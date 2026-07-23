@@ -5,29 +5,44 @@ namespace SevereWeather.World
 {
     public static class PrimitiveFactory
     {
+        private const string RuntimeShaderResource = "SevereWeatherRuntime";
         private static Shader cachedShader;
 
         public static Material CreateMaterial(string name, Color color, float metallic = 0f, float smoothness = 0.25f)
         {
             if (cachedShader == null)
             {
-                cachedShader = Shader.Find("Universal Render Pipeline/Lit");
-                if (cachedShader == null)
-                {
-                    cachedShader = Shader.Find("Standard");
-                }
+                cachedShader = ResolveRuntimeShader();
             }
 
             Material material = new Material(cachedShader)
             {
-                name = name,
-                color = color
+                name = name
             };
 
             if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+            if (material.HasProperty("_Color")) material.SetColor("_Color", color);
             if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", metallic);
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
             return material;
+        }
+
+        private static Shader ResolveRuntimeShader()
+        {
+            Shader shader = Resources.Load<Shader>(RuntimeShaderResource);
+            if (shader != null) return shader;
+
+            shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader != null) return shader;
+
+            shader = Shader.Find("Standard");
+            if (shader != null) return shader;
+
+            shader = Shader.Find("Unlit/Color");
+            if (shader != null) return shader;
+
+            throw new System.InvalidOperationException(
+                "No runtime-compatible shader was available. Expected Resources/SevereWeatherRuntime.shader.");
         }
 
         public static GameObject CreateBox(

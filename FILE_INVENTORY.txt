@@ -13,6 +13,7 @@ Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs
 Assets/SevereWeather/Runtime/Damage/IDamageable.cs
 Assets/SevereWeather/Runtime/Damage/WindReactive.cs
 Assets/SevereWeather/Runtime/Input/StormInput.cs
+Assets/SevereWeather/Runtime/Rendering/Resources/SevereWeatherRuntime.shader
 Assets/SevereWeather/Runtime/SevereWeather.Runtime.asmdef
 Assets/SevereWeather/Runtime/Storms/StormControllerBase.cs
 Assets/SevereWeather/Runtime/Storms/StormKind.cs

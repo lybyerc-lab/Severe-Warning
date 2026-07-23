@@ -19,6 +19,8 @@ namespace SevereWeather.Core
         private Material tornadoMaterial;
         private Material supercellMaterial;
         private Material rainMaterial;
+        private string startupError;
+        private GUIStyle startupErrorStyle;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsureBootstrapExists()
@@ -35,12 +37,27 @@ namespace SevereWeather.Core
             Time.fixedDeltaTime = 1f / 60f;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
-            CreateLighting();
-            CreateRegion();
-            CreateInput();
-            CreateCamera();
-            CreateHud();
-            CreateStorm(activeKind);
+            try
+            {
+                Debug.Log("[Severe Weather] Startup: camera");
+                CreateCamera();
+                Debug.Log("[Severe Weather] Startup: lighting");
+                CreateLighting();
+                Debug.Log("[Severe Weather] Startup: input and HUD");
+                CreateInput();
+                CreateHud();
+                Debug.Log("[Severe Weather] Startup: region");
+                CreateRegion();
+                Debug.Log("[Severe Weather] Startup: storm");
+                CreateStorm(activeKind);
+                Debug.Log("[Severe Weather] Startup complete");
+            }
+            catch (System.Exception exception)
+            {
+                startupError = exception.ToString();
+                Debug.LogException(exception);
+                EnsureEmergencyCamera();
+            }
         }
 
         private void Update()
@@ -50,6 +67,29 @@ namespace SevereWeather.Core
                 activeKind = activeKind == StormKind.Tornado ? StormKind.Supercell : StormKind.Tornado;
                 CreateStorm(activeKind);
             }
+        }
+
+        private void OnGUI()
+        {
+            if (string.IsNullOrEmpty(startupError)) return;
+
+            if (startupErrorStyle == null)
+            {
+                startupErrorStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.UpperLeft,
+                    fontSize = Mathf.Clamp(Screen.height / 48, 13, 20),
+                    wordWrap = true,
+                    normal = { textColor = Color.white }
+                };
+            }
+
+            Rect panel = new Rect(18f, 18f, Screen.width - 36f, Screen.height - 36f);
+            GUI.Box(panel, GUIContent.none);
+            GUI.Label(
+                new Rect(panel.x + 18f, panel.y + 18f, panel.width - 36f, panel.height - 36f),
+                "SEVERE WEATHER STARTUP ERROR\n\n" + startupError,
+                startupErrorStyle);
         }
 
         private void CreateLighting()
@@ -96,12 +136,36 @@ namespace SevereWeather.Core
                 cameraObject = existing.gameObject;
             }
 
+            ConfigureCameraSurface(existing);
             cameraRig = cameraObject.GetComponent<HybridStormCamera>();
             if (cameraRig == null)
             {
                 cameraRig = cameraObject.AddComponent<HybridStormCamera>();
             }
             cameraObject.transform.position = new Vector3(-65f, 70f, -65f);
+        }
+
+        private static void ConfigureCameraSurface(Camera cameraComponent)
+        {
+            cameraComponent.clearFlags = CameraClearFlags.SolidColor;
+            cameraComponent.backgroundColor = new Color(0.08f, 0.12f, 0.16f, 1f);
+            cameraComponent.allowHDR = false;
+        }
+
+        private static void EnsureEmergencyCamera()
+        {
+            Camera emergency = Camera.main;
+            if (emergency == null)
+            {
+                GameObject cameraObject = new GameObject("Emergency Camera");
+                emergency = cameraObject.AddComponent<Camera>();
+                cameraObject.tag = "MainCamera";
+                cameraObject.AddComponent<AudioListener>();
+                cameraObject.transform.position = new Vector3(0f, 12f, -18f);
+                cameraObject.transform.rotation = Quaternion.Euler(25f, 0f, 0f);
+            }
+
+            ConfigureCameraSurface(emergency);
         }
 
         private void CreateHud()
