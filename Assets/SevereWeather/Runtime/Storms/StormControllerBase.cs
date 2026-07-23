@@ -65,7 +65,7 @@ namespace SevereWeather.Storms
 
         protected virtual void MoveStorm(Vector2 inputVector, float dt)
         {
-            Vector3 desired = new Vector3(inputVector.x, 0f, inputVector.y) * moveSpeed;
+            Vector3 desired = GetCameraRelativeDirection(inputVector) * moveSpeed;
             planarVelocity = Vector3.MoveTowards(planarVelocity, desired, acceleration * dt);
             body.MovePosition(body.position + planarVelocity * dt);
 
@@ -76,6 +76,45 @@ namespace SevereWeather.Storms
                     Quaternion.LookRotation(planarVelocity.normalized, Vector3.up),
                     4f * dt);
             }
+        }
+
+        protected Vector3 GetCameraRelativeDirection(Vector2 inputVector)
+        {
+            if (inputVector.sqrMagnitude <= 0.0001f)
+            {
+                return Vector3.zero;
+            }
+
+            Camera activeCamera = Camera.main;
+            if (activeCamera == null)
+            {
+                return Vector3.ClampMagnitude(new Vector3(inputVector.x, 0f, inputVector.y), 1f);
+            }
+
+            Vector3 forward = activeCamera.transform.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude <= 0.0001f)
+            {
+                forward = Vector3.forward;
+            }
+            else
+            {
+                forward.Normalize();
+            }
+
+            Vector3 right = activeCamera.transform.right;
+            right.y = 0f;
+            if (right.sqrMagnitude <= 0.0001f)
+            {
+                right = Vector3.right;
+            }
+            else
+            {
+                right.Normalize();
+            }
+
+            Vector3 direction = right * inputVector.x + forward * inputVector.y;
+            return Vector3.ClampMagnitude(direction, 1f);
         }
 
         protected virtual void RegenerateResources(float dt)

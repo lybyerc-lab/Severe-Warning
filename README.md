@@ -1,65 +1,84 @@
-# Severe Weather - Unity Production Starter v0.1.0
+# Severe Weather - Unity Production Starter
 
-This package begins the production track for **Severe Weather**, a direct-control weather destruction action RPG set in a dense living urban-rural region.
+Severe Weather is a direct-control weather destruction action RPG set in a dense living urban-rural region.
 
-The HTML prototype is preserved as a mechanics laboratory. It is no longer treated as the final rendering or world-production pipeline.
+The player is the storm. The HTML prototype is preserved as a frozen Mechanics Laboratory; Unity is the production track.
 
-## Target editor
+## Current production target
 
-- Unity 6.3 LTS
+- Unity `6000.3.0f1`
 - Universal Render Pipeline
 - Android first
-- Future desktop, console, and Switch-class targets
+- Unity Build Automation connected to GitHub `main`
+- Future WebGL, desktop, console, and Switch-class targets remain later gates
 
 ## What is included
 
-- A Unity project scaffold with URP and Input System package declarations
-- Runtime bootstrapping that creates a dense playable graybox region from an empty scene
+- Runtime bootstrapping that creates a playable graybox region from an empty scene
 - Direct-control Tornado and Supercell implementations
 - Distinct Supercell verbs: Hail Swath, Gust Front, and Electrical Network
 - Hybrid County High and Impact camera behavior
+- Mobile and desktop input
 - Material-aware damage and conductive network chaining
 - Wind-reactive props
 - Runtime density validation
-- Editor menu tools that build and validate the production slice scene
-- Production art, audio, level-design, and migration standards
-- Frozen HTML mechanics laboratory reference
+- Editor scene-generation and project-readiness tools
+- Production art, audio, level-design, migration, and No-Drift standards
+- Frozen HTML Mechanics Laboratory
+- Persistent repository memory through current status, decisions, and device-test evidence
 
-## First desktop setup
+## Persistent project memory
 
-1. Install Unity Hub.
-2. Install Unity 6.3 LTS with Android Build Support, Android SDK and NDK Tools, and OpenJDK.
-3. Open this folder as a Unity project.
-4. Wait for packages to resolve.
-5. Use **Tools > Severe Weather > Create Production Slice Scene**.
-6. Open `Assets/SevereWeather/Scenes/ProductionSlice.unity` if Unity does not open it automatically.
-7. Enter Play Mode.
-8. Use **Tools > Severe Weather > Validate Production Starter** before building.
+Read these before planning work:
 
-## Controls in the starter scene
+1. `CURRENT_STATUS.md`
+2. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
+3. `Docs/NO_DRIFT_POLICY.md`
+4. `Docs/DECISION_LOG.md`
+5. `Docs/DEVICE_TEST_LOG.md`
+6. Other current production documents in `Docs/`
+7. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md` for historical context
+
+The repository is the canonical durable project record. Important chat conclusions must be committed before they are treated as persistent project truth.
+
+## Current mobile controls
 
 Desktop:
 
-- WASD or arrow keys: move the storm
+- WASD or arrow keys: move
 - Space: primary ability
 - Q: secondary ability
 - E: tertiary ability
-- Tab: switch between Tornado and Supercell
+- Tab: switch Tornado/Supercell
 
-Mobile:
+Android Build #3 input laboratory:
 
-- Drag on the left side: move
-- Hold the large right-side zone: primary ability
-- Tap the upper-right zone: secondary ability
-- Tap the middle-right zone: tertiary ability
-- Tap the storm label at top-center: switch storms
+- Start a drag in the lower-left control area to create a floating joystick.
+- Movement is camera-relative.
+- Hold the large right button for Suction or Hail Swath.
+- Tap the left companion button for Gust or Gust Front.
+- Tap the middle companion button for Lightning or Electrical Network.
+- Tap the top-center storm button to switch storm.
+- Temporary MOVE and POS telemetry verifies input and translation on-device.
 
-## Important status
+## Cloud build
 
-This is a production architecture and graybox starter, not final art. It is designed to prevent further investment in the prototype renderer while preserving the mechanics and design discoveries already proven through playtesting.
+Unity Build Automation uses:
 
-Unity is not installed in the current chat execution environment, so the project could not be opened or compiled in the Unity Editor here. The C# source has been structurally validated, the project layout has been checked, and all runtime dependencies are declared. The first real compile and device build remain desktop-editor gates.
+- repository: `lybyerc-lab/Severe-Warning`
+- branch: `main`
+- project subfolder: blank
+- Unity version: auto-detect exact `6000.3.0f1`
+- platform: Android
+- pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
+- debug signing for device-test APKs
 
-## Canonical design source
+## Honest status
 
-The ChatGPT project conversation remains the canonical design and decision record. The documents in `Docs/` mirror the current production direction so the project can survive tool and chat transitions.
+- Build #1 compiled and installed but displayed a black screen.
+- The focused startup hotfix added a guaranteed runtime shader, early camera creation, and on-screen startup diagnostics.
+- Build #2 compiled, installed, rendered the graybox world, and switched between Tornado and Supercell.
+- Build #2 physical testing exposed movement and ability-hitbox defects.
+- Build #3 is the focused mobile-control alignment pass.
+
+This remains a production architecture and graybox starter, not final art or a production-ready game.

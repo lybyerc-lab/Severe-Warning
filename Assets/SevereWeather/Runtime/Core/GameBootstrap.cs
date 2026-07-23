@@ -62,7 +62,7 @@ namespace SevereWeather.Core
 
         private void Update()
         {
-            if (input != null && input.SwitchStormPressed)
+            if (input != null && input.ConsumeSwitchStormPressed())
             {
                 activeKind = activeKind == StormKind.Tornado ? StormKind.Supercell : StormKind.Tornado;
                 CreateStorm(activeKind);
@@ -179,6 +179,7 @@ namespace SevereWeather.Core
             Vector3 spawn = activeStorm != null ? activeStorm.transform.position : new Vector3(-135f, 2f, 122f);
             if (activeStorm != null)
             {
+                activeStorm.gameObject.SetActive(false);
                 Destroy(activeStorm.gameObject);
             }
 

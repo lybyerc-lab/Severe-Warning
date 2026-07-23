@@ -12,6 +12,7 @@ Assets/SevereWeather/Runtime/Damage/DamageType.cs
 Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs
 Assets/SevereWeather/Runtime/Damage/IDamageable.cs
 Assets/SevereWeather/Runtime/Damage/WindReactive.cs
+Assets/SevereWeather/Runtime/Input/MobileControlLayout.cs
 Assets/SevereWeather/Runtime/Input/StormInput.cs
 Assets/SevereWeather/Runtime/Rendering/Resources/SevereWeatherRuntime.shader
 Assets/SevereWeather/Runtime/SevereWeather.Runtime.asmdef
@@ -25,14 +26,18 @@ Assets/SevereWeather/Runtime/World/PrimitiveFactory.cs
 Assets/SevereWeather/Runtime/World/RegionChunk.cs
 Assets/SevereWeather/Runtime/World/RegionGenerator.cs
 Assets/SevereWeather/Runtime/World/WorldDensityValidator.cs
+CURRENT_STATUS.md
 Docs/ART_PIPELINE.md
 Docs/AUDIO_PIPELINE.md
+Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md
 Docs/CORE_DIRECTION.md
 Docs/DECISION_LOG.md
+Docs/DEVICE_TEST_LOG.md
 Docs/MIGRATION_FROM_HTML.md
 Docs/NO_DRIFT_POLICY.md
 Docs/PRODUCTION_PLAN.md
 Docs/REGION_DENSITY_SPEC.md
+Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md
 Docs/STORM_VERBS.md
 Docs/UNITY_SETUP.md
 Docs/VISION_LOCK.md

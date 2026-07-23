@@ -14,4 +14,7 @@
 12. A build is not production-ready merely because it runs.
 13. The real Android device is the final authority for touch, heat, battery, sound, and readability.
 14. Core concept changes require explicit approval.
-15. The canonical project source is the ChatGPT conversation.
+15. The GitHub repository is the canonical durable project record. Chat provides working context, but decisions and evidence become persistent only when committed to the repository.
+16. `CURRENT_STATUS.md` must reflect the latest tested baseline, active blocker, approved patch, and next physical gate.
+17. `Docs/DECISION_LOG.md` and `Docs/DEVICE_TEST_LOG.md` are append-only evidence trails.
+18. Code and its related memory update should land together whenever practical.

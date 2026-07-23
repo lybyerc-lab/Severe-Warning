@@ -16,6 +16,7 @@ namespace SevereWeather.Storms
         private readonly HashSet<ConductiveNode> chainVisited = new HashSet<ConductiveNode>(16);
         private float gustCooldown;
         private float lightningCooldown;
+        private Vector3 velocitySmoothing;
 
         public override StormKind Kind => StormKind.Supercell;
         public override float InfluenceRadius => stormRadius;
@@ -31,7 +32,7 @@ namespace SevereWeather.Storms
 
         protected override void MoveStorm(Vector2 inputVector, float dt)
         {
-            Vector3 desired = new Vector3(inputVector.x, 0f, inputVector.y) * moveSpeed;
+            Vector3 desired = GetCameraRelativeDirection(inputVector) * moveSpeed;
             planarVelocity = Vector3.SmoothDamp(
                 planarVelocity,
                 desired,
@@ -49,8 +50,6 @@ namespace SevereWeather.Storms
                     1.25f * dt);
             }
         }
-
-        private Vector3 velocitySmoothing;
 
         protected override void RegenerateResources(float dt)
         {
@@ -81,20 +80,23 @@ namespace SevereWeather.Storms
         {
             if (stormInput == null) return;
 
+            bool secondaryPressed = stormInput.ConsumeSecondaryPressed();
+            bool tertiaryPressed = stormInput.ConsumeTertiaryPressed();
+
             if (stormInput.PrimaryHeld && power > 0.35f)
             {
                 power = Mathf.Max(0f, power - 2.1f * dt);
                 PaintHailSwath(dt);
             }
 
-            if (stormInput.SecondaryPressed && gustCooldown <= 0f && power >= 18f)
+            if (secondaryPressed && gustCooldown <= 0f && power >= 18f)
             {
                 power -= 18f;
                 gustCooldown = 4.5f;
                 IntensifyGustFront();
             }
 
-            if (stormInput.TertiaryPressed && lightningCooldown <= 0f && charge >= 28f)
+            if (tertiaryPressed && lightningCooldown <= 0f && charge >= 28f)
             {
                 charge -= 28f;
                 lightningCooldown = 2.4f;

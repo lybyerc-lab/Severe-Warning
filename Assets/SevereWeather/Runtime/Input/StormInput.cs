@@ -10,21 +10,50 @@ namespace SevereWeather.Input
     [DisallowMultipleComponent]
     public sealed class StormInput : MonoBehaviour
     {
-        private const float MoveRadiusPixels = 115f;
+        private const float MoveDeadZone = 0.12f;
+        private const float VisualPulseSeconds = 0.14f;
 
         private Vector2 move;
         private bool primaryHeld;
-        private bool secondaryPressed;
-        private bool tertiaryPressed;
-        private bool switchStormPressed;
+        private bool secondaryQueued;
+        private bool tertiaryQueued;
+        private bool switchStormQueued;
+        private bool secondaryTouchHeld;
+        private bool tertiaryTouchHeld;
+        private bool switchTouchHeld;
+        private float secondaryVisualTimer;
+        private float tertiaryVisualTimer;
+        private float switchVisualTimer;
         private int moveTouchId = -1;
         private Vector2 moveTouchStart;
+        private Vector2 moveTouchPosition;
 
         public Vector2 Move => move;
         public bool PrimaryHeld => primaryHeld;
-        public bool SecondaryPressed => secondaryPressed;
-        public bool TertiaryPressed => tertiaryPressed;
-        public bool SwitchStormPressed => switchStormPressed;
+        public bool SecondaryVisualActive => secondaryTouchHeld || secondaryVisualTimer > 0f;
+        public bool TertiaryVisualActive => tertiaryTouchHeld || tertiaryVisualTimer > 0f;
+        public bool SwitchStormVisualActive => switchTouchHeld || switchVisualTimer > 0f;
+        public bool MoveTouchActive => moveTouchId >= 0;
+
+        public Vector2 JoystickCenter
+        {
+            get
+            {
+                MobileControlLayout layout = MobileControlLayout.Calculate();
+                return MoveTouchActive ? moveTouchStart : layout.JoystickDefaultCenter;
+            }
+        }
+
+        public Vector2 JoystickThumbPosition
+        {
+            get
+            {
+                MobileControlLayout layout = MobileControlLayout.Calculate();
+                return JoystickCenter + move * layout.JoystickRadius;
+            }
+        }
+
+        public float JoystickRadius => MobileControlLayout.Calculate().JoystickRadius;
 
         private void OnEnable()
         {
@@ -38,18 +67,65 @@ namespace SevereWeather.Input
 #if ENABLE_INPUT_SYSTEM
             EnhancedTouchSupport.Disable();
 #endif
+            moveTouchId = -1;
+            move = Vector2.zero;
+            primaryHeld = false;
         }
 
         private void Update()
         {
-            secondaryPressed = false;
-            tertiaryPressed = false;
-            switchStormPressed = false;
+            float dt = Time.unscaledDeltaTime;
+            secondaryVisualTimer = Mathf.Max(0f, secondaryVisualTimer - dt);
+            tertiaryVisualTimer = Mathf.Max(0f, tertiaryVisualTimer - dt);
+            switchVisualTimer = Mathf.Max(0f, switchVisualTimer - dt);
+
             primaryHeld = false;
+            secondaryTouchHeld = false;
+            tertiaryTouchHeld = false;
+            switchTouchHeld = false;
             move = Vector2.zero;
 
             ReadKeyboardAndMouse();
             ReadTouches();
+        }
+
+        public bool ConsumeSecondaryPressed()
+        {
+            bool result = secondaryQueued;
+            secondaryQueued = false;
+            return result;
+        }
+
+        public bool ConsumeTertiaryPressed()
+        {
+            bool result = tertiaryQueued;
+            tertiaryQueued = false;
+            return result;
+        }
+
+        public bool ConsumeSwitchStormPressed()
+        {
+            bool result = switchStormQueued;
+            switchStormQueued = false;
+            return result;
+        }
+
+        private void QueueSecondary()
+        {
+            secondaryQueued = true;
+            secondaryVisualTimer = VisualPulseSeconds;
+        }
+
+        private void QueueTertiary()
+        {
+            tertiaryQueued = true;
+            tertiaryVisualTimer = VisualPulseSeconds;
+        }
+
+        private void QueueStormSwitch()
+        {
+            switchStormQueued = true;
+            switchVisualTimer = VisualPulseSeconds;
         }
 
         private void ReadKeyboardAndMouse()
@@ -66,9 +142,9 @@ namespace SevereWeather.Input
                 if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) y += 1f;
                 move = Vector2.ClampMagnitude(new Vector2(x, y), 1f);
                 primaryHeld |= keyboard.spaceKey.isPressed;
-                secondaryPressed |= keyboard.qKey.wasPressedThisFrame;
-                tertiaryPressed |= keyboard.eKey.wasPressedThisFrame;
-                switchStormPressed |= keyboard.tabKey.wasPressedThisFrame;
+                if (keyboard.qKey.wasPressedThisFrame) QueueSecondary();
+                if (keyboard.eKey.wasPressedThisFrame) QueueTertiary();
+                if (keyboard.tabKey.wasPressedThisFrame) QueueStormSwitch();
             }
 
             Mouse mouse = Mouse.current;
@@ -81,109 +157,139 @@ namespace SevereWeather.Input
             float y = UnityEngine.Input.GetAxisRaw("Vertical");
             move = Vector2.ClampMagnitude(new Vector2(x, y), 1f);
             primaryHeld |= UnityEngine.Input.GetKey(KeyCode.Space);
-            secondaryPressed |= UnityEngine.Input.GetKeyDown(KeyCode.Q);
-            tertiaryPressed |= UnityEngine.Input.GetKeyDown(KeyCode.E);
-            switchStormPressed |= UnityEngine.Input.GetKeyDown(KeyCode.Tab);
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Q)) QueueSecondary();
+            if (UnityEngine.Input.GetKeyDown(KeyCode.E)) QueueTertiary();
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Tab)) QueueStormSwitch();
 #endif
         }
 
         private void ReadTouches()
         {
+            MobileControlLayout layout = MobileControlLayout.Calculate();
+            bool moveTouchFound = false;
+
 #if ENABLE_INPUT_SYSTEM
             foreach (EnhancedTouch touch in EnhancedTouch.activeTouches)
             {
                 Vector2 position = touch.screenPosition;
                 int id = touch.touchId;
-                if (position.x < Screen.width * 0.48f)
+                bool began = touch.phase == UnityEngine.InputSystem.TouchPhase.Began;
+                bool ended = touch.phase == UnityEngine.InputSystem.TouchPhase.Ended ||
+                             touch.phase == UnityEngine.InputSystem.TouchPhase.Canceled;
+
+                if (id == moveTouchId)
                 {
-                    if (moveTouchId < 0 || moveTouchId == id)
+                    if (ended)
                     {
-                        if (moveTouchId < 0)
-                        {
-                            moveTouchId = id;
-                            moveTouchStart = position;
-                        }
-
-                        move = Vector2.ClampMagnitude((position - moveTouchStart) / MoveRadiusPixels, 1f);
+                        moveTouchId = -1;
+                        continue;
                     }
-                }
-                else
-                {
-                    ReadAbilityTouch(position, touch.phase == UnityEngine.InputSystem.TouchPhase.Began);
-                }
-            }
 
-            bool moveTouchStillActive = false;
-            foreach (EnhancedTouch touch in EnhancedTouch.activeTouches)
-            {
-                if (touch.touchId == moveTouchId)
-                {
-                    moveTouchStillActive = true;
-                    break;
+                    moveTouchFound = true;
+                    moveTouchPosition = position;
+                    move = ApplyDeadZone((moveTouchPosition - moveTouchStart) / layout.JoystickRadius);
+                    continue;
                 }
-            }
 
-            if (!moveTouchStillActive)
-            {
-                moveTouchId = -1;
+                if (moveTouchId < 0 && began && layout.MovementCapture.Contains(position))
+                {
+                    moveTouchId = id;
+                    moveTouchStart = position;
+                    moveTouchPosition = position;
+                    moveTouchFound = true;
+                    continue;
+                }
+
+                if (!ended)
+                {
+                    ReadAbilityTouch(layout, position, began);
+                }
             }
 #else
             for (int i = 0; i < UnityEngine.Input.touchCount; i++)
             {
                 UnityEngine.Touch touch = UnityEngine.Input.GetTouch(i);
                 Vector2 position = touch.position;
-                if (position.x < Screen.width * 0.48f)
-                {
-                    if (moveTouchId < 0 || moveTouchId == touch.fingerId)
-                    {
-                        if (moveTouchId < 0)
-                        {
-                            moveTouchId = touch.fingerId;
-                            moveTouchStart = position;
-                        }
+                int id = touch.fingerId;
+                bool began = touch.phase == UnityEngine.TouchPhase.Began;
+                bool ended = touch.phase == UnityEngine.TouchPhase.Ended ||
+                             touch.phase == UnityEngine.TouchPhase.Canceled;
 
-                        move = Vector2.ClampMagnitude((position - moveTouchStart) / MoveRadiusPixels, 1f);
-                    }
-                }
-                else
+                if (id == moveTouchId)
                 {
-                    ReadAbilityTouch(position, touch.phase == UnityEngine.TouchPhase.Began);
-                }
-
-                if (touch.phase == UnityEngine.TouchPhase.Ended || touch.phase == UnityEngine.TouchPhase.Canceled)
-                {
-                    if (touch.fingerId == moveTouchId)
+                    if (ended)
                     {
                         moveTouchId = -1;
+                        continue;
                     }
+
+                    moveTouchFound = true;
+                    moveTouchPosition = position;
+                    move = ApplyDeadZone((moveTouchPosition - moveTouchStart) / layout.JoystickRadius);
+                    continue;
+                }
+
+                if (moveTouchId < 0 && began && layout.MovementCapture.Contains(position))
+                {
+                    moveTouchId = id;
+                    moveTouchStart = position;
+                    moveTouchPosition = position;
+                    moveTouchFound = true;
+                    continue;
+                }
+
+                if (!ended)
+                {
+                    ReadAbilityTouch(layout, position, began);
                 }
             }
 #endif
+
+            if (moveTouchId >= 0 && !moveTouchFound)
+            {
+                moveTouchId = -1;
+            }
         }
 
-        private void ReadAbilityTouch(Vector2 position, bool began)
+        private void ReadAbilityTouch(MobileControlLayout layout, Vector2 position, bool began)
         {
-            float normalizedX = position.x / Mathf.Max(1f, Screen.width);
-            float normalizedY = position.y / Mathf.Max(1f, Screen.height);
-
-            if (normalizedY > 0.82f && normalizedX > 0.38f && normalizedX < 0.66f)
+            if (layout.PrimaryButton.Contains(position))
             {
-                switchStormPressed |= began;
+                primaryHeld = true;
                 return;
             }
 
-            if (normalizedY < 0.34f)
+            if (layout.SecondaryButton.Contains(position))
             {
-                primaryHeld = true;
+                secondaryTouchHeld = true;
+                if (began) QueueSecondary();
+                return;
             }
-            else if (normalizedY < 0.62f)
+
+            if (layout.TertiaryButton.Contains(position))
             {
-                tertiaryPressed |= began;
+                tertiaryTouchHeld = true;
+                if (began) QueueTertiary();
+                return;
             }
-            else
+
+            if (layout.StormSwitchButton.Contains(position))
             {
-                secondaryPressed |= began;
+                switchTouchHeld = true;
+                if (began) QueueStormSwitch();
             }
+        }
+
+        private static Vector2 ApplyDeadZone(Vector2 raw)
+        {
+            float magnitude = Mathf.Clamp01(raw.magnitude);
+            if (magnitude <= MoveDeadZone)
+            {
+                return Vector2.zero;
+            }
+
+            float remapped = Mathf.InverseLerp(MoveDeadZone, 1f, magnitude);
+            return raw.normalized * remapped;
         }
     }
 }

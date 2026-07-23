@@ -52,20 +52,23 @@ namespace SevereWeather.Storms
         {
             if (stormInput == null) return;
 
+            bool secondaryPressed = stormInput.ConsumeSecondaryPressed();
+            bool tertiaryPressed = stormInput.ConsumeTertiaryPressed();
+
             if (stormInput.PrimaryHeld && power > 0.5f)
             {
                 power = Mathf.Max(0f, power - 3f * dt);
                 ApplySuction(dt);
             }
 
-            if (stormInput.SecondaryPressed && gustTimer <= 0f && power >= 14f)
+            if (secondaryPressed && gustTimer <= 0f && power >= 14f)
             {
                 power -= 14f;
                 gustTimer = gustCooldown;
                 ApplyGust();
             }
 
-            if (stormInput.TertiaryPressed && lightningTimer <= 0f && power >= 20f)
+            if (tertiaryPressed && lightningTimer <= 0f && power >= 20f)
             {
                 power -= 20f;
                 lightningTimer = lightningCooldown;
