@@ -24,76 +24,76 @@ Important project decisions and test evidence must be committed to the repositor
 - Build #3 mobile-input commit: `32ec421528e75632bae793ba0569c8770baa0d42`
 - Build #4 feel/render commit: `91ee1a257bbe8e771d73097c9c4a3c781c53c225`
 - Build #4.1 motion/silhouette commit: `96c9f780daf070648dc69a7f6cd431233b85617a`
+- Build #4.2 camera/Supercell commit: `fd54c7c2b0764e8e4b301700caba997a27b08378`
 - Unity Build Automation is connected to GitHub `main` and builds with Unity `6000.3.0f1`.
 
-## Build #4.1 physical evidence
+## Build #4.2 physical evidence
 
-Build #4.1 launched successfully on Android and displayed `B4.1 MOTION + SILHOUETTE LAB` with version `0.1.5`.
+Build #4.2 launched successfully on Android and displayed `B4.2 CAMERA + SUPERCELL LAB` with version `0.1.6`.
 
 Confirmed on the physical device:
 
-- Tornado and Supercell both translate through the world.
-- Input, actual speed, position, and distance telemetry agree.
-- Supercell movement speed feels appropriately heavy.
-- The movement-authority defect from Build #4 is resolved.
-- The revised tornado silhouette is a clear improvement over the stacked-cylinder version.
+- Tornado and Supercell movement remain functional.
+- Tornado camera containment is improved.
+- The camera transition between Tornado and Supercell is improved.
+- The complete Supercell fits in the navigation frame.
+- Roads, buildings, targets, and the Supercell ground footprint remain readable.
+- Frame telemetry remained near 60 FPS in the captured scene.
 
-New physical findings:
+New physical finding:
 
-- The regular Tornado can outrun the camera and leave the visible frame.
-- The Supercell cloud mass occupies too much of the screen and obscures roads, buildings, targets, and its own ground footprint.
-- Camera recovery is based only on a world-space leash and does not enforce screen-space containment.
-- The world and storm visuals remain procedural graybox quality and still require later production-art work.
+- The Supercell precipitation placeholder is still an opaque blue cylinder and reads as a silo rather than rain and hail.
+- Existing targets darken and collapse, but impacts still lack a clear staged material response and readable hit feedback.
+- The world and storm visuals remain procedural laboratory geometry rather than production art.
 
-Build #4.1 passes the movement gate but fails the camera-containment and Supercell-framing gates.
+Build #4.2 passes the movement and camera-foundation gate. The next approved phase is impact readability and staged destruction.
 
-## Active work: Build #4.2 camera containment and Supercell framing
+## Active work: Build #5 impact and destruction laboratory
 
 Approved scope:
 
-- preserve existing Tornado and Supercell movement speeds
-- add viewport-aware soft containment and hard screen-edge recovery
-- make Tornado camera catch-up scale with actual storm speed
-- reduce the Tornado world-space leash so the storm cannot disappear before recovery
-- keep the Supercell camera response heavier than the Tornado camera
-- increase Supercell camera distance and raise its focus point
-- reduce and flatten Supercell cloud lobes into a broad shelf-cloud silhouette
-- add a darker central updraft core and retain a visible rain/hail core
-- add `CAM SAFE`, `CAM CATCHUP`, and `CAM RECOVER` device telemetry
-- bump application version to `0.1.6` and Android version code to `6`
+- replace the Supercell blue precipitation cylinder with animated rain and hail streaks plus low ground mist
+- add shared `Intact`, `Stressed`, `Damaged`, `Critical`, and `Destroyed` stages
+- make crop, vegetation, glass, wood, metal, vehicle, infrastructure, and masonry reactions visibly different
+- add throttled material-colored impact bursts and critical-stage rings
+- keep structural targets from becoming weightless whole-building rigidbodies at collapse
+- add a compact mixed-material impact lane near the initial spawn
+- preserve Build #4.2 movement speeds and camera behavior
+- add device telemetry for the most recent material and damage stage
+- bump application version to `0.1.7` and Android version code to `7`
 - update repository memory in the same commit
 
-Explicitly outside Build #4.2:
+Explicitly outside Build #5:
 
-- movement-speed reductions used to hide camera defects
-- input-system changes
-- new abilities or a third storm
+- a third storm
 - missions, progression, economy, or menus
-- production environment art packs
+- final environment art packs
 - final audio
-- full building-fracture prefabs
+- authored fracture meshes and production destruction prefabs
 - authored URP pipeline migration
 - asynchronous region generation
+- people or casualty simulation
 
-## Build #4.2 physical acceptance gate
+## Build #5 physical acceptance gate
 
-1. Confirm `B4.2 CAMERA + SUPERCELL LAB` and version `0.1.6` are visible.
-2. Drive the Tornado at full input in multiple directions for at least ten seconds.
-3. Confirm the Tornado never leaves the visible screen.
-4. Confirm the HUD normally reports `CAM SAFE`, briefly reports `CAM CATCHUP`, and uses `CAM RECOVER` only near a hard edge.
-5. Confirm hard recovery returns the Tornado to frame immediately without a prolonged off-screen period.
-6. Confirm Tornado speed remains approximately the Build #4.1 value rather than being reduced to mask the problem.
-7. Switch to Supercell and confirm its movement speed remains appropriately heavy.
-8. Confirm the complete Supercell silhouette fits comfortably in the view during navigation.
-9. Confirm roads, buildings, targets, the rain core, and the ground footprint remain readable beneath or around the Supercell.
-10. Confirm both storms remain controllable while the camera changes between navigation and impact framing.
-11. Confirm abilities and storm switching still work.
-12. Record frame pacing, heat, and any new defects in `Docs/DEVICE_TEST_LOG.md`.
+1. Confirm `B5 IMPACT + DESTRUCTION LAB` and version `0.1.7` are visible.
+2. Confirm the blue Supercell cylinder is gone.
+3. Confirm rain and hail streaks visibly fall beneath and behind the Supercell without obscuring the world.
+4. Confirm low mist remains near the ground footprint.
+5. Attack the mixed-material starter lane with Tornado suction, gust, and lightning.
+6. Attack the same lane with Supercell hail, gust front, and electrical network.
+7. Confirm the HUD reports material and stage transitions such as `IMPACT Glass Damaged`.
+8. Confirm crops flatten, vegetation leans or falls, glass compresses/shatters, metal deforms/releases, and masonry resists longer.
+9. Confirm structural buildings collapse in place rather than launching as single weightless blocks.
+10. Confirm vehicles rock, slide, tip, and release before destruction.
+11. Confirm abilities and storm switching remain functional.
+12. Confirm camera containment remains stable during impacts.
+13. Record frame pacing, heat, object spam, and any new defects in `Docs/DEVICE_TEST_LOG.md`.
 
-## Known open issues after Build #4.2
+## Known open issues after Build #5
 
-- The world remains procedural graybox geometry rather than production art.
+- Procedural primitives are still stand-ins for authored production assets.
 - The project still needs a committed authored URP asset strategy.
 - Runtime region generation remains synchronous.
 - Persistent authored Unity assets still require `.meta` migration.
-- Final audio, destruction assets, profiling, and broader device coverage remain open gates.
+- Final audio, fracture assets, pooling, profiling, and broader device coverage remain open gates.

@@ -103,3 +103,12 @@ The Vulkan-only and Built-in-template choices are temporary test controls. They 
 - Do not request a clean build unless the cached build fails for a cache-specific reason.
 - Pre-export method remains `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`.
 - Android output remains APK, ARM64, IL2CPP, Vulkan only for this device gate.
+
+## Build #5 device-lab identity
+
+- Application version: `0.1.7`
+- Android version code: `7`
+- HUD label: `B5 IMPACT + DESTRUCTION LAB`
+- Expected source branch after review and merge: `main`
+- Reuse Library cache; do not request a clean build unless Unity reports stale generated content.
+- Preserve Unity `6000.3.0f1`, Android SDK 35, IL2CPP, ARM64, Vulkan, APK output, debug signing, and the existing pre-export method.

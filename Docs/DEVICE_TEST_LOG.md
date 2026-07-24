@@ -220,3 +220,58 @@ Record after installation:
 - Five-minute heat result:
 - New defects:
 - Decision:
+
+## 2026-07-24 - Android Build #4.2
+
+### Source
+
+- Commit: `fd54c7c2b0764e8e4b301700caba997a27b08378`
+- Application version: `0.1.6`
+- Unity: `6000.3.0f1`
+- Target: Android APK through Unity Build Automation
+
+### Result
+
+- Tornado and Supercell movement remained functional.
+- Tornado camera containment improved.
+- Camera transition between Tornado and Supercell improved.
+- Supercell navigation framing now preserves roads, buildings, targets, and ground context.
+- Captured frame telemetry remained near 60 FPS.
+
+### New findings
+
+- The Supercell precipitation volume is visibly an opaque blue cylinder.
+- Damage and collapse still lack a strong staged material language.
+- Procedural primitives remain laboratory assets rather than production art.
+
+### Decision
+
+Build #4.2 passes the movement and camera-foundation gate. Build #5 is approved as a focused impact, precipitation, material-reaction, and staged-destruction laboratory.
+
+## Build #5 test record
+
+Status: pending Unity compilation and physical Android test.
+
+Record after installation:
+
+- Cloud build result:
+- APK update or clean install:
+- Build identity shown:
+- Blue precipitation cylinder removed:
+- Rain and hail curtain readability:
+- Ground mist readability:
+- Wood stage response:
+- Glass stage response:
+- Metal stage response:
+- Masonry stage response:
+- Crop response:
+- Vegetation response:
+- Vehicle response:
+- Structural collapse behavior:
+- Tornado abilities:
+- Supercell abilities:
+- Camera containment during impacts:
+- Frame pacing:
+- Five-minute heat result:
+- New defects:
+- Decision:

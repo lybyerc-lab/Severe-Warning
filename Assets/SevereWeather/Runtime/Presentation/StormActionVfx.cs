@@ -109,6 +109,47 @@ namespace SevereWeather.Presentation
             CreateLine("Lightning Bolt", points, false, color, duration, width);
         }
 
+        public static void ImpactBurst(
+            Vector3 center,
+            Vector3 impulse,
+            Color color,
+            float scale = 1f,
+            bool critical = false)
+        {
+            int rayCount = critical ? 8 : 5;
+            Vector3 normal = impulse.sqrMagnitude > 0.01f ? impulse.normalized : Vector3.up;
+            Vector3 tangent = Vector3.Cross(normal, Vector3.up);
+            if (tangent.sqrMagnitude < 0.01f) tangent = Vector3.right;
+            tangent.Normalize();
+
+            Vector3 origin = center + Vector3.up * 0.18f;
+            Vector3[] points = new Vector3[rayCount * 3];
+            for (int i = 0; i < rayCount; i++)
+            {
+                float angle = i * 360f / rayCount;
+                Vector3 radial = Quaternion.AngleAxis(angle, normal) * tangent;
+                Vector3 direction = (radial + normal * 0.35f + Vector3.up * 0.22f).normalized;
+                float length = scale * (0.85f + (i % 3) * 0.18f);
+                int index = i * 3;
+                points[index] = origin;
+                points[index + 1] = origin + direction * length;
+                points[index + 2] = origin;
+            }
+
+            CreateLine(
+                critical ? "Critical Impact Burst" : "Impact Burst",
+                points,
+                false,
+                color,
+                critical ? 0.48f : 0.3f,
+                critical ? 0.22f : 0.14f);
+
+            if (critical)
+            {
+                Ring(center, Mathf.Max(0.8f, scale * 0.9f), color, 0.42f, 0.16f);
+            }
+        }
+
         private static void CreateLine(
             string name,
             Vector3[] points,

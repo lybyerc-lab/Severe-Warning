@@ -206,6 +206,39 @@ namespace SevereWeather.World
             CreateVehicle(parent, starterSpawnPosition + new Vector3(14f, -0.9f, -9f), false);
             CreateTree(parent, starterSpawnPosition + new Vector3(-14f, -2f, 13f), 6.2f);
             CreatePowerPole(parent, starterSpawnPosition + new Vector3(19f, -2f, -16f));
+            CreateImpactLabLane(parent);
+        }
+
+        private void CreateImpactLabLane(Transform parent)
+        {
+            Vector3 origin = starterSpawnPosition + new Vector3(-18f, -0.35f, -16f);
+            CreateImpactTarget(parent, "Impact Lab Wood Fence", origin, new Vector3(5.8f, 2.8f, 0.5f), residential, 72f, MaterialClass.Wood, false, MobilityClass.Light);
+            CreateImpactTarget(parent, "Impact Lab Glass Panel", origin + Vector3.right * 8f, new Vector3(5.2f, 3.1f, 0.28f), glass, 38f, MaterialClass.Glass, false, MobilityClass.Light);
+            CreateImpactTarget(parent, "Impact Lab Sheet Metal", origin + Vector3.right * 16f, new Vector3(4.8f, 3f, 0.32f), metal, 86f, MaterialClass.Metal, true, MobilityClass.Light);
+            CreateImpactTarget(parent, "Impact Lab Masonry Wall", origin + Vector3.right * 24f, new Vector3(6.2f, 3.4f, 1.2f), commercial, 230f, MaterialClass.Masonry, false, MobilityClass.Structural);
+        }
+
+        private void CreateImpactTarget(
+            Transform parent,
+            string name,
+            Vector3 center,
+            Vector3 size,
+            Material material,
+            float health,
+            MaterialClass materialClass,
+            bool conductive,
+            MobilityClass mobility)
+        {
+            GameObject target = PrimitiveFactory.CreateBox(parent, name, center, size, material, true);
+            Rigidbody body = target.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            PrimitiveFactory.AddDamageable(target, health, materialClass, conductive, mobility);
+            target.AddComponent<WindReactive>();
+            if (conductive)
+            {
+                ConductiveNode node = target.AddComponent<ConductiveNode>();
+                node.Configure(24f, 6);
+            }
         }
 
         private void CreateSmallTownDistrict(Vector3 center)

@@ -16,12 +16,14 @@ The player is the storm. The HTML prototype is preserved as a frozen Mechanics L
 
 - Runtime bootstrapping that creates a playable procedural county test region from an empty scene
 - Direct-control Tornado and Supercell implementations
-- Distinct Supercell verbs: Hail Swath, Gust Front, and Electrical Network
+- Distinct Tornado and Supercell verbs
 - Viewport-contained County High and action-responsive Impact camera behavior
 - Separate Tornado and Supercell framing profiles
 - Mobile and desktop input
-- Material-aware damage and conductive network chaining
+- Material-aware five-stage damage and conductive network chaining
 - Mobility-aware props, approximate mass, and wind response
+- Material-colored impact bursts and recent-impact telemetry
+- Animated Supercell rain and hail curtains with ground mist
 - Collider-aware runtime density validation
 - Immediate ability feedback through rings, swaths, arcs, lightning paths, target counts, and no-target messages
 - Cloud-generated lit material templates, build identity, and deterministic Android player settings
@@ -55,19 +57,26 @@ Desktop:
 - E: tertiary ability
 - Tab: switch Tornado/Supercell
 
-Android Build #4.2 camera and Supercell laboratory:
+Android Build #5 impact and destruction laboratory:
 
 - Start a drag in the lower-left control area to create a floating joystick.
 - Movement is camera-relative.
 - The storm root uses transform-authoritative motion and reports actual resolved speed.
 - The camera uses a soft world-space leash plus screen-space containment.
-- A fast Tornado receives stronger camera catch-up without reducing its movement speed.
-- The Supercell uses a wider, higher framing profile and a flatter shelf-cloud silhouette.
 - Hold `PULL` or `HAIL` for the primary ability.
 - Tap `GUST` or `FRONT` for the secondary ability.
 - Tap `ZAP` or `GRID` for the tertiary ability.
 - Tap the top-center storm button to switch storm.
-- INPUT, POS, ACTUAL speed, DIST, FPS, camera state, target count, render pipeline, graphics API, build version, and commit telemetry remain visible during the device gate.
+- Attack the mixed-material target lane near the initial spawn to compare staged reactions.
+- INPUT, POS, ACTUAL speed, DIST, FPS, camera state, target count, recent impact stage, render pipeline, graphics API, build version, and commit telemetry remain visible during the device gate.
+
+## Damage stages
+
+Damageable targets move through:
+
+`Intact -> Stressed -> Damaged -> Critical -> Destroyed`
+
+Crop, vegetation, glass, wood, metal, vehicles, infrastructure, and masonry use different deformation, release, resistance, and collapse behavior. Structural targets collapse in place during this laboratory pass rather than becoming single weightless rigidbodies.
 
 ## Cloud build
 
@@ -83,15 +92,16 @@ Unity Build Automation uses:
 - APK output and debug signing for device-test builds
 - Library caching
 
-The pre-export method sets application version `0.1.6`, Android version code `6`, IL2CPP, ARM64, Vulkan-only device-lab rendering, generated built-in runtime materials, build identity, the production-slice scene, and quality defaults.
+The pre-export method sets application version `0.1.7`, Android version code `7`, IL2CPP, ARM64, Vulkan-only device-lab rendering, generated built-in runtime materials, build identity, the production-slice scene, and quality defaults.
 
 ## Honest status
 
 - Build #1 compiled and installed but displayed a black screen.
 - Build #2 rendered the graybox world and switched between Tornado and Supercell.
 - Build #3 confirmed mobile input registration but failed movement readability and visual-quality gates.
-- Build #4 improved lighting, props, feedback, and framing, but physical testing proved the storm root stayed at spawn while intended speed and distance counters advanced.
-- Build #4.1 fixed actual translation and passed the movement gate. Physical testing then exposed Tornado camera escape and oversized Supercell framing.
-- Build #4.2 adds screen-space camera containment and reframes the Supercell without reducing either storm's approved movement speed.
+- Build #4 improved lighting and feedback, but physical testing proved the storm root stayed at spawn.
+- Build #4.1 fixed actual translation and passed the movement gate.
+- Build #4.2 improved screen-space camera containment and reframed the Supercell without reducing either storm speed.
+- Build #5 is the first focused impact and staged-destruction laboratory.
 
 This remains a production architecture and procedural lab slice, not final art or a production-ready game.

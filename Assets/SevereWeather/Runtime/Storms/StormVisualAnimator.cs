@@ -64,4 +64,62 @@ namespace SevereWeather.Storms
             }
         }
     }
+
+    public sealed class PrecipitationFieldAnimator : MonoBehaviour
+    {
+        [SerializeField] private Transform[] streaks;
+        [SerializeField] private float fieldHeight = 18.4f;
+        [SerializeField] private float fallSpeed = 17f;
+        [SerializeField] private float swayAmount = 0.45f;
+
+        private Vector3[] startPositions;
+
+        public void Configure(Transform[] rainStreaks, float height, float speed, float sway)
+        {
+            streaks = rainStreaks;
+            fieldHeight = Mathf.Max(1f, height);
+            fallSpeed = Mathf.Max(0.1f, speed);
+            swayAmount = Mathf.Max(0f, sway);
+            CaptureStarts();
+        }
+
+        private void CaptureStarts()
+        {
+            if (streaks == null)
+            {
+                startPositions = null;
+                return;
+            }
+
+            startPositions = new Vector3[streaks.Length];
+            for (int i = 0; i < streaks.Length; i++)
+            {
+                if (streaks[i] != null) startPositions[i] = streaks[i].localPosition;
+            }
+        }
+
+        private void Update()
+        {
+            if (streaks == null || startPositions == null) return;
+
+            float dt = Time.deltaTime;
+            float time = Time.time;
+            for (int i = 0; i < streaks.Length; i++)
+            {
+                Transform streak = streaks[i];
+                if (streak == null) continue;
+
+                Vector3 position = streak.localPosition;
+                position.y -= fallSpeed * (1f + (i % 4) * 0.08f) * dt;
+                position.x = startPositions[i].x + Mathf.Sin(time * 1.7f + i * 0.91f) * swayAmount;
+                position.z = startPositions[i].z + Mathf.Cos(time * 1.23f + i * 0.67f) * swayAmount * 0.55f;
+                if (position.y < -0.4f)
+                {
+                    position.y += fieldHeight;
+                }
+
+                streak.localPosition = position;
+            }
+        }
+    }
 }

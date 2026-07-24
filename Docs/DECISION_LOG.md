@@ -131,3 +131,15 @@ Tune sizes, dead zone, acceleration, and layout only from Build #3 physical-devi
 **Rejected alternatives:** Reducing Tornado speed, returning to hard follow at all times, or treating the off-screen player as acceptable.
 
 **Revisit condition:** Replace this camera contract only when a tested authored camera system provides equal or better containment, motion readability, and distinct Tornado/Supercell feel.
+
+## 2026-07-24 - Advance from camera validation to staged impact
+
+**Decision:** Build #5 focuses on material-readable impact and staged destruction while preserving Build #4.2 movement and camera behavior.
+
+**Evidence:** Physical Android testing confirmed that camera containment and Supercell framing improved. The remaining obvious placeholder is the opaque blue precipitation cylinder, and target reactions still jump through generic darkening and collapse without a clear material-stage language.
+
+**Implementation contract:** Use five shared damage stages, material-colored impact bursts, material-specific deformation, in-place structural collapse, an animated Supercell precipitation curtain, and a mixed-material starter lane.
+
+**Rejected alternative:** Starting missions, progression, a third storm, or final art before the destruction loop proves readable and satisfying.
+
+**Revisit condition:** Broaden into authored fracture assets and progression only after Build #5 passes the physical impact-readability and performance gates.

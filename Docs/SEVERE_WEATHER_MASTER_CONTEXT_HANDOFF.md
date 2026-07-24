@@ -1432,3 +1432,7 @@ This does not reopen the No-Drift rules or substitute code-generated graybox geo
 Build #4.1 commit `96c9f780daf070648dc69a7f6cd431233b85617a` passed the physical movement gate. Tornado and Supercell both move correctly, and the Supercell speed feels appropriate. The next authoritative defects are Tornado camera escape and oversized Supercell framing.
 
 Build #4.2 preserves storm speeds, adds viewport-aware camera containment with hard-edge recovery, separates Tornado and Supercell framing profiles, flattens and reduces the Supercell shelf cloud, adds a dark updraft core, and exposes camera state in the HUD. Application version is `0.1.6`; Android version code is `6`.
+
+## Build #5 impact and destruction update
+
+Build #4.2 physical testing passes the movement and camera-foundation gate. Build #5 preserves both storm movement profiles and viewport containment while replacing the Supercell blue precipitation cylinder, adding animated rain and hail streaks, adding five shared damage stages, differentiating material reactions, preventing structural whole-building launch behavior, and adding a mixed-material impact lane near spawn. Device evidence remains authoritative.
