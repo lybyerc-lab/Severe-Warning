@@ -5,39 +5,63 @@ namespace SevereWeather.Storms
     public sealed class StormVisualAnimator : MonoBehaviour
     {
         [SerializeField] private float spinDegreesPerSecond = 85f;
-        [SerializeField] private float pulseAmount = 0.025f;
-        [SerializeField] private float pulseSpeed = 1.5f;
-        [SerializeField] private Transform[] rotatingLayers;
+        [SerializeField] private float pulseAmount = 0.035f;
+        [SerializeField] private float pulseSpeed = 1.7f;
+        [SerializeField] private Transform spinRoot;
+        [SerializeField] private Transform[] animatedLayers;
 
-        private Vector3 baseScale;
+        private Vector3[] basePositions;
+        private Vector3[] baseScales;
 
-        public void Configure(float spin, Transform[] layers)
+        public void Configure(float spin, Transform[] layers, Transform rotatingRoot)
         {
             spinDegreesPerSecond = spin;
-            rotatingLayers = layers;
+            animatedLayers = layers;
+            spinRoot = rotatingRoot;
+            CaptureLayerState();
         }
 
-        private void Awake()
+        private void CaptureLayerState()
         {
-            baseScale = transform.localScale;
+            if (animatedLayers == null)
+            {
+                basePositions = null;
+                baseScales = null;
+                return;
+            }
+
+            basePositions = new Vector3[animatedLayers.Length];
+            baseScales = new Vector3[animatedLayers.Length];
+            for (int i = 0; i < animatedLayers.Length; i++)
+            {
+                if (animatedLayers[i] == null) continue;
+                basePositions[i] = animatedLayers[i].localPosition;
+                baseScales[i] = animatedLayers[i].localScale;
+            }
         }
 
         private void Update()
         {
-            if (rotatingLayers != null)
+            if (spinRoot != null)
             {
-                for (int i = 0; i < rotatingLayers.Length; i++)
-                {
-                    if (rotatingLayers[i] != null)
-                    {
-                        float direction = (i & 1) == 0 ? 1f : -0.65f;
-                        rotatingLayers[i].Rotate(Vector3.up, spinDegreesPerSecond * direction * Time.deltaTime, Space.Self);
-                    }
-                }
+                spinRoot.Rotate(Vector3.up, spinDegreesPerSecond * Time.deltaTime, Space.Self);
             }
 
-            float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseAmount;
-            transform.localScale = new Vector3(baseScale.x * pulse, baseScale.y, baseScale.z * pulse);
+            if (animatedLayers == null || basePositions == null || baseScales == null) return;
+
+            for (int i = 0; i < animatedLayers.Length; i++)
+            {
+                Transform layer = animatedLayers[i];
+                if (layer == null) continue;
+                float phase = Time.time * pulseSpeed + i * 0.73f;
+                float pulse = 1f + Mathf.Sin(phase) * pulseAmount;
+                Vector3 bob = Vector3.up * Mathf.Sin(phase * 0.83f) * 0.18f;
+                layer.localPosition = basePositions[i] + bob;
+                layer.localScale = new Vector3(
+                    baseScales[i].x * pulse,
+                    baseScales[i].y,
+                    baseScales[i].z * pulse);
+            }
         }
     }
 }

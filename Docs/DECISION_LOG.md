@@ -88,3 +88,14 @@ Build #2 physical testing proved touch reached the app because storm switching w
 ### Revisit condition
 
 Tune sizes, dead zone, acceleration, and layout only from Build #3 physical-device evidence.
+
+## 2026-07-23 - Build #4 feel and render recovery
+
+- Build #3 proved that touch input and storm position updates were registering on the physical Android device.
+- Build #3 failed because the camera tracked the storm so tightly that movement was not perceptible.
+- The Build #3 opening position was a weak interaction test zone: crops were damageable but lacked colliders, so physics-based storm abilities could not find them.
+- The flat emergency shader was retained only as a fallback. Build #4 generates guaranteed Standard and URP material templates, uses the stable lit built-in pipeline for the device gate, and leaves authored URP pipeline assets as a later editor-controlled migration.
+- Build #4 uses a soft camera leash, stronger differentiated movement, immediate ability VFX, action status, target counts, speed, distance, build identity, graphics API, and render-pipeline telemetry.
+- Crop colliders, a mixed starter test pocket, backdrop terrain, distant hills, road markings, mobility classes, approximate masses, and collider-aware density validation are part of the same recovery because they are required to judge feel and interaction honestly.
+- Android build identity is set to version `0.1.4`, version code `4`, IL2CPP, ARM64, Vulkan first, and OpenGLES3 fallback.
+- Build #4 remains a stylized procedural lab slice. It does not claim production art quality.

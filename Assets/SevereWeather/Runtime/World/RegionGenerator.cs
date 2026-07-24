@@ -9,11 +9,14 @@ namespace SevereWeather.World
     {
         [SerializeField] private int seed = 8817;
         [SerializeField] private Vector2 regionSize = new Vector2(420f, 420f);
+        [SerializeField] private Vector3 starterSpawnPosition = new Vector3(-122f, 2f, 112f);
 
+        private Material distantGround;
         private Material grass;
         private Material field;
         private Material road;
         private Material roadEdge;
+        private Material laneMarking;
         private Material residential;
         private Material commercial;
         private Material industrial;
@@ -25,6 +28,9 @@ namespace SevereWeather.World
         private Material trunk;
         private Material vehicleA;
         private Material vehicleB;
+        private Material distantHill;
+
+        public Vector3 StarterSpawnPosition => starterSpawnPosition;
 
         public void Generate()
         {
@@ -33,7 +39,9 @@ namespace SevereWeather.World
                 return;
             }
 
+            UnityEngine.Random.InitState(seed);
             CreateMaterials();
+            CreateBackdrop();
             CreateTerrain();
             CreateRoadNetwork();
             CreateFarmlandDistrict(new Vector3(-115f, 0f, 105f));
@@ -50,21 +58,58 @@ namespace SevereWeather.World
 
         private void CreateMaterials()
         {
-            grass = PrimitiveFactory.CreateMaterial("Grass", new Color(0.26f, 0.42f, 0.24f), 0f, 0.05f);
-            field = PrimitiveFactory.CreateMaterial("Field", new Color(0.58f, 0.48f, 0.18f), 0f, 0.05f);
-            road = PrimitiveFactory.CreateMaterial("Road", new Color(0.10f, 0.11f, 0.12f), 0f, 0.18f);
-            roadEdge = PrimitiveFactory.CreateMaterial("RoadEdge", new Color(0.29f, 0.28f, 0.25f), 0f, 0.05f);
-            residential = PrimitiveFactory.CreateMaterial("Residential", new Color(0.72f, 0.63f, 0.47f), 0f, 0.18f);
-            commercial = PrimitiveFactory.CreateMaterial("Commercial", new Color(0.44f, 0.56f, 0.60f), 0.05f, 0.25f);
-            industrial = PrimitiveFactory.CreateMaterial("Industrial", new Color(0.38f, 0.40f, 0.43f), 0.25f, 0.24f);
-            roof = PrimitiveFactory.CreateMaterial("Roof", new Color(0.19f, 0.22f, 0.25f), 0f, 0.18f);
-            metal = PrimitiveFactory.CreateMaterial("Metal", new Color(0.45f, 0.49f, 0.52f), 0.72f, 0.38f);
-            glass = PrimitiveFactory.CreateMaterial("Glass", new Color(0.28f, 0.62f, 0.74f), 0.15f, 0.72f);
-            crop = PrimitiveFactory.CreateMaterial("Crop", new Color(0.72f, 0.61f, 0.18f), 0f, 0.02f);
-            tree = PrimitiveFactory.CreateMaterial("Tree", new Color(0.15f, 0.34f, 0.16f), 0f, 0.05f);
-            trunk = PrimitiveFactory.CreateMaterial("Trunk", new Color(0.31f, 0.20f, 0.10f), 0f, 0.05f);
-            vehicleA = PrimitiveFactory.CreateMaterial("VehicleA", new Color(0.72f, 0.12f, 0.10f), 0.35f, 0.48f);
-            vehicleB = PrimitiveFactory.CreateMaterial("VehicleB", new Color(0.10f, 0.33f, 0.70f), 0.35f, 0.48f);
+            distantGround = PrimitiveFactory.CreateMaterial("Distant Ground", new Color(0.16f, 0.24f, 0.16f), 0f, 0.02f);
+            grass = PrimitiveFactory.CreateMaterial("Grass", new Color(0.25f, 0.43f, 0.22f), 0f, 0.12f);
+            field = PrimitiveFactory.CreateMaterial("Field", new Color(0.5f, 0.39f, 0.13f), 0f, 0.08f);
+            road = PrimitiveFactory.CreateMaterial("Road", new Color(0.095f, 0.105f, 0.115f), 0f, 0.3f);
+            roadEdge = PrimitiveFactory.CreateMaterial("RoadEdge", new Color(0.3f, 0.28f, 0.24f), 0f, 0.08f);
+            laneMarking = PrimitiveFactory.CreateMaterial("Lane Marking", new Color(0.95f, 0.72f, 0.16f), 0f, 0.14f);
+            residential = PrimitiveFactory.CreateMaterial("Residential", new Color(0.72f, 0.59f, 0.4f), 0f, 0.22f);
+            commercial = PrimitiveFactory.CreateMaterial("Commercial", new Color(0.37f, 0.52f, 0.58f), 0.05f, 0.3f);
+            industrial = PrimitiveFactory.CreateMaterial("Industrial", new Color(0.34f, 0.36f, 0.39f), 0.25f, 0.28f);
+            roof = PrimitiveFactory.CreateMaterial("Roof", new Color(0.12f, 0.15f, 0.18f), 0.05f, 0.22f);
+            metal = PrimitiveFactory.CreateMaterial("Metal", new Color(0.42f, 0.47f, 0.52f), 0.72f, 0.42f);
+            glass = PrimitiveFactory.CreateMaterial("Glass", new Color(0.2f, 0.55f, 0.7f, 0.76f), 0.15f, 0.75f, true);
+            crop = PrimitiveFactory.CreateMaterial("Crop", new Color(0.76f, 0.6f, 0.1f), 0f, 0.06f);
+            tree = PrimitiveFactory.CreateMaterial("Tree", new Color(0.11f, 0.32f, 0.12f), 0f, 0.12f);
+            trunk = PrimitiveFactory.CreateMaterial("Trunk", new Color(0.27f, 0.16f, 0.075f), 0f, 0.08f);
+            vehicleA = PrimitiveFactory.CreateMaterial("VehicleA", new Color(0.78f, 0.09f, 0.07f), 0.35f, 0.55f);
+            vehicleB = PrimitiveFactory.CreateMaterial("VehicleB", new Color(0.06f, 0.3f, 0.75f), 0.35f, 0.55f);
+            distantHill = PrimitiveFactory.CreateMaterial("Distant Hills", new Color(0.16f, 0.28f, 0.2f), 0f, 0.05f);
+        }
+
+        private void CreateBackdrop()
+        {
+            PrimitiveFactory.CreateBox(
+                transform,
+                "Distant County Ground",
+                new Vector3(0f, -1.35f, 0f),
+                new Vector3(980f, 1f, 980f),
+                distantGround,
+                false);
+
+            Vector3[] hillPositions =
+            {
+                new Vector3(-330f, 22f, 255f),
+                new Vector3(-125f, 18f, 340f),
+                new Vector3(135f, 24f, 330f),
+                new Vector3(335f, 21f, 185f),
+                new Vector3(350f, 18f, -140f),
+                new Vector3(130f, 20f, -345f),
+                new Vector3(-170f, 23f, -330f),
+                new Vector3(-350f, 19f, -120f)
+            };
+
+            for (int i = 0; i < hillPositions.Length; i++)
+            {
+                PrimitiveFactory.CreateSphere(
+                    transform,
+                    $"Distant Hill {i}",
+                    hillPositions[i],
+                    new Vector3(105f + (i % 3) * 18f, 34f + (i % 2) * 8f, 76f),
+                    distantHill,
+                    false);
+            }
         }
 
         private void CreateTerrain()
@@ -91,6 +136,8 @@ namespace SevereWeather.World
             CreateRoad("Industrial Connector", new Vector3(-74f, 0f, -48f), new Vector3(148f, 0.35f, 9f));
             CreateRoad("Suburban Loop", new Vector3(94f, 0f, 84f), new Vector3(9f, 0.35f, 128f));
             CreateRoad("Civic Avenue", new Vector3(41f, 0f, -116f), new Vector3(120f, 0.35f, 10f));
+            CreateRoad("Farm Access Road", new Vector3(-87f, 0.02f, 104f), new Vector3(118f, 0.32f, 7f));
+            CreateFarmRoadMarkings();
         }
 
         private void CreateRoad(string name, Vector3 position, Vector3 scale)
@@ -99,16 +146,41 @@ namespace SevereWeather.World
             PrimitiveFactory.CreateBox(transform, name, position, scale, road);
         }
 
+        private void CreateFarmRoadMarkings()
+        {
+            for (int i = 0; i < 13; i++)
+            {
+                Vector3 position = new Vector3(-139f + i * 8.5f, 0.23f, 104f);
+                PrimitiveFactory.CreateBox(
+                    transform,
+                    "Farm Road Center Mark",
+                    position,
+                    new Vector3(4.5f, 0.05f, 0.28f),
+                    laneMarking,
+                    false);
+            }
+        }
+
         private void CreateFarmlandDistrict(Vector3 center)
         {
             GameObject district = CreateDistrictRoot("Farmland District", DistrictKind.Farmland, center, new Vector3(150f, 30f, 130f));
+            Vector2 spawnXZ = new Vector2(starterSpawnPosition.x, starterSpawnPosition.z);
             for (int row = 0; row < 12; row++)
             {
                 for (int column = 0; column < 10; column++)
                 {
                     Vector3 position = center + new Vector3(-57f + column * 7f, 0.55f, -45f + row * 7f);
-                    GameObject stalk = PrimitiveFactory.CreateBox(district.transform, "Crop", position, new Vector3(4.8f, 0.8f, 0.7f), crop, false);
-                    PrimitiveFactory.AddDamageable(stalk, 16f, MaterialClass.Crop);
+                    Vector2 cropXZ = new Vector2(position.x, position.z);
+                    if (Vector2.Distance(cropXZ, spawnXZ) < 11f) continue;
+
+                    GameObject stalk = PrimitiveFactory.CreateBox(
+                        district.transform,
+                        "Crop",
+                        position,
+                        new Vector3(4.8f, 0.8f, 0.7f),
+                        crop,
+                        true);
+                    PrimitiveFactory.AddDamageable(stalk, 16f, MaterialClass.Crop, false, MobilityClass.Light);
                     stalk.AddComponent<WindReactive>();
                 }
             }
@@ -118,6 +190,22 @@ namespace SevereWeather.World
             CreateSilo(district.transform, center + new Vector3(52f, 5.4f, 6f));
             CreateVehicle(district.transform, center + new Vector3(47f, 1.1f, 21f), true);
             CreateTreeLine(district.transform, center + new Vector3(58f, 0f, -25f), 7, Vector3.forward * 8f);
+            CreateStarterTestPocket(district.transform);
+        }
+
+        private void CreateStarterTestPocket(Transform parent)
+        {
+            CreateBuilding(
+                parent,
+                "Storm Lab Shed",
+                starterSpawnPosition + new Vector3(26f, 0.8f, 5f),
+                new Vector3(11f, 5.4f, 9f),
+                residential,
+                165f,
+                MaterialClass.Wood);
+            CreateVehicle(parent, starterSpawnPosition + new Vector3(14f, -0.9f, -9f), false);
+            CreateTree(parent, starterSpawnPosition + new Vector3(-14f, -2f, 13f), 6.2f);
+            CreatePowerPole(parent, starterSpawnPosition + new Vector3(19f, -2f, -16f));
         }
 
         private void CreateSmallTownDistrict(Vector3 center)
@@ -211,21 +299,19 @@ namespace SevereWeather.World
             root.transform.SetParent(parent, false);
             root.transform.position = center;
 
-            GameObject walls = PrimitiveFactory.CreateBox(root.transform, "Walls", center, size, wallMaterial, false);
-            walls.transform.position = center;
-            GameObject roofObject = PrimitiveFactory.CreateBox(root.transform, "Roof", center + Vector3.up * (size.y * 0.58f), new Vector3(size.x * 1.08f, size.y * 0.18f, size.z * 1.08f), roof, false);
-            roofObject.transform.position = center + Vector3.up * (size.y * 0.58f);
+            PrimitiveFactory.CreateBox(root.transform, "Walls", center, size, wallMaterial, false);
+            PrimitiveFactory.CreateBox(root.transform, "Roof", center + Vector3.up * (size.y * 0.58f), new Vector3(size.x * 1.08f, size.y * 0.18f, size.z * 1.08f), roof, false);
             PrimitiveFactory.CreateBox(root.transform, "Door", center + new Vector3(0f, -size.y * 0.17f, -size.z * 0.51f), new Vector3(size.x * 0.18f, size.y * 0.44f, 0.22f), industrial, false);
             PrimitiveFactory.CreateBox(root.transform, "Window", center + new Vector3(-size.x * 0.27f, 0f, -size.z * 0.52f), new Vector3(size.x * 0.2f, size.y * 0.26f, 0.18f), glass, false);
             PrimitiveFactory.CreateBox(root.transform, "Window", center + new Vector3(size.x * 0.27f, 0f, -size.z * 0.52f), new Vector3(size.x * 0.2f, size.y * 0.26f, 0.18f), glass, false);
 
-            DamageableStructure damageable = root.AddComponent<DamageableStructure>();
-            damageable.Configure(health, materialClass, materialClass == MaterialClass.Metal || materialClass == MaterialClass.Infrastructure);
             BoxCollider rootCollider = root.AddComponent<BoxCollider>();
             rootCollider.center = Vector3.zero;
             rootCollider.size = size;
             Rigidbody body = root.AddComponent<Rigidbody>();
             body.isKinematic = true;
+            DamageableStructure damageable = root.AddComponent<DamageableStructure>();
+            damageable.Configure(health, materialClass, materialClass == MaterialClass.Metal || materialClass == MaterialClass.Infrastructure, MobilityClass.Structural);
             return root;
         }
 
@@ -238,13 +324,13 @@ namespace SevereWeather.World
             Material material = alternate ? vehicleA : vehicleB;
             PrimitiveFactory.CreateBox(vehicle.transform, "Chassis", center, bodySize, material, false);
             PrimitiveFactory.CreateBox(vehicle.transform, "Cabin", center + new Vector3(-0.2f, 1.1f, 0f), new Vector3(bodySize.x * 0.48f, 1.25f, bodySize.z * 0.84f), glass, false);
-            DamageableStructure damageable = vehicle.AddComponent<DamageableStructure>();
-            damageable.Configure(95f, MaterialClass.Vehicle, true);
             BoxCollider collider = vehicle.AddComponent<BoxCollider>();
             collider.center = Vector3.zero;
             collider.size = new Vector3(bodySize.x, 2.3f, bodySize.z);
             Rigidbody body = vehicle.AddComponent<Rigidbody>();
             body.isKinematic = true;
+            DamageableStructure damageable = vehicle.AddComponent<DamageableStructure>();
+            damageable.Configure(95f, MaterialClass.Vehicle, true, MobilityClass.Medium);
             vehicle.AddComponent<WindReactive>();
         }
 
@@ -262,20 +348,15 @@ namespace SevereWeather.World
             root.transform.SetParent(parent, false);
             root.transform.position = center;
             PrimitiveFactory.CreateCylinder(root.transform, "Trunk", center + Vector3.up * (height * 0.4f), new Vector3(0.45f, height * 0.4f, 0.45f), trunk, false);
-            GameObject crown = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            crown.name = "Crown";
-            crown.transform.SetParent(root.transform, false);
-            crown.transform.position = center + Vector3.up * height;
-            crown.transform.localScale = new Vector3(height * 0.8f, height * 0.72f, height * 0.8f);
-            crown.GetComponent<Renderer>().sharedMaterial = tree;
-            DamageableStructure damageable = root.AddComponent<DamageableStructure>();
-            damageable.Configure(90f, MaterialClass.Vegetation, false);
+            PrimitiveFactory.CreateSphere(root.transform, "Crown", center + Vector3.up * height, new Vector3(height * 0.8f, height * 0.72f, height * 0.8f), tree, false);
             CapsuleCollider collider = root.AddComponent<CapsuleCollider>();
             collider.center = new Vector3(0f, height * 0.55f, 0f);
             collider.height = height * 1.4f;
             collider.radius = height * 0.35f;
             Rigidbody body = root.AddComponent<Rigidbody>();
             body.isKinematic = true;
+            DamageableStructure damageable = root.AddComponent<DamageableStructure>();
+            damageable.Configure(90f, MaterialClass.Vegetation, false, MobilityClass.Light);
             root.AddComponent<WindReactive>();
         }
 
@@ -286,14 +367,14 @@ namespace SevereWeather.World
             pole.transform.position = center;
             PrimitiveFactory.CreateCylinder(pole.transform, "Pole", center + Vector3.up * 5.5f, new Vector3(0.25f, 5.5f, 0.25f), trunk, false);
             PrimitiveFactory.CreateBox(pole.transform, "Crossarm", center + Vector3.up * 10.2f, new Vector3(4.6f, 0.3f, 0.35f), trunk, false);
-            DamageableStructure damageable = pole.AddComponent<DamageableStructure>();
-            damageable.Configure(125f, MaterialClass.Infrastructure, true);
             CapsuleCollider collider = pole.AddComponent<CapsuleCollider>();
             collider.center = new Vector3(0f, 5.5f, 0f);
             collider.height = 11f;
             collider.radius = 0.6f;
             Rigidbody body = pole.AddComponent<Rigidbody>();
             body.isKinematic = true;
+            DamageableStructure damageable = pole.AddComponent<DamageableStructure>();
+            damageable.Configure(125f, MaterialClass.Infrastructure, true, MobilityClass.Heavy);
             pole.AddComponent<WindReactive>();
             ConductiveNode node = pole.AddComponent<ConductiveNode>();
             node.Configure(31f, 2);
@@ -302,7 +383,9 @@ namespace SevereWeather.World
         private void CreateSilo(Transform parent, Vector3 center)
         {
             GameObject silo = PrimitiveFactory.CreateCylinder(parent, "Grain Silo", center, new Vector3(4.6f, 5.5f, 4.6f), metal);
-            PrimitiveFactory.AddDamageable(silo, 360f, MaterialClass.Metal, true);
+            Rigidbody body = silo.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            PrimitiveFactory.AddDamageable(silo, 360f, MaterialClass.Metal, true, MobilityClass.Heavy);
             ConductiveNode node = silo.AddComponent<ConductiveNode>();
             node.Configure(30f, 3);
         }
@@ -310,7 +393,9 @@ namespace SevereWeather.World
         private void CreateTank(Transform parent, Vector3 center)
         {
             GameObject tank = PrimitiveFactory.CreateCylinder(parent, "Storage Tank", center, new Vector3(4.8f, 3.2f, 4.8f), metal);
-            PrimitiveFactory.AddDamageable(tank, 290f, MaterialClass.Metal, true);
+            Rigidbody body = tank.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            PrimitiveFactory.AddDamageable(tank, 290f, MaterialClass.Metal, true, MobilityClass.Heavy);
             ConductiveNode node = tank.AddComponent<ConductiveNode>();
             node.Configure(28f, 4);
         }
@@ -326,7 +411,9 @@ namespace SevereWeather.World
                 {
                     Vector3 position = center + new Vector3(x * 5f, 1.4f, z * 5f);
                     GameObject equipment = PrimitiveFactory.CreateBox(root.transform, "Transformer", position, new Vector3(3.2f, 2.8f, 2.6f), metal);
-                    PrimitiveFactory.AddDamageable(equipment, 170f, MaterialClass.Infrastructure, true);
+                    Rigidbody body = equipment.AddComponent<Rigidbody>();
+                    body.isKinematic = true;
+                    PrimitiveFactory.AddDamageable(equipment, 170f, MaterialClass.Infrastructure, true, MobilityClass.Heavy);
                     ConductiveNode node = equipment.AddComponent<ConductiveNode>();
                     node.Configure(20f, 8);
                 }

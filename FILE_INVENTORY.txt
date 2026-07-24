@@ -4,6 +4,7 @@ Assets/SevereWeather/Editor/ProductionSliceBuilder.cs
 Assets/SevereWeather/Editor/ProjectReadinessWindow.cs
 Assets/SevereWeather/Editor/SevereWeather.Editor.asmdef
 Assets/SevereWeather/Runtime/Camera/HybridStormCamera.cs
+Assets/SevereWeather/Runtime/Core/BuildIdentity.cs
 Assets/SevereWeather/Runtime/Core/GameBootstrap.cs
 Assets/SevereWeather/Runtime/Core/StormGameState.cs
 Assets/SevereWeather/Runtime/Damage/ConductiveNode.cs
@@ -14,6 +15,7 @@ Assets/SevereWeather/Runtime/Damage/IDamageable.cs
 Assets/SevereWeather/Runtime/Damage/WindReactive.cs
 Assets/SevereWeather/Runtime/Input/MobileControlLayout.cs
 Assets/SevereWeather/Runtime/Input/StormInput.cs
+Assets/SevereWeather/Runtime/Presentation/StormActionVfx.cs
 Assets/SevereWeather/Runtime/Rendering/Resources/SevereWeatherRuntime.shader
 Assets/SevereWeather/Runtime/SevereWeather.Runtime.asmdef
 Assets/SevereWeather/Runtime/Storms/StormControllerBase.cs
@@ -39,6 +41,7 @@ Docs/PRODUCTION_PLAN.md
 Docs/REGION_DENSITY_SPEC.md
 Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md
 Docs/STORM_VERBS.md
+Docs/UNITY_CLOUD_BUILD_SETTINGS.md
 Docs/UNITY_SETUP.md
 Docs/VISION_LOCK.md
 FILE_INVENTORY.txt

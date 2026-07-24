@@ -70,3 +70,60 @@ Record after installation:
 - Heat:
 - New defects:
 - Decision:
+
+## 2026-07-23 - Android Build #3
+
+### Source
+
+- Commit: `32ec421528e75632bae793ba0569c8770baa0d42`
+- Unity: `6000.3.0f1`
+- Target: Android APK through Unity Build Automation
+
+### Result
+
+- Cloud build succeeded from the intended commit.
+- APK installed and launched.
+- `B3 INPUT LAB` rendered.
+- Joystick input telemetry changed during touch.
+- Storm position telemetry changed, confirming runtime movement input was reaching the controller.
+- Storm switching and primary resource drain worked.
+
+### Physical findings
+
+- Movement was not perceptible because the camera immediately tracked the storm and kept it nearly fixed on screen.
+- The opening crop field provided poor parallax and few visible landmarks.
+- Crops were damageable objects without colliders, so storm physics queries could not interact with them.
+- Ability input could drain resources without visible world feedback.
+- The emergency unlit material path produced flat lighting, no useful surface separation, weak storm transparency, and an unacceptable visual-quality baseline.
+- Black world edges remained visible at some camera angles.
+
+### Decision
+
+Build #3 failed the movement-feel and visual-quality gates. Build #4 is approved as a focused feel, interaction, physics, and deterministic-rendering recovery pass. Production art, final audio, missions, and progression remain out of scope.
+
+## Build #4 test record
+
+Status: pending physical Android test.
+
+Record after installation:
+
+- Cloud build result:
+- APK update or clean install:
+- Build identity shown:
+- Active render pipeline:
+- Graphics API:
+- Tornado movement and speed:
+- Supercell movement and speed:
+- Camera leash readability:
+- Starter test-pocket visibility:
+- Primary ability feedback:
+- Secondary ability feedback:
+- Tertiary ability feedback:
+- Crop interaction:
+- Vehicle movement:
+- Shadows, fog, and transparency:
+- World-edge coverage:
+- Frame pacing:
+- Five-minute heat result:
+- New defects:
+- Decision:

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SevereWeather.Damage;
+using SevereWeather.Presentation;
 using UnityEngine;
 
 namespace SevereWeather.Storms
@@ -16,6 +17,7 @@ namespace SevereWeather.Storms
         private readonly HashSet<ConductiveNode> chainVisited = new HashSet<ConductiveNode>(16);
         private float gustCooldown;
         private float lightningCooldown;
+        private float hailFeedbackTimer;
         private Vector3 velocitySmoothing;
 
         public override StormKind Kind => StormKind.Supercell;
@@ -25,9 +27,9 @@ namespace SevereWeather.Storms
         protected override void Awake()
         {
             base.Awake();
-            moveSpeed = 11.5f;
-            acceleration = 6.5f;
-            referenceWindSpeed = 48f;
+            moveSpeed = 16.5f;
+            acceleration = 12f;
+            referenceWindSpeed = 52f;
         }
 
         protected override void MoveStorm(Vector2 inputVector, float dt)
@@ -37,10 +39,12 @@ namespace SevereWeather.Storms
                 planarVelocity,
                 desired,
                 ref velocitySmoothing,
-                0.62f,
+                0.48f,
                 moveSpeed,
                 dt);
-            body.MovePosition(body.position + planarVelocity * dt);
+            Vector3 displacement = planarVelocity * dt;
+            body.MovePosition(body.position + displacement);
+            RecordDisplacement(displacement);
 
             if (planarVelocity.sqrMagnitude > 0.1f)
             {
@@ -58,6 +62,7 @@ namespace SevereWeather.Storms
             charge = Mathf.Min(100f, charge + (2.2f + stability * 0.012f) * dt);
             gustCooldown = Mathf.Max(0f, gustCooldown - dt);
             lightningCooldown = Mathf.Max(0f, lightningCooldown - dt);
+            hailFeedbackTimer = Mathf.Max(0f, hailFeedbackTimer - dt);
         }
 
         protected override void ApplyPassiveField(float dt)
@@ -86,25 +91,55 @@ namespace SevereWeather.Storms
             if (stormInput.PrimaryHeld && power > 0.35f)
             {
                 power = Mathf.Max(0f, power - 2.1f * dt);
-                PaintHailSwath(dt);
+                int targets = PaintHailSwath(dt);
+                if (hailFeedbackTimer <= 0f)
+                {
+                    hailFeedbackTimer = 0.3f;
+                    Vector3 heading = GetHeading();
+                    Vector3 center = transform.position - heading * hailLength * 0.22f;
+                    StormActionVfx.Swath(
+                        center,
+                        heading,
+                        hailHalfWidth,
+                        hailLength,
+                        new Color(0.58f, 0.82f, 1f, 0.8f));
+                    ReportAction(targets > 0 ? "HAIL SWATH" : "HAIL - NO TARGETS", targets, 0.8f);
+                }
             }
 
             if (secondaryPressed && gustCooldown <= 0f && power >= 18f)
             {
                 power -= 18f;
                 gustCooldown = 4.5f;
-                IntensifyGustFront();
+                int targets = IntensifyGustFront();
+                StormActionVfx.Arc(
+                    transform.position,
+                    GetHeading(),
+                    gustFrontRange,
+                    gustFrontHalfAngle,
+                    new Color(1f, 0.72f, 0.25f, 0.92f),
+                    0.65f,
+                    0.9f);
+                ReportAction(targets > 0 ? "GUST FRONT" : "GUST FRONT - NO TARGETS", targets);
             }
 
             if (tertiaryPressed && lightningCooldown <= 0f && charge >= 28f)
             {
-                charge -= 28f;
-                lightningCooldown = 2.4f;
-                ReleaseElectricalNetwork();
+                int chainCount = ReleaseElectricalNetwork();
+                if (chainCount > 0)
+                {
+                    charge -= 28f;
+                    lightningCooldown = 2.4f;
+                    ReportAction("ELECTRICAL NETWORK", chainCount, 1.4f);
+                }
+                else
+                {
+                    ReportAction("NO CONDUCTIVE TARGET", 0, 1.5f);
+                }
             }
         }
 
-        private void PaintHailSwath(float dt)
+        private int PaintHailSwath(float dt)
         {
             Vector3 heading = GetHeading();
             Vector3 center = transform.position - heading * hailLength * 0.22f + Vector3.up * 5f;
@@ -118,6 +153,7 @@ namespace SevereWeather.Storms
                 ~0,
                 QueryTriggerInteraction.Ignore);
 
+            int targets = 0;
             for (int i = 0; i < count; i++)
             {
                 Collider collider = overlapBuffer[i];
@@ -135,15 +171,19 @@ namespace SevereWeather.Storms
                     11f * materialScale * dt,
                     collider.bounds.center,
                     impulse * dt);
+                targets++;
             }
+
+            return targets;
         }
 
-        private void IntensifyGustFront()
+        private int IntensifyGustFront()
         {
             Vector3 heading = GetHeading();
             Vector3 origin = transform.position + heading * 8f;
             int count = Query(origin, gustFrontRange);
             float cosineThreshold = Mathf.Cos(gustFrontHalfAngle * Mathf.Deg2Rad);
+            int targets = 0;
 
             for (int i = 0; i < count; i++)
             {
@@ -167,16 +207,21 @@ namespace SevereWeather.Storms
                     Mathf.Lerp(8f, 31f, strength),
                     collider.bounds.center,
                     impulse);
+                targets++;
             }
+
+            return targets;
         }
 
-        private void ReleaseElectricalNetwork()
+        private int ReleaseElectricalNetwork()
         {
             ConductiveNode anchor = FindConductiveAnchor();
-            if (anchor == null) return;
+            if (anchor == null) return 0;
 
             chainVisited.Clear();
             ConductiveNode current = anchor;
+            Vector3 previousPosition = transform.position + Vector3.up * 18f;
+            int chainCount = 0;
             for (int chain = 0; chain < 6 && current != null; chain++)
             {
                 chainVisited.Add(current);
@@ -191,8 +236,16 @@ namespace SevereWeather.Storms
                         Vector3.up * 1.7f);
                 }
 
+                StormActionVfx.Bolt(
+                    previousPosition,
+                    current.transform.position + Vector3.up * 1.5f,
+                    new Color(0.5f, 0.82f, 1f, 1f));
+                previousPosition = current.transform.position + Vector3.up * 1.5f;
+                chainCount++;
                 current = FindNextConductive(current);
             }
+
+            return chainCount;
         }
 
         private ConductiveNode FindConductiveAnchor()
@@ -208,7 +261,7 @@ namespace SevereWeather.Storms
                 if (node == null) continue;
 
                 Vector3 offset = node.transform.position - transform.position;
-                float forward = Vector3.Dot(heading, offset.normalized);
+                float forward = offset.sqrMagnitude > 0.001f ? Vector3.Dot(heading, offset.normalized) : 0f;
                 float score = node.Priority * 35f + forward * 24f - offset.magnitude;
                 if (score > bestScore)
                 {

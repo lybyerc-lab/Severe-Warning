@@ -21,3 +21,4 @@ Recordings/
 *.VC.db
 *.unitypackage
 .DS_Store
+Assets/__GeneratedBuild/

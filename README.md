@@ -7,21 +7,23 @@ The player is the storm. The HTML prototype is preserved as a frozen Mechanics L
 ## Current production target
 
 - Unity `6000.3.0f1`
-- Universal Render Pipeline
+- Universal Render Pipeline package with a deterministic lit built-in Build #4 baseline while the authored URP asset gate remains open
 - Android first
 - Unity Build Automation connected to GitHub `main`
 - Future WebGL, desktop, console, and Switch-class targets remain later gates
 
 ## What is included
 
-- Runtime bootstrapping that creates a playable graybox region from an empty scene
+- Runtime bootstrapping that creates a playable procedural county test region from an empty scene
 - Direct-control Tornado and Supercell implementations
 - Distinct Supercell verbs: Hail Swath, Gust Front, and Electrical Network
-- Hybrid County High and Impact camera behavior
+- Soft-leash County High and action-responsive Impact camera behavior
 - Mobile and desktop input
 - Material-aware damage and conductive network chaining
-- Wind-reactive props
-- Runtime density validation
+- Mobility-aware props, approximate mass, and wind response
+- Collider-aware runtime density validation
+- Immediate ability feedback through rings, swaths, arcs, lightning paths, target counts, and no-target messages
+- Cloud-generated lit material templates, build identity, and deterministic Android player settings
 - Editor scene-generation and project-readiness tools
 - Production art, audio, level-design, migration, and No-Drift standards
 - Frozen HTML Mechanics Laboratory
@@ -36,8 +38,9 @@ Read these before planning work:
 3. `Docs/NO_DRIFT_POLICY.md`
 4. `Docs/DECISION_LOG.md`
 5. `Docs/DEVICE_TEST_LOG.md`
-6. Other current production documents in `Docs/`
-7. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md` for historical context
+6. `Docs/UNITY_CLOUD_BUILD_SETTINGS.md`
+7. Other current production documents in `Docs/`
+8. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md` for historical context
 
 The repository is the canonical durable project record. Important chat conclusions must be committed before they are treated as persistent project truth.
 
@@ -51,15 +54,16 @@ Desktop:
 - E: tertiary ability
 - Tab: switch Tornado/Supercell
 
-Android Build #3 input laboratory:
+Android Build #4 feel and render laboratory:
 
 - Start a drag in the lower-left control area to create a floating joystick.
 - Movement is camera-relative.
-- Hold the large right button for Suction or Hail Swath.
-- Tap the left companion button for Gust or Gust Front.
-- Tap the middle companion button for Lightning or Electrical Network.
+- The storm can move visibly inside the camera leash before the camera follows.
+- Hold `PULL` or `HAIL` for the primary ability.
+- Tap `GUST` or `FRONT` for the secondary ability.
+- Tap `ZAP` or `GRID` for the tertiary ability.
 - Tap the top-center storm button to switch storm.
-- Temporary MOVE and POS telemetry verifies input and translation on-device.
+- MOVE, POS, SPEED, DIST, FPS, target count, render pipeline, graphics API, build version, and commit telemetry remain visible during the device gate.
 
 ## Cloud build
 
@@ -70,15 +74,18 @@ Unity Build Automation uses:
 - project subfolder: blank
 - Unity version: auto-detect exact `6000.3.0f1`
 - platform: Android
+- Android SDK availability: `35`
 - pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
-- debug signing for device-test APKs
+- APK output and debug signing for device-test builds
+- Library caching
+
+The pre-export method sets application version `0.1.4`, Android version code `4`, IL2CPP, ARM64, Vulkan with OpenGLES3 fallback, generated runtime materials, build identity, the production-slice scene, and quality defaults.
 
 ## Honest status
 
 - Build #1 compiled and installed but displayed a black screen.
-- The focused startup hotfix added a guaranteed runtime shader, early camera creation, and on-screen startup diagnostics.
-- Build #2 compiled, installed, rendered the graybox world, and switched between Tornado and Supercell.
-- Build #2 physical testing exposed movement and ability-hitbox defects.
-- Build #3 is the focused mobile-control alignment pass.
+- Build #2 rendered the graybox world and switched between Tornado and Supercell.
+- Build #3 confirmed mobile input registration and position changes, but failed movement readability and visual-quality gates.
+- Build #4 is the focused movement-perception, interaction, physics, and deterministic-rendering recovery pass.
 
-This remains a production architecture and graybox starter, not final art or a production-ready game.
+This remains a production architecture and procedural lab slice, not final art or a production-ready game.

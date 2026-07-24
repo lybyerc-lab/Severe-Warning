@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using SevereWeather.Damage;
+using SevereWeather.Presentation;
 using UnityEngine;
 
 namespace SevereWeather.Storms
@@ -11,8 +13,10 @@ namespace SevereWeather.Storms
         [SerializeField] private float gustCooldown = 2.8f;
         [SerializeField] private float lightningCooldown = 2.2f;
 
+        private readonly HashSet<ConductiveNode> lightningVisited = new HashSet<ConductiveNode>(16);
         private float gustTimer;
         private float lightningTimer;
+        private float suctionFeedbackTimer;
 
         public override StormKind Kind => StormKind.Tornado;
         public override float InfluenceRadius => suctionRadius;
@@ -20,9 +24,9 @@ namespace SevereWeather.Storms
         protected override void Awake()
         {
             base.Awake();
-            moveSpeed = 18f;
-            acceleration = 34f;
-            referenceWindSpeed = 62f;
+            moveSpeed = 28f;
+            acceleration = 62f;
+            referenceWindSpeed = 68f;
         }
 
         protected override void RegenerateResources(float dt)
@@ -30,6 +34,7 @@ namespace SevereWeather.Storms
             base.RegenerateResources(dt);
             gustTimer = Mathf.Max(0f, gustTimer - dt);
             lightningTimer = Mathf.Max(0f, lightningTimer - dt);
+            suctionFeedbackTimer = Mathf.Max(0f, suctionFeedbackTimer - dt);
         }
 
         protected override void ApplyPassiveField(float dt)
@@ -58,27 +63,54 @@ namespace SevereWeather.Storms
             if (stormInput.PrimaryHeld && power > 0.5f)
             {
                 power = Mathf.Max(0f, power - 3f * dt);
-                ApplySuction(dt);
+                int targets = ApplySuction(dt);
+                if (suctionFeedbackTimer <= 0f)
+                {
+                    suctionFeedbackTimer = 0.24f;
+                    StormActionVfx.Ring(
+                        transform.position,
+                        suctionRadius,
+                        new Color(0.68f, 0.86f, 1f, 0.72f),
+                        0.42f,
+                        0.6f);
+                    ReportAction(targets > 0 ? "SUCTION" : "SUCTION - NO TARGETS", targets, 0.7f);
+                }
             }
 
             if (secondaryPressed && gustTimer <= 0f && power >= 14f)
             {
                 power -= 14f;
                 gustTimer = gustCooldown;
-                ApplyGust();
+                int targets = ApplyGust();
+                StormActionVfx.Ring(
+                    transform.position,
+                    24f,
+                    new Color(1f, 0.72f, 0.24f, 0.92f),
+                    0.55f,
+                    1f);
+                ReportAction(targets > 0 ? "GUST" : "GUST - NO TARGETS", targets);
             }
 
             if (tertiaryPressed && lightningTimer <= 0f && power >= 20f)
             {
-                power -= 20f;
-                lightningTimer = lightningCooldown;
-                ApplyLightningChain();
+                int chainCount = ApplyLightningChain();
+                if (chainCount > 0)
+                {
+                    power -= 20f;
+                    lightningTimer = lightningCooldown;
+                    ReportAction("LIGHTNING CHAIN", chainCount, 1.4f);
+                }
+                else
+                {
+                    ReportAction("NO CONDUCTIVE TARGET", 0, 1.5f);
+                }
             }
         }
 
-        private void ApplySuction(float dt)
+        private int ApplySuction(float dt)
         {
             int count = Query(transform.position, suctionRadius);
+            int targets = 0;
             for (int i = 0; i < count; i++)
             {
                 Collider collider = overlapBuffer[i];
@@ -89,13 +121,16 @@ namespace SevereWeather.Storms
                 float strength = 1f - Mathf.Clamp01(distance / suctionRadius);
                 Vector3 force = offset.normalized * (7f + 22f * strength) + Vector3.up * (2f + 10f * strength);
                 ApplyDamage(damageable, DamageType.Suction, (8f + 30f * strength) * dt, collider.bounds.center, force * dt);
+                targets++;
             }
+            return targets;
         }
 
-        private void ApplyGust()
+        private int ApplyGust()
         {
             const float radius = 24f;
             int count = Query(transform.position, radius);
+            int targets = 0;
             for (int i = 0; i < count; i++)
             {
                 Collider collider = overlapBuffer[i];
@@ -105,31 +140,41 @@ namespace SevereWeather.Storms
                 float strength = 1f - Mathf.Clamp01(offset.magnitude / radius);
                 Vector3 impulse = offset.normalized * Mathf.Lerp(3f, 18f, strength) + Vector3.up * 2f;
                 ApplyDamage(damageable, DamageType.Wind, Mathf.Lerp(10f, 34f, strength), collider.bounds.center, impulse);
+                targets++;
             }
+            return targets;
         }
 
-        private void ApplyLightningChain()
+        private int ApplyLightningChain()
         {
-            ConductiveNode first = FindBestConductiveTarget(transform.position, 62f, null);
-            if (first == null) return;
+            lightningVisited.Clear();
+            ConductiveNode current = FindBestConductiveTarget(transform.position, 62f);
+            if (current == null) return 0;
 
-            ConductiveNode current = first;
-            ConductiveNode previous = null;
+            Vector3 previousPosition = transform.position + Vector3.up * 10f;
+            int chainCount = 0;
             for (int chain = 0; chain < 4 && current != null; chain++)
             {
+                lightningVisited.Add(current);
                 DamageableStructure damageable = current.GetComponentInParent<DamageableStructure>();
                 if (damageable != null)
                 {
                     ApplyDamage(damageable, DamageType.Electrical, 95f - chain * 15f, current.transform.position, Vector3.up * 1.5f);
                 }
 
-                ConductiveNode next = FindBestConductiveTarget(current.transform.position, current.ChainRadius, previous);
-                previous = current;
-                current = next;
+                StormActionVfx.Bolt(
+                    previousPosition,
+                    current.transform.position + Vector3.up * 1.5f,
+                    new Color(0.58f, 0.86f, 1f, 1f));
+                previousPosition = current.transform.position + Vector3.up * 1.5f;
+                chainCount++;
+                current = FindBestConductiveTarget(current.transform.position, current.ChainRadius);
             }
+
+            return chainCount;
         }
 
-        private ConductiveNode FindBestConductiveTarget(Vector3 center, float radius, ConductiveNode excluded)
+        private ConductiveNode FindBestConductiveTarget(Vector3 center, float radius)
         {
             int count = Query(center, radius);
             ConductiveNode best = null;
@@ -137,7 +182,7 @@ namespace SevereWeather.Storms
             for (int i = 0; i < count; i++)
             {
                 ConductiveNode node = overlapBuffer[i].GetComponentInParent<ConductiveNode>();
-                if (node == null || node == excluded) continue;
+                if (node == null || lightningVisited.Contains(node)) continue;
 
                 float distance = Vector3.Distance(center, node.transform.position);
                 float score = node.Priority * 20f - distance;

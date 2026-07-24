@@ -1368,3 +1368,45 @@ The handoff archive includes:
 - SHA-256 checksums for the handoff package contents
 
 Older documents may describe superseded prototype stages. The current production direction in this master handoff and the Unity production `Docs/` folder takes precedence where conflicts exist.
+
+## Living update - 2026-07-23 - Build #4 feel and render recovery
+
+This section supersedes older status statements in this handoff when they conflict with the repository's current code or physical-device evidence.
+
+### Proven since the original handoff
+
+- Unity Build Automation is connected to `lybyerc-lab/Severe-Warning` and builds branch `main` with Unity `6000.3.0f1`.
+- Android Build #1 compiled and installed but displayed a black screen.
+- Commit `23e638f5dbfb0522f512209fa636a17147c6c7d1` fixed startup visibility and produced a rendered Android build.
+- Commit `32ec421528e75632bae793ba0569c8770baa0d42` aligned mobile touch rectangles, added a floating joystick, latched one-shot inputs, and added device telemetry.
+- Physical Build #3 testing proved that touch input and storm position updates were registering.
+
+### Build #3 physical failure
+
+Build #3 did not pass production feel or visual-quality gates:
+
+- the camera followed the storm so tightly that translation was difficult to perceive
+- the opening crop field supplied weak parallax and few immediate interaction landmarks
+- damageable crops lacked colliders and were invisible to physics-based storm queries
+- abilities could consume resources without visible world feedback
+- the emergency unlit material path produced flat, opaque, low-information presentation
+- world edges could reveal the empty background
+
+### Active approved response
+
+Build #4 is a focused feel, interaction, physics, and rendering recovery pass. It includes:
+
+- a soft camera leash and stronger differentiated storm motion
+- a deliberate mixed starter test pocket
+- collider-backed crops and collider-aware density validation
+- immediate action VFX and no-target feedback
+- lit material templates, shadows, fog, transparency, and a larger backdrop
+- mobility classes, approximate masses, and pre-destruction prop release
+- deterministic Android identity and player settings
+- repository-memory updates committed with the implementation
+
+Build #4 remains a procedural laboratory slice. It does not claim final production art, audio, missions, progression, or finished destruction assets.
+
+### Current authority
+
+Read `CURRENT_STATUS.md`, `Docs/DEVICE_TEST_LOG.md`, `Docs/DECISION_LOG.md`, and `Docs/UNITY_CLOUD_BUILD_SETTINGS.md` before planning or testing the next build. Physical Android evidence remains authoritative.
