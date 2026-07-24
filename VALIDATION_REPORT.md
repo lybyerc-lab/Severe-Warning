@@ -1,6 +1,6 @@
 # Validation Report
 
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 
 ## Proven gates
 
@@ -13,67 +13,65 @@ Last updated: 2026-07-23
 - Production slice scene generated through the configured pre-export method
 - Android APKs built successfully through Unity Cloud
 - APK installed and launched on a physical Android device
-- Startup hotfix was validated by Build #2 rendering the generated region and HUD
-- Build #3 confirmed mobile joystick telemetry, storm position changes, storm switching, and primary-resource consumption on-device
+- Build #2 proved the startup hotfix renders the generated region and HUD
+- Build #3 proved mobile input registration and storm switching
+- Build #4 physical telemetry isolated a movement-authority defect
+- Build #4.1 physical testing proved transform-authoritative Tornado and Supercell translation works on Android
+- Build #4.1 confirmed the Supercell movement speed is appropriate
 
-## Physical defects discovered
+## Build #4.1 physical result
 
-Build #3 exposed the following feel, interaction, and rendering defects:
+Build #4.1 compiled, packaged, installed, launched, and moved both storm roots correctly on the physical device. Input, actual speed, position, and distance telemetry agreed. The movement defect is therefore closed.
 
-- movement input registered, but the camera immediately followed the storm and hid visible translation
-- the opening crop field provided weak landmarks and little parallax
-- crops were damageable but lacked colliders, so physics queries could not interact with them
-- ability input could consume resources without visible world feedback
-- the flat emergency material path produced unacceptable lighting and material separation
-- tornado and supercell visual rotation was mostly invisible because symmetrical primitives rotated around their own axes
-- the camera could reveal black space beyond the generated county ground
-- existing rigidbody ordering and default mass behavior could produce implausible prop and structure physics
-- per-renderer material instances undermined mobile batching
+Physical testing also found:
 
-## Build #4 validation intent
+- the fast Tornado can leave camera range before the world-space leash catches up
+- the Supercell cloud mass fills too much of the view
+- roads, buildings, targets, and the ground footprint can become obscured
+- world-space leash distance alone is not a sufficient camera-safety contract
+
+## Build #4.2 validation intent
 
 The current candidate adds:
 
-- soft-leash camera movement with slower catch-up and significant-target impact sampling
-- stronger differentiated Tornado and Supercell movement
-- speed, distance, build identity, render pipeline, graphics API, FPS, action, and target telemetry
-- generated Standard and URP material templates that survive shader stripping, with a stable lit built-in Build #4 baseline
-- lit world materials, soft shadows, fog, ambient lighting, transparent storm layers, and 2x MSAA
-- visible storm trails, ground contact, internal orbit, action rings, swaths, arcs, and lightning paths
-- collider-backed crops, a starter interaction pocket, farm road markings, backdrop terrain, and distant hills
-- mobility classes, approximate mass, pre-destruction prop release, and wind/physics conflict protection
-- collider-aware density validation
-- throttled passive-field and camera-density queries
-- deterministic Android versioning, IL2CPP, ARM64, Vulkan, and OpenGLES3 fallback
-- sanitized repository-memory updates
+- separate Tornado and Supercell navigation and impact distances
+- a smaller Tornado leash with speed-scaled catch-up
+- viewport-aware soft containment
+- immediate hard screen-edge recovery
+- `CAM SAFE`, `CAM CATCHUP`, and `CAM RECOVER` telemetry
+- wider and higher Supercell framing
+- smaller, flatter shelf-cloud lobes
+- a dark central Supercell updraft core
+- a visible trailing rain and hail core
+- preserved Tornado and Supercell movement speeds
+- compact device-lab HUD updates
+- application version `0.1.6` and Android version code `6`
+- Vulkan-only Android device-lab output
+- repository-memory updates in the same patch
+
+## Static checks required before commit
+
+- exact base commit is `96c9f780daf070648dc69a7f6cd431233b85617a`
+- changed paths match the reviewed Build #4.2 scope
+- no unexpected untracked files
+- `git diff --cached --check` passes
+- `sha256sum -c SHA256SUMS.txt` passes
+- `python Tools/validate_project.py` passes
+- camera source contains viewport containment and hard recovery
+- Tornado speed values remain unchanged
+- Supercell speed values remain unchanged
+- application version and Android version code are correct
 
 ## Gates still open
 
-- Build #4 Unity compilation
-- Build #4 Android APK generation
-- physical validation of camera leash, movement visibility, both storm movement profiles, all ability feedback, crop interaction, vehicle response, world-edge coverage, lighting, shadows, fog, and transparency
+- Build #4.2 Unity compilation
+- Build #4.2 Android APK generation
+- physical validation that the Tornado never remains off-screen
+- physical validation of soft catch-up and hard recovery behavior
+- physical validation that the Supercell fits the frame and preserves world readability
 - five-minute frame pacing and thermal test
-- staged/asynchronous startup generation
+- staged or asynchronous startup generation
 - Unity `.meta` file migration for authored assets
 - production environment assets, final materials, VFX, audio, destruction prefabs, and broader profiling
 
 A successful cloud build proves compilation and packaging. Physical Android evidence remains authoritative for controls, readability, heat, battery, sound, and performance.
-
-## Build #4 physical result and Build #4.1 validation intent
-
-Build #4 compiled, packaged, installed, and rendered at approximately 60 FPS on the test device. Physical telemetry exposed a movement-authority defect: input, commanded speed, and requested distance advanced while the storm root position remained at spawn.
-
-Build #4.1 corrects and validates:
-
-- transform-authoritative Tornado and Supercell translation
-- actual resolved velocity and distance measurement
-- `MOTION OK` and `MOTION BLOCKED` device telemetry
-- no direct `transform.rotation` write after `Rigidbody.MovePosition`
-- wider, slower camera leash
-- smooth overlapping tornado condensation lobes instead of stacked cylinders
-- compact-landscape HUD fit and stronger control contrast
-- application version `0.1.5`, Android version code `5`
-- Vulkan-only device-lab output
-- no generated URP Lit material asset while the Built-in lab pipeline is active
-
-The remaining authoritative gate is another physical Android test. Static validation cannot prove resolved device translation or visual feel.

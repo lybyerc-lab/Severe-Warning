@@ -20,6 +20,7 @@ namespace SevereWeather.Core
         private Material tornadoOuterMaterial;
         private Material tornadoInnerMaterial;
         private Material supercellMaterial;
+        private Material supercellCoreMaterial;
         private Material rainMaterial;
         private Material dustMaterial;
         private Material shadowMaterial;
@@ -49,18 +50,18 @@ namespace SevereWeather.Core
 
             try
             {
-                Debug.Log("[Severe Weather] Build #4 startup: camera");
+                Debug.Log("[Severe Weather] Build #4.2 startup: camera");
                 CreateCamera();
-                Debug.Log("[Severe Weather] Build #4 startup: lighting");
+                Debug.Log("[Severe Weather] Build #4.2 startup: lighting");
                 CreateLighting();
-                Debug.Log("[Severe Weather] Build #4 startup: input and HUD");
+                Debug.Log("[Severe Weather] Build #4.2 startup: input and HUD");
                 CreateInput();
                 CreateHud();
-                Debug.Log("[Severe Weather] Build #4 startup: region");
+                Debug.Log("[Severe Weather] Build #4.2 startup: region");
                 CreateRegion();
-                Debug.Log("[Severe Weather] Build #4 startup: storm");
+                Debug.Log("[Severe Weather] Build #4.2 startup: storm");
                 CreateStorm(activeKind);
-                Debug.Log($"[Severe Weather] Build #4 startup complete: {BuildIdentity.DisplayLabel}");
+                Debug.Log($"[Severe Weather] Build #4.2 startup complete: {BuildIdentity.DisplayLabel}");
             }
             catch (System.Exception exception)
             {
@@ -247,10 +248,16 @@ namespace SevereWeather.Core
                 0.04f,
                 true);
             supercellMaterial = PrimitiveFactory.CreateMaterial(
-                "Supercell Cloud",
-                new Color(0.2f, 0.24f, 0.3f, 0.78f),
+                "Supercell Shelf Cloud",
+                new Color(0.2f, 0.24f, 0.3f, 0.7f),
                 0f,
                 0.12f,
+                true);
+            supercellCoreMaterial = PrimitiveFactory.CreateMaterial(
+                "Supercell Updraft Core",
+                new Color(0.065f, 0.075f, 0.095f, 0.84f),
+                0f,
+                0.05f,
                 true);
             rainMaterial = PrimitiveFactory.CreateMaterial(
                 "Rain Core",
@@ -379,47 +386,79 @@ namespace SevereWeather.Core
             spinObject.transform.SetParent(parent, false);
             Transform spinRoot = spinObject.transform;
 
-            Transform[] layers = new Transform[13];
-            for (int i = 0; i < layers.Length; i++)
+            const int shelfCount = 11;
+            const int coreCount = 5;
+            Transform[] layers = new Transform[shelfCount + coreCount];
+
+            for (int i = 0; i < shelfCount; i++)
             {
-                float angle = i * Mathf.PI * 2f / layers.Length;
-                float radius = 12f + (i % 4) * 2.2f;
+                float angle = i * Mathf.PI * 2f / shelfCount;
+                float radiusX = 10.5f + (i % 3) * 1.8f;
+                float radiusZ = 7.6f + (i % 4) * 0.75f;
                 Vector3 offset = new Vector3(
-                    Mathf.Cos(angle) * radius,
-                    13f + (i % 4) * 2.2f,
-                    Mathf.Sin(angle) * radius * 0.76f);
+                    Mathf.Cos(angle) * radiusX,
+                    12.4f + Mathf.Sin(angle * 2f) * 1.1f + (i % 2) * 0.55f,
+                    Mathf.Sin(angle) * radiusZ);
                 GameObject cloud = PrimitiveFactory.CreateSphere(
                     spinRoot,
-                    $"Cloud Mass {i}",
+                    $"Shelf Cloud {i}",
                     parent.position,
-                    new Vector3(17f + (i % 3) * 2.4f, 7f + (i % 2) * 2.5f, 15f),
+                    new Vector3(
+                        11.5f + (i % 3) * 1.7f,
+                        3.8f + (i % 2) * 0.75f,
+                        9.4f + (i % 4) * 0.85f),
                     supercellMaterial,
                     false);
                 cloud.transform.localPosition = offset;
+                cloud.transform.localRotation = Quaternion.Euler(
+                    Mathf.Sin(angle) * 4f,
+                    -angle * Mathf.Rad2Deg * 0.35f,
+                    Mathf.Cos(angle) * 3f);
                 layers[i] = cloud.transform;
+            }
+
+            for (int i = 0; i < coreCount; i++)
+            {
+                float t = i / (float)(coreCount - 1);
+                float angle = i * 67f * Mathf.Deg2Rad;
+                GameObject core = PrimitiveFactory.CreateSphere(
+                    spinRoot,
+                    $"Updraft Core {i}",
+                    parent.position,
+                    new Vector3(
+                        Mathf.Lerp(5.8f, 8.8f, t),
+                        Mathf.Lerp(4.6f, 6.1f, t),
+                        Mathf.Lerp(5.4f, 7.5f, t)),
+                    supercellCoreMaterial,
+                    false);
+                core.transform.localPosition = new Vector3(
+                    Mathf.Cos(angle) * Mathf.Lerp(1.2f, 3.2f, t),
+                    10.4f + i * 1.65f,
+                    Mathf.Sin(angle) * Mathf.Lerp(1f, 2.8f, t));
+                layers[shelfCount + i] = core.transform;
             }
 
             GameObject rain = PrimitiveFactory.CreateCylinder(
                 parent,
                 "Rain and Hail Core",
                 parent.position,
-                new Vector3(13f, 6f, 13f),
+                new Vector3(9.6f, 5.4f, 9.6f),
                 rainMaterial,
                 false);
-            rain.transform.localPosition = new Vector3(-8f, 6f, -10f);
+            rain.transform.localPosition = new Vector3(-7.5f, 5.2f, -9.2f);
 
             GameObject groundShadow = PrimitiveFactory.CreateCylinder(
                 parent,
                 "Supercell Shadow",
                 parent.position + Vector3.up * 0.08f,
-                new Vector3(22f, 0.025f, 17f),
+                new Vector3(18.5f, 0.025f, 14.5f),
                 shadowMaterial,
                 false);
             groundShadow.transform.localPosition = Vector3.up * 0.08f;
 
-            CreateTrail(parent.gameObject, rainMaterial, 3.2f, 13f, 1.4f);
+            CreateTrail(parent.gameObject, rainMaterial, 3f, 10f, 1.1f);
             StormVisualAnimator animator = parent.gameObject.AddComponent<StormVisualAnimator>();
-            animator.Configure(28f, layers, spinRoot);
+            animator.Configure(24f, layers, spinRoot);
         }
 
         private static void CreateTrail(

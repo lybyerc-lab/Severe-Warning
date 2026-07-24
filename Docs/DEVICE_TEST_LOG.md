@@ -167,3 +167,56 @@ The configured spawn is `-122.0, 112.0`. Position therefore remained essentially
 ### Decision
 
 Build #4 fails the movement and target-visual-quality gates. Build #4.1 is approved as a focused correction for actual translation, honest telemetry, camera motion readability, tornado silhouette, HUD fit, and shader-build scope.
+
+## 2026-07-24 - Android Build #4.1
+
+### Source
+
+- Commit: `96c9f780daf070648dc69a7f6cd431233b85617a`
+- Application version: `0.1.5`
+- Unity: `6000.3.0f1`
+- Graphics API observed on device: Vulkan
+- Render pipeline observed on device: Built-in
+
+### Result
+
+- Cloud build succeeded.
+- APK installed and launched.
+- Tornado and Supercell both translated correctly.
+- Input, actual speed, position, and distance telemetry agreed.
+- Supercell movement speed felt appropriate.
+- Tornado silhouette improved substantially over the stacked-cylinder version.
+
+### New physical findings
+
+- The regular Tornado can outrun the camera and leave the visible frame.
+- The Supercell cloud mass is too large for its camera distance and obscures world readability.
+- Build #4.1 passes the movement gate but fails camera containment and Supercell framing.
+
+### Approved response
+
+Build #4.2 keeps both movement speeds and adds viewport containment, hard-edge recovery, wider Supercell framing, a flatter shelf-cloud silhouette, and camera-state telemetry.
+
+## Build #4.2 test record
+
+Status: pending physical Android test.
+
+Record after installation:
+
+- Cloud build result:
+- APK update or clean install:
+- Build identity shown:
+- Tornado remains visible at full speed:
+- `CAM SAFE` behavior:
+- `CAM CATCHUP` behavior:
+- `CAM RECOVER` behavior:
+- Supercell full silhouette fit:
+- Roads and targets readable around Supercell:
+- Rain/hail core visible:
+- Tornado movement speed preserved:
+- Supercell movement speed preserved:
+- Abilities and storm switching:
+- Frame pacing:
+- Five-minute heat result:
+- New defects:
+- Decision:

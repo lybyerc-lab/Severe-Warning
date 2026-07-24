@@ -7,7 +7,7 @@ The player is the storm. The HTML prototype is preserved as a frozen Mechanics L
 ## Current production target
 
 - Unity `6000.3.0f1`
-- Universal Render Pipeline package with a deterministic lit built-in Build #4 baseline while the authored URP asset gate remains open
+- Universal Render Pipeline package with a deterministic lit built-in device-lab baseline while the authored URP asset gate remains open
 - Android first
 - Unity Build Automation connected to GitHub `main`
 - Future WebGL, desktop, console, and Switch-class targets remain later gates
@@ -17,7 +17,8 @@ The player is the storm. The HTML prototype is preserved as a frozen Mechanics L
 - Runtime bootstrapping that creates a playable procedural county test region from an empty scene
 - Direct-control Tornado and Supercell implementations
 - Distinct Supercell verbs: Hail Swath, Gust Front, and Electrical Network
-- Soft-leash County High and action-responsive Impact camera behavior
+- Viewport-contained County High and action-responsive Impact camera behavior
+- Separate Tornado and Supercell framing profiles
 - Mobile and desktop input
 - Material-aware damage and conductive network chaining
 - Mobility-aware props, approximate mass, and wind response
@@ -54,17 +55,19 @@ Desktop:
 - E: tertiary ability
 - Tab: switch Tornado/Supercell
 
-Android Build #4.1 motion and silhouette laboratory:
+Android Build #4.2 camera and Supercell laboratory:
 
 - Start a drag in the lower-left control area to create a floating joystick.
 - Movement is camera-relative.
 - The storm root uses transform-authoritative motion and reports actual resolved speed.
-- The storm can move visibly inside a wider, slower camera leash before the camera follows.
+- The camera uses a soft world-space leash plus screen-space containment.
+- A fast Tornado receives stronger camera catch-up without reducing its movement speed.
+- The Supercell uses a wider, higher framing profile and a flatter shelf-cloud silhouette.
 - Hold `PULL` or `HAIL` for the primary ability.
 - Tap `GUST` or `FRONT` for the secondary ability.
 - Tap `ZAP` or `GRID` for the tertiary ability.
 - Tap the top-center storm button to switch storm.
-- MOVE, POS, SPEED, DIST, FPS, target count, render pipeline, graphics API, build version, and commit telemetry remain visible during the device gate.
+- INPUT, POS, ACTUAL speed, DIST, FPS, camera state, target count, render pipeline, graphics API, build version, and commit telemetry remain visible during the device gate.
 
 ## Cloud build
 
@@ -80,14 +83,15 @@ Unity Build Automation uses:
 - APK output and debug signing for device-test builds
 - Library caching
 
-The pre-export method sets application version `0.1.5`, Android version code `5`, IL2CPP, ARM64, Vulkan-only device-lab rendering, generated built-in runtime materials, build identity, the production-slice scene, and quality defaults.
+The pre-export method sets application version `0.1.6`, Android version code `6`, IL2CPP, ARM64, Vulkan-only device-lab rendering, generated built-in runtime materials, build identity, the production-slice scene, and quality defaults.
 
 ## Honest status
 
 - Build #1 compiled and installed but displayed a black screen.
 - Build #2 rendered the graybox world and switched between Tornado and Supercell.
-- Build #3 confirmed mobile input registration and position changes, but failed movement readability and visual-quality gates.
+- Build #3 confirmed mobile input registration but failed movement readability and visual-quality gates.
 - Build #4 improved lighting, props, feedback, and framing, but physical testing proved the storm root stayed at spawn while intended speed and distance counters advanced.
-- Build #4.1 fixes actual translation, makes telemetry honest, widens the camera leash, reduces shader-build scope, and replaces the stacked-cylinder tornado silhouette with overlapping condensation lobes.
+- Build #4.1 fixed actual translation and passed the movement gate. Physical testing then exposed Tornado camera escape and oversized Supercell framing.
+- Build #4.2 adds screen-space camera containment and reframes the Supercell without reducing either storm's approved movement speed.
 
 This remains a production architecture and procedural lab slice, not final art or a production-ready game.

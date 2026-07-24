@@ -91,3 +91,15 @@ For the Build #4.1 physical movement gate, the pre-export method enforces:
 - Built-in Standard and unlit generated material templates only
 
 The Vulkan-only and Built-in-template choices are temporary test controls. They prevent duplicate API compilation and unused URP Lit variant preparation while the authored URP pipeline asset remains an open production gate.
+
+## Build #4.2 device-lab note
+
+- Source branch after review: `main`
+- Required base before patch: `96c9f780daf070648dc69a7f6cd431233b85617a`
+- Application version: `0.1.6`
+- Android version code: `6`
+- Build label: `B4.2 CAMERA + SUPERCELL LAB`
+- Keep Library caching enabled.
+- Do not request a clean build unless the cached build fails for a cache-specific reason.
+- Pre-export method remains `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`.
+- Android output remains APK, ARM64, IL2CPP, Vulkan only for this device gate.

@@ -1426,3 +1426,9 @@ The approved Build #4.1 response is narrow:
 - reduced shader-build scope
 
 This does not reopen the No-Drift rules or substitute code-generated graybox geometry for the future production asset laboratory.
+
+## Build #4.2 camera containment update
+
+Build #4.1 commit `96c9f780daf070648dc69a7f6cd431233b85617a` passed the physical movement gate. Tornado and Supercell both move correctly, and the Supercell speed feels appropriate. The next authoritative defects are Tornado camera escape and oversized Supercell framing.
+
+Build #4.2 preserves storm speeds, adds viewport-aware camera containment with hard-edge recovery, separates Tornado and Supercell framing profiles, flattens and reduces the Supercell shelf cloud, adds a dark updraft core, and exposes camera state in the HUD. Application version is `0.1.6`; Android version code is `6`.

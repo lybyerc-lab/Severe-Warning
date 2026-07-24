@@ -119,3 +119,15 @@ Tune sizes, dead zone, acceleration, and layout only from Build #3 physical-devi
 **Reason:** Build #4 generated unused URP Lit material assets while running the Built-in pipeline and targeted both Vulkan and OpenGLES3. That forced an extremely expensive shader preparation pass without improving the actual device presentation.
 
 **Revisit condition:** Restore multi-API output and authored URP assets after shader stripping, pipeline configuration, and device-matrix requirements are explicit.
+
+## 2026-07-24 - Enforce camera safety in viewport space
+
+**Decision:** Keep approved storm movement speeds and make the camera responsible for keeping the player storm visible. Build #4.2 combines a smaller world-space leash with viewport-aware soft catch-up and immediate hard-edge recovery.
+
+**Reason:** Build #4.1 proved both storms translate correctly, but the fast Tornado can leave the camera frame. Slowing the Tornado would hide the camera defect and weaken storm differentiation.
+
+**Evidence:** Physical Android testing of Build #4.1 confirmed good Supercell speed, successful Tornado movement, and Tornado camera escape.
+
+**Rejected alternatives:** Reducing Tornado speed, returning to hard follow at all times, or treating the off-screen player as acceptable.
+
+**Revisit condition:** Replace this camera contract only when a tested authored camera system provides equal or better containment, motion readability, and distinct Tornado/Supercell feel.

@@ -17,8 +17,8 @@ namespace SevereWeather.Editor
         private const string ScenePath = SceneDirectory + "/ProductionSlice.unity";
         private const string GeneratedDirectory = "Assets/__GeneratedBuild";
         private const string GeneratedResourcesDirectory = GeneratedDirectory + "/Resources";
-        private const string ProductVersion = "0.1.5";
-        private const int AndroidVersionCode = 5;
+        private const string ProductVersion = "0.1.6";
+        private const int AndroidVersionCode = 6;
 
         [MenuItem("Tools/Severe Weather/Create Production Slice Scene", priority = 10)]
         public static void CreateProductionSliceScene()
@@ -36,7 +36,7 @@ namespace SevereWeather.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Selection.activeGameObject = bootstrap;
-            Debug.Log($"[Severe Weather] Build #4.1 production slice created at {ScenePath}");
+            Debug.Log($"[Severe Weather] Build #4.2 production slice created at {ScenePath}");
         }
 
         private static void ConfigureBuildIdentityAndMaterials()
@@ -62,7 +62,7 @@ namespace SevereWeather.Editor
             }
             if (string.IsNullOrWhiteSpace(revision)) revision = "local";
             string cloudBuildNumber = Environment.GetEnvironmentVariable("BUILD_NUMBER");
-            if (string.IsNullOrWhiteSpace(cloudBuildNumber)) cloudBuildNumber = "4.1";
+            if (string.IsNullOrWhiteSpace(cloudBuildNumber)) cloudBuildNumber = "4.2";
 
             string buildInfo =
                 $"version={ProductVersion}\n" +
@@ -72,7 +72,6 @@ namespace SevereWeather.Editor
             File.WriteAllText(GeneratedResourcesDirectory + "/BuildInfo.txt", buildInfo);
             AssetDatabase.Refresh();
         }
-
 
         private static Shader FindRequiredShader(params string[] candidates)
         {
@@ -177,7 +176,7 @@ namespace SevereWeather.Editor
             }
             else
             {
-                EditorUtility.DisplayDialog("Severe Weather Validation", message + "\nBuild #4.1 structure is ready for device testing.", "OK");
+                EditorUtility.DisplayDialog("Severe Weather Validation", message + "\nBuild #4.2 structure is ready for device testing.", "OK");
                 Debug.Log(message);
             }
         }

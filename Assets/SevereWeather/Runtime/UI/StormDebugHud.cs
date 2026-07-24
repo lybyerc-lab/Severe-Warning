@@ -1,3 +1,4 @@
+using SevereWeather.CameraSystem;
 using SevereWeather.Core;
 using SevereWeather.Input;
 using SevereWeather.Storms;
@@ -8,10 +9,11 @@ namespace SevereWeather.UI
 {
     public sealed class StormDebugHud : MonoBehaviour
     {
-        private const string LabLabel = "B4.1 MOTION + SILHOUETTE LAB";
+        private const string LabLabel = "B4.2 CAMERA + SUPERCELL LAB";
 
         private StormInput input;
         private StormControllerBase storm;
+        private HybridStormCamera cameraRig;
         private GUIStyle titleStyle;
         private GUIStyle smallStyle;
         private GUIStyle buttonStyle;
@@ -25,6 +27,10 @@ namespace SevereWeather.UI
         {
             input = inputSource;
             storm = activeStorm;
+            if (cameraRig == null)
+            {
+                cameraRig = Object.FindFirstObjectByType<HybridStormCamera>();
+            }
         }
 
         public void SetStorm(StormControllerBase activeStorm)
@@ -40,7 +46,7 @@ namespace SevereWeather.UI
 
         private void EnsureStyles()
         {
-            int baseSize = Mathf.Clamp(Screen.height / 52, 12, 18);
+            int baseSize = Mathf.Clamp(Screen.height / 54, 12, 18);
             if (titleStyle != null && titleStyle.fontSize == baseSize + 4) return;
 
             titleStyle = new GUIStyle(GUI.skin.label)
@@ -104,8 +110,8 @@ namespace SevereWeather.UI
         private void DrawStatus(MobileControlLayout layout)
         {
             float topInset = Screen.height - layout.SafeArea.yMax;
-            float panelWidth = Mathf.Clamp(layout.SafeArea.width * 0.32f, 340f, 430f);
-            float panelHeight = Mathf.Clamp(layout.SafeArea.height * 0.34f, 224f, 252f);
+            float panelWidth = Mathf.Clamp(layout.SafeArea.width * 0.29f, 320f, 400f);
+            float panelHeight = Mathf.Clamp(layout.SafeArea.height * 0.31f, 218f, 232f);
             Rect panel = new Rect(layout.SafeArea.xMin + 12f, topInset + 12f, panelWidth, panelHeight);
 
             Color previous = GUI.color;
@@ -113,8 +119,8 @@ namespace SevereWeather.UI
             GUI.Box(panel, GUIContent.none);
             GUI.color = previous;
 
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 7f, panel.width - 28f, 27f), $"{storm.Kind} - LV {storm.Level:0}", titleStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 34f, panel.width - 28f, 21f), $"Power {storm.Power:0}   Stability {storm.Stability:0}", smallStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 7f, panel.width - 28f, 25f), $"{storm.Kind} - LV {storm.Level:0}", titleStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 31f, panel.width - 28f, 19f), $"Power {storm.Power:0}   Stability {storm.Stability:0}", smallStyle);
 
             Vector2 move = input != null ? input.Move : Vector2.zero;
             Vector3 position = storm.transform.position;
@@ -123,19 +129,24 @@ namespace SevereWeather.UI
                 : storm.MotionBlocked || storm.Speed < 0.15f
                     ? "MOTION BLOCKED"
                     : "MOTION OK";
+            string cameraState = cameraRig == null
+                ? "CAM ?"
+                : cameraRig.UsedHardContainment
+                    ? "CAM RECOVER"
+                    : cameraRig.IsTargetInsideSafeFrame ? "CAM SAFE" : "CAM CATCHUP";
 
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 56f, panel.width - 28f, 20f), $"INPUT {move.x:+0.00;-0.00;0.00}, {move.y:+0.00;-0.00;0.00}   {motionState}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 77f, panel.width - 28f, 20f), $"POS {position.x:0.0}, {position.z:0.0}   ACTUAL {storm.Speed:0.0}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 98f, panel.width - 28f, 20f), $"DIST {storm.DistanceTravelled:0.0}   FPS {smoothedFps:0}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 51f, panel.width - 28f, 19f), $"INPUT {move.x:+0.00;-0.00;0.00}, {move.y:+0.00;-0.00;0.00}   {motionState}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 71f, panel.width - 28f, 19f), $"POS {position.x:0.0}, {position.z:0.0}   ACTUAL {storm.Speed:0.0}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 91f, panel.width - 28f, 19f), $"DIST {storm.DistanceTravelled:0.0}   FPS {smoothedFps:0}", telemetryStyle);
 
             string pipeline = GraphicsSettings.currentRenderPipeline != null
                 ? GraphicsSettings.currentRenderPipeline.GetType().Name
                 : GraphicsSettings.defaultRenderPipeline != null
                     ? GraphicsSettings.defaultRenderPipeline.GetType().Name
                     : "Built-in";
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 119f, panel.width - 28f, 20f), $"RP {pipeline}   API {SystemInfo.graphicsDeviceType}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 140f, panel.width - 28f, 20f), $"{storm.ActionStatus}   TARGETS {storm.LastActionTargetCount}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + panel.height - 30f, panel.width - 28f, 20f), $"{LabLabel}  {BuildIdentity.DisplayLabel}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 111f, panel.width - 28f, 19f), $"{cameraState}   RP {pipeline}   {SystemInfo.graphicsDeviceType}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 131f, panel.width - 28f, 19f), $"{storm.ActionStatus}   TARGETS {storm.LastActionTargetCount}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + panel.height - 26f, panel.width - 28f, 18f), $"{LabLabel}  {BuildIdentity.DisplayLabel}", telemetryStyle);
         }
 
         private void DrawControls(MobileControlLayout layout)
