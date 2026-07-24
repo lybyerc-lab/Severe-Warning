@@ -99,3 +99,23 @@ Tune sizes, dead zone, acceleration, and layout only from Build #3 physical-devi
 - Crop colliders, a mixed starter test pocket, backdrop terrain, distant hills, road markings, mobility classes, approximate masses, and collider-aware density validation are part of the same recovery because they are required to judge feel and interaction honestly.
 - Android build identity is set to version `0.1.4`, version code `4`, IL2CPP, ARM64, Vulkan first, and OpenGLES3 fallback.
 - Build #4 remains a stylized procedural lab slice. It does not claim production art quality.
+
+## 2026-07-24 - Make storm movement transform-authoritative
+
+**Decision:** Tornado and Supercell roots use transform-authoritative fixed-step translation. The retained kinematic Rigidbody is no longer used as the movement authority.
+
+**Reason:** Build #4 physical telemetry showed full joystick input, commanded speed `28.0`, and requested distance `123.7`, while the actual root position remained at its spawn coordinates. The controller called `Rigidbody.MovePosition` and then wrote rotation directly through `transform.rotation` in the same fixed step, while distance telemetry counted the requested displacement regardless of the resolved pose.
+
+**Evidence:** Android Build #4 screenshot and device telemetry recorded in `Docs/DEVICE_TEST_LOG.md`.
+
+**Rejected alternative:** Another camera-only adjustment. The root position itself did not change, so camera tuning alone cannot repair the failure.
+
+**Revisit condition:** Replace transform-authoritative motion only when the player storm gains a deliberate collision-driven physics contract and automated movement tests verify resolved translation.
+
+## 2026-07-24 - Keep Build #4.1 on one graphics API and one runtime material family
+
+**Decision:** Build #4.1 generates only Built-in runtime material templates and targets Vulkan only for the current physical-device gate.
+
+**Reason:** Build #4 generated unused URP Lit material assets while running the Built-in pipeline and targeted both Vulkan and OpenGLES3. That forced an extremely expensive shader preparation pass without improving the actual device presentation.
+
+**Revisit condition:** Restore multi-API output and authored URP assets after shader stripping, pipeline configuration, and device-matrix requirements are explicit.

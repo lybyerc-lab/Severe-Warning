@@ -54,11 +54,12 @@ Desktop:
 - E: tertiary ability
 - Tab: switch Tornado/Supercell
 
-Android Build #4 feel and render laboratory:
+Android Build #4.1 motion and silhouette laboratory:
 
 - Start a drag in the lower-left control area to create a floating joystick.
 - Movement is camera-relative.
-- The storm can move visibly inside the camera leash before the camera follows.
+- The storm root uses transform-authoritative motion and reports actual resolved speed.
+- The storm can move visibly inside a wider, slower camera leash before the camera follows.
 - Hold `PULL` or `HAIL` for the primary ability.
 - Tap `GUST` or `FRONT` for the secondary ability.
 - Tap `ZAP` or `GRID` for the tertiary ability.
@@ -79,13 +80,14 @@ Unity Build Automation uses:
 - APK output and debug signing for device-test builds
 - Library caching
 
-The pre-export method sets application version `0.1.4`, Android version code `4`, IL2CPP, ARM64, Vulkan with OpenGLES3 fallback, generated runtime materials, build identity, the production-slice scene, and quality defaults.
+The pre-export method sets application version `0.1.5`, Android version code `5`, IL2CPP, ARM64, Vulkan-only device-lab rendering, generated built-in runtime materials, build identity, the production-slice scene, and quality defaults.
 
 ## Honest status
 
 - Build #1 compiled and installed but displayed a black screen.
 - Build #2 rendered the graybox world and switched between Tornado and Supercell.
 - Build #3 confirmed mobile input registration and position changes, but failed movement readability and visual-quality gates.
-- Build #4 is the focused movement-perception, interaction, physics, and deterministic-rendering recovery pass.
+- Build #4 improved lighting, props, feedback, and framing, but physical testing proved the storm root stayed at spawn while intended speed and distance counters advanced.
+- Build #4.1 fixes actual translation, makes telemetry honest, widens the camera leash, reduces shader-build scope, and replaces the stacked-cylinder tornado silhouette with overlapping condensation lobes.
 
 This remains a production architecture and procedural lab slice, not final art or a production-ready game.

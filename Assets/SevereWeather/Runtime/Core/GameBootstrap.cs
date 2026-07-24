@@ -236,13 +236,13 @@ namespace SevereWeather.Core
 
             tornadoOuterMaterial = PrimitiveFactory.CreateMaterial(
                 "Tornado Condensation",
-                new Color(0.34f, 0.39f, 0.44f, 0.42f),
+                new Color(0.38f, 0.46f, 0.54f, 0.3f),
                 0f,
                 0.08f,
                 true);
             tornadoInnerMaterial = PrimitiveFactory.CreateMaterial(
                 "Tornado Core",
-                new Color(0.08f, 0.09f, 0.11f, 0.82f),
+                new Color(0.055f, 0.065f, 0.08f, 0.68f),
                 0f,
                 0.04f,
                 true);
@@ -260,7 +260,7 @@ namespace SevereWeather.Core
                 true);
             dustMaterial = PrimitiveFactory.CreateMaterial(
                 "Ground Dust",
-                new Color(0.48f, 0.34f, 0.2f, 0.5f),
+                new Color(0.48f, 0.34f, 0.2f, 0.18f),
                 0f,
                 0.05f,
                 true);
@@ -286,69 +286,89 @@ namespace SevereWeather.Core
             spinObject.transform.SetParent(parent, false);
             Transform spinRoot = spinObject.transform;
 
-            Transform[] layers = new Transform[9];
-            for (int i = 0; i < layers.Length; i++)
+            const int outerCount = 13;
+            Transform[] layers = new Transform[outerCount];
+            for (int i = 0; i < outerCount; i++)
             {
-                float t = i / (float)(layers.Length - 1);
-                float radius = Mathf.Lerp(1.1f, 8.7f, t);
-                float y = 1.8f + i * 2.75f;
-                float angle = i * 51f * Mathf.Deg2Rad;
-                Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * Mathf.Lerp(0.08f, 1.15f, t);
-                Material layerMaterial = i < 3 ? tornadoInnerMaterial : tornadoOuterMaterial;
-                GameObject layer = PrimitiveFactory.CreateCylinder(
+                float t = i / (float)(outerCount - 1);
+                float shaped = Mathf.Pow(t, 0.78f);
+                float radius = Mathf.Lerp(0.65f, 8.6f, shaped);
+                float y = 1.3f + i * 2.05f;
+                float angle = i * 47f * Mathf.Deg2Rad;
+                Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * Mathf.Lerp(0.05f, 1.25f, t);
+
+                GameObject layer = PrimitiveFactory.CreateSphere(
                     spinRoot,
-                    $"Funnel Layer {i}",
-                    parent.position + Vector3.up * y,
-                    new Vector3(radius, 1.15f, radius * Mathf.Lerp(0.68f, 0.9f, t)),
-                    layerMaterial,
+                    $"Condensation Lobe {i}",
+                    parent.position,
+                    new Vector3(radius * 1.18f, Mathf.Lerp(2.35f, 3.8f, t), radius * 0.82f),
+                    tornadoOuterMaterial,
                     false);
                 layer.transform.localPosition = offset + Vector3.up * y;
                 layer.transform.localRotation = Quaternion.Euler(
-                    Mathf.Sin(angle) * 5f,
-                    i * 17f,
-                    Mathf.Cos(angle) * 5f);
+                    Mathf.Sin(angle) * 7f,
+                    i * 19f,
+                    Mathf.Cos(angle) * 7f);
                 layers[i] = layer.transform;
             }
 
-            for (int i = 0; i < 14; i++)
+            for (int i = 0; i < 10; i++)
             {
-                float angle = i * Mathf.PI * 2f / 14f;
-                float radius = 5f + (i % 4) * 1.4f;
+                float t = i / 9f;
+                float radius = Mathf.Lerp(0.38f, 3.15f, Mathf.Pow(t, 0.82f));
+                float angle = i * 61f * Mathf.Deg2Rad;
+                GameObject core = PrimitiveFactory.CreateSphere(
+                    spinRoot,
+                    $"Dark Core {i}",
+                    parent.position,
+                    new Vector3(radius, 2.5f + t * 0.8f, radius * 0.76f),
+                    tornadoInnerMaterial,
+                    false);
+                core.transform.localPosition = new Vector3(
+                    Mathf.Cos(angle) * t * 0.42f,
+                    1.15f + i * 2.1f,
+                    Mathf.Sin(angle) * t * 0.42f);
+            }
+
+            for (int i = 0; i < 10; i++)
+            {
+                float angle = i * Mathf.PI * 2f / 10f;
+                float radius = 5f + (i % 4) * 1.35f;
                 GameObject debris = PrimitiveFactory.CreateBox(
                     spinRoot,
                     $"Debris {i}",
                     parent.position,
-                    new Vector3(0.45f + (i % 3) * 0.18f, 0.3f, 0.65f),
+                    new Vector3(0.26f + (i % 3) * 0.12f, 0.2f, 0.42f + (i % 2) * 0.16f),
                     debrisMaterial,
                     false);
                 debris.transform.localPosition = new Vector3(
                     Mathf.Cos(angle) * radius,
-                    1.2f + (i % 5) * 1.1f,
+                    1.2f + (i % 5) * 1.05f,
                     Mathf.Sin(angle) * radius);
                 debris.transform.localRotation = Quaternion.Euler(i * 19f, i * 31f, i * 11f);
             }
 
             GameObject dustRing = PrimitiveFactory.CreateCylinder(
                 parent,
-                "Dust Contact Ring",
-                parent.position + Vector3.up * 0.25f,
-                new Vector3(9.5f, 0.08f, 9.5f),
+                "Dust Contact Haze",
+                parent.position + Vector3.up * 0.18f,
+                new Vector3(8.8f, 0.025f, 8.8f),
                 dustMaterial,
                 false);
-            dustRing.transform.localPosition = Vector3.up * 0.25f;
+            dustRing.transform.localPosition = Vector3.up * 0.18f;
 
             GameObject groundShadow = PrimitiveFactory.CreateCylinder(
                 parent,
                 "Tornado Shadow",
-                parent.position + Vector3.up * 0.08f,
-                new Vector3(10.5f, 0.025f, 8.5f),
+                parent.position + Vector3.up * 0.06f,
+                new Vector3(9.2f, 0.018f, 7.3f),
                 shadowMaterial,
                 false);
-            groundShadow.transform.localPosition = Vector3.up * 0.08f;
+            groundShadow.transform.localPosition = Vector3.up * 0.06f;
 
-            CreateTrail(parent.gameObject, dustMaterial, 2.1f, 6.5f, 0.2f);
+            CreateTrail(parent.gameObject, dustMaterial, 2.4f, 4.8f, 0.1f);
             StormVisualAnimator animator = parent.gameObject.AddComponent<StormVisualAnimator>();
-            animator.Configure(135f, layers, spinRoot);
+            animator.Configure(150f, layers, spinRoot);
         }
 
         private void BuildSupercellVisual(Transform parent)

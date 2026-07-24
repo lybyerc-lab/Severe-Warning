@@ -10,6 +10,7 @@ namespace SevereWeather.Storms
     {
         protected const int OverlapCapacity = 384;
         private const float PassiveFieldInterval = 0.1f;
+        private const float MovementWorldLimit = 360f;
 
         [SerializeField] protected float power = 100f;
         [SerializeField] protected float stability = 100f;
@@ -23,11 +24,13 @@ namespace SevereWeather.Storms
         protected Rigidbody body;
         protected Vector3 planarVelocity;
 
+        private Vector3 resolvedPlanarVelocity;
         private float passiveAccumulator;
         private float distanceTravelled;
         private string actionStatus = "READY";
         private float actionStatusUntil;
         private int lastActionTargetCount;
+        private float blockedMotionSeconds;
 
         public abstract StormKind Kind { get; }
         public abstract float InfluenceRadius { get; }
@@ -35,19 +38,21 @@ namespace SevereWeather.Storms
         public float Stability => stability;
         public float Level => level;
         public float ReferenceWindSpeed => referenceWindSpeed;
-        public Vector3 PlanarVelocity => planarVelocity;
-        public float Speed => planarVelocity.magnitude;
+        public Vector3 PlanarVelocity => resolvedPlanarVelocity;
+        public float Speed => resolvedPlanarVelocity.magnitude;
         public float DistanceTravelled => distanceTravelled;
         public bool HasRecentAction => Time.unscaledTime <= actionStatusUntil;
         public string ActionStatus => HasRecentAction ? actionStatus : "READY";
         public int LastActionTargetCount => HasRecentAction ? lastActionTargetCount : 0;
+        public bool MotionBlocked => blockedMotionSeconds >= 0.18f;
 
         protected virtual void Awake()
         {
             body = GetComponent<Rigidbody>();
             body.useGravity = false;
             body.isKinematic = true;
-            body.interpolation = RigidbodyInterpolation.Interpolate;
+            body.detectCollisions = false;
+            body.interpolation = RigidbodyInterpolation.None;
         }
 
         protected virtual void OnEnable()
@@ -87,22 +92,46 @@ namespace SevereWeather.Storms
         {
             Vector3 desired = GetCameraRelativeDirection(inputVector) * moveSpeed;
             planarVelocity = Vector3.MoveTowards(planarVelocity, desired, acceleration * dt);
-            Vector3 displacement = planarVelocity * dt;
-            body.MovePosition(body.position + displacement);
-            RecordDisplacement(displacement);
-
-            if (planarVelocity.sqrMagnitude > 0.15f)
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    Quaternion.LookRotation(planarVelocity.normalized, Vector3.up),
-                    4f * dt);
-            }
+            ApplyPlanarMotion(planarVelocity * dt, 4f, dt);
         }
 
-        protected void RecordDisplacement(Vector3 displacement)
+        protected void ApplyPlanarMotion(Vector3 requestedDisplacement, float turnResponsiveness, float dt)
         {
-            distanceTravelled += displacement.magnitude;
+            Vector3 before = transform.position;
+            Vector3 nextPosition = before + requestedDisplacement;
+            nextPosition.x = Mathf.Clamp(nextPosition.x, -MovementWorldLimit, MovementWorldLimit);
+            nextPosition.z = Mathf.Clamp(nextPosition.z, -MovementWorldLimit, MovementWorldLimit);
+
+            Quaternion nextRotation = transform.rotation;
+            if (planarVelocity.sqrMagnitude > 0.15f)
+            {
+                Quaternion facing = Quaternion.LookRotation(planarVelocity.normalized, Vector3.up);
+                float turnBlend = 1f - Mathf.Exp(-Mathf.Max(0.01f, turnResponsiveness) * dt);
+                nextRotation = Quaternion.Slerp(transform.rotation, facing, turnBlend);
+            }
+
+            // The storm is an influence volume, not a collision-driven physical body.
+            // Transform-authoritative motion avoids mixing a scheduled Rigidbody position move with direct
+            // Transform rotation, which left the requested velocity active while the root pose
+            // stayed at its spawn position on Android.
+            transform.SetPositionAndRotation(nextPosition, nextRotation);
+            if (body != null)
+            {
+                body.position = nextPosition;
+                body.rotation = nextRotation;
+            }
+
+            Vector3 actualDisplacement = transform.position - before;
+            actualDisplacement.y = 0f;
+            float safeDt = Mathf.Max(0.0001f, dt);
+            resolvedPlanarVelocity = actualDisplacement / safeDt;
+            distanceTravelled += actualDisplacement.magnitude;
+
+            bool commanded = requestedDisplacement.sqrMagnitude > 0.0004f;
+            bool resolved = actualDisplacement.sqrMagnitude > 0.000001f;
+            blockedMotionSeconds = commanded && !resolved
+                ? blockedMotionSeconds + dt
+                : 0f;
         }
 
         protected Vector3 GetCameraRelativeDirection(Vector2 inputVector)

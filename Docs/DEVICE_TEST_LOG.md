@@ -127,3 +127,43 @@ Record after installation:
 - Five-minute heat result:
 - New defects:
 - Decision:
+
+## 2026-07-24 - Android Build #4
+
+### Source
+
+- Commit: `91ee1a257bbe8e771d73097c9c4a3c781c53c225`
+- Application version: `0.1.4`
+- Unity: `6000.3.0f1`
+- Builder: Windows 11 24H2 Micro
+- Graphics API observed on device: Vulkan
+- Render pipeline observed on device: Built-in
+
+### Result
+
+- Cloud build succeeded after a fresh Library import and a long shader preparation stage.
+- APK installed and launched.
+- Lit materials, soft shadows, road markings, props, debris, and immediate-action visuals rendered.
+- Frame telemetry showed approximately 60 FPS in the captured starter scene.
+
+### Movement failure evidence
+
+With the joystick at full right input, the HUD showed:
+
+- `INPUT +1.00, 0.00`
+- `SPEED 28.0`
+- `DIST 123.7`
+- `POS -121.8, 111.9`
+
+The configured spawn is `-122.0, 112.0`. Position therefore remained essentially unchanged while intended speed and distance advanced. The movement controller was recording requested displacement without verifying resolved root translation.
+
+### Visual findings
+
+- Tornado still read as stacked primitive layers with a flat upper silhouette.
+- The compact-landscape status panel clipped its final lines.
+- Inactive control buttons lacked contrast.
+- Environment presentation remained procedural graybox quality despite improved lighting and feedback.
+
+### Decision
+
+Build #4 fails the movement and target-visual-quality gates. Build #4.1 is approved as a focused correction for actual translation, honest telemetry, camera motion readability, tornado silhouette, HUD fit, and shader-build scope.

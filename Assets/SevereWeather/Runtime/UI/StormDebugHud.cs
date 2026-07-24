@@ -8,7 +8,7 @@ namespace SevereWeather.UI
 {
     public sealed class StormDebugHud : MonoBehaviour
     {
-        private const string LabLabel = "B4 FEEL + RENDER LAB";
+        private const string LabLabel = "B4.1 MOTION + SILHOUETTE LAB";
 
         private StormInput input;
         private StormControllerBase storm;
@@ -40,7 +40,7 @@ namespace SevereWeather.UI
 
         private void EnsureStyles()
         {
-            int baseSize = Mathf.Clamp(Screen.height / 46, 13, 20);
+            int baseSize = Mathf.Clamp(Screen.height / 52, 12, 18);
             if (titleStyle != null && titleStyle.fontSize == baseSize + 4) return;
 
             titleStyle = new GUIStyle(GUI.skin.label)
@@ -52,25 +52,25 @@ namespace SevereWeather.UI
             smallStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = baseSize,
-                normal = { textColor = new Color(0.9f, 0.95f, 1f) }
+                normal = { textColor = new Color(0.92f, 0.96f, 1f) }
             };
             buttonStyle = new GUIStyle(GUI.skin.box)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = baseSize,
+                fontSize = baseSize + 1,
                 fontStyle = FontStyle.Bold,
                 wordWrap = false,
                 normal = { textColor = Color.white }
             };
             telemetryStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.Max(12, baseSize - 1),
-                normal = { textColor = new Color(0.78f, 0.92f, 1f) }
+                fontSize = Mathf.Max(12, baseSize),
+                normal = { textColor = new Color(0.8f, 0.94f, 1f) }
             };
             centeredStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = baseSize,
+                fontSize = baseSize + 1,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = Color.white }
             };
@@ -79,15 +79,15 @@ namespace SevereWeather.UI
             {
                 joystickBaseTexture = CreateCircleTexture(
                     128,
-                    new Color(0.12f, 0.18f, 0.23f, 0.12f),
-                    new Color(0.58f, 0.75f, 0.88f, 0.62f));
+                    new Color(0.08f, 0.15f, 0.21f, 0.2f),
+                    new Color(0.55f, 0.79f, 0.96f, 0.82f));
             }
             if (joystickThumbTexture == null)
             {
                 joystickThumbTexture = CreateCircleTexture(
                     96,
-                    new Color(0.88f, 0.94f, 1f, 0.88f),
-                    new Color(1f, 0.62f, 0.16f, 0.98f));
+                    new Color(0.94f, 0.97f, 1f, 0.96f),
+                    new Color(1f, 0.54f, 0.08f, 1f));
             }
         }
 
@@ -104,12 +104,12 @@ namespace SevereWeather.UI
         private void DrawStatus(MobileControlLayout layout)
         {
             float topInset = Screen.height - layout.SafeArea.yMax;
-            float panelWidth = Mathf.Clamp(layout.SafeArea.width * 0.31f, 300f, 390f);
-            float panelHeight = Mathf.Clamp(layout.SafeArea.height * 0.27f, 172f, 205f);
+            float panelWidth = Mathf.Clamp(layout.SafeArea.width * 0.32f, 340f, 430f);
+            float panelHeight = Mathf.Clamp(layout.SafeArea.height * 0.34f, 224f, 252f);
             Rect panel = new Rect(layout.SafeArea.xMin + 12f, topInset + 12f, panelWidth, panelHeight);
 
             Color previous = GUI.color;
-            GUI.color = new Color(0.04f, 0.07f, 0.09f, 0.86f);
+            GUI.color = new Color(0.025f, 0.055f, 0.075f, 0.9f);
             GUI.Box(panel, GUIContent.none);
             GUI.color = previous;
 
@@ -118,18 +118,24 @@ namespace SevereWeather.UI
 
             Vector2 move = input != null ? input.Move : Vector2.zero;
             Vector3 position = storm.transform.position;
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 56f, panel.width - 28f, 20f), $"MOVE {move.x:+0.00;-0.00;0.00}, {move.y:+0.00;-0.00;0.00}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 76f, panel.width - 28f, 20f), $"POS {position.x:0.0}, {position.z:0.0}   SPEED {storm.Speed:0.0}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 96f, panel.width - 28f, 20f), $"DIST {storm.DistanceTravelled:0.0}   FPS {smoothedFps:0}", telemetryStyle);
+            string motionState = move.sqrMagnitude <= 0.01f
+                ? "IDLE"
+                : storm.MotionBlocked || storm.Speed < 0.15f
+                    ? "MOTION BLOCKED"
+                    : "MOTION OK";
+
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 56f, panel.width - 28f, 20f), $"INPUT {move.x:+0.00;-0.00;0.00}, {move.y:+0.00;-0.00;0.00}   {motionState}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 77f, panel.width - 28f, 20f), $"POS {position.x:0.0}, {position.z:0.0}   ACTUAL {storm.Speed:0.0}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 98f, panel.width - 28f, 20f), $"DIST {storm.DistanceTravelled:0.0}   FPS {smoothedFps:0}", telemetryStyle);
 
             string pipeline = GraphicsSettings.currentRenderPipeline != null
                 ? GraphicsSettings.currentRenderPipeline.GetType().Name
                 : GraphicsSettings.defaultRenderPipeline != null
                     ? GraphicsSettings.defaultRenderPipeline.GetType().Name
                     : "Built-in";
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 116f, panel.width - 28f, 20f), $"RP {pipeline}   API {SystemInfo.graphicsDeviceType}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 136f, panel.width - 28f, 20f), $"{storm.ActionStatus}   TARGETS {storm.LastActionTargetCount}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + panel.height - 29f, panel.width - 28f, 18f), $"{LabLabel}  {BuildIdentity.DisplayLabel}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 119f, panel.width - 28f, 20f), $"RP {pipeline}   API {SystemInfo.graphicsDeviceType}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + 140f, panel.width - 28f, 20f), $"{storm.ActionStatus}   TARGETS {storm.LastActionTargetCount}", telemetryStyle);
+            GUI.Label(new Rect(panel.x + 14f, panel.y + panel.height - 30f, panel.width - 28f, 20f), $"{LabLabel}  {BuildIdentity.DisplayLabel}", telemetryStyle);
         }
 
         private void DrawControls(MobileControlLayout layout)
@@ -170,8 +176,8 @@ namespace SevereWeather.UI
                 thumbSize);
             Color previous = GUI.color;
             GUI.color = input != null && input.MoveTouchActive
-                ? new Color(1f, 0.82f, 0.55f, 1f)
-                : new Color(1f, 1f, 1f, 0.82f);
+                ? new Color(1f, 0.78f, 0.42f, 1f)
+                : new Color(1f, 1f, 1f, 0.9f);
             GUI.DrawTexture(thumbRect, joystickThumbTexture, ScaleMode.StretchToFill, true);
             GUI.color = previous;
         }
@@ -181,8 +187,8 @@ namespace SevereWeather.UI
             Rect guiRect = MobileControlLayout.ToGuiRect(screenRect);
             Color previous = GUI.color;
             GUI.color = active
-                ? new Color(1f, 0.62f, 0.16f, 1f)
-                : new Color(0.16f, 0.22f, 0.27f, 0.9f);
+                ? new Color(1f, 0.5f, 0.08f, 1f)
+                : new Color(0.08f, 0.18f, 0.26f, 0.96f);
             GUI.Box(guiRect, label, buttonStyle);
             GUI.color = previous;
         }

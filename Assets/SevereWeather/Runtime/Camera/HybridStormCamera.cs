@@ -7,19 +7,20 @@ namespace SevereWeather.CameraSystem
     [RequireComponent(typeof(Camera))]
     public sealed class HybridStormCamera : MonoBehaviour
     {
-        [SerializeField] private float navigationPitch = 57f;
-        [SerializeField] private float impactPitch = 47f;
-        [SerializeField] private float navigationDistance = 64f;
-        [SerializeField] private float impactDistance = 46f;
-        [SerializeField] private float tornadoLeashRadius = 13f;
-        [SerializeField] private float supercellLeashRadius = 17f;
+        [SerializeField] private float navigationPitch = 50f;
+        [SerializeField] private float impactPitch = 43f;
+        [SerializeField] private float navigationDistance = 56f;
+        [SerializeField] private float impactDistance = 42f;
+        [SerializeField] private float tornadoLeashRadius = 22f;
+        [SerializeField] private float supercellLeashRadius = 18f;
+        [SerializeField] private float anchorCatchupSpeed = 2.1f;
         [SerializeField] private float impactTargetRadius = 42f;
         [SerializeField] private int impactTargetThreshold = 3;
         [SerializeField] private float transitionSpeed = 2.8f;
-        [SerializeField] private float focusSmoothTime = 0.38f;
-        [SerializeField] private float cameraSmoothTime = 0.22f;
+        [SerializeField] private float focusSmoothTime = 0.55f;
+        [SerializeField] private float cameraSmoothTime = 0.3f;
         [SerializeField] private float yaw = 45f;
-        [SerializeField] private float worldClamp = 390f;
+        [SerializeField] private float worldClamp = 440f;
 
         private readonly Collider[] nearbyBuffer = new Collider[128];
         private StormControllerBase target;
@@ -48,7 +49,7 @@ namespace SevereWeather.CameraSystem
             currentPitch = navigationPitch;
             currentDistance = navigationDistance;
             Camera cameraComponent = GetComponent<Camera>();
-            cameraComponent.fieldOfView = 50f;
+            cameraComponent.fieldOfView = 52f;
             cameraComponent.nearClipPlane = 0.15f;
             cameraComponent.farClipPlane = 1400f;
             cameraComponent.allowMSAA = true;
@@ -71,11 +72,12 @@ namespace SevereWeather.CameraSystem
             float targetDistance = impact ? impactDistance : navigationDistance;
             if (target.Kind == StormKind.Supercell)
             {
-                targetDistance *= 1.1f;
+                targetDistance *= 1.08f;
             }
 
-            currentPitch = Mathf.Lerp(currentPitch, targetPitch, 1f - Mathf.Exp(-transitionSpeed * Time.deltaTime));
-            currentDistance = Mathf.Lerp(currentDistance, targetDistance, 1f - Mathf.Exp(-transitionSpeed * Time.deltaTime));
+            float dt = Time.deltaTime;
+            currentPitch = Mathf.Lerp(currentPitch, targetPitch, 1f - Mathf.Exp(-transitionSpeed * dt));
+            currentDistance = Mathf.Lerp(currentDistance, targetDistance, 1f - Mathf.Exp(-transitionSpeed * dt));
 
             Vector3 focusGoal = focusAnchor + Vector3.up * (target.Kind == StormKind.Supercell ? 7f : 4f);
             smoothedFocus = Vector3.SmoothDamp(
@@ -84,7 +86,7 @@ namespace SevereWeather.CameraSystem
                 ref focusVelocity,
                 focusSmoothTime,
                 Mathf.Infinity,
-                Time.deltaTime);
+                dt);
 
             Quaternion rotation = Quaternion.Euler(currentPitch, yaw, 0f);
             Vector3 desired = smoothedFocus - rotation * Vector3.forward * currentDistance;
@@ -96,7 +98,7 @@ namespace SevereWeather.CameraSystem
                 ref cameraVelocity,
                 cameraSmoothTime,
                 Mathf.Infinity,
-                Time.deltaTime);
+                dt);
             transform.rotation = Quaternion.LookRotation(smoothedFocus - transform.position, Vector3.up);
         }
 
@@ -109,7 +111,18 @@ namespace SevereWeather.CameraSystem
             float distance = planarDelta.magnitude;
             if (distance > leashRadius)
             {
-                focusAnchor += planarDelta.normalized * (distance - leashRadius);
+                Vector3 direction = planarDelta / distance;
+                Vector3 desiredAnchor = targetPosition - direction * leashRadius;
+                float catchup = 1f - Mathf.Exp(-anchorCatchupSpeed * Time.deltaTime);
+                focusAnchor = Vector3.Lerp(focusAnchor, desiredAnchor, catchup);
+
+                float maximumOffset = leashRadius * 2.1f;
+                Vector3 remaining = targetPosition - focusAnchor;
+                remaining.y = 0f;
+                if (remaining.magnitude > maximumOffset)
+                {
+                    focusAnchor = targetPosition - remaining.normalized * maximumOffset;
+                }
             }
 
             focusAnchor.y = targetPosition.y;

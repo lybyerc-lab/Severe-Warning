@@ -1,6 +1,6 @@
 # Severe Weather Current Status
 
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
 Unity editor: `6000.3.0f1`
@@ -19,69 +19,82 @@ Important project decisions and test evidence must be committed to the repositor
 
 ## Tested baseline
 
-- Initial production starter commit: `5188c78ba99bf8ff7935f583cad926a4107d0da5`
-- Android startup hotfix commit: `23e638f5dbfb0522f512209fa636a17147c6c7d1`
+- Initial production starter: `5188c78ba99bf8ff7935f583cad926a4107d0da5`
+- Android startup hotfix: `23e638f5dbfb0522f512209fa636a17147c6c7d1`
 - Build #3 mobile-input commit: `32ec421528e75632bae793ba0569c8770baa0d42`
-- Unity Cloud Build Automation is connected to `main`.
-- Build #1 compiled and installed but launched to a black screen.
-- Build #2 rendered the generated county graybox and allowed storm switching.
-- Build #3 confirmed that mobile touch input, joystick telemetry, and position updates were registering.
-- Build #3 failed the physical feel gate because the camera immediately followed the storm, so movement was not perceptible.
-- Build #3 failed the visual-quality gate because the runtime used flat unlit materials, the opening area was a weak interaction test zone, and storm actions lacked visible feedback.
+- Build #4 feel/render commit: `91ee1a257bbe8e771d73097c9c4a3c781c53c225`
+- Unity Build Automation is connected to GitHub `main` and builds with Unity `6000.3.0f1`.
+- Build #1 launched to a black screen.
+- Build #2 rendered the generated region and allowed storm switching.
+- Build #3 aligned mobile control hitboxes and confirmed joystick input registration.
+- Build #4 added lit materials, shadows, visible action feedback, props, a starter interaction pocket, and a wider county backdrop.
 
-## Active work: Build #4 feel and render recovery
+## Build #4 physical evidence
+
+Build #4 launched successfully on Android and displayed `B4 FEEL + RENDER LAB` with version `0.1.4`.
+
+The physical screenshot recorded:
+
+- `INPUT +1.00, 0.00`
+- reported `SPEED 28.0`
+- reported `DIST 123.7`
+- actual `POS -121.8, 111.9`
+- configured spawn `-122.0, 112.0`
+- `FPS 60`
+- render pipeline `Built-in`
+- graphics API `Vulkan`
+
+This proves touch input and commanded velocity were active, but the storm root stayed essentially at spawn. The speed and distance counters were measuring requested displacement rather than resolved world translation. Build #4 therefore fails the movement gate.
+
+Visual presentation improved but still fails the target-quality gate because the tornado reads as stacked primitive layers, the debug HUD clips at compact landscape height, controls lack sufficient contrast, and the environment remains procedural graybox content.
+
+## Active work: Build #4.1 motion and silhouette correction
 
 Approved scope:
 
-- soft-leash camera that allows visible on-screen storm travel
-- increased and differentiated Tornado and Supercell travel response
-- speed, distance, build identity, graphics API, render-pipeline, and action telemetry
-- guaranteed Standard and URP material templates during pre-export, using the stable lit built-in pipeline for Build #4 while the authored URP asset gate remains open
-- lit world materials, soft shadows, fog, ambient lighting, and 2x MSAA
-- transparent layered storm visuals, contact shadows, motion trails, and visible internal rotation
-- immediate action rings, swaths, arcs, lightning paths, target counts, and no-target feedback
-- collider-backed crops and a deliberate starter interaction pocket
-- larger backdrop terrain and distant hills to remove black world edges
-- mobility classes, approximate mass, pre-destruction prop release, and wind/physics conflict protection
-- collider-aware density validation
-- throttled passive-field and camera target queries
-- deterministic Android settings: version `0.1.4`, version code `4`, IL2CPP, ARM64, Vulkan with OpenGLES3 fallback
-- repository-memory updates in the same patch
+- make the storm root transform-authoritative and stop mixing `Rigidbody.MovePosition` with direct transform rotation
+- measure actual resolved position delta for speed and distance telemetry
+- display `MOTION OK` or `MOTION BLOCKED` from physical translation evidence
+- apply the same correction to Tornado and Supercell movement
+- widen and slow the camera leash so motion remains perceptible
+- replace stacked tornado cylinders with overlapping smooth condensation lobes and a distinct dark core
+- reduce oversized debris and contact-disk clutter
+- fix HUD clipping and improve button/joystick contrast
+- build only the material templates used by the active Built-in lab pipeline
+- use Vulkan only for this device gate to reduce duplicate shader work
+- bump application version to `0.1.5` and Android version code to `5`
+- update repository memory in the same commit
 
-Explicitly outside Build #4:
+Explicitly outside Build #4.1:
 
-- production environment asset packs
+- production environment art packs
 - final audio
 - missions, progression, economy, or menus
 - third storm
 - full building-fracture prefabs
-- camera orbit controls
 - full Unity `.meta` migration
-- asynchronous region generation and loading-screen architecture
+- asynchronous region generation
+- final authored URP pipeline asset and production post-processing
 
-## Build #4 physical acceptance gate
+## Build #4.1 physical acceptance gate
 
-On the physical Android device:
+1. Confirm `B4.1 MOTION + SILHOUETTE LAB` and version `0.1.5` are visible.
+2. Hold full right input for two seconds.
+3. Confirm X or Z position changes by at least 35 world units.
+4. Confirm `ACTUAL` speed approaches 28 for Tornado.
+5. Confirm `DIST` matches the real position change rather than increasing while position is frozen.
+6. Confirm the HUD says `MOTION OK`, never `MOTION BLOCKED`, during valid steering.
+7. Confirm the storm visibly crosses its camera leash before the camera follows.
+8. Repeat with Supercell and confirm slower, heavier translation.
+9. Confirm Tornado silhouette no longer reads as a stack of flat cylinders.
+10. Confirm HUD text fits without clipping and all controls remain readable.
+11. Confirm abilities and storm switching still function.
+12. Record frame pacing, heat, and any new defects in `Docs/DEVICE_TEST_LOG.md`.
 
-1. Confirm `B4 FEEL + RENDER LAB` and version `0.1.4` are visible.
-2. Confirm the opening view contains road markings, crops, a small building, a vehicle, a tree, and a conductive power pole.
-3. Confirm no black world edge is visible during normal navigation.
-4. Hold full joystick input for two seconds and confirm the Tornado visibly crosses the screen before the camera leash follows.
-5. Confirm Tornado speed approaches 28 world units per second and distance telemetry increases.
-6. Repeat with Supercell and confirm it is slower and heavier.
-7. Confirm PULL/HAIL, GUST/FRONT, and ZAP/GRID each show distinct immediate visual feedback.
-8. Confirm no-target lightning does not consume its resource and reports `NO CONDUCTIVE TARGET`.
-9. Confirm crops bend, darken, and can be released physically.
-10. Confirm a vehicle can rock or slide under a strong gust before total destruction.
-11. Confirm the tornado and supercell visibly animate while stationary.
-12. Confirm lit materials, shadows, fog, transparency, graphics API, and render-pipeline telemetry work on the device.
-13. Confirm frame rate remains near 60 and does not remain below 45 in the starter pocket.
-14. Run for five minutes and record heat, stutter, control clarity, and any visual defects.
-15. Append the exact result to `Docs/DEVICE_TEST_LOG.md` before approving the build.
+## Known open issues after Build #4.1
 
-## Known open issues after Build #4
-
+- The world remains procedural graybox geometry rather than production art.
+- The project still needs a committed authored URP asset strategy.
 - Runtime region generation remains synchronous.
-- World content remains procedural graybox geometry rather than production art assets.
-- Unity `.meta` files for persistent authored assets are not yet committed.
-- Final audio, VFX, destruction prefabs, profiling, and device-matrix coverage remain future gates.
+- Persistent authored Unity assets still require `.meta` migration.
+- Final audio, destruction assets, profiling, and broader device coverage remain open gates.

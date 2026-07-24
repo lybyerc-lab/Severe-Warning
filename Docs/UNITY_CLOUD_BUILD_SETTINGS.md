@@ -77,3 +77,17 @@ Run Build #4 as a clean build after changing the builder OS or graphics/player s
 - Never commit or paste raw Unity Cloud logs containing `-accessToken` values.
 - Store only sanitized summaries in `Docs/DEVICE_TEST_LOG.md`.
 - Keep the debug keystore for lab builds only. A controlled release keystore is a separate publishing gate.
+
+## Build #4.1 temporary device-lab override
+
+For the Build #4.1 physical movement gate, the pre-export method enforces:
+
+- application version `0.1.5`
+- Android version code `5`
+- IL2CPP
+- ARM64
+- Vulkan only
+- APK output
+- Built-in Standard and unlit generated material templates only
+
+The Vulkan-only and Built-in-template choices are temporary test controls. They prevent duplicate API compilation and unused URP Lit variant preparation while the authored URP pipeline asset remains an open production gate.

@@ -58,3 +58,22 @@ The current candidate adds:
 - production environment assets, final materials, VFX, audio, destruction prefabs, and broader profiling
 
 A successful cloud build proves compilation and packaging. Physical Android evidence remains authoritative for controls, readability, heat, battery, sound, and performance.
+
+## Build #4 physical result and Build #4.1 validation intent
+
+Build #4 compiled, packaged, installed, and rendered at approximately 60 FPS on the test device. Physical telemetry exposed a movement-authority defect: input, commanded speed, and requested distance advanced while the storm root position remained at spawn.
+
+Build #4.1 corrects and validates:
+
+- transform-authoritative Tornado and Supercell translation
+- actual resolved velocity and distance measurement
+- `MOTION OK` and `MOTION BLOCKED` device telemetry
+- no direct `transform.rotation` write after `Rigidbody.MovePosition`
+- wider, slower camera leash
+- smooth overlapping tornado condensation lobes instead of stacked cylinders
+- compact-landscape HUD fit and stronger control contrast
+- application version `0.1.5`, Android version code `5`
+- Vulkan-only device-lab output
+- no generated URP Lit material asset while the Built-in lab pipeline is active
+
+The remaining authoritative gate is another physical Android test. Static validation cannot prove resolved device translation or visual feel.

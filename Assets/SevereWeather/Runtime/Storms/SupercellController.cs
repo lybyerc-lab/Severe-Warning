@@ -42,17 +42,7 @@ namespace SevereWeather.Storms
                 0.48f,
                 moveSpeed,
                 dt);
-            Vector3 displacement = planarVelocity * dt;
-            body.MovePosition(body.position + displacement);
-            RecordDisplacement(displacement);
-
-            if (planarVelocity.sqrMagnitude > 0.1f)
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    Quaternion.LookRotation(planarVelocity.normalized, Vector3.up),
-                    1.25f * dt);
-            }
+            ApplyPlanarMotion(planarVelocity * dt, 1.25f, dt);
         }
 
         protected override void RegenerateResources(float dt)

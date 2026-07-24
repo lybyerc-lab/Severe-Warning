@@ -1410,3 +1410,19 @@ Build #4 remains a procedural laboratory slice. It does not claim final producti
 ### Current authority
 
 Read `CURRENT_STATUS.md`, `Docs/DEVICE_TEST_LOG.md`, `Docs/DECISION_LOG.md`, and `Docs/UNITY_CLOUD_BUILD_SETTINGS.md` before planning or testing the next build. Physical Android evidence remains authoritative.
+
+## Build #4 physical correction - 2026-07-24
+
+Build #4 successfully improved lighting, action feedback, backdrop coverage, and starter-pocket interaction density, but it did not move the storm root on the physical Android device. The device HUD showed full input, commanded speed, and increasing requested distance while the actual position remained at the configured spawn. Camera feel was therefore not the primary blocker.
+
+The approved Build #4.1 response is narrow:
+
+- transform-authoritative Tornado and Supercell movement
+- actual-delta speed and distance telemetry
+- motion-blocked diagnostics
+- slower, wider camera leash
+- smoother tornado silhouette
+- compact-landscape HUD fit and contrast
+- reduced shader-build scope
+
+This does not reopen the No-Drift rules or substitute code-generated graybox geometry for the future production asset laboratory.
