@@ -275,3 +275,19 @@ Record after installation:
 - Five-minute heat result:
 - New defects:
 - Decision:
+
+## 2026-07-24 - Build #5 physical result - impact systems pass, readability fail
+
+Device screenshots confirmed:
+
+- `B5 IMPACT + DESTRUCTION LAB` and version `0.1.7` launched successfully.
+- Tornado and Supercell movement, camera containment, switching, target detection, and staged damage remained functional.
+- The blue Supercell cylinder was removed and rain/hail streaks rendered.
+- Hail reported six targets in the captured pass and material-stage telemetry reported Crop and Vegetation Critical states.
+- Crops rotated into repeated dark vertical slabs instead of flattening near the ground.
+- The Hail Swath rectangle read as a debug selection box rather than weather.
+- Generic radial line bursts read as laboratory graphics rather than material response.
+- Supercell cloud lobes still obscured the affected ground during attacks.
+- Ground mist and Tornado contact geometry remained too solid and primitive.
+
+Build #5 passes the systems gate and fails the impact-readability gate. Build #5.1 must preserve working mechanics while correcting presentation and bounding transient object counts.

@@ -1436,3 +1436,7 @@ Build #4.2 preserves storm speeds, adds viewport-aware camera containment with h
 ## Build #5 impact and destruction update
 
 Build #4.2 physical testing passes the movement and camera-foundation gate. Build #5 preserves both storm movement profiles and viewport containment while replacing the Supercell blue precipitation cylinder, adding animated rain and hail streaks, adding five shared damage stages, differentiating material reactions, preventing structural whole-building launch behavior, and adding a mixed-material impact lane near spawn. Device evidence remains authoritative.
+
+## Build #5.1 impact-readability lock
+
+Physical Build #5 evidence is authoritative: mechanics work, but crop collapse, hail presentation, generic hit bursts, storm occlusion, and temporary-object growth are not acceptable. Build #5.1 uses directional ground-hugging crop deformation, material-shaped temporary fragments, a weather-shaped hail field, softer precipitation and Tornado ground contact, Supercell attack-time cloud fading, visual-only roof/window/crossarm/crown reactions, and explicit FX/fragment caps. Do not add missions, progression, a third storm, persistent detached physics pieces, final art packs, or full fracture architecture in this patch.

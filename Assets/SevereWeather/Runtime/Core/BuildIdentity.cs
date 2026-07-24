@@ -6,8 +6,8 @@ namespace SevereWeather.Core
     public static class BuildIdentity
     {
         private static bool loaded;
-        private static string version = "0.1.7";
-        private static string build = "5";
+        private static string version = "0.1.8";
+        private static string build = "5.1";
         private static string commit = "local";
         private static string utc = "unknown";
 

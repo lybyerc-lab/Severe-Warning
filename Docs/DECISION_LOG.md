@@ -143,3 +143,7 @@ Tune sizes, dead zone, acceleration, and layout only from Build #3 physical-devi
 **Rejected alternative:** Starting missions, progression, a third storm, or final art before the destruction loop proves readable and satisfying.
 
 **Revisit condition:** Broaden into authored fracture assets and progression only after Build #5 passes the physical impact-readability and performance gates.
+
+## 2026-07-24 - Decision B5.1-01: Readability before feature expansion
+
+Build #5 physical testing proved the damage pipeline, stage transitions, target detection, and precipitation replacement work, but exposed unreadable crop poses, debug-shaped hail feedback, storm occlusion, and effect-clutter risk. Build #5.1 is therefore limited to directional deformation, weather-shaped feedback, bounded transient effects, lighter ground contact, Supercell gameplay visibility, and visual-only component reactions. Persistent physics detachment, missions, progression, a third storm, full fracture prefabs, and final art remain outside scope.

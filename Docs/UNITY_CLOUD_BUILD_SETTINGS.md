@@ -112,3 +112,12 @@ The Vulkan-only and Built-in-template choices are temporary test controls. They 
 - Expected source branch after review and merge: `main`
 - Reuse Library cache; do not request a clean build unless Unity reports stale generated content.
 - Preserve Unity `6000.3.0f1`, Android SDK 35, IL2CPP, ARM64, Vulkan, APK output, debug signing, and the existing pre-export method.
+
+## Build #5.1 device-lab identity
+
+- Application version: `0.1.8`
+- Android version code: `8`
+- Expected HUD: `B5.1 IMPACT READABILITY LAB`
+- Expected source base before patch: `d0b7f15927c082b960c034ccc11ae7abaaaf63c3`
+- Continue using the exact Unity `6000.3.0f1`, Android SDK 35, Windows 11 24H2 Micro builder, APK output, debug signing, Vulkan-only player settings, and the existing pre-export method.
+- Reuse the Library cache. A clean build is not required unless Unity reports stale generated assets.

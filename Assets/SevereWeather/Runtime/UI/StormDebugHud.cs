@@ -2,6 +2,7 @@ using SevereWeather.CameraSystem;
 using SevereWeather.Core;
 using SevereWeather.Damage;
 using SevereWeather.Input;
+using SevereWeather.Presentation;
 using SevereWeather.Storms;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,7 +11,7 @@ namespace SevereWeather.UI
 {
     public sealed class StormDebugHud : MonoBehaviour
     {
-        private const string LabLabel = "B5 IMPACT + DESTRUCTION LAB";
+        private const string LabLabel = "B5.1 IMPACT READABILITY LAB";
 
         private StormInput input;
         private StormControllerBase storm;
@@ -64,8 +65,8 @@ namespace SevereWeather.UI
         private void DrawStatus(MobileControlLayout layout)
         {
             float topInset = Screen.height - layout.SafeArea.yMax;
-            float panelWidth = Mathf.Clamp(layout.SafeArea.width * 0.3f, 330f, 410f);
-            float panelHeight = Mathf.Clamp(layout.SafeArea.height * 0.35f, 242f, 262f);
+            float panelWidth = Mathf.Clamp(layout.SafeArea.width * 0.3f, 330f, 420f);
+            float panelHeight = Mathf.Clamp(layout.SafeArea.height * 0.35f, 242f, 264f);
             Rect panel = new Rect(layout.SafeArea.xMin + 12f, topInset + 12f, panelWidth, panelHeight);
             Color previous = GUI.color;
             GUI.color = new Color(0.025f, 0.055f, 0.075f, 0.9f);
@@ -85,7 +86,10 @@ namespace SevereWeather.UI
             string pipeline = GraphicsSettings.currentRenderPipeline != null ? GraphicsSettings.currentRenderPipeline.GetType().Name : GraphicsSettings.defaultRenderPipeline != null ? GraphicsSettings.defaultRenderPipeline.GetType().Name : "Built-in";
             GUI.Label(new Rect(panel.x + 14f, panel.y + 111f, panel.width - 28f, 19f), $"{cameraState}   RP {pipeline}   {SystemInfo.graphicsDeviceType}", telemetryStyle);
             GUI.Label(new Rect(panel.x + 14f, panel.y + 131f, panel.width - 28f, 19f), $"{storm.ActionStatus}   TARGETS {storm.LastActionTargetCount}", telemetryStyle);
-            GUI.Label(new Rect(panel.x + 14f, panel.y + 151f, panel.width - 28f, 19f), DamageableStructure.RecentImpactLabel, telemetryStyle);
+            GUI.Label(
+                new Rect(panel.x + 14f, panel.y + 151f, panel.width - 28f, 19f),
+                $"{DamageableStructure.RecentImpactLabel}   FX {StormActionVfx.ActiveFxCount}/{StormActionVfx.FxCapacity}   FRAG {StormActionVfx.ActiveFragmentCount}/{StormActionVfx.FragmentCapacity}",
+                telemetryStyle);
             GUI.Label(new Rect(panel.x + 14f, panel.y + panel.height - 26f, panel.width - 28f, 18f), $"{LabLabel}  {BuildIdentity.DisplayLabel}", telemetryStyle);
         }
 

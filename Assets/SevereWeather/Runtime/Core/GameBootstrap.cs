@@ -52,18 +52,18 @@ namespace SevereWeather.Core
 
             try
             {
-                Debug.Log("[Severe Weather] Build #5 startup: camera");
+                Debug.Log("[Severe Weather] Build #5.1 startup: camera");
                 CreateCamera();
-                Debug.Log("[Severe Weather] Build #5 startup: lighting");
+                Debug.Log("[Severe Weather] Build #5.1 startup: lighting");
                 CreateLighting();
-                Debug.Log("[Severe Weather] Build #5 startup: input and HUD");
+                Debug.Log("[Severe Weather] Build #5.1 startup: input and HUD");
                 CreateInput();
                 CreateHud();
-                Debug.Log("[Severe Weather] Build #5 startup: region");
+                Debug.Log("[Severe Weather] Build #5.1 startup: region");
                 CreateRegion();
-                Debug.Log("[Severe Weather] Build #5 startup: storm");
+                Debug.Log("[Severe Weather] Build #5.1 startup: storm");
                 CreateStorm(activeKind);
-                Debug.Log($"[Severe Weather] Build #5 startup complete: {BuildIdentity.DisplayLabel}");
+                Debug.Log($"[Severe Weather] Build #5.1 startup complete: {BuildIdentity.DisplayLabel}");
             }
             catch (System.Exception exception)
             {
@@ -263,7 +263,7 @@ namespace SevereWeather.Core
                 true);
             rainMaterial = PrimitiveFactory.CreateMaterial(
                 "Rain Mist",
-                new Color(0.12f, 0.33f, 0.52f, 0.2f),
+                new Color(0.12f, 0.33f, 0.52f, 0.12f),
                 0f,
                 0.08f,
                 true);
@@ -283,7 +283,7 @@ namespace SevereWeather.Core
                 true);
             dustMaterial = PrimitiveFactory.CreateMaterial(
                 "Ground Dust",
-                new Color(0.48f, 0.34f, 0.2f, 0.18f),
+                new Color(0.48f, 0.34f, 0.2f, 0.11f),
                 0f,
                 0.05f,
                 true);
@@ -371,14 +371,7 @@ namespace SevereWeather.Core
                 debris.transform.localRotation = Quaternion.Euler(i * 19f, i * 31f, i * 11f);
             }
 
-            GameObject dustRing = PrimitiveFactory.CreateCylinder(
-                parent,
-                "Dust Contact Haze",
-                parent.position + Vector3.up * 0.18f,
-                new Vector3(8.8f, 0.025f, 8.8f),
-                dustMaterial,
-                false);
-            dustRing.transform.localPosition = Vector3.up * 0.18f;
+            CreateTornadoGroundContact(parent);
 
             GameObject groundShadow = PrimitiveFactory.CreateCylinder(
                 parent,
@@ -389,9 +382,56 @@ namespace SevereWeather.Core
                 false);
             groundShadow.transform.localPosition = Vector3.up * 0.06f;
 
-            CreateTrail(parent.gameObject, dustMaterial, 2.4f, 4.8f, 0.1f);
+            CreateTrail(parent.gameObject, dustMaterial, 1.35f, 2.8f, 0.05f);
             StormVisualAnimator animator = parent.gameObject.AddComponent<StormVisualAnimator>();
             animator.Configure(150f, layers, spinRoot);
+        }
+
+        private void CreateTornadoGroundContact(Transform parent)
+        {
+            GameObject contactObject = new GameObject("Tornado Ground Contact");
+            contactObject.transform.SetParent(parent, false);
+            contactObject.transform.localPosition = Vector3.up * 0.2f;
+
+            const int arcCount = 6;
+            LineRenderer[] arcs = new LineRenderer[arcCount];
+            for (int i = 0; i < arcCount; i++)
+            {
+                GameObject arcObject = new GameObject($"Dust Arc {i}");
+                arcObject.transform.SetParent(contactObject.transform, false);
+                arcObject.transform.localRotation = Quaternion.Euler(0f, i * 61f, 0f);
+
+                LineRenderer line = arcObject.AddComponent<LineRenderer>();
+                line.useWorldSpace = false;
+                line.loop = false;
+                line.positionCount = 9;
+                float radius = 3.2f + i * 0.72f;
+                float sweep = 54f + (i % 3) * 16f;
+                for (int point = 0; point < line.positionCount; point++)
+                {
+                    float t = point / (float)(line.positionCount - 1);
+                    float angle = Mathf.Lerp(-sweep * 0.5f, sweep * 0.5f, t) * Mathf.Deg2Rad;
+                    line.SetPosition(
+                        point,
+                        new Vector3(
+                            Mathf.Cos(angle) * radius,
+                            0.02f + Mathf.Sin(t * Mathf.PI) * 0.08f,
+                            Mathf.Sin(angle) * radius));
+                }
+                line.widthMultiplier = 0.16f + i * 0.025f;
+                line.numCapVertices = 2;
+                line.numCornerVertices = 2;
+                line.alignment = LineAlignment.View;
+                line.sharedMaterial = dustMaterial;
+                line.startColor = new Color(0.62f, 0.46f, 0.28f, 0.08f);
+                line.endColor = new Color(0.62f, 0.46f, 0.28f, 0.28f);
+                line.shadowCastingMode = ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                arcs[i] = line;
+            }
+
+            TornadoGroundContactAnimator animator = contactObject.AddComponent<TornadoGroundContactAnimator>();
+            animator.Configure(arcs, 54f);
         }
 
         private void BuildSupercellVisual(Transform parent)
@@ -465,9 +505,9 @@ namespace SevereWeather.Core
                 false);
             groundShadow.transform.localPosition = Vector3.up * 0.08f;
 
-            CreateTrail(parent.gameObject, rainMaterial, 3f, 10f, 1.1f);
+            CreateTrail(parent.gameObject, rainMaterial, 1.8f, 5.5f, 0.35f);
             StormVisualAnimator animator = parent.gameObject.AddComponent<StormVisualAnimator>();
-            animator.Configure(24f, layers, spinRoot);
+            animator.Configure(24f, layers, spinRoot, shelfCount);
         }
 
         private void CreatePrecipitationCurtain(Transform parent)
@@ -476,54 +516,73 @@ namespace SevereWeather.Core
             field.transform.SetParent(parent, false);
             field.transform.localPosition = new Vector3(-7.5f, 0.2f, -9.2f);
 
-            const int streakCount = 24;
+            const int streakCount = 42;
             Transform[] streaks = new Transform[streakCount];
             for (int i = 0; i < streakCount; i++)
             {
-                bool hail = i % 5 == 0;
+                bool hail = i % 8 == 0;
                 GameObject streakObject = new GameObject(hail ? $"Hail Streak {i}" : $"Rain Streak {i}");
                 streakObject.transform.SetParent(field.transform, false);
                 streakObject.transform.localPosition = new Vector3(
-                    Mathf.Sin(i * 2.13f) * 8f,
-                    3f + (i % 7) * 2.35f,
-                    Mathf.Cos(i * 1.71f) * 7f);
+                    Mathf.Sin(i * 2.13f) * (7.5f + (i % 3) * 0.8f),
+                    2.5f + (i % 9) * 1.85f,
+                    Mathf.Cos(i * 1.71f) * (6.5f + (i % 4) * 0.65f));
 
                 LineRenderer line = streakObject.AddComponent<LineRenderer>();
                 line.useWorldSpace = false;
                 line.positionCount = 2;
                 line.SetPosition(0, Vector3.zero);
-                line.SetPosition(1, Vector3.down * (hail ? 1.15f : 2.6f));
-                line.widthMultiplier = hail ? 0.18f : 0.075f;
+                line.SetPosition(1, new Vector3(-0.05f, -(hail ? 1.05f : 2.35f), -0.1f));
+                line.widthMultiplier = hail ? 0.12f : 0.048f;
                 line.numCapVertices = 2;
                 line.alignment = LineAlignment.View;
                 line.sharedMaterial = hail ? hailMaterial : precipitationMaterial;
-                line.startColor = Color.white;
+                line.startColor = hail
+                    ? new Color(0.86f, 0.98f, 1f, 0.82f)
+                    : new Color(0.34f, 0.7f, 0.96f, 0.46f);
                 line.endColor = hail
-                    ? new Color(0.78f, 0.94f, 1f, 0.15f)
-                    : new Color(0.2f, 0.55f, 0.85f, 0.08f);
+                    ? new Color(0.78f, 0.94f, 1f, 0.08f)
+                    : new Color(0.2f, 0.55f, 0.85f, 0.025f);
                 line.shadowCastingMode = ShadowCastingMode.Off;
                 line.receiveShadows = false;
                 streaks[i] = streakObject.transform;
             }
 
-            for (int i = 0; i < 5; i++)
+            const int mistCount = 4;
+            LineRenderer[] mistLines = new LineRenderer[mistCount];
+            for (int i = 0; i < mistCount; i++)
             {
-                GameObject mist = PrimitiveFactory.CreateSphere(
-                    field.transform,
-                    $"Precipitation Mist {i}",
-                    field.transform.position,
-                    new Vector3(5.5f + (i % 2) * 1.8f, 0.45f, 4.2f + (i % 3) * 0.8f),
-                    rainMaterial,
-                    false);
-                float angle = i * Mathf.PI * 2f / 5f;
-                mist.transform.localPosition = new Vector3(
-                    Mathf.Cos(angle) * 4.8f,
-                    0.15f,
-                    Mathf.Sin(angle) * 3.8f);
+                GameObject mistObject = new GameObject($"Ground Mist Arc {i}");
+                mistObject.transform.SetParent(field.transform, false);
+                mistObject.transform.localPosition = new Vector3((i - 1.5f) * 2.2f, 0.12f, (i % 2 == 0 ? -1f : 1f) * 1.7f);
+                mistObject.transform.localRotation = Quaternion.Euler(0f, i * 37f, 0f);
+
+                LineRenderer line = mistObject.AddComponent<LineRenderer>();
+                line.useWorldSpace = false;
+                line.loop = true;
+                line.positionCount = 18;
+                float radiusX = 4.2f + i * 0.85f;
+                float radiusZ = 2.4f + (i % 2) * 0.75f;
+                for (int point = 0; point < line.positionCount; point++)
+                {
+                    float angle = point * Mathf.PI * 2f / line.positionCount;
+                    float wobble = 1f + Mathf.Sin(angle * 3f + i) * 0.12f;
+                    line.SetPosition(point, new Vector3(Mathf.Cos(angle) * radiusX * wobble, 0f, Mathf.Sin(angle) * radiusZ));
+                }
+                line.widthMultiplier = 0.22f + i * 0.035f;
+                line.numCapVertices = 2;
+                line.numCornerVertices = 2;
+                line.alignment = LineAlignment.View;
+                line.sharedMaterial = rainMaterial;
+                line.startColor = new Color(0.22f, 0.48f, 0.68f, 0.08f);
+                line.endColor = new Color(0.22f, 0.48f, 0.68f, 0.08f);
+                line.shadowCastingMode = ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                mistLines[i] = line;
             }
 
             PrecipitationFieldAnimator animator = field.AddComponent<PrecipitationFieldAnimator>();
-            animator.Configure(streaks, 18.4f, 17f, 0.45f);
+            animator.Configure(streaks, mistLines, 18.4f, 19f, 0.38f);
         }
 
         private static void CreateTrail(

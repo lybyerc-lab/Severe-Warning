@@ -39,6 +39,7 @@ namespace SevereWeather.Damage
         private bool destroyed;
         private DamageStage stage;
         private Vector3 intactScale;
+        private Vector3 intactLocalPosition;
         private Quaternion intactRotation;
         private Color[] intactColors;
         private int[] colorPropertyIds;
@@ -46,6 +47,9 @@ namespace SevereWeather.Damage
         private Rigidbody body;
         private bool bodyConfigured;
         private float nextImpactFeedbackTime;
+        private Vector3 lastImpactDirectionWorld = Vector3.forward;
+        private bool damagedComponentsApplied;
+        private bool criticalComponentsApplied;
 
         public bool IsDestroyed => destroyed;
         public float HealthNormalized => maxHealth <= 0f ? 0f : Mathf.Clamp01(health / maxHealth);
@@ -72,6 +76,8 @@ namespace SevereWeather.Damage
             destroyed = false;
             stage = DamageStage.Intact;
             bodyConfigured = false;
+            damagedComponentsApplied = false;
+            criticalComponentsApplied = false;
             EnsureBody(false);
             UpdateVisualStage();
         }
@@ -81,6 +87,7 @@ namespace SevereWeather.Damage
             health = maxHealth;
             stage = DamageStage.Intact;
             intactScale = transform.localScale;
+            intactLocalPosition = transform.localPosition;
             intactRotation = transform.localRotation;
             CaptureVisuals();
             EnsureBody(false);
@@ -132,6 +139,7 @@ namespace SevereWeather.Damage
                 return;
             }
 
+            CaptureImpactDirection(damageEvent);
             EnsureBody(false);
             DamageStage previousStage = stage;
             float adjusted = damageEvent.Amount * GetMaterialMultiplier(materialClass, damageEvent.Type);
@@ -142,16 +150,39 @@ namespace SevereWeather.Damage
 
             if (body != null && !body.isKinematic && damageEvent.Impulse.sqrMagnitude > 0.01f)
             {
-                body.AddForceAtPosition(damageEvent.Impulse, damageEvent.WorldPoint, ForceMode.Impulse);
+                Vector3 appliedImpulse = damageEvent.Impulse;
+                if (materialClass == MaterialClass.Vegetation)
+                {
+                    appliedImpulse = Vector3.ClampMagnitude(appliedImpulse, 8f);
+                    appliedImpulse.y = Mathf.Min(appliedImpulse.y, 1.5f);
+                }
+                body.AddForceAtPosition(appliedImpulse, damageEvent.WorldPoint, ForceMode.Impulse);
             }
 
             UpdateVisualStage();
+            ApplyComponentStages(previousStage);
             bool stageChanged = stage != previousStage;
             ShowImpactFeedback(damageEvent, adjusted, stageChanged);
 
             if (health <= 0f)
             {
                 Collapse(damageEvent);
+            }
+        }
+
+        private void CaptureImpactDirection(in DamageEvent damageEvent)
+        {
+            Vector3 direction = damageEvent.Impulse;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.001f && damageEvent.Source != null)
+            {
+                direction = transform.position - damageEvent.Source.transform.position;
+                direction.y = 0f;
+            }
+
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                lastImpactDirectionWorld = direction.normalized;
             }
         }
 
@@ -179,15 +210,15 @@ namespace SevereWeather.Damage
                 return;
             }
 
-            nextImpactFeedbackTime = Time.unscaledTime + (stageChanged ? 0.08f : 0.24f);
-            Color color = GetImpactColor(materialClass, damageEvent.Type);
-            float scale = Mathf.Clamp(Mathf.Sqrt(Mathf.Max(0.1f, adjustedDamage)) * 0.34f, 0.55f, 3.2f);
-            bool critical = stageChanged || stage == DamageStage.Critical || stage == DamageStage.Destroyed;
+            nextImpactFeedbackTime = Time.unscaledTime + (stageChanged ? 0.1f : 0.3f);
+            float scale = Mathf.Clamp(Mathf.Sqrt(Mathf.Max(0.1f, adjustedDamage)) * 0.28f, 0.45f, 2.6f);
+            bool critical = stageChanged && ((int)stage >= (int)DamageStage.Critical);
 
-            StormActionVfx.ImpactBurst(
+            StormActionVfx.MaterialImpact(
                 damageEvent.WorldPoint,
                 damageEvent.Impulse,
-                color,
+                materialClass,
+                damageEvent.Type,
                 scale,
                 critical);
 
@@ -198,6 +229,8 @@ namespace SevereWeather.Damage
         private void TryReleaseBody(float adjustedDamage, Vector3 impulse)
         {
             if (destroyed || mobilityClass == MobilityClass.Structural) return;
+            if (materialClass == MaterialClass.Crop) return;
+            if (materialClass == MaterialClass.Vegetation && (int)stage < (int)DamageStage.Critical) return;
 
             float damageFraction = 1f - HealthNormalized;
             float impulseMagnitude = impulse.magnitude;
@@ -220,7 +253,12 @@ namespace SevereWeather.Damage
 
             if (!release) return;
             EnsureBody(true);
-            if (body != null) body.isKinematic = false;
+            if (body != null)
+            {
+                if (materialClass == MaterialClass.Vegetation) body.mass = Mathf.Max(body.mass, 12f);
+                if (materialClass == MaterialClass.Vehicle) body.mass = Mathf.Max(body.mass, 45f);
+                body.isKinematic = false;
+            }
         }
 
         private void EnsureBody(bool createIfMissing)
@@ -280,8 +318,10 @@ namespace SevereWeather.Damage
                     density = 0.55f;
                     break;
                 case MaterialClass.Crop:
+                    density = 0.04f;
+                    break;
                 case MaterialClass.Vegetation:
-                    density = 0.08f;
+                    density = 0.14f;
                     break;
                 default:
                     density = 0.42f;
@@ -292,7 +332,7 @@ namespace SevereWeather.Damage
             switch (mobilityClass)
             {
                 case MobilityClass.Light:
-                    mobilityScale = 0.18f;
+                    mobilityScale = materialClass == MaterialClass.Vegetation ? 0.42f : 0.18f;
                     break;
                 case MobilityClass.Medium:
                     mobilityScale = 0.55f;
@@ -313,8 +353,8 @@ namespace SevereWeather.Damage
             if (visualRenderers == null || intactColors == null) return;
 
             float damage = 1f - HealthNormalized;
-            float darken = Mathf.Lerp(1f, 0.42f, damage);
-            float desaturate = Mathf.Lerp(1f, 0.72f, damage);
+            float darken = Mathf.Lerp(1f, 0.66f, damage);
+            float desaturate = Mathf.Lerp(1f, 0.88f, damage);
 
             for (int i = 0; i < visualRenderers.Length; i++)
             {
@@ -336,43 +376,155 @@ namespace SevereWeather.Damage
 
             Vector3 scale = intactScale;
             Vector3 euler = Vector3.zero;
+            Vector3 localDirection = GetLocalImpactDirection();
             switch (materialClass)
             {
                 case MaterialClass.Crop:
-                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.18f, damage);
-                    scale.z = intactScale.z * Mathf.Lerp(1f, 1.12f, damage);
-                    euler.z = damage * 18f;
+                    scale.x = intactScale.x * Mathf.Lerp(1f, 1.08f, damage);
+                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.14f, damage);
+                    scale.z = intactScale.z * Mathf.Lerp(1f, 1.24f, damage);
+                    euler.y = DirectionToYaw(localDirection) + 90f;
+                    transform.localPosition = intactLocalPosition + Vector3.down * ((intactScale.y - scale.y) * 0.48f);
                     break;
                 case MaterialClass.Vegetation:
-                    euler.z = damage * 30f;
-                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.9f, damage);
+                    euler.x = localDirection.z * damage * 38f;
+                    euler.z = -localDirection.x * damage * 38f;
+                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.94f, damage);
                     break;
                 case MaterialClass.Glass:
-                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.62f, damage);
-                    euler.x = damage * 4f;
-                    euler.z = damage * 6f;
+                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.68f, damage);
+                    euler.x = localDirection.z * damage * 4f;
+                    euler.z = -localDirection.x * damage * 6f;
                     break;
                 case MaterialClass.Metal:
                 case MaterialClass.Infrastructure:
-                    euler.z = Mathf.Sin(damage * 18f) * damage * 8f;
+                    euler.x = localDirection.z * damage * 7f;
+                    euler.z = -localDirection.x * damage * 7f;
                     scale.x = intactScale.x * Mathf.Lerp(1f, 0.96f, damage);
                     break;
                 case MaterialClass.Vehicle:
-                    euler.z = Mathf.Sin(damage * 13f) * damage * 5f;
-                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.92f, damage);
+                    euler.x = localDirection.z * damage * 4f;
+                    euler.z = -localDirection.x * damage * 5f;
+                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.94f, damage);
                     break;
                 case MaterialClass.Masonry:
-                    euler.z = damage * 2.5f;
-                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.92f, damage);
+                    euler.x = localDirection.z * damage * 2f;
+                    euler.z = -localDirection.x * damage * 2.5f;
+                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.94f, damage);
                     break;
                 default:
-                    euler.z = Mathf.Sin(damage * 11f) * damage * 7f;
-                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.82f, damage);
+                    euler.x = localDirection.z * damage * 6f;
+                    euler.z = -localDirection.x * damage * 7f;
+                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.84f, damage);
                     break;
             }
 
             transform.localRotation = intactRotation * Quaternion.Euler(euler);
             transform.localScale = scale;
+        }
+
+        private void ApplyComponentStages(DamageStage previousStage)
+        {
+            if (!damagedComponentsApplied &&
+                (int)previousStage < (int)DamageStage.Damaged &&
+                (int)stage >= (int)DamageStage.Damaged)
+            {
+                damagedComponentsApplied = true;
+                ApplyDamagedComponents();
+            }
+
+            if (!criticalComponentsApplied &&
+                (int)previousStage < (int)DamageStage.Critical &&
+                (int)stage >= (int)DamageStage.Critical)
+            {
+                criticalComponentsApplied = true;
+                ApplyCriticalComponents();
+            }
+        }
+
+        private void ApplyDamagedComponents()
+        {
+            Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+            bool hidOneWindow = false;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null) continue;
+                string lower = renderer.gameObject.name.ToLowerInvariant();
+                if (!hidOneWindow && lower.Contains("window"))
+                {
+                    renderer.enabled = false;
+                    hidOneWindow = true;
+                }
+            }
+
+            Transform door = FindChildContaining("door");
+            if (door != null)
+            {
+                door.localRotation *= Quaternion.Euler(0f, 12f, 0f);
+            }
+        }
+
+        private void ApplyCriticalComponents()
+        {
+            Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null) continue;
+                string lower = renderer.gameObject.name.ToLowerInvariant();
+                if (lower.Contains("window")) renderer.enabled = false;
+            }
+
+            Vector3 localDirection = GetLocalImpactDirection();
+            Transform roof = FindChildContaining("roof");
+            if (roof != null)
+            {
+                roof.localPosition += localDirection * 0.65f + Vector3.up * 0.22f;
+                roof.localRotation *= Quaternion.Euler(localDirection.z * 8f, 5f, -localDirection.x * 12f);
+            }
+
+            Transform crossarm = FindChildContaining("crossarm");
+            if (crossarm != null)
+            {
+                crossarm.localRotation *= Quaternion.Euler(0f, 0f, -localDirection.x * 24f + 12f);
+                crossarm.localPosition += localDirection * 0.35f;
+            }
+
+            Transform crown = FindChildContaining("crown");
+            if (crown != null)
+            {
+                crown.localPosition += localDirection * 0.75f + Vector3.down * 0.35f;
+                crown.localScale *= 0.82f;
+            }
+        }
+
+        private Transform FindChildContaining(string token)
+        {
+            Transform[] children = GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < children.Length; i++)
+            {
+                Transform child = children[i];
+                if (child == transform) continue;
+                if (child.gameObject.name.ToLowerInvariant().Contains(token)) return child;
+            }
+            return null;
+        }
+
+        private Vector3 GetLocalImpactDirection()
+        {
+            Vector3 direction = lastImpactDirectionWorld;
+            if (transform.parent != null)
+            {
+                direction = transform.parent.InverseTransformDirection(direction);
+            }
+            direction.y = 0f;
+            return direction.sqrMagnitude > 0.001f ? direction.normalized : Vector3.forward;
+        }
+
+        private static float DirectionToYaw(Vector3 direction)
+        {
+            return Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
         }
 
         private void Collapse(in DamageEvent damageEvent)
@@ -383,8 +535,11 @@ namespace SevereWeather.Damage
             if (materialClass == MaterialClass.Crop)
             {
                 if (body != null) body.isKinematic = true;
-                transform.localScale = new Vector3(intactScale.x, intactScale.y * 0.07f, intactScale.z * 1.18f);
-                transform.localRotation = intactRotation * Quaternion.Euler(0f, 0f, 78f);
+                Vector3 localDirection = GetLocalImpactDirection();
+                Vector3 scale = new Vector3(intactScale.x * 1.12f, intactScale.y * 0.055f, intactScale.z * 1.32f);
+                transform.localScale = scale;
+                transform.localPosition = intactLocalPosition + Vector3.down * ((intactScale.y - scale.y) * 0.49f);
+                transform.localRotation = intactRotation * Quaternion.Euler(0f, DirectionToYaw(localDirection) + 90f, 0f);
                 return;
             }
 
@@ -399,63 +554,45 @@ namespace SevereWeather.Damage
             if (body != null)
             {
                 body.isKinematic = false;
-                body.AddForce(damageEvent.Impulse + Vector3.up * 2.5f, ForceMode.Impulse);
-                body.AddTorque(UnityEngine.Random.insideUnitSphere * 2.5f, ForceMode.Impulse);
+                Vector3 impulse = damageEvent.Impulse;
+                if (materialClass == MaterialClass.Vegetation)
+                {
+                    impulse = Vector3.ClampMagnitude(impulse, 7f);
+                    impulse.y = Mathf.Min(impulse.y, 1f);
+                }
+                body.AddForce(impulse + Vector3.up * 1.25f, ForceMode.Impulse);
+                body.AddTorque(UnityEngine.Random.insideUnitSphere * 1.8f, ForceMode.Impulse);
             }
         }
 
         private void ApplyStructuralCollapsePose()
         {
             Vector3 scale = intactScale;
+            Vector3 localDirection = GetLocalImpactDirection();
             Vector3 euler;
             switch (materialClass)
             {
                 case MaterialClass.Glass:
                     scale = new Vector3(intactScale.x * 0.84f, intactScale.y * 0.1f, intactScale.z * 0.84f);
-                    euler = new Vector3(4f, 7f, 11f);
+                    euler = new Vector3(localDirection.z * 5f, 7f, -localDirection.x * 11f);
                     break;
                 case MaterialClass.Masonry:
                     scale.y = intactScale.y * 0.44f;
-                    euler = new Vector3(3f, 4f, 5f);
+                    euler = new Vector3(localDirection.z * 3f, 4f, -localDirection.x * 5f);
                     break;
                 case MaterialClass.Metal:
                 case MaterialClass.Infrastructure:
                     scale.y = intactScale.y * 0.3f;
-                    euler = new Vector3(5f, 12f, 14f);
+                    euler = new Vector3(localDirection.z * 6f, 12f, -localDirection.x * 14f);
                     break;
                 default:
                     scale.y = intactScale.y * 0.28f;
-                    euler = new Vector3(7f, 15f, 18f);
+                    euler = new Vector3(localDirection.z * 8f, 15f, -localDirection.x * 18f);
                     break;
             }
 
             transform.localScale = scale;
             transform.localRotation = intactRotation * Quaternion.Euler(euler);
-        }
-
-        private static Color GetImpactColor(MaterialClass material, DamageType type)
-        {
-            if (type == DamageType.Electrical) return new Color(0.48f, 0.84f, 1f, 1f);
-            if (type == DamageType.Hail) return new Color(0.78f, 0.94f, 1f, 0.95f);
-            if (type == DamageType.Suction) return new Color(0.64f, 0.82f, 0.94f, 0.9f);
-
-            switch (material)
-            {
-                case MaterialClass.Glass:
-                    return new Color(0.42f, 0.9f, 1f, 0.95f);
-                case MaterialClass.Crop:
-                case MaterialClass.Vegetation:
-                    return new Color(0.7f, 0.86f, 0.25f, 0.9f);
-                case MaterialClass.Metal:
-                case MaterialClass.Infrastructure:
-                    return new Color(1f, 0.72f, 0.25f, 0.95f);
-                case MaterialClass.Masonry:
-                    return new Color(0.78f, 0.65f, 0.52f, 0.9f);
-                case MaterialClass.Vehicle:
-                    return new Color(1f, 0.5f, 0.24f, 0.95f);
-                default:
-                    return new Color(0.85f, 0.72f, 0.48f, 0.9f);
-            }
         }
 
         private static float GetMaterialMultiplier(MaterialClass material, DamageType type)

@@ -25,75 +25,87 @@ Important project decisions and test evidence must be committed to the repositor
 - Build #4 feel/render commit: `91ee1a257bbe8e771d73097c9c4a3c781c53c225`
 - Build #4.1 motion/silhouette commit: `96c9f780daf070648dc69a7f6cd431233b85617a`
 - Build #4.2 camera/Supercell commit: `fd54c7c2b0764e8e4b301700caba997a27b08378`
+- Build #5 staged-impact commit: `d0b7f15927c082b960c034ccc11ae7abaaaf63c3`
 - Unity Build Automation is connected to GitHub `main` and builds with Unity `6000.3.0f1`.
 
-## Build #4.2 physical evidence
+## Build #5 physical evidence
 
-Build #4.2 launched successfully on Android and displayed `B4.2 CAMERA + SUPERCELL LAB` with version `0.1.6`.
+Build #5 launched successfully on Android and displayed `B5 IMPACT + DESTRUCTION LAB` with version `0.1.7`.
 
 Confirmed on the physical device:
 
-- Tornado and Supercell movement remain functional.
-- Tornado camera containment is improved.
-- The camera transition between Tornado and Supercell is improved.
-- The complete Supercell fits in the navigation frame.
-- Roads, buildings, targets, and the Supercell ground footprint remain readable.
-- Frame telemetry remained near 60 FPS in the captured scene.
+- Tornado and Supercell movement, camera containment, storm switching, and abilities remained functional.
+- The opaque blue Supercell precipitation cylinder was removed.
+- Rain and hail streaks rendered beneath the Supercell.
+- Hail target detection worked and reported six targets in the captured pass.
+- Five-stage damage and recent material-stage telemetry worked.
+- Crop and vegetation targets reached Critical state.
 
-New physical finding:
+Build #5 failures:
 
-- The Supercell precipitation placeholder is still an opaque blue cylinder and reads as a silo rather than rain and hail.
-- Existing targets darken and collapse, but impacts still lack a clear staged material response and readable hit feedback.
-- The world and storm visuals remain procedural laboratory geometry rather than production art.
+- Crop roots rotated into repeated dark vertical slabs instead of lying downwind near the ground.
+- The rectangular Hail Swath outline read as a debug selection box rather than weather.
+- Generic radial line bursts did not communicate wood, glass, metal, vegetation, or masonry differently enough.
+- Supercell cloud geometry obscured target reactions during attacks.
+- Tornado ground contact and Supercell mist remained too solid and primitive.
+- Transient effects had no explicit mobile object budget or device telemetry.
 
-Build #4.2 passes the movement and camera-foundation gate. The next approved phase is impact readability and staged destruction.
+Build #5 passes the damage-system gate and fails the impact-readability gate.
 
-## Active work: Build #5 impact and destruction laboratory
+## Active work: Build #5.1 impact readability laboratory
 
 Approved scope:
 
-- replace the Supercell blue precipitation cylinder with animated rain and hail streaks plus low ground mist
-- add shared `Intact`, `Stressed`, `Damaged`, `Critical`, and `Destroyed` stages
-- make crop, vegetation, glass, wood, metal, vehicle, infrastructure, and masonry reactions visibly different
-- add throttled material-colored impact bursts and critical-stage rings
-- keep structural targets from becoming weightless whole-building rigidbodies at collapse
-- add a compact mixed-material impact lane near the initial spawn
-- preserve Build #4.2 movement speeds and camera behavior
-- add device telemetry for the most recent material and damage stage
-- bump application version to `0.1.7` and Android version code to `7`
+- preserve Build #5 damage math, movement, camera behavior, storm speeds, targeting, and stage thresholds
+- capture the most recent horizontal impulse direction for each target
+- keep destroyed crops kinematic, ground-hugging, and aligned with storm direction
+- delay vegetation Rigidbody release until Critical and clamp tree impulse to avoid weightless launches
+- lighten stage color darkening so damaged vegetation does not become a black spike field
+- replace the rectangular hail outline with bounded falling hail and ground impact fragments
+- replace generic radial impact bursts with capped material-shaped temporary fragments
+- cap transient effect roots and fragments and expose both counts in the HUD
+- replace the Tornado orange contact disk with animated partial dust arcs
+- increase Supercell rain density while replacing blue mist spheres with low-opacity ground arcs
+- fade lower Supercell shelf-cloud layers during HAIL, FRONT, and GRID so affected targets remain readable
+- add visual-only window, roof, door, crossarm, and crown stage reactions without persistent detached physics pieces
+- bump application version to `0.1.8` and Android version code to `8`
 - update repository memory in the same commit
 
-Explicitly outside Build #5:
+Explicitly outside Build #5.1:
 
 - a third storm
-- missions, progression, economy, or menus
-- final environment art packs
+- missions, progression, economy, upgrades, or final menus
+- final environment or storm art packs
 - final audio
-- authored fracture meshes and production destruction prefabs
+- authored fracture meshes and persistent destruction prefabs
+- persistent detached roof, crown, or utility physics pieces
+- a universal pooling framework
 - authored URP pipeline migration
 - asynchronous region generation
 - people or casualty simulation
 
-## Build #5 physical acceptance gate
+## Build #5.1 physical acceptance gate
 
-1. Confirm `B5 IMPACT + DESTRUCTION LAB` and version `0.1.7` are visible.
-2. Confirm the blue Supercell cylinder is gone.
-3. Confirm rain and hail streaks visibly fall beneath and behind the Supercell without obscuring the world.
-4. Confirm low mist remains near the ground footprint.
-5. Attack the mixed-material starter lane with Tornado suction, gust, and lightning.
-6. Attack the same lane with Supercell hail, gust front, and electrical network.
-7. Confirm the HUD reports material and stage transitions such as `IMPACT Glass Damaged`.
-8. Confirm crops flatten, vegetation leans or falls, glass compresses/shatters, metal deforms/releases, and masonry resists longer.
-9. Confirm structural buildings collapse in place rather than launching as single weightless blocks.
-10. Confirm vehicles rock, slide, tip, and release before destruction.
-11. Confirm abilities and storm switching remain functional.
-12. Confirm camera containment remains stable during impacts.
-13. Record frame pacing, heat, object spam, and any new defects in `Docs/DEVICE_TEST_LOG.md`.
+1. Confirm `B5.1 IMPACT READABILITY LAB` and version `0.1.8` are visible.
+2. Confirm Tornado and Supercell movement, speed, switching, and camera containment remain unchanged.
+3. Destroy crops from multiple directions and confirm they remain close to the ground, point with the force, and do not form vertical black slabs.
+4. Confirm trees lean and fall directionally without launching like light debris.
+5. Hold HAIL and confirm no rectangular boundary appears.
+6. Confirm HAIL reads as falling ice and ground impacts while still reporting correct target counts.
+7. Confirm wood, glass, metal, vegetation, vehicle, infrastructure, and masonry hits produce visually distinct temporary fragments.
+8. Confirm temporary fragments shrink and clear automatically.
+9. Confirm HUD FX never exceeds `18` and FRAG never exceeds `42`.
+10. Confirm the Tornado has partial dust arcs and no opaque orange ground disk.
+11. Confirm the Supercell has denser rain, no blue mist spheres, and readable ground targets during HAIL, FRONT, and GRID.
+12. Confirm windows disappear progressively and roof, door, crossarm, and crown pieces visibly shift at stage thresholds without becoming persistent physics clutter.
+13. Run five minutes of repeated attacks and record FPS, heat, clutter, and any stutter.
+14. Append the physical result to `Docs/DEVICE_TEST_LOG.md` before treating the gate as closed.
 
-## Known open issues after Build #5
+## Known open issues after Build #5.1
 
-- Procedural primitives are still stand-ins for authored production assets.
+- Procedural primitives remain stand-ins for authored production assets.
+- Visual-only component reactions are not final fracture behavior.
 - The project still needs a committed authored URP asset strategy.
 - Runtime region generation remains synchronous.
 - Persistent authored Unity assets still require `.meta` migration.
-- Final audio, fracture assets, pooling, profiling, and broader device coverage remain open gates.
+- Final audio, fracture assets, broader pooling, profiling, and wider device coverage remain open gates.

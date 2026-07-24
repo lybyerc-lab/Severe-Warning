@@ -21,11 +21,13 @@ The player is the storm. The HTML prototype is preserved as a frozen Mechanics L
 - Separate Tornado and Supercell framing profiles
 - Mobile and desktop input
 - Material-aware five-stage damage and conductive network chaining
+- Direction-aware crop, vegetation, vehicle, and structural presentation
 - Mobility-aware props, approximate mass, and wind response
-- Material-colored impact bursts and recent-impact telemetry
-- Animated Supercell rain and hail curtains with ground mist
+- Capped material-shaped temporary impact fragments
+- Animated Supercell rain and hail curtains with attack-time cloud visibility
+- Animated Tornado ground-contact dust arcs
 - Collider-aware runtime density validation
-- Immediate ability feedback through rings, swaths, arcs, lightning paths, target counts, and no-target messages
+- Immediate ability feedback, target counts, no-target messages, FX counts, and fragment counts
 - Cloud-generated lit material templates, build identity, and deterministic Android player settings
 - Editor scene-generation and project-readiness tools
 - Production art, audio, level-design, migration, and No-Drift standards
@@ -57,7 +59,7 @@ Desktop:
 - E: tertiary ability
 - Tab: switch Tornado/Supercell
 
-Android Build #5 impact and destruction laboratory:
+Android Build #5.1 impact-readability laboratory:
 
 - Start a drag in the lower-left control area to create a floating joystick.
 - Movement is camera-relative.
@@ -68,7 +70,7 @@ Android Build #5 impact and destruction laboratory:
 - Tap `ZAP` or `GRID` for the tertiary ability.
 - Tap the top-center storm button to switch storm.
 - Attack the mixed-material target lane near the initial spawn to compare staged reactions.
-- INPUT, POS, ACTUAL speed, DIST, FPS, camera state, target count, recent impact stage, render pipeline, graphics API, build version, and commit telemetry remain visible during the device gate.
+- INPUT, POS, ACTUAL speed, DIST, FPS, camera state, target count, recent impact stage, FX count, fragment count, render pipeline, graphics API, build version, and commit telemetry remain visible during the device gate.
 
 ## Damage stages
 
@@ -76,7 +78,7 @@ Damageable targets move through:
 
 `Intact -> Stressed -> Damaged -> Critical -> Destroyed`
 
-Crop, vegetation, glass, wood, metal, vehicles, infrastructure, and masonry use different deformation, release, resistance, and collapse behavior. Structural targets collapse in place during this laboratory pass rather than becoming single weightless rigidbodies.
+Crop, vegetation, glass, wood, metal, vehicles, infrastructure, and masonry use different deformation, release, resistance, and collapse behavior. Build #5.1 keeps crops ground-hugging, delays tree release, and uses temporary capped fragments instead of persistent physics clutter. Structural targets still collapse in place during this laboratory pass.
 
 ## Cloud build
 
@@ -92,7 +94,7 @@ Unity Build Automation uses:
 - APK output and debug signing for device-test builds
 - Library caching
 
-The pre-export method sets application version `0.1.7`, Android version code `7`, IL2CPP, ARM64, Vulkan-only device-lab rendering, generated built-in runtime materials, build identity, the production-slice scene, and quality defaults.
+The pre-export method sets application version `0.1.8`, Android version code `8`, IL2CPP, ARM64, Vulkan-only device-lab rendering, generated built-in runtime materials, build identity, the production-slice scene, and quality defaults.
 
 ## Honest status
 
@@ -102,6 +104,7 @@ The pre-export method sets application version `0.1.7`, Android version code `7`
 - Build #4 improved lighting and feedback, but physical testing proved the storm root stayed at spawn.
 - Build #4.1 fixed actual translation and passed the movement gate.
 - Build #4.2 improved screen-space camera containment and reframed the Supercell without reducing either storm speed.
-- Build #5 is the first focused impact and staged-destruction laboratory.
+- Build #5 proved staged damage and targeting, but failed crop, hail, occlusion, and effect-readability gates.
+- Build #5.1 is the focused directional-impact, weather-feedback, visibility, and mobile-effect-budget correction.
 
 This remains a production architecture and procedural lab slice, not final art or a production-ready game.

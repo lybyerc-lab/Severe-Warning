@@ -18,7 +18,9 @@ namespace SevereWeather.Storms
         private float gustCooldown;
         private float lightningCooldown;
         private float hailFeedbackTimer;
+        private float gameplayVisibilityTimer;
         private Vector3 velocitySmoothing;
+        private StormVisualAnimator visualAnimator;
 
         public override StormKind Kind => StormKind.Supercell;
         public override float InfluenceRadius => stormRadius;
@@ -53,6 +55,12 @@ namespace SevereWeather.Storms
             gustCooldown = Mathf.Max(0f, gustCooldown - dt);
             lightningCooldown = Mathf.Max(0f, lightningCooldown - dt);
             hailFeedbackTimer = Mathf.Max(0f, hailFeedbackTimer - dt);
+            gameplayVisibilityTimer = Mathf.Max(0f, gameplayVisibilityTimer - dt);
+
+            if (gameplayVisibilityTimer > 0f)
+            {
+                RequestGameplayVisibility(0.56f, 0.12f);
+            }
         }
 
         protected override void ApplyPassiveField(float dt)
@@ -81,18 +89,20 @@ namespace SevereWeather.Storms
             if (stormInput.PrimaryHeld && power > 0.35f)
             {
                 power = Mathf.Max(0f, power - 2.1f * dt);
+                RequestGameplayVisibility(0.72f, 0.24f);
                 int targets = PaintHailSwath(dt);
                 if (hailFeedbackTimer <= 0f)
                 {
                     hailFeedbackTimer = 0.3f;
                     Vector3 heading = GetHeading();
                     Vector3 center = transform.position - heading * hailLength * 0.22f;
-                    StormActionVfx.Swath(
+                    center.y = 0.08f;
+                    StormActionVfx.HailField(
                         center,
                         heading,
                         hailHalfWidth,
                         hailLength,
-                        new Color(0.58f, 0.82f, 1f, 0.8f));
+                        targets);
                     ReportAction(targets > 0 ? "HAIL SWATH" : "HAIL - NO TARGETS", targets, 0.8f);
                 }
             }
@@ -101,6 +111,8 @@ namespace SevereWeather.Storms
             {
                 power -= 18f;
                 gustCooldown = 4.5f;
+                gameplayVisibilityTimer = Mathf.Max(gameplayVisibilityTimer, 0.72f);
+                RequestGameplayVisibility(0.56f, 0.72f);
                 int targets = IntensifyGustFront();
                 StormActionVfx.Arc(
                     transform.position,
@@ -115,6 +127,8 @@ namespace SevereWeather.Storms
 
             if (tertiaryPressed && lightningCooldown <= 0f && charge >= 28f)
             {
+                gameplayVisibilityTimer = Mathf.Max(gameplayVisibilityTimer, 0.82f);
+                RequestGameplayVisibility(0.62f, 0.82f);
                 int chainCount = ReleaseElectricalNetwork();
                 if (chainCount > 0)
                 {
@@ -126,6 +140,18 @@ namespace SevereWeather.Storms
                 {
                     ReportAction("NO CONDUCTIVE TARGET", 0, 1.5f);
                 }
+            }
+        }
+
+        private void RequestGameplayVisibility(float intensity, float holdSeconds)
+        {
+            if (visualAnimator == null)
+            {
+                visualAnimator = GetComponent<StormVisualAnimator>();
+            }
+            if (visualAnimator != null)
+            {
+                visualAnimator.RequestGameplayVisibility(intensity, holdSeconds);
             }
         }
 
