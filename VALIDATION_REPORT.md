@@ -64,12 +64,14 @@ The candidate currently includes:
 - The HUD label is `B5.2 ABILITY FEEDBACK CLEANUP` and includes cleanup/crop telemetry.
 - `FILE_INVENTORY.txt` includes the new runtime source and contains 57 project paths.
 
-## Required before merge
+## Final integrity sweep
 
-- Refresh `SHA256SUMS.txt` from the final branch contents.
-- Run `python Tools/validate_project.py` against the final branch checkout.
-- Run a Unity Cloud compile from the reviewed final commit.
-- Confirm the generated APK displays `B5.2 ABILITY FEEDBACK CLEANUP`, version `0.1.9`, and Android code `9`.
+- `SHA256SUMS.txt` was regenerated for the 57-file Build #5.2 project set, excluding the checksum file itself.
+- The changed-file contents were matched against their GitHub blob SHAs before hashing.
+- `python Tools/validate_project.py` passed on the reconstructed final branch contents.
+- Validation result: 26 C# files, 14 docs, 57 project files, Mechanics Lab 190332 bytes.
+- The reviewed branch is ready to merge for the Unity Cloud compilation gate.
+- Unity Cloud compilation and the physical Android acceptance test remain authoritative runtime gates.
 
 ## Physical Android gate
 
