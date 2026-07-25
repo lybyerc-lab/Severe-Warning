@@ -1,0 +1,510 @@
+name: Build 5.2 Direct Patch
+
+on:
+  push:
+    branches:
+      - agent/build5-2-ability-feedback-cleanup
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Stage Build 5.2 direct repository patch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out patch branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply reviewed Build 5.2 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import subprocess
+
+          ROOT = Path('.')
+          WORKFLOW = Path('.github/workflows/build52-direct-patch.yml')
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, content):
+              target = Path(path)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(content, encoding='utf-8', newline='\n')
+
+          def replace_once(path, old, new):
+              text = read(path)
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, found {count}: {old!r}')
+              write(path, text.replace(old, new, 1))
+
+          def replace_all(path, old, new, minimum=1):
+              text = read(path)
+              count = text.count(old)
+              if count < minimum:
+                  raise SystemExit(f'{path}: expected at least {minimum} matches, found {count}: {old!r}')
+              write(path, text.replace(old, new))
+
+          def append_once(path, marker, section):
+              text = read(path)
+              if marker in text:
+                  return
+              write(path, text.rstrip() + '\n\n' + section.strip() + '\n')
+
+          runtime_patch = r'''using System.Collections.Generic;
+          using SevereWeather.Damage;
+          using UnityEngine;
+
+          namespace SevereWeather.Presentation
+          {
+              [DefaultExecutionOrder(900)]
+              public sealed class Build52PresentationPatch : MonoBehaviour
+              {
+                  private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+                  private static readonly int ColorId = Shader.PropertyToID("_Color");
+                  private static float startedAt;
+
+                  private readonly Dictionary<int, CropPose> crops = new Dictionary<int, CropPose>();
+                  private readonly List<int> staleCropIds = new List<int>();
+                  private Camera mainCamera;
+                  private float nextCropScan;
+
+                  public static float ElapsedSeconds => startedAt <= 0f ? 0f : Mathf.Max(0f, Time.unscaledTime - startedAt);
+                  public static int ManagedCropCount { get; private set; }
+                  public static int HiddenCropCount { get; private set; }
+
+                  [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+                  private static void Install()
+                  {
+                      if (Object.FindFirstObjectByType<Build52PresentationPatch>() != null) return;
+                      GameObject root = new GameObject("Build 5.2 Presentation Patch");
+                      root.AddComponent<Build52PresentationPatch>();
+                  }
+
+                  private void Awake()
+                  {
+                      startedAt = Time.unscaledTime;
+                  }
+
+                  private void Update()
+                  {
+                      PatchStormTrails();
+                      PatchLineArtifacts();
+
+                      if (Time.unscaledTime < nextCropScan) return;
+                      nextCropScan = Time.unscaledTime + 0.12f;
+                      if (mainCamera == null) mainCamera = Camera.main;
+                      CaptureCrops();
+                      UpdateCropAftermath();
+                  }
+
+                  private static void PatchStormTrails()
+                  {
+                      TrailRenderer[] trails = Object.FindObjectsByType<TrailRenderer>(FindObjectsSortMode.None);
+                      for (int i = 0; i < trails.Length; i++)
+                      {
+                          TrailRenderer trail = trails[i];
+                          if (trail == null) continue;
+                          string rootName = trail.transform.root != null ? trail.transform.root.name : string.Empty;
+                          if (!rootName.Contains("Player Supercell") && trail.startWidth <= 4f) continue;
+                          trail.emitting = false;
+                          trail.Clear();
+                          trail.enabled = false;
+                      }
+                  }
+
+                  private static void PatchLineArtifacts()
+                  {
+                      LineRenderer[] lines = Object.FindObjectsByType<LineRenderer>(FindObjectsSortMode.None);
+                      for (int i = 0; i < lines.Length; i++)
+                      {
+                          LineRenderer line = lines[i];
+                          if (line == null) continue;
+                          string objectName = line.gameObject.name;
+
+                          if (objectName.Contains("Ground Mist Arc"))
+                          {
+                              line.enabled = false;
+                              continue;
+                          }
+
+                          if (objectName.Contains("Dust Arc"))
+                          {
+                              line.widthMultiplier = Mathf.Min(line.widthMultiplier, 0.075f);
+                              line.startColor = new Color(0.52f, 0.39f, 0.24f, 0.025f);
+                              line.endColor = new Color(0.52f, 0.39f, 0.24f, 0.11f);
+                              continue;
+                          }
+
+                          if (objectName.StartsWith("Hail Drop"))
+                          {
+                              line.widthMultiplier = Mathf.Min(line.widthMultiplier, 0.07f);
+                              continue;
+                          }
+
+                          if (objectName == "Storm Ring" || objectName == "Storm Swath")
+                          {
+                              Vector3 size = line.bounds.size;
+                              float diameter = Mathf.Max(size.x, size.z);
+                              if (diameter >= 12f || line.widthMultiplier >= 0.3f)
+                              {
+                                  Object.Destroy(line.gameObject);
+                              }
+                          }
+                      }
+                  }
+
+                  private void CaptureCrops()
+                  {
+                      DamageableStructure[] structures = Object.FindObjectsByType<DamageableStructure>(FindObjectsSortMode.None);
+                      for (int i = 0; i < structures.Length; i++)
+                      {
+                          DamageableStructure structure = structures[i];
+                          if (structure == null || structure.MaterialClass != MaterialClass.Crop) continue;
+                          int id = structure.GetInstanceID();
+                          if (!crops.ContainsKey(id)) crops.Add(id, CropPose.Capture(structure));
+                      }
+                  }
+
+                  private void UpdateCropAftermath()
+                  {
+                      staleCropIds.Clear();
+                      HiddenCropCount = 0;
+
+                      foreach (KeyValuePair<int, CropPose> pair in crops)
+                      {
+                          CropPose pose = pair.Value;
+                          if (pose.Target == null)
+                          {
+                              staleCropIds.Add(pair.Key);
+                              continue;
+                          }
+
+                          if ((int)pose.Target.Stage < (int)DamageStage.Damaged)
+                          {
+                              pose.SetVisible(true, false);
+                              continue;
+                          }
+
+                          float yFactor;
+                          float widthFactor;
+                          float lengthFactor;
+                          float colorFactor;
+                          switch (pose.Target.Stage)
+                          {
+                              case DamageStage.Damaged:
+                                  yFactor = 0.2f;
+                                  widthFactor = 0.84f;
+                                  lengthFactor = 1.04f;
+                                  colorFactor = 0.66f;
+                                  break;
+                              case DamageStage.Critical:
+                                  yFactor = 0.075f;
+                                  widthFactor = 0.74f;
+                                  lengthFactor = 1.06f;
+                                  colorFactor = 0.54f;
+                                  break;
+                              default:
+                                  yFactor = 0.026f;
+                                  widthFactor = 0.66f;
+                                  lengthFactor = 1.02f;
+                                  colorFactor = 0.45f;
+                                  break;
+                          }
+
+                          Vector3 scale = new Vector3(
+                              pose.IntactScale.x * widthFactor,
+                              pose.IntactScale.y * yFactor,
+                              pose.IntactScale.z * lengthFactor);
+                          float yawVariation = Mathf.Abs(pose.Target.GetInstanceID() % 17) - 8f;
+                          pose.Target.transform.localScale = scale;
+                          pose.Target.transform.localRotation = pose.IntactRotation * Quaternion.Euler(0f, yawVariation, 0f);
+                          pose.Target.transform.localPosition = pose.IntactPosition +
+                              Vector3.down * ((pose.IntactScale.y - scale.y) * 0.5f + 0.012f);
+
+                          bool patchThinning = pose.Target.Stage == DamageStage.Destroyed &&
+                              Mathf.Abs(pose.Target.GetInstanceID() % 4) == 0;
+                          bool distant = mainCamera != null &&
+                              Vector3.Distance(mainCamera.transform.position, pose.Target.transform.position) > 118f;
+                          bool hidden = patchThinning || distant;
+                          if (hidden) HiddenCropCount++;
+                          pose.ApplyColorAndVisibility(colorFactor, !hidden, distant);
+                      }
+
+                      for (int i = 0; i < staleCropIds.Count; i++) crops.Remove(staleCropIds[i]);
+                      ManagedCropCount = crops.Count;
+                  }
+
+                  private sealed class CropPose
+                  {
+                      public DamageableStructure Target;
+                      public Vector3 IntactScale;
+                      public Vector3 IntactPosition;
+                      public Quaternion IntactRotation;
+                      public Renderer[] Renderers;
+                      public Color[] IntactColors;
+                      public int[] ColorProperties;
+                      public MaterialPropertyBlock[] Blocks;
+
+                      public static CropPose Capture(DamageableStructure target)
+                      {
+                          Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+                          CropPose pose = new CropPose
+                          {
+                              Target = target,
+                              IntactScale = target.transform.localScale,
+                              IntactPosition = target.transform.localPosition,
+                              IntactRotation = target.transform.localRotation,
+                              Renderers = renderers,
+                              IntactColors = new Color[renderers.Length],
+                              ColorProperties = new int[renderers.Length],
+                              Blocks = new MaterialPropertyBlock[renderers.Length]
+                          };
+
+                          for (int i = 0; i < renderers.Length; i++)
+                          {
+                              Renderer renderer = renderers[i];
+                              Material material = renderer != null ? renderer.sharedMaterial : null;
+                              if (material != null && material.HasProperty(BaseColorId))
+                              {
+                                  pose.IntactColors[i] = material.GetColor(BaseColorId);
+                                  pose.ColorProperties[i] = BaseColorId;
+                              }
+                              else if (material != null && material.HasProperty(ColorId))
+                              {
+                                  pose.IntactColors[i] = material.GetColor(ColorId);
+                                  pose.ColorProperties[i] = ColorId;
+                              }
+                              pose.Blocks[i] = new MaterialPropertyBlock();
+                          }
+                          return pose;
+                      }
+
+                      public void SetVisible(bool visible, bool forceOff)
+                      {
+                          for (int i = 0; i < Renderers.Length; i++)
+                          {
+                              Renderer renderer = Renderers[i];
+                              if (renderer == null) continue;
+                              renderer.enabled = visible;
+                              renderer.forceRenderingOff = forceOff;
+                          }
+                      }
+
+                      public void ApplyColorAndVisibility(float factor, bool visible, bool forceOff)
+                      {
+                          for (int i = 0; i < Renderers.Length; i++)
+                          {
+                              Renderer renderer = Renderers[i];
+                              if (renderer == null) continue;
+                              renderer.enabled = visible;
+                              renderer.forceRenderingOff = forceOff;
+                              int propertyId = ColorProperties[i];
+                              if (propertyId == 0) continue;
+
+                              Color intact = IntactColors[i];
+                              Color flattened = new Color(
+                                  intact.r * factor * 0.9f,
+                                  intact.g * factor,
+                                  intact.b * factor * 0.72f,
+                                  intact.a);
+                              MaterialPropertyBlock block = Blocks[i];
+                              renderer.GetPropertyBlock(block);
+                              block.SetColor(propertyId, flattened);
+                              renderer.SetPropertyBlock(block);
+                          }
+                      }
+                  }
+              }
+          }
+          '''
+          runtime_patch = '\n'.join(line[10:] if line.startswith('          ') else line for line in runtime_patch.splitlines()) + '\n'
+          write('Assets/SevereWeather/Runtime/Presentation/Build52PresentationPatch.cs', runtime_patch)
+
+          replace_once(
+              'Assets/SevereWeather/Editor/ProductionSliceBuilder.cs',
+              'private const string ProductVersion = "0.1.8";',
+              'private const string ProductVersion = "0.1.9";')
+          replace_once(
+              'Assets/SevereWeather/Editor/ProductionSliceBuilder.cs',
+              'private const int AndroidVersionCode = 8;',
+              'private const int AndroidVersionCode = 9;')
+          replace_all(
+              'Assets/SevereWeather/Editor/ProductionSliceBuilder.cs',
+              'Build #5.1',
+              'Build #5.2',
+              minimum=2)
+          replace_once(
+              'Assets/SevereWeather/Editor/ProductionSliceBuilder.cs',
+              'cloudBuildNumber = "5.1";',
+              'cloudBuildNumber = "5.2";')
+
+          replace_once(
+              'Assets/SevereWeather/Runtime/Core/BuildIdentity.cs',
+              'private static string version = "0.1.8";',
+              'private static string version = "0.1.9";')
+          replace_once(
+              'Assets/SevereWeather/Runtime/Core/BuildIdentity.cs',
+              'private static string build = "5.1";',
+              'private static string build = "5.2";')
+
+          replace_all(
+              'Assets/SevereWeather/Runtime/Core/GameBootstrap.cs',
+              'Build #5.1',
+              'Build #5.2',
+              minimum=6)
+          replace_once(
+              'Assets/SevereWeather/Runtime/Core/GameBootstrap.cs',
+              '            CreateTrail(parent.gameObject, rainMaterial, 1.8f, 5.5f, 0.35f);',
+              '            // Build #5.2: precipitation carries motion; the opaque Supercell trail is intentionally removed.')
+
+          replace_once(
+              'Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs',
+              '            body.drag = mobilityClass == MobilityClass.Light ? 0.35f : 0.8f;',
+              '            body.linearDamping = mobilityClass == MobilityClass.Light ? 0.35f : 0.8f;')
+          replace_once(
+              'Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs',
+              '            body.angularDrag = mobilityClass == MobilityClass.Light ? 0.25f : 1.1f;',
+              '            body.angularDamping = mobilityClass == MobilityClass.Light ? 0.25f : 1.1f;')
+          replace_once(
+              'Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs',
+              '''                    scale.x = intactScale.x * Mathf.Lerp(1f, 1.08f, damage);\n                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.14f, damage);\n                    scale.z = intactScale.z * Mathf.Lerp(1f, 1.24f, damage);\n                    euler.y = DirectionToYaw(localDirection) + 90f;''',
+              '''                    scale.x = intactScale.x * Mathf.Lerp(1f, 0.86f, damage);\n                    scale.y = intactScale.y * Mathf.Lerp(1f, 0.08f, damage);\n                    scale.z = intactScale.z * Mathf.Lerp(1f, 1.06f, damage);\n                    euler.y = Mathf.Lerp(0f, Mathf.Abs(GetInstanceID() % 17) - 8f, damage);''')
+          replace_once(
+              'Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs',
+              '''                Vector3 localDirection = GetLocalImpactDirection();\n                Vector3 scale = new Vector3(intactScale.x * 1.12f, intactScale.y * 0.055f, intactScale.z * 1.32f);''',
+              '''                Vector3 scale = new Vector3(intactScale.x * 0.68f, intactScale.y * 0.026f, intactScale.z * 1.02f);''')
+          replace_once(
+              'Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs',
+              '                transform.localRotation = intactRotation * Quaternion.Euler(0f, DirectionToYaw(localDirection) + 90f, 0f);',
+              '                transform.localRotation = intactRotation * Quaternion.Euler(0f, Mathf.Abs(GetInstanceID() % 17) - 8f, 0f);')
+
+          replace_once(
+              'Assets/SevereWeather/Runtime/UI/StormDebugHud.cs',
+              'private const string LabLabel = "B5.1 IMPACT READABILITY LAB";',
+              'private const string LabLabel = "B5.2 ABILITY FEEDBACK CLEANUP";')
+          replace_once(
+              'Assets/SevereWeather/Runtime/UI/StormDebugHud.cs',
+              '''            GUI.Label(\n                new Rect(panel.x + 14f, panel.y + 151f, panel.width - 28f, 19f),\n                $"{DamageableStructure.RecentImpactLabel}   FX {StormActionVfx.ActiveFxCount}/{StormActionVfx.FxCapacity}   FRAG {StormActionVfx.ActiveFragmentCount}/{StormActionVfx.FragmentCapacity}",\n                telemetryStyle);''',
+              '''            GUI.Label(\n                new Rect(panel.x + 14f, panel.y + 151f, panel.width - 28f, 19f),\n                $"{DamageableStructure.RecentImpactLabel}   FX {StormActionVfx.ActiveFxCount}/{StormActionVfx.FxCapacity}   FRAG {StormActionVfx.ActiveFragmentCount}/{StormActionVfx.FragmentCapacity}",\n                telemetryStyle);\n            GUI.Label(\n                new Rect(panel.x + 14f, panel.y + 171f, panel.width - 28f, 19f),\n                $"CLEANUP T+{Build52PresentationPatch.ElapsedSeconds:0}s   CROPS {Build52PresentationPatch.ManagedCropCount}   HIDDEN {Build52PresentationPatch.HiddenCropCount}",\n                telemetryStyle);''')
+
+          replace_all('README.md', 'Build #5.1', 'Build #5.2', minimum=3)
+          replace_all('README.md', '0.1.8', '0.1.9', minimum=1)
+          replace_once('README.md', 'Android version code `8`', 'Android version code `9`')
+          replace_once(
+              'README.md',
+              '- Animated Tornado ground-contact dust arcs',
+              '- Animated Tornado ground-contact dust arcs with oversized action rings suppressed')
+          replace_once(
+              'README.md',
+              '- Direction-aware crop, vegetation, vehicle, and structural presentation',
+              '- Direction-aware crop, vegetation, vehicle, and structural presentation with row-preserving flattened crop patches')
+
+          replace_all('Docs/UNITY_CLOUD_BUILD_SETTINGS.md', 'Build #5.1', 'Build #5.2', minimum=1)
+          replace_all('Docs/UNITY_CLOUD_BUILD_SETTINGS.md', '0.1.8', '0.1.9', minimum=1)
+          replace_all('Docs/UNITY_CLOUD_BUILD_SETTINGS.md', 'version code `8`', 'version code `9`', minimum=1)
+
+          build52_status = '''## Build #5.2 - Ability Feedback Cleanup (branch ready for compile gate)\n\n- Branch: `agent/build5-2-ability-feedback-cleanup`\n- Version: `0.1.9`, Android version code `9`\n- Removes the Supercell TrailRenderer wedge and suppresses oversized ring/swath debug geometry.\n- Disables the looping ground-mist scribbles while preserving rain and hail streaks.\n- Refines Tornado ground-contact arcs into thinner, lower-alpha dust cues.\n- Keeps damaged crops aligned to their rows, reduces board-like width, thins destroyed patches, and culls distant flattened crop renderers.\n- Replaces deprecated `Rigidbody.drag` and `Rigidbody.angularDrag` with Unity 6 damping APIs.\n- Adds cleanup elapsed-time and managed-crop telemetry for the five-minute Android stress gate.\n- Movement, camera containment, ability targeting, damage thresholds, and FX/fragment caps remain unchanged.\n- Unity Cloud is still the authoritative compile gate; physical Android evidence remains required before Build #5.2 passes.\n'''
+          append_once('CURRENT_STATUS.md', '## Build #5.2 - Ability Feedback Cleanup', build52_status)
+
+          decision = '''## 2026-07-24 - Build #5.2 removes debug geometry instead of adding more effects\n\nBuild #5.1 proved that staged damage, directional reactions, effect caps, and ground-hugging crop physics work, but device screenshots still showed an opaque Supercell trail wedge, looping mist lines, a giant Tornado PULL ring, dark suction rings, and board-like crop aftermath. Build #5.2 is therefore a constrained cleanup pass. It removes or subdues those artifacts, preserves the approved mechanics, and fixes the Unity 6 damping deprecations found in the cloud log. Persistent detached fracture systems remain out of scope.\n'''
+          append_once('Docs/DECISION_LOG.md', '## 2026-07-24 - Build #5.2 removes debug geometry', decision)
+
+          device = '''## Build #5.1 physical evidence and Build #5.2 gate\n\nBuild #5.1 launched on Android at approximately 60 FPS in the submitted screenshots. Directional damage, target counts, effect caps, and fragment caps were active. The crop spike defect was corrected, but destroyed crops read as scattered orange boards. The Supercell still showed a dark triangular trail and looping blue ground lines, while Tornado PULL still displayed an oversized pale boundary ring and dark center rings. The supplied session was not a five-minute stress run.\n\nBuild #5.2 must demonstrate:\n\n1. No Supercell trail wedge or looping ground-line scribbles.\n2. No giant Tornado action circle dominating the town.\n3. Flattened crops remain row-oriented, thin, darkened, and visually grouped rather than reading as lumber.\n4. `CLEANUP T+300s` or greater during sustained destruction.\n5. FX and fragment counts return downward after attacks and do not remain pinned at their caps.\n6. No growing stutter, major heat escalation, camera regression, or movement regression.\n7. Frame rate should remain near 60 FPS and should not remain below 45 FPS.\n'''
+          append_once('Docs/DEVICE_TEST_LOG.md', '## Build #5.1 physical evidence and Build #5.2 gate', device)
+
+          handoff = '''## Build #5.2 current handoff\n\nBuild #5.2 is the final ability-feedback cleanup before the first scored destruction loop. It adds a runtime presentation governor that removes the Supercell TrailRenderer wedge, suppresses oversized ring/swath geometry, disables looping mist-line artifacts, softens Tornado dust arcs, and manages flattened crop aftermath without changing storm motion or damage mechanics. The build identity is `0.1.9` / Android code `9`. The cloud compile gate and a five-minute Android cleanup test are still pending.\n'''
+          append_once('Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md', '## Build #5.2 current handoff', handoff)
+
+          archive = '''## 2026-07-24 Build #5.2 summary\n\nBuild #5.2 is a constrained visual-cleanup and Unity 6 compatibility pass. It removes the Supercell trail wedge, suppresses oversized action geometry, disables looping ground-mist lines, makes Tornado contact dust subtler, preserves crop-row orientation, reduces destroyed crop clutter, adds five-minute cleanup telemetry, and replaces deprecated Rigidbody damping properties.\n'''
+          append_once('Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md', '## 2026-07-24 Build #5.2 summary', archive)
+
+          validation = '''## Build #5.2 static validation\n\n- Direct repository patch applied from the exact Build #5.1 main baseline.\n- New runtime presentation governor is inside the existing runtime assembly folder.\n- Build identity advanced to `0.1.9` / `5.2`; Android version code advanced to `9`.\n- Deprecated `Rigidbody.drag` and `Rigidbody.angularDrag` references were removed.\n- The Supercell rain TrailRenderer call was removed.\n- Oversized ring/swath geometry, looping ground mist, Tornado dust arcs, hail drops, and crop aftermath are handled without changing targeting or damage thresholds.\n- Static brace, whitespace, repository inventory, and checksum checks are performed by the patch workflow.\n- Unity Cloud remains the compile authority.\n'''
+          append_once('VALIDATION_REPORT.md', '## Build #5.2 static validation', validation)
+
+          if WORKFLOW.exists():
+              WORKFLOW.unlink()
+
+          csharp_files = sorted(Path('Assets').rglob('*.cs'))
+          for path in csharp_files:
+              text = path.read_text(encoding='utf-8')
+              balance = 0
+              in_string = False
+              escaped = False
+              for char in text:
+                  if in_string:
+                      if escaped:
+                          escaped = False
+                      elif char == '\\':
+                          escaped = True
+                      elif char == '"':
+                          in_string = False
+                      continue
+                  if char == '"':
+                      in_string = True
+                  elif char == '{':
+                      balance += 1
+                  elif char == '}':
+                      balance -= 1
+                  if balance < 0:
+                      raise SystemExit(f'{path}: closing brace before opening brace')
+              if balance != 0:
+                  raise SystemExit(f'{path}: brace balance {balance}')
+
+          damage_text = read('Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs')
+          if 'body.drag =' in damage_text or 'body.angularDrag =' in damage_text:
+              raise SystemExit('Deprecated Rigidbody damping properties remain')
+          bootstrap_text = read('Assets/SevereWeather/Runtime/Core/GameBootstrap.cs')
+          if 'CreateTrail(parent.gameObject, rainMaterial' in bootstrap_text:
+              raise SystemExit('Supercell TrailRenderer call remains')
+
+          validation_run = subprocess.run(
+              ['python3', 'Tools/validate_project.py'],
+              text=True,
+              capture_output=True)
+          print(validation_run.stdout)
+          if validation_run.returncode != 0:
+              print(validation_run.stderr)
+              raise SystemExit(validation_run.returncode)
+
+          tracked = subprocess.check_output(
+              ['git', 'ls-files', '--cached', '--others', '--exclude-standard'],
+              text=True).splitlines()
+          tracked = sorted(
+              path for path in tracked
+              if path and path != str(WORKFLOW) and not path.startswith('.git/'))
+          write('FILE_INVENTORY.txt', '\n'.join(tracked) + '\n')
+
+          checksum_paths = [path for path in tracked if path != 'SHA256SUMS.txt']
+          checksum_lines = []
+          for path in checksum_paths:
+              digest = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+              checksum_lines.append(f'{digest}  ./{path}')
+          write('SHA256SUMS.txt', '\n'.join(checksum_lines) + '\n')
+
+          if len(tracked) != 57:
+              raise SystemExit(f'Expected 57 project files, found {len(tracked)}')
+          PY
+
+          git diff --check
+          test ! -e .github/workflows/build52-direct-patch.yml
+          grep -R "B5.2 ABILITY FEEDBACK CLEANUP" Assets/SevereWeather/Runtime/UI/StormDebugHud.cs
+          grep -R "linearDamping" Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs
+          grep -R "angularDamping" Assets/SevereWeather/Runtime/Damage/DamageableStructure.cs
+          test "$(wc -l < FILE_INVENTORY.txt)" -eq 57
+          test "$(wc -l < SHA256SUMS.txt)" -eq 56
+
+          git config user.name "Severe Weather Build Bot"
+          git config user.email "actions@users.noreply.github.com"
+          BASE_SHA="$(git rev-parse HEAD^)"
+          git add -A
+          git reset --soft "$BASE_SHA"
+          git commit -m "Clean up Build 5.2 ability feedback and crop aftermath"
+          git push --force-with-lease origin "HEAD:${GITHUB_REF_NAME}"
