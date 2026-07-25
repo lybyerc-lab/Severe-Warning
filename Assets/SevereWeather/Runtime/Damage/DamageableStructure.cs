@@ -275,8 +275,8 @@ namespace SevereWeather.Damage
 
             if (body == null || bodyConfigured) return;
             body.mass = EstimateMass();
-            body.drag = mobilityClass == MobilityClass.Light ? 0.35f : 0.8f;
-            body.angularDrag = mobilityClass == MobilityClass.Light ? 0.25f : 1.1f;
+            body.linearDamping = mobilityClass == MobilityClass.Light ? 0.35f : 0.8f;
+            body.angularDamping = mobilityClass == MobilityClass.Light ? 0.25f : 1.1f;
             body.maxAngularVelocity = mobilityClass == MobilityClass.Light ? 28f : 16f;
             bodyConfigured = true;
         }
