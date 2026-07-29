@@ -128,7 +128,7 @@ namespace SevereWeather.Storms
 
         private int ApplyGust()
         {
-            const float radius = 24f;
+            const float radius = 48f;
             int count = Query(transform.position, radius);
             int targets = 0;
             for (int i = 0; i < count; i++)
@@ -138,8 +138,8 @@ namespace SevereWeather.Storms
 
                 Vector3 offset = collider.bounds.center - transform.position;
                 float strength = 1f - Mathf.Clamp01(offset.magnitude / radius);
-                Vector3 impulse = offset.normalized * Mathf.Lerp(3f, 18f, strength) + Vector3.up * 2f;
-                ApplyDamage(damageable, DamageType.Wind, Mathf.Lerp(10f, 34f, strength), collider.bounds.center, impulse);
+                Vector3 impulse = offset.normalized * Mathf.Lerp(8f, 32f, strength) + Vector3.up * 4f;
+                ApplyDamage(damageable, DamageType.Wind, Mathf.Lerp(15f, 50f, strength), collider.bounds.center, impulse);
                 targets++;
             }
             return targets;

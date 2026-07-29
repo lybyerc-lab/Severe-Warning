@@ -147,13 +147,3 @@ Tune sizes, dead zone, acceleration, and layout only from Build #3 physical-devi
 ## 2026-07-24 - Decision B5.1-01: Readability before feature expansion
 
 Build #5 physical testing proved the damage pipeline, stage transitions, target detection, and precipitation replacement work, but exposed unreadable crop poses, debug-shaped hail feedback, storm occlusion, and effect-clutter risk. Build #5.1 is therefore limited to directional deformation, weather-shaped feedback, bounded transient effects, lighter ground contact, Supercell gameplay visibility, and visual-only component reactions. Persistent physics detachment, missions, progression, a third storm, full fracture prefabs, and final art remain outside scope.
-
-## 2026-07-24 - Decision B5.2-01: Remove debug geometry before adding the game loop
-
-**Decision:** Build #5.2 is a constrained cleanup pass. It removes the Supercell trail wedge, suppresses oversized ring and swath geometry, disables looping ground-mist scribbles, softens Tornado contact arcs, and refines flattened crop aftermath while preserving approved mechanics.
-
-**Evidence:** Build #5.1 Android screenshots showed stable movement, target detection, effect caps, and approximately 60 FPS, but the remaining visual artifacts still read as laboratory debug shapes. The crop screenshot also proved that the spike defect was fixed while exposing a new board-like aftermath problem. The cloud build log additionally identified deprecated Unity Rigidbody damping properties.
-
-**Rejected alternatives:** Beginning missions, progression, upgrades, a third storm, authored fracture systems, or final art before the existing storm verbs read clearly on a physical device.
-
-**Revisit condition:** Broaden into Build #6 only after Build #5.2 compiles and a five-minute Android test confirms readable ability feedback, bounded cleanup, stable camera behavior, and acceptable frame pacing.

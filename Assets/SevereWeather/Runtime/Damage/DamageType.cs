@@ -7,7 +7,8 @@ namespace SevereWeather.Damage
         Hail,
         Electrical,
         Impact,
-        Water
+        Water,
+        DerechoWind
     }
 
     public enum MaterialClass

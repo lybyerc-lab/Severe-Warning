@@ -142,9 +142,15 @@ namespace SevereWeather.Damage
             CaptureImpactDirection(damageEvent);
             EnsureBody(false);
             DamageStage previousStage = stage;
-            float adjusted = damageEvent.Amount * GetMaterialMultiplier(materialClass, damageEvent.Type);
+            float efMult = SevereWeather.Core.EFProgressionManager.Instance != null ? SevereWeather.Core.EFProgressionManager.Instance.DamageMultiplier : 1.0f;
+            float adjusted = damageEvent.Amount * GetMaterialMultiplier(materialClass, damageEvent.Type) * efMult;
             health = Mathf.Max(0f, health - adjusted);
             stage = ResolveDamageStage();
+
+            if (SevereWeather.Core.EFProgressionManager.Instance != null)
+            {
+                SevereWeather.Core.EFProgressionManager.Instance.AddDestructionScore(Mathf.RoundToInt(adjusted * 0.4f));
+            }
 
             TryReleaseBody(adjusted, damageEvent.Impulse);
 
@@ -275,8 +281,8 @@ namespace SevereWeather.Damage
 
             if (body == null || bodyConfigured) return;
             body.mass = EstimateMass();
-            body.linearDamping = mobilityClass == MobilityClass.Light ? 0.35f : 0.8f;
-            body.angularDamping = mobilityClass == MobilityClass.Light ? 0.25f : 1.1f;
+            body.drag = mobilityClass == MobilityClass.Light ? 0.35f : 0.8f;
+            body.angularDrag = mobilityClass == MobilityClass.Light ? 0.25f : 1.1f;
             body.maxAngularVelocity = mobilityClass == MobilityClass.Light ? 28f : 16f;
             bodyConfigured = true;
         }
