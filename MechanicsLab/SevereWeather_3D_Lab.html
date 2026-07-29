@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Severe Weather 3D Lab v2.4.0 - Precision Tuning Edition</title>
+<title>Severe Weather 3D Lab v2.5.0 - Tactical View & World Expansion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -143,7 +143,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.4.0 TUNED</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.5.0 TACTICAL</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -162,8 +162,8 @@
       <div class="objectives-box" id="objList">
         <div><b>STORM OBJECTIVES:</b></div>
         <div class="obj-item" id="obj1">⚪ Shatter Water Tower 💧 & Silo 🌾</div>
-        <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (4,200+ PTS)</div>
-        <div class="obj-item" id="obj3">⚪ Score 7,500 Total Points</div>
+        <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (2,500+ PTS)</div>
+        <div class="obj-item" id="obj3">⚪ Score 4,500 Total Points</div>
       </div>
     </div>
 
@@ -177,7 +177,7 @@
     <div class="panel key-guide">
       <div><b>Move:</b> <span>WASD</span> / <span>Joystick</span></div>
       <div><b>Verbs:</b> <span id="verbSpace">SPACE: Pull (Inward Orbit)</span> | <span id="verbQ">Q: Gust (Outward Shockwave)</span> | <span id="verbE">E: Power Grid Zap</span></div>
-      <div><b>Radar Beacons:</b> 💧 Water Tower | 🌾 Grain Silo</div>
+      <div><b>Districts:</b> 🏙️ Downtown | 🏡 Suburbs | 🏭 Industrial | 🌾 Farmland</div>
     </div>
 
     <div class="panel telemetry">
@@ -325,10 +325,14 @@ function setUI(id, text) {
 const container = document.getElementById('webgl');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#030712');
-scene.fog = new THREE.FogExp2('#030712', 0.0016);
+scene.fog = new THREE.FogExp2('#030712', 0.0014);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 68, 95);
+// OPTIMIZED INITIAL & RUNTIME CAMERA TARGETS (TACTICAL VIEW)
+const isMobileDevice = (window.innerWidth < 850 || window.innerHeight < 540);
+const mobileFactor = isMobileDevice ? 1.22 : 1.0;
+
+camera.position.set(0, 78 * mobileFactor, 110 * mobileFactor);
 camera.lookAt(0, 0, 0);
 
 let cameraShakeIntensity = 0;
@@ -350,13 +354,13 @@ dirLight.shadow.mapSize.width = 2048;
 dirLight.shadow.mapSize.height = 2048;
 dirLight.shadow.camera.near = 0.5;
 dirLight.shadow.camera.far = 400;
-dirLight.shadow.camera.left = -200;
-dirLight.shadow.camera.right = 200;
-dirLight.shadow.camera.top = 200;
-dirLight.shadow.camera.bottom = -200;
+dirLight.shadow.camera.left = -220;
+dirLight.shadow.camera.right = 220;
+dirLight.shadow.camera.top = 220;
+dirLight.shadow.camera.bottom = -220;
 scene.add(dirLight);
 
-// Grass Ground Plane
+// Grass Ground Plane (800x800)
 const groundGeo = new THREE.PlaneGeometry(800, 800);
 const groundMat = new THREE.MeshStandardMaterial({ color: '#162e16', roughness: 0.6, metalness: 0.1 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -368,7 +372,7 @@ scene.add(ground);
 const roadMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.45, metalness: 0.2 });
 const powerPoles = [];
 
-for (let r = -300; r <= 300; r += 100) {
+for (let r = -320; r <= 320; r += 80) {
   const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(800, 12), roadMat);
   roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.05, r);
   roadEW.receiveShadow = true; scene.add(roadEW);
@@ -377,7 +381,7 @@ for (let r = -300; r <= 300; r += 100) {
   roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(r, 0.05, 0);
   roadNS.receiveShadow = true; scene.add(roadNS);
 
-  for (let px = -280; px <= 280; px += 60) {
+  for (let px = -300; px <= 300; px += 50) {
     const poleGroup = new THREE.Group();
     const poleGeo = new THREE.CylinderGeometry(0.35, 0.45, 11, 10);
     const poleMat = new THREE.MeshStandardMaterial({ color: '#542605', roughness: 0.7 });
@@ -521,8 +525,8 @@ let baseScore = 0;
 let efRating = 'EF-0';
 let efMultiplier = 1.0;
 let funnelScale = 1.0;
-let currentCamY = 60, targetCamY = 60;
-let currentCamZ = 85, targetCamZ = 85;
+let currentCamY = 78 * mobileFactor, targetCamY = 78 * mobileFactor;
+let currentCamZ = 110 * mobileFactor, targetCamZ = 110 * mobileFactor;
 let easNewsText = '🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY';
 
 // 3-Minute Run Timer (180s)
@@ -545,22 +549,22 @@ const cooldowns = {
 let activePullVortex = false;
 let pullVortexTimer = 0;
 
-// Storm Mission Objectives Tracker (Tuned Thresholds)
+// Storm Mission Objectives Tracker (Recalibrated Fair Mid-Point)
 const missionObjectives = {
   tornado: [
     { text: "Shatter Water Tower 💧 & Silo 🌾", done: false },
-    { text: "Reach EF-3 Rating (4,200+ PTS)", done: false },
-    { text: "Score 7,500 Total Points", done: false }
+    { text: "Reach EF-3 Rating (2,500+ PTS)", done: false },
+    { text: "Score 4,500 Total Points", done: false }
   ],
   supercell: [
     { text: "Spawn 5+ Hail Corridors", count: 0, target: 5, done: false },
     { text: "Strike 4 Power Poles with Lightning", count: 0, target: 4, done: false },
-    { text: "Reach HAIL 3.25\" Size (4,200+ PTS)", done: false }
+    { text: "Reach HAIL 3.25\" Size (2,500+ PTS)", done: false }
   ],
   derecho: [
     { text: "Damage 30+ Town Structures", count: 0, target: 30, done: false },
     { text: "Trigger 3 Microburst Blasts", count: 0, target: 3, done: false },
-    { text: "Reach 105+ MPH Wind (4,200+ PTS)", done: false }
+    { text: "Reach 105+ MPH Wind (2,500+ PTS)", done: false }
   ]
 };
 
@@ -582,27 +586,27 @@ ground.material.map = swathTexture;
 ground.material.needsUpdate = true;
 
 function markGroundSwath(x, z, r) {
-  const cx = 512 + (x / 400) * 512;
-  const cy = 512 + (z / 400) * 512;
+  const cx = 512 + (x / 450) * 512;
+  const cy = 512 + (z / 450) * 512;
   swathCtx.fillStyle = 'rgba(20, 14, 8, 0.3)';
   swathCtx.beginPath();
-  swathCtx.arc(cx, cy, (r / 400) * 512 * 1.25, 0, Math.PI * 2);
+  swathCtx.arc(cx, cy, (r / 450) * 512 * 1.25, 0, Math.PI * 2);
   swathCtx.fill();
   swathTexture.needsUpdate = true;
 }
 
-// 3D Storm Visual Meshes (Tuned Transparency for Under-Funnel Visibility)
+// 3D Storm Visual Meshes
 const tornadoGroup = new THREE.Group();
 scene.add(tornadoGroup);
 
 const funnelGeo = new THREE.ConeGeometry(16, 34, 32, 24, true);
-const funnelMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.55, roughness: 0.15, side: THREE.DoubleSide });
+const funnelMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.50, roughness: 0.15, side: THREE.DoubleSide });
 const funnelMesh = new THREE.Mesh(funnelGeo, funnelMat);
 funnelMesh.rotation.x = Math.PI; funnelMesh.position.y = 17;
 tornadoGroup.add(funnelMesh);
 
 const outerFunnelGeo = new THREE.ConeGeometry(24, 36, 20, 16, true);
-const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.22, side: THREE.DoubleSide });
+const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.18, side: THREE.DoubleSide });
 const outerFunnelMesh = new THREE.Mesh(outerFunnelGeo, outerFunnelMat);
 outerFunnelMesh.rotation.x = Math.PI; outerFunnelMesh.position.y = 18;
 tornadoGroup.add(outerFunnelMesh);
@@ -624,8 +628,8 @@ const particleSystem = new THREE.Points(particleGeo, particleMat);
 tornadoGroup.add(particleSystem);
 
 // Ground Vortex Target Ring Indicator
-const ringGeo = new THREE.RingGeometry(2.0, 3.2, 32);
-const ringMat = new THREE.MeshBasicMaterial({ color: '#fbbf24', side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+const ringGeo = new THREE.RingGeometry(2.0, 3.4, 32);
+const ringMat = new THREE.MeshBasicMaterial({ color: '#fbbf24', side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
 const vortexRing = new THREE.Mesh(ringGeo, ringMat);
 vortexRing.rotation.x = -Math.PI / 2;
 vortexRing.position.y = 0.1;
@@ -636,7 +640,7 @@ supercellGroup.visible = false;
 scene.add(supercellGroup);
 
 const cloudCanopyGeo = new THREE.CylinderGeometry(38, 20, 14, 32);
-const cloudCanopyMat = new THREE.MeshStandardMaterial({ color: '#0284c7', transparent: true, opacity: 0.45, roughness: 0.25, metalness: 0.4 });
+const cloudCanopyMat = new THREE.MeshStandardMaterial({ color: '#0284c7', transparent: true, opacity: 0.40, roughness: 0.25, metalness: 0.4 });
 const cloudCanopyMesh = new THREE.Mesh(cloudCanopyGeo, cloudCanopyMat);
 cloudCanopyMesh.position.y = 28;
 supercellGroup.add(cloudCanopyMesh);
@@ -662,7 +666,7 @@ derechoGroup.visible = false;
 scene.add(derechoGroup);
 
 const windWallGeo = new THREE.BoxGeometry(65, 18, 14);
-const windWallMat = new THREE.MeshStandardMaterial({ color: '#06b6d4', transparent: true, opacity: 0.42, roughness: 0.35, metalness: 0.3 });
+const windWallMat = new THREE.MeshStandardMaterial({ color: '#06b6d4', transparent: true, opacity: 0.38, roughness: 0.35, metalness: 0.3 });
 const windWallMesh = new THREE.Mesh(windWallGeo, windWallMat);
 windWallMesh.position.y = 9;
 derechoGroup.add(windWallMesh);
@@ -672,7 +676,7 @@ const lightningMat = new THREE.LineBasicMaterial({ color: '#38bdf8', linewidth: 
 const lightningMesh = new THREE.Line(lightningGeo, lightningMat);
 scene.add(lightningMesh);
 
-// World Objects
+// World Objects & Expanded 4-District Layout (210 Total Structures over 460x460 Area)
 const targets = [];
 const landmarks = [];
 const animals = [];
@@ -736,23 +740,23 @@ function createTreeMesh() {
 function createLandmarkMesh(icon) {
   const group = new THREE.Group();
   let baseMat = new THREE.MeshStandardMaterial({ color: '#0284c7', metalness: 0.6, roughness: 0.2 });
-  let geo = new THREE.CylinderGeometry(3.8, 3.8, 15, 20);
+  let geo = new THREE.CylinderGeometry(4.2, 4.2, 17, 20);
 
   if (icon === '🌾') {
     baseMat = new THREE.MeshStandardMaterial({ color: '#d97706', roughness: 0.55 });
-    geo = new THREE.CylinderGeometry(4.2, 4.2, 17, 20);
+    geo = new THREE.CylinderGeometry(4.6, 4.6, 19, 20);
   }
 
   const base = new THREE.Mesh(geo, baseMat);
-  base.position.y = 7.5;
+  base.position.y = 8.5;
   base.castShadow = true; base.receiveShadow = true;
   group.add(base);
 
   // 3D Rotating Beacon Pointer
-  const beaconGeo = new THREE.OctahedronGeometry(2.2);
+  const beaconGeo = new THREE.OctahedronGeometry(2.6);
   const beaconMat = new THREE.MeshBasicMaterial({ color: icon === '💧' ? '#38bdf8' : '#fbbf24', wireframe: true });
   const beacon = new THREE.Mesh(beaconGeo, beaconMat);
-  beacon.position.y = 18;
+  beacon.position.y = 21;
   group.add(beacon);
 
   return { group, base, beacon, color: icon === '🌾' ? '#d97706' : '#0284c7' };
@@ -766,7 +770,7 @@ function explodeStructure(x, z, color, isWaterTower = false, isGrainSilo = false
   if (isWaterTower) playSound('splash');
   else playSound('explode');
 
-  addCameraShake(1.5);
+  addCameraShake(1.6);
 
   const fragGeo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
   const fragMat = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.2 });
@@ -839,7 +843,7 @@ function damageLandmark(lm, amount) {
     if (lm.meshData.beacon) lm.meshData.group.remove(lm.meshData.beacon);
     scene.remove(lm.meshData.group);
     destroyedLandmarksCount++;
-    addScore(350);
+    addScore(450);
     explodeStructure(lm.x, lm.z, lm.meshData.color, lm.icon === '💧', lm.icon === '🌾');
   }
 }
@@ -862,11 +866,27 @@ function init3DWorld() {
   destroyedLandmarksCount = 0;
   destroyedTargetsCount = 0;
 
-  for (let i = 0; i < 145; i++) {
-    const isCommercial = Math.random() < 0.28;
-    const isTree = Math.random() < 0.32;
-    const x = (Math.random() - 0.5) * 370;
-    const z = (Math.random() - 0.5) * 370;
+  // EXPANDED 4-DISTRICT LAYOUT (210 STRUCTURES OVER 460x460 TERRITORY)
+  for (let i = 0; i < 210; i++) {
+    let x, z;
+    const districtType = i % 4; // 0: Downtown, 1: Suburbs, 2: Industrial, 3: Farmland
+
+    if (districtType === 0) { // 🏙️ Downtown (Northwest)
+      x = -80 + (Math.random() - 0.5) * 220;
+      z = -80 + (Math.random() - 0.5) * 220;
+    } else if (districtType === 1) { // 🏡 Suburbs (Northeast)
+      x = 100 + (Math.random() - 0.5) * 220;
+      z = -90 + (Math.random() - 0.5) * 220;
+    } else if (districtType === 2) { // 🏭 Industrial (Southwest)
+      x = -110 + (Math.random() - 0.5) * 220;
+      z = 100 + (Math.random() - 0.5) * 220;
+    } else { // 🌾 Farmland (Southeast)
+      x = 110 + (Math.random() - 0.5) * 220;
+      z = 110 + (Math.random() - 0.5) * 220;
+    }
+
+    const isCommercial = (districtType === 0 && Math.random() < 0.65) || Math.random() < 0.20;
+    const isTree = (districtType === 3 && Math.random() < 0.70) || Math.random() < 0.25;
 
     let meshData;
     if (isTree) meshData = createTreeMesh();
@@ -884,22 +904,23 @@ function init3DWorld() {
     });
   }
 
+  // Priority Landmarks in Industrial & Farmland Districts
   const lm1 = createLandmarkMesh('💧');
-  lm1.group.position.set(-75, 0, -55);
+  lm1.group.position.set(-145, 0, -110);
   scene.add(lm1.group);
-  landmarks.push({ x: -75, z: -55, name: 'WATER TOWER', icon: '💧', health: 240, maxHealth: 240, destroyed: false, meshData: lm1 });
+  landmarks.push({ x: -145, z: -110, name: 'WATER TOWER', icon: '💧', health: 260, maxHealth: 260, destroyed: false, meshData: lm1 });
 
   const lm2 = createLandmarkMesh('🌾');
-  lm2.group.position.set(85, 0, 65);
+  lm2.group.position.set(155, 0, 135);
   scene.add(lm2.group);
-  landmarks.push({ x: 85, z: 65, name: 'GRAIN SILO', icon: '🌾', health: 280, maxHealth: 280, destroyed: false, meshData: lm2 });
+  landmarks.push({ x: 155, z: 135, name: 'GRAIN SILO', icon: '🌾', health: 300, maxHealth: 300, destroyed: false, meshData: lm2 });
 
   const cowGeo = new THREE.BoxGeometry(2.3, 1.6, 1.6);
   const cowMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.75 });
-  for (let i = 0; i < 32; i++) {
+  for (let i = 0; i < 38; i++) {
     const cowMesh = new THREE.Mesh(cowGeo, cowMat);
-    const x = (Math.random() - 0.5) * 320;
-    const z = (Math.random() - 0.5) * 320;
+    const x = (Math.random() - 0.5) * 420;
+    const z = (Math.random() - 0.5) * 420;
     cowMesh.position.set(x, 0.8, z);
     cowMesh.castShadow = true;
     scene.add(cowMesh);
@@ -908,10 +929,10 @@ function init3DWorld() {
 
   const vanGeo = new THREE.BoxGeometry(3.4, 1.9, 1.9);
   const vanMat = new THREE.MeshStandardMaterial({ color: '#f87171', roughness: 0.25, metalness: 0.65 });
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 10; i++) {
     const vanMesh = new THREE.Mesh(vanGeo, vanMat);
-    const x = (Math.random() - 0.5) * 300;
-    const z = (Math.random() - 0.5) * 300;
+    const x = (Math.random() - 0.5) * 400;
+    const z = (Math.random() - 0.5) * 400;
     vanMesh.position.set(x, 0.95, z);
     vanMesh.castShadow = true;
     scene.add(vanMesh);
@@ -963,7 +984,7 @@ function selectStormClass(type) {
   renderObjectives();
 }
 
-// GAME-CHANGING ABILITY IMPLEMENTATION WITH LANDMARK DAMAGE
+// EXPANDED LANDMARK HIT DETECTION RADIUS (storm.radius * 3.2)
 function triggerAbility(slot) {
   if (!runActive) return;
   initAudio();
@@ -981,18 +1002,18 @@ function triggerAbility(slot) {
       addCameraShake(1.4);
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 2.6) damageLandmark(lm, 90);
+        if (dist < storm.radius * 3.2) damageLandmark(lm, 95);
       });
     } else if (slot === 'secondary') { // GUST SHOCKWAVE
       playSound('explode');
       addCameraShake(1.8);
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 2.4) damageLandmark(lm, 110);
+        if (dist < storm.radius * 3.2) damageLandmark(lm, 120);
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 2.2 && t.health > 0) {
+        if (dist < storm.radius * 2.4 && t.health > 0) {
           t.health -= 90;
           if (t.health <= 0) {
             t.health = 0; scene.remove(t.meshData.group);
@@ -1006,7 +1027,7 @@ function triggerAbility(slot) {
       triggerPowerFlash();
       powerPoles.forEach(p => {
         const dist = Math.hypot(p.x - storm.pos.x, p.z - storm.pos.z);
-        if (dist < storm.radius * 2.0 && !p.sparked) {
+        if (dist < storm.radius * 2.2 && !p.sparked) {
           p.sparked = true;
           addScore(75);
         }
@@ -1018,18 +1039,18 @@ function triggerAbility(slot) {
       missionObjectives.supercell[0].count++;
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 2.2) damageLandmark(lm, 50);
+        if (dist < storm.radius * 3.0) damageLandmark(lm, 55);
       });
     } else if (slot === 'secondary') { // DOWNBURST
       playSound('gust');
       addCameraShake(1.6);
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 2.4) damageLandmark(lm, 100);
+        if (dist < storm.radius * 3.2) damageLandmark(lm, 110);
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 1.8 && t.health > 0) {
+        if (dist < storm.radius * 2.0 && t.health > 0) {
           t.health -= 110;
           if (t.health <= 0) {
             t.health = 0; scene.remove(t.meshData.group);
@@ -1044,7 +1065,7 @@ function triggerAbility(slot) {
       missionObjectives.supercell[1].count++;
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 2.4) damageLandmark(lm, 140);
+        if (dist < storm.radius * 3.2) damageLandmark(lm, 150);
       });
     }
   } else if (currentStorm === 'derecho') {
@@ -1053,11 +1074,11 @@ function triggerAbility(slot) {
       addCameraShake(1.4);
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 2.6) damageLandmark(lm, 80);
+        if (dist < storm.radius * 3.4) damageLandmark(lm, 90);
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 2.4 && t.health > 0) {
+        if (dist < storm.radius * 2.6 && t.health > 0) {
           t.health -= 70;
           if (t.health <= 0) {
             t.health = 0; scene.remove(t.meshData.group);
@@ -1072,11 +1093,11 @@ function triggerAbility(slot) {
       missionObjectives.derecho[1].count++;
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 2.4) damageLandmark(lm, 130);
+        if (dist < storm.radius * 3.2) damageLandmark(lm, 140);
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 2.0 && t.health > 0) {
+        if (dist < storm.radius * 2.2 && t.health > 0) {
           t.health -= 140;
           if (t.health <= 0) {
             t.health = 0; scene.remove(t.meshData.group);
@@ -1092,17 +1113,17 @@ function triggerAbility(slot) {
   }
 }
 
-// TUNED BALANCED PROGRESSION THRESHOLDS
+// RECALIBRATED FAIR MID-POINT RATING THRESHOLDS
 function updateEFRating() {
   let badgeText = 'EF-0';
   let mult = 1.0;
   let scaleVal = 1.0;
 
-  if (destructionScore >= 14000) { mult = 3.8; scaleVal = 2.2; }
-  else if (destructionScore >= 8000) { mult = 2.8; scaleVal = 1.8; }
-  else if (destructionScore >= 4200) { mult = 2.2; scaleVal = 1.5; }
-  else if (destructionScore >= 1800) { mult = 1.6; scaleVal = 1.25; }
-  else if (destructionScore >= 500) { mult = 1.25; scaleVal = 1.1; }
+  if (destructionScore >= 9000) { mult = 3.8; scaleVal = 2.2; }
+  else if (destructionScore >= 5000) { mult = 2.8; scaleVal = 1.8; }
+  else if (destructionScore >= 2500) { mult = 2.2; scaleVal = 1.5; }
+  else if (destructionScore >= 1000) { mult = 1.6; scaleVal = 1.25; }
+  else if (destructionScore >= 300) { mult = 1.25; scaleVal = 1.1; }
 
   funnelScale = scaleVal;
 
@@ -1111,27 +1132,27 @@ function updateEFRating() {
   derechoGroup.scale.set(funnelScale, funnelScale, funnelScale);
 
   if (currentStorm === 'tornado') {
-    if (destructionScore >= 14000) badgeText = 'EF-5';
-    else if (destructionScore >= 8000) badgeText = 'EF-4';
-    else if (destructionScore >= 4200) badgeText = 'EF-3';
-    else if (destructionScore >= 1800) badgeText = 'EF-2';
-    else if (destructionScore >= 500) badgeText = 'EF-1';
+    if (destructionScore >= 9000) badgeText = 'EF-5';
+    else if (destructionScore >= 5000) badgeText = 'EF-4';
+    else if (destructionScore >= 2500) badgeText = 'EF-3';
+    else if (destructionScore >= 1000) badgeText = 'EF-2';
+    else if (destructionScore >= 300) badgeText = 'EF-1';
     else badgeText = 'EF-0';
     easNewsText = `🚨 NOAA EAS WARNING: 3D ${badgeText} TORNADO TOUCHDOWN IN LINCOLN COUNTY (MULT: ${mult}x)`;
   } else if (currentStorm === 'supercell') {
-    if (destructionScore >= 14000) badgeText = 'HAIL 4.5"';
-    else if (destructionScore >= 8000) badgeText = 'HAIL 4.0"';
-    else if (destructionScore >= 4200) badgeText = 'HAIL 3.25"';
-    else if (destructionScore >= 1800) badgeText = 'HAIL 2.5"';
-    else if (destructionScore >= 500) badgeText = 'HAIL 1.75"';
+    if (destructionScore >= 9000) badgeText = 'HAIL 4.5"';
+    else if (destructionScore >= 5000) badgeText = 'HAIL 4.0"';
+    else if (destructionScore >= 2500) badgeText = 'HAIL 3.25"';
+    else if (destructionScore >= 1000) badgeText = 'HAIL 2.5"';
+    else if (destructionScore >= 300) badgeText = 'HAIL 1.75"';
     else badgeText = 'HAIL 1.0"';
     easNewsText = `🚨 NOAA EAS SEVERE T-STORM WARNING: SUPERCELL PRODUCING ${badgeText} HAIL & DOWNBURSTS (MULT: ${mult}x)`;
   } else if (currentStorm === 'derecho') {
-    if (destructionScore >= 14000) badgeText = '130+ MPH';
-    else if (destructionScore >= 8000) badgeText = '120 MPH';
-    else if (destructionScore >= 4200) badgeText = '105 MPH';
-    else if (destructionScore >= 1800) badgeText = '90 MPH';
-    else if (destructionScore >= 500) badgeText = '75 MPH';
+    if (destructionScore >= 9000) badgeText = '130+ MPH';
+    else if (destructionScore >= 5000) badgeText = '120 MPH';
+    else if (destructionScore >= 2500) badgeText = '105 MPH';
+    else if (destructionScore >= 1000) badgeText = '90 MPH';
+    else if (destructionScore >= 300) badgeText = '75 MPH';
     else badgeText = '60 MPH';
     easNewsText = `🚨 NOAA EAS HIGH WIND WARNING: DERECHO SQUALL LINE PRODUCING ${badgeText} WINDS (MULT: ${mult}x)`;
   }
@@ -1149,16 +1170,16 @@ function updateEFRating() {
 function updateObjectives() {
   if (currentStorm === 'tornado') {
     missionObjectives.tornado[0].done = (destroyedLandmarksCount >= 2);
-    missionObjectives.tornado[1].done = (destructionScore >= 4200);
-    missionObjectives.tornado[2].done = (destructionScore >= 7500);
+    missionObjectives.tornado[1].done = (destructionScore >= 2500);
+    missionObjectives.tornado[2].done = (destructionScore >= 4500);
   } else if (currentStorm === 'supercell') {
     missionObjectives.supercell[0].done = (missionObjectives.supercell[0].count >= 5);
     missionObjectives.supercell[1].done = (missionObjectives.supercell[1].count >= 4);
-    missionObjectives.supercell[2].done = (destructionScore >= 4200);
+    missionObjectives.supercell[2].done = (destructionScore >= 2500);
   } else if (currentStorm === 'derecho') {
     missionObjectives.derecho[0].done = (destroyedTargetsCount >= 30);
     missionObjectives.derecho[1].done = (missionObjectives.derecho[1].count >= 3);
-    missionObjectives.derecho[2].done = (destructionScore >= 4200);
+    missionObjectives.derecho[2].done = (destructionScore >= 2500);
   }
   renderObjectives();
 }
@@ -1173,11 +1194,14 @@ function renderObjectives() {
     html += `<div class="${cls}">${mark} ${o.text}</div>`;
   });
 
-  // Landmark Health Status Display
+  // Landmark Distance & HP Indicators
   landmarks.forEach(lm => {
     if (!lm.destroyed) {
+      const dist = Math.round(Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z));
+      const inRange = dist < (storm.radius * 3.2);
+      const rangeTag = inRange ? '<b style="color:var(--gold)">[IN RANGE!]</b>' : `${dist}m`;
       const pct = Math.ceil((lm.health / lm.maxHealth) * 100);
-      html += `<div style="font-size:9px;color:var(--cyan);margin-top:2px;">${lm.icon} ${lm.name}: ${pct}% HP</div>`;
+      html += `<div style="font-size:9px;color:var(--cyan);margin-top:2px;">${lm.icon} ${lm.name}: ${pct}% HP (${rangeTag})</div>`;
     }
   });
 
@@ -1193,10 +1217,10 @@ function finishRun() {
   objs.forEach(o => { if (o.done) doneCount++; });
 
   let grade = 'F';
-  if (doneCount === 3 && destructionScore >= 8000) grade = 'S+';
-  else if (doneCount >= 2 && destructionScore >= 4500) grade = 'A';
-  else if (doneCount >= 1 && destructionScore >= 2000) grade = 'B';
-  else if (destructionScore >= 800) grade = 'C';
+  if (doneCount === 3 && destructionScore >= 5000) grade = 'S+';
+  else if (doneCount >= 2 && destructionScore >= 2800) grade = 'A';
+  else if (doneCount >= 1 && destructionScore >= 1200) grade = 'B';
+  else if (destructionScore >= 400) grade = 'C';
 
   setUI('resStormTitle', `${currentStorm.toUpperCase()} WARNING RUN`);
   setUI('resGrade', grade);
@@ -1300,7 +1324,7 @@ function animate(now) {
 
   const isMoving = (moveX !== 0 || moveZ !== 0 || joystickActive);
 
-  // Tornado PULL Vortex Physics: Magnetically pull nearby structures toward center
+  // Tornado PULL Vortex Physics
   if (activePullVortex && pullVortexTimer > 0) {
     pullVortexTimer -= dt;
     if (pullVortexTimer <= 0) activePullVortex = false;
@@ -1323,8 +1347,8 @@ function animate(now) {
   storm.pos.x += moveX * storm.speed * dt;
   storm.pos.z += moveZ * storm.speed * dt;
 
-  storm.pos.x = Math.max(-360, Math.min(360, storm.pos.x));
-  storm.pos.z = Math.max(-360, Math.min(360, storm.pos.z));
+  storm.pos.x = Math.max(-380, Math.min(380, storm.pos.x));
+  storm.pos.z = Math.max(-380, Math.min(380, storm.pos.z));
 
   if (isMoving) {
     markGroundSwath(storm.pos.x, storm.pos.z, storm.radius * funnelScale);
@@ -1341,19 +1365,20 @@ function animate(now) {
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
   tornadoGroup.rotation.x = THREE.MathUtils.lerp(tornadoGroup.rotation.x, moveZ * 0.14, 0.1);
 
-  // Dynamic Zoom-Out Camera Angle
-  let baseCamY = 60, baseCamZ = 85;
-  if (currentStorm === 'supercell') { baseCamY = 80; baseCamZ = 115; }
-  else if (currentStorm === 'derecho') { baseCamY = 100; baseCamZ = 145; }
+  // OPTIMIZED TACTICAL VIEW CAMERA DISTANCE & MOVEMENT LOOK-AHEAD
+  let baseCamY = 78, baseCamZ = 110;
+  if (currentStorm === 'supercell') { baseCamY = 105; baseCamZ = 150; }
+  else if (currentStorm === 'derecho') { baseCamY = 130; baseCamZ = 185; }
 
-  targetCamY = baseCamY * funnelScale;
-  targetCamZ = baseCamZ * funnelScale;
+  targetCamY = baseCamY * funnelScale * mobileFactor;
+  targetCamZ = baseCamZ * funnelScale * mobileFactor;
 
   currentCamY = THREE.MathUtils.lerp(currentCamY, targetCamY, 0.06);
   currentCamZ = THREE.MathUtils.lerp(currentCamZ, targetCamZ, 0.06);
 
-  let camTargetX = storm.pos.x;
-  let camTargetZ = storm.pos.z + currentCamZ;
+  // Movement Look-Ahead Vector Offset
+  let camTargetX = storm.pos.x + (moveX * 12);
+  let camTargetZ = storm.pos.z + currentCamZ + (moveZ * 12);
   if (cameraShakeIntensity > 0) {
     camTargetX += (Math.random() - 0.5) * cameraShakeIntensity * 3.0;
     camTargetZ += (Math.random() - 0.5) * cameraShakeIntensity * 3.0;
@@ -1363,7 +1388,7 @@ function animate(now) {
   camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);
   camera.position.y = THREE.MathUtils.lerp(camera.position.y, currentCamY, 0.08);
   camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);
-  camera.lookAt(storm.pos.x, 0, storm.pos.z);
+  camera.lookAt(storm.pos.x + (moveX * 8), 0, storm.pos.z + (moveZ * 8));
 
   // Rotate Landmark 3D Wayfinding Beacons
   landmarks.forEach(lm => {
@@ -1397,7 +1422,7 @@ function animate(now) {
 
     landmarks.forEach(lm => {
       const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-      if (dist < storm.radius * 1.6 && !lm.destroyed) {
+      if (dist < storm.radius * 1.8 && !lm.destroyed) {
         damageLandmark(lm, 65 * dt * efMultiplier);
       }
     });
@@ -1489,17 +1514,26 @@ function renderRadar() {
   rCtx.stroke();
 
   // Storm Position Dot
-  const rx = 72.5 + (storm.pos.x / 180) * 55;
-  const rz = 72.5 + (storm.pos.z / 180) * 55;
+  const rx = 72.5 + (storm.pos.x / 220) * 55;
+  const rz = 72.5 + (storm.pos.z / 220) * 55;
 
   rCtx.fillStyle = '#ef4444';
   rCtx.beginPath(); rCtx.arc(rx, rz, 10, 0, Math.PI * 2); rCtx.fill();
 
-  // Radar Wayfinding Beacons for Priority Landmarks (Water Tower & Grain Silo)
+  // Radar Wayfinding Beacons with In-Range Pulse & Distance Indicators
   landmarks.forEach(lm => {
     if (!lm.destroyed) {
-      const lmx = 72.5 + (lm.x / 180) * 55;
-      const lmz = 72.5 + (lm.z / 180) * 55;
+      const lmx = 72.5 + (lm.x / 220) * 55;
+      const lmz = 72.5 + (lm.z / 220) * 55;
+      const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
+      const inRange = dist < (storm.radius * 3.2);
+
+      if (inRange) { // Pulsing Gold/White Ring when in ability hit range
+        rCtx.strokeStyle = '#ffffff';
+        rCtx.lineWidth = 2;
+        rCtx.beginPath(); rCtx.arc(lmx, lmz, 11 + Math.sin(performance.now() * 0.01) * 3, 0, Math.PI * 2); rCtx.stroke();
+      }
+
       rCtx.fillStyle = lm.icon === '💧' ? '#38bdf8' : '#fbbf24';
       rCtx.beginPath(); rCtx.arc(lmx, lmz, 7, 0, Math.PI * 2); rCtx.fill();
     }
