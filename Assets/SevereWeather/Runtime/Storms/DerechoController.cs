@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SevereWeather.Storms
 {
-    public class DerechoController : StormControllerBase
+    public sealed class DerechoController : StormControllerBase
     {
         [Header("Derecho Parameters")]
         [SerializeField] private float baseSweepRadius = 45f;
@@ -11,23 +11,42 @@ namespace SevereWeather.Storms
         [SerializeField] private float microburstRadius = 90f;
         [SerializeField] private float microburstDamage = 45f;
         [SerializeField] private float dustSurgeRadius = 60f;
+        [SerializeField] private float microburstCooldown = 3.2f;
+        [SerializeField] private float dustSurgeCooldown = 2.6f;
 
         private bool isSweeping;
-        private bool isMicrobursting;
-        private bool isDustSurging;
-        private float abilityTimer;
+        private float microburstTimer;
+        private float dustSurgeTimer;
 
         public override StormKind Kind => StormKind.Derecho;
         public override float InfluenceRadius => isSweeping ? baseSweepRadius * 1.6f : baseSweepRadius;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            moveSpeed = 20f;
+            acceleration = 18f;
+            referenceWindSpeed = 62f;
+        }
+
+        protected override void RegenerateResources(float dt)
+        {
+            base.RegenerateResources(dt);
+            microburstTimer = Mathf.Max(0f, microburstTimer - dt);
+            dustSurgeTimer = Mathf.Max(0f, dustSurgeTimer - dt);
+        }
 
         protected override void HandleAbilities(float dt)
         {
             if (stormInput == null) return;
 
-            if (stormInput.PrimaryActionHold && power >= 20f)
+            bool secondaryPressed = stormInput.ConsumeSecondaryPressed();
+            bool tertiaryPressed = stormInput.ConsumeTertiaryPressed();
+
+            if (stormInput.PrimaryHeld && power > 0.5f)
             {
                 isSweeping = true;
-                power -= 15f * dt;
+                power = Mathf.Max(0f, power - 15f * dt);
                 ExecuteWindWallSweep(dt);
             }
             else
@@ -35,15 +54,17 @@ namespace SevereWeather.Storms
                 isSweeping = false;
             }
 
-            if (stormInput.SecondaryActionTap && power >= 30f)
+            if (secondaryPressed && microburstTimer <= 0f && power >= 30f)
             {
                 power -= 30f;
+                microburstTimer = microburstCooldown;
                 ExecuteMicroburstBlast();
             }
 
-            if (stormInput.TertiaryActionTap && power >= 25f)
+            if (tertiaryPressed && dustSurgeTimer <= 0f && power >= 25f)
             {
                 power -= 25f;
+                dustSurgeTimer = dustSurgeCooldown;
                 ExecuteDustSurge();
             }
         }
@@ -59,7 +80,12 @@ namespace SevereWeather.Storms
                 if (TryGetDamageable(overlapBuffer[i], out DamageableStructure damageable))
                 {
                     Vector3 impulse = transform.forward * referenceWindSpeed * 0.4f;
-                    ApplyDamage(damageable, DamageType.DerechoWind, 4f * dt, overlapBuffer[i].transform.position, impulse);
+                    ApplyDamage(
+                        damageable,
+                        DamageType.DerechoWind,
+                        4f * dt,
+                        overlapBuffer[i].transform.position,
+                        impulse);
                     hitCount++;
                 }
             }
@@ -73,24 +99,31 @@ namespace SevereWeather.Storms
         private void ExecuteWindWallSweep(float dt)
         {
             Vector3 center = transform.position;
-            float radius = InfluenceRadius;
-            int count = Query(center, radius);
+            int count = Query(center, InfluenceRadius);
             int hitCount = 0;
 
             Vector3 sweepDirection = transform.forward;
-            if (sweepDirection.sqrMagnitude < 0.01f) sweepDirection = Vector3.forward;
+            if (sweepDirection.sqrMagnitude < 0.01f)
+            {
+                sweepDirection = Vector3.forward;
+            }
 
             for (int i = 0; i < count; i++)
             {
                 if (TryGetDamageable(overlapBuffer[i], out DamageableStructure damageable))
                 {
                     Vector3 impulse = sweepDirection * referenceWindSpeed * 1.8f;
-                    ApplyDamage(damageable, DamageType.DerechoWind, windWallDamage * dt, overlapBuffer[i].transform.position, impulse);
+                    ApplyDamage(
+                        damageable,
+                        DamageType.DerechoWind,
+                        windWallDamage * dt,
+                        overlapBuffer[i].transform.position,
+                        impulse);
                     hitCount++;
                 }
             }
 
-            ReportAction("WIND WALL SWEEP", hitCount);
+            ReportAction(hitCount > 0 ? "WIND WALL SWEEP" : "WIND WALL - NO TARGETS", hitCount, 0.7f);
         }
 
         private void ExecuteMicroburstBlast()
@@ -103,32 +136,49 @@ namespace SevereWeather.Storms
             {
                 if (TryGetDamageable(overlapBuffer[i], out DamageableStructure damageable))
                 {
-                    Vector3 outward = (overlapBuffer[i].transform.position - center).normalized;
-                    outward.y = 0.2f;
-                    Vector3 impulse = outward * referenceWindSpeed * 3.0f;
-                    ApplyDamage(damageable, DamageType.DerechoWind, microburstDamage, overlapBuffer[i].transform.position, impulse);
+                    Vector3 outward = overlapBuffer[i].transform.position - center;
+                    outward.y = 0f;
+                    if (outward.sqrMagnitude < 0.01f)
+                    {
+                        outward = transform.forward;
+                    }
+                    else
+                    {
+                        outward.Normalize();
+                    }
+
+                    Vector3 impulse = (outward + Vector3.up * 0.2f) * referenceWindSpeed * 3f;
+                    ApplyDamage(
+                        damageable,
+                        DamageType.DerechoWind,
+                        microburstDamage,
+                        overlapBuffer[i].transform.position,
+                        impulse);
                     hitCount++;
                 }
             }
 
-            ReportAction("MICROBURST BLAST", hitCount);
+            ReportAction(hitCount > 0 ? "MICROBURST BLAST" : "MICROBURST - NO TARGETS", hitCount);
         }
 
         private void ExecuteDustSurge()
         {
-            Vector3 center = transform.position;
-            int count = Query(center, dustSurgeRadius);
-            ReportAction("DUST SURGE CLOUD", count);
+            int count = Query(transform.position, dustSurgeRadius);
+            ReportAction(count > 0 ? "DUST SURGE CLOUD" : "DUST SURGE - NO TARGETS", count);
         }
 
         public override Vector3 SampleWind(Vector3 worldPosition)
         {
-            Vector3 diff = worldPosition - transform.position;
-            diff.y = 0f;
-            if (diff.magnitude > InfluenceRadius) return Vector3.zero;
+            Vector3 offset = worldPosition - transform.position;
+            offset.y = 0f;
+            if (offset.magnitude > InfluenceRadius) return Vector3.zero;
 
             Vector3 forwardWind = transform.forward * referenceWindSpeed;
-            if (isSweeping) forwardWind *= 1.8f;
+            if (isSweeping)
+            {
+                forwardWind *= 1.8f;
+            }
+
             return forwardWind;
         }
     }
