@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Severe Weather 3D Lab v2.2.0 - Warning Run Edition</title>
+<title>Severe Weather 3D Lab v2.3.0 - Arcade Engine Edition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -54,7 +54,7 @@
   
   .ef-badge { display: inline-block; background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 3px 10px; border-radius: 8px; font-weight: 900; font-size: 13px; letter-spacing: 0.06em; box-shadow: 0 0 16px rgba(239, 68, 68, 0.8); }
   
-  /* Storm Tabs */
+  /* Storm Selector Tabs */
   .storm-tabs { display: flex; gap: 6px; margin-top: 10px; }
   .tab-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; }
   .tab-btn.active#tabTornado { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; border-color: #f59e0b; box-shadow: 0 0 18px rgba(245, 158, 11, 0.6); }
@@ -143,24 +143,24 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.2.0 WARNING RUN</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.3.0 ARCADE ENGINE</div>
 </div>
 
 <!-- Glassmorphism HUD -->
 <div id="hud">
   <div class="header">
     <div class="panel title-card">
-      <h1>🌪️ WARNING RUN <span class="ef-badge" id="efBadge">EF-0</span></h1>
-      <p id="stormDesc">3-Minute Destruction Mission, Objectives & Ability Cooldowns</p>
+      <h1><span id="stormIconHead">🌪️</span> SEVERE WEATHER 3D <span class="ef-badge" id="efBadge">EF-0</span></h1>
+      <p id="stormDesc">Select Storm Class to Begin 3-Minute Arcade Warning Run</p>
       
       <div class="storm-tabs">
-        <button class="tab-btn active" id="tabTornado" onclick="setStorm('tornado')">🌪️ TORNADO [1]</button>
-        <button class="tab-btn" id="tabSupercell" onclick="setStorm('supercell')">🌩️ SUPERCELL [2]</button>
-        <button class="tab-btn" id="tabDerecho" onclick="setStorm('derecho')">💨 DERECHO [3]</button>
+        <button class="tab-btn active" id="tabTornado" onclick="selectStormClass('tornado')">🌪️ TORNADO [1]</button>
+        <button class="tab-btn" id="tabSupercell" onclick="selectStormClass('supercell')">🌩️ SUPERCELL [2]</button>
+        <button class="tab-btn" id="tabDerecho" onclick="selectStormClass('derecho')">💨 DERECHO [3]</button>
       </div>
 
       <div class="objectives-box" id="objList">
-        <div><b>MISSION OBJECTIVES:</b></div>
+        <div><b>STORM OBJECTIVES:</b></div>
         <div class="obj-item" id="obj1">⚪ Destroy Water Tower & Grain Silo</div>
         <div class="obj-item" id="obj2">⚪ Reach EF-3 Intensity Rating</div>
         <div class="obj-item" id="obj3">⚪ Score 3,500 Total Points</div>
@@ -177,7 +177,7 @@
     <div class="panel key-guide">
       <div><b>Move:</b> <span>WASD</span> / <span>Joystick</span></div>
       <div><b>Verbs:</b> <span id="verbSpace">SPACE: Pull (Inward Orbit)</span> | <span id="verbQ">Q: Gust (Outward Shockwave)</span> | <span id="verbE">E: Power Grid Zap</span></div>
-      <div><b>3D World:</b> Water Towers 💧, Silos 🌾, Flying 3D Cows 🐄 & Sparking Power Lines ⚡</div>
+      <div><b>Radar Beacons:</b> 💧 Water Tower | 🌾 Grain Silo</div>
     </div>
 
     <div class="panel telemetry">
@@ -211,7 +211,7 @@
 <!-- End-of-Run Results Overlay Screen -->
 <div id="resultsOverlay">
   <div class="results-card">
-    <h2>MISSION RESULTS</h2>
+    <h2 id="resStormTitle">TORNADO WARNING RUN</h2>
     <div class="grade-stamp" id="resGrade">S+</div>
     <div class="results-stats">
       <div>FINAL SCORE: <b id="resScore" style="color:var(--gold)">0</b></div>
@@ -325,10 +325,10 @@ function setUI(id, text) {
 const container = document.getElementById('webgl');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#030712');
-scene.fog = new THREE.FogExp2('#030712', 0.0018);
+scene.fog = new THREE.FogExp2('#030712', 0.0016);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 60, 85);
+camera.position.set(0, 65, 90);
 camera.lookAt(0, 0, 0);
 
 let cameraShakeIntensity = 0;
@@ -340,7 +340,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // Lighting
-const ambientLight = new THREE.AmbientLight('#334155', 1.1);
+const ambientLight = new THREE.AmbientLight('#334155', 1.2);
 scene.add(ambientLight);
 
 const dirLight = new THREE.DirectionalLight('#fef08a', 2.0);
@@ -494,9 +494,9 @@ window.addEventListener('keydown', e => {
 
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(code) || e.key === ' ') e.preventDefault();
 
-  if (code === 'Digit1' || key === '1') setStorm('tornado');
-  if (code === 'Digit2' || key === '2') setStorm('supercell');
-  if (code === 'Digit3' || key === '3') setStorm('derecho');
+  if (code === 'Digit1' || key === '1') selectStormClass('tornado');
+  if (code === 'Digit2' || key === '2') selectStormClass('supercell');
+  if (code === 'Digit3' || key === '3') selectStormClass('derecho');
 
   if (code === 'Space' || key === ' ') triggerAbility('primary');
   if (code === 'KeyQ' || key === 'q') triggerAbility('secondary');
@@ -529,27 +529,31 @@ let easNewsText = '🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN C
 let runTimeRemaining = 180;
 let runActive = true;
 
-// Combo Multiplier System
+// Balanced Combo System (4.5s Decay)
 let comboMultiplier = 1.0;
 let maxComboReached = 1.0;
 let comboDecayTimer = 0;
 
-// Ability Cooldown Timers (Seconds)
+// Ability Cooldown Timers
 const cooldowns = {
   primary: { current: 0, max: 2.5 },
   secondary: { current: 0, max: 4.0 },
   tertiary: { current: 0, max: 5.0 }
 };
 
+// Ability Game-Changing State
+let activePullVortex = false;
+let pullVortexTimer = 0;
+
 // Storm Mission Objectives Tracker
 const missionObjectives = {
   tornado: [
-    { text: "Destroy Water Tower & Grain Silo", done: false },
-    { text: "Reach EF-3 Rating (1500+ PTS)", done: false },
+    { text: "Shatter Water Tower 💧 & Silo 🌾", done: false },
+    { text: "Reach EF-3 Rating (1,500+ PTS)", done: false },
     { text: "Score 3,500 Total Points", done: false }
   ],
   supercell: [
-    { text: "Spawn 5+ Hail Volleys", count: 0, target: 5, done: false },
+    { text: "Spawn 5+ Hail Corridors", count: 0, target: 5, done: false },
     { text: "Strike 4 Power Poles with Lightning", count: 0, target: 4, done: false },
     { text: "Reach HAIL 3.25\" Size Milestone", done: false }
   ],
@@ -587,18 +591,18 @@ function markGroundSwath(x, z, r) {
   swathTexture.needsUpdate = true;
 }
 
-// 3D Storm Visual Meshes
+// 3D Storm Visual Meshes (Adjusted Opacity for Superior Under-Canopy Visibility)
 const tornadoGroup = new THREE.Group();
 scene.add(tornadoGroup);
 
 const funnelGeo = new THREE.ConeGeometry(16, 34, 32, 24, true);
-const funnelMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.92, roughness: 0.15, side: THREE.DoubleSide });
+const funnelMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.68, roughness: 0.15, side: THREE.DoubleSide });
 const funnelMesh = new THREE.Mesh(funnelGeo, funnelMat);
 funnelMesh.rotation.x = Math.PI; funnelMesh.position.y = 17;
 tornadoGroup.add(funnelMesh);
 
 const outerFunnelGeo = new THREE.ConeGeometry(24, 36, 20, 16, true);
-const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.28, side: THREE.DoubleSide });
 const outerFunnelMesh = new THREE.Mesh(outerFunnelGeo, outerFunnelMat);
 outerFunnelMesh.rotation.x = Math.PI; outerFunnelMesh.position.y = 18;
 tornadoGroup.add(outerFunnelMesh);
@@ -624,7 +628,7 @@ supercellGroup.visible = false;
 scene.add(supercellGroup);
 
 const cloudCanopyGeo = new THREE.CylinderGeometry(38, 20, 14, 32);
-const cloudCanopyMat = new THREE.MeshStandardMaterial({ color: '#0284c7', transparent: true, opacity: 0.8, roughness: 0.25, metalness: 0.4 });
+const cloudCanopyMat = new THREE.MeshStandardMaterial({ color: '#0284c7', transparent: true, opacity: 0.55, roughness: 0.25, metalness: 0.4 });
 const cloudCanopyMesh = new THREE.Mesh(cloudCanopyGeo, cloudCanopyMat);
 cloudCanopyMesh.position.y = 28;
 supercellGroup.add(cloudCanopyMesh);
@@ -634,7 +638,7 @@ function spawnSupercellHail() {
   playSound('hail');
   const hailGeo = new THREE.SphereGeometry(1.3, 10, 10);
   const hailMat = new THREE.MeshStandardMaterial({ color: '#bae6fd', roughness: 0.1, metalness: 0.6 });
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 10; i++) {
     const h = new THREE.Mesh(hailGeo, hailMat);
     const hx = storm.pos.x + (Math.random() - 0.5) * 38;
     const hz = storm.pos.z + (Math.random() - 0.5) * 38;
@@ -650,7 +654,7 @@ derechoGroup.visible = false;
 scene.add(derechoGroup);
 
 const windWallGeo = new THREE.BoxGeometry(65, 18, 14);
-const windWallMat = new THREE.MeshStandardMaterial({ color: '#06b6d4', transparent: true, opacity: 0.72, roughness: 0.35, metalness: 0.3 });
+const windWallMat = new THREE.MeshStandardMaterial({ color: '#06b6d4', transparent: true, opacity: 0.50, roughness: 0.35, metalness: 0.3 });
 const windWallMesh = new THREE.Mesh(windWallGeo, windWallMat);
 windWallMesh.position.y = 9;
 derechoGroup.add(windWallMesh);
@@ -735,7 +739,15 @@ function createLandmarkMesh(icon) {
   base.position.y = 7.5;
   base.castShadow = true; base.receiveShadow = true;
   group.add(base);
-  return { group, base, color: icon === '🌾' ? '#d97706' : '#0284c7' };
+
+  // 3D Wayfinding Beacon Pointer Mesh
+  const beaconGeo = new THREE.OctahedronGeometry(2.0);
+  const beaconMat = new THREE.MeshBasicMaterial({ color: icon === '💧' ? '#38bdf8' : '#fbbf24', wireframe: true });
+  const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+  beacon.position.y = 18;
+  group.add(beacon);
+
+  return { group, base, beacon, color: icon === '🌾' ? '#d97706' : '#0284c7' };
 }
 
 function addCameraShake(intensity) {
@@ -802,7 +814,7 @@ function triggerLightningStrike(targetX, targetZ) {
 function addScore(pts) {
   comboMultiplier = Math.min(5.0, comboMultiplier + 0.15);
   maxComboReached = Math.max(maxComboReached, comboMultiplier);
-  comboDecayTimer = 2.5;
+  comboDecayTimer = 4.5; // Balanced 4.5s Decay
 
   const added = Math.round(pts * comboMultiplier);
   baseScore += pts;
@@ -874,7 +886,8 @@ function init3DWorld() {
   }
 }
 
-function setStorm(type) {
+function selectStormClass(type) {
+  if (!runActive) return;
   currentStorm = type;
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
@@ -884,63 +897,148 @@ function setStorm(type) {
 
   if (type === 'tornado') {
     getCachedEl('tabTornado').classList.add('active');
+    setUI('stormIconHead', '🌪️');
     tornadoGroup.visible = true;
     storm.speed = 42; storm.radius = 16;
     setUI('lblBtn1', 'PULL'); setUI('lblBtn2', 'GUST'); setUI('lblBtn3', 'ZAP');
-    setUI('verbSpace', 'SPACE: Pull (Inward Orbit)');
-    setUI('verbQ', 'Q: Gust (Outward Shockwave)');
-    setUI('verbE', 'E: Power Grid Zap');
-    setUI('stormDesc', 'Dark Charcoal Funnel, Flying Cows & Inward Gravity Orbit');
+    setUI('verbSpace', 'SPACE: Pull (Inward Gravitational Vortex)');
+    setUI('verbQ', 'Q: Gust (360° Explosive Shockwave)');
+    setUI('verbE', 'E: Power Grid Chain Zap');
+    setUI('stormDesc', 'Tornado Class: Inward Vortex Gravity & Explosive Shockwaves');
   } else if (type === 'supercell') {
     getCachedEl('tabSupercell').classList.add('active');
+    setUI('stormIconHead', '🌩️');
     supercellGroup.visible = true;
     storm.speed = 36; storm.radius = 26;
     setUI('lblBtn1', 'HAIL'); setUI('lblBtn2', 'DOWNBURST'); setUI('lblBtn3', 'LIGHTNING');
-    setUI('verbSpace', 'SPACE: Hail Barrage');
-    setUI('verbQ', 'Q: Downburst Blast');
-    setUI('verbE', 'E: Lightning Strike');
-    setUI('stormDesc', 'Electric Cyan Cloud Canopy, Raining Hailstones & Lightning Bolts');
+    setUI('verbSpace', 'SPACE: Hail Corridor (Raining Barrage)');
+    setUI('verbQ', 'Q: Downburst (Directional Forward Blast)');
+    setUI('verbE', 'E: Targeted Lightning Super-Strike');
+    setUI('stormDesc', 'Supercell Class: Directional Downbursts & Targeted Lightning');
   } else if (type === 'derecho') {
     getCachedEl('tabDerecho').classList.add('active');
+    setUI('stormIconHead', '💨');
     derechoGroup.visible = true;
     storm.speed = 54; storm.radius = 34;
     setUI('lblBtn1', 'SWEEP'); setUI('lblBtn2', 'MICROBURST'); setUI('lblBtn3', 'DUST');
-    setUI('verbSpace', 'SPACE: Wind Wall Sweep');
-    setUI('verbQ', 'Q: Microburst Blast');
-    setUI('verbE', 'E: Dust Surge Cloud');
-    setUI('stormDesc', '65m Wide Glowing Wind Wall & High-Speed Microburst Blast Waves');
+    setUI('verbSpace', 'SPACE: Wind Wall Sweep (80m Mega Surge)');
+    setUI('verbQ', 'Q: Microburst (High-Damage Blast Ring)');
+    setUI('verbE', 'E: Dust Cloud Surge (Structure Weakening)');
+    setUI('stormDesc', 'Derecho Class: 80m Mega Wind Wall & High-Damage Microburst Rings');
   }
   updateEFRating();
   renderObjectives();
 }
 
+// GAME-CHANGING MECHANICAL ABILITY IMPLEMENTATION
 function triggerAbility(slot) {
   if (!runActive) return;
   initAudio();
 
   const cd = cooldowns[slot];
-  if (cd.current > 0) return; // Cooldown active
+  if (cd.current > 0) return; // Active Cooldown
 
   cd.current = cd.max;
 
-  if (slot === 'primary') {
-    if (currentStorm === 'supercell') {
+  if (currentStorm === 'tornado') {
+    if (slot === 'primary') { // PULL: Inward Gravity Vortex
+      activePullVortex = true;
+      pullVortexTimer = 2.0;
+      playSound('gust');
+      addCameraShake(1.2);
+    } else if (slot === 'secondary') { // GUST: 360 Explosive Shockwave
+      playSound('explode');
+      addCameraShake(1.8);
+      targets.forEach(t => {
+        const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
+        if (dist < storm.radius * 2.2 && t.health > 0) {
+          t.health -= 90;
+          if (t.health <= 0) {
+            t.health = 0; scene.remove(t.meshData.group);
+            destroyedTargetsCount++; addScore(80);
+            explodeStructure(t.x, t.z, t.color);
+          }
+        }
+      });
+    } else if (slot === 'tertiary') { // ZAP: Chain Lightning Flash
+      playSound('zap');
+      triggerPowerFlash();
+      powerPoles.forEach(p => {
+        const dist = Math.hypot(p.x - storm.pos.x, p.z - storm.pos.z);
+        if (dist < storm.radius * 2.0 && !p.sparked) {
+          p.sparked = true;
+          addScore(75);
+        }
+      });
+    }
+  } else if (currentStorm === 'supercell') {
+    if (slot === 'primary') { // HAIL CORRIDOR
       spawnSupercellHail();
       missionObjectives.supercell[0].count++;
-    } else {
+    } else if (slot === 'secondary') { // DOWNBURST: Directional Blast
+      playSound('gust');
+      addCameraShake(1.6);
+      targets.forEach(t => {
+        const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
+        if (dist < storm.radius * 1.8 && t.health > 0) {
+          t.health -= 110;
+          if (t.health <= 0) {
+            t.health = 0; scene.remove(t.meshData.group);
+            destroyedTargetsCount++; addScore(90);
+            explodeStructure(t.x, t.z, t.color);
+          }
+        }
+      });
+    } else if (slot === 'tertiary') { // LIGHTNING SUPER-STRIKE
       playSound('zap');
-      triggerLightningStrike(storm.pos.x + 10, storm.pos.z + 10);
+      triggerLightningStrike(storm.pos.x + 8, storm.pos.z + 8);
+      missionObjectives.supercell[1].count++;
+      landmarks.forEach(lm => {
+        const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
+        if (dist < storm.radius * 2.0 && !lm.destroyed) {
+          lm.health -= 120;
+          if (lm.health <= 0) {
+            lm.destroyed = true; scene.remove(lm.meshData.group);
+            destroyedLandmarksCount++; addScore(350);
+            explodeStructure(lm.x, lm.z, lm.meshData.color, lm.icon === '💧', lm.icon === '🌾');
+          }
+        }
+      });
     }
-  }
-  if (slot === 'secondary') {
-    playSound('gust');
-    if (currentStorm === 'derecho') {
+  } else if (currentStorm === 'derecho') {
+    if (slot === 'primary') { // WIND WALL SWEEP (Speed Boost & Damage)
+      playSound('gust');
+      addCameraShake(1.4);
+      targets.forEach(t => {
+        const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
+        if (dist < storm.radius * 2.4 && t.health > 0) {
+          t.health -= 70;
+          if (t.health <= 0) {
+            t.health = 0; scene.remove(t.meshData.group);
+            destroyedTargetsCount++; addScore(70);
+            explodeStructure(t.x, t.z, t.color);
+          }
+        }
+      });
+    } else if (slot === 'secondary') { // MICROBURST BLAST ZONE
+      playSound('explode');
+      addCameraShake(2.0);
       missionObjectives.derecho[1].count++;
+      targets.forEach(t => {
+        const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
+        if (dist < storm.radius * 2.0 && t.health > 0) {
+          t.health -= 140;
+          if (t.health <= 0) {
+            t.health = 0; scene.remove(t.meshData.group);
+            destroyedTargetsCount++; addScore(100);
+            explodeStructure(t.x, t.z, t.color);
+          }
+        }
+      });
+    } else if (slot === 'tertiary') { // DUST SURGE (Weakening Cloud)
+      playSound('zap');
+      triggerPowerFlash();
     }
-  }
-  if (slot === 'tertiary') {
-    playSound('zap');
-    triggerPowerFlash();
   }
 }
 
@@ -1016,7 +1114,7 @@ function updateObjectives() {
 
 function renderObjectives() {
   const objs = missionObjectives[currentStorm];
-  let html = '<div><b>MISSION OBJECTIVES:</b></div>';
+  let html = '<div><b>STORM OBJECTIVES:</b></div>';
   objs.forEach(o => {
     const isDone = o.done;
     const mark = isDone ? '✓' : '⚪';
@@ -1040,6 +1138,7 @@ function finishRun() {
   else if (doneCount >= 1 && destructionScore >= 1200) grade = 'B';
   else if (destructionScore >= 500) grade = 'C';
 
+  setUI('resStormTitle', `${currentStorm.toUpperCase()} WARNING RUN`);
   setUI('resGrade', grade);
   setUI('resScore', destructionScore);
   setUI('resCombo', `${maxComboReached.toFixed(1)}x`);
@@ -1098,7 +1197,7 @@ function animate(now) {
     }
   }
 
-  // Cooldown Timer Updates
+  // Cooldown Timers
   ['primary', 'secondary', 'tertiary'].forEach((slot, idx) => {
     const cd = cooldowns[slot];
     if (cd.current > 0) {
@@ -1115,7 +1214,7 @@ function animate(now) {
     }
   });
 
-  // Combo Decay
+  // Balanced Combo Decay (4.5s)
   if (comboDecayTimer > 0) {
     comboDecayTimer -= dt;
     if (comboDecayTimer <= 0) {
@@ -1139,6 +1238,26 @@ function animate(now) {
 
   const isMoving = (moveX !== 0 || moveZ !== 0 || joystickActive);
 
+  // Tornado PULL Vortex Physics: Magnetically pull nearby structures toward center
+  if (activePullVortex && pullVortexTimer > 0) {
+    pullVortexTimer -= dt;
+    if (pullVortexTimer <= 0) activePullVortex = false;
+    targets.forEach(t => {
+      const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
+      if (dist < storm.radius * 2.5 && t.health > 0) {
+        t.x = THREE.MathUtils.lerp(t.x, storm.pos.x, 0.05);
+        t.z = THREE.MathUtils.lerp(t.z, storm.pos.z, 0.05);
+        t.meshData.group.position.set(t.x, 0, t.z);
+        t.health -= 90 * dt;
+        if (t.health <= 0) {
+          t.health = 0; scene.remove(t.meshData.group);
+          destroyedTargetsCount++; addScore(80);
+          explodeStructure(t.x, t.z, t.color);
+        }
+      }
+    });
+  }
+
   storm.pos.x += moveX * storm.speed * dt;
   storm.pos.z += moveZ * storm.speed * dt;
 
@@ -1160,7 +1279,7 @@ function animate(now) {
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
   tornadoGroup.rotation.x = THREE.MathUtils.lerp(tornadoGroup.rotation.x, moveZ * 0.14, 0.1);
 
-  // Dynamic Zoom-Out Camera
+  // Dynamic Zoom-Out Camera Angle
   let baseCamY = 55, baseCamZ = 80;
   if (currentStorm === 'supercell') { baseCamY = 75; baseCamZ = 110; }
   else if (currentStorm === 'derecho') { baseCamY = 95; baseCamZ = 140; }
@@ -1184,6 +1303,14 @@ function animate(now) {
   camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);
   camera.lookAt(storm.pos.x, 0, storm.pos.z);
 
+  // Rotate Landmark 3D Wayfinding Beacons
+  landmarks.forEach(lm => {
+    if (!lm.destroyed && lm.meshData && lm.meshData.beacon) {
+      lm.meshData.beacon.rotation.y += 0.05;
+      lm.meshData.beacon.rotation.x += 0.02;
+    }
+  });
+
   // Supercell Raining Hail
   for (let i = hailStones.length - 1; i >= 0; i--) {
     const h = hailStones[i];
@@ -1203,9 +1330,6 @@ function animate(now) {
         pole.sparked = true;
         triggerPowerFlash();
         addScore(60);
-        if (currentStorm === 'supercell') {
-          missionObjectives.supercell[1].count++;
-        }
       }
     });
 
@@ -1215,6 +1339,7 @@ function animate(now) {
         lm.health -= 65 * dt * efMultiplier;
         if (lm.health <= 0) {
           lm.destroyed = true;
+          if (lm.meshData.beacon) lm.meshData.group.remove(lm.meshData.beacon);
           scene.remove(lm.meshData.group);
           destroyedLandmarksCount++;
           addScore(350);
@@ -1309,11 +1434,22 @@ function renderRadar() {
   rCtx.moveTo(0, 72.5); rCtx.lineTo(145, 72.5);
   rCtx.stroke();
 
+  // Storm Position Dot
   const rx = 72.5 + (storm.pos.x / 180) * 55;
   const rz = 72.5 + (storm.pos.z / 180) * 55;
 
   rCtx.fillStyle = '#ef4444';
-  rCtx.beginPath(); rCtx.arc(rx, rz, 12, 0, Math.PI * 2); rCtx.fill();
+  rCtx.beginPath(); rCtx.arc(rx, rz, 10, 0, Math.PI * 2); rCtx.fill();
+
+  // Radar Wayfinding Beacons for Priority Landmarks (Water Tower & Grain Silo)
+  landmarks.forEach(lm => {
+    if (!lm.destroyed) {
+      const lmx = 72.5 + (lm.x / 180) * 55;
+      const lmz = 72.5 + (lm.z / 180) * 55;
+      rCtx.fillStyle = lm.icon === '💧' ? '#38bdf8' : '#fbbf24';
+      rCtx.beginPath(); rCtx.arc(lmx, lmz, 7, 0, Math.PI * 2); rCtx.fill();
+    }
+  });
 }
 
 requestAnimationFrame(animate);
