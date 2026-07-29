@@ -15,7 +15,6 @@ Assets/SevereWeather/Runtime/Damage/IDamageable.cs
 Assets/SevereWeather/Runtime/Damage/WindReactive.cs
 Assets/SevereWeather/Runtime/Input/MobileControlLayout.cs
 Assets/SevereWeather/Runtime/Input/StormInput.cs
-Assets/SevereWeather/Runtime/Presentation/Build52PresentationPatch.cs
 Assets/SevereWeather/Runtime/Presentation/StormActionVfx.cs
 Assets/SevereWeather/Runtime/Rendering/Resources/SevereWeatherRuntime.shader
 Assets/SevereWeather/Runtime/SevereWeather.Runtime.asmdef

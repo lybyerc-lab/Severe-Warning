@@ -26,7 +26,6 @@ Important project decisions and test evidence must be committed to the repositor
 - Build #4.1 motion/silhouette commit: `96c9f780daf070648dc69a7f6cd431233b85617a`
 - Build #4.2 camera/Supercell commit: `fd54c7c2b0764e8e4b301700caba997a27b08378`
 - Build #5 staged-impact commit: `d0b7f15927c082b960c034ccc11ae7abaaaf63c3`
-- Build #5.1 impact-readability commit: `7695875effea2dafb8bb8c1e6519f1b9181b1587`
 - Unity Build Automation is connected to GitHub `main` and builds with Unity `6000.3.0f1`.
 
 ## Build #5 physical evidence
@@ -53,71 +52,56 @@ Build #5 failures:
 
 Build #5 passes the damage-system gate and fails the impact-readability gate.
 
-## Build #5.1 physical evidence
+## Active work: Build #5.1 impact readability laboratory
 
-Build #5.1 compiled successfully and launched on Android at approximately 60 FPS in the supplied screenshots.
+Approved scope:
 
-Confirmed:
+- preserve Build #5 damage math, movement, camera behavior, storm speeds, targeting, and stage thresholds
+- capture the most recent horizontal impulse direction for each target
+- keep destroyed crops kinematic, ground-hugging, and aligned with storm direction
+- delay vegetation Rigidbody release until Critical and clamp tree impulse to avoid weightless launches
+- lighten stage color darkening so damaged vegetation does not become a black spike field
+- replace the rectangular hail outline with bounded falling hail and ground impact fragments
+- replace generic radial impact bursts with capped material-shaped temporary fragments
+- cap transient effect roots and fragments and expose both counts in the HUD
+- replace the Tornado orange contact disk with animated partial dust arcs
+- increase Supercell rain density while replacing blue mist spheres with low-opacity ground arcs
+- fade lower Supercell shelf-cloud layers during HAIL, FRONT, and GRID so affected targets remain readable
+- add visual-only window, roof, door, crossarm, and crown stage reactions without persistent detached physics pieces
+- bump application version to `0.1.8` and Android version code to `8`
+- update repository memory in the same commit
 
-- the blue HAIL rectangle was removed
-- the orange Tornado ground disk was removed
-- effects and fragments remained under the `18` and `42` caps in the captured frames
-- trees, utility pieces, roof pieces, and props reacted directionally
-- crops no longer formed the vertical black spike field
-- Supercell rain and hail rendered while target counts remained functional
+Explicitly outside Build #5.1:
 
-Remaining failures:
+- a third storm
+- missions, progression, economy, upgrades, or final menus
+- final environment or storm art packs
+- final audio
+- authored fracture meshes and persistent destruction prefabs
+- persistent detached roof, crown, or utility physics pieces
+- a universal pooling framework
+- authored URP pipeline migration
+- asynchronous region generation
+- people or casualty simulation
 
-- the Supercell left a large dark triangular TrailRenderer wedge
-- looping ground-mist and hail lines read as tangled blue debug scribbles
-- Tornado PULL still used a giant pale boundary ring and dark center rings
-- flattened crops read as scattered orange boards rather than row-oriented storm damage
-- the supplied session did not include the required five-minute stress test
-- the cloud log reported deprecated `Rigidbody.drag` and `Rigidbody.angularDrag` calls
+## Build #5.1 physical acceptance gate
 
-Build #5.1 passes the mechanical impact-reaction gate and fails the final ability-feedback presentation gate.
+1. Confirm `B5.1 IMPACT READABILITY LAB` and version `0.1.8` are visible.
+2. Confirm Tornado and Supercell movement, speed, switching, and camera containment remain unchanged.
+3. Destroy crops from multiple directions and confirm they remain close to the ground, point with the force, and do not form vertical black slabs.
+4. Confirm trees lean and fall directionally without launching like light debris.
+5. Hold HAIL and confirm no rectangular boundary appears.
+6. Confirm HAIL reads as falling ice and ground impacts while still reporting correct target counts.
+7. Confirm wood, glass, metal, vegetation, vehicle, infrastructure, and masonry hits produce visually distinct temporary fragments.
+8. Confirm temporary fragments shrink and clear automatically.
+9. Confirm HUD FX never exceeds `18` and FRAG never exceeds `42`.
+10. Confirm the Tornado has partial dust arcs and no opaque orange ground disk.
+11. Confirm the Supercell has denser rain, no blue mist spheres, and readable ground targets during HAIL, FRONT, and GRID.
+12. Confirm windows disappear progressively and roof, door, crossarm, and crown pieces visibly shift at stage thresholds without becoming persistent physics clutter.
+13. Run five minutes of repeated attacks and record FPS, heat, clutter, and any stutter.
+14. Append the physical result to `Docs/DEVICE_TEST_LOG.md` before treating the gate as closed.
 
-## Active work: Build #5.2 ability feedback cleanup
-
-Branch: `agent/build5-2-ability-feedback-cleanup`
-
-Locked scope:
-
-- preserve movement, camera containment, storm speeds, targeting, damage thresholds, and effect caps
-- remove the Supercell TrailRenderer wedge
-- suppress oversized `Storm Ring` and `Storm Swath` debug geometry
-- disable looping ground-mist scribbles while retaining rain and hail weather cues
-- reduce Tornado contact arcs to subtle low-alpha dust motion
-- keep flattened crops thin, darkened, row-oriented, and visually grouped
-- thin a bounded portion of destroyed crop renderers and cull distant flattened crops
-- add elapsed cleanup time and crop-management telemetry for the five-minute test
-- replace deprecated `Rigidbody.drag` and `Rigidbody.angularDrag` with Unity 6 `linearDamping` and `angularDamping`
-- advance application version to `0.1.9`, build label to `5.2`, and Android version code to `9`
-
-Current implementation state:
-
-- temporary self-editing GitHub Action removed after verification showed it never ran
-- Build #5.2 runtime presentation governor added
-- build identity, Android version code, and HUD label advanced
-- Unity 6 damping API corrections committed
-- file inventory includes the new runtime source
-- `main` remains untouched
-
-## Build #5.2 physical acceptance gate
-
-1. Confirm `B5.2 ABILITY FEEDBACK CLEANUP` and version `0.1.9` are visible.
-2. Confirm Tornado and Supercell movement, speed, switching, targeting, and camera containment are unchanged.
-3. Confirm no dark triangular trail follows the Supercell.
-4. Confirm HAIL has falling streaks and localized impacts without looping blue ground scribbles or a rectangle.
-5. Confirm Tornado PULL has no giant pale boundary ring dominating the town.
-6. Confirm flattened crops stay low, darkened, and broadly aligned with their rows rather than reading as loose boards.
-7. Confirm FX never exceeds `18` and FRAG never exceeds `42`.
-8. Run repeated destruction until `CLEANUP T+300s` or greater is shown.
-9. Confirm effect and fragment counts fall after attacks rather than remaining pinned at their caps.
-10. Record FPS, heat, clutter, and stutter after the five-minute run.
-11. Append the physical result to `Docs/DEVICE_TEST_LOG.md` before treating Build #5.2 as passed.
-
-## Known open issues after Build #5.2
+## Known open issues after Build #5.1
 
 - Procedural primitives remain stand-ins for authored production assets.
 - Visual-only component reactions are not final fracture behavior.
