@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Severe Weather 3D Lab v2.1.0 - Stable Edition</title>
+<title>Severe Weather 3D Lab v2.2.0 - Warning Run Edition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -21,14 +21,13 @@
 <style>
   :root {
     --bg-dark: #030712;
-    --panel-bg: rgba(15, 23, 42, 0.90);
+    --panel-bg: rgba(15, 23, 42, 0.92);
     --panel-border: rgba(255, 255, 255, 0.22);
     --gold: #fbbf24;
     --red: #f87171;
     --cyan: #38bdf8;
     --green: #4ade80;
     --purple: #c084fc;
-    --eas-bg: #b91c1c;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: var(--bg-dark); font-family: Inter, system-ui, sans-serif; color: white; }
@@ -54,37 +53,54 @@
   .title-card p { margin: 4px 0 0 0; font-size: 11px; color: #94a3b8; }
   
   .ef-badge { display: inline-block; background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 3px 10px; border-radius: 8px; font-weight: 900; font-size: 13px; letter-spacing: 0.06em; box-shadow: 0 0 16px rgba(239, 68, 68, 0.8); }
-  .ability-indicator { margin-top: 6px; font-size: 11px; font-weight: 900; color: var(--cyan); letter-spacing: 0.06em; height: 16px; }
-
-  /* Individualized Storm Tabs */
+  
+  /* Storm Tabs */
   .storm-tabs { display: flex; gap: 6px; margin-top: 10px; }
   .tab-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; }
   .tab-btn.active#tabTornado { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; border-color: #f59e0b; box-shadow: 0 0 18px rgba(245, 158, 11, 0.6); }
   .tab-btn.active#tabSupercell { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border-color: #38bdf8; box-shadow: 0 0 18px rgba(56, 189, 248, 0.6); }
   .tab-btn.active#tabDerecho { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #0f172a; border-color: #22d3ee; box-shadow: 0 0 18px rgba(34, 211, 238, 0.6); }
-  
+
+  /* Mission Objectives Box */
+  .objectives-box { margin-top: 10px; font-size: 11px; color: #e2e8f0; line-height: 1.5; }
+  .obj-item { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .obj-item.done { color: var(--green); font-weight: 700; }
+
   /* Radar Widget */
   .radar-box { position: relative; width: 145px; height: 145px; border-radius: 50%; border: 2px solid var(--green); overflow: hidden; background: #021206; box-shadow: 0 0 20px rgba(74, 222, 128, 0.4); }
   .radar-box canvas { width: 100%; height: 100%; }
   .radar-label { position: absolute; bottom: 6px; width: 100%; text-align: center; font-size: 9px; font-weight: 900; color: var(--green); letter-spacing: 0.08em; }
 
   /* Telemetry Bar */
-  .telemetry { display: flex; gap: 16px; font-size: 11px; font-family: monospace; }
+  .telemetry { display: flex; gap: 14px; font-size: 11px; font-family: monospace; }
   .telemetry b { color: var(--cyan); }
+  .combo-badge { color: var(--gold) !important; font-weight: 900; }
 
   /* Controls Footer */
   .footer { display: flex; justify-content: space-between; align-items: flex-end; }
   .key-guide { font-size: 11px; color: #cbd5e1; line-height: 1.6; }
   .key-guide span { background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: 700; color: white; }
 
-  /* Touch Action Buttons */
+  /* Touch Action Buttons & Cooldowns */
   .touch-controls { display: flex; gap: 10px; pointer-events: auto; }
-  .action-btn { width: 62px; height: 62px; border-radius: 50%; background: var(--panel-bg); border: 2px solid var(--gold); color: white; font-weight: 800; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.6); transition: all 0.1s ease; }
+  .action-btn { position: relative; width: 64px; height: 64px; border-radius: 50%; background: var(--panel-bg); border: 2px solid var(--gold); color: white; font-weight: 800; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.6); transition: all 0.1s ease; overflow: hidden; }
   .action-btn.active, .action-btn:active { background: var(--gold); color: #0f172a; transform: scale(0.92); }
+  .cd-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.75); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: var(--gold); opacity: 0; pointer-events: none; }
 
   /* Mobile On-Screen Joystick Overlay */
   #joystickZone { position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; border-radius: 50%; border: 2px rgba(255,255,255,0.2) solid; background: rgba(0,0,0,0.25); pointer-events: auto; display: flex; align-items: center; justify-content: center; z-index: 150; }
   #joystickThumb { width: 44px; height: 44px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 16px var(--gold); transform: translate(0, 0); }
+
+  /* End-of-Run Results Overlay Screen */
+  #resultsOverlay { position: absolute; inset: 0; background: rgba(3, 7, 18, 0.92); backdrop-filter: blur(20px); z-index: 2000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+  #resultsOverlay.active { opacity: 1; pointer-events: auto; }
+  
+  .results-card { background: var(--panel-bg); border: 2px solid var(--gold); border-radius: 20px; padding: 28px 36px; width: 440px; text-align: center; box-shadow: 0 0 50px rgba(251, 191, 36, 0.4); font-family: Outfit, sans-serif; }
+  .results-card h2 { margin: 0; font-size: 26px; color: var(--gold); letter-spacing: 0.06em; }
+  .grade-stamp { font-size: 54px; font-weight: 900; margin: 10px 0; color: var(--green); text-shadow: 0 0 20px var(--green); }
+  .results-stats { font-size: 13px; font-family: monospace; color: #cbd5e1; text-align: left; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px; margin: 16px 0; line-height: 1.8; }
+  .retry-btn { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; border: none; padding: 12px 32px; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; letter-spacing: 0.08em; box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); transition: transform 0.1s ease; }
+  .retry-btn:active { transform: scale(0.94); }
 
   #powerFlashOverlay { position: absolute; inset: 0; background: rgba(56, 189, 248, 0.85); pointer-events: none; opacity: 0; transition: opacity 0.08s ease-out; z-index: 999; }
 
@@ -95,7 +111,7 @@
     .panel { padding: 6px 10px; border-radius: 10px; }
     
     .title-card h1 { font-size: 13px; }
-    .title-card p, .ability-indicator { display: none !important; }
+    .title-card p, .objectives-box { display: none !important; }
     
     .storm-tabs { margin-top: 4px; gap: 4px; }
     .tab-btn { padding: 4px 8px; font-size: 9px; }
@@ -113,6 +129,9 @@
     
     #joystickZone { bottom: 10px; left: 10px; width: 95px; height: 95px; }
     #joystickThumb { width: 36px; height: 36px; }
+    
+    .results-card { width: 340px; padding: 18px 20px; }
+    .grade-stamp { font-size: 40px; margin: 6px 0; }
   }
 </style>
 </head>
@@ -124,19 +143,27 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.1.0 STABLE</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.2.0 WARNING RUN</div>
 </div>
 
+<!-- Glassmorphism HUD -->
 <div id="hud">
   <div class="header">
     <div class="panel title-card">
-      <h1>🌪️ SEVERE WEATHER 3D <span class="ef-badge" id="efBadge">EF-0</span></h1>
-      <p id="stormDesc">PS4-Quality Volumetric Lighting, Atmospheric Fog, Dynamic Shadows & Multi-Vortex Funnels</p>
-      <div class="ability-indicator" id="abilityStatus">STATUS: IDLE (USE WASD OR JOYSTICK TO MOVE)</div>
+      <h1>🌪️ WARNING RUN <span class="ef-badge" id="efBadge">EF-0</span></h1>
+      <p id="stormDesc">3-Minute Destruction Mission, Objectives & Ability Cooldowns</p>
+      
       <div class="storm-tabs">
         <button class="tab-btn active" id="tabTornado" onclick="setStorm('tornado')">🌪️ TORNADO [1]</button>
         <button class="tab-btn" id="tabSupercell" onclick="setStorm('supercell')">🌩️ SUPERCELL [2]</button>
         <button class="tab-btn" id="tabDerecho" onclick="setStorm('derecho')">💨 DERECHO [3]</button>
+      </div>
+
+      <div class="objectives-box" id="objList">
+        <div><b>MISSION OBJECTIVES:</b></div>
+        <div class="obj-item" id="obj1">⚪ Destroy Water Tower & Grain Silo</div>
+        <div class="obj-item" id="obj2">⚪ Reach EF-3 Intensity Rating</div>
+        <div class="obj-item" id="obj3">⚪ Score 3,500 Total Points</div>
       </div>
     </div>
 
@@ -154,22 +181,46 @@
     </div>
 
     <div class="panel telemetry">
-      <div>FPS: <b id="fpsVal">60</b></div>
+      <div>TIME: <b id="timerVal" style="color:var(--gold);font-weight:900;">03:00</b></div>
+      <div>COMBO: <b class="combo-badge" id="comboVal">1.0x</b></div>
       <div>SCORE: <b id="scoreVal">0</b></div>
-      <div>3D ZOOM: <b id="zoomVal">1.00x</b></div>
-      <div>LANDMARKS: <b id="landmarkVal">0</b></div>
+      <div>FPS: <b id="fpsVal">60</b></div>
     </div>
 
     <div class="touch-controls">
-      <button class="action-btn" id="btnAbility1" onclick="triggerAbility('primary')"><span id="lblBtn1">PULL</span><span style="font-size:8px;opacity:0.7">SPACE</span></button>
-      <button class="action-btn" id="btnAbility2" onclick="triggerAbility('secondary')"><span id="lblBtn2">GUST</span><span style="font-size:8px;opacity:0.7">Q</span></button>
-      <button class="action-btn" id="btnAbility3" onclick="triggerAbility('tertiary')"><span id="lblBtn3">ZAP</span><span style="font-size:8px;opacity:0.7">E</span></button>
+      <button class="action-btn" id="btnAbility1" onclick="triggerAbility('primary')">
+        <span id="lblBtn1">PULL</span><span style="font-size:8px;opacity:0.7">SPACE</span>
+        <div class="cd-overlay" id="cd1"></div>
+      </button>
+      <button class="action-btn" id="btnAbility2" onclick="triggerAbility('secondary')">
+        <span id="lblBtn2">GUST</span><span style="font-size:8px;opacity:0.7">Q</span>
+        <div class="cd-overlay" id="cd2"></div>
+      </button>
+      <button class="action-btn" id="btnAbility3" onclick="triggerAbility('tertiary')">
+        <span id="lblBtn3">ZAP</span><span style="font-size:8px;opacity:0.7">E</span>
+        <div class="cd-overlay" id="cd3"></div>
+      </button>
     </div>
   </div>
 </div>
 
 <div id="joystickZone">
   <div id="joystickThumb"></div>
+</div>
+
+<!-- End-of-Run Results Overlay Screen -->
+<div id="resultsOverlay">
+  <div class="results-card">
+    <h2>MISSION RESULTS</h2>
+    <div class="grade-stamp" id="resGrade">S+</div>
+    <div class="results-stats">
+      <div>FINAL SCORE: <b id="resScore" style="color:var(--gold)">0</b></div>
+      <div>MAX COMBO: <b id="resCombo" style="color:var(--cyan)">1.0x</b></div>
+      <div>OBJECTIVES COMPLETED: <b id="resObjCount" style="color:var(--green)">0/3</b></div>
+      <div>LANDMARKS SHATTERED: <b id="resLandmarks">0/2</b></div>
+    </div>
+    <button class="retry-btn" onclick="resetWarningRun()">RETRY RUN 🔄</button>
+  </div>
 </div>
 
 <script>
@@ -270,7 +321,7 @@ function setUI(id, text) {
   if (el && el.innerText !== text) el.innerText = text;
 }
 
-// --- THREE.JS 3D INITIALIZATION (PS4 NEXT-GEN VISUAL PIPELINE) ---
+// --- THREE.JS 3D INITIALIZATION ---
 const container = document.getElementById('webgl');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#030712');
@@ -288,7 +339,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-// PS4 Quality Lighting & Environment
+// Lighting
 const ambientLight = new THREE.AmbientLight('#334155', 1.1);
 scene.add(ambientLight);
 
@@ -305,7 +356,7 @@ dirLight.shadow.camera.top = 200;
 dirLight.shadow.camera.bottom = -200;
 scene.add(dirLight);
 
-// 1. PS4 High-Detail Grass Ground Plane with Specular Wetness Maps (800 x 800)
+// Grass Ground Plane
 const groundGeo = new THREE.PlaneGeometry(800, 800);
 const groundMat = new THREE.MeshStandardMaterial({ color: '#162e16', roughness: 0.6, metalness: 0.1 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -313,7 +364,7 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// 2. Asphalt Road Grid Lines & Detailed High-Voltage Power Poles
+// Asphalt Roads & Power Line Poles
 const roadMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.45, metalness: 0.2 });
 const powerPoles = [];
 
@@ -348,7 +399,7 @@ for (let r = -300; r <= 300; r += 100) {
   }
 }
 
-// --- MULTI-TOUCH JOYSTICK & VERB INPUT ---
+// --- MULTI-TOUCH JOYSTICK ---
 let joystickTouchId = null;
 let joystickActive = false;
 let joystickDir = { x: 0, z: 0 };
@@ -427,12 +478,7 @@ window.addEventListener('touchcancel', handleTouchEnd);
     btn.addEventListener('touchstart', e => {
       e.preventDefault();
       e.stopPropagation();
-      btn.classList.add('active');
       triggerAbility(slot);
-    });
-    btn.addEventListener('touchend', e => {
-      e.preventDefault();
-      btn.classList.remove('active');
     });
   }
 });
@@ -468,9 +514,10 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// --- GAME & STORM SYSTEM STATE ---
+// --- GAME, MISSION & COOLDOWN STATE ---
 let currentStorm = 'tornado';
 let destructionScore = 0;
+let baseScore = 0;
 let efRating = 'EF-0';
 let efMultiplier = 1.0;
 let funnelScale = 1.0;
@@ -478,16 +525,49 @@ let currentCamY = 60, targetCamY = 60;
 let currentCamZ = 85, targetCamZ = 85;
 let easNewsText = '🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY';
 
+// 3-Minute Run Timer (180s)
+let runTimeRemaining = 180;
+let runActive = true;
+
+// Combo Multiplier System
+let comboMultiplier = 1.0;
+let maxComboReached = 1.0;
+let comboDecayTimer = 0;
+
+// Ability Cooldown Timers (Seconds)
+const cooldowns = {
+  primary: { current: 0, max: 2.5 },
+  secondary: { current: 0, max: 4.0 },
+  tertiary: { current: 0, max: 5.0 }
+};
+
+// Storm Mission Objectives Tracker
+const missionObjectives = {
+  tornado: [
+    { text: "Destroy Water Tower & Grain Silo", done: false },
+    { text: "Reach EF-3 Rating (1500+ PTS)", done: false },
+    { text: "Score 3,500 Total Points", done: false }
+  ],
+  supercell: [
+    { text: "Spawn 5+ Hail Volleys", count: 0, target: 5, done: false },
+    { text: "Strike 4 Power Poles with Lightning", count: 0, target: 4, done: false },
+    { text: "Reach HAIL 3.25\" Size Milestone", done: false }
+  ],
+  derecho: [
+    { text: "Damage 30+ Town Structures", count: 0, target: 30, done: false },
+    { text: "Trigger 3 Microburst Blasts", count: 0, target: 3, done: false },
+    { text: "Reach 105+ MPH Wind Speed", done: false }
+  ]
+};
+
 const storm = {
   pos: new THREE.Vector3(0, 0, 0),
   vel: new THREE.Vector3(0, 0, 0),
   speed: 42,
-  radius: 16,
-  activePrimary: false,
-  activeSecondary: false
+  radius: 16
 };
 
-// --- DYNAMIC TORNADO SWATH GROUND SCAR TRAILS ---
+// Ground Damage Swath Canvas
 const swathCanvas = document.createElement('canvas');
 swathCanvas.width = 1024; swathCanvas.height = 1024;
 const swathCtx = swathCanvas.getContext('2d');
@@ -507,9 +587,7 @@ function markGroundSwath(x, z, r) {
   swathTexture.needsUpdate = true;
 }
 
-// --- 3D INDIVIDUALIZED PS4-QUALITY STORM VISUAL MESHES ---
-
-// 1. TORNADO MESH GROUP (Volumetric Multi-Layer Funnel + Dust Vortex)
+// 3D Storm Visual Meshes
 const tornadoGroup = new THREE.Group();
 scene.add(tornadoGroup);
 
@@ -541,7 +619,6 @@ const particleMat = new THREE.PointsMaterial({ color: '#fbbf24', size: 1.0 });
 const particleSystem = new THREE.Points(particleGeo, particleMat);
 tornadoGroup.add(particleSystem);
 
-// 2. SUPERCELL MESH GROUP (Electric Cyan Cloud Canopy + Raining Hailstones)
 const supercellGroup = new THREE.Group();
 supercellGroup.visible = false;
 scene.add(supercellGroup);
@@ -568,7 +645,6 @@ function spawnSupercellHail() {
   }
 }
 
-// 3. DERECHO MESH GROUP (Wide Horizontal Glowing Wind Wall & Dust Surge)
 const derechoGroup = new THREE.Group();
 derechoGroup.visible = false;
 scene.add(derechoGroup);
@@ -579,19 +655,19 @@ const windWallMesh = new THREE.Mesh(windWallGeo, windWallMat);
 windWallMesh.position.y = 9;
 derechoGroup.add(windWallMesh);
 
-// 3D Lightning Bolt Line
 const lightningGeo = new THREE.BufferGeometry();
 const lightningMat = new THREE.LineBasicMaterial({ color: '#38bdf8', linewidth: 4 });
 const lightningMesh = new THREE.Line(lightningGeo, lightningMat);
 scene.add(lightningMesh);
 
-// --- PS4 QUALITY TOWN ARCHITECTURE & OBJECTS ---
+// World Objects
 const targets = [];
 const landmarks = [];
 const animals = [];
 const chaserVans = [];
 const activeExplosionFragments = [];
 let destroyedLandmarksCount = 0;
+let destroyedTargetsCount = 0;
 
 const houseColors = ['#f87171', '#60a5fa', '#fbbf24', '#4ade80', '#c084fc', '#f472b6', '#94a3b8'];
 
@@ -723,7 +799,24 @@ function triggerLightningStrike(targetX, targetZ) {
   addCameraShake(1.0);
 }
 
+function addScore(pts) {
+  comboMultiplier = Math.min(5.0, comboMultiplier + 0.15);
+  maxComboReached = Math.max(maxComboReached, comboMultiplier);
+  comboDecayTimer = 2.5;
+
+  const added = Math.round(pts * comboMultiplier);
+  baseScore += pts;
+  destructionScore += added;
+}
+
 function init3DWorld() {
+  targets.length = 0;
+  landmarks.length = 0;
+  animals.length = 0;
+  chaserVans.length = 0;
+  destroyedLandmarksCount = 0;
+  destroyedTargetsCount = 0;
+
   for (let i = 0; i < 145; i++) {
     const isCommercial = Math.random() < 0.28;
     const isTree = Math.random() < 0.32;
@@ -818,19 +911,33 @@ function setStorm(type) {
     setUI('stormDesc', '65m Wide Glowing Wind Wall & High-Speed Microburst Blast Waves');
   }
   updateEFRating();
+  renderObjectives();
 }
 
 function triggerAbility(slot) {
+  if (!runActive) return;
   initAudio();
+
+  const cd = cooldowns[slot];
+  if (cd.current > 0) return; // Cooldown active
+
+  cd.current = cd.max;
+
   if (slot === 'primary') {
     if (currentStorm === 'supercell') {
       spawnSupercellHail();
+      missionObjectives.supercell[0].count++;
     } else {
       playSound('zap');
       triggerLightningStrike(storm.pos.x + 10, storm.pos.z + 10);
     }
   }
-  if (slot === 'secondary') playSound('gust');
+  if (slot === 'secondary') {
+    playSound('gust');
+    if (currentStorm === 'derecho') {
+      missionObjectives.derecho[1].count++;
+    }
+  }
   if (slot === 'tertiary') {
     playSound('zap');
     triggerPowerFlash();
@@ -890,7 +997,79 @@ function updateEFRating() {
   }
 }
 
-// --- MAIN ANIMATION & SIMULATION LOOP ---
+function updateObjectives() {
+  if (currentStorm === 'tornado') {
+    missionObjectives.tornado[0].done = (destroyedLandmarksCount >= 2);
+    missionObjectives.tornado[1].done = (destructionScore >= 1500);
+    missionObjectives.tornado[2].done = (destructionScore >= 3500);
+  } else if (currentStorm === 'supercell') {
+    missionObjectives.supercell[0].done = (missionObjectives.supercell[0].count >= 5);
+    missionObjectives.supercell[1].done = (missionObjectives.supercell[1].count >= 4);
+    missionObjectives.supercell[2].done = (destructionScore >= 1500);
+  } else if (currentStorm === 'derecho') {
+    missionObjectives.derecho[0].done = (destroyedTargetsCount >= 30);
+    missionObjectives.derecho[1].done = (missionObjectives.derecho[1].count >= 3);
+    missionObjectives.derecho[2].done = (destructionScore >= 1500);
+  }
+  renderObjectives();
+}
+
+function renderObjectives() {
+  const objs = missionObjectives[currentStorm];
+  let html = '<div><b>MISSION OBJECTIVES:</b></div>';
+  objs.forEach(o => {
+    const isDone = o.done;
+    const mark = isDone ? '✓' : '⚪';
+    const cls = isDone ? 'obj-item done' : 'obj-item';
+    html += `<div class="${cls}">${mark} ${o.text}</div>`;
+  });
+  const el = getCachedEl('objList');
+  if (el) el.innerHTML = html;
+}
+
+function finishRun() {
+  runActive = false;
+  
+  let doneCount = 0;
+  const objs = missionObjectives[currentStorm];
+  objs.forEach(o => { if (o.done) doneCount++; });
+
+  let grade = 'F';
+  if (doneCount === 3 && destructionScore >= 4000) grade = 'S+';
+  else if (doneCount >= 2 && destructionScore >= 2500) grade = 'A';
+  else if (doneCount >= 1 && destructionScore >= 1200) grade = 'B';
+  else if (destructionScore >= 500) grade = 'C';
+
+  setUI('resGrade', grade);
+  setUI('resScore', destructionScore);
+  setUI('resCombo', `${maxComboReached.toFixed(1)}x`);
+  setUI('resObjCount', `${doneCount}/3`);
+  setUI('resLandmarks', `${destroyedLandmarksCount}/2`);
+
+  getCachedEl('resultsOverlay').classList.add('active');
+}
+
+function resetWarningRun() {
+  runTimeRemaining = 180;
+  destructionScore = 0;
+  baseScore = 0;
+  comboMultiplier = 1.0;
+  maxComboReached = 1.0;
+  runActive = true;
+
+  storm.pos.set(0, 0, 0);
+
+  missionObjectives.tornado.forEach(o => o.done = false);
+  missionObjectives.supercell.forEach(o => { o.done = false; o.count = 0; });
+  missionObjectives.derecho.forEach(o => { o.done = false; o.count = 0; });
+
+  getCachedEl('resultsOverlay').classList.remove('active');
+  init3DWorld();
+  updateEFRating();
+  renderObjectives();
+}
+
+// --- MAIN ANIMATION LOOP ---
 init3DWorld();
 
 let lastTime = performance.now();
@@ -907,15 +1086,55 @@ function animate(now) {
 
   const dt = 0.016;
 
-  let moveX = 0, moveZ = 0;
-  if (keys['KeyA'] || keys['a'] || keys['ArrowLeft']) moveX -= 1;
-  if (keys['KeyD'] || keys['d'] || keys['ArrowRight']) moveX += 1;
-  if (keys['KeyW'] || keys['w'] || keys['ArrowUp']) moveZ -= 1;
-  if (keys['KeyS'] || keys['s'] || keys['ArrowDown']) moveZ += 1;
+  // Run Timer
+  if (runActive) {
+    runTimeRemaining = Math.max(0, runTimeRemaining - dt);
+    const mins = Math.floor(runTimeRemaining / 60);
+    const secs = Math.floor(runTimeRemaining % 60);
+    setUI('timerVal', `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
 
-  if (joystickActive) {
-    moveX = joystickDir.x;
-    moveZ = joystickDir.z;
+    if (runTimeRemaining <= 0) {
+      finishRun();
+    }
+  }
+
+  // Cooldown Timer Updates
+  ['primary', 'secondary', 'tertiary'].forEach((slot, idx) => {
+    const cd = cooldowns[slot];
+    if (cd.current > 0) {
+      cd.current = Math.max(0, cd.current - dt);
+      const overlay = getCachedEl(`cd${idx + 1}`);
+      if (overlay) {
+        if (cd.current > 0) {
+          overlay.style.opacity = '1';
+          overlay.innerText = `${Math.ceil(cd.current)}s`;
+        } else {
+          overlay.style.opacity = '0';
+        }
+      }
+    }
+  });
+
+  // Combo Decay
+  if (comboDecayTimer > 0) {
+    comboDecayTimer -= dt;
+    if (comboDecayTimer <= 0) {
+      comboMultiplier = Math.max(1.0, comboMultiplier - 0.2);
+    }
+  }
+  setUI('comboVal', `${comboMultiplier.toFixed(1)}x`);
+
+  let moveX = 0, moveZ = 0;
+  if (runActive) {
+    if (keys['KeyA'] || keys['a'] || keys['ArrowLeft']) moveX -= 1;
+    if (keys['KeyD'] || keys['d'] || keys['ArrowRight']) moveX += 1;
+    if (keys['KeyW'] || keys['w'] || keys['ArrowUp']) moveZ -= 1;
+    if (keys['KeyS'] || keys['s'] || keys['ArrowDown']) moveZ += 1;
+
+    if (joystickActive) {
+      moveX = joystickDir.x;
+      moveZ = joystickDir.z;
+    }
   }
 
   const isMoving = (moveX !== 0 || moveZ !== 0 || joystickActive);
@@ -941,7 +1160,7 @@ function animate(now) {
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
   tornadoGroup.rotation.x = THREE.MathUtils.lerp(tornadoGroup.rotation.x, moveZ * 0.14, 0.1);
 
-  // Dynamic Zoom-Out Scaling based on Storm Type and Scale
+  // Dynamic Zoom-Out Camera
   let baseCamY = 55, baseCamZ = 80;
   if (currentStorm === 'supercell') { baseCamY = 75; baseCamZ = 110; }
   else if (currentStorm === 'derecho') { baseCamY = 95; baseCamZ = 140; }
@@ -952,7 +1171,6 @@ function animate(now) {
   currentCamY = THREE.MathUtils.lerp(currentCamY, targetCamY, 0.06);
   currentCamZ = THREE.MathUtils.lerp(currentCamZ, targetCamZ, 0.06);
 
-  // Camera Trailing with Dynamic Camera Shake
   let camTargetX = storm.pos.x;
   let camTargetZ = storm.pos.z + currentCamZ;
   if (cameraShakeIntensity > 0) {
@@ -966,25 +1184,28 @@ function animate(now) {
   camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);
   camera.lookAt(storm.pos.x, 0, storm.pos.z);
 
-  // Supercell Raining Hail Physics
+  // Supercell Raining Hail
   for (let i = hailStones.length - 1; i >= 0; i--) {
     const h = hailStones[i];
     h.mesh.position.y += h.vy;
     if (h.mesh.position.y <= h.groundY) {
       scene.remove(h.mesh);
       hailStones.splice(i, 1);
-      destructionScore += 5;
+      if (runActive) addScore(5);
     }
   }
 
-  // Destruction Damage ONLY Inflicted when Storm is Actively Moving or Casting
-  if (isMoving) {
+  // Active Navigation Damage Only
+  if (isMoving && runActive) {
     powerPoles.forEach(pole => {
       const dist = Math.hypot(pole.x - storm.pos.x, pole.z - storm.pos.z);
       if (dist < storm.radius * 1.4 && !pole.sparked) {
         pole.sparked = true;
         triggerPowerFlash();
-        destructionScore += 60;
+        addScore(60);
+        if (currentStorm === 'supercell') {
+          missionObjectives.supercell[1].count++;
+        }
       }
     });
 
@@ -996,7 +1217,7 @@ function animate(now) {
           lm.destroyed = true;
           scene.remove(lm.meshData.group);
           destroyedLandmarksCount++;
-          destructionScore += 350;
+          addScore(350);
           explodeStructure(lm.x, lm.z, lm.meshData.color, lm.icon === '💧', lm.icon === '🌾');
         }
       }
@@ -1009,7 +1230,8 @@ function animate(now) {
         if (t.health <= 0) {
           t.health = 0;
           scene.remove(t.meshData.group);
-          destructionScore += t.isCommercial ? 100 : (t.isTree ? 25 : 60);
+          destroyedTargetsCount++;
+          addScore(t.isCommercial ? 100 : (t.isTree ? 25 : 60));
           explodeStructure(t.x, t.z, t.color);
         }
       }
@@ -1066,12 +1288,11 @@ function animate(now) {
   }
 
   updateEFRating();
+  updateObjectives();
   renderRadar();
 
   setUI('fpsVal', fps || 60);
   setUI('scoreVal', destructionScore);
-  setUI('zoomVal', `${(currentCamZ / 80).toFixed(2)}x`);
-  setUI('landmarkVal', `${destroyedLandmarksCount}/${landmarks.length}`);
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
