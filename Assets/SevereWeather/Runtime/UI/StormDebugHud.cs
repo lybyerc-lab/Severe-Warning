@@ -11,7 +11,7 @@ namespace SevereWeather.UI
 {
     public sealed class StormDebugHud : MonoBehaviour
     {
-        private const string LabLabel = "B5.1 IMPACT READABILITY LAB";
+        private const string LabLabel = "B5.2 ABILITY FEEDBACK CLEANUP";
 
         private StormInput input;
         private StormControllerBase storm;
@@ -66,7 +66,7 @@ namespace SevereWeather.UI
         {
             float topInset = Screen.height - layout.SafeArea.yMax;
             float panelWidth = Mathf.Clamp(layout.SafeArea.width * 0.3f, 330f, 420f);
-            float panelHeight = Mathf.Clamp(layout.SafeArea.height * 0.35f, 242f, 264f);
+            float panelHeight = Mathf.Clamp(layout.SafeArea.height * 0.38f, 262f, 286f);
             Rect panel = new Rect(layout.SafeArea.xMin + 12f, topInset + 12f, panelWidth, panelHeight);
             Color previous = GUI.color;
             GUI.color = new Color(0.025f, 0.055f, 0.075f, 0.9f);
@@ -90,6 +90,10 @@ namespace SevereWeather.UI
                 new Rect(panel.x + 14f, panel.y + 151f, panel.width - 28f, 19f),
                 $"{DamageableStructure.RecentImpactLabel}   FX {StormActionVfx.ActiveFxCount}/{StormActionVfx.FxCapacity}   FRAG {StormActionVfx.ActiveFragmentCount}/{StormActionVfx.FragmentCapacity}",
                 telemetryStyle);
+            GUI.Label(
+                new Rect(panel.x + 14f, panel.y + 171f, panel.width - 28f, 19f),
+                $"CLEANUP T+{Build52PresentationPatch.ElapsedSeconds:0}s   CROPS {Build52PresentationPatch.ManagedCropCount}   HIDDEN {Build52PresentationPatch.HiddenCropCount}",
+                telemetryStyle);
             GUI.Label(new Rect(panel.x + 14f, panel.y + panel.height - 26f, panel.width - 28f, 18f), $"{LabLabel}  {BuildIdentity.DisplayLabel}", telemetryStyle);
         }
 
@@ -99,9 +103,9 @@ namespace SevereWeather.UI
             bool secondaryActive = input != null && input.SecondaryVisualActive;
             bool tertiaryActive = input != null && input.TertiaryVisualActive;
             bool switchActive = input != null && input.SwitchStormVisualActive;
-            string primaryName = storm.Kind == StormKind.Tornado ? "PULL" : storm.Kind == StormKind.Derecho ? "SWEEP" : "HAIL";
-            string secondaryName = storm.Kind == StormKind.Tornado ? "GUST" : storm.Kind == StormKind.Derecho ? "MICROBURST" : "FRONT";
-            string tertiaryName = storm.Kind == StormKind.Tornado ? "ZAP" : storm.Kind == StormKind.Derecho ? "SURGE" : "GRID";
+            string primaryName = storm.Kind == StormKind.Tornado ? "PULL" : "HAIL";
+            string secondaryName = storm.Kind == StormKind.Tornado ? "GUST" : "FRONT";
+            string tertiaryName = storm.Kind == StormKind.Tornado ? "ZAP" : "GRID";
             DrawButton(layout.PrimaryButton, primaryName, primaryActive);
             DrawButton(layout.SecondaryButton, secondaryName, secondaryActive);
             DrawButton(layout.TertiaryButton, tertiaryName, tertiaryActive);
