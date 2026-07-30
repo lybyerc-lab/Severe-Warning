@@ -24,15 +24,6 @@ renderer/rendering_method.mobile="mobile"
 textures/default_filters/use_nearest_mipmap_filter=false
 anti_aliasing/quality/msaa_3d=2
 
-[input]
-move_left={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":65)]}
-move_right={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":68)]}
-move_up={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":87)]}
-move_down={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":83)]}
-pull={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":32)]}
-gust={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":81)]}
-grid_zap={"deadzone":0.2,"events":[Object(InputEventKey,"physical_keycode":69)]}
-
 [physics]
 common/physics_ticks_per_second=60
 3d/default_gravity=9.8
