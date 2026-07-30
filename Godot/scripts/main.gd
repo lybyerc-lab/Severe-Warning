@@ -3,7 +3,6 @@ extends Node3D
 const RUN_SECONDS := 180.0
 const MOVE_SPEED := 28.0
 const ACCELERATION := 62.0
-const PULL_RADIUS := 30.0
 const GUST_RADIUS := 48.0
 
 var tornado: CharacterBody3D
@@ -18,6 +17,7 @@ var breaking_text := "TORNADO TACTICAL GODOT FOUNDATION"
 var velocity_planar := Vector3.ZERO
 
 func _ready() -> void:
+	_ensure_input_actions()
 	_create_environment()
 	_create_tornado()
 	_create_camera()
@@ -33,6 +33,23 @@ func _physics_process(delta: float) -> void:
 	_update_camera(delta)
 	_handle_actions(delta)
 	_update_hud()
+
+func _ensure_input_actions() -> void:
+	_register_key_action("move_left", KEY_A)
+	_register_key_action("move_right", KEY_D)
+	_register_key_action("move_up", KEY_W)
+	_register_key_action("move_down", KEY_S)
+	_register_key_action("pull", KEY_SPACE)
+	_register_key_action("gust", KEY_Q)
+	_register_key_action("grid_zap", KEY_E)
+
+func _register_key_action(action_name: StringName, keycode: Key) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name, 0.2)
+	var event := InputEventKey.new()
+	event.physical_keycode = keycode
+	if not InputMap.action_has_event(action_name, event):
+		InputMap.action_add_event(action_name, event)
 
 func _update_movement(delta: float) -> void:
 	var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -63,13 +80,17 @@ func _handle_actions(delta: float) -> void:
 		combo = minf(8.0, combo + 0.25)
 
 func _launch_nearby_animals() -> void:
-	for animal in get_tree().get_nodes_in_group("animals"):
-		if animal is RigidBody3D and animal.global_position.distance_to(tornado.global_position) <= GUST_RADIUS:
-			var direction := (animal.global_position - tornado.global_position).normalized()
-			animal.freeze = false
-			animal.apply_central_impulse(direction * 18.0 + Vector3.UP * 9.0)
-			score += 100
-			breaking_text = "BOVINE BALLISTIC"
+	for node in get_tree().get_nodes_in_group("animals"):
+		var animal := node as RigidBody3D
+		if animal == null:
+			continue
+		if animal.global_position.distance_to(tornado.global_position) > GUST_RADIUS:
+			continue
+		var direction := (animal.global_position - tornado.global_position).normalized()
+		animal.freeze = false
+		animal.apply_central_impulse(direction * 18.0 + Vector3.UP * 9.0)
+		score += 100
+		breaking_text = "BOVINE BALLISTIC"
 
 func _create_environment() -> void:
 	var world_environment := WorldEnvironment.new()
@@ -130,7 +151,7 @@ func _create_hud() -> void:
 	add_child(layer)
 
 	ticker_label = Label.new()
-	ticker_label.position = Vector2(0.0, 0.0)
+	ticker_label.position = Vector2.ZERO
 	ticker_label.size = Vector2(1280.0, 36.0)
 	ticker_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ticker_label.text = "TORNADO WARNING: GODOT MIGRATION FOUNDATION"
@@ -145,7 +166,8 @@ func _create_test_targets() -> void:
 	for index in range(12):
 		var target := StaticBody3D.new()
 		target.name = "DestructibleTarget%d" % index
-		target.position = Vector3(38.0 + float(index % 4) * 13.0, 2.0, 12.0 + float(index / 4) * 15.0)
+		var row := floori(float(index) / 4.0)
+		target.position = Vector3(38.0 + float(index % 4) * 13.0, 2.0, 12.0 + float(row) * 15.0)
 		var mesh_instance := MeshInstance3D.new()
 		var box := BoxMesh.new()
 		box.size = Vector3(9.0, 4.0, 8.0)
@@ -189,8 +211,9 @@ func _create_safe_chaser() -> void:
 	add_child(chaser)
 
 func _update_hud() -> void:
-	var minutes := int(remaining) / 60
-	var seconds := int(remaining) % 60
+	var total_seconds := int(remaining)
+	var minutes := int(total_seconds / 60)
+	var seconds := total_seconds % 60
 	hud_label.text = "TORNADO TACTICAL GODOT\nTIME %02d:%02d   SCORE %d   COMBO %.1fx\nPOWER %.0f\n%s" % [minutes, seconds, score, combo, power, breaking_text]
 
 func _material(color: Color) -> StandardMaterial3D:
