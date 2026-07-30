@@ -3,147 +3,126 @@
 Last updated: 2026-07-30
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Unity editor: `6000.3.0f1`
+Active engine: Godot `4.7.1-stable`
+Primary language: GDScript
 Primary target: Android
+Godot project root: `Godot/`
 
 ## Canonical memory order
 
 1. Current repository code and physical-device evidence
 2. This status file
-3. `Docs/CONTEXT_CHECKPOINT_2026-07-30.md`
-4. `Docs/TORNADO_TACTICAL_PRODUCT_DIRECTION.md`
-5. `Docs/HTML_2_5_UNITY_PARITY_MATRIX.md`
-6. `Docs/TORNADO_TACTICAL_P1_IMPLEMENTATION.md`
-7. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-8. Current production documents in `Docs/`
-9. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md`
+3. `Docs/GODOT_MIGRATION_CHECKPOINT_2026-07-30.md`
+4. `Docs/CONTEXT_CHECKPOINT_2026-07-30.md`
+5. `Docs/TORNADO_TACTICAL_PRODUCT_DIRECTION.md`
+6. `Docs/HTML_2_5_UNITY_PARITY_MATRIX.md`
+7. Historical Unity implementation documents
+8. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md`
 
-Important project decisions and test evidence must be committed to the repository. Chat is working context, not the durable source of truth.
+Important decisions and test evidence must be committed to the repository. Chat is working context, not durable project memory.
+
+## Active engine decision
+
+Production development has moved from Unity to Godot.
+
+Unity source is preserved as a reference implementation and historical record. No new Unity gameplay work should occur while the Godot migration is active.
+
+Godot `4.7.1-stable` with GDScript is the active production path. The Android-first foundation uses GDScript because Godot's current Android documentation still identifies C# Android export as experimental.
 
 ## Locked product direction
 
-HTML 2.5 is the authoritative gameplay, layout, pacing, comfort, and enjoyment reference.
+The engine changes. The game does not.
 
-Unity remains the production engine, but Unity must reproduce and improve the HTML experience rather than continue as a separate debug-first interpretation.
+HTML 3D Lab v2.5 Tactical remains the authoritative gameplay, layout, pacing, comfort, and enjoyment reference.
 
-The primary production vertical slice is Tornado.
+The first production vertical slice remains Tornado and must include:
 
-Non-negotiable features include:
-
-- HTML-style tactical camera and look-ahead
+- pulled-back tactical camera and look-ahead
 - comfortable mobile movement
 - Pull, Gust, and Grid Zap
 - generous destruction
 - four readable districts
 - score, combo, EF growth, timer, objectives, radar, and results
 - persistent event-driven warning/news ticker
-- active safe storm chasers and captured-on-camera bonuses
+- safe storm chasers and captured-on-camera bonuses
 - invincible flingable animals with safe landings
 - opening broadcast and ending news recap
-- substantially improved tornado, landscape, destruction, atmosphere, audio, and aftermath
+- improved tornado, landscape, destruction, atmosphere, audio, and aftermath
+- people protected and off-limits
 
-## Current implementation
+Physical Android testing remains authoritative.
 
-Tornado Tactical P1 source is implemented on `main` and hardened with a Tornado-only input lock.
+## Godot foundation
 
-Implemented systems:
+The active Godot project contains:
 
-- runtime Tornado Tactical prototype installer
-- pulled-back tactical camera override with velocity look-ahead
-- Tornado-only production input lock
-- three-minute run timer
-- player-facing HUD
-- destruction-derived score and combo feedback
-- EF rating display, breaking-news updates, and tornado growth
-- persistent warning/news ticker
-- dense nearby destruction test block
-- conductive Grid Zap test targets
-- runtime-built invincible cow
-- cow orbit, Gust launch, ballistic flight, safe landing, and recovery
-- safe storm-chaser SUV prototype
-- chaser retreat and observation-distance behavior
-- captured-on-camera bonus feedback
-- debug HUD suppression while the tactical prototype runs
+- `Godot/project.godot`
+- `Godot/scenes/main.tscn`
+- `Godot/scripts/main.gd`
 
-Implementation records:
+Current source foundation includes:
 
-- `Docs/CONTEXT_CHECKPOINT_2026-07-30.md`
-- `Docs/TORNADO_TACTICAL_P1_IMPLEMENTATION.md`
-
-## Build identity
-
-Expected next Android build identity:
-
-- application version: `0.2.0`
-- Android version code: `10`
-- build label: `Tornado Tactical P1`
-
-Expected Unity Build Automation settings:
-
-- branch: `main`
-- exact checkpoint source commit before this docs-only checkpoint: `ec054aafb2685590711d41cacad2c15b4a5f37e0`
-- Unity: `6000.3.0f1`
-- project subfolder: blank
-- pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
-- Android APK
-- IL2CPP
-- ARM64
-- debug signing
-- Library caching enabled
-- clean build only if Unity reports stale generated content
+- Mobile rendering method
+- landscape viewport configuration
+- code-driven main scene
+- tactical camera with velocity look-ahead
+- Tornado movement
+- Pull, Gust, and Grid Zap input actions
+- three-minute timer
+- score, combo, power, ticker, and HUD shell
+- dense target block
+- invincible flingable cow prototype
+- safe storm-chaser visual placeholder
 
 ## Evidence status
 
-Tornado Tactical P1 has been source-reviewed through the GitHub connector.
+The Godot foundation is source-only.
 
-It has not yet been compiled by Unity Build Automation and has not yet been tested on a physical Android device.
+It has not yet been:
 
-No GitHub Actions workflow run or GitHub commit status was present when the checkpoint was created. Unity Build Automation must be launched from the Unity dashboard.
+- parsed by Godot 4.7.1
+- run in the Godot editor
+- exported to Android
+- installed on a physical device
+- accepted for gameplay feel or performance
 
-Do not describe the implementation as compiled, playable, stable, or accepted until those gates pass.
+Do not describe it as compiled, playable, stable, or parity-complete until those gates pass.
 
-## First device gate
+## Preserved Unity status
 
-The first device build must confirm:
+The latest Unity checkpoint remains preserved at commit:
 
-1. `v0.2.0` and `Tornado Tactical P1` identity.
-2. Warning ticker appears across the top.
-3. Tactical camera remains pulled back and comfortable.
-4. Old debug HUD is hidden.
-5. Timer counts down from 03:00.
-6. Damage raises score and combo.
-7. EF upgrades change the headline and tornado scale.
-8. Dense test block appears near the initial tornado.
-9. Grid Zap chains through test utility poles.
-10. Pull lifts the cow into orbit.
-11. Gust flings the cow and it lands safely.
-12. The legacy storm-switch action cannot replace the Tornado.
-13. Chaser retreats before tornado contact.
-14. Destruction near the chaser triggers captured-on-camera feedback.
-15. Ordinary gameplay remains at or above 45 FPS.
-16. Five-minute stress testing shows no runaway clutter or severe heat regression.
+`98a576d926abdfa3345225a3959349f817f7cfde`
 
-## Known P1 limitations
+The Unity Tornado Tactical P1 source remains useful for reference values and system intent, but it is no longer the active build target.
 
-- The tactical prototype uses runtime installation rather than a final authored scene hierarchy.
-- The HUD uses IMGUI for rapid device testing.
-- Cow, chaser, and dense district assets use runtime primitives.
-- Chaser logic is safe-distance steering, not final road-graph AI.
-- Camera bonuses use observation distance rather than a final footage frustum.
-- The final four-district county is not yet authored.
-- Supercell and Derecho remain in source but cannot be selected during the P1 run.
-- Radar, intro broadcast, final results menu, authored assets, and production audio remain missing.
-- `DamageableStructure.cs` still uses deprecated `Rigidbody.drag` and `angularDrag` properties.
-- `FunnelCloudMeshVFX` remains disconnected from the runtime tornado.
-- Repository inventory and checksums require regeneration after implementation.
+## First Godot gate
 
-## Immediate sequence
+1. Open `Godot/project.godot` in Godot `4.7.1-stable`.
+2. Resolve every parser error.
+3. Run `Godot/scenes/main.tscn`.
+4. Confirm Tornado movement and tactical camera comfort.
+5. Confirm Pull, Gust, and Grid Zap inputs fire.
+6. Confirm ticker and HUD remain readable in landscape.
+7. Confirm the cow can be flung without harm.
+8. Add touch joystick and action buttons.
+9. Commit an Android export preset.
+10. Export and install the first Android APK.
+11. Compare directly with HTML 2.5 on the same device.
 
-1. Run Unity Build Automation from current `main`.
-2. Record the exact commit selected by Unity Build Automation.
-3. Capture the complete compiler result.
-4. Fix all remaining compile errors in one repair pass if necessary.
-5. Install the APK on the physical Android device.
-6. Complete the first device gate.
-7. Compare Tornado Tactical P1 directly with HTML 2.5 on the same device.
-8. Tune camera, movement, destruction, cow fling, ticker, and chaser behavior from physical evidence.
+## Known foundation limitations
+
+- primitive visuals only
+- keyboard controls only at the first checkpoint
+- Pull is currently a feedback shell, not full orbit physics
+- Grid Zap is currently a feedback/scoring shell, not a conductive chain
+- target destruction is not yet implemented
+- cow safe-landing and reset need a dedicated controller
+- chaser is visual-only
+- no Android export preset yet
+- no Godot parser or headless validation has run
+- final four-district county, objectives, radar, broadcast sequences, production audio, and authored graphics remain missing
+
+## Immediate next action
+
+Open the Godot project in `4.7.1-stable`, run the main scene, and capture the complete parser/runtime result before adding more systems.
