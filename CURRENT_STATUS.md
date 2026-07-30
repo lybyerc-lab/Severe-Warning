@@ -1,6 +1,6 @@
 # Severe Weather Current Status
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
 Unity editor: `6000.3.0f1`
@@ -10,12 +10,13 @@ Primary target: Android
 
 1. Current repository code and physical-device evidence
 2. This status file
-3. `Docs/TORNADO_TACTICAL_PRODUCT_DIRECTION.md`
-4. `Docs/HTML_2_5_UNITY_PARITY_MATRIX.md`
-5. `Docs/TORNADO_TACTICAL_P1_IMPLEMENTATION.md`
-6. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-7. Current production documents in `Docs/`
-8. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md`
+3. `Docs/CONTEXT_CHECKPOINT_2026-07-30.md`
+4. `Docs/TORNADO_TACTICAL_PRODUCT_DIRECTION.md`
+5. `Docs/HTML_2_5_UNITY_PARITY_MATRIX.md`
+6. `Docs/TORNADO_TACTICAL_P1_IMPLEMENTATION.md`
+7. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
+8. Current production documents in `Docs/`
+9. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md`
 
 Important project decisions and test evidence must be committed to the repository. Chat is working context, not the durable source of truth.
 
@@ -64,8 +65,9 @@ Implemented systems:
 - captured-on-camera bonus feedback
 - debug HUD suppression while the tactical prototype runs
 
-Implementation record:
+Implementation records:
 
+- `Docs/CONTEXT_CHECKPOINT_2026-07-30.md`
 - `Docs/TORNADO_TACTICAL_P1_IMPLEMENTATION.md`
 
 ## Build identity
@@ -79,6 +81,7 @@ Expected next Android build identity:
 Expected Unity Build Automation settings:
 
 - branch: `main`
+- exact checkpoint source commit before this docs-only checkpoint: `ec054aafb2685590711d41cacad2c15b4a5f37e0`
 - Unity: `6000.3.0f1`
 - project subfolder: blank
 - pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
@@ -94,6 +97,8 @@ Expected Unity Build Automation settings:
 Tornado Tactical P1 has been source-reviewed through the GitHub connector.
 
 It has not yet been compiled by Unity Build Automation and has not yet been tested on a physical Android device.
+
+No GitHub Actions workflow run or GitHub commit status was present when the checkpoint was created. Unity Build Automation must be launched from the Unity dashboard.
 
 Do not describe the implementation as compiled, playable, stable, or accepted until those gates pass.
 
@@ -134,10 +139,11 @@ The first device build must confirm:
 
 ## Immediate sequence
 
-1. Run Unity Build Automation from the exact current `main` commit.
-2. Capture the complete compiler result.
-3. Fix all remaining compile errors in one repair pass if necessary.
-4. Install the APK on the physical Android device.
-5. Complete the first device gate.
-6. Compare Tornado Tactical P1 directly with HTML 2.5 on the same device.
-7. Tune camera, movement, destruction, cow fling, ticker, and chaser behavior from physical evidence.
+1. Run Unity Build Automation from current `main`.
+2. Record the exact commit selected by Unity Build Automation.
+3. Capture the complete compiler result.
+4. Fix all remaining compile errors in one repair pass if necessary.
+5. Install the APK on the physical Android device.
+6. Complete the first device gate.
+7. Compare Tornado Tactical P1 directly with HTML 2.5 on the same device.
+8. Tune camera, movement, destruction, cow fling, ticker, and chaser behavior from physical evidence.
