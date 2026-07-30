@@ -43,12 +43,13 @@ Non-negotiable features include:
 
 ## Current implementation
 
-Tornado Tactical P1 source is implemented on branch `agent/tornado-tactical-implementation` from base commit `c0963a89d2afb0f3fa917cfcc5e3d30e421a625a`.
+Tornado Tactical P1 source is implemented on `main` and hardened with a Tornado-only input lock.
 
 Implemented systems:
 
 - runtime Tornado Tactical prototype installer
 - pulled-back tactical camera override with velocity look-ahead
+- Tornado-only production input lock
 - three-minute run timer
 - player-facing HUD
 - destruction-derived score and combo feedback
@@ -77,7 +78,7 @@ Expected next Android build identity:
 
 Expected Unity Build Automation settings:
 
-- branch: `main` after the implementation branch is merged
+- branch: `main`
 - Unity: `6000.3.0f1`
 - project subfolder: blank
 - pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
@@ -111,10 +112,11 @@ The first device build must confirm:
 9. Grid Zap chains through test utility poles.
 10. Pull lifts the cow into orbit.
 11. Gust flings the cow and it lands safely.
-12. Chaser retreats before tornado contact.
-13. Destruction near the chaser triggers captured-on-camera feedback.
-14. Ordinary gameplay remains at or above 45 FPS.
-15. Five-minute stress testing shows no runaway clutter or severe heat regression.
+12. The legacy storm-switch action cannot replace the Tornado.
+13. Chaser retreats before tornado contact.
+14. Destruction near the chaser triggers captured-on-camera feedback.
+15. Ordinary gameplay remains at or above 45 FPS.
+16. Five-minute stress testing shows no runaway clutter or severe heat regression.
 
 ## Known P1 limitations
 
@@ -124,7 +126,7 @@ The first device build must confirm:
 - Chaser logic is safe-distance steering, not final road-graph AI.
 - Camera bonuses use observation distance rather than a final footage frustum.
 - The final four-district county is not yet authored.
-- Supercell and Derecho remain in source and the older storm-switch input still exists.
+- Supercell and Derecho remain in source but cannot be selected during the P1 run.
 - Radar, intro broadcast, final results menu, authored assets, and production audio remain missing.
 - `DamageableStructure.cs` still uses deprecated `Rigidbody.drag` and `angularDrag` properties.
 - `FunnelCloudMeshVFX` remains disconnected from the runtime tornado.
@@ -132,11 +134,10 @@ The first device build must confirm:
 
 ## Immediate sequence
 
-1. Merge the controlled implementation branch only after final branch comparison.
-2. Run Unity Build Automation from the exact merged `main` commit.
-3. Capture the complete compiler result.
-4. Fix all remaining compile errors in one repair pass if necessary.
-5. Install the APK on the physical Android device.
-6. Complete the first device gate.
-7. Compare Tornado Tactical P1 directly with HTML 2.5 on the same device.
-8. Tune camera, movement, destruction, cow fling, ticker, and chaser behavior from physical evidence.
+1. Run Unity Build Automation from the exact current `main` commit.
+2. Capture the complete compiler result.
+3. Fix all remaining compile errors in one repair pass if necessary.
+4. Install the APK on the physical Android device.
+5. Complete the first device gate.
+6. Compare Tornado Tactical P1 directly with HTML 2.5 on the same device.
+7. Tune camera, movement, destruction, cow fling, ticker, and chaser behavior from physical evidence.
