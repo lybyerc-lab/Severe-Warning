@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using SevereWeather.Damage;
 using SevereWeather.Presentation;
+using SevereWeather.World;
 using UnityEngine;
 
 namespace SevereWeather.Storms
@@ -14,6 +15,7 @@ namespace SevereWeather.Storms
         [SerializeField] private float lightningCooldown = 2.2f;
 
         private readonly HashSet<ConductiveNode> lightningVisited = new HashSet<ConductiveNode>(16);
+        private readonly HashSet<InvincibleAnimal> animalVisited = new HashSet<InvincibleAnimal>(16);
         private float gustTimer;
         private float lightningTimer;
         private float suctionFeedbackTimer;
@@ -84,7 +86,7 @@ namespace SevereWeather.Storms
                 int targets = ApplyGust();
                 StormActionVfx.Ring(
                     transform.position,
-                    24f,
+                    48f,
                     new Color(1f, 0.72f, 0.24f, 0.92f),
                     0.55f,
                     1f);
@@ -111,9 +113,13 @@ namespace SevereWeather.Storms
         {
             int count = Query(transform.position, suctionRadius);
             int targets = 0;
+            animalVisited.Clear();
             for (int i = 0; i < count; i++)
             {
                 Collider collider = overlapBuffer[i];
+                InvincibleAnimal animal = collider.GetComponentInParent<InvincibleAnimal>();
+                if (animal != null && animalVisited.Add(animal)) targets++;
+
                 if (!TryGetDamageable(collider, out DamageableStructure damageable)) continue;
 
                 Vector3 offset = transform.position - collider.bounds.center;
@@ -131,14 +137,25 @@ namespace SevereWeather.Storms
             const float radius = 48f;
             int count = Query(transform.position, radius);
             int targets = 0;
+            animalVisited.Clear();
             for (int i = 0; i < count; i++)
             {
                 Collider collider = overlapBuffer[i];
+                InvincibleAnimal animal = collider.GetComponentInParent<InvincibleAnimal>();
+                if (animal != null && animalVisited.Add(animal))
+                {
+                    float animalDistance = Vector3.Distance(transform.position, animal.transform.position);
+                    float animalStrength = 1f - Mathf.Clamp01(animalDistance / radius);
+                    animal.LaunchFrom(transform.position, Mathf.Lerp(20f, 38f, animalStrength));
+                    targets++;
+                }
+
                 if (!TryGetDamageable(collider, out DamageableStructure damageable)) continue;
 
                 Vector3 offset = collider.bounds.center - transform.position;
                 float strength = 1f - Mathf.Clamp01(offset.magnitude / radius);
-                Vector3 impulse = offset.normalized * Mathf.Lerp(8f, 32f, strength) + Vector3.up * 4f;
+                Vector3 direction = offset.sqrMagnitude > 0.01f ? offset.normalized : transform.forward;
+                Vector3 impulse = direction * Mathf.Lerp(8f, 32f, strength) + Vector3.up * 4f;
                 ApplyDamage(damageable, DamageType.Wind, Mathf.Lerp(15f, 50f, strength), collider.bounds.center, impulse);
                 targets++;
             }
