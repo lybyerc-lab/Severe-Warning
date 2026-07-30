@@ -17,8 +17,8 @@ namespace SevereWeather.Editor
         private const string ScenePath = SceneDirectory + "/ProductionSlice.unity";
         private const string GeneratedDirectory = "Assets/__GeneratedBuild";
         private const string GeneratedResourcesDirectory = GeneratedDirectory + "/Resources";
-        private const string ProductVersion = "0.1.9";
-        private const int AndroidVersionCode = 9;
+        private const string ProductVersion = "0.2.0";
+        private const int AndroidVersionCode = 10;
 
         [MenuItem("Tools/Severe Weather/Create Production Slice Scene", priority = 10)]
         public static void CreateProductionSliceScene()
@@ -36,7 +36,7 @@ namespace SevereWeather.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Selection.activeGameObject = bootstrap;
-            Debug.Log($"[Severe Weather] Build #5.2 production slice created at {ScenePath}");
+            Debug.Log($"[Severe Weather] Tornado Tactical v1 production slice created at {ScenePath}");
         }
 
         private static void ConfigureBuildIdentityAndMaterials()
@@ -62,7 +62,7 @@ namespace SevereWeather.Editor
             }
             if (string.IsNullOrWhiteSpace(revision)) revision = "local";
             string cloudBuildNumber = Environment.GetEnvironmentVariable("BUILD_NUMBER");
-            if (string.IsNullOrWhiteSpace(cloudBuildNumber)) cloudBuildNumber = "5.2";
+            if (string.IsNullOrWhiteSpace(cloudBuildNumber)) cloudBuildNumber = "TTV1";
 
             string buildInfo =
                 $"version={ProductVersion}\n" +
@@ -176,7 +176,7 @@ namespace SevereWeather.Editor
             }
             else
             {
-                EditorUtility.DisplayDialog("Severe Weather Validation", message + "\nBuild #5.2 structure is ready for device testing.", "OK");
+                EditorUtility.DisplayDialog("Severe Weather Validation", message + "\nTornado Tactical v1 structure is ready for device testing.", "OK");
                 Debug.Log(message);
             }
         }
