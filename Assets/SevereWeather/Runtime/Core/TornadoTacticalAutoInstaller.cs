@@ -3,6 +3,7 @@ using SevereWeather.CameraSystem;
 using SevereWeather.Input;
 using SevereWeather.Storms;
 using SevereWeather.UI;
+using SevereWeather.World;
 using UnityEngine;
 
 namespace SevereWeather.Core
@@ -35,8 +36,6 @@ namespace SevereWeather.Core
         {
             if (input != null)
             {
-                // Tornado-first production slice: consume the old storm-switch action
-                // before the legacy bootstrap can replace the player storm.
                 input.ConsumeSwitchStormPressed();
             }
         }
@@ -71,6 +70,8 @@ namespace SevereWeather.Core
             TacticalScoreBridge bridge = GetComponent<TacticalScoreBridge>();
             if (bridge == null) bridge = gameObject.AddComponent<TacticalScoreBridge>();
             bridge.Configure(director);
+
+            TacticalTestDistrictSpawner.Spawn(tornado.transform.position);
 
             installed = true;
             Debug.Log("[Severe Weather] Tornado Tactical v1 runtime installed.");
