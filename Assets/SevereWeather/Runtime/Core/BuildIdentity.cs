@@ -6,8 +6,8 @@ namespace SevereWeather.Core
     public static class BuildIdentity
     {
         private static bool loaded;
-        private static string version = "0.1.9";
-        private static string build = "5.2";
+        private static string version = "0.2.0";
+        private static string build = "Tornado Tactical P1";
         private static string commit = "local";
         private static string utc = "unknown";
 
@@ -56,7 +56,7 @@ namespace SevereWeather.Core
             }
         }
 
-        public static string DisplayLabel => $"v{Version}  B{Build}  {ShortCommit}";
+        public static string DisplayLabel => $"v{Version}  {Build}  {ShortCommit}";
 
         private static void EnsureLoaded()
         {
