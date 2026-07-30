@@ -12,39 +12,72 @@ Primary target: Android
 2. This status file
 3. `Docs/TORNADO_TACTICAL_PRODUCT_DIRECTION.md`
 4. `Docs/HTML_2_5_UNITY_PARITY_MATRIX.md`
-5. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-6. Current production documents in `Docs/`
-7. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md`
+5. `Docs/TORNADO_TACTICAL_P1_IMPLEMENTATION.md`
+6. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
+7. Current production documents in `Docs/`
+8. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md`
 
 Important project decisions and test evidence must be committed to the repository. Chat is working context, not the durable source of truth.
 
-## Current source state
+## Locked product direction
 
-Current pre-pivot `main` source commit:
+HTML 2.5 is the authoritative gameplay, layout, pacing, comfort, and enjoyment reference.
 
-`9b856fd2586bc0c70e3ee95da02fe1dfe0162f74`
+Unity remains the production engine, but Unity must reproduce and improve the HTML experience rather than continue as a separate debug-first interpretation.
 
-This commit contains:
+The primary production vertical slice is Tornado.
 
-- the repaired Unity Build 5.2 source foundation
-- Unity identity `v0.1.9 / Build 5.2`
-- Android version code `9`
-- repaired Derecho input calls
-- repaired `InvincibleAnimal` namespace and safe landing height
-- restored Build 5.2 HUD cleanup telemetry
-- restored production-scene generation
-- HTML Mechanics Lab v2.5.0 Tactical View and World Expansion
-- a procedural `FunnelCloudMeshVFX` source file that is not yet integrated into the runtime bootstrap
+Non-negotiable features include:
 
-The unconfigured duplicate GameCI workflow was removed. Unity Build Automation remains the intended Android build route.
+- HTML-style tactical camera and look-ahead
+- comfortable mobile movement
+- Pull, Gust, and Grid Zap
+- generous destruction
+- four readable districts
+- score, combo, EF growth, timer, objectives, radar, and results
+- persistent event-driven warning/news ticker
+- active safe storm chasers and captured-on-camera bonuses
+- invincible flingable animals with safe landings
+- opening broadcast and ending news recap
+- substantially improved tornado, landscape, destruction, atmosphere, audio, and aftermath
 
-## Build status
+## Current implementation
 
-A Unity build may be launched from current `main` to establish whether the repaired Build 5.2 foundation compiles and launches.
+Tornado Tactical P1 source is implemented on branch `agent/tornado-tactical-implementation` from base commit `c0963a89d2afb0f3fa917cfcc5e3d30e421a625a`.
 
-Expected build settings:
+Implemented systems:
 
-- branch: `main`
+- runtime Tornado Tactical prototype installer
+- pulled-back tactical camera override with velocity look-ahead
+- three-minute run timer
+- player-facing HUD
+- destruction-derived score and combo feedback
+- EF rating display, breaking-news updates, and tornado growth
+- persistent warning/news ticker
+- dense nearby destruction test block
+- conductive Grid Zap test targets
+- runtime-built invincible cow
+- cow orbit, Gust launch, ballistic flight, safe landing, and recovery
+- safe storm-chaser SUV prototype
+- chaser retreat and observation-distance behavior
+- captured-on-camera bonus feedback
+- debug HUD suppression while the tactical prototype runs
+
+Implementation record:
+
+- `Docs/TORNADO_TACTICAL_P1_IMPLEMENTATION.md`
+
+## Build identity
+
+Expected next Android build identity:
+
+- application version: `0.2.0`
+- Android version code: `10`
+- build label: `Tornado Tactical P1`
+
+Expected Unity Build Automation settings:
+
+- branch: `main` after the implementation branch is merged
 - Unity: `6000.3.0f1`
 - project subfolder: blank
 - pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
@@ -55,89 +88,55 @@ Expected build settings:
 - Library caching enabled
 - clean build only if Unity reports stale generated content
 
-Expected identity:
+## Evidence status
 
-- `B5.2 ABILITY FEEDBACK CLEANUP`
-- `v0.1.9`
+Tornado Tactical P1 has been source-reviewed through the GitHub connector.
 
-No cloud-build result or physical-device result for commit `9b856fd2` has been recorded yet.
+It has not yet been compiled by Unity Build Automation and has not yet been tested on a physical Android device.
 
-## Locked product pivot
+Do not describe the implementation as compiled, playable, stable, or accepted until those gates pass.
 
-HTML 2.5 is now the authoritative gameplay, layout, pacing, comfort, and enjoyment reference.
+## First device gate
 
-Unity remains the production engine, but Unity must reproduce and improve the HTML experience instead of continuing as a separate debug-first interpretation.
+The first device build must confirm:
 
-The primary production vertical slice is Tornado only.
+1. `v0.2.0` and `Tornado Tactical P1` identity.
+2. Warning ticker appears across the top.
+3. Tactical camera remains pulled back and comfortable.
+4. Old debug HUD is hidden.
+5. Timer counts down from 03:00.
+6. Damage raises score and combo.
+7. EF upgrades change the headline and tornado scale.
+8. Dense test block appears near the initial tornado.
+9. Grid Zap chains through test utility poles.
+10. Pull lifts the cow into orbit.
+11. Gust flings the cow and it lands safely.
+12. Chaser retreats before tornado contact.
+13. Destruction near the chaser triggers captured-on-camera feedback.
+14. Ordinary gameplay remains at or above 45 FPS.
+15. Five-minute stress testing shows no runaway clutter or severe heat regression.
 
-The locked direction includes:
+## Known P1 limitations
 
-- HTML-style tactical camera and look-ahead
-- comfortable mobile movement
-- Pull, Gust, and Grid Zap
-- generous destruction
-- four readable districts: Downtown, Suburbs, Industrial, Farmland
-- score, combo, EF growth, timer, objectives, radar, and results
-- persistent event-driven warning/news ticker
-- breaking-news callouts
-- active, safe storm chasers and captured-on-camera bonuses
-- invincible, flingable animals with safe landings
-- opening broadcast and ending news recap
-- dramatically improved tornado, landscape, destruction, lighting, atmosphere, audio, and aftermath
-
-Authoritative pivot documents:
-
-- `Docs/TORNADO_TACTICAL_PRODUCT_DIRECTION.md`
-- `Docs/HTML_2_5_UNITY_PARITY_MATRIX.md`
-
-## Non-negotiable rules
-
-- The player is the storm.
-- Direct action comes before management.
-- HTML 2.5 is the fun blueprint.
-- Unity must match or beat HTML 2.5 on the same physical Android device.
-- Tornado receives the first complete production pass.
-- People remain protected and off-limits.
-- Animals are invincible and may be lifted, orbited, flung, and safely landed.
-- Storm chasers are witnesses and moving footage zones, not targets.
-- The news ticker reports real gameplay events.
-- Graphics must improve gameplay readability, power, scale, and aftermath.
-- Build success does not equal production readiness.
+- The tactical prototype uses runtime installation rather than a final authored scene hierarchy.
+- The HUD uses IMGUI for rapid device testing.
+- Cow, chaser, and dense district assets use runtime primitives.
+- Chaser logic is safe-distance steering, not final road-graph AI.
+- Camera bonuses use observation distance rather than a final footage frustum.
+- The final four-district county is not yet authored.
+- Supercell and Derecho remain in source and the older storm-switch input still exists.
+- Radar, intro broadcast, final results menu, authored assets, and production audio remain missing.
+- `DamageableStructure.cs` still uses deprecated `Rigidbody.drag` and `angularDrag` properties.
+- `FunnelCloudMeshVFX` remains disconnected from the runtime tornado.
+- Repository inventory and checksums require regeneration after implementation.
 
 ## Immediate sequence
 
-1. Run the repaired Build 5.2 Unity build from current `main`.
-2. Record the exact source commit and cloud-build result.
-3. Install and test the APK on the physical Android device.
-4. Record Build 5.2 launch, movement, abilities, destruction, and five-minute cleanup behavior.
-5. Preserve the verified Build 5.2 baseline.
-6. Begin the Tornado Tactical vertical slice on a controlled feature branch.
-7. Implement tactical camera and movement first.
-8. Add a dense test district, flingable cow prototype, event-driven ticker stub, and one safe storm chaser.
-9. Compare Unity directly against HTML 2.5 on the same device.
-
-## First post-baseline gate
-
-Unity must prove:
-
-- tactical camera comfort
-- movement comfort
-- readable tornado silhouette
-- satisfying Pull, Gust, and Grid Zap
-- rapid access to destructible targets
-- visible aftermath
-- one invincible animal capture, fling, and safe landing loop
-- one event-driven ticker update
-- one storm chaser footage-zone interaction
-- acceptable Android performance
-
-Supercell and Derecho remain preserved but cannot displace Tornado parity work until this gate passes.
-
-## Known technical debt
-
-- `DamageableStructure.cs` still uses deprecated `Rigidbody.drag` and `angularDrag` properties.
-- `FunnelCloudMeshVFX` is not connected to `GameBootstrap`.
-- Unity player HUD is still debug-oriented.
-- HTML 2.5 systems are not yet ported into Unity production code.
-- Repository inventory and checksums require regeneration after the design-document merge.
-- Final authored assets, audio, pooling, profiling, and wider device coverage remain open.
+1. Merge the controlled implementation branch only after final branch comparison.
+2. Run Unity Build Automation from the exact merged `main` commit.
+3. Capture the complete compiler result.
+4. Fix all remaining compile errors in one repair pass if necessary.
+5. Install the APK on the physical Android device.
+6. Complete the first device gate.
+7. Compare Tornado Tactical P1 directly with HTML 2.5 on the same device.
+8. Tune camera, movement, destruction, cow fling, ticker, and chaser behavior from physical evidence.
