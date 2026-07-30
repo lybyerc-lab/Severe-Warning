@@ -19,7 +19,6 @@ namespace SevereWeather.Core
         {
             if (Object.FindFirstObjectByType<TornadoTacticalAutoInstaller>() != null) return;
             GameObject root = new GameObject("Tornado Tactical Runtime");
-            DontDestroyOnLoad(root);
             root.AddComponent<TornadoTacticalAutoInstaller>();
         }
 
