@@ -631,7 +631,13 @@ function startRunFromMenu() {
   initAudio();
   playSound('click');
   const menu = getCachedEl('mainMenu');
-  if (menu) menu.classList.add('hidden');
+  if (menu) {
+    menu.classList.add('hidden');
+    menu.style.display = 'none';
+    menu.style.pointerEvents = 'none';
+    menu.style.opacity = '0';
+    menu.style.visibility = 'hidden';
+  }
   gameStarted = true;
   isPaused = false;
   resetWarningRun();
@@ -674,7 +680,13 @@ function quitToMainMenu() {
   const pauseOverlay = getCachedEl('pauseOverlay');
   const menu = getCachedEl('mainMenu');
   if (pauseOverlay) pauseOverlay.classList.remove('active');
-  if (menu) menu.classList.remove('hidden');
+  if (menu) {
+    menu.classList.remove('hidden');
+    menu.style.display = 'flex';
+    menu.style.pointerEvents = 'auto';
+    menu.style.opacity = '1';
+    menu.style.visibility = 'visible';
+  }
 }
 
 function toggleNeonCosmetic() {
@@ -691,13 +703,18 @@ function setupMenuEventListeners() {
   const attachTouchClick = (id, fn) => {
     const el = getCachedEl(id);
     if (!el) return;
-    ['click', 'pointerdown', 'touchstart'].forEach(evt => {
-      el.addEventListener(evt, (e) => {
-        if (e.type === 'touchstart' || e.type === 'pointerdown') {
-          e.preventDefault();
-        }
-        fn();
-      }, { passive: false });
+    let lastCall = 0;
+    const trigger = (e) => {
+      const now = performance.now();
+      if (now - lastCall < 300) return; // 300ms debounce
+      lastCall = now;
+      if (e && (e.type === 'touchstart' || e.type === 'pointerdown')) {
+        if (e.cancelable) e.preventDefault();
+      }
+      fn();
+    };
+    ['pointerdown', 'touchstart', 'click'].forEach(evt => {
+      el.addEventListener(evt, trigger, { passive: false });
     });
   };
 
