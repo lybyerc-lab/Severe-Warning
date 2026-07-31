@@ -5,12 +5,12 @@ The HTML/WebGL build is the active gameplay source and the planned foundation fo
 ## Current build
 
 - `SevereWeather_3D_Lab.html`
-- Version: `3.2.0 Live Coverage Edition`
+- Version: `3.3.0 High Country Edition`
 - Runtime: self-contained Three.js/WebGL game with locally bundled fonts
 - Primary target: Android landscape through the Capacitor project in `../android/`
 - Mode: single-player only
 
-Version 3.2.0 contains a three-district arcade run:
+Version 3.3.0 contains a three-district arcade run:
 
 1. Pine Ridge neighborhood
 2. Main Street
@@ -19,6 +19,8 @@ Version 3.2.0 contains a three-district arcade run:
 It also contains district transitions, randomized bonus challenges, thirteen destructible comedy props, sequential substation activation, a persistent Neon Funnel cosmetic unlock, mobile result-screen fitting, expanded results telemetry, and a deterministic bot route.
 
 The v3.2 coverage system replaces enemy-looking red vehicle boxes with four satellite news vans and five storm-chaser SUVs. Crews maintain an observation radius, retreat when the storm becomes unsafe, flash cameras for nearby destruction, publish temporary live headlines, award bounded footage bonuses, and appear on radar. Crews are invincible witnesses and never destruction targets.
+
+The v3.3 graphics pass replaces the flat four-tile board with a continuous height-mapped county. Pine Ridge is physically raised, Main Street sits on a broad rise, County Fair rolls across low knolls, and the east side drops into a visible creek. Roads, shoulders, lane markings, structures, landmarks, animals, storm effects, and media crews follow the terrain height while destruction and steering retain predictable X/Z arcade collision. Contour cues and low-cost instanced dressing make the elevation readable from the pulled-back mobile camera.
 
 ## Controls
 

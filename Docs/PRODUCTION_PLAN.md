@@ -5,6 +5,7 @@
 - preserve v3.0.0 as the stable pre-district reference in Git history
 - complete the v3.1.0 three-district arcade slice
 - complete the v3.2.0 news-crew and storm-chaser coverage loop
+- complete the v3.3.0 district-topography and graphics-depth pass
 - verify startup, full-run completion, replay reset, and responsive landscape layout
 
 ## Phase 1 - Human browser acceptance
@@ -19,21 +20,24 @@
 - [x] bundle the HTML, JavaScript, and fonts locally
 - [x] lock sensor-landscape orientation and immersive fullscreen behavior
 - [x] add safe pause/resume timing and local-only web security settings
-- [ ] build a debug APK without paid cloud-build services on a permitted Android build machine
+- [x] build a debug APK without paid cloud-build services through GitHub Actions
 
 ## Phase 3 - Physical-device acceptance
 
-- install on the target Android phone
-- verify joystick ownership and simultaneous action-button touches
+- [x] install v3.2.0 on the target Galaxy S26 Ultra
+- [x] complete one full Tornado run with HTML-equivalent look and play
+- verify joystick ownership and simultaneous action-button touches after each input change
 - verify audio initialization, focus, pause/resume, and mute behavior
 - verify localStorage cosmetic persistence across close/reopen
 - record sustained FPS, heat, battery use, and WebGL context behavior
-- test at least one complete three-minute run and one retry
+- [x] test at least one complete three-minute run
+- test one retry, one close/reopen persistence cycle, and one airplane-mode run on the current release candidate
 
-The current work PC cannot install the Android Studio/SDK/JDK toolchain under company policy. Phase 2 native compilation and all Phase 3 checks must occur on a permitted personal or managed build machine; the repository handoff is in `Docs/ANDROID_PACKAGING.md`.
+The current work PC cannot install the Android Studio/SDK/JDK toolchain under company policy. GitHub Actions is the proven debug-build machine; physical installation and acceptance remain manual device-security steps. The repository handoff is in `Docs/ANDROID_PACKAGING.md`.
 
 ## Phase 4 - One-town content proof
 
+- [x] replace the flat board with district-specific elevation, terrain-following roads, contour cues, and a drainage creek
 - improve district-specific building silhouettes and signage
 - add district-aware reporter lines only after the current event-driven headlines remain readable in human play
 - expand environmental comedy without targeting people

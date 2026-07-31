@@ -217,3 +217,23 @@ Build #5 physical testing proved the damage pipeline, stage transitions, target 
 **Rejected alternatives:** Rebuilding the game in another engine before measuring the wrapper; using a paid cloud-build subscription; loading game code or fonts from the network; working around managed-PC permissions.
 
 **Revisit condition:** Reopen the wrapper decision only after a permitted physical-device build demonstrates a specific WebView, performance, input, thermal, audio, or lifecycle requirement that cannot be corrected in the web runtime.
+
+## 2026-07-31 - Decision HTML-05: Accept the Capacitor wrapper after a real Android run
+
+**Decision:** Keep the HTML/WebGL game as the production gameplay source and GitHub Actions as the managed-PC-safe debug APK builder. Stop treating an engine rewrite as a prerequisite for Android.
+
+**Evidence:** GitHub Actions run `30653818627` compiled commit `d2b8fde67b76e7d5d5faa7991f9984801586836b`. The resulting APK installed on a Galaxy S26 Ultra, looked and played like the HTML build, and completed a full Tornado run at `S+` with all objectives, landmarks, substations, and district bonuses.
+
+**Rejected alternatives:** Paying for an engine build service before the wrapper failed; bypassing work-PC software policy; describing a cloud compilation without installation as device acceptance.
+
+**Revisit condition:** Reopen the engine question only if measured testing on the intended Android range exposes a requirement the local WebView wrapper cannot meet.
+
+## 2026-07-31 - Decision HTML-06: Use arcade topography, not terrain physics
+
+**Decision:** v3.3.0 uses one continuous height-mapped county with terrain-following presentation while preserving X/Z storm collision and steering. Pine Ridge rises visibly, Main Street occupies a broad shelf, County Fair rolls over low knolls, and an eastern creek breaks the board silhouette.
+
+**Evidence:** The flat four-color board remained the largest visual weakness after Android gameplay parity was proven. Browser inspection of the new surface showed intact destruction, media behavior, score progression, road readability, and approximately `60 FPS` while moving from Pine Ridge into Main Street.
+
+**Rejected alternatives:** Cosmetic hills that structures float through; full rigid-body terrain physics that changes the proven controls; dense imported scenery that increases APK size and mobile draw calls without improving district identity.
+
+**Revisit condition:** Add slope-aware storm mechanics only if human play shows that elevation itself should create a new decision, not merely because the terrain exists.

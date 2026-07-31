@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<title>Severe Weather 3D Lab v3.2.0 - Live Coverage Edition</title>
+<title>Severe Weather 3D Lab v3.3.0 - High Country Edition</title>
 <script>
 /* INLINED THREE.JS R128 */
 /**
@@ -193,7 +193,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.2.0 LIVE</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.3.0 HIGH COUNTRY</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -562,12 +562,17 @@ let cameraShakeIntensity = 0;
 const renderer = new THREE.WebGLRenderer({ canvas: container, antialias: true, powerPreference: 'high-performance' });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // Lighting
 const ambientLight = new THREE.AmbientLight('#334155', 1.2);
 scene.add(ambientLight);
+
+const skyLight = new THREE.HemisphereLight('#93c5fd', '#3f2d1d', 0.38);
+scene.add(skyLight);
 
 const dirLight = new THREE.DirectionalLight('#fef08a', 2.0);
 dirLight.position.set(70, 120, 70);
@@ -582,50 +587,112 @@ dirLight.shadow.camera.top = 220;
 dirLight.shadow.camera.bottom = -220;
 scene.add(dirLight);
 
-// VISUALLY DIFFERENTIATED 4-DISTRICT GROUND TILES WITH SOFTENED TRANSITIONS
+// CONTINUOUS FOUR-DISTRICT TERRAIN WITH ARCADE-SAFE ELEVATION
 const groundGroup = new THREE.Group();
 scene.add(groundGroup);
 
-// 🏙️ Downtown Ground Tile (Northwest) - Dark Asphalt Concrete
-const dtGroundGeo = new THREE.PlaneGeometry(360, 360);
-const dtGroundMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.45 });
-const dtGround = new THREE.Mesh(dtGroundGeo, dtGroundMat);
-dtGround.rotation.x = -Math.PI / 2; dtGround.position.set(-180, -0.05, -180);
-dtGround.receiveShadow = true; groundGroup.add(dtGround);
+// The world surface changes elevation, while X/Z collision stays arcade-predictable.
+function terrainHeightAt(x, z) {
+  const pineRidge = 13.5 * Math.exp(-(((x - 145) ** 2) / 28000 + ((z + 135) ** 2) / 10500));
+  const mainStreetRise = 5.0 * Math.exp(-(((x + 120) ** 2) / 42000 + ((z + 95) ** 2) / 26000));
+  const fairKnolls = 4.5 * Math.sin((x + 35) * 0.025) * Math.sin((z - 20) * 0.021) * Math.exp(-(((x - 120) ** 2 + (z - 125) ** 2) / 78000));
+  const drainage = -4.0 * Math.exp(-((x - 255) ** 2) / 750) * Math.exp(-(z ** 2) / 125000);
+  const countyRoll = 1.4 * Math.sin(x * 0.018) * Math.cos(z * 0.015);
+  return pineRidge + mainStreetRise + fairKnolls + drainage + countyRoll;
+}
 
-// 🏡 Suburbs Ground Tile (Northeast) - Lush Green Grass Lawn
-const subGroundGeo = new THREE.PlaneGeometry(360, 360);
-const subGroundMat = new THREE.MeshStandardMaterial({ color: '#163816', roughness: 0.65 });
-const subGround = new THREE.Mesh(subGroundGeo, subGroundMat);
-subGround.rotation.x = -Math.PI / 2; subGround.position.set(180, -0.05, -180);
-subGround.receiveShadow = true; groundGroup.add(subGround);
+function districtGroundColor(x, z, height) {
+  let color;
+  if (x < 0 && z < 0) color = new THREE.Color('#1b2738');
+  else if (x >= 0 && z < 0) color = new THREE.Color('#285b2b');
+  else if (x < 0) color = new THREE.Color('#4a3022');
+  else color = new THREE.Color('#70511d');
+  color.offsetHSL(0, 0.02, THREE.MathUtils.clamp(height / 22, -0.04, 0.18));
+  return color;
+}
 
-// 🏭 Industrial Ground Tile (Southwest) - Dark Gravel & Dirt
-const indGroundGeo = new THREE.PlaneGeometry(360, 360);
-const indGroundMat = new THREE.MeshStandardMaterial({ color: '#2a1a10', roughness: 0.85 });
-const indGround = new THREE.Mesh(indGroundGeo, indGroundMat);
-indGround.rotation.x = -Math.PI / 2; indGround.position.set(-180, -0.05, 180);
-indGround.receiveShadow = true; groundGroup.add(indGround);
+function conformPlaneToTerrain(geometry, centerX = 0, centerZ = 0, lift = 0) {
+  const positions = geometry.attributes.position;
+  for (let i = 0; i < positions.count; i++) {
+    const worldX = centerX + positions.getX(i);
+    const worldZ = centerZ - positions.getY(i);
+    positions.setZ(i, terrainHeightAt(worldX, worldZ) + lift);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
-// 🌾 Farmland Ground Tile (Southeast) - Golden Wheat Soil
-const farmGroundGeo = new THREE.PlaneGeometry(360, 360);
-const farmGroundMat = new THREE.MeshStandardMaterial({ color: '#3d2b0f', roughness: 0.75 });
-const farmGround = new THREE.Mesh(farmGroundGeo, farmGroundMat);
-farmGround.rotation.x = -Math.PI / 2; farmGround.position.set(180, -0.05, 180);
-farmGround.receiveShadow = true; groundGroup.add(farmGround);
+const terrainGeo = new THREE.PlaneGeometry(800, 800, 64, 64);
+const terrainPositions = terrainGeo.attributes.position;
+const terrainColors = [];
+for (let i = 0; i < terrainPositions.count; i++) {
+  const x = terrainPositions.getX(i);
+  const z = -terrainPositions.getY(i);
+  const height = terrainHeightAt(x, z);
+  terrainPositions.setZ(i, height - 0.08);
+  const color = districtGroundColor(x, z, height);
+  terrainColors.push(color.r, color.g, color.b);
+}
+terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(terrainColors, 3));
+terrainGeo.computeVertexNormals();
+const terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0.02 });
+const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
+terrainMesh.rotation.x = -Math.PI / 2;
+terrainMesh.receiveShadow = true;
+groundGroup.add(terrainMesh);
+
+function addTerrainContour(cx, cz, radiusX, radiusZ, color) {
+  const points = [];
+  for (let i = 0; i <= 64; i++) {
+    const angle = (i / 64) * Math.PI * 2;
+    const x = cx + Math.cos(angle) * radiusX;
+    const z = cz + Math.sin(angle) * radiusZ;
+    points.push(new THREE.Vector3(x, terrainHeightAt(x, z) + 0.44, z));
+  }
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const contour = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.42 }));
+  scene.add(contour);
+}
+
+[[52, 28], [82, 46], [112, 65], [146, 88]].forEach(size => addTerrainContour(145, -135, size[0], size[1], '#86a789'));
+[[50, 36], [92, 68], [138, 100]].forEach(size => addTerrainContour(120, 125, size[0], size[1], '#d6ad60'));
 
 // Asphalt Roads & Power Line Poles
-const roadMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.45, metalness: 0.2 });
+const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', roughness: 0.58, metalness: 0.12 });
+const shoulderMat = new THREE.MeshStandardMaterial({ color: '#64748b', roughness: 0.88 });
+const laneMat = new THREE.MeshBasicMaterial({ color: '#f8d568' });
 const powerPoles = [];
+const eastWestLaneDashes = [];
+const northSouthLaneDashes = [];
+
+function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material, lift) {
+  const geometry = isEastWest
+    ? new THREE.PlaneGeometry(length, width, 64, 1)
+    : new THREE.PlaneGeometry(width, length, 1, 64);
+  conformPlaneToTerrain(geometry, centerX, centerZ, lift);
+  const road = new THREE.Mesh(geometry, material);
+  road.rotation.x = -Math.PI / 2;
+  road.position.set(centerX, 0, centerZ);
+  road.receiveShadow = true;
+  scene.add(road);
+  return road;
+}
+
+// A shallow creek cuts through the east side; roads render afterward as bridges.
+const creekMat = new THREE.MeshStandardMaterial({ color: '#164e63', roughness: 0.22, metalness: 0.12, transparent: true, opacity: 0.92 });
+createTerrainRoad(9, 780, 255, 0, false, creekMat, 0.12);
 
 for (let r = -320; r <= 320; r += 80) {
-  const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(800, 12), roadMat);
-  roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.05, r);
-  roadEW.receiveShadow = true; scene.add(roadEW);
+  createTerrainRoad(17, 800, 0, r, true, shoulderMat, 0.22);
+  createTerrainRoad(12, 800, 0, r, true, roadMat, 0.30);
+  createTerrainRoad(17, 800, r, 0, false, shoulderMat, 0.22);
+  createTerrainRoad(12, 800, r, 0, false, roadMat, 0.30);
 
-  const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(12, 800), roadMat);
-  roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(r, 0.05, 0);
-  roadNS.receiveShadow = true; scene.add(roadNS);
+  for (let m = -360; m <= 360; m += 32) {
+    eastWestLaneDashes.push({ x: m, y: terrainHeightAt(m, r) + 0.46, z: r });
+    northSouthLaneDashes.push({ x: r, y: terrainHeightAt(r, m) + 0.46, z: m });
+  }
 
   for (let px = -300; px <= 300; px += 50) {
     const poleGroup = new THREE.Group();
@@ -643,11 +710,43 @@ for (let r = -320; r <= 320; r += 80) {
     cross.castShadow = true;
     poleGroup.add(cross);
 
-    poleGroup.position.set(px, 0, r + 8);
+    poleGroup.position.set(px, terrainHeightAt(px, r + 8), r + 8);
     scene.add(poleGroup);
     powerPoles.push({ group: poleGroup, x: px, z: r + 8, sparked: false });
   }
 }
+
+function addInstancedRoadMarks(geometry, transforms) {
+  const marks = new THREE.InstancedMesh(geometry, laneMat, transforms.length);
+  const matrix = new THREE.Matrix4();
+  transforms.forEach((transform, index) => {
+    matrix.makeTranslation(transform.x, transform.y, transform.z);
+    marks.setMatrixAt(index, matrix);
+  });
+  marks.instanceMatrix.needsUpdate = true;
+  scene.add(marks);
+}
+
+addInstancedRoadMarks(new THREE.BoxGeometry(12, 0.12, 0.42), eastWestLaneDashes);
+addInstancedRoadMarks(new THREE.BoxGeometry(0.42, 0.12, 12), northSouthLaneDashes);
+
+// Low-cost silhouettes make elevation readable at the pulled-back mobile camera distance.
+const ridgeRockMat = new THREE.MeshStandardMaterial({ color: '#475569', roughness: 0.9, flatShading: true });
+const ridgeRocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(3.2, 0), ridgeRockMat, 18);
+const ridgeMatrix = new THREE.Matrix4();
+for (let i = 0; i < 18; i++) {
+  const x = 232 + (i % 3) * 12;
+  const z = -255 + Math.floor(i / 3) * 42;
+  const scale = 0.75 + (i % 4) * 0.18;
+  ridgeMatrix.compose(
+    new THREE.Vector3(x, terrainHeightAt(x, z) + 1.4 * scale, z),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, i * 0.73, 0)),
+    new THREE.Vector3(1.5 * scale, 0.72 * scale, scale)
+  );
+  ridgeRocks.setMatrixAt(i, ridgeMatrix);
+}
+ridgeRocks.instanceMatrix.needsUpdate = true;
+scene.add(ridgeRocks);
 
 // --- MULTI-TOUCH JOYSTICK ---
 let joystickTouchId = null;
@@ -841,11 +940,11 @@ swathCtx.fillStyle = 'rgba(0,0,0,0)'; swathCtx.fillRect(0, 0, 1024, 1024);
 
 const swathTexture = new THREE.CanvasTexture(swathCanvas);
 
-const swathOverlayGeo = new THREE.PlaneGeometry(800, 800);
+const swathOverlayGeo = conformPlaneToTerrain(new THREE.PlaneGeometry(800, 800, 64, 64), 0, 0, 0.38);
 const swathOverlayMat = new THREE.MeshStandardMaterial({ map: swathTexture, transparent: true, opacity: 0.85, roughness: 0.8 });
 const swathOverlay = new THREE.Mesh(swathOverlayGeo, swathOverlayMat);
 swathOverlay.rotation.x = -Math.PI / 2;
-swathOverlay.position.set(0, 0.02, 0);
+swathOverlay.position.set(0, 0, 0);
 swathOverlay.receiveShadow = true;
 scene.add(swathOverlay);
 
@@ -928,10 +1027,10 @@ function spawnSupercellHail() {
     const h = new THREE.Mesh(hailGeo, hailMat);
     const hx = storm.pos.x + (Math.random() - 0.5) * 38;
     const hz = storm.pos.z + (Math.random() - 0.5) * 38;
-    h.position.set(hx, 30, hz);
+    h.position.set(hx, terrainHeightAt(hx, hz) + 30, hz);
     h.castShadow = true;
     scene.add(h);
-    hailStones.push({ mesh: h, vy: -1.4 - Math.random() * 1.6, groundY: 0.65 });
+    hailStones.push({ mesh: h, vy: -1.4 - Math.random() * 1.6, groundY: terrainHeightAt(hx, hz) + 0.65 });
   }
 }
 
@@ -1256,7 +1355,7 @@ function spawnTownComedyProps() {
 
   definitions.forEach((definition, index) => {
     const meshData = createComedyPropMesh(definition.kind);
-    meshData.group.position.set(definition.x, 0, definition.z);
+    meshData.group.position.set(definition.x, terrainHeightAt(definition.x, definition.z), definition.z);
     scene.add(meshData.group);
     comedyProps.push({
       ...definition,
@@ -1323,7 +1422,7 @@ function spawnPersistentRuin(x, z, color) {
   wall.castShadow = true;
   group.add(wall);
 
-  group.position.set(x, 0, z);
+  group.position.set(x, terrainHeightAt(x, z), z);
   ruinsGroup.add(group);
 }
 
@@ -1343,7 +1442,7 @@ function explodeStructure(x, z, color, isWaterTower = false, isGrainSilo = false
   
   for (let i = 0; i < (isWaterTower || isGrainSilo ? 24 : 15); i++) {
     const frag = new THREE.Mesh(fragGeo, fragMat);
-    frag.position.set(x + (Math.random()-0.5)*4, 2 + Math.random()*4, z + (Math.random()-0.5)*4);
+    frag.position.set(x + (Math.random()-0.5)*4, terrainHeightAt(x, z) + 2 + Math.random()*4, z + (Math.random()-0.5)*4);
     frag.castShadow = true;
     scene.add(frag);
 
@@ -1395,7 +1494,7 @@ function triggerLightningStrike(targetX, targetZ) {
     cz += (Math.random() - 0.5) * 14;
     points.push(new THREE.Vector3(cx, cy, cz));
   }
-  points.push(new THREE.Vector3(targetX, 0, targetZ));
+  points.push(new THREE.Vector3(targetX, terrainHeightAt(targetX, targetZ), targetZ));
   lightningGeo.setFromPoints(points);
 
   scene.background.set('#38bdf8');
@@ -1532,7 +1631,7 @@ function updateMediaCrews(dt) {
 
     crew.x = THREE.MathUtils.clamp(crew.x + moveX, -370, 370);
     crew.z = THREE.MathUtils.clamp(crew.z + moveZ, -370, 370);
-    crew.mesh.position.set(crew.x, 0, crew.z);
+    crew.mesh.position.set(crew.x, terrainHeightAt(crew.x, crew.z), crew.z);
     if (Math.abs(moveX) + Math.abs(moveZ) > 0.001) crew.mesh.rotation.y = Math.atan2(moveX, moveZ);
   });
 }
@@ -1599,7 +1698,7 @@ function init3DWorld() {
     else if (isCommercial) meshData = createCommercialMesh(districtType);
     else meshData = createHouseMesh(districtType, i);
 
-    meshData.group.position.set(x, 0, z);
+    meshData.group.position.set(x, terrainHeightAt(x, z), z);
     scene.add(meshData.group);
 
     targets.push({
@@ -1612,12 +1711,12 @@ function init3DWorld() {
 
   // Priority Landmarks in Industrial & Farmland Districts
   const lm1 = createLandmarkMesh('💧');
-  lm1.group.position.set(-145, 0, -110);
+  lm1.group.position.set(-145, terrainHeightAt(-145, -110), -110);
   scene.add(lm1.group);
   landmarks.push({ x: -145, z: -110, name: 'WATER TOWER', icon: '💧', health: 260, maxHealth: 260, destroyed: false, meshData: lm1 });
 
   const lm2 = createLandmarkMesh('🌾');
-  lm2.group.position.set(155, 0, 135);
+  lm2.group.position.set(155, terrainHeightAt(155, 135), 135);
   scene.add(lm2.group);
   landmarks.push({ x: 155, z: 135, name: 'GRAIN SILO', icon: '🌾', health: 300, maxHealth: 300, destroyed: false, meshData: lm2 });
 
@@ -1629,7 +1728,7 @@ function init3DWorld() {
   ];
   subCoords.forEach(c => {
     const subMesh = createSubstationMesh();
-    subMesh.group.position.set(c.x, 0, c.z);
+    subMesh.group.position.set(c.x, terrainHeightAt(c.x, c.z), c.z);
     scene.add(subMesh.group);
     substations.push({ x: c.x, z: c.z, health: 620, maxHealth: 620, activeAfter: c.activeAfter, destroyed: false, meshData: subMesh });
   });
@@ -1640,10 +1739,11 @@ function init3DWorld() {
     const cowMesh = new THREE.Mesh(cowGeo, cowMat);
     const x = (Math.random() - 0.5) * 420;
     const z = (Math.random() - 0.5) * 420;
-    cowMesh.position.set(x, 0.8, z);
+    const groundY = terrainHeightAt(x, z);
+    cowMesh.position.set(x, groundY + 0.8, z);
     cowMesh.castShadow = true;
     scene.add(cowMesh);
-    animals.push({ mesh: cowMesh, x, z, airborne: false, altitude: 0, orbitAngle: Math.random() * Math.PI * 2 });
+    animals.push({ mesh: cowMesh, x, z, groundY, airborne: false, altitude: 0.8, orbitAngle: Math.random() * Math.PI * 2 });
   }
 
   const mediaCrewSpawns = [
@@ -1660,7 +1760,7 @@ function init3DWorld() {
 
   mediaCrewSpawns.forEach((spawn, index) => {
     const meshData = createMediaVehicleMesh(spawn.role, index + 1);
-    meshData.group.position.set(spawn.x, 0, spawn.z);
+    meshData.group.position.set(spawn.x, terrainHeightAt(spawn.x, spawn.z), spawn.z);
     meshData.group.rotation.y = Math.random() * Math.PI * 2;
     scene.add(meshData.group);
     chaserVans.push({
@@ -2006,7 +2106,7 @@ function resetWarningRun() {
   runActive = true;
   currentStage = 1;
 
-  storm.pos.set(0, 0, 0);
+  storm.pos.set(0, terrainHeightAt(0, 0), 0);
 
   missionObjectives.tornado.forEach(o => o.done = false);
   missionObjectives.supercell.forEach(o => { o.done = false; o.count = 0; });
@@ -2202,7 +2302,7 @@ function animate(now) {
       if (dist < storm.radius * 2.5 && t.health > 0) {
         t.x = THREE.MathUtils.lerp(t.x, storm.pos.x, 0.06);
         t.z = THREE.MathUtils.lerp(t.z, storm.pos.z, 0.06);
-        t.meshData.group.position.set(t.x, 0, t.z);
+        t.meshData.group.position.set(t.x, terrainHeightAt(t.x, t.z), t.z);
         t.health -= 90 * dt;
         if (t.health <= 0) {
           t.health = 0; scene.remove(t.meshData.group);
@@ -2218,6 +2318,7 @@ function animate(now) {
 
   storm.pos.x = Math.max(-380, Math.min(380, storm.pos.x));
   storm.pos.z = Math.max(-380, Math.min(380, storm.pos.z));
+  storm.pos.y = terrainHeightAt(storm.pos.x, storm.pos.z);
 
   if (isMoving) {
     markGroundSwath(storm.pos.x, storm.pos.z, storm.radius * funnelScale);
@@ -2254,9 +2355,9 @@ function animate(now) {
   }
 
   camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);
-  camera.position.y = THREE.MathUtils.lerp(camera.position.y, currentCamY, 0.08);
+  camera.position.y = THREE.MathUtils.lerp(camera.position.y, storm.pos.y + currentCamY, 0.08);
   camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);
-  camera.lookAt(storm.pos.x + (moveX * 8), 0, storm.pos.z + (moveZ * 8));
+  camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 1.5, storm.pos.z + (moveZ * 8));
 
   // Rotate Landmark & Substation 3D Wayfinding Beacons
   landmarks.forEach(lm => {
@@ -2362,12 +2463,14 @@ function animate(now) {
       a.altitude = Math.min(20, a.altitude + 0.35);
       a.x = storm.pos.x + Math.cos(a.orbitAngle) * (9 + a.altitude * 0.35);
       a.z = storm.pos.z + Math.sin(a.orbitAngle) * (9 + a.altitude * 0.35);
-      a.mesh.position.set(a.x, a.altitude, a.z);
+      a.groundY = terrainHeightAt(a.x, a.z);
+      a.mesh.position.set(a.x, a.groundY + a.altitude, a.z);
       a.mesh.rotation.y += 0.2;
     } else if (a.airborne) {
       a.altitude -= 0.45;
-      a.mesh.position.y = a.altitude;
-      if (a.altitude <= 0.75) { a.altitude = 0.75; a.airborne = false; }
+      a.groundY = terrainHeightAt(a.x, a.z);
+      a.mesh.position.y = a.groundY + a.altitude;
+      if (a.altitude <= 0.8) { a.altitude = 0.8; a.airborne = false; }
     }
   });
 
@@ -2377,7 +2480,7 @@ function animate(now) {
     gag.altitude = Math.min(30, gag.altitude + dt * 17);
     gag.mesh.position.set(
       storm.pos.x + Math.cos(gag.orbitAngle) * (10 + gag.altitude * 0.3),
-      gag.altitude,
+      storm.pos.y + gag.altitude,
       storm.pos.z + Math.sin(gag.orbitAngle) * (10 + gag.altitude * 0.3)
     );
     gag.mesh.rotation.x += gag.spin;
@@ -2394,7 +2497,7 @@ function animate(now) {
     f.orbitAngle += 0.12;
     f.mesh.position.x = storm.pos.x + Math.cos(f.orbitAngle) * 10;
     f.mesh.position.z = storm.pos.z + Math.sin(f.orbitAngle) * 10;
-    f.mesh.position.y = f.altitude;
+    f.mesh.position.y = storm.pos.y + f.altitude;
     f.mesh.rotation.x += f.rotX;
     f.mesh.rotation.y += f.rotY;
 

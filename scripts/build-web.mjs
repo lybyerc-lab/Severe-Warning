@@ -42,7 +42,7 @@ for (const [packagePath, outputName] of fontFiles) {
 const sourceSha256 = createHash('sha256').update(html).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
-  `${JSON.stringify({ version: '3.2.0', source: 'MechanicsLab/SevereWeather_3D_Lab.html', sourceSha256 }, null, 2)}\n`,
+  `${JSON.stringify({ version: '3.3.0', source: 'MechanicsLab/SevereWeather_3D_Lab.html', sourceSha256 }, null, 2)}\n`,
   'utf8'
 );
 

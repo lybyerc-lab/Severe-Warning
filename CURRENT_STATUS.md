@@ -3,7 +3,7 @@
 Last updated: 2026-07-31
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active game: HTML/WebGL `3.2.0 Live Coverage Edition`
+Active game: HTML/WebGL `3.3.0 High Country Edition`
 Primary target: single-player Android landscape
 Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
 
@@ -40,7 +40,7 @@ The game is a humorous, replayable, mobile arcade destruction game in which the 
 - News vans and storm chasers are invincible witnesses that film, report, reposition, and retreat. They are not enemies.
 - The project may learn from classic city-destruction game structure but must use original storms, locations, jokes, art, progression, and identity.
 
-## Current v3.2.0 slice
+## Current v3.3.0 slice
 
 The current three-minute run contains:
 
@@ -64,6 +64,11 @@ Implemented systems include:
 - captured-on-camera bonuses triggered by real destruction events near a crew
 - camera flashes, local-news headlines, radar crew markers, live footage telemetry, and results recap
 - a global editorial cooldown that limits coverage to readable highlight moments
+- a continuous height-mapped county instead of four flat ground tiles
+- raised Pine Ridge terrain, a broad Main Street rise, County Fair knolls, and an eastern creek/drainage cut
+- terrain-following roads, shoulders, markings, props, targets, ruins, animals, storm effects, and media vehicles
+- instanced road markings and ridge silhouettes to preserve mobile draw-call discipline
+- contour cues, hemisphere fill light, and filmic tone mapping for stronger depth separation
 
 ## Automated evidence
 
@@ -82,26 +87,23 @@ Browser playtesting of the exact v3.2.0 source completed a full Tornado run with
 
 Responsive validation at `844x390` confirmed that the `95x95` joystick, three `50x50` action buttons, radar, footage telemetry, compact HUD, challenge banner, and game view fit the landscape viewport. The expanded results card measured `313.25` pixels high and ended at `351.625`, inside the 390-pixel viewport.
 
-## Evidence boundary
+## Android build and physical evidence
 
-The Android wrapper has been created and synchronized with an offline web bundle. The packaged HTML passed a separate Chromium check at `844x390`: local Inter and Outfit fonts loaded, the document had no horizontal or vertical overflow, and the HUD/game view rendered correctly.
+GitHub Actions run `30653818627` successfully compiled the v3.2.0 Capacitor wrapper at commit `d2b8fde67b76e7d5d5faa7991f9984801586836b`. The downloaded APK SHA-256 was `35d8996f6d3bdc30dafdbae42b395efb89a99d200f4444e2d7d922024ab6963c`.
 
-The v3.2.0 build has not yet been:
+The user installed that APK on a Galaxy S26 Ultra. It looked and played like the HTML build and completed a full Tornado run with an `S+` rank, score `23621`, objectives `3/3`, landmarks `2/2`, substations `3/3`, bonus challenges `3/3`, seventeen media moments, and the Neon Funnel unlock.
 
-- compiled as an Android APK or AAB
-- run inside Android System WebView
-- tested with physical touchscreen input
-- checked for sustained device heat, battery use, audio behavior, pause/resume, or WebGL context recovery
-- accepted on a physical Android device
+This accepts the v3.2.0 wrapper strategy and high-end-phone gameplay parity. It does not prove lower-end performance, broad WebView compatibility, sustained heat/battery behavior, or that the new v3.3.0 terrain pass has passed on-device.
 
-Do not describe Android packaging or physical-device acceptance as complete until those gates pass.
+## Current browser evidence
+
+The v3.3.0 offline bundle completed a full automated Tornado run at approximately 60 FPS with zero observed console warnings or errors. The run earned `S+`, score `23016`, all three objectives, both landmarks, all three substations, all three district bonuses, seven media moments, `+1067` footage, and retained the Neon Funnel. Retry returned to Pine Ridge, hid the results overlay, reset the timer, and resumed scoring in a clean run. Terrain-following world objects, roads, storm movement, damage swath, debris, media crews, and all three district transitions remained intact.
 
 ## Immediate next action
 
-1. Run the manual **Build Android Debug APK** GitHub Actions workflow.
-2. Download and unzip the debug APK artifact.
-3. Install the debug APK on the target Android phone.
-4. Record touch comfort, frame pacing, heat, battery, audio, pause/resume, save persistence, orientation, and browser-back results.
-5. Optimize only measured device problems before expanding the campaign.
+1. Synchronize the accepted source into the Android assets and run repository integrity checks.
+2. Build and install one v3.3.0 debug APK through the proven GitHub Actions path.
+3. Confirm the raised terrain remains readable and smooth on the Galaxy S26 Ultra.
+4. Test one ordinary or older Android device before making broad performance claims.
 
 This work PC is intentionally not being modified around company software restrictions.

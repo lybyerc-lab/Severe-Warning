@@ -346,3 +346,35 @@ This is compilation and packaging evidence, not a physical-device result.
 ### Decision
 
 Commit `80f2f14` is the latest proven compile/package baseline. The Build #5.2 physical gate remains open because no five-minute Android acceptance record accompanies the artifact.
+
+## 2026-07-31 - HTML/Capacitor v3.2.0 Android proof
+
+### Source and artifact
+
+- Active gameplay source: `MechanicsLab/SevereWeather_3D_Lab.html`
+- Edition: `3.2.0 Live Coverage Edition`
+- Commit: `d2b8fde67b76e7d5d5faa7991f9984801586836b`
+- GitHub Actions run: `30653818627`
+- Artifact: `severe-weather-v3.2.0-debug-2`
+- APK SHA-256: `35d8996f6d3bdc30dafdbae42b395efb89a99d200f4444e2d7d922024ab6963c`
+- Device: Galaxy S26 Ultra, reported by the user as a high-end phone
+
+### Result
+
+- The debug APK installed and launched successfully.
+- The user reported that it looked and played like the HTML game.
+- A full Tornado Warning run reached the results screen.
+- Rank: `S+`
+- Final score: `23621`
+- Maximum combo: `3.5x`
+- Objectives: `3/3`
+- Landmarks: `2/2`
+- Substations: `3/3`
+- Bonus challenges: `3/3`
+- Media moments: `17`
+- Footage bonus: `+1817`
+- Neon Funnel cosmetic unlocked.
+
+### Decision
+
+The local Capacitor wrapper is the accepted Android packaging strategy. The HTML game does not need an engine rewrite to reach the target phone with its gameplay feel intact. This is strong high-end-device evidence, not a lower-end Android performance matrix. Sustained heat, battery, interruption recovery, and close/reopen persistence were not separately quantified in the submitted evidence.

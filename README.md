@@ -6,7 +6,7 @@ The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.ht
 
 ## Current gameplay baseline
 
-Version `3.2.0 Live Coverage Edition` contains:
+Version `3.3.0 High Country Edition` contains:
 
 - three-minute single-player warning runs
 - Pine Ridge, Main Street, and County Fair districts
@@ -22,6 +22,9 @@ Version `3.2.0 Live Coverage Edition` contains:
 - sequential County Fair substation finale
 - persistent Neon Funnel cosmetic unlock
 - deterministic browser playtest mode through `?bot=true`
+- district-shaped elevation: Pine Ridge, the Main Street rise, rolling County Fair ground, and an eastern drainage creek
+- terrain-following roads, shoulders, lane markings, structures, storm effects, animals, and media crews
+- GPU-instanced road markings, low-cost ridge silhouettes, contour cues, and stormier color/lighting treatment
 
 The design reference is the readable, humorous, replayable city-block destruction structure associated with classic arcade destruction games. This project must develop its own storms, districts, humor, names, art, and progression rather than copying another game's protected characters or assets.
 
@@ -48,6 +51,8 @@ The design reference is the readable, humorous, replayable city-block destructio
 
 Automated browser testing of v3.2.0 completed a full Tornado run at approximately 60 FPS with all three district challenges, both landmarks, all three sequential substations, eight captured media moments, a `+1289` footage bonus, and a successful mobile retry. The offline bundle also passed a separate `844x390` mobile-landscape layout check with local fonts loaded and no document overflow.
 
-The Android project is scaffolded and synchronized, but this work PC cannot install Android Studio, the Android SDK, or a JDK under company policy. No APK has been compiled here, so physical Android acceptance remains open. See `Docs/ANDROID_PACKAGING.md` for the exact handoff.
+GitHub Actions compiled the v3.2.0 debug APK successfully. The APK installed on a Galaxy S26 Ultra, looked and played like the HTML build, and completed a full Tornado run with an `S+` rank, score `23621`, all objectives, both landmarks, all substations, all district bonuses, seventeen media moments, and the Neon Funnel unlock. This proves the Capacitor strategy on the primary high-end test phone; it does not represent a broad Android device matrix.
+
+The current v3.3.0 source adds the graphics and terrain pass after that Android proof. Its full automated Tornado run held approximately 60 FPS, produced an `S+` with score `23016`, completed every objective/landmark/substation/district bonus, retried cleanly, and emitted no observed console warnings or errors. It must receive a new APK/device check before being called the physically accepted Android release.
 
 Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work.
