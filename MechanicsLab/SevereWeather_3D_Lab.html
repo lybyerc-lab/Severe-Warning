@@ -1063,9 +1063,9 @@ for (let r = -320; r <= 320; r += 80) {
     cross.castShadow = true;
     poleGroup.add(cross);
 
-    poleGroup.position.set(px, terrainHeightAt(px, r + 8), r + 8);
+    poleGroup.position.set(px, terrainHeightAt(px, r + 13.5), r + 13.5);
     scene.add(poleGroup);
-    powerPoles.push({ group: poleGroup, x: px, z: r + 8, sparked: false });
+    powerPoles.push({ group: poleGroup, x: px, z: r + 13.5, sparked: false });
   }
 }
 
@@ -2204,19 +2204,19 @@ function spawnTownComedyProps() {
   activeGagProps.length = 0;
 
   const definitions = [
-    { kind: 'trampoline', x: 78, z: -82, stage: 1, tags: ['yard','lawn'], gag: 'TRAMPOLINE ACHIEVES LOW EARTH ORBIT.' },
-    { kind: 'flamingo', x: 110, z: -68, stage: 1, tags: ['yard','lawn'], gag: 'LAWN FLAMINGO MIGRATION BEGINS EARLY.' },
-    { kind: 'mailbox', x: 132, z: -105, stage: 1, tags: ['yard'], gag: 'SPECIAL DELIVERY: SOMEWHERE ELSE.' },
-    { kind: 'grill', x: 62, z: -120, stage: 1, tags: ['yard'], gag: 'THE COOKOUT HAS BEEN RESCHEDULED.' },
-    { kind: 'billboard', x: -92, z: -78, stage: 2, tags: ['main','sign'], gag: 'STORM-PROOF ROOFING REQUESTS A RETRACTION.' },
+    { kind: 'trampoline', x: 62, z: -64, stage: 1, tags: ['yard','lawn'], gag: 'TRAMPOLINE ACHIEVES LOW EARTH ORBIT.' },
+    { kind: 'flamingo', x: 115, z: -62, stage: 1, tags: ['yard','lawn'], gag: 'LAWN FLAMINGO MIGRATION BEGINS EARLY.' },
+    { kind: 'mailbox', x: 135, z: -105, stage: 1, tags: ['yard'], gag: 'SPECIAL DELIVERY: SOMEWHERE ELSE.' },
+    { kind: 'grill', x: 55, z: -125, stage: 1, tags: ['yard'], gag: 'THE COOKOUT HAS BEEN RESCHEDULED.' },
+    { kind: 'billboard', x: -105, z: -62, stage: 2, tags: ['main','sign'], gag: 'STORM-PROOF ROOFING REQUESTS A RETRACTION.' },
     { kind: 'coffee', x: -45, z: -105, stage: 2, tags: ['main','sign'], gag: 'MAIN STREET JUST ORDERED COFFEE TO GO.' },
-    { kind: 'mascot', x: -132, z: -62, stage: 2, tags: ['main','sign'], gag: 'INFLATABLE MAYOR LEAVES THE CAMPAIGN TRAIL.' },
-    { kind: 'carts', x: -20, z: -55, stage: 2, tags: ['main'], gag: 'CART RETURN NOW LOCATED THREE COUNTIES EAST.' },
-    { kind: 'ferris', x: 92, z: 102, stage: 3, tags: ['fair','ride'], gag: 'FERRIS WHEEL UPGRADES TO FREQUENT FLYER.' },
-    { kind: 'carousel', x: 132, z: 80, stage: 3, tags: ['fair','ride'], gag: 'CAROUSEL HORSES FINALLY MAKE A BREAK FOR IT.' },
+    { kind: 'mascot', x: -135, z: -55, stage: 2, tags: ['main','sign'], gag: 'INFLATABLE MAYOR LEAVES THE CAMPAIGN TRAIL.' },
+    { kind: 'carts', x: -35, z: -55, stage: 2, tags: ['main'], gag: 'CART RETURN NOW LOCATED THREE COUNTIES EAST.' },
+    { kind: 'ferris', x: 145, z: 145, stage: 3, tags: ['fair','ride'], gag: 'FERRIS WHEEL UPGRADES TO FREQUENT FLYER.' },
+    { kind: 'carousel', x: 125, z: 105, stage: 3, tags: ['fair','ride'], gag: 'CAROUSEL HORSES FINALLY MAKE A BREAK FOR IT.' },
     { kind: 'foodcart', x: 155, z: 125, stage: 3, tags: ['fair','food'], gag: 'FUNNEL CAKES MEET AN ACTUAL FUNNEL.' },
-    { kind: 'corndog', x: 115, z: 148, stage: 3, tags: ['fair','food'], gag: 'WORLD\'S LARGEST CORN DOG: NOW AIRBORNE.' },
-    { kind: 'porta', x: 75, z: 145, stage: 3, tags: ['fair'], gag: 'THE BLUE BOOTH HAS LEFT THE CHAT.' }
+    { kind: 'corndog', x: 105, z: 148, stage: 3, tags: ['fair','food'], gag: 'WORLD\'S LARGEST CORN DOG: NOW AIRBORNE.' },
+    { kind: 'porta', x: 62, z: 145, stage: 3, tags: ['fair'], gag: 'THE BLUE BOOTH HAS LEFT THE CHAT.' }
   ];
 
   definitions.forEach((definition, index) => {
