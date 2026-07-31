@@ -4,7 +4,7 @@ Last updated: 2026-07-31
 
 ## Current state
 
-The repository contains a Capacitor `8.5.0` Android project for Severe Weather v3.3.1. GitHub Actions successfully compiled both the accepted v3.2.0 wrapper and the v3.3.0 terrain APK. v3.2.0 installed, launched, and completed a full run on a Galaxy S26 Ultra; v3.3.0 was also observed running live on that phone. The work PC still does not compile APKs locally because company policy does not permit installing Android Studio, the Android SDK, or a JDK.
+The repository contains a Capacitor `8.5.0` Android project for Severe Weather v4.0.0. GitHub Actions successfully compiled the accepted v3.2.0 wrapper and the later v3.3.x terrain/roads builds. The user confirmed the v3.3.1 APK looked and played like the HTML game on a Galaxy S26 Ultra. The work PC still does not compile APKs locally because company policy does not permit installing Android Studio, the Android SDK, or a JDK.
 
 Do not treat generated Android files as proof for a new gameplay version. Each materially changed HTML release still needs its own synchronized workflow build and focused device check.
 
@@ -53,7 +53,7 @@ To run it manually:
 1. Open the repository's **Actions** tab.
 2. Select **Build Android Debug APK**.
 3. Choose **Run workflow** on `main`.
-4. Open the completed run and download the `severe-weather-v3.3.1-debug-*` artifact.
+4. Open the completed run and download the `severe-weather-v4.0.0-debug-*` artifact.
 5. Unzip the artifact before transferring `app-debug.apk` to the phone.
 
 The workflow has read-only repository permission and requires no signing secrets. Gradle signs the debug APK with an ephemeral debug key suitable for device testing, not public distribution.

@@ -6,7 +6,7 @@ The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.ht
 
 ## Current gameplay baseline
 
-Version `3.3.1 County Roads Edition` contains:
+Version `4.0.0 Living County Edition` contains:
 
 - three-minute single-player warning runs
 - Pine Ridge, Main Street, and County Fair districts
@@ -26,6 +26,10 @@ Version `3.3.1 County Roads Edition` contains:
 - terrain-following roads, shoulders, lane markings, structures, storm effects, animals, and media crews
 - GPU-instanced road markings, low-cost ridge silhouettes, restrained contour cues, and stormier color/lighting treatment
 - an extended county terrain apron, softened under-road damage scars, layered road/creek surfaces, and varied office/warehouse silhouettes
+- a 36-block authored county layout that replaces the old randomized building scatter
+- recognizable homes, garages, porches, barns, storefronts, offices, workshops, windows, signs, chimneys, and rooftop equipment
+- two visible damage stages before collapse, footprint-sized persistent rubble, and ballistic debris that bounces across the terrain
+- block-clear bonuses and four optional chain-reaction businesses with collateral destruction, shockwaves, radar diamonds, and original local-news jokes
 
 The design reference is the readable, humorous, replayable city-block destruction structure associated with classic arcade destruction games. This project must develop its own storms, districts, humor, names, art, and progression rather than copying another game's protected characters or assets.
 
@@ -54,6 +58,6 @@ Automated browser testing of v3.2.0 completed a full Tornado run at approximatel
 
 GitHub Actions compiled the v3.2.0 debug APK successfully. The APK installed on a Galaxy S26 Ultra, looked and played like the HTML build, and completed a full Tornado run with an `S+` rank, score `23621`, all objectives, both landmarks, all substations, all district bonuses, seventeen media moments, and the Neon Funnel unlock. This proves the Capacitor strategy on the primary high-end test phone; it does not represent a broad Android device matrix.
 
-The v3.3.0 terrain APK was compiled successfully and its live High Country HUD and terrain were observed on the Galaxy S26 Ultra. The current v3.3.1 browser pass removes exposed world edges, constrains media crews to roads, softens the damage swath, and varies commercial silhouettes. Its road-routing run held approximately 60 FPS, produced an `S+` with score `24830`, completed every objective/landmark/substation/district bonus, and emitted no observed console warnings or errors. The final visual-only tuning then passed a clean `844x390` startup/layout check at a settled `61 FPS`. v3.3.1 still requires its own APK/device check before physical acceptance.
+The v3.3.1 County Roads APK compiled in GitHub Actions and the user confirmed that it looked and played like the HTML build on a Galaxy S26 Ultra. The first v4.0.0 browser startup/visual pass rendered the authored blocks and richer structures at a reported 60-61 FPS with no observed console warnings or errors. The offline builder and inline-script parser also pass. A complete v4.0.0 bot run, retry check, synchronized APK build, and physical-device acceptance are still required before v4 is called stable.
 
 Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work.

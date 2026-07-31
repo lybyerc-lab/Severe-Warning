@@ -5,12 +5,12 @@ The HTML/WebGL build is the active gameplay source and the planned foundation fo
 ## Current build
 
 - `SevereWeather_3D_Lab.html`
-- Version: `3.3.1 County Roads Edition`
+- Version: `4.0.0 Living County Edition`
 - Runtime: self-contained Three.js/WebGL game with locally bundled fonts
 - Primary target: Android landscape through the Capacitor project in `../android/`
 - Mode: single-player only
 
-Version 3.3.1 contains a three-district arcade run:
+Version 4.0.0 contains a three-district arcade run:
 
 1. Pine Ridge neighborhood
 2. Main Street
@@ -23,6 +23,8 @@ The v3.2 coverage system replaces enemy-looking red vehicle boxes with four sate
 The v3.3 graphics pass replaces the flat four-tile board with a continuous height-mapped county. Pine Ridge is physically raised, Main Street sits on a broad rise, County Fair rolls across low knolls, and the east side drops into a visible creek. Roads, shoulders, lane markings, structures, landmarks, animals, storm effects, and media crews follow the terrain height while destruction and steering retain predictable X/Z arcade collision.
 
 The v3.3.1 cleanup extends terrain beyond the playable boundary so the tactical camera never exposes a black void, moves the softened damage scar beneath roads and bridges, reduces contour and creek-bank artifacts, routes every media vehicle along roads and intersections, and gives commercial districts varied office and warehouse silhouettes.
+
+The v4.0 Living County pass replaces the randomized 210-object scatter with 36 authored road blocks. Pine Ridge now reads as homes with porches, garages, windows, chimneys, and trees; Main Street uses signed storefront and office facades; Foundry Row uses broad workshops with service doors and rooftop vents; and the fair/farm side uses barns and open vegetation. Structures visibly lean, compress, darken, and shed debris before collapsing into footprint-scaled ruins. Clearing an entire block awards a Block Buster bonus. Four original set-piece businesses can trigger shockwaves and collateral destruction: Last Chance Gas, Twister Shine Car Wash, Hanks Propane, and Totally Legal Fireworks.
 
 ## Controls
 

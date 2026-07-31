@@ -123,6 +123,12 @@ Confirmed during the automated road-routing run:
 
 The final visual-only tune narrowed and softened damage stamps and varied commercial building dimensions, colors, roof caps, and antennas. A fresh `844x390` check of that exact source reported document dimensions `844x390`, no horizontal or vertical overflow, the `95x95` joystick fully inside the viewport, a settled `61 FPS`, and no observed console warnings or errors. A visual capture showed the county apron covering the former void and multiple news/chaser vehicles positioned on asphalt.
 
+## v4.0.0 Living County checks
+
+The first v4 pass replaced the random target scatter with 36 authored blocks and richer district-specific structures. Browser startup confirmed that the canonical HTML loaded, produced two canvases, advanced the automated route, and rendered the new Pine Ridge lots, roads, media traffic, damage stages, persistent debris, and v4 badge. The reported rate settled at `60-61 FPS`; observed startup console warnings or errors were `0`.
+
+The canonical source and both inline scripts passed the offline builder and JavaScript parser. The source, generated `www/index.html`, and synchronized Android `public/index.html` matched at SHA-256 `10b0629a905cf2ec432190a27478efcbd2f0f3ebcce5fa602415381a68e4834b`; both build-info files report version `4.0.0`. The resulting screenshot is useful visual/startup evidence, not a complete-run acceptance record. The browser controller was subsequently denied permission to restart localhost, so a full v4 bot result, retry reset, chain-reaction completion count, mobile-landscape result-card fit, and final console pass remain open rather than being inferred.
+
 ## Repository integrity
 
 Validation commands use the bundled Python runtime when `python` is not available on `PATH`:
@@ -149,7 +155,8 @@ Older Unity and Godot work remains in the repository as reference material. The 
 
 ## Gates still open
 
-- build and install a synchronized v3.3.1 APK
+- complete the deterministic v4.0.0 bot run and retry check
+- build and install a synchronized v4.0.0 APK
 - verify real multi-touch, browser back, pause/resume, and orientation behavior after the terrain change
 - run repeated five-minute rounds while recording frame pacing, heat, and battery behavior
 - verify audio focus and interruption recovery
@@ -160,4 +167,4 @@ Older Unity and Godot work remains in the repository as reference material. The 
 - replace the generated Capacitor launcher icon and splash art before public release
 - establish the release-signing workflow; never commit the signing key or passwords
 
-Browser acceptance, GitHub Actions compilation, and the successful Galaxy S26 Ultra run prove that the HTML game can ship through the local Capacitor wrapper without an engine rewrite. Physical evidence for v3.3.1 and a broader performance sample remain authoritative before a public mobile release claim.
+Earlier browser acceptance, GitHub Actions compilation, and the successful Galaxy S26 Ultra runs prove that the HTML game can ship through the local Capacitor wrapper without an engine rewrite. A complete v4.0.0 browser run, v4 physical-device evidence, and a broader performance sample remain authoritative before a public mobile release claim.

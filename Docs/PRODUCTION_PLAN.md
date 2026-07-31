@@ -7,6 +7,7 @@
 - complete the v3.2.0 news-crew and storm-chaser coverage loop
 - complete the v3.3.0 district-topography and graphics-depth pass
 - complete the v3.3.1 county-edge, damage-scar, road-routing, and commercial-silhouette cleanup
+- complete the v4.0.0 Living County authored-block, staged-destruction, and chain-reaction pass
 - verify startup, full-run completion, replay reset, and responsive landscape layout
 
 ## Phase 1 - Human browser acceptance
@@ -40,7 +41,8 @@ The current work PC cannot install the Android Studio/SDK/JDK toolchain under co
 
 - [x] replace the flat board with district-specific elevation, terrain-following roads, contour cues, and a drainage creek
 - [x] introduce varied Main Street offices and industrial warehouse silhouettes
-- continue district-specific storefront, home, vegetation, and signage upgrades in measured batches
+- [x] replace random structure scatter with authored blocks and district-specific homes, storefronts, barns, workshops, vegetation, and signage
+- [x] add readable pre-collapse damage stages, block-clear bonuses, and four chain-reaction businesses
 - add district-aware reporter lines only after the current event-driven headlines remain readable in human play
 - expand environmental comedy without targeting people
 - add varied destruction sounds and reduce repetition

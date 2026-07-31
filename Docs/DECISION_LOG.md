@@ -247,3 +247,13 @@ Build #5 physical testing proved the damage pipeline, stage transitions, target 
 **Rejected alternatives:** Expanding to a larger playable map before fixing its visible boundary; adding dense imported assets; converting the road system to physics; accepting off-road crew movement because it was mechanically harmless; hiding the world edge by moving the camera back toward the storm.
 
 **Revisit condition:** Expand the playable county only when another district or campaign decision adds distinct mechanics and content, not merely more empty travel distance.
+
+## 2026-07-31 - Decision HTML-08: Author a living county before adding another map
+
+**Decision:** v4.0.0 replaces the randomized structure scatter with 36 authored road blocks and district-specific building archetypes. Destruction now communicates progress through two visible damage stages, larger persistent ruins, ballistic debris, whole-block bonuses, and four optional chain-reaction businesses.
+
+**Evidence:** The old random distribution created broad variety but weak place identity; many targets still read as unrelated boxes. The first Living County browser startup rendered recognizable homes, garages, porches, barns, storefronts, offices, workshops, signs, and chain sites at a reported `60-61 FPS` with no observed console warnings or errors. The deterministic offline builder and inline-script parser also pass.
+
+**Rejected alternatives:** A second map before the first town has memorable blocks; imported high-poly asset packs that compromise the self-contained mobile build; more empty map area; military enemies; chain-reaction humor involving people or real disasters.
+
+**Revisit condition:** Add another town only after a complete v4 browser run, retry, synchronized Android build, physical-device round, and human feedback show that clearing blocks and discovering chain sites materially improve replay desire.

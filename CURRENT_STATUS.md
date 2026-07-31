@@ -3,7 +3,7 @@
 Last updated: 2026-07-31
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active game: HTML/WebGL `3.3.1 County Roads Edition`
+Active game: HTML/WebGL `4.0.0 Living County Edition`
 Primary target: single-player Android landscape
 Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
 
@@ -40,7 +40,7 @@ The game is a humorous, replayable, mobile arcade destruction game in which the 
 - News vans and storm chasers are invincible witnesses that film, report, reposition, and retreat. They are not enemies.
 - The project may learn from classic city-destruction game structure but must use original storms, locations, jokes, art, progression, and identity.
 
-## Current v3.3.1 slice
+## Current v4.0.0 slice
 
 The current three-minute run contains:
 
@@ -74,6 +74,12 @@ Implemented systems include:
 - a narrower semi-transparent damage scar rendered beneath roads and bridges
 - depth-ordered road, shoulder, and creek surfaces plus smaller, darker creek-bank rocks
 - varied Main Street offices and industrial warehouses with distinct dimensions, roof caps, colors, and occasional antennas
+- 36 authored road blocks with district-specific lot composition instead of a randomized structure scatter
+- recognizable houses, garages, porches, windows, chimneys, barns, storefronts, offices, workshops, service doors, signs, and roof equipment
+- staged structural damage at approximately 72% and 36% health before final collapse
+- footprint-scaled persistent rubble and terrain-aware ballistic debris with bounce and storm pull
+- whole-block clearance bonuses, results telemetry, and local-news Block Buster callouts
+- four optional chain-reaction businesses with shockwaves, collateral damage, radar diamonds, score bonuses, and original jokes
 
 ## Automated evidence
 
@@ -98,7 +104,7 @@ GitHub Actions run `30653818627` successfully compiled the v3.2.0 Capacitor wrap
 
 The user installed that APK on a Galaxy S26 Ultra. It looked and played like the HTML build and completed a full Tornado run with an `S+` rank, score `23621`, objectives `3/3`, landmarks `2/2`, substations `3/3`, bonus challenges `3/3`, seventeen media moments, and the Neon Funnel unlock.
 
-The subsequent v3.3.0 APK also compiled successfully in GitHub Actions run `30656859971`, and a live device screenshot confirmed the `3D LAB v3.3.0 HIGH COUNTRY` build rendering and playing on the Galaxy S26 Ultra. That screenshot proves launch and active gameplay, not a second complete-run acceptance record. Lower-end performance, broad WebView compatibility, sustained heat/battery behavior, and the v3.3.1 cleanup remain unproven on-device.
+The subsequent v3.3.0 APK also compiled successfully in GitHub Actions run `30656859971`, and a live device screenshot confirmed the `3D LAB v3.3.0 HIGH COUNTRY` build rendering and playing on the Galaxy S26 Ultra. The later v3.3.1 GitHub Actions build also succeeded, and the user confirmed that its County Roads APK looked and played like the HTML build on that phone. Lower-end performance, broad WebView compatibility, and sustained heat/battery behavior remain unproven.
 
 ## Current browser evidence
 
@@ -108,9 +114,9 @@ After that complete run, the damage-stamp opacity/radius and commercial-building
 
 ## Immediate next action
 
-1. Push the committed v3.3.1 release to `main`; the scoped workflow trigger will build the debug APK automatically.
-2. Install the resulting v3.3.1 artifact.
-3. Confirm the county apron, restrained damage scar, varied buildings, and road-bound media crews remain readable and smooth on the Galaxy S26 Ultra.
+1. Push the committed v4.0.0 release to `main`; the scoped workflow trigger will build the debug APK automatically.
+2. Complete the deterministic v4.0.0 bot run and retry check when localhost browser control is available again.
+3. Install the resulting v4.0.0 artifact and verify staged collapse, block bonuses, chain reactions, touch comfort, and frame pacing on the Galaxy S26 Ultra.
 4. Test one ordinary or older Android device before making broad performance claims.
 
 This work PC is intentionally not being modified around company software restrictions.

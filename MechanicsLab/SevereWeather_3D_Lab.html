@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<title>Severe Weather 3D Lab v3.3.1 - County Roads Edition</title>
+<title>Severe Weather 3D Lab v4.0.0 - Living County Edition</title>
 <script>
 /* INLINED THREE.JS R128 */
 /**
@@ -193,7 +193,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.3.1 COUNTY ROADS</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v4.0.0 LIVING COUNTY</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -279,6 +279,7 @@
       <div>LANDMARKS SHATTERED: <b id="resLandmarks">0/2</b></div>
       <div>SUBSTATIONS SHATTERED: <b id="resSubstations" style="color:var(--cyan)">0/3</b></div>
       <div>BONUS CHALLENGES: <b id="resChallenges" style="color:var(--gold)">0/3</b></div>
+      <div>BLOCKS CLEARED: <b id="resBlocks" style="color:#f472b6">0</b> / CHAIN REACTIONS: <b id="resChains" style="color:var(--gold)">0</b></div>
       <div>MEDIA MOMENTS: <b id="resMediaMoments" style="color:#f8fafc">0</b> / FOOTAGE BONUS: <b id="resFootageBonus" style="color:var(--cyan)">+0</b></div>
       <div>COSMETIC: <b id="resCosmetic" style="color:#f472b6">LOCKED</b></div>
       
@@ -1117,48 +1118,69 @@ const substations = []; // STAGE 3 FINALE SYSTEM
 const animals = [];
 const chaserVans = [];
 const comedyProps = [];
+const townBlocks = [];
+const chainSetpieces = [];
 const activeGagProps = [];
 const activeExplosionFragments = [];
+const activeSetpieceEffects = [];
 const ruinsGroup = new THREE.Group();
+const townDressGroup = new THREE.Group();
+const setpieceGroup = new THREE.Group();
 scene.add(ruinsGroup);
+scene.add(townDressGroup);
+scene.add(setpieceGroup);
 
 let destroyedLandmarksCount = 0;
 let destroyedSubstationsCount = 0;
 let destroyedTargetsCount = 0;
 let destroyedComedyPropsCount = 0;
+let clearedBlocksCount = 0;
+let chainReactionsCount = 0;
 
-function createHouseMesh(districtType, i) {
+function createHouseMesh(districtType, i, variant = 0) {
   const group = new THREE.Group();
-  let color = '#f87171';
+  const damageParts = [];
+  const homeColors = ['#f87171', '#60a5fa', '#fbbf24', '#4ade80', '#c084fc', '#f472b6', '#fb923c'];
+  const color = districtType === 3 ? '#b91c1c' : homeColors[(i + variant) % homeColors.length];
+  const width = districtType === 3 ? 11.5 : 7.2 + (variant % 3) * 1.25;
+  const depth = districtType === 3 ? 8.2 : 6.5 + ((variant + 1) % 2) * 1.6;
+  const wallHeight = districtType === 3 ? 6.2 : 4.8 + (variant % 2) * 1.6;
+  const base = addPropPart(group, new THREE.BoxGeometry(width, wallHeight, depth), color, 0, wallHeight / 2, 0, { roughness: 0.72 });
+  damageParts.push(base);
 
-  if (districtType === 1) { // Suburbs: Bright family home colors
-    const colors = ['#f87171', '#60a5fa', '#fbbf24', '#4ade80', '#c084fc', '#f472b6'];
-    color = colors[i % colors.length];
-  } else if (districtType === 3) { // Farmland: Red Barns
-    color = '#b91c1c';
+  const roofColor = districtType === 3 ? '#450a0a' : ['#1e293b', '#334155', '#713f12'][variant % 3];
+  const roof = addPropPart(group, new THREE.ConeGeometry(Math.max(width, depth) * 0.72, districtType === 3 ? 4.6 : 3.6, 4), roofColor, 0, wallHeight + (districtType === 3 ? 2.0 : 1.55), 0, { rotation: { y: Math.PI / 4 }, roughness: 0.62 });
+  roof.scale.z = depth / width;
+  damageParts.push(roof);
+
+  if (districtType === 3) {
+    const loft = addPropPart(group, new THREE.BoxGeometry(3.1, 3.1, 0.35), '#f8fafc', 0, wallHeight - 0.2, -depth / 2 - 0.18);
+    addPropPart(group, new THREE.BoxGeometry(2.25, 2.25, 0.42), '#3f0b0b', 0, 2.1, -depth / 2 - 0.22, { rotation: { z: Math.PI / 4 } });
+    damageParts.push(loft);
   } else {
-    color = '#94a3b8';
+    const porch = addPropPart(group, new THREE.BoxGeometry(width * 0.62, 0.45, 2.2), '#cbd5e1', 0, 0.35, -depth / 2 - 0.9, { roughness: 0.8 });
+    addPropPart(group, new THREE.BoxGeometry(1.15, 2.5, 0.28), '#422006', 0, 1.6, -depth / 2 - 0.18);
+    [-width * 0.28, width * 0.28].forEach(x => addPropPart(group, new THREE.BoxGeometry(1.45, 1.25, 0.22), '#bae6fd', x, wallHeight * 0.62, -depth / 2 - 0.2, { roughness: 0.18, metalness: 0.18 }));
+    damageParts.push(porch);
+
+    if (variant % 2 === 0) {
+      const garage = addPropPart(group, new THREE.BoxGeometry(4.4, 3.2, 5.2), homeColors[(i + 3) % homeColors.length], width * 0.58, 1.6, 0.6, { roughness: 0.75 });
+      addPropPart(group, new THREE.BoxGeometry(3.4, 2.25, 0.22), '#e2e8f0', width * 0.58, 1.45, -2.02);
+      damageParts.push(garage);
+    }
+    if (variant % 3 === 1) {
+      const chimney = addPropPart(group, new THREE.BoxGeometry(1.1, 4.0, 1.1), '#7f1d1d', -width * 0.27, wallHeight + 1.1, 0.8, { roughness: 0.86 });
+      damageParts.push(chimney);
+    }
   }
 
-  const baseGeo = new THREE.BoxGeometry(4.8, 3.4, 4.8);
-  const baseMat = new THREE.MeshStandardMaterial({ color, roughness: 0.65 });
-  const base = new THREE.Mesh(baseGeo, baseMat);
-  base.position.y = 1.7;
-  base.castShadow = true; base.receiveShadow = true;
-  group.add(base);
-
-  const roofGeo = new THREE.ConeGeometry(3.8, 2.6, 4);
-  const roofMat = new THREE.MeshStandardMaterial({ color: districtType === 3 ? '#450a0a' : '#1e293b', roughness: 0.45 });
-  const roof = new THREE.Mesh(roofGeo, roofMat);
-  roof.position.y = 4.6; roof.rotation.y = Math.PI / 4;
-  roof.castShadow = true;
-  group.add(roof);
-
-  return { group, base, roof, color };
+  group.rotation.y = (variant % 4) * Math.PI / 2;
+  return { group, base, roof, color, damageParts, footprint: Math.max(width, depth), label: districtType === 3 ? 'BARN' : 'HOME', points: districtType === 3 ? 95 : 75 };
 }
 
-function createCommercialMesh(districtType) {
+function createCommercialMesh(districtType, variant = 0) {
   const group = new THREE.Group();
+  const damageParts = [];
   let h;
   let width;
   let depth;
@@ -1168,18 +1190,18 @@ function createCommercialMesh(districtType) {
 
   if (districtType === 0) { // Main Street: varied offices instead of identical black towers.
     const palette = ['#155e75', '#1d4ed8', '#334155', '#0f766e', '#475569'];
-    h = 18 + Math.random() * 21;
-    width = 6.2 + Math.random() * 4.8;
-    depth = 6.2 + Math.random() * 4.8;
-    color = palette[Math.floor(Math.random() * palette.length)];
+    h = 15 + (variant % 4) * 4.5;
+    width = 9 + (variant % 3) * 2.0;
+    depth = 9 + ((variant + 1) % 3) * 1.6;
+    color = palette[variant % palette.length];
     roughness = 0.34;
     metalness = 0.42;
   } else if (districtType === 2) { // Industrial district: broad warehouses and machine shops.
     const palette = ['#475569', '#57534e', '#7c2d12', '#3f3f46'];
-    h = 7 + Math.random() * 8;
-    width = 12 + Math.random() * 8;
-    depth = 9 + Math.random() * 7;
-    color = palette[Math.floor(Math.random() * palette.length)];
+    h = 7 + (variant % 3) * 2.4;
+    width = 14 + (variant % 2) * 4.5;
+    depth = 11 + ((variant + 1) % 3) * 2.4;
+    color = palette[variant % palette.length];
     roughness = 0.72;
     metalness = 0.24;
   } else {
@@ -1201,6 +1223,7 @@ function createCommercialMesh(districtType) {
   base.position.y = h / 2;
   base.castShadow = true; base.receiveShadow = true;
   group.add(base);
+  damageParts.push(base);
 
   const capColor = districtType === 0 ? '#94a3b8' : '#27272a';
   const cap = new THREE.Mesh(
@@ -1210,21 +1233,38 @@ function createCommercialMesh(districtType) {
   cap.position.y = h + 0.28;
   cap.castShadow = true;
   group.add(cap);
+  damageParts.push(cap);
 
-  if (districtType === 0 && Math.random() < 0.48) {
+  if (districtType === 0) {
+    const windowMat = new THREE.MeshStandardMaterial({ color: '#93c5fd', emissive: '#0c4a6e', emissiveIntensity: 0.35, roughness: 0.12, metalness: 0.5 });
+    const rows = Math.min(5, Math.max(2, Math.floor(h / 5)));
+    for (let row = 0; row < rows; row++) {
+      [-0.26, 0.26].forEach(column => {
+        const windowMesh = addPropPart(group, new THREE.BoxGeometry(width * 0.26, 1.45, 0.18), '#93c5fd', width * column, 3.0 + row * 4.2, -depth / 2 - 0.1, { material: windowMat });
+        damageParts.push(windowMesh);
+      });
+    }
+    addPropPart(group, new THREE.BoxGeometry(width * 0.72, 1.2, 0.35), '#fbbf24', 0, 2.0, -depth / 2 - 0.24, { material: createSignMaterial(['CITY HALL', 'CHANNEL 8', 'TAX & TACKLE', 'MAIN ST. BANK'][variant % 4], ['#1d4ed8', '#b91c1c', '#166534', '#713f12'][variant % 4]) });
+  } else if (districtType === 2) {
+    addPropPart(group, new THREE.BoxGeometry(width * 0.42, h * 0.62, 0.35), '#cbd5e1', 0, h * 0.35, -depth / 2 - 0.2, { roughness: 0.8 });
+    for (let vent = -1; vent <= 1; vent++) damageParts.push(addPropPart(group, new THREE.CylinderGeometry(0.52, 0.62, 2.7, 8), '#64748b', vent * 3.0, h + 1.6, 0, { metalness: 0.62 }));
+  }
+
+  if (districtType === 0 && variant % 2 === 0) {
     const antenna = new THREE.Mesh(
       new THREE.CylinderGeometry(0.12, 0.16, 4.5, 7),
       new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.35, metalness: 0.75 })
     );
     antenna.position.y = h + 2.7;
     group.add(antenna);
+    damageParts.push(antenna);
   }
 
-  group.rotation.y = Math.round(Math.random()) * Math.PI / 2;
-  return { group, base, cap, color };
+  group.rotation.y = (variant % 4) * Math.PI / 2;
+  return { group, base, cap, color, damageParts, footprint: Math.max(width, depth), label: districtType === 2 ? 'WORKSHOP' : 'MAIN STREET BUILDING', points: districtType === 2 ? 105 : 135 };
 }
 
-function createTreeMesh() {
+function createTreeMesh(variant = 0) {
   const group = new THREE.Group();
   const trunkGeo = new THREE.CylinderGeometry(0.5, 0.75, 3.2, 8);
   const trunkMat = new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.85 });
@@ -1232,13 +1272,13 @@ function createTreeMesh() {
   trunk.position.y = 1.6;
   group.add(trunk);
 
-  const leavesGeo = new THREE.SphereGeometry(2.7, 10, 10);
-  const leavesMat = new THREE.MeshStandardMaterial({ color: '#15803d', roughness: 0.75 });
+  const leavesGeo = new THREE.SphereGeometry(2.7 + (variant % 3) * 0.35, 10, 10);
+  const leavesMat = new THREE.MeshStandardMaterial({ color: ['#15803d', '#166534', '#3f6212'][variant % 3], roughness: 0.75 });
   const leaves = new THREE.Mesh(leavesGeo, leavesMat);
   leaves.position.y = 4.2; leaves.castShadow = true;
   group.add(leaves);
 
-  return { group, base: leaves, color: '#15803d' };
+  return { group, base: leaves, color: '#15803d', damageParts: [trunk, leaves], footprint: 5.5, label: 'TREE', points: 30 };
 }
 
 function createLandmarkMesh(icon) {
@@ -1514,11 +1554,12 @@ function damageNearbyComedyProps(amount, range) {
 }
 
 // 3D HIGH-FIDELITY DETAILED RUINS WITH COLOR-MATCHED SLABS & SMOKE
-function spawnPersistentRuin(x, z, color) {
+function spawnPersistentRuin(x, z, color, footprint = 5) {
   const group = new THREE.Group();
+  const ruinSize = THREE.MathUtils.clamp(footprint * 0.82, 4.8, 15);
   
   // Base Concrete Slab
-  const slabGeo = new THREE.BoxGeometry(4.8, 0.4, 4.8);
+  const slabGeo = new THREE.BoxGeometry(ruinSize, 0.4, ruinSize * 0.82);
   const slabMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.9 });
   const slab = new THREE.Mesh(slabGeo, slabMat);
   slab.position.y = 0.2;
@@ -1526,13 +1567,15 @@ function spawnPersistentRuin(x, z, color) {
   group.add(slab);
 
   // Tilted Object-Colored Debris Wall Fragment
-  const wallGeo = new THREE.BoxGeometry(2.2, 1.4, 0.6);
   const wallMat = new THREE.MeshStandardMaterial({ color: color || '#64748b', roughness: 0.8 });
-  const wall = new THREE.Mesh(wallGeo, wallMat);
-  wall.position.set((Math.random()-0.5)*2, 0.9, (Math.random()-0.5)*2);
-  wall.rotation.set(0.3, Math.random()*Math.PI, 0.2);
-  wall.castShadow = true;
-  group.add(wall);
+  const rubbleCount = footprint > 10 ? 6 : 4;
+  for (let i = 0; i < rubbleCount; i++) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(1.4 + Math.random() * 2.4, 0.7 + Math.random() * 1.4, 0.45 + Math.random() * 0.55), wallMat);
+    wall.position.set((Math.random()-0.5) * ruinSize * 0.66, 0.65 + Math.random() * 0.55, (Math.random()-0.5) * ruinSize * 0.52);
+    wall.rotation.set(0.25 + Math.random() * 0.4, Math.random() * Math.PI, (Math.random()-0.5) * 0.55);
+    wall.castShadow = true;
+    group.add(wall);
+  }
 
   group.position.set(x, terrainHeightAt(x, z), z);
   ruinsGroup.add(group);
@@ -1542,14 +1585,15 @@ function addCameraShake(intensity) {
   cameraShakeIntensity = Math.max(cameraShakeIntensity, intensity);
 }
 
-function explodeStructure(x, z, color, isWaterTower = false, isGrainSilo = false) {
+function explodeStructure(x, z, color, isWaterTower = false, isGrainSilo = false, footprint = 5) {
   if (isWaterTower) playSound('splash');
   else playSound('explode');
 
-  spawnPersistentRuin(x, z, color);
+  spawnPersistentRuin(x, z, color, footprint);
   addCameraShake(1.6);
 
-  const fragGeo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
+  const fragmentSize = THREE.MathUtils.clamp(footprint * 0.13, 0.9, 2.0);
+  const fragGeo = new THREE.BoxGeometry(fragmentSize, fragmentSize, fragmentSize);
   const fragMat = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.2 });
   
   for (let i = 0; i < (isWaterTower || isGrainSilo ? 24 : 15); i++) {
@@ -1560,19 +1604,89 @@ function explodeStructure(x, z, color, isWaterTower = false, isGrainSilo = false
 
     activeExplosionFragments.push({
       mesh: frag,
-      vx: (Math.random() - 0.5) * 1.9,
-      vy: 1.3 + Math.random() * 2.3,
-      vz: (Math.random() - 0.5) * 1.9,
+      vx: (Math.random() - 0.5) * 21,
+      vy: 11 + Math.random() * 18,
+      vz: (Math.random() - 0.5) * 21,
       rotX: Math.random() * 0.35,
       rotY: Math.random() * 0.35,
-      life: 1.0,
-      orbitAngle: Math.random() * Math.PI * 2,
-      altitude: 4 + Math.random() * 14
+      life: 2.1 + Math.random() * 0.8,
+      bounced: false
     });
   }
 
   const mediaLabel = isWaterTower ? 'THE WATER TOWER COLLAPSE' : (isGrainSilo ? 'THE SILO IMPACT' : 'A DIRECT HIT');
   recordMediaMoment(x, z, isWaterTower || isGrainSilo ? 180 : 65, mediaLabel);
+}
+
+function spawnDamagePuff(target) {
+  const fragMat = new THREE.MeshStandardMaterial({ color: target.color || '#64748b', roughness: 0.85 });
+  for (let i = 0; i < 4; i++) {
+    const frag = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.75, 0.75), fragMat);
+    frag.position.set(target.x + (Math.random() - 0.5) * 4, terrainHeightAt(target.x, target.z) + 3 + Math.random() * 5, target.z + (Math.random() - 0.5) * 4);
+    scene.add(frag);
+    activeExplosionFragments.push({
+      mesh: frag,
+      vx: (Math.random() - 0.5) * 8,
+      vy: 5 + Math.random() * 8,
+      vz: (Math.random() - 0.5) * 8,
+      rotX: Math.random() * 0.35,
+      rotY: Math.random() * 0.35,
+      life: 1.1 + Math.random() * 0.45,
+      bounced: false
+    });
+  }
+}
+
+function applyTargetDamageStage(target) {
+  if (!target || target.destroyed) return;
+  const ratio = target.health / target.maxHealth;
+  const nextStage = ratio <= 0.36 ? 2 : (ratio <= 0.72 ? 1 : 0);
+  if (nextStage <= target.damageStage) return;
+  target.damageStage = nextStage;
+  const lean = target.x % 2 === 0 ? 1 : -1;
+  target.meshData.group.rotation.z += lean * (nextStage === 1 ? 0.055 : 0.095);
+  target.meshData.group.scale.y *= nextStage === 1 ? 0.94 : 0.84;
+  if (target.meshData.roof) {
+    target.meshData.roof.rotation.z += lean * 0.18;
+    target.meshData.roof.position.x += lean * 0.7;
+  }
+  (target.meshData.damageParts || [target.meshData.base]).filter(Boolean).forEach(part => {
+    if (part.material && part.material.color) part.material.color.offsetHSL(0, -0.08, nextStage === 1 ? -0.08 : -0.14);
+  });
+  spawnDamagePuff(target);
+  if (nextStage === 2) addScore(18);
+}
+
+function checkBlockClear(blockId) {
+  const block = townBlocks.find(candidate => candidate.id === blockId);
+  if (!block || block.cleared || block.targets.length === 0) return;
+  if (!block.targets.every(target => target.destroyed)) return;
+  block.cleared = true;
+  clearedBlocksCount++;
+  addScore(325);
+  playSound('explode');
+  addCameraShake(1.2);
+  const callouts = ['BLOCK BUSTER!', 'URBAN RENEWAL, WEATHER EDITION!', 'THAT BLOCK IS NOW OPEN CONCEPT!', 'PROPERTY VALUES: HIGHLY MOBILE!'];
+  showGagToast(callouts[clearedBlocksCount % callouts.length]);
+  recordMediaMoment(block.x, block.z, 145, `THE ${block.name} BLOCK CLEAR`);
+}
+
+function destroyTarget(target, source = 'storm') {
+  if (!target || target.destroyed) return;
+  target.destroyed = true;
+  target.health = 0;
+  scene.remove(target.meshData.group);
+  destroyedTargetsCount++;
+  addScore(target.points || target.meshData.points || (target.isCommercial ? 100 : (target.isTree ? 25 : 60)));
+  explodeStructure(target.x, target.z, target.color, false, false, target.meshData.footprint || 5);
+  checkBlockClear(target.blockId);
+}
+
+function damageTarget(target, amount, source = 'storm') {
+  if (!target || target.destroyed || target.health <= 0) return;
+  target.health = Math.max(0, target.health - amount);
+  if (target.health <= 0) destroyTarget(target, source);
+  else applyTargetDamageStage(target);
 }
 
 function triggerPowerFlash() {
@@ -1798,6 +1912,181 @@ function updateMediaCrews(dt) {
   });
 }
 
+function createChainSetpieceMesh(kind) {
+  const group = new THREE.Group();
+  let color = '#ef4444';
+  let effectColor = '#fb923c';
+  let footprint = 16;
+
+  if (kind === 'gas') {
+    color = '#ef4444'; effectColor = '#f97316'; footprint = 18;
+    addPropPart(group, new THREE.BoxGeometry(16, 1.1, 10), '#f8fafc', 0, 6.6, 0, { roughness: 0.42 });
+    addPropPart(group, new THREE.BoxGeometry(16, 0.5, 10.2), color, 0, 7.25, 0);
+    [-4.5, 0, 4.5].forEach(x => {
+      addPropPart(group, new THREE.BoxGeometry(1.8, 3.2, 1.8), '#f8fafc', x, 1.7, 0);
+      addPropPart(group, new THREE.BoxGeometry(1.9, 0.65, 1.9), color, x, 2.9, 0);
+    });
+    [-7, 7].forEach(x => addPropPart(group, new THREE.BoxGeometry(0.55, 6.2, 0.55), '#64748b', x, 3.2, 0));
+    addPropPart(group, new THREE.BoxGeometry(8, 4.2, 0.45), color, 0, 11.2, 0, { material: createSignMaterial('LAST CHANCE|GAS', '#b91c1c') });
+  } else if (kind === 'carwash') {
+    color = '#06b6d4'; effectColor = '#38bdf8'; footprint = 20;
+    addPropPart(group, new THREE.BoxGeometry(20, 7.2, 9), '#dbeafe', 0, 3.6, 0, { roughness: 0.5 });
+    addPropPart(group, new THREE.BoxGeometry(12, 5.2, 0.5), '#172554', 0, 3.1, -4.65);
+    [-3.3, 3.3].forEach(x => addPropPart(group, new THREE.CylinderGeometry(1.1, 1.1, 4.8, 12), x < 0 ? '#f472b6' : '#22d3ee', x, 3.0, -4.9, { rotation: { z: Math.PI / 2 } }));
+    addPropPart(group, new THREE.BoxGeometry(13, 2.2, 0.45), color, 0, 8.25, -1.5, { material: createSignMaterial('TWISTER SHINE|CAR WASH', '#0369a1') });
+  } else if (kind === 'fireworks') {
+    color = '#7c3aed'; effectColor = '#facc15'; footprint = 17;
+    addPropPart(group, new THREE.BoxGeometry(17, 6.0, 11), '#581c87', 0, 3.0, 0, { roughness: 0.72 });
+    addPropPart(group, new THREE.ConeGeometry(11, 4.2, 4), '#dc2626', 0, 8.0, 0, { rotation: { y: Math.PI / 4 } });
+    addPropPart(group, new THREE.BoxGeometry(15, 2.8, 0.5), color, 0, 5.1, -5.7, { material: createSignMaterial('TOTALLY LEGAL|FIREWORKS', '#7c3aed') });
+    [-5, 0, 5].forEach(x => addPropPart(group, new THREE.BoxGeometry(2.6, 2.0, 2.6), ['#ef4444','#facc15','#3b82f6'][(x + 5) / 5], x, 1.1, -7.1));
+  } else {
+    color = '#f59e0b'; effectColor = '#fde047'; footprint = 19;
+    addPropPart(group, new THREE.BoxGeometry(17, 5.8, 12), '#78716c', 0, 2.9, 0, { roughness: 0.82 });
+    [-5, 0, 5].forEach(x => addPropPart(group, new THREE.CylinderGeometry(1.45, 1.45, 8.2, 14), '#f8fafc', x, 4.2, -7.1, { rotation: { z: Math.PI / 2 }, metalness: 0.45 }));
+    addPropPart(group, new THREE.BoxGeometry(14, 2.8, 0.45), color, 0, 6.3, -6.3, { material: createSignMaterial('HANKS PROPANE|& PROPANE', '#92400e') });
+  }
+
+  return { group, color, effectColor, footprint };
+}
+
+function spawnChainSetpieces() {
+  chainSetpieces.length = 0;
+  while (setpieceGroup.children.length > 0) setpieceGroup.remove(setpieceGroup.children[0]);
+  const definitions = [
+    { kind: 'gas', stage: 1, x: 40, z: -200, name: 'LAST CHANCE GAS', gag: 'LAST CHANCE GAS BECOMES FIRST CHANCE FIRE.' },
+    { kind: 'carwash', stage: 2, x: -40, z: -200, name: 'TWISTER SHINE CAR WASH', gag: 'FREE UNDERCARRIAGE CLEANING EXTENDED TO THE ENTIRE COUNTY.' },
+    { kind: 'propane', stage: 2, x: -200, z: 120, name: 'HANKS PROPANE', gag: 'HANKS PROPANE INTRODUCES SAME-DAY AIR DELIVERY.' },
+    { kind: 'fireworks', stage: 3, x: 200, z: 200, name: 'TOTALLY LEGAL FIREWORKS', gag: 'THE COUNTY FAIR ADDS AN UNPLANNED NIGHT SHOW.' }
+  ];
+  definitions.forEach((definition, index) => {
+    const meshData = createChainSetpieceMesh(definition.kind);
+    meshData.group.position.set(definition.x, terrainHeightAt(definition.x, definition.z), definition.z);
+    meshData.group.rotation.y = (index % 2) * Math.PI / 2;
+    setpieceGroup.add(meshData.group);
+    chainSetpieces.push({ ...definition, meshData, health: 420, maxHealth: 420, damageStage: 0, destroyed: false, points: 700 });
+  });
+}
+
+function spawnSetpieceShockwave(setpiece) {
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(3.5, 5.2, 40),
+    new THREE.MeshBasicMaterial({ color: setpiece.meshData.effectColor, transparent: true, opacity: 0.92, side: THREE.DoubleSide, depthWrite: false })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(setpiece.x, terrainHeightAt(setpiece.x, setpiece.z) + 1.1, setpiece.z);
+  scene.add(ring);
+  activeSetpieceEffects.push({ mesh: ring, life: 1.0, maxLife: 1.0 });
+}
+
+function destroyChainSetpiece(setpiece) {
+  if (!setpiece || setpiece.destroyed) return;
+  setpiece.destroyed = true;
+  setpiece.health = 0;
+  setpieceGroup.remove(setpiece.meshData.group);
+  chainReactionsCount++;
+  addScore(setpiece.points);
+  showGagToast(setpiece.gag);
+  recordMediaMoment(setpiece.x, setpiece.z, 260, setpiece.name);
+  addCameraShake(3.2);
+  playSound('explode');
+  spawnSetpieceShockwave(setpiece);
+  explodeStructure(setpiece.x, setpiece.z, setpiece.meshData.color, false, false, setpiece.meshData.footprint);
+  targets.forEach(target => {
+    const distance = Math.hypot(target.x - setpiece.x, target.z - setpiece.z);
+    if (distance <= 58) damageTarget(target, Math.max(95, 230 - distance * 2.5), 'chain');
+  });
+  publishMediaHeadline(`BREAKING: ${setpiece.gag}`, 3.8);
+}
+
+function damageNearbyChainSetpieces(amount, range) {
+  chainSetpieces.forEach(setpiece => {
+    if (setpiece.destroyed) return;
+    const distance = Math.hypot(setpiece.x - storm.pos.x, setpiece.z - storm.pos.z);
+    if (distance > range) return;
+    setpiece.health = Math.max(0, setpiece.health - amount);
+    const ratio = setpiece.health / setpiece.maxHealth;
+    if (ratio <= 0) destroyChainSetpiece(setpiece);
+    else if (ratio <= 0.55 && setpiece.damageStage === 0) {
+      setpiece.damageStage = 1;
+      setpiece.meshData.group.rotation.z += 0.08;
+      publishMediaHeadline(`${setpiece.name}: MANAGEMENT SAYS EVERYTHING IS FINE.`, 2.2);
+      spawnSetpieceShockwave(setpiece);
+    }
+  });
+}
+
+function blockDistrict(centerX, centerZ) {
+  if (centerX < 0 && centerZ < 0) return 0;
+  if (centerX >= 0 && centerZ < 0) return 1;
+  if (centerX < 0) return 2;
+  return 3;
+}
+
+function buildLivingCounty() {
+  townBlocks.length = 0;
+  while (townDressGroup.children.length > 0) townDressGroup.remove(townDressGroup.children[0]);
+  const centers = [-200, -120, -40, 40, 120, 200];
+  const reserved = [
+    [-145, -110], [-60, -60], [-110, 100], [120, 120], [155, 135],
+    [40, -200], [-40, -200], [-200, 120], [200, 200]
+  ];
+  const lotOffsets = [[-18, -18], [18, -18], [-18, 18], [18, 18]];
+  const districtNames = ['MAIN STREET', 'PINE RIDGE', 'FOUNDRY ROW', 'COUNTY FAIR'];
+  const padColors = ['#263449', '#315f35', '#5a3b2a', '#806129'];
+  let targetIndex = 0;
+
+  centers.forEach((centerZ, row) => centers.forEach((centerX, column) => {
+    const district = blockDistrict(centerX, centerZ);
+    const id = `${district}-${row}-${column}`;
+    const block = { id, x: centerX, z: centerZ, district, name: `${districtNames[district]} ${row + 1}-${column + 1}`, targets: [], cleared: false };
+    townBlocks.push(block);
+
+    const padGeometry = conformPlaneToTerrain(new THREE.PlaneGeometry(58, 58, 4, 4), centerX, centerZ, 0.17);
+    const pad = new THREE.Mesh(padGeometry, new THREE.MeshStandardMaterial({ color: padColors[district], transparent: true, opacity: 0.45, roughness: 0.96, depthWrite: false }));
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.set(centerX, 0, centerZ);
+    pad.receiveShadow = true;
+    townDressGroup.add(pad);
+
+    lotOffsets.forEach((offset, slot) => {
+      const x = centerX + offset[0];
+      const z = centerZ + offset[1];
+      if (reserved.some(point => Math.hypot(x - point[0], z - point[1]) < 24)) return;
+      const variant = row * centers.length + column + slot;
+      let meshData;
+      let isTree = false;
+      let isCommercial = false;
+
+      if (district === 0) {
+        if (slot === 3 && variant % 2 === 0) { meshData = createTreeMesh(variant); isTree = true; }
+        else { meshData = createCommercialMesh(0, variant); isCommercial = true; }
+      } else if (district === 1) {
+        if (slot === 3) { meshData = createTreeMesh(variant); isTree = true; }
+        else meshData = createHouseMesh(1, targetIndex, variant);
+      } else if (district === 2) {
+        if (slot === 2) { meshData = createTreeMesh(variant); isTree = true; }
+        else { meshData = createCommercialMesh(2, variant); isCommercial = true; }
+      } else {
+        if (slot === 1 || slot === 3) { meshData = createTreeMesh(variant); isTree = true; }
+        else meshData = createHouseMesh(3, targetIndex, variant);
+      }
+
+      meshData.group.position.set(x, terrainHeightAt(x, z), z);
+      scene.add(meshData.group);
+      const health = isTree ? 42 : (isCommercial ? (district === 0 ? 190 : 165) : (district === 3 ? 145 : 115));
+      const target = {
+        x, z, health, maxHealth: health, stage: 'Intact', damageStage: 0, destroyed: false,
+        meshData, isTree, isCommercial, color: meshData.color, points: meshData.points,
+        blockId: id, blockName: block.name, district
+      };
+      targets.push(target);
+      block.targets.push(target);
+      targetIndex++;
+    });
+  }));
+}
+
 function init3DWorld() {
   if (districtChallenges.length === 0) setupDistrictChallenges();
   targets.forEach(target => scene.remove(target.meshData.group));
@@ -1806,6 +2095,7 @@ function init3DWorld() {
   animals.forEach(animal => scene.remove(animal.mesh));
   chaserVans.forEach(van => scene.remove(van.mesh));
   activeExplosionFragments.forEach(fragment => scene.remove(fragment.mesh));
+  activeSetpieceEffects.forEach(effect => scene.remove(effect.mesh));
   hailStones.forEach(hail => scene.remove(hail.mesh));
   powerPoles.forEach(pole => { pole.sparked = false; });
 
@@ -1815,11 +2105,14 @@ function init3DWorld() {
   animals.length = 0;
   chaserVans.length = 0;
   activeExplosionFragments.length = 0;
+  activeSetpieceEffects.length = 0;
   hailStones.length = 0;
   destroyedLandmarksCount = 0;
   destroyedSubstationsCount = 0;
   destroyedTargetsCount = 0;
   destroyedComedyPropsCount = 0;
+  clearedBlocksCount = 0;
+  chainReactionsCount = 0;
   currentStage = 1;
   stage1Score = 0; stage2Score = 0; stage3Score = 0;
   mediaMoments = 0;
@@ -1835,43 +2128,9 @@ function init3DWorld() {
   lastSwathZ = Infinity;
   swathTexture.needsUpdate = true;
 
-  // DISTINCT 4-DISTRICT LAYOUT (210 STRUCTURES OVER 460x460 TERRITORY)
-  for (let i = 0; i < 210; i++) {
-    let x, z;
-    const districtType = i % 4; // 0: Downtown, 1: Suburbs, 2: Industrial, 3: Farmland
-
-    if (districtType === 0) { // 🏙️ Downtown (Northwest)
-      x = -80 + (Math.random() - 0.5) * 220;
-      z = -80 + (Math.random() - 0.5) * 220;
-    } else if (districtType === 1) { // 🏡 Suburbs (Northeast)
-      x = 100 + (Math.random() - 0.5) * 220;
-      z = -90 + (Math.random() - 0.5) * 220;
-    } else if (districtType === 2) { // 🏭 Industrial (Southwest)
-      x = -110 + (Math.random() - 0.5) * 220;
-      z = 100 + (Math.random() - 0.5) * 220;
-    } else { // 🌾 Farmland (Southeast)
-      x = 110 + (Math.random() - 0.5) * 220;
-      z = 110 + (Math.random() - 0.5) * 220;
-    }
-
-    const isCommercial = (districtType === 0 && Math.random() < 0.80) || Math.random() < 0.15;
-    const isTree = (districtType === 3 && Math.random() < 0.75) || Math.random() < 0.20;
-
-    let meshData;
-    if (isTree) meshData = createTreeMesh();
-    else if (isCommercial) meshData = createCommercialMesh(districtType);
-    else meshData = createHouseMesh(districtType, i);
-
-    meshData.group.position.set(x, terrainHeightAt(x, z), z);
-    scene.add(meshData.group);
-
-    targets.push({
-      x, z,
-      health: isTree ? 35 : (isCommercial ? 160 : 95),
-      maxHealth: isTree ? 35 : (isCommercial ? 160 : 95),
-      stage: 'Intact', meshData, isTree, isCommercial, color: meshData.color
-    });
-  }
+  // V4 LIVING COUNTY: authored blocks, recognizable structures and set-piece businesses.
+  buildLivingCounty();
+  spawnChainSetpieces();
 
   // Priority Landmarks in Industrial & Farmland Districts
   const lm1 = createLandmarkMesh('💧');
@@ -2027,14 +2286,7 @@ function triggerAbility(slot) {
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 2.4 && t.health > 0) {
-          t.health -= 90;
-          if (t.health <= 0) {
-            t.health = 0; scene.remove(t.meshData.group);
-            destroyedTargetsCount++; addScore(80);
-            explodeStructure(t.x, t.z, t.color);
-          }
-        }
+        if (dist < storm.radius * 2.4) damageTarget(t, 90, 'gust');
       });
     } else if (slot === 'tertiary') { // ZAP
       playSound('zap');
@@ -2064,14 +2316,7 @@ function triggerAbility(slot) {
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 2.0 && t.health > 0) {
-          t.health -= 110;
-          if (t.health <= 0) {
-            t.health = 0; scene.remove(t.meshData.group);
-            destroyedTargetsCount++; addScore(90);
-            explodeStructure(t.x, t.z, t.color);
-          }
-        }
+        if (dist < storm.radius * 2.0) damageTarget(t, 110, 'downburst');
       });
     } else if (slot === 'tertiary') { // LIGHTNING SUPER-STRIKE
       playSound('zap');
@@ -2092,14 +2337,7 @@ function triggerAbility(slot) {
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 2.6 && t.health > 0) {
-          t.health -= 70;
-          if (t.health <= 0) {
-            t.health = 0; scene.remove(t.meshData.group);
-            destroyedTargetsCount++; addScore(70);
-            explodeStructure(t.x, t.z, t.color);
-          }
-        }
+        if (dist < storm.radius * 2.6) damageTarget(t, 70, 'wind wall');
       });
     } else if (slot === 'secondary') { // MICROBURST BLAST
       playSound('explode');
@@ -2111,14 +2349,7 @@ function triggerAbility(slot) {
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 2.2 && t.health > 0) {
-          t.health -= 140;
-          if (t.health <= 0) {
-            t.health = 0; scene.remove(t.meshData.group);
-            destroyedTargetsCount++; addScore(100);
-            explodeStructure(t.x, t.z, t.color);
-          }
-        }
+        if (dist < storm.radius * 2.2) damageTarget(t, 140, 'microburst');
       });
     } else if (slot === 'tertiary') { // DUST SURGE
       playSound('zap');
@@ -2129,6 +2360,7 @@ function triggerAbility(slot) {
   const propDamage = slot === 'secondary' ? 145 : (slot === 'tertiary' ? 110 : 85);
   const propRange = storm.radius * (slot === 'secondary' ? 2.8 : 2.4);
   damageNearbyComedyProps(propDamage, propRange);
+  damageNearbyChainSetpieces(propDamage * 0.82, propRange);
 }
 
 // STRICT STAGE EF CAPS & REAL-TIME EAS SYNC
@@ -2214,6 +2446,9 @@ function renderObjectives() {
     }
   });
 
+  const liveSetpieces = chainSetpieces.filter(setpiece => !setpiece.destroyed).length;
+  html += `<div style="font-size:9px;color:#f472b6;margin-top:4px;font-weight:900;">CHAIN SITES: ${chainReactionsCount}/4 DETONATED | ${liveSetpieces} LIVE</div>`;
+
   // Stage 3 Substation Finale Counter
   if (currentStage === 3) {
     const stage3Elapsed = Math.max(0, 60 - runTimeRemaining);
@@ -2258,6 +2493,8 @@ function finishRun() {
   setUI('resLandmarks', `${destroyedLandmarksCount}/2`);
   setUI('resSubstations', `${destroyedSubstationsCount}/3`);
   setUI('resChallenges', `${challengeCount}/3`);
+  setUI('resBlocks', clearedBlocksCount);
+  setUI('resChains', chainReactionsCount);
   setUI('resMediaMoments', mediaMoments);
   setUI('resFootageBonus', `+${footageBonus}`);
   setUI('resCosmetic', cosmeticResult);
@@ -2301,19 +2538,20 @@ function getBotDistrictTarget() {
   );
 
   if (currentStage === 1) {
-    return matchingProp || { x: 100, z: -90 };
+    const stageSetpiece = chainSetpieces.find(setpiece => !setpiece.destroyed && setpiece.stage === 1);
+    return matchingProp || stageSetpiece || { x: 100, z: -90 };
   }
 
   if (currentStage === 2) {
     if (matchingProp && !challenge.done) return matchingProp;
-    return landmarks.find(landmark => !landmark.destroyed) || { x: -60, z: -60 };
+    return landmarks.find(landmark => !landmark.destroyed) || chainSetpieces.find(setpiece => !setpiece.destroyed && setpiece.stage === 2) || { x: -60, z: -60 };
   }
 
   const stage3Elapsed = Math.max(0, 60 - runTimeRemaining);
   const activeSubstation = substations.find(sub => !sub.destroyed && stage3Elapsed >= sub.activeAfter);
   if (activeSubstation) return activeSubstation;
   if (matchingProp && !challenge.done) return matchingProp;
-  return substations.find(sub => !sub.destroyed) || { x: 120, z: 120 };
+  return substations.find(sub => !sub.destroyed) || chainSetpieces.find(setpiece => !setpiece.destroyed && setpiece.stage === 3) || { x: 120, z: 120 };
 }
 
 // --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---
@@ -2471,16 +2709,11 @@ function animate(now) {
     if (pullVortexTimer <= 0) activePullVortex = false;
     targets.forEach(t => {
       const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-      if (dist < storm.radius * 2.5 && t.health > 0) {
+      if (dist < storm.radius * 2.5 && !t.destroyed) {
         t.x = THREE.MathUtils.lerp(t.x, storm.pos.x, 0.06);
         t.z = THREE.MathUtils.lerp(t.z, storm.pos.z, 0.06);
         t.meshData.group.position.set(t.x, terrainHeightAt(t.x, t.z), t.z);
-        t.health -= 90 * dt;
-        if (t.health <= 0) {
-          t.health = 0; scene.remove(t.meshData.group);
-          destroyedTargetsCount++; addScore(80);
-          explodeStructure(t.x, t.z, t.color);
-        }
+        damageTarget(t, 90 * dt, 'pull');
       }
     });
   }
@@ -2606,19 +2839,11 @@ function animate(now) {
 
     targets.forEach(t => {
       const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-      if (dist < storm.radius * 1.5 && t.health > 0) {
-        t.health -= 55 * dt * efMultiplier;
-        if (t.health <= 0) {
-          t.health = 0;
-          scene.remove(t.meshData.group);
-          destroyedTargetsCount++;
-          addScore(t.isCommercial ? 100 : (t.isTree ? 25 : 60));
-          explodeStructure(t.x, t.z, t.color);
-        }
-      }
+      if (dist < storm.radius * 1.5) damageTarget(t, 55 * dt * efMultiplier, 'contact');
     });
 
     damageNearbyComedyProps(72 * dt * efMultiplier, storm.radius * 1.55);
+    damageNearbyChainSetpieces(48 * dt * efMultiplier, storm.radius * 1.7);
   }
 
   // News vans and storm chasers are invincible witnesses, never hostile targets.
@@ -2666,17 +2891,42 @@ function animate(now) {
 
   for (let i = activeExplosionFragments.length - 1; i >= 0; i--) {
     const f = activeExplosionFragments[i];
-    f.orbitAngle += 0.12;
-    f.mesh.position.x = storm.pos.x + Math.cos(f.orbitAngle) * 10;
-    f.mesh.position.z = storm.pos.z + Math.sin(f.orbitAngle) * 10;
-    f.mesh.position.y = storm.pos.y + f.altitude;
-    f.mesh.rotation.x += f.rotX;
-    f.mesh.rotation.y += f.rotY;
+    const pullDistance = Math.hypot(f.mesh.position.x - storm.pos.x, f.mesh.position.z - storm.pos.z);
+    if (pullDistance < storm.radius * 2.0 && pullDistance > 1) {
+      f.vx += ((storm.pos.x - f.mesh.position.x) / pullDistance) * dt * 9;
+      f.vz += ((storm.pos.z - f.mesh.position.z) / pullDistance) * dt * 9;
+    }
+    f.vy -= 24 * dt;
+    f.mesh.position.x += f.vx * dt;
+    f.mesh.position.y += f.vy * dt;
+    f.mesh.position.z += f.vz * dt;
+    const fragmentGround = terrainHeightAt(f.mesh.position.x, f.mesh.position.z) + 0.45;
+    if (f.mesh.position.y < fragmentGround && !f.bounced) {
+      f.mesh.position.y = fragmentGround;
+      f.vy = Math.abs(f.vy) * 0.28;
+      f.vx *= 0.68;
+      f.vz *= 0.68;
+      f.bounced = true;
+    }
+    f.mesh.rotation.x += f.rotX * dt * 8;
+    f.mesh.rotation.y += f.rotY * dt * 8;
 
-    f.life -= dt * 0.25;
+    f.life -= dt;
     if (f.life <= 0) {
       scene.remove(f.mesh);
       activeExplosionFragments.splice(i, 1);
+    }
+  }
+
+  for (let i = activeSetpieceEffects.length - 1; i >= 0; i--) {
+    const effect = activeSetpieceEffects[i];
+    effect.life -= dt;
+    const progress = 1 - Math.max(0, effect.life) / effect.maxLife;
+    effect.mesh.scale.setScalar(1 + progress * 12);
+    effect.mesh.material.opacity = Math.max(0, 0.92 * (1 - progress));
+    if (effect.life <= 0) {
+      scene.remove(effect.mesh);
+      activeSetpieceEffects.splice(i, 1);
     }
   }
 
@@ -2727,6 +2977,19 @@ function renderRadar() {
       rCtx.fillStyle = currentStage < 2 ? '#64748b' : (lm.icon === '💧' ? '#38bdf8' : '#fbbf24');
       rCtx.beginPath(); rCtx.arc(lmx, lmz, 7, 0, Math.PI * 2); rCtx.fill();
     }
+  });
+
+  // Magenta diamonds advertise optional Rampage-style chain-reaction businesses.
+  chainSetpieces.forEach(setpiece => {
+    if (setpiece.destroyed) return;
+    const setpieceX = 72.5 + (setpiece.x / 220) * 55;
+    const setpieceZ = 72.5 + (setpiece.z / 220) * 55;
+    rCtx.save();
+    rCtx.translate(setpieceX, setpieceZ);
+    rCtx.rotate(Math.PI / 4);
+    rCtx.fillStyle = setpiece.stage <= currentStage ? '#f472b6' : '#6b214f';
+    rCtx.fillRect(-4, -4, 8, 8);
+    rCtx.restore();
   });
 
   // Stage 3 Substation Radar Beacons
