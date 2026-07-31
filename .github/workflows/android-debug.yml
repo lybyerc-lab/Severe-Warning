@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build-debug-apk:
     name: Build debug APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
@@ -34,10 +34,6 @@ jobs:
           cache-dependency-path: |
             android/**/*.gradle*
             android/gradle/wrapper/gradle-wrapper.properties
-
-      - name: Install Android SDK 36
-        shell: bash
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install pinned JavaScript dependencies
         shell: bash
