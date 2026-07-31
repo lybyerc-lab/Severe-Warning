@@ -3,7 +3,7 @@
 Last updated: 2026-07-31
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active game: HTML/WebGL `3.3.0 High Country Edition`
+Active game: HTML/WebGL `3.3.1 County Roads Edition`
 Primary target: single-player Android landscape
 Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
 
@@ -40,7 +40,7 @@ The game is a humorous, replayable, mobile arcade destruction game in which the 
 - News vans and storm chasers are invincible witnesses that film, report, reposition, and retreat. They are not enemies.
 - The project may learn from classic city-destruction game structure but must use original storms, locations, jokes, art, progression, and identity.
 
-## Current v3.3.0 slice
+## Current v3.3.1 slice
 
 The current three-minute run contains:
 
@@ -69,6 +69,11 @@ Implemented systems include:
 - terrain-following roads, shoulders, markings, props, targets, ruins, animals, storm effects, and media vehicles
 - instanced road markings and ridge silhouettes to preserve mobile draw-call discipline
 - contour cues, hemisphere fill light, and filmic tone mapping for stronger depth separation
+- an extended county apron that prevents the pulled-back camera from exposing the black WebGL void
+- road-grid routing for news vans and storm chasers, including intersection turns and emergency retreat routing
+- a narrower semi-transparent damage scar rendered beneath roads and bridges
+- depth-ordered road, shoulder, and creek surfaces plus smaller, darker creek-bank rocks
+- varied Main Street offices and industrial warehouses with distinct dimensions, roof caps, colors, and occasional antennas
 
 ## Automated evidence
 
@@ -93,17 +98,19 @@ GitHub Actions run `30653818627` successfully compiled the v3.2.0 Capacitor wrap
 
 The user installed that APK on a Galaxy S26 Ultra. It looked and played like the HTML build and completed a full Tornado run with an `S+` rank, score `23621`, objectives `3/3`, landmarks `2/2`, substations `3/3`, bonus challenges `3/3`, seventeen media moments, and the Neon Funnel unlock.
 
-This accepts the v3.2.0 wrapper strategy and high-end-phone gameplay parity. It does not prove lower-end performance, broad WebView compatibility, sustained heat/battery behavior, or that the new v3.3.0 terrain pass has passed on-device.
+The subsequent v3.3.0 APK also compiled successfully in GitHub Actions run `30656859971`, and a live device screenshot confirmed the `3D LAB v3.3.0 HIGH COUNTRY` build rendering and playing on the Galaxy S26 Ultra. That screenshot proves launch and active gameplay, not a second complete-run acceptance record. Lower-end performance, broad WebView compatibility, sustained heat/battery behavior, and the v3.3.1 cleanup remain unproven on-device.
 
 ## Current browser evidence
 
-The v3.3.0 offline bundle completed a full automated Tornado run at approximately 60 FPS with zero observed console warnings or errors. The run earned `S+`, score `23016`, all three objectives, both landmarks, all three substations, all three district bonuses, seven media moments, `+1067` footage, and retained the Neon Funnel. Retry returned to Pine Ridge, hid the results overlay, reset the timer, and resumed scoring in a clean run. Terrain-following world objects, roads, storm movement, damage swath, debris, media crews, and all three district transitions remained intact.
+The v3.3.1 road-routing and terrain-cleanup pass completed a full automated Tornado run at approximately 60 FPS with zero observed console warnings or errors. The run earned `S+`, score `24830`, all three objectives, both landmarks, all three substations, all three district bonuses, eight media moments, `+1504` footage, and retained the Neon Funnel. Media crews remained productive while using the road grid rather than cutting across lawns.
+
+After that complete run, the damage-stamp opacity/radius and commercial-building meshes received a final visual-only tune. The resulting source passed a fresh `844x390` startup/layout check with document dimensions exactly matching the viewport, no overflow, the `95x95` joystick inside the screen, no observed console warnings or errors, and a settled reported rate of `61 FPS`. The cleanup screenshot showed no exposed black world edge and visible media vehicles on asphalt.
 
 ## Immediate next action
 
-1. Push the committed v3.3.0 release to `main`; the scoped workflow trigger will build the debug APK automatically.
-2. Install the resulting v3.3.0 artifact.
-3. Confirm the raised terrain remains readable and smooth on the Galaxy S26 Ultra.
+1. Push the committed v3.3.1 release to `main`; the scoped workflow trigger will build the debug APK automatically.
+2. Install the resulting v3.3.1 artifact.
+3. Confirm the county apron, restrained damage scar, varied buildings, and road-bound media crews remain readable and smooth on the Galaxy S26 Ultra.
 4. Test one ordinary or older Android device before making broad performance claims.
 
 This work PC is intentionally not being modified around company software restrictions.

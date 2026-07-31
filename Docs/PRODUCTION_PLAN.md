@@ -6,6 +6,7 @@
 - complete the v3.1.0 three-district arcade slice
 - complete the v3.2.0 news-crew and storm-chaser coverage loop
 - complete the v3.3.0 district-topography and graphics-depth pass
+- complete the v3.3.1 county-edge, damage-scar, road-routing, and commercial-silhouette cleanup
 - verify startup, full-run completion, replay reset, and responsive landscape layout
 
 ## Phase 1 - Human browser acceptance
@@ -38,7 +39,8 @@ The current work PC cannot install the Android Studio/SDK/JDK toolchain under co
 ## Phase 4 - One-town content proof
 
 - [x] replace the flat board with district-specific elevation, terrain-following roads, contour cues, and a drainage creek
-- improve district-specific building silhouettes and signage
+- [x] introduce varied Main Street offices and industrial warehouse silhouettes
+- continue district-specific storefront, home, vegetation, and signage upgrades in measured batches
 - add district-aware reporter lines only after the current event-driven headlines remain readable in human play
 - expand environmental comedy without targeting people
 - add varied destruction sounds and reduce repetition

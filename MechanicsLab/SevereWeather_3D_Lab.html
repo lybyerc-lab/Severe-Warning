@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<title>Severe Weather 3D Lab v3.3.0 - High Country Edition</title>
+<title>Severe Weather 3D Lab v3.3.1 - County Roads Edition</title>
 <script>
 /* INLINED THREE.JS R128 */
 /**
@@ -193,7 +193,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.3.0 HIGH COUNTRY</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.3.1 COUNTY ROADS</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -607,7 +607,10 @@ function districtGroundColor(x, z, height) {
   else if (x >= 0 && z < 0) color = new THREE.Color('#285b2b');
   else if (x < 0) color = new THREE.Color('#4a3022');
   else color = new THREE.Color('#70511d');
-  color.offsetHSL(0, 0.02, THREE.MathUtils.clamp(height / 22, -0.04, 0.18));
+  const elevationMix = THREE.MathUtils.clamp((height - 2) / 18, 0, 0.36);
+  const drainageMix = THREE.MathUtils.clamp(1 - Math.abs(x - 255) / 42, 0, 0.24);
+  color.lerp(new THREE.Color('#879b69'), elevationMix);
+  color.lerp(new THREE.Color('#315f4a'), drainageMix);
   return color;
 }
 
@@ -642,6 +645,32 @@ terrainMesh.rotation.x = -Math.PI / 2;
 terrainMesh.receiveShadow = true;
 groundGroup.add(terrainMesh);
 
+// A low-detail county apron keeps the pulled-back camera from exposing the WebGL void.
+// It follows the same terrain equation, but darkens into the distance beneath the fog.
+const countyApronGeo = new THREE.PlaneGeometry(1800, 1800, 72, 72);
+const countyApronPositions = countyApronGeo.attributes.position;
+const countyApronColors = [];
+for (let i = 0; i < countyApronPositions.count; i++) {
+  const x = countyApronPositions.getX(i);
+  const z = -countyApronPositions.getY(i);
+  const height = terrainHeightAt(x, z);
+  countyApronPositions.setZ(i, height - 0.65);
+  const edgeFade = THREE.MathUtils.clamp((Math.max(Math.abs(x), Math.abs(z)) - 360) / 520, 0, 1);
+  const color = districtGroundColor(x, z, height).multiplyScalar(1 - edgeFade * 0.42);
+  countyApronColors.push(color.r, color.g, color.b);
+}
+countyApronGeo.setAttribute('color', new THREE.Float32BufferAttribute(countyApronColors, 3));
+countyApronGeo.computeVertexNormals();
+const countyApron = new THREE.Mesh(
+  countyApronGeo,
+  new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 })
+);
+countyApron.rotation.x = -Math.PI / 2;
+countyApron.receiveShadow = false;
+groundGroup.add(countyApron);
+countyApron.renderOrder = -2;
+terrainMesh.renderOrder = -1;
+
 function addTerrainContour(cx, cz, radiusX, radiusZ, color) {
   const points = [];
   for (let i = 0; i <= 64; i++) {
@@ -651,7 +680,7 @@ function addTerrainContour(cx, cz, radiusX, radiusZ, color) {
     points.push(new THREE.Vector3(x, terrainHeightAt(x, z) + 0.44, z));
   }
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
-  const contour = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.42 }));
+  const contour = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.10, depthWrite: false }));
   scene.add(contour);
 }
 
@@ -659,8 +688,8 @@ function addTerrainContour(cx, cz, radiusX, radiusZ, color) {
 [[50, 36], [92, 68], [138, 100]].forEach(size => addTerrainContour(120, 125, size[0], size[1], '#d6ad60'));
 
 // Asphalt Roads & Power Line Poles
-const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', roughness: 0.58, metalness: 0.12 });
-const shoulderMat = new THREE.MeshStandardMaterial({ color: '#64748b', roughness: 0.88 });
+const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', roughness: 0.58, metalness: 0.12, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+const shoulderMat = new THREE.MeshStandardMaterial({ color: '#64748b', roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
 const laneMat = new THREE.MeshBasicMaterial({ color: '#f8d568' });
 const powerPoles = [];
 const eastWestLaneDashes = [];
@@ -680,7 +709,7 @@ function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material
 }
 
 // A shallow creek cuts through the east side; roads render afterward as bridges.
-const creekMat = new THREE.MeshStandardMaterial({ color: '#164e63', roughness: 0.22, metalness: 0.12, transparent: true, opacity: 0.92 });
+const creekMat = new THREE.MeshStandardMaterial({ color: '#164e63', roughness: 0.3, metalness: 0.08, transparent: true, opacity: 0.88, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
 createTerrainRoad(9, 780, 255, 0, false, creekMat, 0.12);
 
 for (let r = -320; r <= 320; r += 80) {
@@ -731,13 +760,13 @@ addInstancedRoadMarks(new THREE.BoxGeometry(12, 0.12, 0.42), eastWestLaneDashes)
 addInstancedRoadMarks(new THREE.BoxGeometry(0.42, 0.12, 12), northSouthLaneDashes);
 
 // Low-cost silhouettes make elevation readable at the pulled-back mobile camera distance.
-const ridgeRockMat = new THREE.MeshStandardMaterial({ color: '#475569', roughness: 0.9, flatShading: true });
+const ridgeRockMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.94, flatShading: true });
 const ridgeRocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(3.2, 0), ridgeRockMat, 18);
 const ridgeMatrix = new THREE.Matrix4();
 for (let i = 0; i < 18; i++) {
-  const x = 232 + (i % 3) * 12;
-  const z = -255 + Math.floor(i / 3) * 42;
-  const scale = 0.75 + (i % 4) * 0.18;
+  const x = 234 + (i % 3) * 10 + Math.sin(i * 2.13) * 3.5;
+  const z = -255 + Math.floor(i / 3) * 44 + Math.cos(i * 1.71) * 6;
+  const scale = 0.48 + (i % 4) * 0.11;
   ridgeMatrix.compose(
     new THREE.Vector3(x, terrainHeightAt(x, z) + 1.4 * scale, z),
     new THREE.Quaternion().setFromEuler(new THREE.Euler(0, i * 0.73, 0)),
@@ -940,21 +969,53 @@ swathCtx.fillStyle = 'rgba(0,0,0,0)'; swathCtx.fillRect(0, 0, 1024, 1024);
 
 const swathTexture = new THREE.CanvasTexture(swathCanvas);
 
-const swathOverlayGeo = conformPlaneToTerrain(new THREE.PlaneGeometry(800, 800, 64, 64), 0, 0, 0.38);
-const swathOverlayMat = new THREE.MeshStandardMaterial({ map: swathTexture, transparent: true, opacity: 0.85, roughness: 0.8 });
+// The scar sits under roads and bridges so it reads as torn turf instead of brown paint.
+const swathOverlayGeo = conformPlaneToTerrain(new THREE.PlaneGeometry(800, 800, 64, 64), 0, 0, 0.10);
+const swathOverlayMat = new THREE.MeshStandardMaterial({
+  map: swathTexture,
+  transparent: true,
+  opacity: 0.58,
+  roughness: 1.0,
+  depthWrite: false,
+  polygonOffset: true,
+  polygonOffsetFactor: -1,
+  polygonOffsetUnits: -1
+});
 const swathOverlay = new THREE.Mesh(swathOverlayGeo, swathOverlayMat);
 swathOverlay.rotation.x = -Math.PI / 2;
 swathOverlay.position.set(0, 0, 0);
-swathOverlay.receiveShadow = true;
+swathOverlay.receiveShadow = false;
 scene.add(swathOverlay);
 
+let lastSwathX = Infinity;
+let lastSwathZ = Infinity;
+
 function markGroundSwath(x, z, r) {
+  const stampSpacing = Math.max(3.2, r * 0.14);
+  if (Math.hypot(x - lastSwathX, z - lastSwathZ) < stampSpacing) return;
+  lastSwathX = x;
+  lastSwathZ = z;
+
   const cx = 512 + (x / 450) * 512;
   const cy = 512 + (z / 450) * 512;
-  swathCtx.fillStyle = 'rgba(20, 14, 8, 0.35)';
-  swathCtx.beginPath();
-  swathCtx.arc(cx, cy, (r / 450) * 512 * 1.25, 0, Math.PI * 2);
-  swathCtx.fill();
+  const pixelRadius = (r / 450) * 512;
+
+  // Overlapping soft, offset stamps leave gaps and ragged edges like stripped turf.
+  for (let i = 0; i < 3; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const scatter = pixelRadius * Math.random() * 0.36;
+    const stampX = cx + Math.cos(angle) * scatter;
+    const stampY = cy + Math.sin(angle) * scatter;
+    const stampRadius = pixelRadius * (0.34 + Math.random() * 0.28);
+    const gradient = swathCtx.createRadialGradient(stampX, stampY, stampRadius * 0.08, stampX, stampY, stampRadius);
+    gradient.addColorStop(0, 'rgba(38, 24, 13, 0.12)');
+    gradient.addColorStop(0.58, 'rgba(58, 36, 18, 0.055)');
+    gradient.addColorStop(1, 'rgba(72, 43, 19, 0)');
+    swathCtx.fillStyle = gradient;
+    swathCtx.beginPath();
+    swathCtx.arc(stampX, stampY, stampRadius, 0, Math.PI * 2);
+    swathCtx.fill();
+  }
   swathTexture.needsUpdate = true;
 }
 
@@ -1098,18 +1159,69 @@ function createHouseMesh(districtType, i) {
 
 function createCommercialMesh(districtType) {
   const group = new THREE.Group();
-  const h = districtType === 0 ? (20 + Math.random() * 18) : (12 + Math.random() * 8); // Downtown Skyscrapers
-  const baseGeo = new THREE.BoxGeometry(7.5, h, 7.5);
+  let h;
+  let width;
+  let depth;
+  let color;
+  let roughness;
+  let metalness;
+
+  if (districtType === 0) { // Main Street: varied offices instead of identical black towers.
+    const palette = ['#155e75', '#1d4ed8', '#334155', '#0f766e', '#475569'];
+    h = 18 + Math.random() * 21;
+    width = 6.2 + Math.random() * 4.8;
+    depth = 6.2 + Math.random() * 4.8;
+    color = palette[Math.floor(Math.random() * palette.length)];
+    roughness = 0.34;
+    metalness = 0.42;
+  } else if (districtType === 2) { // Industrial district: broad warehouses and machine shops.
+    const palette = ['#475569', '#57534e', '#7c2d12', '#3f3f46'];
+    h = 7 + Math.random() * 8;
+    width = 12 + Math.random() * 8;
+    depth = 9 + Math.random() * 7;
+    color = palette[Math.floor(Math.random() * palette.length)];
+    roughness = 0.72;
+    metalness = 0.24;
+  } else {
+    h = 9 + Math.random() * 8;
+    width = 9 + Math.random() * 6;
+    depth = 7 + Math.random() * 5;
+    color = districtType === 3 ? '#92400e' : '#475569';
+    roughness = 0.62;
+    metalness = 0.18;
+  }
+
+  const baseGeo = new THREE.BoxGeometry(width, h, depth);
   const baseMat = new THREE.MeshStandardMaterial({
-    color: districtType === 0 ? '#0284c7' : '#475569',
-    roughness: districtType === 0 ? 0.1 : 0.6,
-    metalness: districtType === 0 ? 0.85 : 0.3
+    color,
+    roughness,
+    metalness
   });
   const base = new THREE.Mesh(baseGeo, baseMat);
   base.position.y = h / 2;
   base.castShadow = true; base.receiveShadow = true;
   group.add(base);
-  return { group, base, color: districtType === 0 ? '#0284c7' : '#475569' };
+
+  const capColor = districtType === 0 ? '#94a3b8' : '#27272a';
+  const cap = new THREE.Mesh(
+    new THREE.BoxGeometry(width * 0.72, 0.55, depth * 0.72),
+    new THREE.MeshStandardMaterial({ color: capColor, roughness: 0.48, metalness: 0.38 })
+  );
+  cap.position.y = h + 0.28;
+  cap.castShadow = true;
+  group.add(cap);
+
+  if (districtType === 0 && Math.random() < 0.48) {
+    const antenna = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.16, 4.5, 7),
+      new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.35, metalness: 0.75 })
+    );
+    antenna.position.y = h + 2.7;
+    group.add(antenna);
+  }
+
+  group.rotation.y = Math.round(Math.random()) * Math.PI / 2;
+  return { group, base, cap, color };
 }
 
 function createTreeMesh() {
@@ -1581,6 +1693,24 @@ function recordMediaMoment(x, z, value, eventLabel) {
   publishMediaHeadline(`${crew.callSign} CAUGHT ${eventLabel} ON CAMERA!${bonusText}`);
 }
 
+const MEDIA_ROAD_SPACING = 80;
+const MEDIA_ROAD_MIN = -320;
+const MEDIA_ROAD_MAX = 320;
+
+function nearestMediaRoadCenter(value) {
+  const snapped = Math.round(value / MEDIA_ROAD_SPACING) * MEDIA_ROAD_SPACING;
+  return THREE.MathUtils.clamp(snapped, MEDIA_ROAD_MIN, MEDIA_ROAD_MAX);
+}
+
+function snapMediaCrewToRoad(x, z, laneOffset) {
+  const horizontalLine = nearestMediaRoadCenter(z) + laneOffset;
+  const verticalLine = nearestMediaRoadCenter(x) + laneOffset;
+  if (Math.abs(z - horizontalLine) <= Math.abs(x - verticalLine)) {
+    return { x: THREE.MathUtils.clamp(x, -370, 370), z: horizontalLine, roadAxis: 'x', roadLine: horizontalLine };
+  }
+  return { x: verticalLine, z: THREE.MathUtils.clamp(z, -370, 370), roadAxis: 'z', roadLine: verticalLine };
+}
+
 function updateMediaCrews(dt) {
   mediaCaptureCooldown = Math.max(0, mediaCaptureCooldown - dt);
   chaserVans.forEach(crew => {
@@ -1621,16 +1751,48 @@ function updateMediaCrews(dt) {
       crew.state = distance < observationRadius + 24 ? 'FILMING' : 'REPOSITIONING';
     }
 
-    const toTargetX = targetX - crew.x;
-    const toTargetZ = targetZ - crew.z;
-    const targetDistance = Math.max(0.01, Math.hypot(toTargetX, toTargetZ));
-    const moveSpeed = crew.state === 'RETREATING' ? crew.speed * 1.75 : crew.speed;
-    const step = Math.min(targetDistance, moveSpeed * dt);
-    const moveX = (toTargetX / targetDistance) * step;
-    const moveZ = (toTargetZ / targetDistance) * step;
+    crew.routeTimer -= dt;
+    if (crew.routeTimer <= 0) {
+      const roadGoal = snapMediaCrewToRoad(targetX, targetZ, crew.laneOffset);
+      crew.routeGoalX = roadGoal.x;
+      crew.routeGoalZ = roadGoal.z;
+      crew.routeTimer = crew.state === 'RETREATING' ? 0.35 : 0.8;
+    }
 
-    crew.x = THREE.MathUtils.clamp(crew.x + moveX, -370, 370);
-    crew.z = THREE.MathUtils.clamp(crew.z + moveZ, -370, 370);
+    const moveSpeed = crew.state === 'RETREATING' ? crew.speed * 1.75 : crew.speed;
+    let moveX = 0;
+    let moveZ = 0;
+
+    if (crew.roadAxis === 'x') {
+      const needsCrossTownTurn = Math.abs(crew.routeGoalZ - crew.roadLine) > 12;
+      const alongTarget = needsCrossTownTurn
+        ? nearestMediaRoadCenter(crew.routeGoalX) + crew.laneOffset
+        : crew.routeGoalX;
+      const delta = alongTarget - crew.x;
+      moveX = Math.sign(delta) * Math.min(Math.abs(delta), moveSpeed * dt);
+      crew.x += moveX;
+      crew.z = crew.roadLine;
+      if (needsCrossTownTurn && Math.abs(alongTarget - crew.x) < 0.2) {
+        crew.x = alongTarget;
+        crew.roadAxis = 'z';
+        crew.roadLine = alongTarget;
+      }
+    } else {
+      const needsCrossTownTurn = Math.abs(crew.routeGoalX - crew.roadLine) > 12;
+      const alongTarget = needsCrossTownTurn
+        ? nearestMediaRoadCenter(crew.routeGoalZ) + crew.laneOffset
+        : crew.routeGoalZ;
+      const delta = alongTarget - crew.z;
+      moveZ = Math.sign(delta) * Math.min(Math.abs(delta), moveSpeed * dt);
+      crew.z += moveZ;
+      crew.x = crew.roadLine;
+      if (needsCrossTownTurn && Math.abs(alongTarget - crew.z) < 0.2) {
+        crew.z = alongTarget;
+        crew.roadAxis = 'x';
+        crew.roadLine = alongTarget;
+      }
+    }
+
     crew.mesh.position.set(crew.x, terrainHeightAt(crew.x, crew.z), crew.z);
     if (Math.abs(moveX) + Math.abs(moveZ) > 0.001) crew.mesh.rotation.y = Math.atan2(moveX, moveZ);
   });
@@ -1669,6 +1831,8 @@ function init3DWorld() {
 
   while(ruinsGroup.children.length > 0) ruinsGroup.remove(ruinsGroup.children[0]);
   swathCtx.clearRect(0, 0, swathCanvas.width, swathCanvas.height);
+  lastSwathX = Infinity;
+  lastSwathZ = Infinity;
   swathTexture.needsUpdate = true;
 
   // DISTINCT 4-DISTRICT LAYOUT (210 STRUCTURES OVER 460x460 TERRITORY)
@@ -1760,7 +1924,9 @@ function init3DWorld() {
 
   mediaCrewSpawns.forEach((spawn, index) => {
     const meshData = createMediaVehicleMesh(spawn.role, index + 1);
-    meshData.group.position.set(spawn.x, terrainHeightAt(spawn.x, spawn.z), spawn.z);
+    const laneOffset = index % 2 === 0 ? 3.6 : -3.6;
+    const roadSpawn = snapMediaCrewToRoad(spawn.x, spawn.z, laneOffset);
+    meshData.group.position.set(roadSpawn.x, terrainHeightAt(roadSpawn.x, roadSpawn.z), roadSpawn.z);
     meshData.group.rotation.y = Math.random() * Math.PI * 2;
     scene.add(meshData.group);
     chaserVans.push({
@@ -1768,12 +1934,18 @@ function init3DWorld() {
       meshData,
       role: spawn.role,
       callSign: spawn.callSign,
-      x: spawn.x,
-      z: spawn.z,
+      x: roadSpawn.x,
+      z: roadSpawn.z,
       speed: spawn.role === 'news' ? 18 : 25,
       orbitAngle: Math.atan2(spawn.z - storm.pos.z, spawn.x - storm.pos.x),
       orbitSpeed: (index % 2 === 0 ? 1 : -1) * (spawn.role === 'news' ? 0.08 : 0.12),
       radiusOffset: (index % 3) * 7,
+      laneOffset,
+      roadAxis: roadSpawn.roadAxis,
+      roadLine: roadSpawn.roadLine,
+      routeGoalX: roadSpawn.x,
+      routeGoalZ: roadSpawn.z,
+      routeTimer: index * 0.06,
       captureCooldown: index * 0.22,
       panicCooldown: 0,
       flashTimer: 0,

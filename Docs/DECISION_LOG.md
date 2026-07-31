@@ -237,3 +237,13 @@ Build #5 physical testing proved the damage pipeline, stage transitions, target 
 **Rejected alternatives:** Cosmetic hills that structures float through; full rigid-body terrain physics that changes the proven controls; dense imported scenery that increases APK size and mobile draw calls without improving district identity.
 
 **Revisit condition:** Add slope-aware storm mechanics only if human play shows that elevation itself should create a new decision, not merely because the terrain exists.
+
+## 2026-07-31 - Decision HTML-07: Clean the county before expanding the map
+
+**Decision:** v3.3.1 is a focused presentation and movement cleanup. Extend terrain beyond the playable boundary, keep the storm scar under roads, reduce map-like contour decoration, route media crews on the road grid, and vary commercial silhouettes without changing the proven three-minute scoring structure.
+
+**Evidence:** The first v3.3.0 phone screenshot proved the terrain concept but exposed a black world edge, a dominant opaque swath, a bright repetitive creek-bank strip, lawn-crossing media vehicles, and overly uniform building blocks. The cleanup road-routing run completed at `S+`, score `24830`, all objectives and bonuses, eight media moments, approximately `60 FPS`, and no observed console warnings or errors. A final `844x390` visual check showed no exposed void, road-bound crews, no document overflow, and a settled `61 FPS`.
+
+**Rejected alternatives:** Expanding to a larger playable map before fixing its visible boundary; adding dense imported assets; converting the road system to physics; accepting off-road crew movement because it was mechanically harmless; hiding the world edge by moving the camera back toward the storm.
+
+**Revisit condition:** Expand the playable county only when another district or campaign decision adds distinct mechanics and content, not merely more empty travel distance.

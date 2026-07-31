@@ -6,7 +6,7 @@ The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.ht
 
 ## Current gameplay baseline
 
-Version `3.3.0 High Country Edition` contains:
+Version `3.3.1 County Roads Edition` contains:
 
 - three-minute single-player warning runs
 - Pine Ridge, Main Street, and County Fair districts
@@ -15,7 +15,7 @@ Version `3.3.0 High Country Edition` contains:
 - pulled-back tactical camera and movement look-ahead
 - score, combo, EF progression, objectives, radar, and results
 - buildings, landmarks, power infrastructure, persistent ruins, and invincible airborne animals
-- distinct news vans and storm-chaser SUVs that film destruction, retreat from danger, and never act as enemies or targets
+- distinct news vans and storm-chaser SUVs that film destruction, retreat from danger, stay on the road grid, and never act as enemies or targets
 - camera flashes, live reporting chatter, captured-footage scoring, media radar markers, and an end-of-run coverage recap
 - thirteen destructible comedy props with slapstick callouts
 - one randomized bonus challenge per district
@@ -24,7 +24,8 @@ Version `3.3.0 High Country Edition` contains:
 - deterministic browser playtest mode through `?bot=true`
 - district-shaped elevation: Pine Ridge, the Main Street rise, rolling County Fair ground, and an eastern drainage creek
 - terrain-following roads, shoulders, lane markings, structures, storm effects, animals, and media crews
-- GPU-instanced road markings, low-cost ridge silhouettes, contour cues, and stormier color/lighting treatment
+- GPU-instanced road markings, low-cost ridge silhouettes, restrained contour cues, and stormier color/lighting treatment
+- an extended county terrain apron, softened under-road damage scars, layered road/creek surfaces, and varied office/warehouse silhouettes
 
 The design reference is the readable, humorous, replayable city-block destruction structure associated with classic arcade destruction games. This project must develop its own storms, districts, humor, names, art, and progression rather than copying another game's protected characters or assets.
 
@@ -53,6 +54,6 @@ Automated browser testing of v3.2.0 completed a full Tornado run at approximatel
 
 GitHub Actions compiled the v3.2.0 debug APK successfully. The APK installed on a Galaxy S26 Ultra, looked and played like the HTML build, and completed a full Tornado run with an `S+` rank, score `23621`, all objectives, both landmarks, all substations, all district bonuses, seventeen media moments, and the Neon Funnel unlock. This proves the Capacitor strategy on the primary high-end test phone; it does not represent a broad Android device matrix.
 
-The current v3.3.0 source adds the graphics and terrain pass after that Android proof. Its full automated Tornado run held approximately 60 FPS, produced an `S+` with score `23016`, completed every objective/landmark/substation/district bonus, retried cleanly, and emitted no observed console warnings or errors. It must receive a new APK/device check before being called the physically accepted Android release.
+The v3.3.0 terrain APK was compiled successfully and its live High Country HUD and terrain were observed on the Galaxy S26 Ultra. The current v3.3.1 browser pass removes exposed world edges, constrains media crews to roads, softens the damage swath, and varies commercial silhouettes. Its road-routing run held approximately 60 FPS, produced an `S+` with score `24830`, completed every objective/landmark/substation/district bonus, and emitted no observed console warnings or errors. The final visual-only tuning then passed a clean `844x390` startup/layout check at a settled `61 FPS`. v3.3.1 still requires its own APK/device check before physical acceptance.
 
 Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work.

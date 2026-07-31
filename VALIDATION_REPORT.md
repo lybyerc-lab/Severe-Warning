@@ -106,6 +106,23 @@ The automated Tornado run completed at approximately `60 FPS` with zero observed
 
 At the `844x390` landscape viewport, the final bundle reported document dimensions exactly `844x390`, loaded both local font families, kept the `95x95` joystick inside the viewport, rendered the terrain and district card, and emitted no observed console warnings or errors.
 
+## v3.3.1 county-cleanup browser checks
+
+The County Roads Edition addresses issues visible in the first physical v3.3.0 screenshot: an exposed black world edge, an overly solid damage trail, prominent contour rings, a bright repetitive creek-bank strip, identical dark commercial towers, and media vehicles crossing open lots.
+
+Confirmed during the automated road-routing run:
+
+- an `1800 x 1800` terrain apron filled the camera background without changing the `800 x 800` playable boundary
+- road, shoulder, creek, and damage layers rendered in a stable visual order
+- the damage scar remained beneath asphalt and bridges
+- all nine media vehicles spawned on roads and routed through grid intersections
+- road-bound crews still captured eight media moments and awarded `+1504` footage
+- the run completed at `S+`, score `24830`, objectives `3/3`, landmarks `2/2`, substations `3/3`, and district bonuses `3/3`
+- observed frame rate remained approximately `60 FPS`
+- observed console warnings or errors: `0`
+
+The final visual-only tune narrowed and softened damage stamps and varied commercial building dimensions, colors, roof caps, and antennas. A fresh `844x390` check of that exact source reported document dimensions `844x390`, no horizontal or vertical overflow, the `95x95` joystick fully inside the viewport, a settled `61 FPS`, and no observed console warnings or errors. A visual capture showed the county apron covering the former void and multiple news/chaser vehicles positioned on asphalt.
+
 ## Repository integrity
 
 Validation commands use the bundled Python runtime when `python` is not available on `PATH`:
@@ -132,7 +149,7 @@ Older Unity and Godot work remains in the repository as reference material. The 
 
 ## Gates still open
 
-- build and install a synchronized v3.3.0 APK
+- build and install a synchronized v3.3.1 APK
 - verify real multi-touch, browser back, pause/resume, and orientation behavior after the terrain change
 - run repeated five-minute rounds while recording frame pacing, heat, and battery behavior
 - verify audio focus and interruption recovery
@@ -143,4 +160,4 @@ Older Unity and Godot work remains in the repository as reference material. The 
 - replace the generated Capacitor launcher icon and splash art before public release
 - establish the release-signing workflow; never commit the signing key or passwords
 
-Browser acceptance, GitHub Actions compilation, and the successful Galaxy S26 Ultra run prove that the HTML game can ship through the local Capacitor wrapper without an engine rewrite. Physical evidence for v3.3.0 and a broader performance sample remain authoritative before a public mobile release claim.
+Browser acceptance, GitHub Actions compilation, and the successful Galaxy S26 Ultra run prove that the HTML game can ship through the local Capacitor wrapper without an engine rewrite. Physical evidence for v3.3.1 and a broader performance sample remain authoritative before a public mobile release claim.
