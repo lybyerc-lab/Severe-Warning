@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Severe Weather 3D Lab v2.7.0 - Delta-Time & District Engine</title>
+<title>Severe Weather 3D Lab v2.7.1 - Delta-Time & District Engine</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -143,7 +143,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.7.0 DELTA-TIME</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.7.1 STABLE</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -610,20 +610,26 @@ const storm = {
   radius: 16
 };
 
-// Ground Damage Swath Canvas
+// Ground Damage Swath Canvas & TRANSPARENT OVERLAY PLANE (FIXES STARTUP REFERENCE ERROR)
 const swathCanvas = document.createElement('canvas');
 swathCanvas.width = 1024; swathCanvas.height = 1024;
 const swathCtx = swathCanvas.getContext('2d');
-swathCtx.fillStyle = '#162e16'; swathCtx.fillRect(0, 0, 1024, 1024);
+swathCtx.fillStyle = 'rgba(0,0,0,0)'; swathCtx.fillRect(0, 0, 1024, 1024);
 
 const swathTexture = new THREE.CanvasTexture(swathCanvas);
-ground.material.map = swathTexture;
-ground.material.needsUpdate = true;
+
+const swathOverlayGeo = new THREE.PlaneGeometry(800, 800);
+const swathOverlayMat = new THREE.MeshStandardMaterial({ map: swathTexture, transparent: true, opacity: 0.85, roughness: 0.8 });
+const swathOverlay = new THREE.Mesh(swathOverlayGeo, swathOverlayMat);
+swathOverlay.rotation.x = -Math.PI / 2;
+swathOverlay.position.set(0, 0.02, 0);
+swathOverlay.receiveShadow = true;
+scene.add(swathOverlay);
 
 function markGroundSwath(x, z, r) {
   const cx = 512 + (x / 450) * 512;
   const cy = 512 + (z / 450) * 512;
-  swathCtx.fillStyle = 'rgba(20, 14, 8, 0.3)';
+  swathCtx.fillStyle = 'rgba(20, 14, 8, 0.35)';
   swathCtx.beginPath();
   swathCtx.arc(cx, cy, (r / 450) * 512 * 1.25, 0, Math.PI * 2);
   swathCtx.fill();
