@@ -217,7 +217,7 @@
 <div id="mainMenu">
   <div class="menu-card">
     <h1 class="menu-title">🌪️ SEVERE WEATHER 3D</h1>
-    <div class="menu-sub">ARCADE DISASTER SIMULATOR v4.2.0</div>
+    <div class="menu-sub">ARCADE DISASTER SIMULATOR v4.3.0 RAMPAGE LAYER</div>
     
     <div class="storm-select-grid">
       <div class="storm-card selected" id="menuCardTornado" onclick="selectMenuStorm('tornado')">
@@ -700,36 +700,27 @@ function toggleNeonCosmetic() {
 }
 
 function setupMenuEventListeners() {
-  const attachTouchClick = (id, fn) => {
-    const el = getCachedEl(id);
-    if (!el) return;
-    let lastCall = 0;
-    const trigger = (e) => {
-      const now = performance.now();
-      if (now - lastCall < 300) return; // 300ms debounce
-      lastCall = now;
-      if (e && (e.type === 'touchstart' || e.type === 'pointerdown')) {
-        if (e.cancelable) e.preventDefault();
-      }
-      fn();
-    };
-    ['pointerdown', 'touchstart', 'click'].forEach(evt => {
-      el.addEventListener(evt, trigger, { passive: false });
-    });
+  const bindClick = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.onclick = (e) => {
+        fn();
+      };
+    }
   };
 
-  attachTouchClick('menuCardTornado', () => selectMenuStorm('tornado'));
-  attachTouchClick('menuCardSupercell', () => selectMenuStorm('supercell'));
-  attachTouchClick('menuCardDerecho', () => selectMenuStorm('derecho'));
-  attachTouchClick('btnToggleNeonMenu', toggleNeonCosmetic);
-  attachTouchClick('btnToggleAudioMenu', toggleAudioMute);
-  attachTouchClick('btnStartMenu', startRunFromMenu);
+  bindClick('menuCardTornado', () => selectMenuStorm('tornado'));
+  bindClick('menuCardSupercell', () => selectMenuStorm('supercell'));
+  bindClick('menuCardDerecho', () => selectMenuStorm('derecho'));
+  bindClick('btnToggleNeonMenu', toggleNeonCosmetic);
+  bindClick('btnToggleAudioMenu', toggleAudioMute);
+  bindClick('btnStartMenu', startRunFromMenu);
 }
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', setupMenuEventListeners);
 } else {
-  setTimeout(setupMenuEventListeners, 50);
+  setupMenuEventListeners();
 }
 
 if (isBotMode) {
