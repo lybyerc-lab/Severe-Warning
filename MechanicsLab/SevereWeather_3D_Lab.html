@@ -1020,44 +1020,106 @@ function markGroundSwath(x, z, r) {
   swathTexture.needsUpdate = true;
 }
 
-// 3D Storm Visual Meshes
+// 3D Storm Visual Meshes - REALISTIC DYNAMIC TORNADO FUNNEL CLOUD SYSTEM
 const tornadoGroup = new THREE.Group();
 scene.add(tornadoGroup);
 
-const funnelGeo = new THREE.ConeGeometry(16, 34, 32, 24, true);
-const funnelMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.50, roughness: 0.15, side: THREE.DoubleSide });
+// Overhead Mesocyclone Storm Cloud Canopy Base
+const mesoCloudGroup = new THREE.Group();
+mesoCloudGroup.position.y = 34;
+const mesoCloudMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.75, roughness: 0.3 });
+for (let i = 0; i < 6; i++) {
+  const angle = (i / 6) * Math.PI * 2;
+  const rad = 14 + Math.random() * 6;
+  const cloudLobeGeo = new THREE.CylinderGeometry(rad, rad * 0.8, 8, 16);
+  const cloudLobe = new THREE.Mesh(cloudLobeGeo, mesoCloudMat);
+  cloudLobe.position.set(Math.cos(angle) * 10, 0, Math.sin(angle) * 10);
+  mesoCloudGroup.add(cloudLobe);
+}
+tornadoGroup.add(mesoCloudGroup);
+
+// Multi-Segmented Inner Heavy Condensation Funnel Core (Top radius 22, Bottom radius 2.2, Height 34, 16 Height Segments)
+const funnelGeo = new THREE.CylinderGeometry(22, 2.2, 34, 32, 16, true);
+const funnelMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.82, roughness: 0.15, side: THREE.DoubleSide });
 const funnelMesh = new THREE.Mesh(funnelGeo, funnelMat);
-funnelMesh.rotation.x = Math.PI; funnelMesh.position.y = 17;
+funnelMesh.position.y = 17;
 tornadoGroup.add(funnelMesh);
 
-const outerFunnelGeo = new THREE.ConeGeometry(24, 36, 20, 16, true);
-const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.18, side: THREE.DoubleSide });
+// Store original vertex position buffer for dynamic serpentine wave deformation
+const funnelPosAttr = funnelGeo.attributes.position;
+const baseFunnelPos = new Float32Array(funnelPosAttr.array);
+
+// Multi-Segmented Outer Vapor & Dust Condensation Sheath
+const outerFunnelGeo = new THREE.CylinderGeometry(28, 4.5, 36, 24, 16, true);
+const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.38, side: THREE.DoubleSide });
 const outerFunnelMesh = new THREE.Mesh(outerFunnelGeo, outerFunnelMat);
-outerFunnelMesh.rotation.x = Math.PI; outerFunnelMesh.position.y = 18;
+outerFunnelMesh.position.y = 18;
 tornadoGroup.add(outerFunnelMesh);
 
-const particleCount = 650;
+const outerPosAttr = outerFunnelGeo.attributes.position;
+const baseOuterPos = new Float32Array(outerPosAttr.array);
+
+// Ground Touchdown Churning Dust & Debris Cloud Bowl
+const dustBowlGroup = new THREE.Group();
+dustBowlGroup.position.y = 1.5;
+const dustPuffs = [];
+const dustMat = new THREE.MeshStandardMaterial({ color: '#1e293b', transparent: true, opacity: 0.55, roughness: 0.9 });
+for (let i = 0; i < 8; i++) {
+  const pSize = 3.5 + Math.random() * 3.5;
+  const pGeo = new THREE.DodecahedronGeometry(pSize, 1);
+  const pMesh = new THREE.Mesh(pGeo, dustMat);
+  const pAngle = (i / 8) * Math.PI * 2;
+  const pDist = 4.0 + Math.random() * 4.0;
+  pMesh.position.set(Math.cos(pAngle) * pDist, (Math.random() - 0.5) * 1.5, Math.sin(pAngle) * pDist);
+  dustBowlGroup.add(pMesh);
+  dustPuffs.push({ mesh: pMesh, angle: pAngle, dist: pDist, rotSpeed: 0.04 + Math.random() * 0.05, baseSize: pSize });
+}
+tornadoGroup.add(dustBowlGroup);
+
+// Upward Helical Swirling Debris & Dirt Particle System (1,000 Particles)
+const particleCount = 1000;
 const particleGeo = new THREE.BufferGeometry();
 const particlePos = new Float32Array(particleCount * 3);
+const particleColors = new Float32Array(particleCount * 3);
+const particleMeta = []; // Stores angle, height, speed, radius
+
+const colorPalette = [
+  new THREE.Color('#fbbf24'), // Gold Spark
+  new THREE.Color('#78350f'), // Dirt Brown
+  new THREE.Color('#334155'), // Dark Slate Debris
+  new THREE.Color('#f87171'), // Red Fragment
+  new THREE.Color('#94a3b8')  // Concrete Dust
+];
+
 for (let i = 0; i < particleCount; i++) {
   const angle = Math.random() * Math.PI * 2;
   const h = Math.random() * 34;
-  const r = (h / 34) * 15 + 2.2;
+  const r = (h / 34) * 18 + 2.5;
+  const speed = 0.05 + Math.random() * 0.08;
+  const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+
   particlePos[i * 3] = Math.cos(angle) * r;
   particlePos[i * 3 + 1] = h;
   particlePos[i * 3 + 2] = Math.sin(angle) * r;
+
+  particleColors[i * 3] = color.r;
+  particleColors[i * 3 + 1] = color.g;
+  particleColors[i * 3 + 2] = color.b;
+
+  particleMeta.push({ angle, h, r, speed });
 }
+
 particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
-const particleMat = new THREE.PointsMaterial({ color: '#fbbf24', size: 1.0 });
+particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+
+const particleMat = new THREE.PointsMaterial({ size: 1.2, vertexColors: true, transparent: true, opacity: 0.85 });
 const particleSystem = new THREE.Points(particleGeo, particleMat);
 tornadoGroup.add(particleSystem);
 
 function applyUnlockedCosmetic() {
   if (neonFunnelUnlocked) {
-    particleMat.color.set('#f472b6');
     outerFunnelMat.color.set('#22d3ee');
   } else {
-    particleMat.color.set('#fbbf24');
     outerFunnelMat.color.set('#334155');
   }
 }
@@ -2733,8 +2795,70 @@ function animate(now) {
   supercellGroup.position.copy(storm.pos);
   derechoGroup.position.copy(storm.pos);
 
-  funnelMesh.rotation.y += 0.25;
-  outerFunnelMesh.rotation.y -= 0.12;
+  // DYNAMIC ORGANIC TORNADO SERPENTINE TWISTING & DUST BOWL ANIMATION
+  const tTime = now * 0.0035;
+  
+  // 1. Serpentine Wave Deformation for Inner Funnel Mesh
+  const fPositions = funnelMesh.geometry.attributes.position;
+  for (let i = 0; i < fPositions.count; i++) {
+    const vy = baseFunnelPos[i * 3 + 1];
+    const factor = (vy / 34.0); // 0 at ground, 1 at cloud top
+    const waveX = Math.sin(tTime * 4 + vy * 0.22) * (factor * 3.8);
+    const waveZ = Math.cos(tTime * 3.2 + vy * 0.22) * (factor * 3.8);
+    fPositions.setX(i, baseFunnelPos[i * 3] + waveX);
+    fPositions.setZ(i, baseFunnelPos[i * 3 + 2] + waveZ);
+  }
+  fPositions.needsUpdate = true;
+
+  // 2. Serpentine Wave Deformation for Outer Condensation Sheath
+  const oPositions = outerFunnelMesh.geometry.attributes.position;
+  for (let i = 0; i < oPositions.count; i++) {
+    const vy = baseOuterPos[i * 3 + 1];
+    const factor = (vy / 36.0);
+    const waveX = Math.sin(tTime * 3.5 - vy * 0.18) * (factor * 4.4);
+    const waveZ = Math.cos(tTime * 2.8 - vy * 0.18) * (factor * 4.4);
+    oPositions.setX(i, baseOuterPos[i * 3] + waveX);
+    oPositions.setZ(i, baseOuterPos[i * 3 + 2] + waveZ);
+  }
+  oPositions.needsUpdate = true;
+
+  // 3. Mesocyclone Canopy Base Rotation
+  mesoCloudGroup.rotation.y += 0.04;
+
+  // 4. Ground Touchdown Dust Bowl Churning
+  dustPuffs.forEach(p => {
+    p.angle += p.rotSpeed;
+    p.mesh.position.x = Math.cos(p.angle) * p.dist;
+    p.mesh.position.z = Math.sin(p.angle) * p.dist;
+    p.mesh.rotation.y += 0.08;
+    const pulseScale = 1.0 + Math.sin(tTime * 6 + p.angle) * 0.2;
+    p.mesh.scale.set(pulseScale, pulseScale, pulseScale);
+  });
+
+  // 5. Upward Helical Swirling Particle Helices
+  const pPositions = particleSystem.geometry.attributes.position;
+  for (let i = 0; i < particleCount; i++) {
+    const meta = particleMeta[i];
+    meta.h += meta.speed * 40 * dt;
+    if (meta.h > 34) meta.h = 0;
+    meta.angle += 0.08;
+
+    const factor = (meta.h / 34.0);
+    const orbitR = factor * 18 + 2.5;
+    const waveX = Math.sin(tTime * 4 + meta.h * 0.22) * (factor * 3.8);
+    const waveZ = Math.cos(tTime * 3.2 + meta.h * 0.22) * (factor * 3.8);
+
+    pPositions.setXYZ(
+      i,
+      Math.cos(meta.angle) * orbitR + waveX,
+      meta.h,
+      Math.sin(meta.angle) * orbitR + waveZ
+    );
+  }
+  pPositions.needsUpdate = true;
+
+  funnelMesh.rotation.y += 0.15;
+  outerFunnelMesh.rotation.y -= 0.10;
   cloudCanopyMesh.rotation.y += 0.06;
 
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
