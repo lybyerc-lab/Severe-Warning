@@ -22,3 +22,13 @@ Recordings/
 *.unitypackage
 .DS_Store
 Assets/__GeneratedBuild/
+
+# Capacitor / Node workspace
+node_modules/
+.pnpm-store/
+www/
+npm-debug.log*
+pnpm-debug.log*
+android/.gradle/
+android/local.properties
+android/**/build/

@@ -207,3 +207,13 @@ Build #5 physical testing proved the damage pipeline, stage transitions, target 
 **Rejected alternatives:** Military opposition, weapons fired at the storm, scoring crew destruction, helpless civilian vehicles, or constant broadcast notifications.
 
 **Revisit condition:** Add drones, named reporters, or district-specific broadcast arcs only after human mobile play confirms the nine-crew scene remains readable and the current cadence remains funny rather than repetitive.
+
+## 2026-07-31 - Decision HTML-04: Use a local Capacitor wrapper and respect the managed-PC boundary
+
+**Decision:** Package the exact v3.2.0 HTML game with Capacitor 8.5.0, local fonts, landscape orientation, immersive fullscreen, no cleartext traffic, and no production remote navigation. Keep the generated Android project in the repository. Do not bypass company controls to install Android Studio, the Android SDK, or a JDK on the current work PC.
+
+**Evidence:** The deterministic web build and Capacitor sync completed. The source HTML, generated `www/index.html`, and Android asset copy had identical SHA-256 hashes. The offline bundle rendered correctly at `844x390` with local fonts loaded and no document overflow. Native Gradle compilation cannot be honestly verified here because the required Android toolchain is unavailable and installation is not permitted.
+
+**Rejected alternatives:** Rebuilding the game in another engine before measuring the wrapper; using a paid cloud-build subscription; loading game code or fonts from the network; working around managed-PC permissions.
+
+**Revisit condition:** Reopen the wrapper decision only after a permitted physical-device build demonstrates a specific WebView, performance, input, thermal, audio, or lifecycle requirement that cannot be corrected in the web runtime.

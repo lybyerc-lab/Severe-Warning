@@ -6,8 +6,8 @@ The HTML/WebGL build is the active gameplay source and the planned foundation fo
 
 - `SevereWeather_3D_Lab.html`
 - Version: `3.2.0 Live Coverage Edition`
-- Runtime: self-contained Three.js/WebGL game
-- Primary target: Android landscape through a local web-app wrapper
+- Runtime: self-contained Three.js/WebGL game with locally bundled fonts
+- Primary target: Android landscape through the Capacitor project in `../android/`
 - Mode: single-player only
 
 Version 3.2.0 contains a three-district arcade run:
@@ -31,7 +31,7 @@ The v3.2 coverage system replaces enemy-looking red vehicle boxes with four sate
 
 ## Verification
 
-Use `?bot=true` to run the deterministic automated playtest route. Automated browser testing validates startup, stage progression, scoring, objectives, unlocks, replay reset, responsive layout, and console stability. Physical Android testing remains required for touch comfort, thermals, sustained frame pacing, sound, and WebView compatibility.
+Use `?bot=true` to run the deterministic automated playtest route. `node scripts/build-web.mjs` copies this canonical source to the generated `www/index.html`, verifies its content-security policy and offline-resource boundary, and bundles local fonts. Automated browser testing validates startup, stage progression, scoring, objectives, unlocks, replay reset, responsive layout, and console stability. Physical Android testing remains required for touch comfort, thermals, sustained frame pacing, sound, and WebView compatibility.
 
 ## Preserved builds
 

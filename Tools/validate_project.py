@@ -1,10 +1,22 @@
 from pathlib import Path
 import json
 import re
+import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[1]
 errors = []
+
+git_files = subprocess.run(
+    ['git', 'ls-files', '--cached', '--others', '--exclude-standard'],
+    cwd=root,
+    capture_output=True,
+    check=True,
+    text=True,
+    encoding='utf-8',
+)
+project_rel_paths = sorted(line for line in git_files.stdout.splitlines() if line)
+project_files = [root / rel for rel in project_rel_paths]
 
 required = [
     'Packages/manifest.json',
@@ -67,9 +79,7 @@ for path in sorted(root.rglob('*.cs')):
 
 text_suffixes = {'.md', '.txt', '.cs', '.py', '.json', '.shader', '.gitignore', '.gitattributes'}
 jwt_pattern = re.compile(r'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}')
-for path in sorted(root.rglob('*')):
-    if not path.is_file() or '.git' in path.parts:
-        continue
+for path in project_files:
     if path.suffix.lower() not in text_suffixes and path.name not in {'.gitignore', '.gitattributes'}:
         continue
     try:
@@ -82,12 +92,7 @@ for path in sorted(root.rglob('*')):
 inventory_path = root / 'FILE_INVENTORY.txt'
 if inventory_path.exists():
     listed = [line.strip() for line in inventory_path.read_text(encoding='utf-8').splitlines() if line.strip()]
-    actual = sorted(
-        str(path.relative_to(root)).replace('\\', '/')
-        for path in root.rglob('*')
-        if path.is_file() and '.git' not in path.parts
-    )
-    if listed != actual:
+    if listed != project_rel_paths:
         errors.append('FILE_INVENTORY.txt does not match the tracked project file set')
 
 if errors:
@@ -99,8 +104,5 @@ if errors:
 print('VALIDATION PASSED')
 print('C# files:', len(list(root.rglob('*.cs'))))
 print('Docs:', len(list((root / 'Docs').glob('*.md'))))
-print('Project files:', len([
-    path for path in root.rglob('*')
-    if path.is_file() and '.git' not in path.parts
-]))
+print('Project files:', len(project_files))
 print('Mechanics lab:', (root / 'MechanicsLab/SevereWeather_MechanicsLab_v0.7.1.html').stat().st_size, 'bytes')

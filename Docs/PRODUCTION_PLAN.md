@@ -15,10 +15,11 @@
 
 ## Phase 2 - Android wrapper proof
 
-- create a minimal Capacitor Android shell
-- bundle the HTML, JavaScript, fonts, and future media locally
-- lock landscape orientation and immersive fullscreen behavior
-- build a debug APK without paid cloud-build services
+- [x] create a minimal Capacitor 8 Android shell
+- [x] bundle the HTML, JavaScript, and fonts locally
+- [x] lock sensor-landscape orientation and immersive fullscreen behavior
+- [x] add safe pause/resume timing and local-only web security settings
+- [ ] build a debug APK without paid cloud-build services on a permitted Android build machine
 
 ## Phase 3 - Physical-device acceptance
 
@@ -28,6 +29,8 @@
 - verify localStorage cosmetic persistence across close/reopen
 - record sustained FPS, heat, battery use, and WebGL context behavior
 - test at least one complete three-minute run and one retry
+
+The current work PC cannot install the Android Studio/SDK/JDK toolchain under company policy. Phase 2 native compilation and all Phase 3 checks must occur on a permitted personal or managed build machine; the repository handoff is in `Docs/ANDROID_PACKAGING.md`.
 
 ## Phase 4 - One-town content proof
 

@@ -22,7 +22,7 @@ Important decisions and test evidence must be committed to the repository. Chat 
 
 ## Active implementation decision
 
-The enjoyable HTML/WebGL game is the production gameplay source. The immediate Android strategy is to package its local assets in a native web wrapper instead of recreating the game in another 3D engine.
+The enjoyable HTML/WebGL game is the production gameplay source. Capacitor 8.5.0 now packages its local assets in a native Android wrapper instead of recreating the game in another 3D engine.
 
 Unity and Godot source remain preserved as historical experiments and implementation references. They are not the active gameplay path. Reopen an engine port only if measured physical-device evidence proves that the wrapped HTML build cannot meet an explicit requirement.
 
@@ -84,9 +84,11 @@ Responsive validation at `844x390` confirmed that the `95x95` joystick, three `5
 
 ## Evidence boundary
 
+The Android wrapper has been created and synchronized with an offline web bundle. The packaged HTML passed a separate Chromium check at `844x390`: local Inter and Outfit fonts loaded, the document had no horizontal or vertical overflow, and the HUD/game view rendered correctly.
+
 The v3.2.0 build has not yet been:
 
-- packaged as an Android APK or AAB
+- compiled as an Android APK or AAB
 - run inside Android System WebView
 - tested with physical touchscreen input
 - checked for sustained device heat, battery use, audio behavior, pause/resume, or WebGL context recovery
@@ -96,10 +98,10 @@ Do not describe Android packaging or physical-device acceptance as complete unti
 
 ## Immediate next action
 
-1. Freeze v3.2.0 gameplay after human browser acceptance of crew readability and coverage cadence.
-2. Create a small Capacitor Android shell with all game assets bundled locally.
-3. Remove or locally bundle external font dependencies for offline play.
-4. Build a debug APK locally.
-5. Install it on the target Android phone.
-6. Record touch comfort, frame pacing, heat, battery, audio, pause/resume, save persistence, and orientation results.
-7. Optimize only measured device problems before expanding the campaign.
+1. Move or clone this repository to a permitted machine with Node 22+, Android Studio, Android SDK 36, and a compatible JDK.
+2. Run the documented dependency, bundle, sync, and Gradle commands in `Docs/ANDROID_PACKAGING.md`.
+3. Install the debug APK on the target Android phone.
+4. Record touch comfort, frame pacing, heat, battery, audio, pause/resume, save persistence, orientation, and browser-back results.
+5. Optimize only measured device problems before expanding the campaign.
+
+This work PC is intentionally not being modified around company software restrictions.

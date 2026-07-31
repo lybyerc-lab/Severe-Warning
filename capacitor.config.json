@@ -1,0 +1,18 @@
+{
+  "appId": "com.lybyerclab.severeweather",
+  "appName": "Severe Weather",
+  "webDir": "www",
+  "loggingBehavior": "debug",
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false,
+    "zoomEnabled": false,
+    "useLegacyBridge": false
+  },
+  "server": {
+    "hostname": "localhost",
+    "androidScheme": "https",
+    "cleartext": false,
+    "allowNavigation": []
+  }
+}

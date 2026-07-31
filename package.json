@@ -1,0 +1,22 @@
+{
+  "name": "severe-weather-mobile",
+  "version": "3.2.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "build": "node scripts/build-web.mjs",
+    "cap:sync": "npm run build && node node_modules/@capacitor/cli/bin/capacitor sync android",
+    "android:debug": "npm run cap:sync && cd android && gradlew.bat assembleDebug",
+    "android:open": "node node_modules/@capacitor/cli/bin/capacitor open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.0",
+    "@capacitor/core": "8.5.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.0",
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/outfit": "5.3.0"
+  }
+}

@@ -60,6 +60,22 @@ Confirmed:
 
 This is a responsive-browser check, not proof of touch feel, thermal stability, battery use, or Android WebView behavior.
 
+## Android wrapper checks
+
+Capacitor `8.5.0` created and synchronized the native Android project. The wrapper is configured for Android API 24 or newer, hardware-accelerated WebGL, sensor-landscape orientation, immersive fullscreen, local HTTPS-scheme assets, no cleartext traffic, and no remote navigation allowlist.
+
+The deterministic bundle builder:
+
+- rejected external HTTP script and stylesheet resources
+- required a content-security-policy declaration
+- copied local Inter and Outfit WOFF2 fonts
+- produced the same HTML bytes in the source, `www`, and synchronized Android asset directories
+- produced SHA-256 `121d944f46980528830f736204ea249ca9ffde526adf1b95aaa58010f1f1bb2d`
+
+The synchronized offline bundle was opened separately in Chromium at `844x390`. Local fonts reported loaded, the document had zero horizontal and vertical overflow, both WebGL and radar canvases were present, and the gameplay/HUD rendered without an observed layout failure.
+
+Native Gradle compilation was not run. The managed work PC has no permitted Android Studio, Android SDK, JDK, `adb`, or `sdkmanager` installation. This is an environment gate, not a passed build.
+
 ## Repository integrity
 
 Validation commands use the bundled Python runtime when `python` is not available on `PATH`:
@@ -74,8 +90,8 @@ Final pre-commit results:
 
 - `Tools/validate_project.py`: passed
 - C# files: `34`
-- Markdown documents in `Docs/`: `19`
-- project files outside `.git`: `76`
+- Markdown documents in `Docs/`: `20`
+- tracked and intended project files: `135`
 - `FILE_INVENTORY.txt`: synchronized
 - SHA-256 registry: verified with zero mismatches
 - `git diff --check`: passed
@@ -93,6 +109,8 @@ Older Unity and Godot work remains in the repository as reference material. The 
 - test cosmetic persistence after fully closing and reopening the Android app
 - confirm human players can distinguish news vans from storm-chaser SUVs without relying on radar colors
 - confirm eight to twelve coverage moments per round feels lively rather than repetitive
-- add an offline Android wrapper and release-signing workflow
+- compile the existing Android wrapper on a permitted build machine
+- replace the generated Capacitor launcher icon and splash art before public release
+- establish the release-signing workflow; never commit the signing key or passwords
 
-Browser acceptance proves that this vertical slice is playable and internally consistent. Physical Android evidence remains authoritative for whether it is ready to ship as a mobile game.
+Browser acceptance and wrapper synchronization prove that this vertical slice is playable and packageable as local web assets. Physical Android evidence remains authoritative for whether it is ready to ship as a mobile game.

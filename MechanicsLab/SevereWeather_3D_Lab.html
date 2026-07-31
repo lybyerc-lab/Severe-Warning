@@ -6,10 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';">
 <title>Severe Weather 3D Lab v3.2.0 - Live Coverage Edition</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
 <script>
 /* INLINED THREE.JS R128 */
 /**
@@ -22,6 +20,13 @@
 </script>
 
 <style>
+  @font-face { font-family: Inter; src: url('./fonts/inter-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: Inter; src: url('./fonts/inter-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+  @font-face { font-family: Inter; src: url('./fonts/inter-latin-800-normal.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
+  @font-face { font-family: Inter; src: url('./fonts/inter-latin-900-normal.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+  @font-face { font-family: Outfit; src: url('./fonts/outfit-latin-700-normal.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+  @font-face { font-family: Outfit; src: url('./fonts/outfit-latin-900-normal.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+
   :root {
     --bg-dark: #030712;
     --panel-bg: rgba(15, 23, 42, 0.92);
@@ -31,6 +36,10 @@
     --cyan: #38bdf8;
     --green: #4ade80;
     --purple: #c084fc;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: var(--bg-dark); font-family: Inter, system-ui, sans-serif; color: white; }
@@ -40,14 +49,14 @@
   #easBanner {
     position: absolute; top: 0; left: 0; right: 0;
     background: linear-gradient(90deg, #991b1b, #dc2626, #991b1b); color: white; font-weight: 900; font-size: 13px;
-    padding: 8px 16px; display: flex; align-items: center; justify-content: space-between;
+    padding: calc(8px + var(--safe-top)) calc(16px + var(--safe-right)) 8px calc(16px + var(--safe-left)); display: flex; align-items: center; justify-content: space-between;
     letter-spacing: 0.08em; z-index: 1000; box-shadow: 0 4px 22px rgba(153, 27, 27, 0.85);
     font-family: Outfit, sans-serif;
   }
   .eas-ticker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 900; }
 
   /* Glassmorphism HUD Overlay */
-  #hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 52px 16px 16px 16px; z-index: 100; }
+  #hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: calc(52px + var(--safe-top)) calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left)); z-index: 100; }
   
   .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .panel { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 14px; backdrop-filter: blur(18px); padding: 12px 16px; pointer-events: auto; box-shadow: 0 10px 32px rgba(0,0,0,0.75); transition: all 0.3s ease; }
@@ -100,7 +109,7 @@
   .cd-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.75); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: var(--gold); opacity: 0; pointer-events: none; }
 
   /* Mobile On-Screen Joystick Overlay */
-  #joystickZone { position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; border-radius: 50%; border: 2px rgba(255,255,255,0.2) solid; background: rgba(0,0,0,0.25); pointer-events: auto; display: flex; align-items: center; justify-content: center; z-index: 150; }
+  #joystickZone { position: absolute; bottom: calc(20px + var(--safe-bottom)); left: calc(20px + var(--safe-left)); width: 120px; height: 120px; border-radius: 50%; border: 2px rgba(255,255,255,0.2) solid; background: rgba(0,0,0,0.25); pointer-events: auto; display: flex; align-items: center; justify-content: center; z-index: 150; }
   #joystickThumb { width: 44px; height: 44px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 16px var(--gold); transform: translate(0, 0); }
 
   /* End-of-Run Results Overlay Screen */
@@ -129,8 +138,8 @@
 
   /* RESPONSIVE MOBILE LAYOUT OVERRIDES */
   @media (max-height: 540px), (max-width: 850px) {
-    #hud { padding: 36px 10px 8px 10px; }
-    #easBanner { font-size: 10px; padding: 4px 10px; }
+    #hud { padding: calc(36px + var(--safe-top)) calc(10px + var(--safe-right)) calc(8px + var(--safe-bottom)) calc(10px + var(--safe-left)); }
+    #easBanner { font-size: 10px; padding: calc(4px + var(--safe-top)) calc(10px + var(--safe-right)) 4px calc(10px + var(--safe-left)); }
     .panel { padding: 6px 10px; border-radius: 10px; }
     
     .title-card h1 { font-size: 13px; }
@@ -152,7 +161,7 @@
     .touch-controls { gap: 6px; }
     .action-btn { width: 50px; height: 50px; font-size: 9px; }
     
-    #joystickZone { bottom: 10px; left: 10px; width: 95px; height: 95px; }
+    #joystickZone { bottom: calc(10px + var(--safe-bottom)); left: calc(10px + var(--safe-left)); width: 95px; height: 95px; }
     #joystickThumb { width: 36px; height: 36px; }
     
     .results-card { width: min(340px, calc(100vw - 20px)); max-height: calc(100vh - 12px); overflow-y: auto; padding: 10px 16px; }
@@ -780,6 +789,7 @@ let stage3Score = 0;
 // 3-Minute Run Timer (180s Real Wall-Clock Seconds)
 let runTimeRemaining = 180;
 let runActive = true;
+let runSuspendedByVisibility = false;
 
 // Rebalanced Combo System (3.5x Max, +0.05 per hit)
 let comboMultiplier = 1.0;
@@ -2041,6 +2051,24 @@ let lastFrameTime = performance.now();
 let fpsTimer = performance.now();
 let frameCount = 0;
 let fps = 60;
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (runActive) {
+      runActive = false;
+      runSuspendedByVisibility = true;
+    }
+    if (audioCtx && audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
+  } else {
+    lastFrameTime = performance.now();
+    if (runSuspendedByVisibility) {
+      runActive = true;
+      runSuspendedByVisibility = false;
+      showGagToast('WARNING RUN RESUMED. THE CAMERAS NEVER LEFT.');
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  }
+});
 
 function animate(now) {
   frameCount++;

@@ -2,7 +2,7 @@
 
 Severe Weather is a mobile-first, single-player arcade destruction game. The player directly controls a tornado, supercell, or derecho across stylized town and city districts.
 
-The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.html`. The planned Android path is to package this game in a local native web wrapper while preserving offline play and the existing browser feel.
+The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.html`. A Capacitor 8 Android wrapper now packages that exact game and its fonts locally while preserving offline play and the existing browser feel.
 
 ## Current gameplay baseline
 
@@ -37,6 +37,8 @@ The design reference is the readable, humorous, replayable city-block destructio
 ## Repository layout
 
 - `MechanicsLab/`: active HTML game and preserved browser experiments
+- `android/`: generated Capacitor Android Studio project
+- `scripts/build-web.mjs`: deterministic offline web-bundle builder
 - `Docs/`: product direction, decisions, validation history, and historical checkpoints
 - `Godot/`: preserved migration experiment
 - `Assets/`, `Packages/`, `ProjectSettings/`: preserved Unity implementation history
@@ -44,6 +46,8 @@ The design reference is the readable, humorous, replayable city-block destructio
 
 ## Current evidence
 
-Automated browser testing of v3.2.0 completed a full Tornado run at approximately 60 FPS with all three district challenges, both landmarks, all three sequential substations, eight captured media moments, a `+1289` footage bonus, and a successful mobile retry. The results card and controls fit an `844x390` mobile-landscape viewport. This is not a substitute for physical Android acceptance.
+Automated browser testing of v3.2.0 completed a full Tornado run at approximately 60 FPS with all three district challenges, both landmarks, all three sequential substations, eight captured media moments, a `+1289` footage bonus, and a successful mobile retry. The offline bundle also passed a separate `844x390` mobile-landscape layout check with local fonts loaded and no document overflow.
+
+The Android project is scaffolded and synchronized, but this work PC cannot install Android Studio, the Android SDK, or a JDK under company policy. No APK has been compiled here, so physical Android acceptance remains open. See `Docs/ANDROID_PACKAGING.md` for the exact handoff.
 
 Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work.
