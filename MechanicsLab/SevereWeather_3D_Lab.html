@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Severe Weather 3D Lab v2.7.1 - Delta-Time & District Engine</title>
+<title>Severe Weather 3D Lab v2.8.0 - Stage-Based Escalation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -142,8 +142,8 @@
 
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
-  <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.7.1 STABLE</div>
+  <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: STAGE 1 NEIGHBORHOOD TOUCHDOWN IN LINCOLN COUNTY</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.8.0 ESCALATION</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -151,7 +151,7 @@
   <div class="header">
     <div class="panel title-card">
       <h1><span id="stormIconHead">🌪️</span> SEVERE WEATHER 3D <span class="ef-badge" id="efBadge">EF-0</span></h1>
-      <p id="stormDesc">TORNADO RUN ACTIVE - 03:00 REMAINING</p>
+      <p id="stormDesc">STAGE 1: NEIGHBORHOOD TOUCHDOWN - 03:00 REMAINING</p>
       
       <div class="storm-tabs">
         <button class="tab-btn active" id="tabTornado" onclick="selectStormClass('tornado')">🌪️ TORNADO [1]</button>
@@ -161,9 +161,9 @@
 
       <div class="objectives-box" id="objList">
         <div><b>STORM OBJECTIVES:</b></div>
-        <div class="obj-item" id="obj1">⚪ Shatter Water Tower 💧 & Silo 🌾</div>
-        <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (4,500+ PTS)</div>
-        <div class="obj-item" id="obj3">⚪ Score 8,000 Total Points</div>
+        <div class="obj-item" id="obj1">⚪ Shatter Water Tower 💧 & Silo 🌾 (Unlocks Stage 2)</div>
+        <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (3,800+ PTS)</div>
+        <div class="obj-item" id="obj3">⚪ Score 7,500 Total Points</div>
       </div>
     </div>
 
@@ -177,7 +177,7 @@
     <div class="panel key-guide">
       <div><b>Move:</b> <span>WASD</span> / <span>Joystick</span></div>
       <div><b>Verbs:</b> <span id="verbSpace">SPACE: Pull (Inward Orbit)</span> | <span id="verbQ">Q: Gust (Outward Shockwave)</span> | <span id="verbE">E: Power Grid Zap</span></div>
-      <div><b>Districts:</b> 🏙️ Downtown | 🏡 Suburbs | 🏭 Industrial | 🌾 Farmland</div>
+      <div><b>Stage Status:</b> <span id="stageStatusTag" style="color:var(--gold);font-weight:900;">STAGE 1: NEIGHBORHOOD</span></div>
     </div>
 
     <div class="panel telemetry">
@@ -228,10 +228,10 @@
 const urlParams = new URLSearchParams(window.location.search);
 const isBotMode = urlParams.get('bot') === 'true' || window.location.hash === '#bot';
 let botWaypoints = [
-  { x: -145, z: -110 }, // Water Tower
   { x: -80, z: -80 },   // Downtown
   { x: 100, z: -90 },   // Suburbs
-  { x: 155, z: 135 },   // Grain Silo
+  { x: -145, z: -110 }, // Water Tower (Stage 2)
+  { x: 155, z: 135 },   // Grain Silo (Stage 2)
   { x: -110, z: 100 }   // Industrial
 ];
 let currentBotWp = 0;
@@ -371,7 +371,7 @@ dirLight.shadow.camera.top = 220;
 dirLight.shadow.camera.bottom = -220;
 scene.add(dirLight);
 
-// VISUALLY DIFFERENTIATED 4-DISTRICT GROUND TILES
+// VISUALLY DIFFERENTIATED 4-DISTRICT GROUND TILES WITH SOFTENED TRANSITIONS
 const groundGroup = new THREE.Group();
 scene.add(groundGroup);
 
@@ -553,8 +553,9 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// --- GAME, MISSION & COOLDOWN STATE ---
+// --- GAME, MISSION & 3-STAGE ESCALATION STATE ---
 let currentStorm = 'tornado';
+let currentStage = 1; // 1: Neighborhood, 2: Landmarks & Heavy Grid, 3: Extreme Finale
 let destructionScore = 0;
 let baseScore = 0;
 let efRating = 'EF-0';
@@ -562,7 +563,7 @@ let efMultiplier = 1.0;
 let funnelScale = 1.0;
 let currentCamY = 78 * mobileFactor, targetCamY = 78 * mobileFactor;
 let currentCamZ = 110 * mobileFactor, targetCamZ = 110 * mobileFactor;
-let easNewsText = '🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY';
+let easNewsText = '🚨 NOAA EAS WARNING: STAGE 1 NEIGHBORHOOD TOUCHDOWN IN LINCOLN COUNTY';
 
 // 3-Minute Run Timer (180s Real Wall-Clock Seconds)
 let runTimeRemaining = 180;
@@ -584,22 +585,22 @@ const cooldowns = {
 let activePullVortex = false;
 let pullVortexTimer = 0;
 
-// Storm Mission Objectives Tracker (Tuned for 3-Minute Pacing)
+// Storm Mission Objectives Tracker
 const missionObjectives = {
   tornado: [
-    { text: "Shatter Water Tower 💧 & Silo 🌾", done: false },
-    { text: "Reach EF-3 Rating (4,500+ PTS)", done: false },
-    { text: "Score 8,000 Total Points", done: false }
+    { text: "Shatter Water Tower 💧 & Silo 🌾 (Stage 2 Unlock)", done: false },
+    { text: "Reach EF-3 Rating (3,800+ PTS)", done: false },
+    { text: "Score 7,500 Total Points", done: false }
   ],
   supercell: [
     { text: "Spawn 5+ Hail Corridors", count: 0, target: 5, done: false },
     { text: "Strike 4 Power Poles with Lightning", count: 0, target: 4, done: false },
-    { text: "Reach HAIL 3.25\" Size (4,500+ PTS)", done: false }
+    { text: "Reach HAIL 3.25\" Size (3,800+ PTS)", done: false }
   ],
   derecho: [
     { text: "Damage 30+ Town Structures", count: 0, target: 30, done: false },
     { text: "Trigger 3 Microburst Blasts", count: 0, target: 3, done: false },
-    { text: "Reach 105+ MPH Wind (4,500+ PTS)", done: false }
+    { text: "Reach 105+ MPH Wind (3,800+ PTS)", done: false }
   ]
 };
 
@@ -610,7 +611,7 @@ const storm = {
   radius: 16
 };
 
-// Ground Damage Swath Canvas & TRANSPARENT OVERLAY PLANE (FIXES STARTUP REFERENCE ERROR)
+// Ground Damage Swath Canvas & TRANSPARENT OVERLAY PLANE
 const swathCanvas = document.createElement('canvas');
 swathCanvas.width = 1024; swathCanvas.height = 1024;
 const swathCtx = swathCanvas.getContext('2d');
@@ -817,13 +818,29 @@ function createLandmarkMesh(icon) {
   return { group, base, beacon, color: icon === '🌾' ? '#d97706' : '#0284c7' };
 }
 
+// 3D HIGH-FIDELITY DETAILED RUINS WITH COLOR-MATCHED SLABS & SMOKE
 function spawnPersistentRuin(x, z, color) {
-  const ruinGeo = new THREE.BoxGeometry(4.2, 0.4, 4.2);
-  const ruinMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.9 });
-  const ruin = new THREE.Mesh(ruinGeo, ruinMat);
-  ruin.position.set(x, 0.2, z);
-  ruin.receiveShadow = true;
-  ruinsGroup.add(ruin);
+  const group = new THREE.Group();
+  
+  // Base Concrete Slab
+  const slabGeo = new THREE.BoxGeometry(4.8, 0.4, 4.8);
+  const slabMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.9 });
+  const slab = new THREE.Mesh(slabGeo, slabMat);
+  slab.position.y = 0.2;
+  slab.receiveShadow = true;
+  group.add(slab);
+
+  // Tilted Object-Colored Debris Wall Fragment
+  const wallGeo = new THREE.BoxGeometry(2.2, 1.4, 0.6);
+  const wallMat = new THREE.MeshStandardMaterial({ color: color || '#64748b', roughness: 0.8 });
+  const wall = new THREE.Mesh(wallGeo, wallMat);
+  wall.position.set((Math.random()-0.5)*2, 0.9, (Math.random()-0.5)*2);
+  wall.rotation.set(0.3, Math.random()*Math.PI, 0.2);
+  wall.castShadow = true;
+  group.add(wall);
+
+  group.position.set(x, 0, z);
+  ruinsGroup.add(group);
 }
 
 function addCameraShake(intensity) {
@@ -888,8 +905,14 @@ function triggerLightningStrike(targetX, targetZ) {
   addCameraShake(1.0);
 }
 
+// LANDMARK DAMAGE WITH STAGE 2 UNLOCK LOCK
 function damageLandmark(lm, amount) {
   if (lm.destroyed) return;
+
+  if (currentStage < 2) { // Stage 1 Shield
+    return;
+  }
+
   lm.health -= amount;
 
   // Flash Beacon Red on Hit
@@ -908,7 +931,7 @@ function damageLandmark(lm, amount) {
     if (lm.meshData.beacon) lm.meshData.group.remove(lm.meshData.beacon);
     scene.remove(lm.meshData.group);
     destroyedLandmarksCount++;
-    addScore(450);
+    addScore(500);
     explodeStructure(lm.x, lm.z, lm.meshData.color, lm.icon === '💧', lm.icon === '🌾');
   }
 }
@@ -931,6 +954,7 @@ function init3DWorld() {
   chaserVans.length = 0;
   destroyedLandmarksCount = 0;
   destroyedTargetsCount = 0;
+  currentStage = 1;
 
   while(ruinsGroup.children.length > 0) ruinsGroup.remove(ruinsGroup.children[0]);
 
@@ -1026,7 +1050,6 @@ function selectStormClass(type) {
     setUI('verbSpace', 'SPACE: Pull (Inward Gravitational Vortex)');
     setUI('verbQ', 'Q: Gust (360° Explosive Shockwave)');
     setUI('verbE', 'E: Power Grid Chain Zap');
-    setUI('stormDesc', 'TORNADO WARNING RUN ACTIVE - 03:00 REMAINING');
   } else if (type === 'supercell') {
     getCachedEl('tabSupercell').classList.add('active');
     setUI('stormIconHead', '🌩️');
@@ -1036,7 +1059,6 @@ function selectStormClass(type) {
     setUI('verbSpace', 'SPACE: Hail Corridor (Raining Barrage)');
     setUI('verbQ', 'Q: Downburst (Directional Forward Blast)');
     setUI('verbE', 'E: Targeted Lightning Super-Strike');
-    setUI('stormDesc', 'SUPERCELL WARNING RUN ACTIVE - 03:00 REMAINING');
   } else if (type === 'derecho') {
     getCachedEl('tabDerecho').classList.add('active');
     setUI('stormIconHead', '💨');
@@ -1046,7 +1068,6 @@ function selectStormClass(type) {
     setUI('verbSpace', 'SPACE: Wind Wall Sweep (80m Mega Surge)');
     setUI('verbQ', 'Q: Microburst (High-Damage Blast Ring)');
     setUI('verbE', 'E: Dust Cloud Surge (Structure Weakening)');
-    setUI('stormDesc', 'DERECHO WARNING RUN ACTIVE - 03:00 REMAINING');
   }
   updateEFRating();
   renderObjectives();
@@ -1180,17 +1201,17 @@ function triggerAbility(slot) {
   }
 }
 
-// TUNED 3-MINUTE PACING THRESHOLDS
+// TUNED 3-STAGE ESCALATION RATING THRESHOLDS
 function updateEFRating() {
   let badgeText = 'EF-0';
   let mult = 1.0;
   let scaleVal = 1.0;
 
-  if (destructionScore >= 13500) { mult = 3.8; scaleVal = 2.2; }
-  else if (destructionScore >= 8500) { mult = 2.8; scaleVal = 1.8; }
-  else if (destructionScore >= 4500) { mult = 2.2; scaleVal = 1.5; }
-  else if (destructionScore >= 2000) { mult = 1.6; scaleVal = 1.25; }
-  else if (destructionScore >= 600) { mult = 1.25; scaleVal = 1.1; }
+  if (destructionScore >= 11000) { mult = 3.8; scaleVal = 2.2; }
+  else if (destructionScore >= 7000) { mult = 2.8; scaleVal = 1.8; }
+  else if (destructionScore >= 3800) { mult = 2.2; scaleVal = 1.5; }
+  else if (destructionScore >= 1500) { mult = 1.6; scaleVal = 1.25; }
+  else if (destructionScore >= 400) { mult = 1.25; scaleVal = 1.1; }
 
   funnelScale = scaleVal;
 
@@ -1199,29 +1220,29 @@ function updateEFRating() {
   derechoGroup.scale.set(funnelScale, funnelScale, funnelScale);
 
   if (currentStorm === 'tornado') {
-    if (destructionScore >= 13500) badgeText = 'EF-5';
-    else if (destructionScore >= 8500) badgeText = 'EF-4';
-    else if (destructionScore >= 4500) badgeText = 'EF-3';
-    else if (destructionScore >= 2000) badgeText = 'EF-2';
-    else if (destructionScore >= 600) badgeText = 'EF-1';
+    if (destructionScore >= 11000) badgeText = 'EF-5';
+    else if (destructionScore >= 7000) badgeText = 'EF-4';
+    else if (destructionScore >= 3800) badgeText = 'EF-3';
+    else if (destructionScore >= 1500) badgeText = 'EF-2';
+    else if (destructionScore >= 400) badgeText = 'EF-1';
     else badgeText = 'EF-0';
-    easNewsText = `🚨 NOAA EAS WARNING: 3D ${badgeText} TORNADO TOUCHDOWN IN LINCOLN COUNTY (MULT: ${mult}x)`;
+    easNewsText = `🚨 NOAA EAS STAGE ${currentStage} WARNING: 3D ${badgeText} TORNADO TOUCHDOWN (MULT: ${mult}x)`;
   } else if (currentStorm === 'supercell') {
-    if (destructionScore >= 13500) badgeText = 'HAIL 4.5"';
-    else if (destructionScore >= 8500) badgeText = 'HAIL 4.0"';
-    else if (destructionScore >= 4500) badgeText = 'HAIL 3.25"';
-    else if (destructionScore >= 2000) badgeText = 'HAIL 2.5"';
-    else if (destructionScore >= 600) badgeText = 'HAIL 1.75"';
+    if (destructionScore >= 11000) badgeText = 'HAIL 4.5"';
+    else if (destructionScore >= 7000) badgeText = 'HAIL 4.0"';
+    else if (destructionScore >= 3800) badgeText = 'HAIL 3.25"';
+    else if (destructionScore >= 1500) badgeText = 'HAIL 2.5"';
+    else if (destructionScore >= 400) badgeText = 'HAIL 1.75"';
     else badgeText = 'HAIL 1.0"';
-    easNewsText = `🚨 NOAA EAS SEVERE T-STORM WARNING: SUPERCELL PRODUCING ${badgeText} HAIL & DOWNBURSTS (MULT: ${mult}x)`;
+    easNewsText = `🚨 NOAA EAS STAGE ${currentStage} SEVERE T-STORM: ${badgeText} HAIL & DOWNBURSTS (MULT: ${mult}x)`;
   } else if (currentStorm === 'derecho') {
-    if (destructionScore >= 13500) badgeText = '130+ MPH';
-    else if (destructionScore >= 8500) badgeText = '120 MPH';
-    else if (destructionScore >= 4500) badgeText = '105 MPH';
-    else if (destructionScore >= 2000) badgeText = '90 MPH';
-    else if (destructionScore >= 600) badgeText = '75 MPH';
+    if (destructionScore >= 11000) badgeText = '130+ MPH';
+    else if (destructionScore >= 7000) badgeText = '120 MPH';
+    else if (destructionScore >= 3800) badgeText = '105 MPH';
+    else if (destructionScore >= 1500) badgeText = '90 MPH';
+    else if (destructionScore >= 400) badgeText = '75 MPH';
     else badgeText = '60 MPH';
-    easNewsText = `🚨 NOAA EAS HIGH WIND WARNING: DERECHO SQUALL LINE PRODUCING ${badgeText} WINDS (MULT: ${mult}x)`;
+    easNewsText = `🚨 NOAA EAS STAGE ${currentStage} HIGH WIND WARNING: ${badgeText} WINDS (MULT: ${mult}x)`;
   }
 
   if (badgeText !== efRating) {
@@ -1237,16 +1258,16 @@ function updateEFRating() {
 function updateObjectives() {
   if (currentStorm === 'tornado') {
     missionObjectives.tornado[0].done = (destroyedLandmarksCount >= 2);
-    missionObjectives.tornado[1].done = (destructionScore >= 4500);
-    missionObjectives.tornado[2].done = (destructionScore >= 8000);
+    missionObjectives.tornado[1].done = (destructionScore >= 3800);
+    missionObjectives.tornado[2].done = (destructionScore >= 7500);
   } else if (currentStorm === 'supercell') {
     missionObjectives.supercell[0].done = (missionObjectives.supercell[0].count >= 5);
     missionObjectives.supercell[1].done = (missionObjectives.supercell[1].count >= 4);
-    missionObjectives.supercell[2].done = (destructionScore >= 4500);
+    missionObjectives.supercell[2].done = (destructionScore >= 3800);
   } else if (currentStorm === 'derecho') {
     missionObjectives.derecho[0].done = (destroyedTargetsCount >= 30);
     missionObjectives.derecho[1].done = (missionObjectives.derecho[1].count >= 3);
-    missionObjectives.derecho[2].done = (destructionScore >= 4500);
+    missionObjectives.derecho[2].done = (destructionScore >= 3800);
   }
   renderObjectives();
 }
@@ -1261,12 +1282,13 @@ function renderObjectives() {
     html += `<div class="${cls}">${mark} ${o.text}</div>`;
   });
 
-  // Landmark Distance & HP Indicators
+  // Landmark Distance & HP Indicators with Stage 1 Shield Status
   landmarks.forEach(lm => {
     if (!lm.destroyed) {
       const dist = Math.round(Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z));
       const inRange = dist < (storm.radius * 3.2);
-      const rangeTag = inRange ? '<b style="color:var(--gold)">[IN RANGE!]</b>' : `${dist}m`;
+      let rangeTag = inRange ? '<b style="color:var(--gold)">[IN RANGE!]</b>' : `${dist}m`;
+      if (currentStage < 2) rangeTag = '<b style="color:var(--red)">[SHIELDED - STAGE 2]</b>';
       const pct = Math.ceil((lm.health / lm.maxHealth) * 100);
       html += `<div style="font-size:9px;color:var(--cyan);margin-top:2px;">${lm.icon} ${lm.name}: ${pct}% HP (${rangeTag})</div>`;
     }
@@ -1284,10 +1306,10 @@ function finishRun() {
   objs.forEach(o => { if (o.done) doneCount++; });
 
   let grade = 'F';
-  if (doneCount === 3 && destructionScore >= 9000) grade = 'S+';
-  else if (doneCount >= 2 && destructionScore >= 5000) grade = 'A';
-  else if (doneCount >= 1 && destructionScore >= 2200) grade = 'B';
-  else if (destructionScore >= 600) grade = 'C';
+  if (doneCount === 3 && destructionScore >= 8000) grade = 'S+';
+  else if (doneCount >= 2 && destructionScore >= 4500) grade = 'A';
+  else if (doneCount >= 1 && destructionScore >= 2000) grade = 'B';
+  else if (destructionScore >= 500) grade = 'C';
 
   setUI('resStormTitle', `${currentStorm.toUpperCase()} WARNING RUN`);
   setUI('resGrade', grade);
@@ -1306,6 +1328,7 @@ function resetWarningRun() {
   comboMultiplier = 1.0;
   maxComboReached = 1.0;
   runActive = true;
+  currentStage = 1;
 
   storm.pos.set(0, 0, 0);
 
@@ -1319,7 +1342,7 @@ function resetWarningRun() {
   renderObjectives();
 }
 
-// --- MAIN ANIMATION LOOP WITH REAL DELTA-TIME ---
+// --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---
 init3DWorld();
 
 let lastFrameTime = performance.now();
@@ -1341,14 +1364,30 @@ function animate(now) {
 
   const dt = realDelta;
 
-  // Run Timer
+  // Run Timer & 3-Stage Escalation Logic
   if (runActive) {
     runTimeRemaining = Math.max(0, runTimeRemaining - dt);
     const mins = Math.floor(runTimeRemaining / 60);
     const secs = Math.floor(runTimeRemaining % 60);
     const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     setUI('timerVal', timeStr);
-    setUI('stormDesc', `${currentStorm.toUpperCase()} WARNING RUN ACTIVE - ${timeStr} REMAINING`);
+
+    // Stage 1 (180s -> 120s): Neighborhood Touchdown
+    // Stage 2 (120s -> 60s): Landmark Shields Drop & Heavy Grid
+    // Stage 3 (60s -> 0s): Extreme Finale & Convoy Fleet
+    if (runTimeRemaining > 120) {
+      if (currentStage !== 1) { currentStage = 1; playSound('siren'); }
+      setUI('stormDesc', `STAGE 1: NEIGHBORHOOD TOUCHDOWN - ${timeStr} REMAINING`);
+      setUI('stageStatusTag', 'STAGE 1: NEIGHBORHOOD');
+    } else if (runTimeRemaining > 60) {
+      if (currentStage !== 2) { currentStage = 2; playSound('siren'); addCameraShake(2.0); }
+      setUI('stormDesc', `STAGE 2: LANDMARKS & HEAVY GRID - ${timeStr} REMAINING`);
+      setUI('stageStatusTag', 'STAGE 2: LANDMARKS UNLOCKED!');
+    } else {
+      if (currentStage !== 3) { currentStage = 3; playSound('siren'); addCameraShake(2.5); }
+      setUI('stormDesc', `STAGE 3: EXTREME FINALE - ${timeStr} REMAINING`);
+      setUI('stageStatusTag', 'STAGE 3: EXTREME FINALE!');
+    }
 
     if (runTimeRemaining <= 0) {
       finishRun();
@@ -1617,13 +1656,13 @@ function renderRadar() {
       const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
       const inRange = dist < (storm.radius * 3.2);
 
-      if (inRange) { // Pulsing Gold/White Ring when in ability hit range
+      if (inRange && currentStage >= 2) { // Pulsing Gold/White Ring when in ability hit range
         rCtx.strokeStyle = '#ffffff';
         rCtx.lineWidth = 2;
         rCtx.beginPath(); rCtx.arc(lmx, lmz, 11 + Math.sin(performance.now() * 0.01) * 3, 0, Math.PI * 2); rCtx.stroke();
       }
 
-      rCtx.fillStyle = lm.icon === '💧' ? '#38bdf8' : '#fbbf24';
+      rCtx.fillStyle = currentStage < 2 ? '#64748b' : (lm.icon === '💧' ? '#38bdf8' : '#fbbf24');
       rCtx.beginPath(); rCtx.arc(lmx, lmz, 7, 0, Math.PI * 2); rCtx.fill();
     }
   });
