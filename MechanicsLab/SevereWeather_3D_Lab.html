@@ -173,10 +173,99 @@
     .district-card { min-width: 260px; padding: 12px 18px; }
     .district-card h2 { font-size: 20px; }
     #gagToast { top: 34px; font-size: 9px; }
+    .menu-card { padding: 16px; width: min(520px, 94vw); }
+    .menu-title { font-size: 24px; }
+    .storm-select-grid { gap: 6px; }
+    .storm-card { padding: 8px; }
+    .storm-card h3 { font-size: 12px; }
   }
+
+  /* Main Menu & Pause Overlays */
+  #mainMenu { position: absolute; inset: 0; z-index: 3000; background: radial-gradient(circle at center, rgba(15,23,42,0.85), rgba(3,7,18,0.96)); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; color: white; overflow-y: auto; }
+  #mainMenu.hidden { display: none !important; }
+  .menu-card { width: min(680px, 94vw); max-height: calc(100vh - 20px); overflow-y: auto; background: rgba(15,23,42,0.94); border: 2px solid rgba(251,191,36,0.65); border-radius: 20px; padding: 24px; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.8); backdrop-filter: blur(14px); }
+  .menu-title { font: 900 34px/1 Outfit, sans-serif; color: var(--gold); letter-spacing: 0.08em; text-shadow: 0 0 24px rgba(251,191,36,0.5); margin: 0; }
+  .menu-sub { font-size: 12px; color: var(--cyan); letter-spacing: 0.14em; font-weight: 800; margin: 4px 0 16px; }
+  
+  .storm-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+  .storm-card { background: rgba(3,7,18,0.7); border: 2px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 12px 8px; cursor: pointer; transition: all 0.2s ease; text-align: center; }
+  .storm-card:hover, .storm-card.selected { border-color: var(--gold); background: rgba(251,191,36,0.14); transform: translateY(-3px); box-shadow: 0 0 16px rgba(251,191,36,0.3); }
+  .storm-card h3 { margin: 4px 0 2px; font-size: 14px; color: white; }
+  .storm-card p { margin: 0; font-size: 10px; color: #94a3b8; line-height: 1.25; }
+  .storm-card .hi-score { font-size: 10px; color: var(--gold); font-weight: 800; margin-top: 6px; }
+
+  .menu-options { display: flex; gap: 10px; justify-content: center; align-items: center; margin: 12px 0; flex-wrap: wrap; }
+  .opt-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.22); color: white; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s ease; }
+  .opt-btn:hover { background: rgba(255,255,255,0.18); }
+  .opt-btn.active { border-color: var(--cyan); color: var(--cyan); }
+  .start-btn { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; border: none; padding: 12px 40px; border-radius: 12px; font: 900 17px/1 Outfit, sans-serif; letter-spacing: 0.08em; cursor: pointer; box-shadow: 0 0 30px rgba(245,158,11,0.6); transition: transform 0.15s ease; margin-top: 6px; }
+  .start-btn:active { transform: scale(0.94); }
+
+  #pauseOverlay { position: absolute; inset: 0; z-index: 2500; background: rgba(3,7,18,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+  #pauseOverlay.active { opacity: 1; pointer-events: auto; }
+  .pause-card { width: min(420px, 90vw); background: rgba(15,23,42,0.96); border: 2px solid var(--cyan); border-radius: 18px; padding: 20px; text-align: center; box-shadow: 0 0 40px rgba(56,189,248,0.3); }
+  .pause-card h2 { margin: 0 0 10px; font: 900 24px Outfit, sans-serif; color: var(--cyan); letter-spacing: 0.06em; }
+  .pause-stats { font-size: 11px; font-family: monospace; color: #cbd5e1; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 10px; margin: 10px 0; text-align: left; line-height: 1.5; }
+  .pause-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .pause-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: white; padding: 10px 20px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; }
+  .pause-btn.primary { background: linear-gradient(135deg, #0284c7, #0369a1); border: none; }
 </style>
 </head>
 <body>
+
+<!-- MAIN TITLE MENU OVERLAY -->
+<div id="mainMenu">
+  <div class="menu-card">
+    <h1 class="menu-title">🌪️ SEVERE WEATHER 3D</h1>
+    <div class="menu-sub">ARCADE DISASTER SIMULATOR v4.2.0</div>
+    
+    <div class="storm-select-grid">
+      <div class="storm-card selected" id="menuCardTornado" onclick="selectMenuStorm('tornado')">
+        <div style="font-size:24px;">🌪️</div>
+        <h3>TORNADO</h3>
+        <p>High mobility, serpentine funnel, vortex suction pull & launch verbs.</p>
+        <div class="hi-score" id="hiScoreTornado">BEST: 0</div>
+      </div>
+      <div class="storm-card" id="menuCardSupercell" onclick="selectMenuStorm('supercell')">
+        <div style="font-size:24px;">🌩️</div>
+        <h3>SUPERCELL</h3>
+        <p>Mesocyclone wall cloud, hail corridors & cloud-to-ground lightning bolts.</p>
+        <div class="hi-score" id="hiScoreSupercell">BEST: 0</div>
+      </div>
+      <div class="storm-card" id="menuCardDerecho" onclick="selectMenuStorm('derecho')">
+        <div style="font-size:24px;">💨</div>
+        <h3>DERECHO</h3>
+        <p>Bow echo wind shelf, high-speed microburst gale blasts & structural sweep.</p>
+        <div class="hi-score" id="hiScoreDerecho">BEST: 0</div>
+      </div>
+    </div>
+
+    <div class="menu-options">
+      <button class="opt-btn" id="btnToggleNeonMenu" onclick="toggleNeonCosmetic()">NEON FUNNEL: OFF</button>
+      <button class="opt-btn" id="btnToggleAudioMenu" onclick="toggleAudioMute()">AUDIO: ON 🔊</button>
+    </div>
+
+    <button class="start-btn" onclick="startRunFromMenu()">UNLEASH STORM ⚡</button>
+  </div>
+</div>
+
+<!-- PAUSE MENU OVERLAY -->
+<div id="pauseOverlay">
+  <div class="pause-card">
+    <h2>⏸️ RUN PAUSED</h2>
+    <div class="pause-stats" id="pauseStatsBox">
+      <div>SCORE: <b>0</b> | RATING: <b>EF-0</b></div>
+      <div>TIME REMAINING: <b>03:00</b></div>
+      <div>DISTRICT: <b>PINE RIDGE</b></div>
+    </div>
+    <div class="pause-btns">
+      <button class="pause-btn primary" onclick="togglePauseMenu()">RESUME RUN</button>
+      <button class="pause-btn" id="btnPauseAudio" onclick="toggleAudioMute()">AUDIO: ON 🔊</button>
+      <button class="pause-btn" onclick="restartCurrentRun()">RESTART RUN</button>
+      <button class="pause-btn" onclick="quitToMainMenu()">MAIN MENU</button>
+    </div>
+  </div>
+</div>
 
 <canvas id="webgl"></canvas>
 <div id="powerFlashOverlay"></div>
@@ -193,7 +282,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v4.1.0 SERPENTINE FUNNEL</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v4.2.0 MOBILE ARCADE</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -202,6 +291,7 @@
     <div class="panel title-card" id="titleCardPanel">
       <h1>
         <span><span id="stormIconHead">🌪️</span> SEVERE WEATHER 3D <span class="ef-badge" id="efBadge">EF-0</span></span>
+        <button class="collapse-btn" onclick="togglePauseMenu()" style="margin-right: 4px;">⏸️</button>
         <button class="collapse-btn" onclick="toggleTitleCard()">[ ─ ]</button>
       </h1>
       
@@ -327,24 +417,112 @@ setTimeout(() => {
 }, 10000);
 
 // --- WEB AUDIO API SYNTHESIZER ---
+// --- WEB AUDIO API ADVANCED SYNTHESIZER & SOUNDSCAPE ENGINE ---
 let audioCtx = null;
+let isAudioMuted = false;
+let noiseBuffer = null;
+let rumbleOsc = null;
+let rumbleGain = null;
+
 function initAudio() {
   if (!audioCtx && !isBotMode) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function toggleAudioMute() {
+  isAudioMuted = !isAudioMuted;
+  const menuBtn = getCachedEl('btnToggleAudioMenu');
+  const pauseBtn = getCachedEl('btnPauseAudio');
+  const label = isAudioMuted ? 'AUDIO: OFF 🔇' : 'AUDIO: ON 🔊';
+  if (menuBtn) menuBtn.innerText = label;
+  if (pauseBtn) pauseBtn.innerText = label;
+  if (isAudioMuted && rumbleGain) rumbleGain.gain.setValueAtTime(0, audioCtx ? audioCtx.currentTime : 0);
+}
+
+function getNoiseBuffer() {
+  if (!audioCtx) return null;
+  if (!noiseBuffer) {
+    const bufferSize = audioCtx.sampleRate * 1.5;
+    noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+  }
+  return noiseBuffer;
+}
+
+function updateWindRumble(speed, efMultiplier) {
+  if (!audioCtx || isBotMode || isAudioMuted) return;
+  const now = audioCtx.currentTime;
+  if (!rumbleOsc) {
+    rumbleOsc = audioCtx.createOscillator();
+    rumbleGain = audioCtx.createGain();
+    rumbleOsc.type = 'sawtooth';
+    rumbleOsc.frequency.setValueAtTime(45, now);
+    rumbleGain.gain.setValueAtTime(0, now);
+    rumbleOsc.connect(rumbleGain);
+    rumbleGain.connect(audioCtx.destination);
+    rumbleOsc.start();
+  }
+  const targetGain = runActive && !isPaused ? Math.min(0.28, 0.05 + (speed / 42) * 0.12 * efMultiplier) : 0;
+  const targetFreq = 40 + (speed / 42) * 35 * efMultiplier;
+  rumbleGain.gain.setTargetAtTime(targetGain, now, 0.1);
+  rumbleOsc.frequency.setTargetAtTime(targetFreq, now, 0.1);
 }
 
 function playSound(type) {
-  if (!audioCtx || isBotMode) return;
+  if (!audioCtx || isBotMode || isAudioMuted) return;
   const now = audioCtx.currentTime;
 
-  if (type === 'zap') {
+  if (type === 'shatter' || type === 'explode') {
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = getNoiseBuffer();
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(350, now);
+    filter.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.55, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+    noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+    noise.start(now); noise.stop(now + 0.4);
+  } else if (type === 'glass') {
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = getNoiseBuffer();
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2400, now);
+    filter.Q.value = 3.0;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+    noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+    noise.start(now); noise.stop(now + 0.25);
+  } else if (type === 'easAlert') {
+    // Dual-tone 853Hz + 960Hz NOAA EAS Alert Signal
+    [853, 960].forEach(freq => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.setValueAtTime(0.12, now + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.5);
+    });
+  } else if (type === 'zap') {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
-    gain.gain.setValueAtTime(0.3, now);
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(35, now + 0.25);
+    gain.gain.setValueAtTime(0.35, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
     osc.connect(gain); gain.connect(audioCtx.destination);
     osc.start(now); osc.stop(now + 0.25);
@@ -352,9 +530,19 @@ function playSound(type) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(60, now);
-    osc.frequency.exponentialRampToValueAtTime(180, now + 0.35);
+    osc.frequency.setValueAtTime(55, now);
+    osc.frequency.exponentialRampToValueAtTime(210, now + 0.35);
     gain.gain.setValueAtTime(0.4, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(now); osc.stop(now + 0.35);
+  } else if (type === 'pull') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(70, now + 0.35);
+    gain.gain.setValueAtTime(0.35, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
     osc.connect(gain); gain.connect(audioCtx.destination);
     osc.start(now); osc.stop(now + 0.35);
@@ -371,33 +559,13 @@ function playSound(type) {
   } else if (type === 'moo') {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(220, now);
-    osc.frequency.linearRampToValueAtTime(180, now + 0.4);
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(now); osc.stop(now + 0.4);
-  } else if (type === 'explode') {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(95, now);
-    osc.frequency.exponentialRampToValueAtTime(20, now + 0.45);
-    gain.gain.setValueAtTime(0.5, now);
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.linearRampToValueAtTime(160, now + 0.45);
+    gain.gain.setValueAtTime(0.25, now);
     gain.gain.linearRampToValueAtTime(0.01, now + 0.45);
     osc.connect(gain); gain.connect(audioCtx.destination);
     osc.start(now); osc.stop(now + 0.45);
-  } else if (type === 'splash') {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(300, now);
-    osc.frequency.exponentialRampToValueAtTime(60, now + 0.5);
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(now); osc.stop(now + 0.5);
   } else if (type === 'siren') {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -409,8 +577,118 @@ function playSound(type) {
     gain.gain.linearRampToValueAtTime(0.01, now + 1.2);
     osc.connect(gain); gain.connect(audioCtx.destination);
     osc.start(now); osc.stop(now + 1.2);
+  } else if (type === 'click') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(now); osc.stop(now + 0.05);
   }
 }
+
+// --- MAIN MENU & PAUSE CONTROLS ---
+let gameStarted = false;
+let isPaused = false;
+let highScores = { tornado: 0, supercell: 0, derecho: 0 };
+
+function loadHighScores() {
+  try {
+    const saved = localStorage.getItem('severeWeatherHiScores');
+    if (saved) highScores = Object.assign(highScores, JSON.parse(saved));
+  } catch (e) {}
+  setUI('hiScoreTornado', `BEST: ${highScores.tornado}`);
+  setUI('hiScoreSupercell', `BEST: ${highScores.supercell}`);
+  setUI('hiScoreDerecho', `BEST: ${highScores.derecho}`);
+}
+
+function updateHighScore(stormType, score) {
+  if (score > (highScores[stormType] || 0)) {
+    highScores[stormType] = Math.round(score);
+    try {
+      localStorage.setItem('severeWeatherHiScores', JSON.stringify(highScores));
+    } catch (e) {}
+    loadHighScores();
+  }
+}
+
+function selectMenuStorm(stormType) {
+  initAudio();
+  playSound('click');
+  ['tornado', 'supercell', 'derecho'].forEach(t => {
+    const card = getCachedEl(`menuCard${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    if (card) {
+      if (t === stormType) card.classList.add('selected');
+      else card.classList.remove('selected');
+    }
+  });
+  selectStormClass(stormType);
+}
+
+function startRunFromMenu() {
+  initAudio();
+  playSound('click');
+  const menu = getCachedEl('mainMenu');
+  if (menu) menu.classList.add('hidden');
+  gameStarted = true;
+  isPaused = false;
+  resetWarningRun();
+}
+
+function togglePauseMenu() {
+  if (!gameStarted) return;
+  initAudio();
+  playSound('click');
+  isPaused = !isPaused;
+  const overlay = getCachedEl('pauseOverlay');
+  const statsBox = getCachedEl('pauseStatsBox');
+  if (overlay) {
+    if (isPaused) {
+      overlay.classList.add('active');
+      if (statsBox) {
+        const mins = Math.floor(runTimeRemaining / 60);
+        const secs = Math.floor(runTimeRemaining % 60).toString().padStart(2, '0');
+        const districtName = DISTRICTS[currentStage] ? DISTRICTS[currentStage].name : 'PINE RIDGE';
+        statsBox.innerHTML = `
+          <div>SCORE: <b style="color:var(--gold)">${Math.round(destructionScore)}</b> | RATING: <b style="color:var(--red)">${efRating}</b></div>
+          <div>TIME REMAINING: <b>${mins}:${secs}</b></div>
+          <div>DISTRICT: <b style="color:var(--cyan)">${districtName}</b></div>
+        `;
+      }
+    } else {
+      overlay.classList.remove('active');
+    }
+  }
+}
+
+function restartCurrentRun() {
+  togglePauseMenu();
+  resetWarningRun();
+}
+
+function quitToMainMenu() {
+  isPaused = false;
+  gameStarted = false;
+  const pauseOverlay = getCachedEl('pauseOverlay');
+  const menu = getCachedEl('mainMenu');
+  if (pauseOverlay) pauseOverlay.classList.remove('active');
+  if (menu) menu.classList.remove('hidden');
+}
+
+function toggleNeonCosmetic() {
+  initAudio();
+  playSound('click');
+  neonFunnelUnlocked = !neonFunnelUnlocked;
+  saveCosmeticProgress();
+  applyUnlockedCosmetic();
+  const btn = getCachedEl('btnToggleNeonMenu');
+  if (btn) btn.innerText = `NEON FUNNEL: ${neonFunnelUnlocked ? 'ON 🦄' : 'OFF'}`;
+}
+
+loadHighScores();
+
 
 // --- UI CACHE HELPER ---
 const UI_CACHE = {};
@@ -1132,15 +1410,51 @@ vortexRing.rotation.x = -Math.PI / 2;
 vortexRing.position.y = 0.1;
 tornadoGroup.add(vortexRing);
 
+// --- SUPERCELL 3D MESOCYCLONE ANVIL & HAIL CORRIDOR UPGRADE ---
 const supercellGroup = new THREE.Group();
 supercellGroup.visible = false;
 scene.add(supercellGroup);
 
-const cloudCanopyGeo = new THREE.CylinderGeometry(38, 20, 14, 32);
-const cloudCanopyMat = new THREE.MeshStandardMaterial({ color: '#0284c7', transparent: true, opacity: 0.40, roughness: 0.25, metalness: 0.4 });
-const cloudCanopyMesh = new THREE.Mesh(cloudCanopyGeo, cloudCanopyMat);
-cloudCanopyMesh.position.y = 28;
-supercellGroup.add(cloudCanopyMesh);
+// Tier 1: Massive Upper Anvil Disc
+const anvilGeo = new THREE.CylinderGeometry(54, 38, 10, 32);
+const anvilMat = new THREE.MeshStandardMaterial({ color: '#0f172a', transparent: true, opacity: 0.85, roughness: 0.25 });
+const anvilMesh = new THREE.Mesh(anvilGeo, anvilMat);
+anvilMesh.position.y = 36;
+supercellGroup.add(anvilMesh);
+
+// Tier 2: Rotating Mid-Layer Mesocyclone Wall Cloud
+const mesoWallGeo = new THREE.CylinderGeometry(36, 22, 12, 32);
+const mesoWallMat = new THREE.MeshStandardMaterial({ color: '#0284c7', transparent: true, opacity: 0.65, roughness: 0.2 });
+const mesoWallMesh = new THREE.Mesh(mesoWallGeo, mesoWallMat);
+mesoWallMesh.position.y = 25;
+supercellGroup.add(mesoWallMesh);
+
+// Tier 3: Core Downdraft Hail Funnel Shaft
+const downdraftGeo = new THREE.CylinderGeometry(22, 8, 16, 24);
+const downdraftMat = new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+const downdraftMesh = new THREE.Mesh(downdraftGeo, downdraftMat);
+downdraftMesh.position.y = 11;
+supercellGroup.add(downdraftMesh);
+
+// Supercell Hail Corridor Swarm Particles (800 Ice Shimmer Particles)
+const supercellHailCount = 800;
+const supercellHailGeo = new THREE.BufferGeometry();
+const supercellHailPos = new Float32Array(supercellHailCount * 3);
+const supercellHailMeta = [];
+
+for (let i = 0; i < supercellHailCount; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const r = Math.random() * 26;
+  const h = Math.random() * 32;
+  supercellHailPos[i * 3] = Math.cos(angle) * r;
+  supercellHailPos[i * 3 + 1] = h;
+  supercellHailPos[i * 3 + 2] = Math.sin(angle) * r;
+  supercellHailMeta.push({ angle, r, h, fallSpeed: 12 + Math.random() * 18 });
+}
+supercellHailGeo.setAttribute('position', new THREE.BufferAttribute(supercellHailPos, 3));
+const supercellHailMat = new THREE.PointsMaterial({ color: '#e0f2fe', size: 1.4, transparent: true, opacity: 0.85 });
+const supercellHailSwarm = new THREE.Points(supercellHailGeo, supercellHailMat);
+supercellGroup.add(supercellHailSwarm);
 
 const hailStones = [];
 function spawnSupercellHail() {
@@ -1158,15 +1472,43 @@ function spawnSupercellHail() {
   }
 }
 
+// --- DERECHO 3D BOW ECHO WIND SHELF & MICROBURST UPGRADE ---
 const derechoGroup = new THREE.Group();
 derechoGroup.visible = false;
 scene.add(derechoGroup);
 
-const windWallGeo = new THREE.BoxGeometry(65, 18, 14);
-const windWallMat = new THREE.MeshStandardMaterial({ color: '#06b6d4', transparent: true, opacity: 0.38, roughness: 0.35, metalness: 0.3 });
-const windWallMesh = new THREE.Mesh(windWallGeo, windWallMat);
-windWallMesh.position.y = 9;
-derechoGroup.add(windWallMesh);
+// Forward Sweeping Bow Echo Shelf Cloud (60-unit wide curved arc)
+const bowShelfGeo = new THREE.CylinderGeometry(55, 42, 16, 32, 1, true, -Math.PI * 0.4, Math.PI * 0.8);
+const bowShelfMat = new THREE.MeshStandardMaterial({ color: '#1e293b', transparent: true, opacity: 0.78, roughness: 0.3, side: THREE.DoubleSide });
+const bowShelfMesh = new THREE.Mesh(bowShelfGeo, bowShelfMat);
+bowShelfMesh.position.y = 18;
+derechoGroup.add(bowShelfMesh);
+
+// Forward Microburst Gale Vector Lines (400 Streak Lines)
+const derechoLinesCount = 400;
+const derechoLinesGeo = new THREE.BufferGeometry();
+const derechoLinesPos = new Float32Array(derechoLinesCount * 6); // 2 points per line segment
+const derechoLinesMeta = [];
+
+for (let i = 0; i < derechoLinesCount; i++) {
+  const lx = (Math.random() - 0.5) * 60;
+  const ly = 1.0 + Math.random() * 14;
+  const lz = (Math.random() - 0.5) * 30;
+  const length = 4.0 + Math.random() * 6.0;
+
+  derechoLinesPos[i * 6] = lx;
+  derechoLinesPos[i * 6 + 1] = ly;
+  derechoLinesPos[i * 6 + 2] = lz;
+  derechoLinesPos[i * 6 + 3] = lx;
+  derechoLinesPos[i * 6 + 4] = ly;
+  derechoLinesPos[i * 6 + 5] = lz - length;
+
+  derechoLinesMeta.push({ lx, ly, lz, length, speed: 35 + Math.random() * 25 });
+}
+derechoLinesGeo.setAttribute('position', new THREE.BufferAttribute(derechoLinesPos, 3));
+const derechoLinesMat = new THREE.LineBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.75, linewidth: 2 });
+const derechoWindLines = new THREE.LineSegments(derechoLinesGeo, derechoLinesMat);
+derechoGroup.add(derechoWindLines);
 
 const lightningGeo = new THREE.BufferGeometry();
 const lightningMat = new THREE.LineBasicMaterial({ color: '#38bdf8', linewidth: 4 });
@@ -2565,6 +2907,7 @@ function finishRun() {
   setUI('resS2Score', stage2Score);
   setUI('resS3Score', stage3Score);
 
+  updateHighScore(currentStorm, destructionScore);
   getCachedEl('resultsOverlay').classList.add('active');
 }
 
@@ -2859,10 +3202,44 @@ function animate(now) {
 
   funnelMesh.rotation.y += 0.15;
   outerFunnelMesh.rotation.y -= 0.10;
-  cloudCanopyMesh.rotation.y += 0.06;
 
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
   tornadoGroup.rotation.x = THREE.MathUtils.lerp(tornadoGroup.rotation.x, moveZ * 0.14, 0.1);
+
+  // DYNAMIC AUDIO RUMBLE SOUNDSCAPE MODULATION
+  updateWindRumble(isMoving ? storm.speed : 0, efMultiplier);
+
+  // SUPERCELL 3D ANVIL ROTATION & HAIL SWARM ANIMATION
+  if (currentStorm === 'supercell') {
+    anvilMesh.rotation.y += 0.015;
+    mesoWallMesh.rotation.y -= 0.035;
+    downdraftMesh.rotation.y += 0.06;
+
+    const sHailPos = supercellHailSwarm.geometry.attributes.position;
+    for (let i = 0; i < supercellHailCount; i++) {
+      const meta = supercellHailMeta[i];
+      meta.h -= meta.fallSpeed * dt;
+      if (meta.h <= 0) meta.h = 32;
+      meta.angle += 0.06;
+      sHailPos.setXYZ(i, Math.cos(meta.angle) * meta.r, meta.h, Math.sin(meta.angle) * meta.r);
+    }
+    sHailPos.needsUpdate = true;
+  }
+
+  // DERECHO 3D BOW ECHO SHELF & MICROBURST WIND STREAKS ANIMATION
+  if (currentStorm === 'derecho') {
+    bowShelfMesh.rotation.y = THREE.MathUtils.lerp(bowShelfMesh.rotation.y, Math.atan2(moveX, moveZ || 1), 0.1);
+    
+    const dLinesPos = derechoWindLines.geometry.attributes.position;
+    for (let i = 0; i < derechoLinesCount; i++) {
+      const meta = derechoLinesMeta[i];
+      meta.lz += meta.speed * dt;
+      if (meta.lz > 30) meta.lz = -30;
+      dLinesPos.setXYZ(i * 2, meta.lx, meta.ly, meta.lz);
+      dLinesPos.setXYZ(i * 2 + 1, meta.lx, meta.ly, meta.lz - meta.length);
+    }
+    dLinesPos.needsUpdate = true;
+  }
 
   // OPTIMIZED TACTICAL VIEW CAMERA DISTANCE & MOVEMENT LOOK-AHEAD
   let baseCamY = 78, baseCamZ = 110;
