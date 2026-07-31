@@ -1617,62 +1617,111 @@ function spawnScorePopup(x, y, z, text, color = '#fbbf24') {
   activeScorePopups.push({ sprite, life: 1.4, startY: y + 4 });
 }
 
-// --- AMBIENT TOWN CARS SYSTEM ---
-function spawnTownCars() {
-  townCars.length = 0;
-  const carColors = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b', '#e11d48'];
-  const roadPositions = [];
-  // Generate road paths along the grid lines between blocks
-  const gridLines = [-160, -80, 0, 80, 160];
-  gridLines.forEach(pos => {
-    roadPositions.push({ x: pos, z: -240, dx: 0, dz: 1 });   // North-South
-    roadPositions.push({ x: -240, z: pos, dx: 1, dz: 0 });   // East-West
+// --- AMBIENT TOWN CARS SYSTEM (POLISHED & PROPERLY ALIGNED) ---
+function createTownCarGroup(color) {
+  const group = new THREE.Group();
+  
+  // Main body (Length 5.5 along Z)
+  const bodyGeo = new THREE.BoxGeometry(3.0, 1.4, 5.4);
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.4 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.9;
+  body.castShadow = true;
+  group.add(body);
+  
+  // Cabin & Windshield (Centered slightly back at z = -0.3)
+  const cabinGeo = new THREE.BoxGeometry(2.5, 1.1, 2.7);
+  const cabinMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.1, metalness: 0.8 });
+  const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+  cabin.position.set(0, 2.0, -0.3);
+  group.add(cabin);
+  
+  // 4 Black Wheels with Silver Hubcaps
+  const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 12);
+  const wheelMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.8 });
+  const capGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.42, 8);
+  const capMat = new THREE.MeshStandardMaterial({ color: '#94a3b8', metalness: 0.7, roughness: 0.2 });
+  
+  [[-1.6, 0.5, 1.6], [1.6, 0.5, 1.6], [-1.6, 0.5, -1.6], [1.6, 0.5, -1.6]].forEach(pos => {
+    const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(pos[0], pos[1], pos[2]);
+    group.add(wheel);
+    
+    const cap = new THREE.Mesh(capGeo, capMat);
+    cap.rotation.z = Math.PI / 2;
+    cap.position.set(pos[0], pos[1], pos[2]);
+    group.add(cap);
   });
   
-  for (let i = 0; i < 18; i++) {
-    const road = roadPositions[i % roadPositions.length];
+  // Headlights at FRONT (+Z)
+  const hlMat = new THREE.MeshBasicMaterial({ color: '#fef08a' });
+  [-1.0, 1.0].forEach(hx => {
+    const hl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.2), hlMat);
+    hl.position.set(hx, 0.95, 2.72);
+    group.add(hl);
+  });
+  
+  // Headlight Light Cones (projecting forward in +Z)
+  const coneGeo = new THREE.ConeGeometry(2.2, 8.0, 12);
+  const coneMat = new THREE.MeshBasicMaterial({ color: '#fef08a', transparent: true, opacity: 0.18, depthWrite: false });
+  const cone = new THREE.Mesh(coneGeo, coneMat);
+  cone.rotation.x = -Math.PI / 2;
+  cone.position.set(0, 0.9, 6.8);
+  group.add(cone);
+  
+  // Tail lights at REAR (-Z)
+  const tlMat = new THREE.MeshBasicMaterial({ color: '#ef4444' });
+  [-1.0, 1.0].forEach(tx => {
+    const tl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.2), tlMat);
+    tl.position.set(tx, 0.95, -2.72);
+    group.add(tl);
+  });
+  
+  return group;
+}
+
+function spawnTownCars() {
+  townCars.forEach(c => scene.remove(c.group));
+  townCars.length = 0;
+  const carColors = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b', '#e11d48'];
+  
+  // Grid road lanes
+  const gridLanes = [
+    { x: -160, z: -240, dx: 0, dz: 1 },  { x: -156, z: 240, dx: 0, dz: -1 },
+    { x: -80,  z: -240, dx: 0, dz: 1 },  { x: -76,  z: 240, dx: 0, dz: -1 },
+    { x: 0,    z: -240, dx: 0, dz: 1 },  { x: 4,    z: 240, dx: 0, dz: -1 },
+    { x: 80,   z: -240, dx: 0, dz: 1 },  { x: 84,   z: 240, dx: 0, dz: -1 },
+    { x: 160,  z: -240, dx: 0, dz: 1 },  { x: 164,  z: 240, dx: 0, dz: -1 },
+    { x: -240, z: -160, dx: 1, dz: 0 },  { x: 240,  z: -156, dx: -1, dz: 0 },
+    { x: -240, z: -80,  dx: 1, dz: 0 },  { x: 240,  z: -76,  dx: -1, dz: 0 },
+    { x: -240, z: 0,    dx: 1, dz: 0 },  { x: 240,  z: 4,    dx: -1, dz: 0 },
+    { x: -240, z: 80,   dx: 1, dz: 0 },  { x: 240,  z: 84,   dx: -1, dz: 0 },
+    { x: -240, z: 160,  dx: 1, dz: 0 },  { x: 240,  z: 164,  dx: -1, dz: 0 }
+  ];
+  
+  for (let i = 0; i < 20; i++) {
+    const lane = gridLanes[i % gridLanes.length];
     const color = carColors[i % carColors.length];
-    const group = new THREE.Group();
+    const group = createTownCarGroup(color);
     
-    // Car body
-    const bodyGeo = new THREE.BoxGeometry(3.2, 1.6, 5.5);
-    const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.3 });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = 0.8;
-    body.castShadow = true;
-    group.add(body);
-    
-    // Car roof/cabin
-    const cabinGeo = new THREE.BoxGeometry(2.4, 1.1, 2.8);
-    const cabinMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.2, metalness: 0.5 });
-    const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-    cabin.position.y = 2.0;
-    cabin.position.z = -0.4;
-    group.add(cabin);
-    
-    // Headlights
-    const hlGeo = new THREE.SphereGeometry(0.3, 6, 6);
-    const hlMat = new THREE.MeshBasicMaterial({ color: '#fef9c3' });
-    [-1.1, 1.1].forEach(hx => {
-      const hl = new THREE.Mesh(hlGeo, hlMat);
-      hl.position.set(hx, 0.8, -2.8);
-      group.add(hl);
-    });
-    
-    const startOffset = Math.random() * 400;
-    const x = road.x + (Math.random() - 0.5) * 4;
-    const z = road.z + startOffset;
-    const speed = 18 + Math.random() * 14;
+    const offset = (i * 24 + Math.random() * 40) % 460;
+    const x = lane.x + lane.dx * offset;
+    const z = lane.z + lane.dz * offset;
+    const speed = 20 + Math.random() * 12;
     
     group.position.set(x, terrainHeightAt(x, z), z);
-    if (road.dx !== 0) group.rotation.y = Math.PI / 2;
+    group.rotation.y = Math.atan2(lane.dx, lane.dz); // Perfectly face driving direction!
     scene.add(group);
     
     townCars.push({
       group, x, z,
-      dx: road.dx, dz: road.dz,
-      speed, baseSpeed: speed,
-      fleeing: false, destroyed: false,
+      dx: lane.dx, dz: lane.dz,
+      speed, baseSpeed: speed, points: 40,
+      fleeing: false, destroyed: false
+    });
+  }
+}
       health: 45, color,
       points: 40
     });
@@ -3771,6 +3820,7 @@ function animate(now) {
       if (car.z > 250) car.z = -250; if (car.z < -250) car.z = 250;
       
       car.group.position.set(car.x, terrainHeightAt(car.x, car.z), car.z);
+      car.group.rotation.y = Math.atan2(car.dx, car.dz);
       
       // Storm contact destruction
       if (dist < storm.radius * 1.4 && runActive) {
