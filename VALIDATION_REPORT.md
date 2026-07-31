@@ -6,24 +6,36 @@ Last updated: 2026-07-31
 
 The active playable is `MechanicsLab/SevereWeather_3D_Lab.html`. This report separates browser validation, repository integrity, Android packaging, and physical-device acceptance. Passing one gate does not imply the others.
 
-## v3.1.0 browser acceptance
+## v3.2.0 browser acceptance
 
-The Storm Town Rampage vertical slice completed a full automated Tornado round in the in-app Chromium browser.
+The Live Coverage Edition completed a full automated Tornado round in the in-app Chromium browser.
 
 Observed result:
 
 - rank: `S+`
-- final score: `22625`
+- final score: `25781`
 - district objectives: `3/3`
 - landmarks: `2/2`
 - substations: `3/3`
 - randomized bonus challenges: `3/3`
-- cosmetic reward: `NEON FUNNEL UNLOCKED!`
-- district scores: `2999`, `7999`, `22625`
+- cosmetic reward: `NEON FUNNEL EQUIPPED`
+- media moments: `8`
+- awarded footage bonus: `+1289`
+- district scores: `2999`, `7999`, `25781`
 - frame rate: approximately `60 FPS`
-- browser warnings or errors: `0`
+- observed rendering or interaction failures: `0`
 
-The retry control was also exercised. It closed the results overlay, reset the timer, score, district, and challenge state, rebuilt a single clean world, and resumed play without a browser error.
+The retry control was exercised at the mobile viewport. It closed the results overlay, reset the timer, score, footage count, district, and challenge state, rebuilt a single clean world, and resumed play.
+
+## News and storm-chaser checks
+
+- Four white satellite news vans and five yellow camera-equipped storm-chaser SUVs replaced the ten generic red boxes.
+- Crews pursued observation positions around the player storm and retreated after entering their role-specific danger radius.
+- Crews remained invincible and were never counted as targets or destruction.
+- Nearby destruction triggered a visible camera flash, a temporary crew-specific live headline, and a footage bonus.
+- News vans and storm chasers used different filming ranges, speeds, and radar markers.
+- The results screen reported actual media moments and awarded footage points.
+- An initial untuned round produced `43` media moments and overwhelmed the broadcast. A global cooldown produced `8` moments in the accepted round.
 
 ## Progression and finale checks
 
@@ -42,10 +54,9 @@ Confirmed:
 - joystick remained visible and usable at `95 x 95` pixels
 - all three action buttons remained visible at `50 x 50` pixels
 - compact HUD, radar, district, and challenge information fit on screen
-- the results card fit completely inside the viewport after its mobile-height correction
-- Tornado, Supercell, and Derecho selectors exposed the correct action labels and EAS descriptions
-- observed frame rate remained approximately `56-60 FPS`
-- browser warnings or errors: `0`
+- footage telemetry remained visible while the less important FPS field hid at the mobile breakpoint
+- the expanded results card measured `313.25` pixels high, from `y=38.375` to `bottom=351.625`, completely inside the viewport
+- observed frame rate remained approximately `60 FPS`
 
 This is a responsive-browser check, not proof of touch feel, thermal stability, battery use, or Android WebView behavior.
 
@@ -71,7 +82,7 @@ Final pre-commit results:
 
 ## Historical Unity evidence
 
-Older Unity and Godot work remains in the repository as reference material. The current production direction is the HTML/WebGL game, packaged for Android as a local single-player experience. Previous Unity compilation and APK evidence does not validate the v3.1.0 HTML build.
+Older Unity and Godot work remains in the repository as reference material. The current production direction is the HTML/WebGL game, packaged for Android as a local single-player experience. Previous Unity compilation and APK evidence does not validate the v3.2.0 HTML build.
 
 ## Gates still open
 
@@ -80,6 +91,8 @@ Older Unity and Godot work remains in the repository as reference material. The 
 - run repeated five-minute rounds while recording frame pacing, heat, and battery behavior
 - verify audio focus and interruption recovery
 - test cosmetic persistence after fully closing and reopening the Android app
+- confirm human players can distinguish news vans from storm-chaser SUVs without relying on radar colors
+- confirm eight to twelve coverage moments per round feels lively rather than repetitive
 - add an offline Android wrapper and release-signing workflow
 
 Browser acceptance proves that this vertical slice is playable and internally consistent. Physical Android evidence remains authoritative for whether it is ready to ship as a mobile game.

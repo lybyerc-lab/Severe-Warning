@@ -5,18 +5,20 @@ The HTML/WebGL build is the active gameplay source and the planned foundation fo
 ## Current build
 
 - `SevereWeather_3D_Lab.html`
-- Version: `3.1.0 Storm Town Rampage Slice`
+- Version: `3.2.0 Live Coverage Edition`
 - Runtime: self-contained Three.js/WebGL game
 - Primary target: Android landscape through a local web-app wrapper
 - Mode: single-player only
 
-Version 3.1.0 adds a three-district arcade run:
+Version 3.2.0 contains a three-district arcade run:
 
 1. Pine Ridge neighborhood
 2. Main Street
 3. County Fair blackout finale
 
-It also adds district transitions, randomized bonus challenges, thirteen destructible comedy props, sequential substation activation, a persistent Neon Funnel cosmetic unlock, mobile result-screen fitting, expanded results telemetry, and an updated deterministic bot route.
+It also contains district transitions, randomized bonus challenges, thirteen destructible comedy props, sequential substation activation, a persistent Neon Funnel cosmetic unlock, mobile result-screen fitting, expanded results telemetry, and a deterministic bot route.
+
+The v3.2 coverage system replaces enemy-looking red vehicle boxes with four satellite news vans and five storm-chaser SUVs. Crews maintain an observation radius, retreat when the storm becomes unsafe, flash cameras for nearby destruction, publish temporary live headlines, award bounded footage bonuses, and appear on radar. Crews are invincible witnesses and never destruction targets.
 
 ## Controls
 

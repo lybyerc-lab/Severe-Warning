@@ -6,7 +6,7 @@ The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.ht
 
 ## Current gameplay baseline
 
-Version `3.1.0 Storm Town Rampage Slice` contains:
+Version `3.2.0 Live Coverage Edition` contains:
 
 - three-minute single-player warning runs
 - Pine Ridge, Main Street, and County Fair districts
@@ -14,7 +14,9 @@ Version `3.1.0 Storm Town Rampage Slice` contains:
 - mobile joystick and three action buttons
 - pulled-back tactical camera and movement look-ahead
 - score, combo, EF progression, objectives, radar, and results
-- buildings, landmarks, power infrastructure, persistent ruins, storm chasers, and invincible airborne animals
+- buildings, landmarks, power infrastructure, persistent ruins, and invincible airborne animals
+- distinct news vans and storm-chaser SUVs that film destruction, retreat from danger, and never act as enemies or targets
+- camera flashes, live reporting chatter, captured-footage scoring, media radar markers, and an end-of-run coverage recap
 - thirteen destructible comedy props with slapstick callouts
 - one randomized bonus challenge per district
 - sequential County Fair substation finale
@@ -28,7 +30,8 @@ The design reference is the readable, humorous, replayable city-block destructio
 - Android landscape is the primary target.
 - The game is single-player; multiplayer is out of scope.
 - People remain protected and off-limits as targets.
-- Humor comes from fictional signs, props, weather reporting, vehicles, animals with safe landings, and environmental slapstick.
+- Humor comes from fictional signs, props, excitable local reporting, reckless-but-invincible storm chasers, animals with safe landings, and environmental slapstick.
+- News crews and storm chasers are witnesses. They report, film, reposition, and retreat; the player is never rewarded for targeting them.
 - Physical Android testing is authoritative for touch comfort, performance, heat, battery, audio, and final readability.
 
 ## Repository layout
@@ -41,6 +44,6 @@ The design reference is the readable, humorous, replayable city-block destructio
 
 ## Current evidence
 
-Automated browser testing of v3.1.0 completed a full Tornado run at approximately 60 FPS with no browser warnings or errors. It verified all three district challenges, both landmarks, all three sequential substations, the Neon Funnel unlock, replay reset, and an `844x390` mobile-landscape layout. This is not a substitute for physical Android acceptance.
+Automated browser testing of v3.2.0 completed a full Tornado run at approximately 60 FPS with all three district challenges, both landmarks, all three sequential substations, eight captured media moments, a `+1289` footage bonus, and a successful mobile retry. The results card and controls fit an `844x390` mobile-landscape viewport. This is not a substitute for physical Android acceptance.
 
 Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work.

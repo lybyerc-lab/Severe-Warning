@@ -197,3 +197,13 @@ Build #5 physical testing proved the damage pipeline, stage transitions, target 
 **Rejected alternatives:** Pursuing visual realism before replayable district personality; adding a large roster of cosmetically different storms with shared verbs; using jokes about real disasters or victims.
 
 **Revisit condition:** Expand beyond one town only after human browser play and a physical Android package confirm that the district loop remains readable, funny, comfortable, and replayable.
+
+## 2026-07-31 - Decision HTML-03: Make the response a media circus, not a battle
+
+**Decision:** News vans and storm chasers are the storm's moving audience. They film destruction, chase safe observation positions, retreat when the storm closes in, and drive live-reporting humor. They are invincible witnesses, never hostile units or destruction targets.
+
+**Evidence:** The previous ten plain red vehicle boxes looked enemy-coded and simply became airborne near the storm. v3.2.0 replaces them with four white satellite vans and five yellow camera-equipped chaser SUVs, event-driven camera flashes, live headlines, safe-distance vehicle behavior, radar markers, footage scoring, and results telemetry. An initial automated round produced 43 media moments and felt noisy; a global editorial cooldown reduced the verified tuned round to eight moments and `+1289` footage points while preserving S+ completion at approximately 60 FPS.
+
+**Rejected alternatives:** Military opposition, weapons fired at the storm, scoring crew destruction, helpless civilian vehicles, or constant broadcast notifications.
+
+**Revisit condition:** Add drones, named reporters, or district-specific broadcast arcs only after human mobile play confirms the nine-crew scene remains readable and the current cadence remains funny rather than repetitive.

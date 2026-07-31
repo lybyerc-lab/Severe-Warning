@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
-<title>Severe Weather 3D Lab v3.1.0 - Storm Town Rampage Slice</title>
+<title>Severe Weather 3D Lab v3.2.0 - Live Coverage Edition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -86,6 +86,7 @@
   .telemetry { display: flex; gap: 14px; font-size: 11px; font-family: monospace; }
   .telemetry b { color: var(--cyan); }
   .combo-badge { color: var(--gold) !important; font-weight: 900; }
+  .footage-badge { color: #f8fafc !important; text-shadow: 0 0 8px rgba(255,255,255,0.75); }
 
   /* Controls Footer */
   .footer { display: flex; justify-content: space-between; align-items: flex-end; }
@@ -146,6 +147,7 @@
     
     .telemetry { font-size: 9px; gap: 8px; padding: 4px 8px; }
     .telemetry .district-telemetry { display: none; }
+    .telemetry .fps-telemetry { display: none; }
     
     .touch-controls { gap: 6px; }
     .action-btn { width: 50px; height: 50px; font-size: 9px; }
@@ -182,7 +184,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.1.0 ARCADE</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.2.0 LIVE</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -215,7 +217,7 @@
 
     <div class="panel radar-box">
       <canvas id="radarCanvas" width="145" height="145"></canvas>
-      <div class="radar-label">DOPPLER HOOK ECHO</div>
+      <div class="radar-label">DOPPLER + LIVE CREWS</div>
     </div>
   </div>
 
@@ -231,7 +233,8 @@
       <div>TIME: <b id="timerVal" style="color:var(--gold);font-weight:900;">03:00</b></div>
       <div>COMBO: <b class="combo-badge" id="comboVal">1.0x</b></div>
       <div>SCORE: <b id="scoreVal">0</b></div>
-      <div>FPS: <b id="fpsVal">60</b></div>
+      <div>FOOTAGE: <b class="footage-badge" id="footageVal">0</b></div>
+      <div class="fps-telemetry">FPS: <b id="fpsVal">60</b></div>
     </div>
 
     <div class="touch-controls">
@@ -267,6 +270,7 @@
       <div>LANDMARKS SHATTERED: <b id="resLandmarks">0/2</b></div>
       <div>SUBSTATIONS SHATTERED: <b id="resSubstations" style="color:var(--cyan)">0/3</b></div>
       <div>BONUS CHALLENGES: <b id="resChallenges" style="color:var(--gold)">0/3</b></div>
+      <div>MEDIA MOMENTS: <b id="resMediaMoments" style="color:#f8fafc">0</b> / FOOTAGE BONUS: <b id="resFootageBonus" style="color:var(--cyan)">+0</b></div>
       <div>COSMETIC: <b id="resCosmetic" style="color:#f472b6">LOCKED</b></div>
       
       <div class="stage-breakdown">
@@ -761,6 +765,11 @@ let efMultiplier = 1.0;
 let funnelScale = 1.0;
 let currentCamY = 78 * mobileFactor, targetCamY = 78 * mobileFactor;
 let currentCamZ = 110 * mobileFactor, targetCamZ = 110 * mobileFactor;
+let mediaHeadlineText = '';
+let mediaHeadlineTimer = 0;
+let mediaMoments = 0;
+let footageBonus = 0;
+let mediaCaptureCooldown = 0;
 let easNewsText = '🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)';
 
 // Stage Telemetry Tracking
@@ -1094,6 +1103,47 @@ function createSignMaterial(text, background = '#1d4ed8', foreground = '#ffffff'
   return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.55, side: THREE.DoubleSide });
 }
 
+function createMediaVehicleMesh(role, crewNumber) {
+  const group = new THREE.Group();
+  const isNews = role === 'news';
+  const bodyColor = isNews ? '#f8fafc' : '#f59e0b';
+  const stripeColor = isNews ? '#2563eb' : '#111827';
+
+  addPropPart(group, new THREE.BoxGeometry(4.8, 1.5, 2.35), bodyColor, 0, 1.25, 0, { roughness: 0.32, metalness: 0.38 });
+  addPropPart(group, new THREE.BoxGeometry(isNews ? 3.0 : 2.7, 1.15, 2.15), bodyColor, -0.45, 2.35, 0, { roughness: 0.3, metalness: 0.28 });
+  addPropPart(group, new THREE.BoxGeometry(5.0, 0.36, 2.42), stripeColor, 0, 1.28, 0, { roughness: 0.35, metalness: 0.42 });
+  addPropPart(group, new THREE.BoxGeometry(0.75, 0.72, 2.18), '#0f172a', 1.7, 2.38, 0, { roughness: 0.12, metalness: 0.2 });
+
+  [-1.55, 1.55].forEach(x => [-1.08, 1.08].forEach(z => {
+    addPropPart(group, new THREE.CylinderGeometry(0.54, 0.54, 0.34, 12), '#09090b', x, 0.55, z, { rotation: { x: Math.PI / 2 } });
+  }));
+
+  if (isNews) {
+    const stationMat = createSignMaterial(`LIVE 8|NEWS`, '#1d4ed8');
+    addPropPart(group, new THREE.BoxGeometry(2.7, 1.15, 0.12), '#ffffff', -0.55, 2.25, -1.14, { material: stationMat });
+    addPropPart(group, new THREE.CylinderGeometry(0.08, 0.1, 2.4, 8), '#e2e8f0', -0.8, 3.9, 0);
+    const dish = addPropPart(group, new THREE.SphereGeometry(0.85, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), '#e2e8f0', -0.8, 5.15, 0, { roughness: 0.2, metalness: 0.65 });
+    dish.rotation.z = Math.PI / 3;
+  } else {
+    addPropPart(group, new THREE.BoxGeometry(2.7, 0.18, 1.9), '#111827', -0.35, 3.0, 0, { roughness: 0.25, metalness: 0.55 });
+    addPropPart(group, new THREE.CylinderGeometry(0.18, 0.22, 0.8, 8), '#475569', 0.25, 3.5, 0);
+    addPropPart(group, new THREE.BoxGeometry(0.75, 0.48, 0.52), '#111827', 0.25, 3.95, 0);
+    addPropPart(group, new THREE.CylinderGeometry(0.04, 0.04, 2.0, 6), '#e2e8f0', -1.3, 4.0, 0, { rotation: { z: -0.15 } });
+  }
+
+  const flash = addPropPart(group, new THREE.SphereGeometry(0.42, 8, 6), '#ffffff', isNews ? -0.8 : 0.25, isNews ? 5.25 : 4.0, -0.5, {
+    material: new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.95 })
+  });
+  flash.visible = false;
+
+  const crewTag = addPropPart(group, new THREE.BoxGeometry(1.35, 0.62, 0.1), stripeColor, 2.42, 1.55, 0, {
+    material: createSignMaterial(isNews ? `${crewNumber}|LIVE` : `WX|${crewNumber}`, isNews ? '#1d4ed8' : '#111827')
+  });
+  crewTag.rotation.y = Math.PI / 2;
+
+  return { group, flash };
+}
+
 function createComedyPropMesh(kind) {
   const group = new THREE.Group();
   let color = '#f472b6';
@@ -1218,6 +1268,7 @@ function destroyComedyProp(prop) {
   addScore(prop.points);
   recordDistrictChallengeProp(prop);
   showGagToast(prop.gag);
+  recordMediaMoment(prop.x, prop.z, prop.stage === 3 ? 125 : 85, prop.gag.replace(/\.$/, ''));
   playSound(prop.kind === 'foodcart' ? 'splash' : 'explode');
   addCameraShake(prop.stage === 3 ? 1.5 : 0.9);
   spawnPersistentRuin(prop.x, prop.z, prop.meshData.color);
@@ -1298,6 +1349,9 @@ function explodeStructure(x, z, color, isWaterTower = false, isGrainSilo = false
       altitude: 4 + Math.random() * 14
     });
   }
+
+  const mediaLabel = isWaterTower ? 'THE WATER TOWER COLLAPSE' : (isGrainSilo ? 'THE SILO IMPACT' : 'A DIRECT HIT');
+  recordMediaMoment(x, z, isWaterTower || isGrainSilo ? 180 : 65, mediaLabel);
 }
 
 function triggerPowerFlash() {
@@ -1389,6 +1443,90 @@ function addScore(pts) {
   return destructionScore - previousScore;
 }
 
+function publishMediaHeadline(text, duration = 3.2) {
+  mediaHeadlineText = text;
+  mediaHeadlineTimer = duration;
+  setUI('easTicker', `LIVE CAMERA: ${text}`);
+}
+
+function recordMediaMoment(x, z, value, eventLabel) {
+  if (!runActive || mediaCaptureCooldown > 0) return;
+  const availableCrew = chaserVans
+    .filter(crew => crew.captureCooldown <= 0)
+    .map(crew => ({ crew, distance: Math.hypot(crew.x - x, crew.z - z) }))
+    .filter(candidate => candidate.distance <= (candidate.crew.role === 'news' ? 105 : 88))
+    .sort((a, b) => a.distance - b.distance)[0];
+
+  if (!availableCrew) return;
+  const crew = availableCrew.crew;
+  const requestedBonus = Math.round(value * (crew.role === 'chaser' ? 1.25 : 1.0));
+  const awarded = addScore(requestedBonus);
+  footageBonus += awarded;
+  mediaMoments++;
+  mediaCaptureCooldown = crew.role === 'chaser' ? 7.5 : 8.5;
+  crew.captureCooldown = crew.role === 'chaser' ? 2.7 : 3.4;
+  crew.flashTimer = 0.24;
+  crew.meshData.flash.visible = true;
+  crew.meshData.flash.scale.setScalar(2.6);
+  const bonusText = awarded > 0 ? ` +${awarded} FOOTAGE` : '';
+  publishMediaHeadline(`${crew.callSign} CAUGHT ${eventLabel} ON CAMERA!${bonusText}`);
+}
+
+function updateMediaCrews(dt) {
+  mediaCaptureCooldown = Math.max(0, mediaCaptureCooldown - dt);
+  chaserVans.forEach(crew => {
+    crew.captureCooldown = Math.max(0, crew.captureCooldown - dt);
+    crew.panicCooldown = Math.max(0, crew.panicCooldown - dt);
+
+    if (crew.flashTimer > 0) {
+      crew.flashTimer -= dt;
+      crew.meshData.flash.visible = true;
+      const flashScale = 1 + Math.max(0, crew.flashTimer) * 7;
+      crew.meshData.flash.scale.setScalar(flashScale);
+    } else {
+      crew.meshData.flash.visible = false;
+    }
+
+    if (!runActive) return;
+
+    const fromStormX = crew.x - storm.pos.x;
+    const fromStormZ = crew.z - storm.pos.z;
+    const distance = Math.max(0.01, Math.hypot(fromStormX, fromStormZ));
+    const dangerRadius = storm.radius * funnelScale * (crew.role === 'news' ? 2.65 : 2.15) + 8;
+    const observationRadius = dangerRadius + (crew.role === 'news' ? 30 : 20) + crew.radiusOffset;
+    let targetX;
+    let targetZ;
+
+    if (distance < dangerRadius) {
+      targetX = crew.x + (fromStormX / distance) * 80;
+      targetZ = crew.z + (fromStormZ / distance) * 80;
+      crew.state = 'RETREATING';
+      if (crew.panicCooldown <= 0 && mediaHeadlineTimer <= 0) {
+        crew.panicCooldown = 8;
+        publishMediaHeadline(`${crew.callSign}: "BACK UP! KEEP THE CAMERA ROLLING!"`, 2.4);
+      }
+    } else {
+      crew.orbitAngle += dt * crew.orbitSpeed;
+      targetX = storm.pos.x + Math.cos(crew.orbitAngle) * observationRadius;
+      targetZ = storm.pos.z + Math.sin(crew.orbitAngle) * observationRadius;
+      crew.state = distance < observationRadius + 24 ? 'FILMING' : 'REPOSITIONING';
+    }
+
+    const toTargetX = targetX - crew.x;
+    const toTargetZ = targetZ - crew.z;
+    const targetDistance = Math.max(0.01, Math.hypot(toTargetX, toTargetZ));
+    const moveSpeed = crew.state === 'RETREATING' ? crew.speed * 1.75 : crew.speed;
+    const step = Math.min(targetDistance, moveSpeed * dt);
+    const moveX = (toTargetX / targetDistance) * step;
+    const moveZ = (toTargetZ / targetDistance) * step;
+
+    crew.x = THREE.MathUtils.clamp(crew.x + moveX, -370, 370);
+    crew.z = THREE.MathUtils.clamp(crew.z + moveZ, -370, 370);
+    crew.mesh.position.set(crew.x, 0, crew.z);
+    if (Math.abs(moveX) + Math.abs(moveZ) > 0.001) crew.mesh.rotation.y = Math.atan2(moveX, moveZ);
+  });
+}
+
 function init3DWorld() {
   if (districtChallenges.length === 0) setupDistrictChallenges();
   targets.forEach(target => scene.remove(target.meshData.group));
@@ -1413,6 +1551,12 @@ function init3DWorld() {
   destroyedComedyPropsCount = 0;
   currentStage = 1;
   stage1Score = 0; stage2Score = 0; stage3Score = 0;
+  mediaMoments = 0;
+  footageBonus = 0;
+  mediaHeadlineText = '';
+  mediaHeadlineTimer = 0;
+  mediaCaptureCooldown = 0;
+  setUI('footageVal', '0');
 
   while(ruinsGroup.children.length > 0) ruinsGroup.remove(ruinsGroup.children[0]);
   swathCtx.clearRect(0, 0, swathCanvas.width, swathCanvas.height);
@@ -1492,17 +1636,40 @@ function init3DWorld() {
     animals.push({ mesh: cowMesh, x, z, airborne: false, altitude: 0, orbitAngle: Math.random() * Math.PI * 2 });
   }
 
-  const vanGeo = new THREE.BoxGeometry(3.4, 1.9, 1.9);
-  const vanMat = new THREE.MeshStandardMaterial({ color: '#f87171', roughness: 0.25, metalness: 0.65 });
-  for (let i = 0; i < 10; i++) {
-    const vanMesh = new THREE.Mesh(vanGeo, vanMat);
-    const x = (Math.random() - 0.5) * 400;
-    const z = (Math.random() - 0.5) * 400;
-    vanMesh.position.set(x, 0.95, z);
-    vanMesh.castShadow = true;
-    scene.add(vanMesh);
-    chaserVans.push({ mesh: vanMesh, x, z, vx: (Math.random() - 0.5) * 0.6, vz: (Math.random() - 0.5) * 0.6, airborne: false, altitude: 0.95 });
-  }
+  const mediaCrewSpawns = [
+    { role: 'news', x: 42, z: -58, callSign: 'LIVE 8' },
+    { role: 'chaser', x: 86, z: -42, callSign: 'TEAM MESO' },
+    { role: 'chaser', x: 146, z: -132, callSign: 'VORTEX VAN' },
+    { role: 'news', x: -46, z: -54, callSign: 'COUNTY 5' },
+    { role: 'chaser', x: -112, z: -36, callSign: 'HOOK ECHO' },
+    { role: 'news', x: -158, z: -132, callSign: 'ACTION 12' },
+    { role: 'chaser', x: 62, z: 82, callSign: 'DEBRIS DESK' },
+    { role: 'news', x: 132, z: 62, callSign: 'SKY 4' },
+    { role: 'chaser', x: 172, z: 148, callSign: 'CORE PUNCH' }
+  ];
+
+  mediaCrewSpawns.forEach((spawn, index) => {
+    const meshData = createMediaVehicleMesh(spawn.role, index + 1);
+    meshData.group.position.set(spawn.x, 0, spawn.z);
+    meshData.group.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(meshData.group);
+    chaserVans.push({
+      mesh: meshData.group,
+      meshData,
+      role: spawn.role,
+      callSign: spawn.callSign,
+      x: spawn.x,
+      z: spawn.z,
+      speed: spawn.role === 'news' ? 18 : 25,
+      orbitAngle: Math.atan2(spawn.z - storm.pos.z, spawn.x - storm.pos.x),
+      orbitSpeed: (index % 2 === 0 ? 1 : -1) * (spawn.role === 'news' ? 0.08 : 0.12),
+      radiusOffset: (index % 3) * 7,
+      captureCooldown: index * 0.22,
+      panicCooldown: 0,
+      flashTimer: 0,
+      state: 'REPOSITIONING'
+    });
+  });
 
   spawnTownComedyProps();
   applyUnlockedCosmetic();
@@ -1723,7 +1890,7 @@ function updateEFRating() {
   efRating = badgeText;
   efMultiplier = mult;
   setUI('efBadge', badgeText);
-  setUI('easTicker', easNewsText);
+  if (mediaHeadlineTimer <= 0) setUI('easTicker', easNewsText);
 }
 
 function updateObjectives() {
@@ -1809,6 +1976,8 @@ function finishRun() {
   setUI('resLandmarks', `${destroyedLandmarksCount}/2`);
   setUI('resSubstations', `${destroyedSubstationsCount}/3`);
   setUI('resChallenges', `${challengeCount}/3`);
+  setUI('resMediaMoments', mediaMoments);
+  setUI('resFootageBonus', `+${footageBonus}`);
   setUI('resCosmetic', cosmeticResult);
 
   setUI('resS1Score', stage1Score);
@@ -1932,6 +2101,11 @@ function animate(now) {
     if (runTimeRemaining <= 0) {
       finishRun();
     }
+  }
+
+  if (mediaHeadlineTimer > 0) {
+    mediaHeadlineTimer = Math.max(0, mediaHeadlineTimer - dt);
+    if (mediaHeadlineTimer <= 0) setUI('easTicker', easNewsText);
   }
 
   // Cooldown Timers
@@ -2146,18 +2320,8 @@ function animate(now) {
     damageNearbyComedyProps(72 * dt * efMultiplier, storm.radius * 1.55);
   }
 
-  chaserVans.forEach(v => {
-    const dist = Math.hypot(v.x - storm.pos.x, v.z - storm.pos.z);
-    if (dist < storm.radius * 1.6) {
-      if (!v.airborne) {
-        v.airborne = true;
-        playSound('explode');
-      }
-      v.altitude = Math.min(22, v.altitude + 0.4);
-      v.mesh.position.set(storm.pos.x + (Math.random()-0.5)*12, v.altitude, storm.pos.z + (Math.random()-0.5)*12);
-      v.mesh.rotation.x += 0.25; v.mesh.rotation.y += 0.25;
-    }
-  });
+  // News vans and storm chasers are invincible witnesses, never hostile targets.
+  updateMediaCrews(dt);
 
   animals.forEach(a => {
     const dist = Math.hypot(a.x - storm.pos.x, a.z - storm.pos.z);
@@ -2219,6 +2383,7 @@ function animate(now) {
 
   setUI('fpsVal', fps || 60);
   setUI('scoreVal', destructionScore);
+  setUI('footageVal', mediaMoments);
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
@@ -2273,6 +2438,18 @@ function renderRadar() {
       }
     });
   }
+
+  // Moving witness crews: blue squares are news vans, amber dots are storm chasers.
+  chaserVans.forEach(crew => {
+    const crewX = 72.5 + (crew.x / 220) * 55;
+    const crewZ = 72.5 + (crew.z / 220) * 55;
+    rCtx.fillStyle = crew.role === 'news' ? '#60a5fa' : '#fbbf24';
+    if (crew.role === 'news') {
+      rCtx.fillRect(crewX - 2.5, crewZ - 2.5, 5, 5);
+    } else {
+      rCtx.beginPath(); rCtx.arc(crewX, crewZ, 2.8, 0, Math.PI * 2); rCtx.fill();
+    }
+  });
 }
 
 requestAnimationFrame(animate);

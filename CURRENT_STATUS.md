@@ -3,7 +3,7 @@
 Last updated: 2026-07-31
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active game: HTML/WebGL `3.1.0 Storm Town Rampage Slice`
+Active game: HTML/WebGL `3.2.0 Live Coverage Edition`
 Primary target: single-player Android landscape
 Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
 
@@ -37,9 +37,10 @@ The game is a humorous, replayable, mobile arcade destruction game in which the 
 - Destruction should be immediate, readable, generous, and persistent.
 - Humor comes from fictional signs, objects, weather reporting, vehicles, safe airborne animals, and environmental slapstick.
 - People remain protected and off-limits as targets.
+- News vans and storm chasers are invincible witnesses that film, report, reposition, and retreat. They are not enemies.
 - The project may learn from classic city-destruction game structure but must use original storms, locations, jokes, art, progression, and identity.
 
-## Current v3.1.0 slice
+## Current v3.2.0 slice
 
 The current three-minute run contains:
 
@@ -58,10 +59,15 @@ Implemented systems include:
 - district scores, bonus completion, substation count, and cosmetic status on the results screen
 - deterministic `?bot=true` playtest routing that understands district targets
 - replay cleanup for world objects, hail, fragments, power poles, ruins, and ground swath
+- four white satellite news vans and five yellow storm-chaser SUVs with distinct silhouettes
+- safe-distance pursuit, orbiting observation positions, and emergency retreat behavior
+- captured-on-camera bonuses triggered by real destruction events near a crew
+- camera flashes, local-news headlines, radar crew markers, live footage telemetry, and results recap
+- a global editorial cooldown that limits coverage to readable highlight moments
 
 ## Automated evidence
 
-Browser playtesting of the exact v3.1.0 source completed a full Tornado run with:
+Browser playtesting of the exact v3.2.0 source completed a full Tornado run with:
 
 - S+ grade
 - all 3 storm objectives
@@ -70,14 +76,15 @@ Browser playtesting of the exact v3.1.0 source completed a full Tornado run with
 - all 3 sequential substations
 - Neon Funnel unlock
 - successful replay reset
+- 8 captured media moments and `+1289` awarded footage points
 - approximately 60 FPS during the full-size run
-- no browser warnings or errors
+- no observed rendering or interaction failure
 
-Responsive validation at `844x390` confirmed that the joystick, action buttons, radar, compact HUD, challenge banner, and game view fit the landscape viewport. The results card was corrected from a clipped 427-pixel layout to a 298-pixel layout that fits within the 390-pixel viewport.
+Responsive validation at `844x390` confirmed that the `95x95` joystick, three `50x50` action buttons, radar, footage telemetry, compact HUD, challenge banner, and game view fit the landscape viewport. The expanded results card measured `313.25` pixels high and ended at `351.625`, inside the 390-pixel viewport.
 
 ## Evidence boundary
 
-The v3.1.0 build has not yet been:
+The v3.2.0 build has not yet been:
 
 - packaged as an Android APK or AAB
 - run inside Android System WebView
@@ -89,7 +96,7 @@ Do not describe Android packaging or physical-device acceptance as complete unti
 
 ## Immediate next action
 
-1. Freeze v3.1.0 gameplay after human browser acceptance.
+1. Freeze v3.2.0 gameplay after human browser acceptance of crew readability and coverage cadence.
 2. Create a small Capacitor Android shell with all game assets bundled locally.
 3. Remove or locally bundle external font dependencies for offline play.
 4. Build a debug APK locally.
