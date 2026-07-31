@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<title>Severe Weather 3D Lab v4.1.0 - Serpentine Funnel</title>
+<title>Severe Weather 3D Lab v4.3.0 - Rampage Layer</title>
 <script>
 /* INLINED THREE.JS R128 */
 /**
@@ -282,7 +282,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v4.2.0 MOBILE ARCADE</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v4.3.0 RAMPAGE LAYER</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -1575,6 +1575,187 @@ let destroyedComedyPropsCount = 0;
 let clearedBlocksCount = 0;
 let chainReactionsCount = 0;
 
+// --- RAMPAGE REACTION LAYER: NEW WORLD SYSTEMS ---
+const activeScorePopups = [];   // Floating "+XXX" sprites
+const townCars = [];            // Ambient driving cars
+const mapPickups = [];          // Collectible power-up items
+const enemyVehicles = [];       // Police/Fire/Guard resistance
+let scoreDoublerTimer = 0;      // Active score doubler pickup
+let comboFreezeTimer = 0;       // Active combo freeze pickup
+let efBoostTimer = 0;           // Active EF boost pickup
+let destroyedCarsCount = 0;
+
+// --- FLOATING SCORE POP-UP SYSTEM ---
+function spawnScorePopup(x, y, z, text, color = '#fbbf24') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 48;
+  const ctx = canvas.getContext('2d');
+  ctx.font = 'bold 36px Outfit, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 4;
+  ctx.strokeText(text, 64, 24);
+  ctx.fillStyle = color;
+  ctx.fillText(text, 64, 24);
+  
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.position.set(x, y + 4, z);
+  sprite.scale.set(8, 3, 1);
+  scene.add(sprite);
+  activeScorePopups.push({ sprite, life: 1.4, startY: y + 4 });
+}
+
+// --- AMBIENT TOWN CARS SYSTEM ---
+function spawnTownCars() {
+  townCars.length = 0;
+  const carColors = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b', '#e11d48'];
+  const roadPositions = [];
+  // Generate road paths along the grid lines between blocks
+  const gridLines = [-160, -80, 0, 80, 160];
+  gridLines.forEach(pos => {
+    roadPositions.push({ x: pos, z: -240, dx: 0, dz: 1 });   // North-South
+    roadPositions.push({ x: -240, z: pos, dx: 1, dz: 0 });   // East-West
+  });
+  
+  for (let i = 0; i < 18; i++) {
+    const road = roadPositions[i % roadPositions.length];
+    const color = carColors[i % carColors.length];
+    const group = new THREE.Group();
+    
+    // Car body
+    const bodyGeo = new THREE.BoxGeometry(3.2, 1.6, 5.5);
+    const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.3 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.8;
+    body.castShadow = true;
+    group.add(body);
+    
+    // Car roof/cabin
+    const cabinGeo = new THREE.BoxGeometry(2.4, 1.1, 2.8);
+    const cabinMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.2, metalness: 0.5 });
+    const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+    cabin.position.y = 2.0;
+    cabin.position.z = -0.4;
+    group.add(cabin);
+    
+    // Headlights
+    const hlGeo = new THREE.SphereGeometry(0.3, 6, 6);
+    const hlMat = new THREE.MeshBasicMaterial({ color: '#fef9c3' });
+    [-1.1, 1.1].forEach(hx => {
+      const hl = new THREE.Mesh(hlGeo, hlMat);
+      hl.position.set(hx, 0.8, -2.8);
+      group.add(hl);
+    });
+    
+    const startOffset = Math.random() * 400;
+    const x = road.x + (Math.random() - 0.5) * 4;
+    const z = road.z + startOffset;
+    const speed = 18 + Math.random() * 14;
+    
+    group.position.set(x, terrainHeightAt(x, z), z);
+    if (road.dx !== 0) group.rotation.y = Math.PI / 2;
+    scene.add(group);
+    
+    townCars.push({
+      group, x, z,
+      dx: road.dx, dz: road.dz,
+      speed, baseSpeed: speed,
+      fleeing: false, destroyed: false,
+      health: 45, color,
+      points: 40
+    });
+  }
+}
+
+// --- MAP PICKUPS SYSTEM ---
+function spawnMapPickups() {
+  mapPickups.forEach(p => { if (p.group) scene.remove(p.group); });
+  mapPickups.length = 0;
+  
+  const pickupDefs = [
+    { type: 'time',   icon: '⏱️', color: '#fbbf24', label: '+15 SEC', effect: 'time' },
+    { type: 'ef',     icon: '⚡', color: '#38bdf8', label: 'EF BOOST', effect: 'efBoost' },
+    { type: 'combo',  icon: '🔥', color: '#ef4444', label: 'COMBO FREEZE', effect: 'comboFreeze' },
+    { type: 'double', icon: '💎', color: '#22c55e', label: '2× SCORE', effect: 'scoreDoubler' },
+    { type: 'time',   icon: '⏱️', color: '#fbbf24', label: '+15 SEC', effect: 'time' },
+    { type: 'ef',     icon: '⚡', color: '#38bdf8', label: 'EF BOOST', effect: 'efBoost' },
+    { type: 'combo',  icon: '🔥', color: '#ef4444', label: 'COMBO FREEZE', effect: 'comboFreeze' },
+  ];
+  
+  const positions = [
+    [-140, -140], [140, -140], [-140, 140], [140, 140],
+    [0, -180], [0, 180], [-180, 0]
+  ];
+  
+  pickupDefs.forEach((def, i) => {
+    const pos = positions[i % positions.length];
+    const group = new THREE.Group();
+    
+    // Glowing orb
+    const orbGeo = new THREE.SphereGeometry(2.5, 12, 12);
+    const orbMat = new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.7 });
+    const orb = new THREE.Mesh(orbGeo, orbMat);
+    group.add(orb);
+    
+    // Inner diamond
+    const diaGeo = new THREE.OctahedronGeometry(1.4, 0);
+    const diaMat = new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: def.color, emissiveIntensity: 0.8, roughness: 0.1, metalness: 0.6 });
+    const diamond = new THREE.Mesh(diaGeo, diaMat);
+    group.add(diamond);
+    
+    // Beacon column
+    const beamGeo = new THREE.CylinderGeometry(0.3, 0.3, 14, 6);
+    const beamMat = new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.25 });
+    const beam = new THREE.Mesh(beamGeo, beamMat);
+    beam.position.y = 7;
+    group.add(beam);
+    
+    const px = pos[0];
+    const pz = pos[1];
+    group.position.set(px, terrainHeightAt(px, pz) + 4, pz);
+    scene.add(group);
+    
+    mapPickups.push({
+      group, x: px, z: pz, diamond,
+      type: def.type, label: def.label, effect: def.effect, color: def.color,
+      collected: false, bobPhase: Math.random() * Math.PI * 2
+    });
+  });
+}
+
+function collectPickup(pickup) {
+  if (pickup.collected) return;
+  pickup.collected = true;
+  scene.remove(pickup.group);
+  playSound('click');
+  playSound('glass');
+  
+  if (pickup.effect === 'time') {
+    runTimeRemaining = Math.min(runTimeRemaining + 15, 210);
+    showGagToast('⏱️ +15 SECONDS! TIME IS ON YOUR SIDE!');
+    spawnScorePopup(pickup.x, terrainHeightAt(pickup.x, pickup.z) + 6, pickup.z, '+15s', '#fbbf24');
+  } else if (pickup.effect === 'efBoost') {
+    efBoostTimer = 8.0;
+    showGagToast('⚡ EF BOOST! MAXIMUM POWER FOR 8 SECONDS!');
+    spawnScorePopup(pickup.x, terrainHeightAt(pickup.x, pickup.z) + 6, pickup.z, 'EF UP!', '#38bdf8');
+  } else if (pickup.effect === 'comboFreeze') {
+    comboFreezeTimer = 12.0;
+    showGagToast('🔥 COMBO FREEZE! NO DECAY FOR 12 SECONDS!');
+    spawnScorePopup(pickup.x, terrainHeightAt(pickup.x, pickup.z) + 6, pickup.z, 'COMBO!', '#ef4444');
+  } else if (pickup.effect === 'scoreDoubler') {
+    scoreDoublerTimer = 10.0;
+    showGagToast('💎 SCORE DOUBLER! 2× POINTS FOR 10 SECONDS!');
+    spawnScorePopup(pickup.x, terrainHeightAt(pickup.x, pickup.z) + 6, pickup.z, '2× PTS!', '#22c55e');
+  }
+  addCameraShake(0.6);
+}
+
+// --- MEDIA OBSERVERS & STORM CHASERS ---
+// Storm chasers and news vans try to film, report, and document the storm for ratings!
+
 function createHouseMesh(districtType, i, variant = 0) {
   const group = new THREE.Group();
   const damageParts = [];
@@ -2082,17 +2263,66 @@ function applyTargetDamageStage(target) {
   if (nextStage <= target.damageStage) return;
   target.damageStage = nextStage;
   const lean = target.x % 2 === 0 ? 1 : -1;
-  target.meshData.group.rotation.z += lean * (nextStage === 1 ? 0.055 : 0.095);
-  target.meshData.group.scale.y *= nextStage === 1 ? 0.94 : 0.84;
-  if (target.meshData.roof) {
-    target.meshData.roof.rotation.z += lean * 0.18;
-    target.meshData.roof.position.x += lean * 0.7;
+
+  if (nextStage === 1) {
+    // STAGE 1: Roof flies off, building leans, darkens
+    if (target.meshData.roof && target.meshData.roof.parent) {
+      target.meshData.group.remove(target.meshData.roof);
+      // Spawn roof as flying debris
+      const roofFrag = target.meshData.roof.clone();
+      roofFrag.position.copy(target.meshData.group.position);
+      roofFrag.position.y += 6;
+      scene.add(roofFrag);
+      activeExplosionFragments.push({
+        mesh: roofFrag,
+        vx: lean * 12 + (Math.random() - 0.5) * 8,
+        vy: 14 + Math.random() * 6,
+        vz: (Math.random() - 0.5) * 10,
+        rotX: 0.3, rotY: 0.2,
+        life: 2.5, bounced: false
+      });
+    }
+    target.meshData.group.rotation.z += lean * 0.08;
+    target.meshData.group.scale.y *= 0.88;
+    playSound('shatter');
+    spawnScorePopup(target.x, terrainHeightAt(target.x, target.z) + 5, target.z, 'CRUMBLE!', '#f97316');
+  } else if (nextStage === 2) {
+    // STAGE 2: Upper walls crumble away, heavy lean, near-collapse
+    const parts = target.meshData.damageParts || [];
+    // Remove 40% of damage parts as flying chunks  
+    const removeCount = Math.max(1, Math.floor(parts.length * 0.4));
+    for (let r = 0; r < removeCount && parts.length > 1; r++) {
+      const part = parts.pop();
+      if (part && part.parent) {
+        target.meshData.group.remove(part);
+        const chunk = part.clone();
+        chunk.position.copy(target.meshData.group.position);
+        chunk.position.y += 3 + Math.random() * 4;
+        scene.add(chunk);
+        activeExplosionFragments.push({
+          mesh: chunk,
+          vx: (Math.random() - 0.5) * 18,
+          vy: 8 + Math.random() * 12,
+          vz: (Math.random() - 0.5) * 18,
+          rotX: 0.25, rotY: 0.3,
+          life: 2.0, bounced: false
+        });
+      }
+    }
+    target.meshData.group.rotation.z += lean * 0.15;
+    target.meshData.group.scale.y *= 0.7;
+    target.meshData.group.scale.x *= 0.92;
+    addScore(18);
+    playSound('explode');
+    addCameraShake(0.8);
+    spawnScorePopup(target.x, terrainHeightAt(target.x, target.z) + 4, target.z, '+18', '#ef4444');
   }
+
+  // Darken remaining parts
   (target.meshData.damageParts || [target.meshData.base]).filter(Boolean).forEach(part => {
-    if (part.material && part.material.color) part.material.color.offsetHSL(0, -0.08, nextStage === 1 ? -0.08 : -0.14);
+    if (part.material && part.material.color) part.material.color.offsetHSL(0, -0.12, nextStage === 1 ? -0.10 : -0.18);
   });
   spawnDamagePuff(target);
-  if (nextStage === 2) addScore(18);
 }
 
 function checkBlockClear(blockId) {
@@ -2115,7 +2345,9 @@ function destroyTarget(target, source = 'storm') {
   target.health = 0;
   scene.remove(target.meshData.group);
   destroyedTargetsCount++;
-  addScore(target.points || target.meshData.points || (target.isCommercial ? 100 : (target.isTree ? 25 : 60)));
+  const pts = target.points || target.meshData.points || (target.isCommercial ? 100 : (target.isTree ? 25 : 60));
+  const awarded = addScore(pts);
+  if (awarded > 0) spawnScorePopup(target.x, terrainHeightAt(target.x, target.z) + 6, target.z, `+${awarded}`, target.isTree ? '#22c55e' : '#fbbf24');
   explodeStructure(target.x, target.z, target.color, false, false, target.meshData.footprint || 5);
   checkBlockClear(target.blockId);
 }
@@ -2193,18 +2425,21 @@ function damageLandmark(lm, amount) {
     if (lm.meshData.beacon) lm.meshData.group.remove(lm.meshData.beacon);
     scene.remove(lm.meshData.group);
     destroyedLandmarksCount++;
-    addScore(500);
+    const awarded = addScore(500);
+    if (awarded > 0) spawnScorePopup(lm.x, terrainHeightAt(lm.x, lm.z) + 10, lm.z, `+${awarded}`, '#f59e0b');
     explodeStructure(lm.x, lm.z, lm.meshData.color, lm.icon === '💧', lm.icon === '🌾');
   }
 }
 
-// STRICT STAGE SCORE HARD CAPS
+// STRICT STAGE SCORE HARD CAPS + SCORE DOUBLER PICKUP SUPPORT
 function addScore(pts) {
   comboMultiplier = Math.min(3.5, comboMultiplier + 0.05);
   maxComboReached = Math.max(maxComboReached, comboMultiplier);
   comboDecayTimer = 4.5;
 
-  const added = Math.round(pts * comboMultiplier);
+  let multiplied = Math.round(pts * comboMultiplier);
+  if (scoreDoublerTimer > 0) multiplied *= 2;
+  const added = multiplied;
   baseScore += pts;
   
   const previousScore = destructionScore;
@@ -2545,6 +2780,16 @@ function init3DWorld() {
   activeExplosionFragments.length = 0;
   activeSetpieceEffects.length = 0;
   hailStones.length = 0;
+  activeScorePopups.forEach(p => scene.remove(p.sprite));
+  activeScorePopups.length = 0;
+  townCars.forEach(c => scene.remove(c.group));
+  townCars.length = 0;
+  mapPickups.forEach(p => { if (p.group) scene.remove(p.group); });
+  mapPickups.length = 0;
+  destroyedCarsCount = 0;
+  scoreDoublerTimer = 0;
+  comboFreezeTimer = 0;
+  efBoostTimer = 0;
   destroyedLandmarksCount = 0;
   destroyedSubstationsCount = 0;
   destroyedTargetsCount = 0;
@@ -2651,6 +2896,8 @@ function init3DWorld() {
   });
 
   spawnTownComedyProps();
+  spawnTownCars();
+  spawnMapPickups();
   applyUnlockedCosmetic();
   showDistrictTransition(1);
 }
@@ -3453,17 +3700,78 @@ function animate(now) {
     }
   }
 
-  for (let i = activeSetpieceEffects.length - 1; i >= 0; i--) {
-    const effect = activeSetpieceEffects[i];
-    effect.life -= dt;
-    const progress = 1 - Math.max(0, effect.life) / effect.maxLife;
-    effect.mesh.scale.setScalar(1 + progress * 12);
-    effect.mesh.material.opacity = Math.max(0, 0.92 * (1 - progress));
-    if (effect.life <= 0) {
-      scene.remove(effect.mesh);
-      activeSetpieceEffects.splice(i, 1);
+  // --- RAMPAGE REACTION LAYER ANIMATION UPDATES ---
+  // 1. Floating 3D Score Pop-ups (+150, +500, CRUMBLE!)
+  for (let i = activeScorePopups.length - 1; i >= 0; i--) {
+    const pop = activeScorePopups[i];
+    pop.life -= dt;
+    pop.sprite.position.y += dt * 5.5;
+    pop.sprite.material.opacity = Math.max(0, pop.life / 1.4);
+    if (pop.life <= 0) {
+      scene.remove(pop.sprite);
+      activeScorePopups.splice(i, 1);
     }
   }
+
+  // 2. Power-Up Timers Countdown
+  if (scoreDoublerTimer > 0) scoreDoublerTimer = Math.max(0, scoreDoublerTimer - dt);
+  if (comboFreezeTimer > 0) {
+    comboFreezeTimer = Math.max(0, comboFreezeTimer - dt);
+    comboDecayTimer = 4.5; // Freeze decay
+  }
+  if (efBoostTimer > 0) {
+    efBoostTimer = Math.max(0, efBoostTimer - dt);
+    efMultiplier = Math.max(efMultiplier, 2.0);
+  }
+
+  // 3. Map Pickups Bobbing & Collection
+  mapPickups.forEach(p => {
+    if (!p.collected) {
+      p.bobPhase += dt * 3.0;
+      p.group.position.y = terrainHeightAt(p.x, p.z) + 4 + Math.sin(p.bobPhase) * 0.8;
+      p.diamond.rotation.y += dt * 2.5;
+      
+      const dist = Math.hypot(p.x - storm.pos.x, p.z - storm.pos.z);
+      if (dist < storm.radius * 1.4 + 3) {
+        collectPickup(p);
+      }
+    }
+  });
+
+  // 4. Ambient Town Cars Driving, Fleeing & Destruction
+  townCars.forEach(car => {
+    if (!car.destroyed) {
+      const dist = Math.hypot(car.x - storm.pos.x, car.z - storm.pos.z);
+      if (dist < storm.radius * 2.2 && !car.fleeing) {
+        car.fleeing = true;
+        car.speed = car.baseSpeed * 1.8;
+      }
+      
+      // Drive forward
+      car.x += car.dx * car.speed * dt;
+      car.z += car.dz * car.speed * dt;
+      
+      // Wrap around grid boundaries
+      if (car.x > 250) car.x = -250; if (car.x < -250) car.x = 250;
+      if (car.z > 250) car.z = -250; if (car.z < -250) car.z = 250;
+      
+      car.group.position.set(car.x, terrainHeightAt(car.x, car.z), car.z);
+      
+      // Storm contact destruction
+      if (dist < storm.radius * 1.4 && runActive) {
+        car.destroyed = true;
+        scene.remove(car.group);
+        destroyedCarsCount++;
+        const awarded = addScore(car.points);
+        if (awarded > 0) spawnScorePopup(car.x, terrainHeightAt(car.x, car.z) + 4, car.z, `+${awarded}`, '#3b82f6');
+        playSound('explode');
+        addCameraShake(0.5);
+        if (destroyedCarsCount % 4 === 0) {
+          showGagToast('🚘 TRAFFIC SWEEP! CLEAR THE ROADS!');
+        }
+      }
+    }
+  });
 
   updateEFRating();
   updateObjectives();
