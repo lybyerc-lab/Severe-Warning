@@ -44,6 +44,20 @@ Expected APK location:
 android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## Build in GitHub Actions
+
+The manual workflow at `.github/workflows/android-debug.yml` builds on GitHub's Ubuntu runner, not on the local work PC. It installs the pinned JavaScript toolchain, synchronizes the offline Capacitor assets, uses JDK 21 and Android SDK 36, runs the checked-in Gradle Wrapper, verifies the APK exists, records its SHA-256, and uploads both files for seven days.
+
+To run it:
+
+1. Open the repository's **Actions** tab.
+2. Select **Build Android Debug APK**.
+3. Choose **Run workflow** on `main`.
+4. Open the completed run and download the `severe-weather-v3.2.0-debug-*` artifact.
+5. Unzip the artifact before transferring `app-debug.apk` to the phone.
+
+The workflow has read-only repository permission and requires no signing secrets. Gradle signs the debug APK with an ephemeral debug key suitable for device testing, not public distribution.
+
 Capacitor sync may update generated files under `android/app/src/main/assets/`. Review the Git diff before committing any native-project change.
 
 ## Device acceptance checklist

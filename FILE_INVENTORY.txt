@@ -1,4 +1,5 @@
 .gitattributes
+.github/workflows/android-debug.yml
 .gitignore
 Assets/SevereWeather/Editor/ProductionSliceBuilder.cs
 Assets/SevereWeather/Editor/ProjectReadinessWindow.cs

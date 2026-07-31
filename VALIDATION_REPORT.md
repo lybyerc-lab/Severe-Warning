@@ -76,6 +76,8 @@ The synchronized offline bundle was opened separately in Chromium at `844x390`. 
 
 Native Gradle compilation was not run. The managed work PC has no permitted Android Studio, Android SDK, JDK, `adb`, or `sdkmanager` installation. This is an environment gate, not a passed build.
 
+The repository now contains a manually triggered GitHub Actions workflow for the first native compilation. Its presence is not build evidence; this report must record the run URL, commit, result, and APK hash after the workflow completes.
+
 ## Repository integrity
 
 Validation commands use the bundled Python runtime when `python` is not available on `PATH`:
@@ -91,7 +93,7 @@ Final pre-commit results:
 - `Tools/validate_project.py`: passed
 - C# files: `34`
 - Markdown documents in `Docs/`: `20`
-- tracked and intended project files: `135`
+- tracked and intended project files: `136`
 - `FILE_INVENTORY.txt`: synchronized
 - SHA-256 registry: verified with zero mismatches
 - `git diff --check`: passed

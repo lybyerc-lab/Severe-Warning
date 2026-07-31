@@ -98,8 +98,8 @@ Do not describe Android packaging or physical-device acceptance as complete unti
 
 ## Immediate next action
 
-1. Move or clone this repository to a permitted machine with Node 22+, Android Studio, Android SDK 36, and a compatible JDK.
-2. Run the documented dependency, bundle, sync, and Gradle commands in `Docs/ANDROID_PACKAGING.md`.
+1. Run the manual **Build Android Debug APK** GitHub Actions workflow.
+2. Download and unzip the debug APK artifact.
 3. Install the debug APK on the target Android phone.
 4. Record touch comfort, frame pacing, heat, battery, audio, pause/resume, save persistence, orientation, and browser-back results.
 5. Optimize only measured device problems before expanding the campaign.
