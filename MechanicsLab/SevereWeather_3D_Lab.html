@@ -3588,6 +3588,13 @@ function animate(now) {
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
   tornadoGroup.rotation.x = THREE.MathUtils.lerp(tornadoGroup.rotation.x, moveZ * 0.14, 0.1);
 
+  // Swirl ground touchdown dust bowl puffs dynamically
+  dustPuffs.forEach(p => {
+    p.angle += p.rotSpeed * 2.5;
+    p.mesh.position.set(Math.cos(p.angle) * p.dist, 0.8 + Math.sin(p.angle * 2) * 0.4, Math.sin(p.angle) * p.dist);
+    p.mesh.rotation.y += 0.08;
+  });
+
   // DYNAMIC AUDIO RUMBLE SOUNDSCAPE MODULATION
   updateWindRumble(isMoving ? storm.speed : 0, efMultiplier);
 
