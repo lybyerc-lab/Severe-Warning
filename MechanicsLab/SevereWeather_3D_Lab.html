@@ -387,6 +387,18 @@
 // --- AUTOMATED BOT PLAYTEST HARNESS MODE ---
 const urlParams = new URLSearchParams(window.location.search);
 const isBotMode = urlParams.get('bot') === 'true' || window.location.hash === '#bot';
+// --- UI CACHE HELPER (INITIALIZED AT TOP OF SCRIPT) ---
+var UI_CACHE = {};
+function getCachedEl(id) {
+  if (!id) return null;
+  if (!UI_CACHE[id]) UI_CACHE[id] = document.getElementById(id);
+  return UI_CACHE[id];
+}
+function setUI(id, text) {
+  const el = getCachedEl(id);
+  if (el && el.innerText !== text) el.innerText = text;
+}
+
 let botWaypoints = [
   { x: -80, z: -80 },   // Downtown
   { x: 100, z: -90 },   // Suburbs
@@ -731,17 +743,6 @@ if (isBotMode) {
 
 loadHighScores();
 
-
-// --- UI CACHE HELPER ---
-const UI_CACHE = {};
-function getCachedEl(id) {
-  if (!UI_CACHE[id]) UI_CACHE[id] = document.getElementById(id);
-  return UI_CACHE[id];
-}
-function setUI(id, text) {
-  const el = getCachedEl(id);
-  if (el && el.innerText !== text) el.innerText = text;
-}
 
 // --- STORM TOWN ARCADE DISTRICTS, BONUS CHALLENGES & PERSISTENT COSMETIC ---
 const DISTRICTS = {
@@ -2911,44 +2912,49 @@ function init3DWorld() {
 }
 
 function selectStormClass(type) {
-  if (!runActive) return;
   currentStorm = type;
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-  tornadoGroup.visible = false;
-  supercellGroup.visible = false;
-  derechoGroup.visible = false;
+  if (typeof tornadoGroup !== 'undefined' && tornadoGroup) tornadoGroup.visible = false;
+  if (typeof supercellGroup !== 'undefined' && supercellGroup) supercellGroup.visible = false;
+  if (typeof derechoGroup !== 'undefined' && derechoGroup) derechoGroup.visible = false;
 
   if (type === 'tornado') {
-    getCachedEl('tabTornado').classList.add('active');
+    const tab = getCachedEl('tabTornado');
+    if (tab) tab.classList.add('active');
     setUI('stormIconHead', '🌪️');
-    tornadoGroup.visible = true;
+    if (typeof tornadoGroup !== 'undefined' && tornadoGroup) tornadoGroup.visible = true;
     storm.speed = 42; storm.radius = 16;
     setUI('lblBtn1', 'PULL'); setUI('lblBtn2', 'GUST'); setUI('lblBtn3', 'ZAP');
     setUI('verbSpace', 'SPACE: Pull (Inward Gravitational Vortex)');
     setUI('verbQ', 'Q: Gust (360° Explosive Shockwave)');
     setUI('verbE', 'E: Power Grid Chain Zap');
   } else if (type === 'supercell') {
-    getCachedEl('tabSupercell').classList.add('active');
+    const tab = getCachedEl('tabSupercell');
+    if (tab) tab.classList.add('active');
     setUI('stormIconHead', '🌩️');
-    supercellGroup.visible = true;
+    if (typeof supercellGroup !== 'undefined' && supercellGroup) supercellGroup.visible = true;
     storm.speed = 36; storm.radius = 26;
     setUI('lblBtn1', 'HAIL'); setUI('lblBtn2', 'DOWNBURST'); setUI('lblBtn3', 'LIGHTNING');
     setUI('verbSpace', 'SPACE: Hail Corridor (Raining Barrage)');
     setUI('verbQ', 'Q: Downburst (Directional Forward Blast)');
     setUI('verbE', 'E: Targeted Lightning Super-Strike');
   } else if (type === 'derecho') {
-    getCachedEl('tabDerecho').classList.add('active');
+    const tab = getCachedEl('tabDerecho');
+    if (tab) tab.classList.add('active');
     setUI('stormIconHead', '💨');
-    derechoGroup.visible = true;
+    if (typeof derechoGroup !== 'undefined' && derechoGroup) derechoGroup.visible = true;
     storm.speed = 54; storm.radius = 34;
     setUI('lblBtn1', 'SWEEP'); setUI('lblBtn2', 'MICROBURST'); setUI('lblBtn3', 'DUST');
     setUI('verbSpace', 'SPACE: Wind Wall Sweep (80m Mega Surge)');
     setUI('verbQ', 'Q: Microburst (High-Damage Blast Ring)');
     setUI('verbE', 'E: Dust Cloud Surge (Structure Weakening)');
   }
-  updateEFRating();
-  renderObjectives();
+
+  if (gameStarted) {
+    updateEFRating();
+    renderObjectives();
+  }
 }
 
 function triggerAbility(slot) {
@@ -3218,6 +3224,7 @@ function resetWarningRun() {
 
   getCachedEl('resultsOverlay').classList.remove('active');
   init3DWorld();
+  selectStormClass(currentStorm);
   updateEFRating();
   renderObjectives();
 }
