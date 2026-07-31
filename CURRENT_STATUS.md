@@ -3,7 +3,7 @@
 Last updated: 2026-07-31
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active game: HTML/WebGL `4.0.0 Living County Edition`
+Active game: HTML/WebGL `4.1.0 Serpentine Funnel Edition`
 Primary target: single-player Android landscape
 Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
 
@@ -40,7 +40,7 @@ The game is a humorous, replayable, mobile arcade destruction game in which the 
 - News vans and storm chasers are invincible witnesses that film, report, reposition, and retreat. They are not enemies.
 - The project may learn from classic city-destruction game structure but must use original storms, locations, jokes, art, progression, and identity.
 
-## Current v4.0.0 slice
+## Current v4.1.0 slice
 
 The current three-minute run contains:
 
