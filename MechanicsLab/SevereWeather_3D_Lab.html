@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Severe Weather 3D Lab v2.9.0 - Pacing Finale & Telemetry Reference</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#030712">
+<title>Severe Weather 3D Lab v3.0.0 - Gameplay Reference & Mobile Ready</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -47,10 +50,16 @@
   #hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 52px 16px 16px 16px; z-index: 100; }
   
   .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  .panel { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 14px; backdrop-filter: blur(18px); padding: 12px 16px; pointer-events: auto; box-shadow: 0 10px 32px rgba(0,0,0,0.75); }
+  .panel { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 14px; backdrop-filter: blur(18px); padding: 12px 16px; pointer-events: auto; box-shadow: 0 10px 32px rgba(0,0,0,0.75); transition: all 0.3s ease; }
   
-  .title-card h1 { margin: 0; font-family: Outfit, sans-serif; font-size: 18px; font-weight: 900; letter-spacing: 0.04em; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+  .title-card { position: relative; max-width: 380px; }
+  .title-card h1 { margin: 0; font-family: Outfit, sans-serif; font-size: 18px; font-weight: 900; letter-spacing: 0.04em; color: var(--gold); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .title-card p { margin: 4px 0 0 0; font-size: 11px; color: #94a3b8; }
+
+  /* Collapsible Title Card Toggle Button for Mobile / Clean View */
+  .collapse-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 2px 8px; font-size: 10px; cursor: pointer; font-weight: 900; }
+  .title-card.collapsed .collapsible-content { display: none !important; }
+  .title-card.collapsed { padding: 8px 12px; }
   
   .ef-badge { display: inline-block; background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 3px 10px; border-radius: 8px; font-weight: 900; font-size: 13px; letter-spacing: 0.06em; box-shadow: 0 0 16px rgba(239, 68, 68, 0.8); }
   
@@ -144,27 +153,33 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.9.0 FINALE</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.0.0 STABLE</div>
 </div>
 
 <!-- Glassmorphism HUD -->
 <div id="hud">
   <div class="header">
-    <div class="panel title-card">
-      <h1><span id="stormIconHead">🌪️</span> SEVERE WEATHER 3D <span class="ef-badge" id="efBadge">EF-0</span></h1>
-      <p id="stormDesc">STAGE 1: NEIGHBORHOOD TOUCHDOWN - 03:00 REMAINING</p>
+    <div class="panel title-card" id="titleCardPanel">
+      <h1>
+        <span><span id="stormIconHead">🌪️</span> SEVERE WEATHER 3D <span class="ef-badge" id="efBadge">EF-0</span></span>
+        <button class="collapse-btn" onclick="toggleTitleCard()">[ ─ ]</button>
+      </h1>
       
-      <div class="storm-tabs">
-        <button class="tab-btn active" id="tabTornado" onclick="selectStormClass('tornado')">🌪️ TORNADO [1]</button>
-        <button class="tab-btn" id="tabSupercell" onclick="selectStormClass('supercell')">🌩️ SUPERCELL [2]</button>
-        <button class="tab-btn" id="tabDerecho" onclick="selectStormClass('derecho')">💨 DERECHO [3]</button>
-      </div>
+      <div class="collapsible-content">
+        <p id="stormDesc">STAGE 1: NEIGHBORHOOD TOUCHDOWN - 03:00 REMAINING</p>
+        
+        <div class="storm-tabs">
+          <button class="tab-btn active" id="tabTornado" onclick="selectStormClass('tornado')">🌪️ TORNADO [1]</button>
+          <button class="tab-btn" id="tabSupercell" onclick="selectStormClass('supercell')">🌩️ SUPERCELL [2]</button>
+          <button class="tab-btn" id="tabDerecho" onclick="selectStormClass('derecho')">💨 DERECHO [3]</button>
+        </div>
 
-      <div class="objectives-box" id="objList">
-        <div><b>STORM OBJECTIVES:</b></div>
-        <div class="obj-item" id="obj1">⚪ Shatter Water Tower 💧 & Silo 🌾 (Unlocks in Stage 2)</div>
-        <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (3,800+ PTS)</div>
-        <div class="obj-item" id="obj3">⚪ Score 7,500 Total Points</div>
+        <div class="objectives-box" id="objList">
+          <div><b>STORM OBJECTIVES:</b></div>
+          <div class="obj-item" id="obj1">⚪ Shatter Water Tower 💧 & Silo 🌾 (Unlocks in Stage 2)</div>
+          <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (3,800+ PTS)</div>
+          <div class="obj-item" id="obj3">⚪ Score 7,500 Total Points</div>
+        </div>
       </div>
     </div>
 
@@ -219,6 +234,7 @@
       <div>MAX COMBO: <b id="resCombo" style="color:var(--cyan)">1.0x</b></div>
       <div>OBJECTIVES COMPLETED: <b id="resObjCount" style="color:var(--green)">0/3</b></div>
       <div>LANDMARKS SHATTERED: <b id="resLandmarks">0/2</b></div>
+      <div>SUBSTATIONS SHATTERED: <b id="resSubstations" style="color:var(--cyan)">0/3</b></div>
       
       <div class="stage-breakdown">
         <div>STAGE 1 SCORE (2:00 REMAINING): <b id="resS1Score" style="color:white">0</b></div>
@@ -242,6 +258,26 @@ let botWaypoints = [
   { x: -110, z: 100 }   // Industrial Substation (Stage 3)
 ];
 let currentBotWp = 0;
+
+// --- COLLAPSIBLE TITLE CARD HUD ---
+let isTitleCardCollapsed = false;
+function toggleTitleCard() {
+  const panel = getCachedEl('titleCardPanel');
+  const btn = panel.querySelector('.collapse-btn');
+  isTitleCardCollapsed = !isTitleCardCollapsed;
+  if (isTitleCardCollapsed) {
+    panel.classList.add('collapsed');
+    btn.innerText = '[ ➕ ]';
+  } else {
+    panel.classList.remove('collapsed');
+    btn.innerText = '[ ─ ]';
+  }
+}
+
+// Auto-Collapse Title Card after 10 seconds into the run for Android/Mobile view clarity
+setTimeout(() => {
+  if (window.innerWidth < 850 && !isTitleCardCollapsed) toggleTitleCard();
+}, 10000);
 
 // --- WEB AUDIO API SYNTHESIZER ---
 let audioCtx = null;
@@ -600,7 +636,7 @@ let pullVortexTimer = 0;
 // Storm Mission Objectives Tracker
 const missionObjectives = {
   tornado: [
-    { text: "Shatter Water Tower 💧 & Silo 🌾 (Unlocks in Stage 2)", done: false },
+    { text: "Shatter Water Tower 💧 & Silo 🌾", done: false },
     { text: "Reach EF-3 Rating (3,800+ PTS)", done: false },
     { text: "Score 7,500 Total Points", done: false }
   ],
@@ -741,6 +777,7 @@ const ruinsGroup = new THREE.Group();
 scene.add(ruinsGroup);
 
 let destroyedLandmarksCount = 0;
+let destroyedSubstationsCount = 0;
 let destroyedTargetsCount = 0;
 
 function createHouseMesh(districtType, i) {
@@ -831,7 +868,7 @@ function createLandmarkMesh(icon) {
   return { group, base, beacon, color: icon === '🌾' ? '#d97706' : '#0284c7' };
 }
 
-// STAGE 3 FINALE SYSTEM: HIGH-VALUE POWER SUBSTATION MESH
+// STAGE 3 FINALE SYSTEM: HIGH-VALUE POWER SUBSTATION MESH WITH PULSING BEACON
 function createSubstationMesh() {
   const group = new THREE.Group();
   const padGeo = new THREE.BoxGeometry(10, 0.6, 10);
@@ -850,7 +887,13 @@ function createSubstationMesh() {
   sparkRing.rotation.x = Math.PI / 2; sparkRing.position.y = 5.2;
   group.add(sparkRing);
 
-  return { group, base: trans, sparkRing, color: '#38bdf8' };
+  const beaconGeo = new THREE.OctahedronGeometry(2.0);
+  const beaconMat = new THREE.MeshBasicMaterial({ color: '#38bdf8', wireframe: true });
+  const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+  beacon.position.y = 9.0;
+  group.add(beacon);
+
+  return { group, base: trans, sparkRing, beacon, color: '#38bdf8' };
 }
 
 // 3D HIGH-FIDELITY DETAILED RUINS WITH COLOR-MATCHED SLABS & SMOKE
@@ -921,6 +964,18 @@ function triggerPowerFlash() {
   addCameraShake(0.8);
 }
 
+// DRAMATIC TOWN BLACKOUT & ARC FLASH FINALE EVENT
+function triggerSubstationBlackoutEvent() {
+  triggerPowerFlash();
+  playSound('zap');
+  playSound('explode');
+  addCameraShake(2.4);
+
+  // Blackout Light Surge
+  ambientLight.color.set('#0284c7');
+  setTimeout(() => ambientLight.color.set('#334155'), 450);
+}
+
 function triggerLightningStrike(targetX, targetZ) {
   const points = [];
   let cx = storm.pos.x, cy = 42, cz = storm.pos.z;
@@ -971,7 +1026,7 @@ function damageLandmark(lm, amount) {
   }
 }
 
-// STRICT STAGE SCORE HARD CAPS (PREVENTS RUNAWAY 27K SCORES IN STAGE 1)
+// STRICT STAGE SCORE HARD CAPS
 function addScore(pts) {
   comboMultiplier = Math.min(3.5, comboMultiplier + 0.05);
   maxComboReached = Math.max(maxComboReached, comboMultiplier);
@@ -994,6 +1049,7 @@ function init3DWorld() {
   animals.length = 0;
   chaserVans.length = 0;
   destroyedLandmarksCount = 0;
+  destroyedSubstationsCount = 0;
   destroyedTargetsCount = 0;
   currentStage = 1;
   stage1Score = 0; stage2Score = 0; stage3Score = 0;
@@ -1256,7 +1312,7 @@ function triggerAbility(slot) {
   }
 }
 
-// STRICT STAGE EF CAPS (CAPS EF-2 IN STAGE 1, EF-4 IN STAGE 2, EF-5 IN STAGE 3)
+// STRICT STAGE EF CAPS & REAL-TIME EAS SYNC
 function updateEFRating() {
   let badgeText = 'EF-0';
   let mult = 1.0;
@@ -1294,14 +1350,10 @@ function updateEFRating() {
     easNewsText = `🚨 NOAA EAS STAGE ${currentStage} HIGH WIND WARNING: ${windLabel} WINDS (MULT: ${mult}x)`;
   }
 
-  if (badgeText !== efRating) {
-    efRating = badgeText;
-    efMultiplier = mult;
-    setUI('efBadge', badgeText);
-    setUI('easTicker', easNewsText);
-    playSound('siren');
-    addCameraShake(1.8);
-  }
+  efRating = badgeText;
+  efMultiplier = mult;
+  setUI('efBadge', badgeText);
+  setUI('easTicker', easNewsText);
 }
 
 function updateObjectives() {
@@ -1331,7 +1383,7 @@ function renderObjectives() {
     html += `<div class="${cls}">${mark} ${o.text}</div>`;
   });
 
-  // Landmark Distance & HP Indicators with Clear Wording
+  // Dynamic Landmark Wording (Removes "(Unlocks in Stage 2)" when Stage 2 begins or when done!)
   landmarks.forEach(lm => {
     if (!lm.destroyed) {
       const dist = Math.round(Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z));
@@ -1342,6 +1394,11 @@ function renderObjectives() {
       html += `<div style="font-size:9px;color:var(--cyan);margin-top:2px;">${lm.icon} ${lm.name}: ${pct}% HP (${rangeTag})</div>`;
     }
   });
+
+  // Stage 3 Substation Finale Counter
+  if (currentStage === 3) {
+    html += `<div style="font-size:10px;color:var(--gold);margin-top:4px;font-weight:900;">⚡ SUBSTATIONS SHATTERED: ${destroyedSubstationsCount}/3</div>`;
+  }
 
   const el = getCachedEl('objList');
   if (el) el.innerHTML = html;
@@ -1367,6 +1424,7 @@ function finishRun() {
   setUI('resCombo', `${maxComboReached.toFixed(1)}x`);
   setUI('resObjCount', `${doneCount}/3`);
   setUI('resLandmarks', `${destroyedLandmarksCount}/2`);
+  setUI('resSubstations', `${destroyedSubstationsCount}/3`);
 
   setUI('resS1Score', stage1Score);
   setUI('resS2Score', stage2Score);
@@ -1418,7 +1476,7 @@ function animate(now) {
 
   const dt = realDelta;
 
-  // Run Timer & 3-Stage Escalation Telemetry
+  // Run Timer & Stage Transitions
   if (runActive) {
     runTimeRemaining = Math.max(0, runTimeRemaining - dt);
     const mins = Math.floor(runTimeRemaining / 60);
@@ -1426,11 +1484,12 @@ function animate(now) {
     const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     setUI('timerVal', timeStr);
 
-    // Stage 1 (180s -> 120s): Neighborhood Touchdown (EF-2 Max Cap)
-    // Stage 2 (120s -> 60s): Landmark Shields Drop (EF-4 Max Cap)
-    // Stage 3 (60s -> 0s): Power Substation Finale (EF-5 Opportunity)
     if (runTimeRemaining > 120) {
-      if (currentStage !== 1) { currentStage = 1; playSound('siren'); }
+      if (currentStage !== 1) {
+        currentStage = 1;
+        playSound('siren');
+        updateEFRating();
+      }
       setUI('stormDesc', `STAGE 1: NEIGHBORHOOD TOUCHDOWN - ${timeStr} REMAINING`);
       setUI('stageStatusTag', 'STAGE 1: NEIGHBORHOOD (EF-2 MAX)');
     } else if (runTimeRemaining > 60) {
@@ -1439,6 +1498,7 @@ function animate(now) {
         stage1Score = destructionScore;
         playSound('siren');
         addCameraShake(2.0);
+        updateEFRating();
       }
       setUI('stormDesc', `STAGE 2: LANDMARKS & HEAVY GRID - ${timeStr} REMAINING`);
       setUI('stageStatusTag', 'STAGE 2: LANDMARKS UNLOCKED!');
@@ -1448,6 +1508,7 @@ function animate(now) {
         stage2Score = destructionScore;
         playSound('siren');
         addCameraShake(2.5);
+        updateEFRating();
       }
       setUI('stormDesc', `STAGE 3: POWER SUBSTATION FINALE - ${timeStr} REMAINING`);
       setUI('stageStatusTag', 'STAGE 3: POWER SUBSTATION FINALE!');
@@ -1582,7 +1643,7 @@ function animate(now) {
   camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);
   camera.lookAt(storm.pos.x + (moveX * 8), 0, storm.pos.z + (moveZ * 8));
 
-  // Rotate Landmark 3D Wayfinding Beacons & Substation Spark Rings
+  // Rotate Landmark & Substation 3D Wayfinding Beacons
   landmarks.forEach(lm => {
     if (!lm.destroyed && lm.meshData && lm.meshData.beacon) {
       lm.meshData.beacon.rotation.y += 0.05;
@@ -1593,6 +1654,10 @@ function animate(now) {
   substations.forEach(sub => {
     if (!sub.destroyed && sub.meshData && sub.meshData.sparkRing) {
       sub.meshData.sparkRing.rotation.z += 0.08;
+      if (sub.meshData.beacon) {
+        sub.meshData.beacon.rotation.y += 0.06;
+        sub.meshData.beacon.rotation.z += 0.04;
+      }
     }
   });
 
@@ -1634,8 +1699,11 @@ function animate(now) {
           triggerPowerFlash();
           if (sub.health <= 0) {
             sub.health = 0; sub.destroyed = true;
+            if (sub.meshData.beacon) sub.meshData.group.remove(sub.meshData.beacon);
             scene.remove(sub.meshData.group);
+            destroyedSubstationsCount++;
             addScore(350);
+            triggerSubstationBlackoutEvent();
             explodeStructure(sub.x, sub.z, sub.meshData.color);
           }
         }
@@ -1753,6 +1821,18 @@ function renderRadar() {
       rCtx.beginPath(); rCtx.arc(lmx, lmz, 7, 0, Math.PI * 2); rCtx.fill();
     }
   });
+
+  // Stage 3 Substation Radar Beacons
+  if (currentStage === 3) {
+    substations.forEach(sub => {
+      if (!sub.destroyed) {
+        const subx = 72.5 + (sub.x / 220) * 55;
+        const subz = 72.5 + (sub.z / 220) * 55;
+        rCtx.fillStyle = '#38bdf8';
+        rCtx.beginPath(); rCtx.arc(subx, subz, 6, 0, Math.PI * 2); rCtx.fill();
+      }
+    });
+  }
 }
 
 requestAnimationFrame(animate);
