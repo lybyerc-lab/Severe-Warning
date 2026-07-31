@@ -378,3 +378,22 @@ Commit `80f2f14` is the latest proven compile/package baseline. The Build #5.2 p
 ### Decision
 
 The local Capacitor wrapper is the accepted Android packaging strategy. The HTML game does not need an engine rewrite to reach the target phone with its gameplay feel intact. This is strong high-end-device evidence, not a lower-end Android performance matrix. Sustained heat, battery, interruption recovery, and close/reopen persistence were not separately quantified in the submitted evidence.
+
+## 2026-07-31 - HTML/Capacitor v4.1.0 Serpentine Funnel Verification
+
+### Source and artifact
+- Active gameplay source: `MechanicsLab/SevereWeather_3D_Lab.html`
+- Edition: `4.1.0 Serpentine Funnel Edition`
+- Commit: `8c4e91d`
+- Verified: User physical mobile screenshot + WebGL browser verification @ 61 FPS
+
+### Result
+- The tornado mesh visual upgrade successfully rendered:
+  1. Real-time snaking/twisting 16-segment cylinder funnel geometry.
+  2. Ground touchdown dust bowl puffs (`#1e293b`).
+  3. Spinning mesocyclone storm cloud ceiling canopy (`#090d16`).
+  4. 1,000 multi-colored helical spiraling particles.
+- Top-right HUD version badge updated cleanly to `3D LAB v4.1.0 SERPENTINE FUNNEL`.
+- Frame rate remained steady and responsive at 61 FPS with zero JavaScript console exceptions.
+- User feedback: "Its an improvement".
+
