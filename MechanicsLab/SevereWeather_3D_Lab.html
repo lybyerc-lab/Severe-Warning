@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
-<title>Severe Weather 3D Lab v3.0.0 - Gameplay Reference & Mobile Ready</title>
+<title>Severe Weather 3D Lab v3.1.0 - Storm Town Rampage Slice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -74,6 +74,8 @@
   .objectives-box { margin-top: 10px; font-size: 11px; color: #e2e8f0; line-height: 1.5; }
   .obj-item { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
   .obj-item.done { color: var(--green); font-weight: 700; }
+  .district-challenge { margin-top: 7px; padding: 6px 8px; border: 1px solid rgba(251,191,36,0.42); border-radius: 8px; background: rgba(120,53,15,0.24); color: #fde68a; font-size: 10px; font-weight: 800; }
+  .district-challenge.done { border-color: rgba(74,222,128,0.55); background: rgba(20,83,45,0.28); color: var(--green); }
 
   /* Radar Widget */
   .radar-box { position: relative; width: 145px; height: 145px; border-radius: 50%; border: 2px solid var(--green); overflow: hidden; background: #021206; box-shadow: 0 0 20px rgba(74, 222, 128, 0.4); }
@@ -114,6 +116,16 @@
 
   #powerFlashOverlay { position: absolute; inset: 0; background: rgba(56, 189, 248, 0.85); pointer-events: none; opacity: 0; transition: opacity 0.08s ease-out; z-index: 999; }
 
+  /* Mobile-safe arcade district cards and environmental comedy callouts */
+  #districtOverlay { position: absolute; inset: 0; z-index: 1700; pointer-events: none; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease; background: radial-gradient(circle, rgba(15,23,42,0.15), rgba(3,7,18,0.72)); }
+  #districtOverlay.active { opacity: 1; }
+  .district-card { min-width: 330px; max-width: 78vw; padding: 18px 28px; border: 2px solid var(--gold); border-radius: 18px; background: rgba(3,7,18,0.92); text-align: center; box-shadow: 0 0 42px rgba(251,191,36,0.34); }
+  .district-kicker { color: var(--cyan); font: 800 10px/1.2 monospace; letter-spacing: 0.16em; }
+  .district-card h2 { margin: 5px 0 2px; color: var(--gold); font: 900 28px/1 Outfit, sans-serif; letter-spacing: 0.06em; }
+  .district-card p { margin: 6px 0 0; color: #e2e8f0; font-size: 12px; }
+  #gagToast { position: absolute; top: 52px; left: 50%; transform: translateX(-50%) translateY(-8px); z-index: 1600; pointer-events: none; opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease; max-width: 78vw; padding: 8px 14px; border-radius: 999px; background: rgba(15,23,42,0.94); border: 1px solid rgba(251,191,36,0.65); color: #fde68a; font: 900 11px/1.2 Outfit, sans-serif; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+  #gagToast.active { opacity: 1; transform: translateX(-50%) translateY(0); }
+
   /* RESPONSIVE MOBILE LAYOUT OVERRIDES */
   @media (max-height: 540px), (max-width: 850px) {
     #hud { padding: 36px 10px 8px 10px; }
@@ -133,6 +145,7 @@
     .key-guide { display: none !important; }
     
     .telemetry { font-size: 9px; gap: 8px; padding: 4px 8px; }
+    .telemetry .district-telemetry { display: none; }
     
     .touch-controls { gap: 6px; }
     .action-btn { width: 50px; height: 50px; font-size: 9px; }
@@ -140,8 +153,15 @@
     #joystickZone { bottom: 10px; left: 10px; width: 95px; height: 95px; }
     #joystickThumb { width: 36px; height: 36px; }
     
-    .results-card { width: 340px; padding: 18px 20px; }
-    .grade-stamp { font-size: 36px; margin: 4px 0; }
+    .results-card { width: min(340px, calc(100vw - 20px)); max-height: calc(100vh - 12px); overflow-y: auto; padding: 10px 16px; }
+    .results-card h2 { font-size: 18px; }
+    .results-stats { margin: 6px 0; padding: 8px 10px; line-height: 1.35; }
+    .stage-breakdown { margin-top: 4px; padding-top: 4px; }
+    .grade-stamp { font-size: 28px; margin: 2px 0; }
+    .retry-btn { padding: 8px 24px; font-size: 12px; }
+    .district-card { min-width: 260px; padding: 12px 18px; }
+    .district-card h2 { font-size: 20px; }
+    #gagToast { top: 34px; font-size: 9px; }
   }
 </style>
 </head>
@@ -149,11 +169,20 @@
 
 <canvas id="webgl"></canvas>
 <div id="powerFlashOverlay"></div>
+<div id="gagToast">THE TOWN WOULD LIKE A REFUND.</div>
+<div id="districtOverlay">
+  <div class="district-card">
+    <div class="district-kicker" id="districtKicker">DISTRICT 1 OF 3</div>
+    <h2 id="districtTitle">PINE RIDGE</h2>
+    <p id="districtSubtitle">Neighborhood touchdown. Mind the lawn ornaments.</p>
+    <p id="districtChallengeCard">BONUS: Launch the local yard decor.</p>
+  </div>
+</div>
 
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.0.0 STABLE</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v3.1.0 ARCADE</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -166,7 +195,7 @@
       </h1>
       
       <div class="collapsible-content">
-        <p id="stormDesc">STAGE 1: NEIGHBORHOOD TOUCHDOWN - 03:00 REMAINING</p>
+        <p id="stormDesc">DISTRICT 1: PINE RIDGE - 03:00 REMAINING</p>
         
         <div class="storm-tabs">
           <button class="tab-btn active" id="tabTornado" onclick="selectStormClass('tornado')">🌪️ TORNADO [1]</button>
@@ -180,6 +209,7 @@
           <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (3,800+ PTS)</div>
           <div class="obj-item" id="obj3">⚪ Score 7,500 Total Points</div>
         </div>
+        <div class="district-challenge" id="districtChallenge">BONUS: Loading district challenge...</div>
       </div>
     </div>
 
@@ -193,10 +223,11 @@
     <div class="panel key-guide">
       <div><b>Move:</b> <span>WASD</span> / <span>Joystick</span></div>
       <div><b>Verbs:</b> <span id="verbSpace">SPACE: Pull</span> | <span id="verbQ">Q: Gust</span> | <span id="verbE">E: Power Grid Zap</span></div>
-      <div><b>Stage Status:</b> <span id="stageStatusTag" style="color:var(--gold);font-weight:900;">STAGE 1: NEIGHBORHOOD (EF-2 MAX)</span></div>
+      <div><b>District:</b> <span id="stageStatusTag" style="color:var(--gold);font-weight:900;">PINE RIDGE: NEIGHBORHOOD (EF-2 MAX)</span></div>
     </div>
 
     <div class="panel telemetry">
+      <div class="district-telemetry">DISTRICT: <b id="districtVal">1/3</b></div>
       <div>TIME: <b id="timerVal" style="color:var(--gold);font-weight:900;">03:00</b></div>
       <div>COMBO: <b class="combo-badge" id="comboVal">1.0x</b></div>
       <div>SCORE: <b id="scoreVal">0</b></div>
@@ -235,11 +266,13 @@
       <div>OBJECTIVES COMPLETED: <b id="resObjCount" style="color:var(--green)">0/3</b></div>
       <div>LANDMARKS SHATTERED: <b id="resLandmarks">0/2</b></div>
       <div>SUBSTATIONS SHATTERED: <b id="resSubstations" style="color:var(--cyan)">0/3</b></div>
+      <div>BONUS CHALLENGES: <b id="resChallenges" style="color:var(--gold)">0/3</b></div>
+      <div>COSMETIC: <b id="resCosmetic" style="color:#f472b6">LOCKED</b></div>
       
       <div class="stage-breakdown">
-        <div>STAGE 1 SCORE (2:00 REMAINING): <b id="resS1Score" style="color:white">0</b></div>
-        <div>STAGE 2 SCORE (1:00 REMAINING): <b id="resS2Score" style="color:white">0</b></div>
-        <div>STAGE 3 SCORE (FINALE): <b id="resS3Score" style="color:white">0</b></div>
+        <div>PINE RIDGE SCORE (2:00 REMAINING): <b id="resS1Score" style="color:white">0</b></div>
+        <div>MAIN STREET SCORE (1:00 REMAINING): <b id="resS2Score" style="color:white">0</b></div>
+        <div>COUNTY FAIR SCORE (FINALE): <b id="resS3Score" style="color:white">0</b></div>
       </div>
     </div>
     <button class="retry-btn" onclick="resetWarningRun()">RETRY RUN 🔄</button>
@@ -375,6 +408,128 @@ function setUI(id, text) {
   const el = getCachedEl(id);
   if (el && el.innerText !== text) el.innerText = text;
 }
+
+// --- STORM TOWN ARCADE DISTRICTS, BONUS CHALLENGES & PERSISTENT COSMETIC ---
+const DISTRICTS = {
+  1: { name: 'PINE RIDGE', subtitle: 'Neighborhood touchdown. Mind the lawn ornaments.' },
+  2: { name: 'MAIN STREET', subtitle: 'Signs, shops and questionable insurance coverage.' },
+  3: { name: 'COUNTY FAIR', subtitle: 'Blackout finale. The funnel cake stand had a good run.' }
+};
+
+const DISTRICT_CHALLENGE_POOLS = {
+  1: [
+    { id: 'yard-sale', text: 'YARD SALE: Launch 3 yard decorations', tags: ['yard'], target: 3 },
+    { id: 'lawn-order', text: 'LAWN & ORDER: Launch 2 lawn ornaments', tags: ['lawn'], target: 2 },
+    { id: 'curb-appeal', text: 'CURB APPEAL: Remove 3 neighborhood props', tags: ['yard'], target: 3 }
+  ],
+  2: [
+    { id: 'sign-times', text: 'SIGN OF THE TIMES: Flatten 2 signs', tags: ['sign'], target: 2 },
+    { id: 'main-event', text: 'MAIN EVENT: Launch 3 Main Street props', tags: ['main'], target: 3 },
+    { id: 'retail-therapy', text: 'RETAIL THERAPY: Remove 3 storefront props', tags: ['main'], target: 3 }
+  ],
+  3: [
+    { id: 'fair-warning', text: 'FAIR WARNING: Launch 4 fairground props', tags: ['fair'], target: 4 },
+    { id: 'ride-it-out', text: 'RIDE IT OUT: Wreck 2 carnival rides', tags: ['ride'], target: 2 },
+    { id: 'food-flight', text: 'FOOD FLIGHT: Launch 2 concession props', tags: ['food'], target: 2 }
+  ]
+};
+
+const COSMETIC_STORAGE_KEY = 'severe_weather_cosmetics_v1';
+let districtChallenges = [];
+let neonFunnelUnlocked = false;
+let gagToastToken = 0;
+let districtOverlayToken = 0;
+
+function loadCosmeticProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COSMETIC_STORAGE_KEY) || '{}');
+    neonFunnelUnlocked = saved.neonFunnel === true;
+  } catch (_) {
+    neonFunnelUnlocked = false;
+  }
+}
+
+function saveCosmeticProgress() {
+  try {
+    localStorage.setItem(COSMETIC_STORAGE_KEY, JSON.stringify({ neonFunnel: neonFunnelUnlocked }));
+  } catch (_) {
+    // The game remains fully playable when storage is unavailable.
+  }
+}
+
+function setupDistrictChallenges() {
+  districtChallenges = [1, 2, 3].map(stage => {
+    const pool = DISTRICT_CHALLENGE_POOLS[stage];
+    const index = isBotMode ? 0 : Math.floor(Math.random() * pool.length);
+    const selected = pool[index];
+    return { ...selected, stage, progress: 0, done: false, reward: 450 };
+  });
+  updateDistrictChallengeHud();
+}
+
+function getDistrictChallenge(stage) {
+  return districtChallenges.find(challenge => challenge.stage === stage);
+}
+
+function updateDistrictChallengeHud() {
+  const challenge = getDistrictChallenge(currentStage);
+  const el = getCachedEl('districtChallenge');
+  if (!el || !challenge) return;
+  const prefix = challenge.done ? 'COMPLETE' : `BONUS ${challenge.progress}/${challenge.target}`;
+  el.innerText = `${prefix}: ${challenge.text}`;
+  el.classList.toggle('done', challenge.done);
+}
+
+function showDistrictTransition(stage) {
+  const district = DISTRICTS[stage];
+  const challenge = getDistrictChallenge(stage);
+  const overlay = getCachedEl('districtOverlay');
+  if (!district || !overlay) return;
+
+  setUI('districtKicker', `DISTRICT ${stage} OF 3`);
+  setUI('districtTitle', district.name);
+  setUI('districtSubtitle', district.subtitle);
+  setUI('districtChallengeCard', challenge ? `BONUS: ${challenge.text}` : 'BONUS CHALLENGE INCOMING');
+  setUI('districtVal', `${stage}/3`);
+  overlay.classList.add('active');
+  const token = ++districtOverlayToken;
+  setTimeout(() => {
+    if (token === districtOverlayToken) overlay.classList.remove('active');
+  }, isBotMode ? 700 : 1900);
+}
+
+function showGagToast(message) {
+  const toast = getCachedEl('gagToast');
+  if (!toast) return;
+  toast.innerText = message;
+  toast.classList.add('active');
+  const token = ++gagToastToken;
+  setTimeout(() => {
+    if (token === gagToastToken) toast.classList.remove('active');
+  }, isBotMode ? 500 : 1500);
+}
+
+function recordDistrictChallengeProp(prop) {
+  const challenge = getDistrictChallenge(prop.stage);
+  if (!challenge || challenge.done) return;
+  const matches = prop.tags.some(tag => challenge.tags.includes(tag));
+  if (!matches) return;
+
+  challenge.progress = Math.min(challenge.target, challenge.progress + 1);
+  if (challenge.progress >= challenge.target) {
+    challenge.done = true;
+    const awarded = addScore(challenge.reward);
+    const rewardText = awarded > 0 ? ` +${awarded}` : '';
+    showGagToast(`BONUS COMPLETE${rewardText}: ${challenge.text}`);
+  }
+  updateDistrictChallengeHud();
+}
+
+function completedChallengeCount() {
+  return districtChallenges.filter(challenge => challenge.done).length;
+}
+
+loadCosmeticProgress();
 
 // --- THREE.JS 3D INITIALIZATION ---
 const container = document.getElementById('webgl');
@@ -717,6 +872,16 @@ const particleMat = new THREE.PointsMaterial({ color: '#fbbf24', size: 1.0 });
 const particleSystem = new THREE.Points(particleGeo, particleMat);
 tornadoGroup.add(particleSystem);
 
+function applyUnlockedCosmetic() {
+  if (neonFunnelUnlocked) {
+    particleMat.color.set('#f472b6');
+    outerFunnelMat.color.set('#22d3ee');
+  } else {
+    particleMat.color.set('#fbbf24');
+    outerFunnelMat.color.set('#334155');
+  }
+}
+
 // Ground Vortex Target Ring Indicator
 const ringGeo = new THREE.RingGeometry(2.0, 3.4, 32);
 const ringMat = new THREE.MeshBasicMaterial({ color: '#fbbf24', side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
@@ -772,6 +937,8 @@ const landmarks = [];
 const substations = []; // STAGE 3 FINALE SYSTEM
 const animals = [];
 const chaserVans = [];
+const comedyProps = [];
+const activeGagProps = [];
 const activeExplosionFragments = [];
 const ruinsGroup = new THREE.Group();
 scene.add(ruinsGroup);
@@ -779,6 +946,7 @@ scene.add(ruinsGroup);
 let destroyedLandmarksCount = 0;
 let destroyedSubstationsCount = 0;
 let destroyedTargetsCount = 0;
+let destroyedComedyPropsCount = 0;
 
 function createHouseMesh(districtType, i) {
   const group = new THREE.Group();
@@ -894,6 +1062,183 @@ function createSubstationMesh() {
   group.add(beacon);
 
   return { group, base: trans, sparkRing, beacon, color: '#38bdf8' };
+}
+
+function addPropPart(group, geometry, color, x, y, z, options = {}) {
+  const material = options.material || new THREE.MeshStandardMaterial({
+    color,
+    roughness: options.roughness ?? 0.58,
+    metalness: options.metalness ?? 0.12
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(x, y, z);
+  if (options.rotation) mesh.rotation.set(options.rotation.x || 0, options.rotation.y || 0, options.rotation.z || 0);
+  if (options.scale) mesh.scale.set(options.scale.x || 1, options.scale.y || 1, options.scale.z || 1);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+  return mesh;
+}
+
+function createSignMaterial(text, background = '#1d4ed8', foreground = '#ffffff') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = background; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 10; ctx.strokeRect(5, 5, 246, 118);
+  ctx.fillStyle = foreground; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '900 25px sans-serif';
+  const words = text.split('|');
+  words.forEach((word, index) => ctx.fillText(word, 128, 48 + index * 34));
+  const texture = new THREE.CanvasTexture(canvas);
+  return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.55, side: THREE.DoubleSide });
+}
+
+function createComedyPropMesh(kind) {
+  const group = new THREE.Group();
+  let color = '#f472b6';
+
+  if (kind === 'trampoline') {
+    color = '#38bdf8';
+    addPropPart(group, new THREE.TorusGeometry(3.3, 0.5, 10, 28), color, 0, 1.2, 0, { rotation: { x: Math.PI / 2 } });
+    addPropPart(group, new THREE.CylinderGeometry(2.9, 2.9, 0.25, 28), '#111827', 0, 1.15, 0);
+    [-2.4, 2.4].forEach(x => [-2.4, 2.4].forEach(z => addPropPart(group, new THREE.CylinderGeometry(0.14, 0.14, 1.2, 6), '#94a3b8', x, 0.6, z)));
+  } else if (kind === 'flamingo') {
+    color = '#f472b6';
+    addPropPart(group, new THREE.SphereGeometry(1.25, 12, 10), color, 0, 2.3, 0, { scale: { x: 1.35, y: 0.9, z: 0.8 } });
+    addPropPart(group, new THREE.CylinderGeometry(0.16, 0.18, 3.3, 8), color, 0.7, 4.0, 0, { rotation: { z: -0.2 } });
+    addPropPart(group, new THREE.SphereGeometry(0.62, 10, 8), color, 1.0, 5.5, 0);
+    addPropPart(group, new THREE.CylinderGeometry(0.08, 0.08, 2.2, 6), '#fda4af', -0.35, 1.0, 0);
+  } else if (kind === 'mailbox') {
+    color = '#60a5fa';
+    addPropPart(group, new THREE.CylinderGeometry(0.2, 0.25, 3.2, 8), '#78350f', 0, 1.6, 0);
+    addPropPart(group, new THREE.BoxGeometry(2.5, 1.3, 1.5), color, 0, 3.4, 0);
+    addPropPart(group, new THREE.BoxGeometry(0.18, 1.6, 0.18), '#ef4444', 1.1, 4.1, 0);
+  } else if (kind === 'grill') {
+    color = '#ef4444';
+    addPropPart(group, new THREE.SphereGeometry(1.45, 14, 10), color, 0, 2.4, 0, { scale: { x: 1, y: 0.6, z: 1 } });
+    [-0.8, 0.8].forEach(x => addPropPart(group, new THREE.CylinderGeometry(0.12, 0.12, 2.2, 6), '#94a3b8', x, 1.1, 0));
+    addPropPart(group, new THREE.BoxGeometry(0.3, 2.3, 0.3), '#111827', 1.5, 2.5, 0);
+  } else if (kind === 'billboard') {
+    color = '#fbbf24';
+    const signMat = createSignMaterial('STORM PROOF|ROOFING', '#7f1d1d');
+    addPropPart(group, new THREE.BoxGeometry(8.5, 4.2, 0.45), color, 0, 7.2, 0, { material: signMat });
+    [-2.8, 2.8].forEach(x => addPropPart(group, new THREE.CylinderGeometry(0.22, 0.3, 5.2, 8), '#78350f', x, 2.6, 0));
+  } else if (kind === 'coffee') {
+    color = '#f97316';
+    addPropPart(group, new THREE.CylinderGeometry(1.9, 1.55, 4.2, 18), '#f8fafc', 0, 2.2, 0);
+    addPropPart(group, new THREE.TorusGeometry(1.25, 0.35, 8, 18), color, 1.9, 2.5, 0, { rotation: { y: Math.PI / 2 } });
+    addPropPart(group, new THREE.BoxGeometry(5.3, 1.2, 0.35), color, 0, 5.2, 0, { material: createSignMaterial('MUG SHOTS', '#c2410c') });
+  } else if (kind === 'mascot') {
+    color = '#a78bfa';
+    addPropPart(group, new THREE.SphereGeometry(2.2, 14, 12), color, 0, 4.4, 0, { scale: { x: 0.8, y: 2.0, z: 0.8 } });
+    addPropPart(group, new THREE.SphereGeometry(1.55, 12, 10), '#fde68a', 0, 8.3, 0);
+    [-1.8, 1.8].forEach(x => addPropPart(group, new THREE.CylinderGeometry(0.25, 0.25, 4, 8), color, x, 5.2, 0, { rotation: { z: x < 0 ? -0.6 : 0.6 } }));
+  } else if (kind === 'carts') {
+    color = '#22d3ee';
+    addPropPart(group, new THREE.BoxGeometry(5.5, 1.8, 2.6), color, 0, 2.0, 0, { roughness: 0.25, metalness: 0.7 });
+    [-2, 2].forEach(x => [-0.9, 0.9].forEach(z => addPropPart(group, new THREE.CylinderGeometry(0.4, 0.4, 0.3, 10), '#111827', x, 0.7, z, { rotation: { z: Math.PI / 2 } })));
+  } else if (kind === 'ferris') {
+    color = '#f472b6';
+    addPropPart(group, new THREE.TorusGeometry(6.5, 0.45, 10, 32), color, 0, 8.0, 0);
+    [-3.6, 3.6].forEach(x => addPropPart(group, new THREE.BoxGeometry(0.6, 9, 0.6), '#fbbf24', x, 4.5, 0, { rotation: { z: x < 0 ? -0.45 : 0.45 } }));
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      addPropPart(group, new THREE.BoxGeometry(1.4, 1.0, 1.2), ['#ef4444','#38bdf8','#4ade80'][i % 3], Math.cos(angle) * 6.5, 8 + Math.sin(angle) * 6.5, 0);
+    }
+  } else if (kind === 'carousel') {
+    color = '#c084fc';
+    addPropPart(group, new THREE.CylinderGeometry(5.0, 5.0, 1.0, 24), '#fbbf24', 0, 0.6, 0);
+    addPropPart(group, new THREE.ConeGeometry(6.2, 3.0, 24), color, 0, 6.0, 0);
+    addPropPart(group, new THREE.CylinderGeometry(0.35, 0.35, 6.0, 10), '#f8fafc', 0, 3.3, 0);
+    [-3, 0, 3].forEach(x => addPropPart(group, new THREE.BoxGeometry(1.2, 1.0, 2.2), '#38bdf8', x, 2.0, 0));
+  } else if (kind === 'foodcart') {
+    color = '#ef4444';
+    addPropPart(group, new THREE.BoxGeometry(5.2, 2.8, 3.2), '#f8fafc', 0, 1.8, 0);
+    addPropPart(group, new THREE.CylinderGeometry(3.2, 0.4, 2.2, 12), color, 0, 5.2, 0);
+    addPropPart(group, new THREE.BoxGeometry(5.0, 1.2, 0.3), color, 0, 4.0, -1.7, { material: createSignMaterial('FUNNEL CAKES', '#b91c1c') });
+  } else if (kind === 'corndog') {
+    color = '#f59e0b';
+    addPropPart(group, new THREE.CylinderGeometry(1.15, 1.15, 5.0, 14), color, 0, 4.5, 0);
+    addPropPart(group, new THREE.SphereGeometry(1.15, 12, 10), color, 0, 7.0, 0);
+    addPropPart(group, new THREE.CylinderGeometry(0.22, 0.22, 3.0, 8), '#92400e', 0, 1.5, 0);
+  } else if (kind === 'porta') {
+    color = '#0ea5e9';
+    addPropPart(group, new THREE.BoxGeometry(3.5, 6.2, 3.5), color, 0, 3.1, 0);
+    addPropPart(group, new THREE.ConeGeometry(2.7, 1.1, 4), '#0369a1', 0, 6.7, 0, { rotation: { y: Math.PI / 4 } });
+    addPropPart(group, new THREE.BoxGeometry(0.5, 0.5, 0.2), '#f8fafc', 0, 4.2, -1.85);
+  }
+
+  return { group, color };
+}
+
+function spawnTownComedyProps() {
+  comedyProps.forEach(prop => scene.remove(prop.meshData.group));
+  activeGagProps.forEach(prop => scene.remove(prop.mesh));
+  comedyProps.length = 0;
+  activeGagProps.length = 0;
+
+  const definitions = [
+    { kind: 'trampoline', x: 78, z: -82, stage: 1, tags: ['yard','lawn'], gag: 'TRAMPOLINE ACHIEVES LOW EARTH ORBIT.' },
+    { kind: 'flamingo', x: 110, z: -68, stage: 1, tags: ['yard','lawn'], gag: 'LAWN FLAMINGO MIGRATION BEGINS EARLY.' },
+    { kind: 'mailbox', x: 132, z: -105, stage: 1, tags: ['yard'], gag: 'SPECIAL DELIVERY: SOMEWHERE ELSE.' },
+    { kind: 'grill', x: 62, z: -120, stage: 1, tags: ['yard'], gag: 'THE COOKOUT HAS BEEN RESCHEDULED.' },
+    { kind: 'billboard', x: -92, z: -78, stage: 2, tags: ['main','sign'], gag: 'STORM-PROOF ROOFING REQUESTS A RETRACTION.' },
+    { kind: 'coffee', x: -45, z: -105, stage: 2, tags: ['main','sign'], gag: 'MAIN STREET JUST ORDERED COFFEE TO GO.' },
+    { kind: 'mascot', x: -132, z: -62, stage: 2, tags: ['main','sign'], gag: 'INFLATABLE MAYOR LEAVES THE CAMPAIGN TRAIL.' },
+    { kind: 'carts', x: -20, z: -55, stage: 2, tags: ['main'], gag: 'CART RETURN NOW LOCATED THREE COUNTIES EAST.' },
+    { kind: 'ferris', x: 92, z: 102, stage: 3, tags: ['fair','ride'], gag: 'FERRIS WHEEL UPGRADES TO FREQUENT FLYER.' },
+    { kind: 'carousel', x: 132, z: 80, stage: 3, tags: ['fair','ride'], gag: 'CAROUSEL HORSES FINALLY MAKE A BREAK FOR IT.' },
+    { kind: 'foodcart', x: 155, z: 125, stage: 3, tags: ['fair','food'], gag: 'FUNNEL CAKES MEET AN ACTUAL FUNNEL.' },
+    { kind: 'corndog', x: 115, z: 148, stage: 3, tags: ['fair','food'], gag: 'WORLD\'S LARGEST CORN DOG: NOW AIRBORNE.' },
+    { kind: 'porta', x: 75, z: 145, stage: 3, tags: ['fair'], gag: 'THE BLUE BOOTH HAS LEFT THE CHAT.' }
+  ];
+
+  definitions.forEach((definition, index) => {
+    const meshData = createComedyPropMesh(definition.kind);
+    meshData.group.position.set(definition.x, 0, definition.z);
+    scene.add(meshData.group);
+    comedyProps.push({
+      ...definition,
+      id: `${definition.stage}-${definition.kind}-${index}`,
+      health: definition.stage === 3 ? 185 : 120,
+      maxHealth: definition.stage === 3 ? 185 : 120,
+      destroyed: false,
+      points: definition.stage === 3 ? 180 : 120,
+      meshData
+    });
+  });
+}
+
+function destroyComedyProp(prop) {
+  if (prop.destroyed) return;
+  prop.destroyed = true;
+  prop.health = 0;
+  destroyedComedyPropsCount++;
+  addScore(prop.points);
+  recordDistrictChallengeProp(prop);
+  showGagToast(prop.gag);
+  playSound(prop.kind === 'foodcart' ? 'splash' : 'explode');
+  addCameraShake(prop.stage === 3 ? 1.5 : 0.9);
+  spawnPersistentRuin(prop.x, prop.z, prop.meshData.color);
+  activeGagProps.push({
+    mesh: prop.meshData.group,
+    orbitAngle: Math.random() * Math.PI * 2,
+    altitude: 3,
+    life: 1.8,
+    spin: 0.08 + Math.random() * 0.12
+  });
+}
+
+function damageNearbyComedyProps(amount, range) {
+  comedyProps.forEach(prop => {
+    if (prop.destroyed || prop.stage > currentStage) return;
+    const dist = Math.hypot(prop.x - storm.pos.x, prop.z - storm.pos.z);
+    if (dist <= range) {
+      prop.health -= amount;
+      if (prop.health <= 0) destroyComedyProp(prop);
+    }
+  });
 }
 
 // 3D HIGH-FIDELITY DETAILED RUINS WITH COLOR-MATCHED SLABS & SMOKE
@@ -1035,26 +1380,43 @@ function addScore(pts) {
   const added = Math.round(pts * comboMultiplier);
   baseScore += pts;
   
+  const previousScore = destructionScore;
   let targetScore = destructionScore + added;
   if (currentStage === 1) targetScore = Math.min(2999, targetScore);
   else if (currentStage === 2) targetScore = Math.min(7999, targetScore);
 
   destructionScore = targetScore;
+  return destructionScore - previousScore;
 }
 
 function init3DWorld() {
+  if (districtChallenges.length === 0) setupDistrictChallenges();
+  targets.forEach(target => scene.remove(target.meshData.group));
+  landmarks.forEach(landmark => scene.remove(landmark.meshData.group));
+  substations.forEach(substation => scene.remove(substation.meshData.group));
+  animals.forEach(animal => scene.remove(animal.mesh));
+  chaserVans.forEach(van => scene.remove(van.mesh));
+  activeExplosionFragments.forEach(fragment => scene.remove(fragment.mesh));
+  hailStones.forEach(hail => scene.remove(hail.mesh));
+  powerPoles.forEach(pole => { pole.sparked = false; });
+
   targets.length = 0;
   landmarks.length = 0;
   substations.length = 0;
   animals.length = 0;
   chaserVans.length = 0;
+  activeExplosionFragments.length = 0;
+  hailStones.length = 0;
   destroyedLandmarksCount = 0;
   destroyedSubstationsCount = 0;
   destroyedTargetsCount = 0;
+  destroyedComedyPropsCount = 0;
   currentStage = 1;
   stage1Score = 0; stage2Score = 0; stage3Score = 0;
 
   while(ruinsGroup.children.length > 0) ruinsGroup.remove(ruinsGroup.children[0]);
+  swathCtx.clearRect(0, 0, swathCanvas.width, swathCanvas.height);
+  swathTexture.needsUpdate = true;
 
   // DISTINCT 4-DISTRICT LAYOUT (210 STRUCTURES OVER 460x460 TERRITORY)
   for (let i = 0; i < 210; i++) {
@@ -1107,15 +1469,15 @@ function init3DWorld() {
 
   // STAGE 3 FINALE SYSTEM: 3 HIGH-VALUE POWER SUBSTATION TARGETS
   const subCoords = [
-    { x: -110, z: 100 },
-    { x: -60, z: -60 },
-    { x: 120, z: 120 }
+    { x: -110, z: 100, activeAfter: 0 },
+    { x: -60, z: -60, activeAfter: 18 },
+    { x: 120, z: 120, activeAfter: 38 }
   ];
   subCoords.forEach(c => {
     const subMesh = createSubstationMesh();
     subMesh.group.position.set(c.x, 0, c.z);
     scene.add(subMesh.group);
-    substations.push({ x: c.x, z: c.z, health: 350, destroyed: false, meshData: subMesh });
+    substations.push({ x: c.x, z: c.z, health: 620, maxHealth: 620, activeAfter: c.activeAfter, destroyed: false, meshData: subMesh });
   });
 
   const cowGeo = new THREE.BoxGeometry(2.3, 1.6, 1.6);
@@ -1141,6 +1503,10 @@ function init3DWorld() {
     scene.add(vanMesh);
     chaserVans.push({ mesh: vanMesh, x, z, vx: (Math.random() - 0.5) * 0.6, vz: (Math.random() - 0.5) * 0.6, airborne: false, altitude: 0.95 });
   }
+
+  spawnTownComedyProps();
+  applyUnlockedCosmetic();
+  showDistrictTransition(1);
 }
 
 function selectStormClass(type) {
@@ -1310,6 +1676,10 @@ function triggerAbility(slot) {
       triggerPowerFlash();
     }
   }
+
+  const propDamage = slot === 'secondary' ? 145 : (slot === 'tertiary' ? 110 : 85);
+  const propRange = storm.radius * (slot === 'secondary' ? 2.8 : 2.4);
+  damageNearbyComedyProps(propDamage, propRange);
 }
 
 // STRICT STAGE EF CAPS & REAL-TIME EAS SYNC
@@ -1397,11 +1767,15 @@ function renderObjectives() {
 
   // Stage 3 Substation Finale Counter
   if (currentStage === 3) {
-    html += `<div style="font-size:10px;color:var(--gold);margin-top:4px;font-weight:900;">⚡ SUBSTATIONS SHATTERED: ${destroyedSubstationsCount}/3</div>`;
+    const stage3Elapsed = Math.max(0, 60 - runTimeRemaining);
+    const nextLocked = substations.find(sub => !sub.destroyed && stage3Elapsed < sub.activeAfter);
+    const nextText = nextLocked ? ` | NEXT GRID NODE: ${Math.ceil(nextLocked.activeAfter - stage3Elapsed)}s` : '';
+    html += `<div style="font-size:10px;color:var(--gold);margin-top:4px;font-weight:900;">⚡ SUBSTATIONS SHATTERED: ${destroyedSubstationsCount}/3${nextText}</div>`;
   }
 
   const el = getCachedEl('objList');
   if (el) el.innerHTML = html;
+  updateDistrictChallengeHud();
 }
 
 function finishRun() {
@@ -1418,6 +1792,15 @@ function finishRun() {
   else if (doneCount >= 1 && destructionScore >= 2000) grade = 'B';
   else if (destructionScore >= 500) grade = 'C';
 
+  const challengeCount = completedChallengeCount();
+  let cosmeticResult = neonFunnelUnlocked ? 'NEON FUNNEL EQUIPPED' : `${challengeCount}/3 TO UNLOCK`;
+  if (challengeCount === 3 && !neonFunnelUnlocked) {
+    neonFunnelUnlocked = true;
+    saveCosmeticProgress();
+    applyUnlockedCosmetic();
+    cosmeticResult = 'NEON FUNNEL UNLOCKED!';
+  }
+
   setUI('resStormTitle', `${currentStorm.toUpperCase()} WARNING RUN`);
   setUI('resGrade', grade);
   setUI('resScore', destructionScore);
@@ -1425,6 +1808,8 @@ function finishRun() {
   setUI('resObjCount', `${doneCount}/3`);
   setUI('resLandmarks', `${destroyedLandmarksCount}/2`);
   setUI('resSubstations', `${destroyedSubstationsCount}/3`);
+  setUI('resChallenges', `${challengeCount}/3`);
+  setUI('resCosmetic', cosmeticResult);
 
   setUI('resS1Score', stage1Score);
   setUI('resS2Score', stage2Score);
@@ -1447,11 +1832,37 @@ function resetWarningRun() {
   missionObjectives.tornado.forEach(o => o.done = false);
   missionObjectives.supercell.forEach(o => { o.done = false; o.count = 0; });
   missionObjectives.derecho.forEach(o => { o.done = false; o.count = 0; });
+  setupDistrictChallenges();
 
   getCachedEl('resultsOverlay').classList.remove('active');
   init3DWorld();
   updateEFRating();
   renderObjectives();
+}
+
+function getBotDistrictTarget() {
+  const challenge = getDistrictChallenge(currentStage);
+  const matchingProp = comedyProps.find(prop =>
+    !prop.destroyed &&
+    prop.stage === currentStage &&
+    challenge &&
+    prop.tags.some(tag => challenge.tags.includes(tag))
+  );
+
+  if (currentStage === 1) {
+    return matchingProp || { x: 100, z: -90 };
+  }
+
+  if (currentStage === 2) {
+    if (matchingProp && !challenge.done) return matchingProp;
+    return landmarks.find(landmark => !landmark.destroyed) || { x: -60, z: -60 };
+  }
+
+  const stage3Elapsed = Math.max(0, 60 - runTimeRemaining);
+  const activeSubstation = substations.find(sub => !sub.destroyed && stage3Elapsed >= sub.activeAfter);
+  if (activeSubstation) return activeSubstation;
+  if (matchingProp && !challenge.done) return matchingProp;
+  return substations.find(sub => !sub.destroyed) || { x: 120, z: 120 };
 }
 
 // --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---
@@ -1490,8 +1901,8 @@ function animate(now) {
         playSound('siren');
         updateEFRating();
       }
-      setUI('stormDesc', `STAGE 1: NEIGHBORHOOD TOUCHDOWN - ${timeStr} REMAINING`);
-      setUI('stageStatusTag', 'STAGE 1: NEIGHBORHOOD (EF-2 MAX)');
+      setUI('stormDesc', `DISTRICT 1: PINE RIDGE - ${timeStr} REMAINING`);
+      setUI('stageStatusTag', 'PINE RIDGE: NEIGHBORHOOD (EF-2 MAX)');
     } else if (runTimeRemaining > 60) {
       if (currentStage !== 2) {
         currentStage = 2;
@@ -1499,9 +1910,11 @@ function animate(now) {
         playSound('siren');
         addCameraShake(2.0);
         updateEFRating();
+        showDistrictTransition(2);
+        updateDistrictChallengeHud();
       }
-      setUI('stormDesc', `STAGE 2: LANDMARKS & HEAVY GRID - ${timeStr} REMAINING`);
-      setUI('stageStatusTag', 'STAGE 2: LANDMARKS UNLOCKED!');
+      setUI('stormDesc', `DISTRICT 2: MAIN STREET - ${timeStr} REMAINING`);
+      setUI('stageStatusTag', 'MAIN STREET: LANDMARKS UNLOCKED!');
     } else {
       if (currentStage !== 3) {
         currentStage = 3;
@@ -1509,9 +1922,11 @@ function animate(now) {
         playSound('siren');
         addCameraShake(2.5);
         updateEFRating();
+        showDistrictTransition(3);
+        updateDistrictChallengeHud();
       }
-      setUI('stormDesc', `STAGE 3: POWER SUBSTATION FINALE - ${timeStr} REMAINING`);
-      setUI('stageStatusTag', 'STAGE 3: POWER SUBSTATION FINALE!');
+      setUI('stormDesc', `DISTRICT 3: COUNTY FAIR BLACKOUT - ${timeStr} REMAINING`);
+      setUI('stageStatusTag', 'COUNTY FAIR: BLACKOUT FINALE!');
     }
 
     if (runTimeRemaining <= 0) {
@@ -1548,14 +1963,12 @@ function animate(now) {
   let moveX = 0, moveZ = 0;
   if (runActive) {
     if (isBotMode) { // AUTOMATED BOT DRIVER MODE
-      const targetWp = botWaypoints[currentBotWp];
+      const targetWp = getBotDistrictTarget();
       const dx = targetWp.x - storm.pos.x;
       const dz = targetWp.z - storm.pos.z;
       const dist = Math.hypot(dx, dz);
 
-      if (dist < 20) {
-        currentBotWp = (currentBotWp + 1) % botWaypoints.length;
-      } else {
+      if (dist >= 8) {
         moveX = dx / dist;
         moveZ = dz / dist;
       }
@@ -1653,6 +2066,11 @@ function animate(now) {
 
   substations.forEach(sub => {
     if (!sub.destroyed && sub.meshData && sub.meshData.sparkRing) {
+      const stage3Elapsed = Math.max(0, 60 - runTimeRemaining);
+      const isActive = currentStage === 3 && stage3Elapsed >= sub.activeAfter;
+      sub.meshData.group.visible = currentStage === 3;
+      sub.meshData.sparkRing.material.color.set(isActive ? '#38bdf8' : '#475569');
+      if (sub.meshData.beacon) sub.meshData.beacon.material.color.set(isActive ? '#fbbf24' : '#475569');
       sub.meshData.sparkRing.rotation.z += 0.08;
       if (sub.meshData.beacon) {
         sub.meshData.beacon.rotation.y += 0.06;
@@ -1692,9 +2110,10 @@ function animate(now) {
 
     // STAGE 3 FINALE SYSTEM: POWER SUBSTATION DESTRUCTION
     if (currentStage === 3) {
+      const stage3Elapsed = Math.max(0, 60 - runTimeRemaining);
       substations.forEach(sub => {
         const dist = Math.hypot(sub.x - storm.pos.x, sub.z - storm.pos.z);
-        if (dist < storm.radius * 2.2 && !sub.destroyed) {
+        if (dist < storm.radius * 2.2 && !sub.destroyed && stage3Elapsed >= sub.activeAfter) {
           sub.health -= 120 * dt * efMultiplier;
           triggerPowerFlash();
           if (sub.health <= 0) {
@@ -1723,6 +2142,8 @@ function animate(now) {
         }
       }
     });
+
+    damageNearbyComedyProps(72 * dt * efMultiplier, storm.radius * 1.55);
   }
 
   chaserVans.forEach(v => {
@@ -1757,6 +2178,24 @@ function animate(now) {
       if (a.altitude <= 0.75) { a.altitude = 0.75; a.airborne = false; }
     }
   });
+
+  for (let i = activeGagProps.length - 1; i >= 0; i--) {
+    const gag = activeGagProps[i];
+    gag.orbitAngle += 0.11;
+    gag.altitude = Math.min(30, gag.altitude + dt * 17);
+    gag.mesh.position.set(
+      storm.pos.x + Math.cos(gag.orbitAngle) * (10 + gag.altitude * 0.3),
+      gag.altitude,
+      storm.pos.z + Math.sin(gag.orbitAngle) * (10 + gag.altitude * 0.3)
+    );
+    gag.mesh.rotation.x += gag.spin;
+    gag.mesh.rotation.y += gag.spin * 1.4;
+    gag.life -= dt;
+    if (gag.life <= 0) {
+      scene.remove(gag.mesh);
+      activeGagProps.splice(i, 1);
+    }
+  }
 
   for (let i = activeExplosionFragments.length - 1; i >= 0; i--) {
     const f = activeExplosionFragments[i];
@@ -1824,11 +2263,12 @@ function renderRadar() {
 
   // Stage 3 Substation Radar Beacons
   if (currentStage === 3) {
+    const stage3Elapsed = Math.max(0, 60 - runTimeRemaining);
     substations.forEach(sub => {
       if (!sub.destroyed) {
         const subx = 72.5 + (sub.x / 220) * 55;
         const subz = 72.5 + (sub.z / 220) * 55;
-        rCtx.fillStyle = '#38bdf8';
+        rCtx.fillStyle = stage3Elapsed >= sub.activeAfter ? '#38bdf8' : '#475569';
         rCtx.beginPath(); rCtx.arc(subx, subz, 6, 0, Math.PI * 2); rCtx.fill();
       }
     });

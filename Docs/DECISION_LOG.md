@@ -177,3 +177,23 @@ Build #5 physical testing proved the damage pipeline, stage transitions, target 
 **Rejected alternative:** Leaving contradictory documentation in place until the next gameplay patch.
 
 **Revisit condition:** None. Future corrections must append clarification rather than deleting historical evidence.
+
+## 2026-07-31 - Decision HTML-01: Ship the enjoyable HTML game instead of rebuilding it
+
+**Decision:** The HTML/WebGL game becomes the active gameplay source and planned Android foundation. Unity and Godot implementations remain preserved as historical experiments. Android packaging should bundle the HTML game locally in a native web wrapper. Multiplayer is explicitly out of scope.
+
+**Evidence:** The HTML build repeatedly proved more enjoyable than the engine ports. Browser testing of v3.0.0 completed the three-minute loop at approximately 60 FPS with all objectives and no console errors. The user explicitly selected the HTML game's feel as the product to preserve and approved a mobile single-player direction.
+
+**Rejected alternatives:** Continuing to recreate the same game in Unity or Godot without a measured wrapper blocker; treating the HTML game as merely disposable reference material; adding multiplayer before the single-player mobile loop is proven.
+
+**Revisit condition:** Reopen an engine port only if a bundled Android HTML build fails a documented requirement that cannot be corrected within the web runtime.
+
+## 2026-07-31 - Decision HTML-02: Use humorous district destruction as the replayability model
+
+**Decision:** Evolve the three-minute warning run into original storm-driven districts with environmental slapstick, randomized challenges, landmarks, unlocks, and escalating finales. Use classic arcade city-destruction structure as design inspiration without copying protected characters, locations, assets, writing, or branding.
+
+**Evidence:** v3.1.0 implements Pine Ridge, Main Street, and County Fair; thirteen destructible comedy props; one randomized challenge per district; sequential substation activation; and a persistent Neon Funnel cosmetic. A deterministic full browser run completed all systems with no warnings or errors, and the responsive layout fit an `844x390` landscape viewport after correcting the results card.
+
+**Rejected alternatives:** Pursuing visual realism before replayable district personality; adding a large roster of cosmetically different storms with shared verbs; using jokes about real disasters or victims.
+
+**Revisit condition:** Expand beyond one town only after human browser play and a physical Android package confirm that the district loop remains readable, funny, comfortable, and replayable.

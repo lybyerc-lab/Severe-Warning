@@ -1,128 +1,98 @@
 # Severe Weather Current Status
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active engine: Godot `4.7.1-stable`
-Primary language: GDScript
-Primary target: Android
-Godot project root: `Godot/`
+Active game: HTML/WebGL `3.1.0 Storm Town Rampage Slice`
+Primary target: single-player Android landscape
+Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
 
 ## Canonical memory order
 
 1. Current repository code and physical-device evidence
 2. This status file
-3. `Docs/GODOT_MIGRATION_CHECKPOINT_2026-07-30.md`
-4. `Docs/CONTEXT_CHECKPOINT_2026-07-30.md`
-5. `Docs/TORNADO_TACTICAL_PRODUCT_DIRECTION.md`
-6. `Docs/HTML_2_5_UNITY_PARITY_MATRIX.md`
-7. Historical Unity implementation documents
+3. `MechanicsLab/README.md`
+4. `Docs/DECISION_LOG.md`
+5. `Docs/NO_DRIFT_POLICY.md`
+6. `Docs/DEVICE_TEST_LOG.md`
+7. Dated Unity and Godot checkpoint documents
 8. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md`
 
 Important decisions and test evidence must be committed to the repository. Chat is working context, not durable project memory.
 
-## Active engine decision
+## Active implementation decision
 
-Production development has moved from Unity to Godot.
+The enjoyable HTML/WebGL game is the production gameplay source. The immediate Android strategy is to package its local assets in a native web wrapper instead of recreating the game in another 3D engine.
 
-Unity source is preserved as a reference implementation and historical record. No new Unity gameplay work should occur while the Godot migration is active.
-
-Godot `4.7.1-stable` with GDScript is the active production path. The Android-first foundation uses GDScript because Godot's current Android documentation still identifies C# Android export as experimental.
+Unity and Godot source remain preserved as historical experiments and implementation references. They are not the active gameplay path. Reopen an engine port only if measured physical-device evidence proves that the wrapped HTML build cannot meet an explicit requirement.
 
 ## Locked product direction
 
-The engine changes. The game does not.
+The game is a humorous, replayable, mobile arcade destruction game in which the player is the storm.
 
-HTML 3D Lab v2.5 Tactical remains the authoritative gameplay, layout, pacing, comfort, and enjoyment reference.
+- Android landscape is the primary target.
+- Multiplayer is out of scope.
+- The player directly controls Tornado, Supercell, or Derecho.
+- Town and city districts must be visually and mechanically recognizable.
+- Destruction should be immediate, readable, generous, and persistent.
+- Humor comes from fictional signs, objects, weather reporting, vehicles, safe airborne animals, and environmental slapstick.
+- People remain protected and off-limits as targets.
+- The project may learn from classic city-destruction game structure but must use original storms, locations, jokes, art, progression, and identity.
 
-The first production vertical slice remains Tornado and must include:
+## Current v3.1.0 slice
 
-- pulled-back tactical camera and look-ahead
-- comfortable mobile movement
-- Pull, Gust, and Grid Zap
-- generous destruction
-- four readable districts
-- score, combo, EF growth, timer, objectives, radar, and results
-- persistent event-driven warning/news ticker
-- safe storm chasers and captured-on-camera bonuses
-- invincible flingable animals with safe landings
-- opening broadcast and ending news recap
-- improved tornado, landscape, destruction, atmosphere, audio, and aftermath
-- people protected and off-limits
+The current three-minute run contains:
 
-Physical Android testing remains authoritative.
+1. Pine Ridge neighborhood
+2. Main Street
+3. County Fair blackout finale
 
-## Godot foundation
+Implemented systems include:
 
-The active Godot project contains:
+- district title transitions and compact mobile telemetry
+- one randomized bonus challenge per district
+- thirteen destructible comedy props with contextual callouts
+- Pine Ridge yard props, Main Street signage/storefront props, and County Fair rides/concessions
+- sequential substation activation at 0, 18, and 38 seconds into the finale
+- persistent Neon Funnel cosmetic unlock through `localStorage`
+- district scores, bonus completion, substation count, and cosmetic status on the results screen
+- deterministic `?bot=true` playtest routing that understands district targets
+- replay cleanup for world objects, hail, fragments, power poles, ruins, and ground swath
 
-- `Godot/project.godot`
-- `Godot/scenes/main.tscn`
-- `Godot/scripts/main.gd`
+## Automated evidence
 
-Current source foundation includes:
+Browser playtesting of the exact v3.1.0 source completed a full Tornado run with:
 
-- Mobile rendering method
-- landscape viewport configuration
-- code-driven main scene
-- tactical camera with velocity look-ahead
-- Tornado movement
-- Pull, Gust, and Grid Zap input actions
-- three-minute timer
-- score, combo, power, ticker, and HUD shell
-- dense target block
-- invincible flingable cow prototype
-- safe storm-chaser visual placeholder
+- S+ grade
+- all 3 storm objectives
+- both landmarks
+- all 3 district challenges
+- all 3 sequential substations
+- Neon Funnel unlock
+- successful replay reset
+- approximately 60 FPS during the full-size run
+- no browser warnings or errors
 
-## Evidence status
+Responsive validation at `844x390` confirmed that the joystick, action buttons, radar, compact HUD, challenge banner, and game view fit the landscape viewport. The results card was corrected from a clipped 427-pixel layout to a 298-pixel layout that fits within the 390-pixel viewport.
 
-The Godot foundation is source-only.
+## Evidence boundary
 
-It has not yet been:
+The v3.1.0 build has not yet been:
 
-- parsed by Godot 4.7.1
-- run in the Godot editor
-- exported to Android
-- installed on a physical device
-- accepted for gameplay feel or performance
+- packaged as an Android APK or AAB
+- run inside Android System WebView
+- tested with physical touchscreen input
+- checked for sustained device heat, battery use, audio behavior, pause/resume, or WebGL context recovery
+- accepted on a physical Android device
 
-Do not describe it as compiled, playable, stable, or parity-complete until those gates pass.
-
-## Preserved Unity status
-
-The latest Unity checkpoint remains preserved at commit:
-
-`98a576d926abdfa3345225a3959349f817f7cfde`
-
-The Unity Tornado Tactical P1 source remains useful for reference values and system intent, but it is no longer the active build target.
-
-## First Godot gate
-
-1. Open `Godot/project.godot` in Godot `4.7.1-stable`.
-2. Resolve every parser error.
-3. Run `Godot/scenes/main.tscn`.
-4. Confirm Tornado movement and tactical camera comfort.
-5. Confirm Pull, Gust, and Grid Zap inputs fire.
-6. Confirm ticker and HUD remain readable in landscape.
-7. Confirm the cow can be flung without harm.
-8. Add touch joystick and action buttons.
-9. Commit an Android export preset.
-10. Export and install the first Android APK.
-11. Compare directly with HTML 2.5 on the same device.
-
-## Known foundation limitations
-
-- primitive visuals only
-- keyboard controls only at the first checkpoint
-- Pull is currently a feedback shell, not full orbit physics
-- Grid Zap is currently a feedback/scoring shell, not a conductive chain
-- target destruction is not yet implemented
-- cow safe-landing and reset need a dedicated controller
-- chaser is visual-only
-- no Android export preset yet
-- no Godot parser or headless validation has run
-- final four-district county, objectives, radar, broadcast sequences, production audio, and authored graphics remain missing
+Do not describe Android packaging or physical-device acceptance as complete until those gates pass.
 
 ## Immediate next action
 
-Open the Godot project in `4.7.1-stable`, run the main scene, and capture the complete parser/runtime result before adding more systems.
+1. Freeze v3.1.0 gameplay after human browser acceptance.
+2. Create a small Capacitor Android shell with all game assets bundled locally.
+3. Remove or locally bundle external font dependencies for offline play.
+4. Build a debug APK locally.
+5. Install it on the target Android phone.
+6. Record touch comfort, frame pacing, heat, battery, audio, pause/resume, save persistence, and orientation results.
+7. Optimize only measured device problems before expanding the campaign.

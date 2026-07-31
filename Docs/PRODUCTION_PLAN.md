@@ -1,67 +1,53 @@
-# Production Vertical Slice Plan
+# HTML Mobile Production Plan
 
-## Phase 0 - Starter and toolchain
+## Phase 0 - Gameplay reference
 
-- Unity 6.3 LTS project opens
-- URP and Input System resolve
-- production slice scene generates
-- Tornado and Supercell both move and use distinct abilities
-- Android development build launches
+- preserve v3.0.0 as the stable pre-district reference in Git history
+- complete the v3.1.0 three-district arcade slice
+- verify startup, full-run completion, replay reset, and responsive landscape layout
 
-## Phase 1 - Vision lock
+## Phase 1 - Human browser acceptance
 
-- approve one target screenshot
-- approve material and lighting guide
-- approve region-density map
-- approve scale sheet
-- approve Tornado and Supercell storyboards
-- approve audio reference sheet
+- play Tornado manually across all three districts
+- confirm movement, camera distance, ability timing, challenge clarity, humor cadence, and replay desire
+- tune the County Fair sequence only from observed play rather than automated score totals
 
-## Phase 2 - Asset laboratory
+## Phase 2 - Android wrapper proof
 
-Create production-quality:
+- create a minimal Capacitor Android shell
+- bundle the HTML, JavaScript, fonts, and future media locally
+- lock landscape orientation and immersive fullscreen behavior
+- build a debug APK without paid cloud-build services
 
-- two houses
-- one barn
-- one commercial building
-- one warehouse
-- sedan, pickup, and SUV
-- utility pole and transformer
-- tree set
-- crops and field-edge set
-- road intersection kit
+## Phase 3 - Physical-device acceptance
 
-Each asset includes LOD and destruction states.
+- install on the target Android phone
+- verify joystick ownership and simultaneous action-button touches
+- verify audio initialization, focus, pause/resume, and mute behavior
+- verify localStorage cosmetic persistence across close/reopen
+- record sustained FPS, heat, battery use, and WebGL context behavior
+- test at least one complete three-minute run and one retry
 
-## Phase 3 - Dense living-region slice
+## Phase 4 - One-town content proof
 
-Build one connected urban-rural region with no long inactive gaps.
+- improve district-specific building silhouettes and signage
+- expand environmental comedy without targeting people
+- add varied destruction sounds and reduce repetition
+- add one additional challenge variant per district only if current challenges remain readable
+- preserve Tornado, Supercell, and Derecho mechanical differences
 
-## Phase 4 - Tornado proof
+## Phase 5 - Campaign decision
 
-Prove concentrated physical destruction, debris, object displacement, and readable path damage.
-
-## Phase 5 - Supercell proof
-
-Prove Hail Swath, Gust Front, Electrical Network, rain response, and broad-storm navigation.
-
-## Phase 6 - Android performance proof
-
-- GPU instancing
-- LOD and HLOD
-- culling
-- pooled debris and VFX
-- adaptive quality
-- thermals and battery
-- stable touch input
+Expand beyond the first fictional town only when browser and Android playtests show that players want another run. Additional towns must provide distinct landmarks, props, hazards, visual identity, and challenge combinations rather than merely recoloring the same block.
 
 ## Production release gate
 
-No production claim until:
+No Android-ready claim until:
 
-- the region looks coherent on the real phone
-- both storms feel mechanically different
-- no-dead-zone playtest passes
-- sound no longer feels arcade-like
-- Android performance and temperature are acceptable
-- previous production build remains recoverable
+- the bundled app works offline
+- touch controls remain comfortable for a complete run
+- the game resumes safely after interruption
+- saves and the cosmetic unlock survive close/reopen
+- frame pacing, heat, battery, and sound are acceptable on the real phone
+- the game remains funny and replayable after repeated runs
+- the last verified HTML release remains recoverable

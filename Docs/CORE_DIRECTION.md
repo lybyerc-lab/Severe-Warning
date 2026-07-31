@@ -1,8 +1,8 @@
-# Severe Weather Core Direction - Production Track
+# Severe Weather Core Direction - HTML Mobile Track
 
 ## Canonical identity
 
-Severe Weather is a stylized 3D, direct-control weather destruction action RPG set in a dense living urban-rural region.
+Severe Weather is a stylized 3D, direct-control arcade destruction game set across humorous town and city districts.
 
 The player is the storm. The player does not manage weather from a dashboard.
 
@@ -16,13 +16,13 @@ The region existed before the storm arrived. Roads connect farms, towns, neighbo
 
 ## Production rendering direction
 
-- Unity 6.3 LTS
-- Universal Render Pipeline
+- HTML, Three.js, and WebGL as the gameplay source
+- locally bundled Android web wrapper
 - Stylized dimensional 3D
-- City-builder readability with action-game destruction
-- County High camera for navigation
-- Impact camera for close destruction
-- Cinematic replay cameras separate from gameplay cameras
+- pulled-back tactical readability with action-game destruction
+- recognizable districts with unique landmarks, props, and jokes
+- mobile landscape controls and presentation
+- adaptive effects based on measured Android performance
 
 ## Storm differentiation
 
@@ -61,4 +61,4 @@ The Supercell must never become a large tornado with alternate particles.
 
 ## Production boundary
 
-The HTML prototype is the mechanics laboratory. Unity is the production track. Prototype renderer limitations must not dictate the final art, map, audio, or storm design.
+The HTML/WebGL game is the active production gameplay source. Unity and Godot source are preserved historical experiments. Multiplayer is out of scope. An engine port may be reconsidered only after a bundled Android wrapper fails a documented requirement that cannot be corrected within the web runtime.

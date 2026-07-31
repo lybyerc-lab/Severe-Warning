@@ -1,120 +1,46 @@
-# Severe Weather - Unity Production Starter
+# Severe Weather
 
-Severe Weather is a direct-control weather destruction action RPG set in a dense living urban-rural region.
+Severe Weather is a mobile-first, single-player arcade destruction game. The player directly controls a tornado, supercell, or derecho across stylized town and city districts.
 
-The player is the storm. Unity is the production track; the HTML builds are preserved as a Mechanics Laboratory.
+The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.html`. The planned Android path is to package this game in a local native web wrapper while preserving offline play and the existing browser feel.
 
-## Current production target
+## Current gameplay baseline
 
-- Unity `6000.3.0f1`
-- Universal Render Pipeline package with a deterministic lit Built-in device-lab baseline while authored URP assets remain an open gate
-- Android first
-- Unity Build Automation connected to GitHub `main`
-- Future WebGL, desktop, console, and Switch-class targets remain later gates
+Version `3.1.0 Storm Town Rampage Slice` contains:
 
-## Production gameplay currently wired
+- three-minute single-player warning runs
+- Pine Ridge, Main Street, and County Fair districts
+- Tornado, Supercell, and Derecho storm classes
+- mobile joystick and three action buttons
+- pulled-back tactical camera and movement look-ahead
+- score, combo, EF progression, objectives, radar, and results
+- buildings, landmarks, power infrastructure, persistent ruins, storm chasers, and invincible airborne animals
+- thirteen destructible comedy props with slapstick callouts
+- one randomized bonus challenge per district
+- sequential County Fair substation finale
+- persistent Neon Funnel cosmetic unlock
+- deterministic browser playtest mode through `?bot=true`
 
-- Direct-control Tornado and Supercell
-- Distinct movement, positioning, and ability verbs
-- Runtime-generated connected county graybox
-- Viewport-contained County High and action-responsive Impact camera behavior
-- Separate Tornado and Supercell framing profiles
-- Mobile and desktop input
-- Five-stage, material-aware damage
-- Conductive network chaining
-- Direction-aware crop, vegetation, vehicle, utility, and structural reactions
-- Mobility-aware props, approximate mass, and wind response
-- Capped temporary effects and material-shaped fragments
-- Animated Supercell rain/hail and Tornado ground contact
-- Collider-aware runtime density validation
-- Immediate ability, target, impact-stage, FX, fragment, camera, performance, graphics, and build telemetry
-- Deterministic scene generation and Android player settings
+The design reference is the readable, humorous, replayable city-block destruction structure associated with classic arcade destruction games. This project must develop its own storms, districts, humor, names, art, and progression rather than copying another game's protected characters or assets.
 
-Damageable targets move through:
+## Product constraints
 
-`Intact -> Stressed -> Damaged -> Critical -> Destroyed`
+- Android landscape is the primary target.
+- The game is single-player; multiplayer is out of scope.
+- People remain protected and off-limits as targets.
+- Humor comes from fictional signs, props, weather reporting, vehicles, animals with safe landings, and environmental slapstick.
+- Physical Android testing is authoritative for touch comfort, performance, heat, battery, audio, and final readability.
 
-This remains a procedural laboratory slice, not final art or a production-ready game.
+## Repository layout
 
-## Source-present experiments
+- `MechanicsLab/`: active HTML game and preserved browser experiments
+- `Docs/`: product direction, decisions, validation history, and historical checkpoints
+- `Godot/`: preserved migration experiment
+- `Assets/`, `Packages/`, `ProjectSettings/`: preserved Unity implementation history
+- `Tools/validate_project.py`: repository structure and source validation
 
-The repository also contains experimental July 29 source for Derecho, EF score/rating progression, a NOAA/EAS banner, invincible animals, and a power-substation cascade.
+## Current evidence
 
-These files are not currently integrated into the production loop:
+Automated browser testing of v3.1.0 completed a full Tornado run at approximately 60 FPS with no browser warnings or errors. It verified all three district challenges, both landmarks, all three sequential substations, the Neon Funnel unlock, replay reset, and an `844x390` mobile-landscape layout. This is not a substitute for physical Android acceptance.
 
-- `GameBootstrap` still switches only Tornado and Supercell.
-- Derecho is never instantiated.
-- EF and NOAA systems are never created.
-- Animals and cascade components are not attached to the generated region.
-- No supplied Unity build validates these additions.
-
-The production roster therefore remains Tornado and Supercell until an explicit integration decision and successful build/device gates.
-
-## Persistent project memory
-
-Read these before planning work:
-
-1. `CURRENT_STATUS.md`
-2. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-3. `Docs/NO_DRIFT_POLICY.md`
-4. `Docs/DECISION_LOG.md`
-5. `Docs/DEVICE_TEST_LOG.md`
-6. `Docs/UNITY_CLOUD_BUILD_SETTINGS.md`
-7. Other current production documents in `Docs/`
-8. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md` for historical context
-
-The repository is the canonical durable project record. Important conclusions become project truth only when committed with their evidence.
-
-## Controls
-
-Desktop:
-
-- WASD or arrow keys: move
-- Space: hold primary ability
-- Q: secondary ability
-- E: tertiary ability
-- Tab: switch Tornado/Supercell
-
-Android Build #5.2:
-
-- Drag in the lower-left capture area to create a floating joystick.
-- Movement is camera-relative.
-- Hold `PULL` or `HAIL`.
-- Tap `GUST` or `FRONT`.
-- Tap `ZAP` or `GRID`.
-- Tap the top-center storm button to switch storm.
-- Use the mixed-material lane near spawn to compare staged reactions.
-- Keep debug telemetry visible during the device gate.
-
-## Cloud build
-
-Unity Build Automation uses:
-
-- repository: `lybyerc-lab/Severe-Warning`
-- branch: `main`
-- project subfolder: blank
-- Unity: exact `6000.3.0f1`
-- platform: Android APK
-- pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
-- IL2CPP and ARM64
-- Android minimum API 26
-- Vulkan-only current device baseline
-- debug signing and Library caching
-
-The current pre-export method sets application version `0.1.9`, Android version code `9`, generated Standard/unlit runtime materials, build identity, production-slice scene, and quality defaults.
-
-## Evidence status
-
-- Build #1 compiled and installed but displayed a black screen.
-- Build #2 rendered the graybox world.
-- Build #3 proved touch registration but failed movement readability.
-- Build #4 improved feedback but exposed a stationary storm root.
-- Build #4.1 fixed translation.
-- Build #4.2 passed the camera-foundation gate.
-- Build #5 proved staged damage but failed impact readability.
-- Build #5.1 corrected major crop/effect problems but still failed final presentation and lacked the five-minute stress record.
-- Unity Build Automation successfully compiled and packaged Build #5.2 at commit `80f2f14`.
-- Build #5.2 still lacks its complete physical Android acceptance record.
-- Later July 29 source changes remain uncompiled and unverified by the supplied evidence.
-
-See `CURRENT_STATUS.md` for the exact active gate.
+Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work.
