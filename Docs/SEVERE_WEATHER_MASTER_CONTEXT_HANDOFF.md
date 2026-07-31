@@ -1,6 +1,6 @@
 # Severe Weather - Master Project Context Handoff
 
-**Living handoff last updated:** 2026-07-23
+**Living handoff last updated:** 2026-07-29
 **Repository:** `lybyerc-lab/Severe-Warning`
 **Default branch:** `main`
 **Current production engine:** Unity 6.3 LTS / Unity `6000.3.0f1` with URP
@@ -1440,3 +1440,19 @@ Build #4.2 physical testing passes the movement and camera-foundation gate. Buil
 ## Build #5.1 impact-readability lock
 
 Physical Build #5 evidence is authoritative: mechanics work, but crop collapse, hail presentation, generic hit bursts, storm occlusion, and temporary-object growth are not acceptable. Build #5.1 uses directional ground-hugging crop deformation, material-shaped temporary fragments, a weather-shaped hail field, softer precipitation and Tornado ground contact, Supercell attack-time cloud fading, visual-only roof/window/crossarm/crown reactions, and explicit FX/fragment caps. Do not add missions, progression, a third storm, persistent detached physics pieces, final art packs, or full fracture architecture in this patch.
+
+## Build #5.2 and current-head audit - 2026-07-29
+
+Build #5.1 commit `7695875effea2dafb8bb8c1e6519f1b9181b1587` is the latest recorded physical baseline. It corrected the HAIL rectangle, Tornado ground disk, effect caps, directional reactions, and vertical crop-spike defect, but still failed final presentation because of a Supercell trail wedge, looping line artifacts, oversized Tornado feedback, board-like crop aftermath, and the missing five-minute stress record.
+
+Unity Build Automation attempt `6` compiled and packaged Build #5.2 commit `80f2f1438d600b3b2857925e6aef60e48dd04444` successfully with Unity `6000.3.0f1`. That proves compilation and APK generation only. The Build #5.2 physical gate remains open.
+
+The audited July 29 `main` head contains experimental Derecho, EF progression, NOAA/EAS, invincible-animal, power-cascade, and newer HTML Mechanics Laboratory source. These additions do not change the accepted production roster:
+
+- Bootstrap still instantiates only Tornado and Supercell.
+- Derecho lacks complete production HUD, camera, visual, and switching integration.
+- EF, NOAA, animal, and cascade components are not created by the production bootstrap/region.
+- The later source delta has no supplied Unity compile or physical-device evidence.
+- Tornado gust balance and Rigidbody damping were changed outside the locked Build #5.2 scope.
+
+Treat those files as experimental until an explicit integration decision and full build/device gates. Read `CURRENT_STATUS.md` for the precise active baseline and blocker.

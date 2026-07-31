@@ -2,37 +2,53 @@
 
 Severe Weather is a direct-control weather destruction action RPG set in a dense living urban-rural region.
 
-The player is the storm. The HTML prototype is preserved as a frozen Mechanics Laboratory; Unity is the production track.
+The player is the storm. Unity is the production track; the HTML builds are preserved as a Mechanics Laboratory.
 
 ## Current production target
 
 - Unity `6000.3.0f1`
-- Universal Render Pipeline package with a deterministic lit built-in device-lab baseline while the authored URP asset gate remains open
+- Universal Render Pipeline package with a deterministic lit Built-in device-lab baseline while authored URP assets remain an open gate
 - Android first
 - Unity Build Automation connected to GitHub `main`
 - Future WebGL, desktop, console, and Switch-class targets remain later gates
 
-## What is included
+## Production gameplay currently wired
 
-- Runtime bootstrapping that creates a playable procedural county test region from an empty scene
-- Direct-control Tornado and Supercell implementations
-- Distinct Tornado and Supercell verbs
+- Direct-control Tornado and Supercell
+- Distinct movement, positioning, and ability verbs
+- Runtime-generated connected county graybox
 - Viewport-contained County High and action-responsive Impact camera behavior
 - Separate Tornado and Supercell framing profiles
 - Mobile and desktop input
-- Material-aware five-stage damage and conductive network chaining
-- Direction-aware crop, vegetation, vehicle, and structural presentation
+- Five-stage, material-aware damage
+- Conductive network chaining
+- Direction-aware crop, vegetation, vehicle, utility, and structural reactions
 - Mobility-aware props, approximate mass, and wind response
-- Capped material-shaped temporary impact fragments
-- Animated Supercell rain and hail curtains with attack-time cloud visibility
-- Animated Tornado ground-contact dust arcs
+- Capped temporary effects and material-shaped fragments
+- Animated Supercell rain/hail and Tornado ground contact
 - Collider-aware runtime density validation
-- Immediate ability feedback, target counts, no-target messages, FX counts, and fragment counts
-- Cloud-generated lit material templates, build identity, and deterministic Android player settings
-- Editor scene-generation and project-readiness tools
-- Production art, audio, level-design, migration, and No-Drift standards
-- Frozen HTML Mechanics Laboratory
-- Persistent repository memory through current status, decisions, and device-test evidence
+- Immediate ability, target, impact-stage, FX, fragment, camera, performance, graphics, and build telemetry
+- Deterministic scene generation and Android player settings
+
+Damageable targets move through:
+
+`Intact -> Stressed -> Damaged -> Critical -> Destroyed`
+
+This remains a procedural laboratory slice, not final art or a production-ready game.
+
+## Source-present experiments
+
+The repository also contains experimental July 29 source for Derecho, EF score/rating progression, a NOAA/EAS banner, invincible animals, and a power-substation cascade.
+
+These files are not currently integrated into the production loop:
+
+- `GameBootstrap` still switches only Tornado and Supercell.
+- Derecho is never instantiated.
+- EF and NOAA systems are never created.
+- Animals and cascade components are not attached to the generated region.
+- No supplied Unity build validates these additions.
+
+The production roster therefore remains Tornado and Supercell until an explicit integration decision and successful build/device gates.
 
 ## Persistent project memory
 
@@ -47,38 +63,28 @@ Read these before planning work:
 7. Other current production documents in `Docs/`
 8. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md` for historical context
 
-The repository is the canonical durable project record. Important chat conclusions must be committed before they are treated as persistent project truth.
+The repository is the canonical durable project record. Important conclusions become project truth only when committed with their evidence.
 
-## Current mobile controls
+## Controls
 
 Desktop:
 
 - WASD or arrow keys: move
-- Space: primary ability
+- Space: hold primary ability
 - Q: secondary ability
 - E: tertiary ability
 - Tab: switch Tornado/Supercell
 
-Android Build #5.1 impact-readability laboratory:
+Android Build #5.2:
 
-- Start a drag in the lower-left control area to create a floating joystick.
+- Drag in the lower-left capture area to create a floating joystick.
 - Movement is camera-relative.
-- The storm root uses transform-authoritative motion and reports actual resolved speed.
-- The camera uses a soft world-space leash plus screen-space containment.
-- Hold `PULL` or `HAIL` for the primary ability.
-- Tap `GUST` or `FRONT` for the secondary ability.
-- Tap `ZAP` or `GRID` for the tertiary ability.
+- Hold `PULL` or `HAIL`.
+- Tap `GUST` or `FRONT`.
+- Tap `ZAP` or `GRID`.
 - Tap the top-center storm button to switch storm.
-- Attack the mixed-material target lane near the initial spawn to compare staged reactions.
-- INPUT, POS, ACTUAL speed, DIST, FPS, camera state, target count, recent impact stage, FX count, fragment count, render pipeline, graphics API, build version, and commit telemetry remain visible during the device gate.
-
-## Damage stages
-
-Damageable targets move through:
-
-`Intact -> Stressed -> Damaged -> Critical -> Destroyed`
-
-Crop, vegetation, glass, wood, metal, vehicles, infrastructure, and masonry use different deformation, release, resistance, and collapse behavior. Build #5.1 keeps crops ground-hugging, delays tree release, and uses temporary capped fragments instead of persistent physics clutter. Structural targets still collapse in place during this laboratory pass.
+- Use the mixed-material lane near spawn to compare staged reactions.
+- Keep debug telemetry visible during the device gate.
 
 ## Cloud build
 
@@ -87,24 +93,28 @@ Unity Build Automation uses:
 - repository: `lybyerc-lab/Severe-Warning`
 - branch: `main`
 - project subfolder: blank
-- Unity version: auto-detect exact `6000.3.0f1`
-- platform: Android
-- Android SDK availability: `35`
+- Unity: exact `6000.3.0f1`
+- platform: Android APK
 - pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
-- APK output and debug signing for device-test builds
-- Library caching
+- IL2CPP and ARM64
+- Android minimum API 26
+- Vulkan-only current device baseline
+- debug signing and Library caching
 
-The pre-export method sets application version `0.1.8`, Android version code `8`, IL2CPP, ARM64, Vulkan-only device-lab rendering, generated built-in runtime materials, build identity, the production-slice scene, and quality defaults.
+The current pre-export method sets application version `0.1.9`, Android version code `9`, generated Standard/unlit runtime materials, build identity, production-slice scene, and quality defaults.
 
-## Honest status
+## Evidence status
 
 - Build #1 compiled and installed but displayed a black screen.
-- Build #2 rendered the graybox world and switched between Tornado and Supercell.
-- Build #3 confirmed mobile input registration but failed movement readability and visual-quality gates.
-- Build #4 improved lighting and feedback, but physical testing proved the storm root stayed at spawn.
-- Build #4.1 fixed actual translation and passed the movement gate.
-- Build #4.2 improved screen-space camera containment and reframed the Supercell without reducing either storm speed.
-- Build #5 proved staged damage and targeting, but failed crop, hail, occlusion, and effect-readability gates.
-- Build #5.1 is the focused directional-impact, weather-feedback, visibility, and mobile-effect-budget correction.
+- Build #2 rendered the graybox world.
+- Build #3 proved touch registration but failed movement readability.
+- Build #4 improved feedback but exposed a stationary storm root.
+- Build #4.1 fixed translation.
+- Build #4.2 passed the camera-foundation gate.
+- Build #5 proved staged damage but failed impact readability.
+- Build #5.1 corrected major crop/effect problems but still failed final presentation and lacked the five-minute stress record.
+- Unity Build Automation successfully compiled and packaged Build #5.2 at commit `80f2f14`.
+- Build #5.2 still lacks its complete physical Android acceptance record.
+- Later July 29 source changes remain uncompiled and unverified by the supplied evidence.
 
-This remains a production architecture and procedural lab slice, not final art or a production-ready game.
+See `CURRENT_STATUS.md` for the exact active gate.

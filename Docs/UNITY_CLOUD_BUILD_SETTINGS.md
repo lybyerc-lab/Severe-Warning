@@ -1,10 +1,10 @@
 # Unity Cloud Build Settings
 
-Last verified: 2026-07-23
+Last verified from repository source and supplied build log: 2026-07-29
 Target: `Severe Weather Android`
 Repository: `lybyerc-lab/Severe-Warning`
 
-This file records the intended Unity Build Automation configuration. Dashboard settings remain external state, so any change must be reflected here.
+This file records the intended Unity Build Automation configuration. Dashboard settings remain external state. The latest supplied successful cloud run was attempt `6` at commit `80f2f14` on 2026-07-25.
 
 ## Basic settings
 
@@ -51,21 +51,22 @@ This file records the intended Unity Build Automation configuration. Dashboard s
 
 `ProductionSliceBuilder` applies these settings inside Unity before every build:
 
-- application version `0.1.4`
-- Android version code `4`
+- application version `0.1.9`
+- Android version code `9`
 - application identifier `com.lybyerclab.severewarning`
 - IL2CPP scripting backend
 - ARM64 architecture
 - managed stripping level Medium
 - Android minimum API 26
 - target SDK Auto, with SDK 35 available in the cloud builder
-- Vulkan first with OpenGLES3 fallback
+- Vulkan only for the current device baseline
 - APK output rather than AAB
 - landscape-left orientation
 - linear color space
 - 2x MSAA
 - soft shadows and mobile shadow distance
-- generated Standard/URP material templates and build identity
+- generated Standard and unlit runtime material templates
+- generated build identity
 - generated production-slice scene
 
 ## Build #4 clean-build rule
@@ -121,3 +122,29 @@ The Vulkan-only and Built-in-template choices are temporary test controls. They 
 - Expected source base before patch: `d0b7f15927c082b960c034ccc11ae7abaaaf63c3`
 - Continue using the exact Unity `6000.3.0f1`, Android SDK 35, Windows 11 24H2 Micro builder, APK output, debug signing, Vulkan-only player settings, and the existing pre-export method.
 - Reuse the Library cache. A clean build is not required unless Unity reports stale generated assets.
+
+## Build #5.2 device-lab identity
+
+- Application version: `0.1.9`
+- Android version code: `9`
+- Expected HUD: `B5.2 ABILITY FEEDBACK CLEANUP`
+- Source base before the cleanup series: `7695875effea2dafb8bb8c1e6519f1b9181b1587`
+- Last successful cloud commit: `80f2f1438d600b3b2857925e6aef60e48dd04444`
+- Unity Build Automation attempt: `6`
+- Result: successful Android IL2CPP/ARM64 compilation and APK packaging
+- Unity: exact `6000.3.0f1`
+- Output: APK with debug signing
+- Graphics API: Vulkan only
+- Pre-export method: `SevereWeather.Editor.ProductionSliceBuilder.CreateProductionSliceScene`
+
+Compilation does not close the physical gate. A five-minute Android run must still confirm trail/ring removal, crop aftermath, effect cleanup, frame pacing, heat, and battery behavior.
+
+## Current-head rule
+
+The July 29 source additions after `80f2f14` have no supplied Unity build evidence. Before requesting another cloud build:
+
+1. restore Unity 6 damping APIs
+2. decide whether experimental Derecho/progression files remain quarantined or become an approved integration
+3. run repository validation and checksum verification
+4. confirm `CURRENT_STATUS.md` names the exact source head and intended test
+5. preserve the successful `80f2f14` APK as the rollback artifact

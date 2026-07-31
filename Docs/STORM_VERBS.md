@@ -1,5 +1,9 @@
 # Storm Verb Contract
 
+## Production roster status
+
+Tornado and Supercell are the accepted production storms for the current foundation gate. Experimental Derecho source does not amend this contract until it receives explicit approval, distinct production integration, compilation, and physical-device validation.
+
 ## Tornado
 
 ### Movement identity

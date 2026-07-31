@@ -291,3 +291,58 @@ Device screenshots confirmed:
 - Ground mist and Tornado contact geometry remained too solid and primitive.
 
 Build #5 passes the systems gate and fails the impact-readability gate. Build #5.1 must preserve working mechanics while correcting presentation and bounding transient object counts.
+
+## 2026-07-24 - Android Build #5.1
+
+### Source
+
+- Commit: `7695875effea2dafb8bb8c1e6519f1b9181b1587`
+- Application version: `0.1.8`
+- Unity: `6000.3.0f1`
+- Target: Android APK through Unity Build Automation
+
+### Recorded physical result
+
+- Build #5.1 compiled and launched on Android.
+- Captured telemetry was approximately 60 FPS.
+- Tornado and Supercell movement, camera behavior, switching, target detection, and staged damage remained functional.
+- The blue HAIL rectangle and orange Tornado ground disk were removed.
+- FX and fragment counts remained within the `18` and `42` caps in captured frames.
+- Trees, utilities, roofs, props, and crops reacted directionally.
+- Crops no longer formed the vertical black spike field.
+
+### Remaining failures
+
+- A dark triangular trail followed the Supercell.
+- Looping ground-mist and hail lines read as tangled blue debug scribbles.
+- Tornado PULL still used oversized ring feedback.
+- Flattened crops read as scattered boards rather than coherent row damage.
+- No five-minute stress, heat, battery, or sustained-cleanup result was recorded.
+
+### Decision
+
+Build #5.1 passes its mechanical impact-reaction gate and fails final ability-feedback presentation. Build #5.2 remains a constrained cleanup and sustained-device-test pass.
+
+## 2026-07-25 - Unity Build Automation attempt 6 for Build #5.2
+
+This is compilation and packaging evidence, not a physical-device result.
+
+### Source
+
+- Commit: `80f2f1438d600b3b2857925e6aef60e48dd04444`
+- Application version: `0.1.9`
+- Build label: `5.2`
+- Unity: `6000.3.0f1`
+- Target: Android APK, IL2CPP, ARM64
+
+### Result
+
+- Unity generated the Build #5.2 production slice.
+- Android player compilation and APK packaging succeeded.
+- The cloud log ended with `Build Finished, Result: Success`.
+- The supplied APK is readable and contains Android manifest and Unity player data.
+- The automated test step recorded zero duration; no gameplay unit tests ran.
+
+### Decision
+
+Commit `80f2f14` is the latest proven compile/package baseline. The Build #5.2 physical gate remains open because no five-minute Android acceptance record accompanies the artifact.

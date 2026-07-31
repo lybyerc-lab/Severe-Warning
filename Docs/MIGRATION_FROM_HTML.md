@@ -33,6 +33,9 @@
 - monolithic single-file architecture
 - prototype-specific UI layout
 
-## Frozen mechanics reference
+## Preserved mechanics references
 
-`MechanicsLab/SevereWeather_MechanicsLab_v0.7.1.html` is preserved for comparison. It is not production source.
+- `MechanicsLab/SevereWeather_MechanicsLab_v0.7.1.html` is the large frozen baseline used during the Unity transition.
+- `MechanicsLab/SevereWeather_MechanicsLab_v0.8.0.html` is a later compact experiment whose internal page title is `v1.3.5`.
+
+The later experiment explores Derecho, EF score scaling, NOAA/EAS presentation, blackouts, animals, and landmarks. It is not production source and does not approve those systems for the Unity production loop.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Severe Weather 3D Lab v2.6.0 - District Readability Edition</title>
+<title>Severe Weather 3D Lab v2.7.0 - Delta-Time & District Engine</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -143,7 +143,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.6.0 DISTRICTS</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.7.0 DELTA-TIME</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -162,8 +162,8 @@
       <div class="objectives-box" id="objList">
         <div><b>STORM OBJECTIVES:</b></div>
         <div class="obj-item" id="obj1">⚪ Shatter Water Tower 💧 & Silo 🌾</div>
-        <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (2,500+ PTS)</div>
-        <div class="obj-item" id="obj3">⚪ Score 4,500 Total Points</div>
+        <div class="obj-item" id="obj2">⚪ Reach EF-3 Rating (4,500+ PTS)</div>
+        <div class="obj-item" id="obj3">⚪ Score 8,000 Total Points</div>
       </div>
     </div>
 
@@ -371,13 +371,37 @@ dirLight.shadow.camera.top = 220;
 dirLight.shadow.camera.bottom = -220;
 scene.add(dirLight);
 
-// Grass Ground Plane (800x800)
-const groundGeo = new THREE.PlaneGeometry(800, 800);
-const groundMat = new THREE.MeshStandardMaterial({ color: '#162e16', roughness: 0.6, metalness: 0.1 });
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-scene.add(ground);
+// VISUALLY DIFFERENTIATED 4-DISTRICT GROUND TILES
+const groundGroup = new THREE.Group();
+scene.add(groundGroup);
+
+// 🏙️ Downtown Ground Tile (Northwest) - Dark Asphalt Concrete
+const dtGroundGeo = new THREE.PlaneGeometry(360, 360);
+const dtGroundMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.45 });
+const dtGround = new THREE.Mesh(dtGroundGeo, dtGroundMat);
+dtGround.rotation.x = -Math.PI / 2; dtGround.position.set(-180, -0.05, -180);
+dtGround.receiveShadow = true; groundGroup.add(dtGround);
+
+// 🏡 Suburbs Ground Tile (Northeast) - Lush Green Grass Lawn
+const subGroundGeo = new THREE.PlaneGeometry(360, 360);
+const subGroundMat = new THREE.MeshStandardMaterial({ color: '#163816', roughness: 0.65 });
+const subGround = new THREE.Mesh(subGroundGeo, subGroundMat);
+subGround.rotation.x = -Math.PI / 2; subGround.position.set(180, -0.05, -180);
+subGround.receiveShadow = true; groundGroup.add(subGround);
+
+// 🏭 Industrial Ground Tile (Southwest) - Dark Gravel & Dirt
+const indGroundGeo = new THREE.PlaneGeometry(360, 360);
+const indGroundMat = new THREE.MeshStandardMaterial({ color: '#2a1a10', roughness: 0.85 });
+const indGround = new THREE.Mesh(indGroundGeo, indGroundMat);
+indGround.rotation.x = -Math.PI / 2; indGround.position.set(-180, -0.05, 180);
+indGround.receiveShadow = true; groundGroup.add(indGround);
+
+// 🌾 Farmland Ground Tile (Southeast) - Golden Wheat Soil
+const farmGroundGeo = new THREE.PlaneGeometry(360, 360);
+const farmGroundMat = new THREE.MeshStandardMaterial({ color: '#3d2b0f', roughness: 0.75 });
+const farmGround = new THREE.Mesh(farmGroundGeo, farmGroundMat);
+farmGround.rotation.x = -Math.PI / 2; farmGround.position.set(180, -0.05, 180);
+farmGround.receiveShadow = true; groundGroup.add(farmGround);
 
 // Asphalt Roads & Power Line Poles
 const roadMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.45, metalness: 0.2 });
@@ -540,11 +564,11 @@ let currentCamY = 78 * mobileFactor, targetCamY = 78 * mobileFactor;
 let currentCamZ = 110 * mobileFactor, targetCamZ = 110 * mobileFactor;
 let easNewsText = '🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY';
 
-// 3-Minute Run Timer (180s)
+// 3-Minute Run Timer (180s Real Wall-Clock Seconds)
 let runTimeRemaining = 180;
 let runActive = true;
 
-// Balanced Combo System (4.5s Decay)
+// Rebalanced Combo System (3.5x Max, +0.05 per hit)
 let comboMultiplier = 1.0;
 let maxComboReached = 1.0;
 let comboDecayTimer = 0;
@@ -560,22 +584,22 @@ const cooldowns = {
 let activePullVortex = false;
 let pullVortexTimer = 0;
 
-// Storm Mission Objectives Tracker
+// Storm Mission Objectives Tracker (Tuned for 3-Minute Pacing)
 const missionObjectives = {
   tornado: [
     { text: "Shatter Water Tower 💧 & Silo 🌾", done: false },
-    { text: "Reach EF-3 Rating (2,500+ PTS)", done: false },
-    { text: "Score 4,500 Total Points", done: false }
+    { text: "Reach EF-3 Rating (4,500+ PTS)", done: false },
+    { text: "Score 8,000 Total Points", done: false }
   ],
   supercell: [
     { text: "Spawn 5+ Hail Corridors", count: 0, target: 5, done: false },
     { text: "Strike 4 Power Poles with Lightning", count: 0, target: 4, done: false },
-    { text: "Reach HAIL 3.25\" Size (2,500+ PTS)", done: false }
+    { text: "Reach HAIL 3.25\" Size (4,500+ PTS)", done: false }
   ],
   derecho: [
     { text: "Damage 30+ Town Structures", count: 0, target: 30, done: false },
     { text: "Trigger 3 Microburst Blasts", count: 0, target: 3, done: false },
-    { text: "Reach 105+ MPH Wind (2,500+ PTS)", done: false }
+    { text: "Reach 105+ MPH Wind (4,500+ PTS)", done: false }
   ]
 };
 
@@ -687,20 +711,30 @@ const lightningMat = new THREE.LineBasicMaterial({ color: '#38bdf8', linewidth: 
 const lightningMesh = new THREE.Line(lightningGeo, lightningMat);
 scene.add(lightningMesh);
 
-// World Objects & Distinct 4-District Layout
+// World Objects & Visually Differentiated 4-District Layout
 const targets = [];
 const landmarks = [];
 const animals = [];
 const chaserVans = [];
 const activeExplosionFragments = [];
+const ruinsGroup = new THREE.Group();
+scene.add(ruinsGroup);
+
 let destroyedLandmarksCount = 0;
 let destroyedTargetsCount = 0;
 
-const houseColors = ['#f87171', '#60a5fa', '#fbbf24', '#4ade80', '#c084fc', '#f472b6', '#94a3b8'];
-
-function createHouseMesh(colorIndex) {
+function createHouseMesh(districtType, i) {
   const group = new THREE.Group();
-  const color = houseColors[colorIndex % houseColors.length];
+  let color = '#f87171';
+
+  if (districtType === 1) { // Suburbs: Bright family home colors
+    const colors = ['#f87171', '#60a5fa', '#fbbf24', '#4ade80', '#c084fc', '#f472b6'];
+    color = colors[i % colors.length];
+  } else if (districtType === 3) { // Farmland: Red Barns
+    color = '#b91c1c';
+  } else {
+    color = '#94a3b8';
+  }
 
   const baseGeo = new THREE.BoxGeometry(4.8, 3.4, 4.8);
   const baseMat = new THREE.MeshStandardMaterial({ color, roughness: 0.65 });
@@ -710,7 +744,7 @@ function createHouseMesh(colorIndex) {
   group.add(base);
 
   const roofGeo = new THREE.ConeGeometry(3.8, 2.6, 4);
-  const roofMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.45 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: districtType === 3 ? '#450a0a' : '#1e293b', roughness: 0.45 });
   const roof = new THREE.Mesh(roofGeo, roofMat);
   roof.position.y = 4.6; roof.rotation.y = Math.PI / 4;
   roof.castShadow = true;
@@ -719,16 +753,20 @@ function createHouseMesh(colorIndex) {
   return { group, base, roof, color };
 }
 
-function createCommercialMesh() {
+function createCommercialMesh(districtType) {
   const group = new THREE.Group();
-  const h = 14 + Math.random() * 12;
-  const baseGeo = new THREE.BoxGeometry(6.8, h, 6.8);
-  const baseMat = new THREE.MeshStandardMaterial({ color: '#0284c7', roughness: 0.15, metalness: 0.75 });
+  const h = districtType === 0 ? (20 + Math.random() * 18) : (12 + Math.random() * 8); // Downtown Skyscrapers
+  const baseGeo = new THREE.BoxGeometry(7.5, h, 7.5);
+  const baseMat = new THREE.MeshStandardMaterial({
+    color: districtType === 0 ? '#0284c7' : '#475569',
+    roughness: districtType === 0 ? 0.1 : 0.6,
+    metalness: districtType === 0 ? 0.85 : 0.3
+  });
   const base = new THREE.Mesh(baseGeo, baseMat);
   base.position.y = h / 2;
   base.castShadow = true; base.receiveShadow = true;
   group.add(base);
-  return { group, base, color: '#0284c7' };
+  return { group, base, color: districtType === 0 ? '#0284c7' : '#475569' };
 }
 
 function createTreeMesh() {
@@ -773,6 +811,15 @@ function createLandmarkMesh(icon) {
   return { group, base, beacon, color: icon === '🌾' ? '#d97706' : '#0284c7' };
 }
 
+function spawnPersistentRuin(x, z, color) {
+  const ruinGeo = new THREE.BoxGeometry(4.2, 0.4, 4.2);
+  const ruinMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.9 });
+  const ruin = new THREE.Mesh(ruinGeo, ruinMat);
+  ruin.position.set(x, 0.2, z);
+  ruin.receiveShadow = true;
+  ruinsGroup.add(ruin);
+}
+
 function addCameraShake(intensity) {
   cameraShakeIntensity = Math.max(cameraShakeIntensity, intensity);
 }
@@ -781,6 +828,7 @@ function explodeStructure(x, z, color, isWaterTower = false, isGrainSilo = false
   if (isWaterTower) playSound('splash');
   else playSound('explode');
 
+  spawnPersistentRuin(x, z, color);
   addCameraShake(1.6);
 
   const fragGeo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
@@ -859,8 +907,9 @@ function damageLandmark(lm, amount) {
   }
 }
 
+// TUNED COMBO SCALING (+0.05 PER HIT, 3.5X MAX)
 function addScore(pts) {
-  comboMultiplier = Math.min(5.0, comboMultiplier + 0.15);
+  comboMultiplier = Math.min(3.5, comboMultiplier + 0.05);
   maxComboReached = Math.max(maxComboReached, comboMultiplier);
   comboDecayTimer = 4.5;
 
@@ -876,6 +925,8 @@ function init3DWorld() {
   chaserVans.length = 0;
   destroyedLandmarksCount = 0;
   destroyedTargetsCount = 0;
+
+  while(ruinsGroup.children.length > 0) ruinsGroup.remove(ruinsGroup.children[0]);
 
   // DISTINCT 4-DISTRICT LAYOUT (210 STRUCTURES OVER 460x460 TERRITORY)
   for (let i = 0; i < 210; i++) {
@@ -896,13 +947,13 @@ function init3DWorld() {
       z = 110 + (Math.random() - 0.5) * 220;
     }
 
-    const isCommercial = (districtType === 0 && Math.random() < 0.65) || Math.random() < 0.20;
-    const isTree = (districtType === 3 && Math.random() < 0.70) || Math.random() < 0.25;
+    const isCommercial = (districtType === 0 && Math.random() < 0.80) || Math.random() < 0.15;
+    const isTree = (districtType === 3 && Math.random() < 0.75) || Math.random() < 0.20;
 
     let meshData;
     if (isTree) meshData = createTreeMesh();
-    else if (isCommercial) meshData = createCommercialMesh();
-    else meshData = createHouseMesh(i);
+    else if (isCommercial) meshData = createCommercialMesh(districtType);
+    else meshData = createHouseMesh(districtType, i);
 
     meshData.group.position.set(x, 0, z);
     scene.add(meshData.group);
@@ -1123,16 +1174,17 @@ function triggerAbility(slot) {
   }
 }
 
+// TUNED 3-MINUTE PACING THRESHOLDS
 function updateEFRating() {
   let badgeText = 'EF-0';
   let mult = 1.0;
   let scaleVal = 1.0;
 
-  if (destructionScore >= 9000) { mult = 3.8; scaleVal = 2.2; }
-  else if (destructionScore >= 5000) { mult = 2.8; scaleVal = 1.8; }
-  else if (destructionScore >= 2500) { mult = 2.2; scaleVal = 1.5; }
-  else if (destructionScore >= 1000) { mult = 1.6; scaleVal = 1.25; }
-  else if (destructionScore >= 300) { mult = 1.25; scaleVal = 1.1; }
+  if (destructionScore >= 13500) { mult = 3.8; scaleVal = 2.2; }
+  else if (destructionScore >= 8500) { mult = 2.8; scaleVal = 1.8; }
+  else if (destructionScore >= 4500) { mult = 2.2; scaleVal = 1.5; }
+  else if (destructionScore >= 2000) { mult = 1.6; scaleVal = 1.25; }
+  else if (destructionScore >= 600) { mult = 1.25; scaleVal = 1.1; }
 
   funnelScale = scaleVal;
 
@@ -1141,27 +1193,27 @@ function updateEFRating() {
   derechoGroup.scale.set(funnelScale, funnelScale, funnelScale);
 
   if (currentStorm === 'tornado') {
-    if (destructionScore >= 9000) badgeText = 'EF-5';
-    else if (destructionScore >= 5000) badgeText = 'EF-4';
-    else if (destructionScore >= 2500) badgeText = 'EF-3';
-    else if (destructionScore >= 1000) badgeText = 'EF-2';
-    else if (destructionScore >= 300) badgeText = 'EF-1';
+    if (destructionScore >= 13500) badgeText = 'EF-5';
+    else if (destructionScore >= 8500) badgeText = 'EF-4';
+    else if (destructionScore >= 4500) badgeText = 'EF-3';
+    else if (destructionScore >= 2000) badgeText = 'EF-2';
+    else if (destructionScore >= 600) badgeText = 'EF-1';
     else badgeText = 'EF-0';
     easNewsText = `🚨 NOAA EAS WARNING: 3D ${badgeText} TORNADO TOUCHDOWN IN LINCOLN COUNTY (MULT: ${mult}x)`;
   } else if (currentStorm === 'supercell') {
-    if (destructionScore >= 9000) badgeText = 'HAIL 4.5"';
-    else if (destructionScore >= 5000) badgeText = 'HAIL 4.0"';
-    else if (destructionScore >= 2500) badgeText = 'HAIL 3.25"';
-    else if (destructionScore >= 1000) badgeText = 'HAIL 2.5"';
-    else if (destructionScore >= 300) badgeText = 'HAIL 1.75"';
+    if (destructionScore >= 13500) badgeText = 'HAIL 4.5"';
+    else if (destructionScore >= 8500) badgeText = 'HAIL 4.0"';
+    else if (destructionScore >= 4500) badgeText = 'HAIL 3.25"';
+    else if (destructionScore >= 2000) badgeText = 'HAIL 2.5"';
+    else if (destructionScore >= 600) badgeText = 'HAIL 1.75"';
     else badgeText = 'HAIL 1.0"';
     easNewsText = `🚨 NOAA EAS SEVERE T-STORM WARNING: SUPERCELL PRODUCING ${badgeText} HAIL & DOWNBURSTS (MULT: ${mult}x)`;
   } else if (currentStorm === 'derecho') {
-    if (destructionScore >= 9000) badgeText = '130+ MPH';
-    else if (destructionScore >= 5000) badgeText = '120 MPH';
-    else if (destructionScore >= 2500) badgeText = '105 MPH';
-    else if (destructionScore >= 1000) badgeText = '90 MPH';
-    else if (destructionScore >= 300) badgeText = '75 MPH';
+    if (destructionScore >= 13500) badgeText = '130+ MPH';
+    else if (destructionScore >= 8500) badgeText = '120 MPH';
+    else if (destructionScore >= 4500) badgeText = '105 MPH';
+    else if (destructionScore >= 2000) badgeText = '90 MPH';
+    else if (destructionScore >= 600) badgeText = '75 MPH';
     else badgeText = '60 MPH';
     easNewsText = `🚨 NOAA EAS HIGH WIND WARNING: DERECHO SQUALL LINE PRODUCING ${badgeText} WINDS (MULT: ${mult}x)`;
   }
@@ -1179,16 +1231,16 @@ function updateEFRating() {
 function updateObjectives() {
   if (currentStorm === 'tornado') {
     missionObjectives.tornado[0].done = (destroyedLandmarksCount >= 2);
-    missionObjectives.tornado[1].done = (destructionScore >= 2500);
-    missionObjectives.tornado[2].done = (destructionScore >= 4500);
+    missionObjectives.tornado[1].done = (destructionScore >= 4500);
+    missionObjectives.tornado[2].done = (destructionScore >= 8000);
   } else if (currentStorm === 'supercell') {
     missionObjectives.supercell[0].done = (missionObjectives.supercell[0].count >= 5);
     missionObjectives.supercell[1].done = (missionObjectives.supercell[1].count >= 4);
-    missionObjectives.supercell[2].done = (destructionScore >= 2500);
+    missionObjectives.supercell[2].done = (destructionScore >= 4500);
   } else if (currentStorm === 'derecho') {
     missionObjectives.derecho[0].done = (destroyedTargetsCount >= 30);
     missionObjectives.derecho[1].done = (missionObjectives.derecho[1].count >= 3);
-    missionObjectives.derecho[2].done = (destructionScore >= 2500);
+    missionObjectives.derecho[2].done = (destructionScore >= 4500);
   }
   renderObjectives();
 }
@@ -1226,10 +1278,10 @@ function finishRun() {
   objs.forEach(o => { if (o.done) doneCount++; });
 
   let grade = 'F';
-  if (doneCount === 3 && destructionScore >= 5000) grade = 'S+';
-  else if (doneCount >= 2 && destructionScore >= 2800) grade = 'A';
-  else if (doneCount >= 1 && destructionScore >= 1200) grade = 'B';
-  else if (destructionScore >= 400) grade = 'C';
+  if (doneCount === 3 && destructionScore >= 9000) grade = 'S+';
+  else if (doneCount >= 2 && destructionScore >= 5000) grade = 'A';
+  else if (doneCount >= 1 && destructionScore >= 2200) grade = 'B';
+  else if (destructionScore >= 600) grade = 'C';
 
   setUI('resStormTitle', `${currentStorm.toUpperCase()} WARNING RUN`);
   setUI('resGrade', grade);
@@ -1261,22 +1313,27 @@ function resetWarningRun() {
   renderObjectives();
 }
 
-// --- MAIN ANIMATION LOOP ---
+// --- MAIN ANIMATION LOOP WITH REAL DELTA-TIME ---
 init3DWorld();
 
-let lastTime = performance.now();
+let lastFrameTime = performance.now();
+let fpsTimer = performance.now();
 let frameCount = 0;
 let fps = 60;
 
 function animate(now) {
   frameCount++;
-  if (now - lastTime >= 1000) {
+  if (now - fpsTimer >= 1000) {
     fps = frameCount;
     frameCount = 0;
-    lastTime = now;
+    fpsTimer = now;
   }
 
-  const dt = 0.016;
+  // REAL DELTA-TIME CALCULATION IN SECONDS (FRAME-RATE INDEPENDENT)
+  const realDelta = Math.min(0.1, (now - lastFrameTime) / 1000);
+  lastFrameTime = now;
+
+  const dt = realDelta;
 
   // Run Timer
   if (runActive) {
@@ -1333,7 +1390,6 @@ function animate(now) {
         moveZ = dz / dist;
       }
 
-      // Auto-trigger abilities when off cooldown
       if (cooldowns.primary.current <= 0) triggerAbility('primary');
       if (cooldowns.secondary.current <= 0) triggerAbility('secondary');
       if (cooldowns.tertiary.current <= 0) triggerAbility('tertiary');

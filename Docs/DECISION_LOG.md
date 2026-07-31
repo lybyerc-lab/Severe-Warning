@@ -147,3 +147,33 @@ Tune sizes, dead zone, acceleration, and layout only from Build #3 physical-devi
 ## 2026-07-24 - Decision B5.1-01: Readability before feature expansion
 
 Build #5 physical testing proved the damage pipeline, stage transitions, target detection, and precipitation replacement work, but exposed unreadable crop poses, debug-shaped hail feedback, storm occlusion, and effect-clutter risk. Build #5.1 is therefore limited to directional deformation, weather-shaped feedback, bounded transient effects, lighter ground contact, Supercell gameplay visibility, and visual-only component reactions. Persistent physics detachment, missions, progression, a third storm, full fracture prefabs, and final art remain outside scope.
+
+## 2026-07-24 - Decision B5.2-01: Remove debug geometry before adding the game loop
+
+**Decision:** Build #5.2 is a constrained cleanup pass. It removes the Supercell trail wedge, suppresses oversized ring and swath geometry, disables looping ground-mist scribbles, softens Tornado contact arcs, and refines flattened crop aftermath while preserving approved mechanics.
+
+**Evidence:** Build #5.1 Android screenshots showed stable movement, target detection, effect caps, and approximately 60 FPS, but the remaining visual artifacts still read as laboratory debug shapes. The crop screenshot also proved that the spike defect was fixed while exposing a new board-like aftermath problem. The cloud build log additionally identified deprecated Unity Rigidbody damping properties.
+
+**Rejected alternatives:** Beginning missions, progression, upgrades, a third storm, authored fracture systems, or final art before the existing storm verbs read clearly on a physical device.
+
+**Revisit condition:** Broaden into Build #6 only after Build #5.2 compiles and a five-minute Android test confirms readable ability feedback, bounded cleanup, stable camera behavior, and acceptable frame pacing.
+
+## 2026-07-29 - Decision AUDIT-01: Source presence is not feature acceptance
+
+**Decision:** The production roster remains Tornado and Supercell. The July 29 Derecho, EF progression, NOAA banner, invincible-animal, power-cascade, and Mechanics Laboratory additions are classified as experimental source until they are explicitly approved, fully integrated, compiled, and physically tested.
+
+**Evidence:** `GameBootstrap` still alternates only Tornado and Supercell. Derecho is never instantiated and lacks dedicated camera, HUD, and visual integration. The EF manager, NOAA banner, animals, and cascade helper are never created or attached by the production bootstrap or region generator. The latest supplied successful Unity build applies to commit `80f2f14`, before these additions.
+
+**Rejected alternatives:** Treating newly present files as a working feature, silently expanding the production scope, or deleting experimental work without review.
+
+**Revisit condition:** Reclassify an experimental feature only after an explicit scope decision, complete runtime wiring, Unity compilation of the exact source head, and appropriate physical Android acceptance evidence.
+
+## 2026-07-29 - Decision AUDIT-02: Restore the repository evidence chain
+
+**Decision:** Restore the removed Build #5.2 decision, correct rolled-back Build #5.1 status documents, and refresh inventory/checksum metadata in the same documentation patch.
+
+**Evidence:** The repository policy makes `CURRENT_STATUS.md` current-state authority and declares this decision log append-only. The July 29 feature batch rolled `CURRENT_STATUS.md` and `VALIDATION_REPORT.md` back to Build #5.1, removed the Build #5.2 decision, and left inventory/checksum metadata inconsistent with tracked source.
+
+**Rejected alternative:** Leaving contradictory documentation in place until the next gameplay patch.
+
+**Revisit condition:** None. Future corrections must append clarification rather than deleting historical evidence.
