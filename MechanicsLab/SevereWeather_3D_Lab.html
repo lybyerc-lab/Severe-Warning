@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Severe Weather 3D Lab v2.5.0 - Tactical View & World Expansion</title>
+<title>Severe Weather 3D Lab v2.6.0 - District Readability Edition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
@@ -143,7 +143,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: 3D EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.5.0 TACTICAL</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v2.6.0 DISTRICTS</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -224,16 +224,28 @@
 </div>
 
 <script>
+// --- AUTOMATED BOT PLAYTEST HARNESS MODE ---
+const urlParams = new URLSearchParams(window.location.search);
+const isBotMode = urlParams.get('bot') === 'true' || window.location.hash === '#bot';
+let botWaypoints = [
+  { x: -145, z: -110 }, // Water Tower
+  { x: -80, z: -80 },   // Downtown
+  { x: 100, z: -90 },   // Suburbs
+  { x: 155, z: 135 },   // Grain Silo
+  { x: -110, z: 100 }   // Industrial
+];
+let currentBotWp = 0;
+
 // --- WEB AUDIO API SYNTHESIZER ---
 let audioCtx = null;
 function initAudio() {
-  if (!audioCtx) {
+  if (!audioCtx && !isBotMode) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
 }
 
 function playSound(type) {
-  if (!audioCtx) return;
+  if (!audioCtx || isBotMode) return;
   const now = audioCtx.currentTime;
 
   if (type === 'zap') {
@@ -328,7 +340,6 @@ scene.background = new THREE.Color('#030712');
 scene.fog = new THREE.FogExp2('#030712', 0.0014);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-// OPTIMIZED INITIAL & RUNTIME CAMERA TARGETS (TACTICAL VIEW)
 const isMobileDevice = (window.innerWidth < 850 || window.innerHeight < 540);
 const mobileFactor = isMobileDevice ? 1.22 : 1.0;
 
@@ -549,7 +560,7 @@ const cooldowns = {
 let activePullVortex = false;
 let pullVortexTimer = 0;
 
-// Storm Mission Objectives Tracker (Recalibrated Fair Mid-Point)
+// Storm Mission Objectives Tracker
 const missionObjectives = {
   tornado: [
     { text: "Shatter Water Tower 💧 & Silo 🌾", done: false },
@@ -676,7 +687,7 @@ const lightningMat = new THREE.LineBasicMaterial({ color: '#38bdf8', linewidth: 
 const lightningMesh = new THREE.Line(lightningGeo, lightningMat);
 scene.add(lightningMesh);
 
-// World Objects & Expanded 4-District Layout (210 Total Structures over 460x460 Area)
+// World Objects & Distinct 4-District Layout
 const targets = [];
 const landmarks = [];
 const animals = [];
@@ -866,7 +877,7 @@ function init3DWorld() {
   destroyedLandmarksCount = 0;
   destroyedTargetsCount = 0;
 
-  // EXPANDED 4-DISTRICT LAYOUT (210 STRUCTURES OVER 460x460 TERRITORY)
+  // DISTINCT 4-DISTRICT LAYOUT (210 STRUCTURES OVER 460x460 TERRITORY)
   for (let i = 0; i < 210; i++) {
     let x, z;
     const districtType = i % 4; // 0: Downtown, 1: Suburbs, 2: Industrial, 3: Farmland
@@ -984,7 +995,6 @@ function selectStormClass(type) {
   renderObjectives();
 }
 
-// EXPANDED LANDMARK HIT DETECTION RADIUS (storm.radius * 3.2)
 function triggerAbility(slot) {
   if (!runActive) return;
   initAudio();
@@ -1113,7 +1123,6 @@ function triggerAbility(slot) {
   }
 }
 
-// RECALIBRATED FAIR MID-POINT RATING THRESHOLDS
 function updateEFRating() {
   let badgeText = 'EF-0';
   let mult = 1.0;
@@ -1311,18 +1320,37 @@ function animate(now) {
 
   let moveX = 0, moveZ = 0;
   if (runActive) {
-    if (keys['KeyA'] || keys['a'] || keys['ArrowLeft']) moveX -= 1;
-    if (keys['KeyD'] || keys['d'] || keys['ArrowRight']) moveX += 1;
-    if (keys['KeyW'] || keys['w'] || keys['ArrowUp']) moveZ -= 1;
-    if (keys['KeyS'] || keys['s'] || keys['ArrowDown']) moveZ += 1;
+    if (isBotMode) { // AUTOMATED BOT DRIVER MODE
+      const targetWp = botWaypoints[currentBotWp];
+      const dx = targetWp.x - storm.pos.x;
+      const dz = targetWp.z - storm.pos.z;
+      const dist = Math.hypot(dx, dz);
 
-    if (joystickActive) {
-      moveX = joystickDir.x;
-      moveZ = joystickDir.z;
+      if (dist < 20) {
+        currentBotWp = (currentBotWp + 1) % botWaypoints.length;
+      } else {
+        moveX = dx / dist;
+        moveZ = dz / dist;
+      }
+
+      // Auto-trigger abilities when off cooldown
+      if (cooldowns.primary.current <= 0) triggerAbility('primary');
+      if (cooldowns.secondary.current <= 0) triggerAbility('secondary');
+      if (cooldowns.tertiary.current <= 0) triggerAbility('tertiary');
+    } else {
+      if (keys['KeyA'] || keys['a'] || keys['ArrowLeft']) moveX -= 1;
+      if (keys['KeyD'] || keys['d'] || keys['ArrowRight']) moveX += 1;
+      if (keys['KeyW'] || keys['w'] || keys['ArrowUp']) moveZ -= 1;
+      if (keys['KeyS'] || keys['s'] || keys['ArrowDown']) moveZ += 1;
+
+      if (joystickActive) {
+        moveX = joystickDir.x;
+        moveZ = joystickDir.z;
+      }
     }
   }
 
-  const isMoving = (moveX !== 0 || moveZ !== 0 || joystickActive);
+  const isMoving = (moveX !== 0 || moveZ !== 0 || joystickActive || isBotMode);
 
   // Tornado PULL Vortex Physics
   if (activePullVortex && pullVortexTimer > 0) {
@@ -1376,7 +1404,6 @@ function animate(now) {
   currentCamY = THREE.MathUtils.lerp(currentCamY, targetCamY, 0.06);
   currentCamZ = THREE.MathUtils.lerp(currentCamZ, targetCamZ, 0.06);
 
-  // Movement Look-Ahead Vector Offset
   let camTargetX = storm.pos.x + (moveX * 12);
   let camTargetZ = storm.pos.z + currentCamZ + (moveZ * 12);
   if (cameraShakeIntensity > 0) {
