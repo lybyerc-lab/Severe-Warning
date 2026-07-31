@@ -1,5 +1,5 @@
 345e6616d892a7d7f6efa2472a33a7cc056a0418cf9a33dfedcbf9bcab486bc1  ./.gitattributes
-e9a9a52609cb3708bdb75615ae39b5efeb76e9ba0ec1b0116da58e213eb9111d  ./.github/workflows/android-debug.yml
+3dd767f0f3e06d7c30bbf806841705d55fa693e5ae4ae35fc5c49940f20ed2fd  ./.github/workflows/android-debug.yml
 9e93cac1b07d95eeb699525ff85fb4e29c05a4d0e298f4a64367033834dc70f5  ./.gitignore
 7ae487afb7e7fd79106ea66b5b0cc6151eb3dea6628938e209df6ad34791a41e  ./android/app/build.gradle
 6607b459e9b16aa69df75ec0af0ed8e27bde966bc8e3057b4025746dbf9e0258  ./android/app/src/main/AndroidManifest.xml
@@ -39,8 +39,8 @@ c00f3abbe39e72a0619d91aa7700ed34c25e193b3a97a75dbf45f99bd7b56b41  ./Assets/Sever
 bb9c1e956f64477c221759d74c5743d21f85c140776880562f20b80dc042c6e1  ./Assets/SevereWeather/Runtime/World/RegionGenerator.cs
 c0df63c65cc98ef53a344e78d8b26d687b0d6f197d0d52544eb6c64304a38bfe  ./Assets/SevereWeather/Runtime/World/WorldDensityValidator.cs
 a8226ceb770be77f5454b712daaccf33e977824f8b78615e39ad165aa94096ba  ./capacitor.config.json
-23c1ffe5b9140ee79caf98e4752a29cc0576439f400dd66ba51e3f33569c5fce  ./CURRENT_STATUS.md
-25b2d6f0d074da36e9f4f9c1335dd4d4e15fe931af8f90a5e2bd857761f1034c  ./Docs/ANDROID_PACKAGING.md
+df0a26fab5bc99f75ec30502d3f45495d969a3e9ac9c445e5c759be3d1a9fb7d  ./CURRENT_STATUS.md
+5d5f26e7ddaa1a57c85d5a634403cb466a4a946f2207f429aab0c092f880e210  ./Docs/ANDROID_PACKAGING.md
 981ff9cb27f541b380066f758e78d6eb9b31338ba9d1564db52f6cb74249ec0b  ./Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md
 efa31907da7cb058287c334a1edf1084348e0563b436f62d8506cbb0cb960ff8  ./Docs/ART_PIPELINE.md
 273e8add95e74167ce176f7e3e564222807e0c7cab46ae7d7bdaeb560644d08c  ./Docs/AUDIO_PIPELINE.md

@@ -46,9 +46,9 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ## Build in GitHub Actions
 
-The manual workflow at `.github/workflows/android-debug.yml` builds on GitHub's Ubuntu runner, not on the local work PC. It installs the pinned JavaScript toolchain, synchronizes the offline Capacitor assets, uses JDK 21 and Android SDK 36, runs the checked-in Gradle Wrapper, verifies the APK exists, records its SHA-256, and uploads both files for seven days.
+The workflow at `.github/workflows/android-debug.yml` builds on GitHub's Ubuntu runner, not on the local work PC. It runs automatically when gameplay or Android-packaging files change on `main` and remains manually dispatchable. It installs the pinned JavaScript toolchain, synchronizes the offline Capacitor assets, uses JDK 21 and Android SDK 36, runs the checked-in Gradle Wrapper, verifies the APK exists, records its SHA-256, and uploads both files for seven days.
 
-To run it:
+To run it manually:
 
 1. Open the repository's **Actions** tab.
 2. Select **Build Android Debug APK**.

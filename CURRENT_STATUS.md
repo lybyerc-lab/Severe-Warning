@@ -101,8 +101,8 @@ The v3.3.0 offline bundle completed a full automated Tornado run at approximatel
 
 ## Immediate next action
 
-1. Synchronize the accepted source into the Android assets and run repository integrity checks.
-2. Build and install one v3.3.0 debug APK through the proven GitHub Actions path.
+1. Push the committed v3.3.0 release to `main`; the scoped workflow trigger will build the debug APK automatically.
+2. Install the resulting v3.3.0 artifact.
 3. Confirm the raised terrain remains readable and smooth on the Galaxy S26 Ultra.
 4. Test one ordinary or older Android device before making broad performance claims.
 
