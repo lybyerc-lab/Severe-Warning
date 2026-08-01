@@ -12,7 +12,7 @@
     "patch:v440": "node scripts/apply-v440-source-patch.mjs",
     "patch:v441": "node scripts/apply-v441-source-patch.mjs",
     "patch:v442": "node scripts/apply-v442-source-patch.mjs",
-    "patch:v450": "node scripts/apply-v450-source-patch.mjs",
+    "patch:v450": "node scripts/fix-v450-parser.mjs && node scripts/apply-v450-source-patch.mjs",
     "cap:sync": "npm run build && node node_modules/@capacitor/cli/bin/capacitor sync android",
     "android:debug": "npm run cap:sync && cd android && gradlew.bat assembleDebug",
     "android:open": "node node_modules/@capacitor/cli/bin/capacitor open android"
