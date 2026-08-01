@@ -6,9 +6,17 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
 const sourceHtml = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const packageJsonPath = path.join(projectRoot, 'package.json');
 const outputDir = path.join(projectRoot, 'www');
 const outputFonts = path.join(outputDir, 'fonts');
-const buildVersion = '4.3.1';
+
+const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
+const buildVersion = packageJson.version;
+const buildLabel = packageJson.buildLabel ?? 'Severe Weather';
+
+if (!/^\d+\.\d+\.\d+$/.test(buildVersion)) {
+  throw new Error(`package.json version must be semantic x.y.z, received: ${buildVersion}`);
+}
 
 const fontFiles = [
   ['@fontsource/inter/files/inter-latin-400-normal.woff2', 'inter-latin-400-normal.woff2'],
@@ -27,8 +35,16 @@ if (forbiddenRemoteResources.length > 0) {
 if (!html.includes('Content-Security-Policy')) {
   throw new Error('The game must define a Content Security Policy before Android packaging.');
 }
-if (!html.includes(`v${buildVersion}`) || html.includes('v4.3.0')) {
-  throw new Error(`Gameplay source identity must be v${buildVersion} before packaging.`);
+
+const gameplayVersions = [...new Set(
+  [...html.matchAll(/\bv(\d+\.\d+\.\d+)\b/g)].map((match) => match[1])
+)];
+if (!gameplayVersions.includes(buildVersion)) {
+  throw new Error(`Gameplay source identity must include v${buildVersion} before packaging. Found: ${gameplayVersions.join(', ') || 'none'}`);
+}
+const staleVersions = gameplayVersions.filter((version) => version !== buildVersion);
+if (staleVersions.length > 0) {
+  throw new Error(`Gameplay source contains mixed version identities. Expected only v${buildVersion}; found stale: ${staleVersions.join(', ')}`);
 }
 if (/enemyVehicles|Police\/Fire\/Guard resistance/.test(html)) {
   throw new Error('Hostile vehicle terminology is not allowed in the production gameplay source.');
@@ -49,8 +65,8 @@ for (const [packagePath, outputName] of fontFiles) {
 const sourceSha256 = createHash('sha256').update(html).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
-  `${JSON.stringify({ version: buildVersion, label: 'Mobile Comfort & Identity', source: 'MechanicsLab/SevereWeather_3D_Lab.html', sourceSha256 }, null, 2)}\n`,
+  `${JSON.stringify({ version: buildVersion, label: buildLabel, source: 'MechanicsLab/SevereWeather_3D_Lab.html', sourceSha256 }, null, 2)}\n`,
   'utf8'
 );
 
-console.log(`Built offline web bundle v${buildVersion}: www/index.html (${sourceSha256})`);
+console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256})`);
