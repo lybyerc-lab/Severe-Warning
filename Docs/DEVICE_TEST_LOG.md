@@ -397,3 +397,51 @@ The local Capacitor wrapper is the accepted Android packaging strategy. The HTML
 - Frame rate remained steady and responsive at 61 FPS with zero JavaScript console exceptions.
 - User feedback: "Its an improvement".
 
+## 2026-07-31 - HTML/Capacitor v4.3.1 Mobile Comfort acceptance
+
+### Source and artifact
+
+- Active gameplay source: `MechanicsLab/SevereWeather_3D_Lab.html`
+- Release: `4.3.1 Mobile Comfort & Identity`
+- Tested commit: `5ef95e1e774cf80d9612c25fe780b1db81ea73bb`
+- GitHub Actions run: `30680592594` (`Build Android Debug APK #21`)
+- Artifact: `severe-weather-v4.3.1-mobile-comfort-21`
+- APK: `Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk`
+- APK SHA-256: `00f927ece76fd0eccaea429d77ec37d2f1ae8e553f733867c892090e29f25359`
+- Device: Galaxy S26 Ultra
+
+### Result
+
+- GitHub Actions completed successfully.
+- The exact debug APK installed and launched.
+- The user reported: `Good build`.
+- A full Tornado Warning run reached the results and retry screen without a reported crash.
+- Rank: `S+`
+- Final score: `56185`
+- Maximum combo: `3.5x`
+- Objectives: `3/3`
+- Landmarks: `2/2`
+- Substations: `0/3`
+- Bonus challenges: `3/3`
+- Blocks cleared: `34`
+- Chain reactions: `4`
+- Media moments: `20`
+- Footage bonus: `+1869`
+- Neon Funnel cosmetic unlocked.
+
+### Physical acceptance
+
+- The mobile-comfort release is accepted on the target high-end Android device.
+- The corrected joystick and reduced NOAA banner did not prevent a complete run and received no new negative device feedback.
+- The HTML/Capacitor production path remains accepted.
+
+### Follow-up observation
+
+The run earned `S+` with `0/3` substations. This is not a build failure, but it is scoring-balance evidence: the finale substation path is presently optional enough that the highest grade remains reachable without engaging it. Review grade weighting or substation objective signaling during the next gameplay-balance pass rather than reopening this corrective release.
+
+### Remaining unproven areas
+
+- ordinary or older Android performance
+- sustained heat and battery behavior
+- interruption recovery and close/reopen persistence
+- repeated-run cleanup beyond the accepted completed run
