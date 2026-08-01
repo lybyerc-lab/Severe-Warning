@@ -65,8 +65,11 @@ jobs:
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile
 
-      - name: Apply deterministic v4.3.1 gameplay-source patch
+      - name: Apply deterministic v4.3.1 mobile-comfort patch
         run: npm run patch:v431
+
+      - name: Apply deterministic v4.4.0 illustrated-storm patch
+        run: npm run patch:v440
 
       - name: Build and synchronize offline game assets
         run: npm run cap:sync
@@ -74,10 +77,14 @@ jobs:
       - name: Verify packaged gameplay identity
         shell: bash
         run: |
-          grep -q 'v4.3.1' www/index.html
-          grep -q 'MOBILE COMFORT' www/index.html
+          grep -q 'v4.4.0' www/index.html
+          grep -q 'ILLUSTRATED STORM' www/index.html
+          grep -q 'triggerGridZapCascade' www/index.html
+          grep -q 'activeGridZapEffects' www/index.html
+          grep -q 'MeshToonMaterial' www/index.html
           ! grep -q 'enemyVehicles' www/index.html
           ! grep -q 'Police/Fire/Guard resistance' www/index.html
+          ! grep -q 'v4.3.1' www/index.html
           cmp -s www/index.html android/app/src/main/assets/public/index.html
 
       - name: Assemble debug APK
@@ -91,7 +98,7 @@ jobs:
         shell: bash
         run: |
           source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
-          named_apk="android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk"
+          named_apk="android/app/build/outputs/apk/debug/Severe-Weather-v4.4.0-Illustrated-Storm-debug.apk"
           test -f "$source_apk"
           cp "$source_apk" "$named_apk"
           sha256sum "$named_apk" > "${named_apk}.sha256"
@@ -99,9 +106,9 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: severe-weather-v4.3.1-mobile-comfort-${{ github.run_number }}
+          name: severe-weather-v4.4.0-illustrated-storm-${{ github.run_number }}
           path: |
-            android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk
-            android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk.sha256
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.4.0-Illustrated-Storm-debug.apk
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.4.0-Illustrated-Storm-debug.apk.sha256
           if-no-files-found: error
           retention-days: 7
