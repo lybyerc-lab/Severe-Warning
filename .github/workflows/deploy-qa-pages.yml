@@ -113,4 +113,5 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Show deployed URL
-        run: echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
+        run: |
+          echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
