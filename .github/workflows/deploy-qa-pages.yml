@@ -27,8 +27,6 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment:
-      name: github-pages
 
     steps:
       - name: Check out QA branch
@@ -101,6 +99,15 @@ jobs:
         with:
           path: www
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
