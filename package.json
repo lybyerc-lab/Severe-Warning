@@ -6,7 +6,7 @@
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "audio:generate": "node scripts/generate-storm-audio.mjs",
+    "audio:generate": "node scripts/generate-storm-audio.mjs && node scripts/apply-recorded-storm-effects.mjs",
     "build": "npm run audio:generate && node scripts/build-web.mjs",
     "patch:v431": "node scripts/apply-v431-source-patch.mjs",
     "patch:v440": "node scripts/apply-v440-source-patch.mjs",
