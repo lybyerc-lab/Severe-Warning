@@ -9,6 +9,7 @@ on:
       - '.github/workflows/android-debug.yml'
       - 'MechanicsLab/SevereWeather_3D_Lab.html'
       - 'android/**'
+      - 'assets/audio/**'
       - 'capacitor.config.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -21,6 +22,7 @@ on:
       - '.github/workflows/android-debug.yml'
       - 'MechanicsLab/SevereWeather_3D_Lab.html'
       - 'android/**'
+      - 'assets/audio/**'
       - 'capacitor.config.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -77,29 +79,42 @@ jobs:
       - name: Apply deterministic v4.4.2 Pull Feedback patch
         run: npm run patch:v442
 
+      - name: Apply deterministic v4.5.0 Storm Feel patch
+        run: npm run patch:v450
+
       - name: Build and synchronize offline game assets
         run: npm run cap:sync
 
-      - name: Verify packaged gameplay identity
+      - name: Verify packaged gameplay and audio identity
         shell: bash
         run: |
-          grep -q 'v4.4.2' www/index.html
-          grep -q 'PULL FEEDBACK' www/index.html
+          grep -q 'v4.5.0' www/index.html
+          grep -q 'STORM FEEL' www/index.html
+          grep -q 'updateStormSoundscape' www/index.html
+          grep -q 'playMaterialSound' www/index.html
+          grep -q 'MAX_AUDIO_VOICES' www/index.html
+          grep -q 'storm-feel-sprite.wav' www/index.html
+          grep -q 'targetMaterialFamily' www/index.html
           grep -q 'triggerPullFeedback' www/index.html
           grep -q 'activePullEffects' www/index.html
-          grep -q 'animateTreePull' www/index.html
-          grep -q 'pullLightComedyProps' www/index.html
-          grep -q 'spawnPullSpiral' www/index.html
           grep -q 'triggerGustFeedback' www/index.html
           grep -q 'activeGustEffects' www/index.html
           grep -q 'triggerGridZapCascade' www/index.html
           grep -q 'MeshToonMaterial' www/index.html
           ! grep -q 'enemyVehicles' www/index.html
           ! grep -q 'Police/Fire/Guard resistance' www/index.html
+          ! grep -q 'v4.4.2' www/index.html
           ! grep -q 'v4.4.1' www/index.html
           ! grep -q 'v4.4.0' www/index.html
           ! grep -q 'v4.3.1' www/index.html
+          test -s www/audio/storm-feel-sprite.wav
+          test -s www/audio/storm-feel-manifest.json
+          test -s www/audio/LICENSE.md
           cmp -s www/index.html android/app/src/main/assets/public/index.html
+          cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
+          cmp -s www/audio/storm-feel-manifest.json android/app/src/main/assets/public/audio/storm-feel-manifest.json
+          cmp -s www/audio/LICENSE.md android/app/src/main/assets/public/audio/LICENSE.md
+          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const count=Object.keys(manifest.clips || {}).length; if (count !== 41) throw new Error('Expected 41 generated audio clips, found ' + count);"
 
       - name: Assemble debug APK
         shell: bash
@@ -112,7 +127,7 @@ jobs:
         shell: bash
         run: |
           source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
-          named_apk="android/app/build/outputs/apk/debug/Severe-Weather-v4.4.2-Pull-Feedback-debug.apk"
+          named_apk="android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-Storm-Feel-debug.apk"
           test -f "$source_apk"
           cp "$source_apk" "$named_apk"
           sha256sum "$named_apk" > "${named_apk}.sha256"
@@ -120,9 +135,9 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: severe-weather-v4.4.2-pull-feedback-${{ github.run_number }}
+          name: severe-weather-v4.5.0-storm-feel-${{ github.run_number }}
           path: |
-            android/app/build/outputs/apk/debug/Severe-Weather-v4.4.2-Pull-Feedback-debug.apk
-            android/app/build/outputs/apk/debug/Severe-Weather-v4.4.2-Pull-Feedback-debug.apk.sha256
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-Storm-Feel-debug.apk
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-Storm-Feel-debug.apk.sha256
           if-no-files-found: error
           retention-days: 7
