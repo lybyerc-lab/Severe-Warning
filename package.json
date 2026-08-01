@@ -6,13 +6,13 @@
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "audio:generate": "node scripts/generate-storm-audio.mjs && node scripts/apply-recorded-storm-effects.mjs",
+    "audio:generate": "node scripts/generate-storm-audio.mjs && node scripts/apply-recorded-storm-effects.mjs && node scripts/append-rampage-music.mjs",
     "build": "npm run audio:generate && node scripts/build-web.mjs",
     "patch:v431": "node scripts/apply-v431-source-patch.mjs",
     "patch:v440": "node scripts/apply-v440-source-patch.mjs",
     "patch:v441": "node scripts/apply-v441-source-patch.mjs",
     "patch:v442": "node scripts/apply-v442-source-patch.mjs",
-    "patch:v450": "node scripts/fix-v450-parser.mjs && node scripts/apply-v450-source-patch.mjs",
+    "patch:v450": "node scripts/fix-v450-parser.mjs && node scripts/apply-v450-source-patch.mjs && node scripts/apply-v450-rampage-music-patch.mjs",
     "cap:sync": "npm run build && node node_modules/@capacitor/cli/bin/capacitor sync android",
     "android:debug": "npm run cap:sync && cd android && gradlew.bat assembleDebug",
     "android:open": "node node_modules/@capacitor/cli/bin/capacitor open android"
