@@ -1,15 +1,18 @@
 {
   "name": "severe-weather-mobile",
-  "version": "4.4.2",
+  "version": "4.5.0",
+  "buildLabel": "Storm Feel Overhaul",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "build": "node scripts/build-web.mjs",
+    "audio:generate": "node scripts/generate-storm-audio.mjs",
+    "build": "npm run audio:generate && node scripts/build-web.mjs",
     "patch:v431": "node scripts/apply-v431-source-patch.mjs",
     "patch:v440": "node scripts/apply-v440-source-patch.mjs",
     "patch:v441": "node scripts/apply-v441-source-patch.mjs",
     "patch:v442": "node scripts/apply-v442-source-patch.mjs",
+    "patch:v450": "node scripts/apply-v450-source-patch.mjs",
     "cap:sync": "npm run build && node node_modules/@capacitor/cli/bin/capacitor sync android",
     "android:debug": "npm run cap:sync && cd android && gradlew.bat assembleDebug",
     "android:open": "node node_modules/@capacitor/cli/bin/capacitor open android"
