@@ -1,0 +1,109 @@
+name: Deploy QA Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qa
+    paths:
+      - '.github/workflows/deploy-qa-pages.yml'
+      - 'MechanicsLab/SevereWeather_3D_Lab.html'
+      - 'assets/audio/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'scripts/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+
+    steps:
+      - name: Check out QA branch
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install pinned JavaScript dependencies
+        shell: bash
+        run: |
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+
+      - name: Restore verified QA audio cache
+        id: audio-cache
+        uses: actions/cache@v5
+        with:
+          path: assets/audio
+          key: qa-audio-${{ hashFiles('scripts/generate-storm-audio.mjs', 'scripts/apply-recorded-storm-effects.mjs', 'scripts/append-rampage-music.mjs') }}
+
+      - name: Install FFmpeg for audio cache miss
+        if: steps.audio-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          ffmpeg -hide_banner -version | head -n 1
+
+      - name: Generate verified audio on cache miss
+        if: steps.audio-cache.outputs.cache-hit != 'true'
+        run: npm run audio:generate
+
+      - name: Apply deterministic gameplay patches
+        shell: bash
+        run: |
+          npm run patch:v431
+          npm run patch:v440
+          npm run patch:v441
+          npm run patch:v442
+          npm run patch:v450
+
+      - name: Build web game without regenerating audio
+        run: node scripts/build-web.mjs
+
+      - name: Stamp QA build identity
+        run: node scripts/stamp-qa-pages.mjs
+
+      - name: Verify QA package
+        shell: bash
+        run: |
+          test -s www/index.html
+          test -s www/404.html
+          test -s www/qa-build.json
+          test -s www/audio/storm-feel-sprite.wav
+          test -s www/audio/storm-feel-manifest.json
+          grep -q 'QA_BUILD_STAMP' www/index.html
+          grep -q 'rampageFeedbackLayer' www/index.html
+          grep -q 'music_drive_low' www/index.html
+          grep -q 'music_drive_high' www/index.html
+          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const clips=Object.keys(manifest.clips || {}); if (clips.length !== 44) throw new Error('Expected 44 clips, found ' + clips.length); for (const name of ['music_drive_low','music_drive_high','music_rampage_stinger']) if (!clips.includes(name)) throw new Error('Missing ' + name);"
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: www
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Show deployed URL
+        run: echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
