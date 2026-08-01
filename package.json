@@ -1,11 +1,12 @@
 {
   "name": "severe-weather-mobile",
-  "version": "4.0.0",
+  "version": "4.3.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "build": "node scripts/build-web.mjs",
+    "patch:v431": "node scripts/apply-v431-source-patch.mjs",
     "cap:sync": "npm run build && node node_modules/@capacitor/cli/bin/capacitor sync android",
     "android:debug": "npm run cap:sync && cd android && gradlew.bat assembleDebug",
     "android:open": "node node_modules/@capacitor/cli/bin/capacitor open android"

@@ -3,120 +3,108 @@
 Last updated: 2026-07-31
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active game: HTML/WebGL `4.1.0 Serpentine Funnel Edition`
+Active release: HTML/WebGL `4.3.1 Mobile Comfort & Identity`
 Primary target: single-player Android landscape
 Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
+Android packaging: Capacitor 8.5.0 with local offline assets
 
 ## Canonical memory order
 
 1. Current repository code and physical-device evidence
 2. This status file
-3. `MechanicsLab/README.md`
+3. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
 4. `Docs/DECISION_LOG.md`
 5. `Docs/NO_DRIFT_POLICY.md`
 6. `Docs/DEVICE_TEST_LOG.md`
-7. Dated Unity and Godot checkpoint documents
-8. `Docs/Archive/SEVERE_WEATHER_ALL_MARKDOWNS.md`
+7. Historical Unity and Godot checkpoint documents
 
 Important decisions and test evidence must be committed to the repository. Chat is working context, not durable project memory.
 
-## Active implementation decision
+## Production decision
 
-The enjoyable HTML/WebGL game is the production gameplay source. Capacitor 8.5.0 now packages its local assets in a native Android wrapper instead of recreating the game in another 3D engine.
+The enjoyable HTML/WebGL game is the production gameplay source. Capacitor packages the exact game locally for Android. Unity and Godot remain preserved historical experiments and are not active production paths.
 
-Unity and Godot source remain preserved as historical experiments and implementation references. They are not the active gameplay path. Reopen an engine port only if measured physical-device evidence proves that the wrapped HTML build cannot meet an explicit requirement.
+Reopen an engine port only if measured physical-device evidence proves that the wrapped HTML build cannot meet an explicit requirement.
 
 ## Locked product direction
 
-The game is a humorous, replayable, mobile arcade destruction game in which the player is the storm.
+Severe Weather is a humorous, replayable mobile arcade destruction game in which the player directly controls the storm.
 
 - Android landscape is the primary target.
-- Multiplayer is out of scope.
-- The player directly controls Tornado, Supercell, or Derecho.
-- Town and city districts must be visually and mechanically recognizable.
-- Destruction should be immediate, readable, generous, and persistent.
-- Humor comes from fictional signs, objects, weather reporting, vehicles, safe airborne animals, and environmental slapstick.
-- People remain protected and off-limits as targets.
-- News vans and storm chasers are invincible witnesses that film, report, reposition, and retreat. They are not enemies.
-- The project may learn from classic city-destruction game structure but must use original storms, locations, jokes, art, progression, and identity.
+- The visual target is a modernized mid-2000s arcade destruction game with soft toon lighting, bold silhouettes, expressive damage, readable atmosphere, and selective outlines.
+- The response is a media circus, not a battle.
+- News vans and storm chasers are invincible witnesses, never enemies or destruction targets.
+- People remain protected and off-limits.
+- Animals are invincible, non-targetable, and may appear in safe slapstick sequences.
+- `Moo Brew` is the approved opening-cinematic coffee brand.
+- Regional campaigns are approved: Heartland, Coastland, East Coast, and West Coast.
+- Approved future storm forms include waterspouts, twin or satellite funnels, multi-vortex tornadoes, and a later fire-whirl variant only after real fire mechanics exist.
+- Storm abilities must become visibly physical: lightning propagation through power infrastructure, wind-driven tree and prop reactions, and stronger Pull anticipation.
+- The audio system must advance to layered weather ambience and material-specific destruction sounds.
 
-## Current v4.1.0 slice
+The complete approved direction is recorded in `Docs/PRODUCT_VISION_AND_ROADMAP.md`.
 
-The current three-minute run contains:
+## v4.3.1 release contents
 
-1. Pine Ridge neighborhood
-2. Main Street
-3. County Fair blackout finale
+- Raised the mobile movement joystick above the phone edge.
+- Reduced the NOAA banner footprint on short landscape screens.
+- Hid the persistent banner build badge on compact displays.
+- Realigned HUD and toast offsets.
+- Removed hostile-vehicle terminology.
+- Preserved media crews as invincible observers.
+- Synchronized package, Android, in-game, build-info, and artifact identity to `4.3.1`.
+- Android `versionCode`: `431`.
+- APK name: `Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk`.
+- Added fail-fast build checks for stale version identity and hostile-vehicle references.
+- Added the durable product vision and roadmap.
 
-Implemented systems include:
+## Build and physical evidence
 
-- district title transitions and compact mobile telemetry
-- one randomized bonus challenge per district
-- thirteen destructible comedy props with contextual callouts
-- Pine Ridge yard props, Main Street signage/storefront props, and County Fair rides/concessions
-- sequential substation activation at 0, 18, and 38 seconds into the finale
-- persistent Neon Funnel cosmetic unlock through `localStorage`
-- district scores, bonus completion, substation count, and cosmetic status on the results screen
-- deterministic `?bot=true` playtest routing that understands district targets
-- replay cleanup for world objects, hail, fragments, power poles, ruins, and ground swath
-- four white satellite news vans and five yellow storm-chaser SUVs with distinct silhouettes
-- safe-distance pursuit, orbiting observation positions, and emergency retreat behavior
-- captured-on-camera bonuses triggered by real destruction events near a crew
-- camera flashes, local-news headlines, radar crew markers, live footage telemetry, and results recap
-- a global editorial cooldown that limits coverage to readable highlight moments
-- a continuous height-mapped county instead of four flat ground tiles
-- raised Pine Ridge terrain, a broad Main Street rise, County Fair knolls, and an eastern creek/drainage cut
-- terrain-following roads, shoulders, markings, props, targets, ruins, animals, storm effects, and media vehicles
-- instanced road markings and ridge silhouettes to preserve mobile draw-call discipline
-- contour cues, hemisphere fill light, and filmic tone mapping for stronger depth separation
-- an extended county apron that prevents the pulled-back camera from exposing the black WebGL void
-- road-grid routing for news vans and storm chasers, including intersection turns and emergency retreat routing
-- a narrower semi-transparent damage scar rendered beneath roads and bridges
-- depth-ordered road, shoulder, and creek surfaces plus smaller, darker creek-bank rocks
-- varied Main Street offices and industrial warehouses with distinct dimensions, roof caps, colors, and occasional antennas
-- 36 authored road blocks with district-specific lot composition instead of a randomized structure scatter
-- recognizable houses, garages, porches, windows, chimneys, barns, storefronts, offices, workshops, service doors, signs, and roof equipment
-- staged structural damage at approximately 72% and 36% health before final collapse
-- footprint-scaled persistent rubble and terrain-aware ballistic debris with bounce and storm pull
-- whole-block clearance bonuses, results telemetry, and local-news Block Buster callouts
-- four optional chain-reaction businesses with shockwaves, collateral damage, radar diamonds, score bonuses, and original jokes
+- Tested commit: `5ef95e1e774cf80d9612c25fe780b1db81ea73bb`
+- GitHub Actions run: `30680592594` (`Build Android Debug APK #21`)
+- Artifact: `severe-weather-v4.3.1-mobile-comfort-21`
+- APK SHA-256: `00f927ece76fd0eccaea429d77ec37d2f1ae8e553f733867c892090e29f25359`
+- Device: Galaxy S26 Ultra
+- User verdict: `Good build`
 
-## Automated evidence
+A full Tornado Warning run reached the results and retry screen without a reported crash:
 
-Browser playtesting of the exact v3.2.0 source completed a full Tornado run with:
+- Rank: `S+`
+- Final score: `56185`
+- Maximum combo: `3.5x`
+- Objectives: `3/3`
+- Landmarks: `2/2`
+- Substations: `0/3`
+- Bonus challenges: `3/3`
+- Blocks cleared: `34`
+- Chain reactions: `4`
+- Media moments: `20`
+- Footage bonus: `+1869`
+- Neon Funnel unlocked
 
-- S+ grade
-- all 3 storm objectives
-- both landmarks
-- all 3 district challenges
-- all 3 sequential substations
-- Neon Funnel unlock
-- successful replay reset
-- 8 captured media moments and `+1289` awarded footage points
-- approximately 60 FPS during the full-size run
-- no observed rendering or interaction failure
+The mobile-comfort gate is accepted on the target high-end Android device.
 
-Responsive validation at `844x390` confirmed that the `95x95` joystick, three `50x50` action buttons, radar, footage telemetry, compact HUD, challenge banner, and game view fit the landscape viewport. The expanded results card measured `313.25` pixels high and ended at `351.625`, inside the 390-pixel viewport.
+## Known evidence gap
 
-## Android build and physical evidence
+The highest grade remains reachable with `0/3` substations. This is not a release blocker, but it is scoring-balance evidence. Review substation signaling and grade weighting during a later gameplay-balance pass.
 
-GitHub Actions run `30653818627` successfully compiled the v3.2.0 Capacitor wrapper at commit `d2b8fde67b76e7d5d5faa7991f9984801586836b`. The downloaded APK SHA-256 was `35d8996f6d3bdc30dafdbae42b395efb89a99d200f4444e2d7d922024ab6963c`.
+Still unproven:
 
-The user installed that APK on a Galaxy S26 Ultra. It looked and played like the HTML build and completed a full Tornado run with an `S+` rank, score `23621`, objectives `3/3`, landmarks `2/2`, substations `3/3`, bonus challenges `3/3`, seventeen media moments, and the Neon Funnel unlock.
+- ordinary or older Android performance
+- sustained heat and battery behavior
+- interruption recovery
+- close/reopen persistence
+- broader repeated-run cleanup testing
 
-The subsequent v3.3.0 APK also compiled successfully in GitHub Actions run `30656859971`, and a live device screenshot confirmed the `3D LAB v3.3.0 HIGH COUNTRY` build rendering and playing on the Galaxy S26 Ultra. The later v3.3.1 GitHub Actions build also succeeded, and the user confirmed that its County Roads APK looked and played like the HTML build on that phone. Lower-end performance, broad WebView compatibility, and sustained heat/battery behavior remain unproven.
+## Immediate next milestone
 
-## Current browser evidence
+Begin v4.4.0 as an illustrated storm-feedback pass, starting with one exceptional ability rather than upgrading everything at once.
 
-The v3.3.1 road-routing and terrain-cleanup pass completed a full automated Tornado run at approximately 60 FPS with zero observed console warnings or errors. The run earned `S+`, score `24830`, all three objectives, both landmarks, all three substations, all three district bonuses, eight media moments, `+1504` footage, and retained the Neon Funnel. Media crews remained productive while using the road grid rather than cutting across lawns.
+Recommended first slice:
 
-After that complete run, the damage-stamp opacity/radius and commercial-building meshes received a final visual-only tune. The resulting source passed a fresh `844x390` startup/layout check with document dimensions exactly matching the viewport, no overflow, the `95x95` joystick inside the screen, no observed console warnings or errors, and a settled reported rate of `61 FPS`. The cleanup screenshot showed no exposed black world edge and visible media vehicles on asphalt.
+1. Grid Zap follows actual power connections and visibly arcs through poles, lines, transformers, and substations.
+2. Add matching electrical sound layers and lighting feedback.
+3. Establish soft toon materials and selective outline rules on a limited target set.
+4. Validate browser performance and one Android APK before expanding the treatment to Gust and Pull.
 
-## Immediate next action
-
-1. Push the committed v4.0.0 release to `main`; the scoped workflow trigger will build the debug APK automatically.
-2. Complete the deterministic v4.0.0 bot run and retry check when localhost browser control is available again.
-3. Install the resulting v4.0.0 artifact and verify staged collapse, block bonuses, chain reactions, touch comfort, and frame pacing on the Galaxy S26 Ultra.
-4. Test one ordinary or older Android device before making broad performance claims.
-
-This work PC is intentionally not being modified around company software restrictions.
+Do not bundle regional campaigns, Moo Brew cinematics, animals, and the complete replacement audio library into the first v4.4.0 slice.

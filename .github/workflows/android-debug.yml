@@ -2,6 +2,18 @@ name: Build Android Debug APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/android-debug.yml'
+      - 'MechanicsLab/SevereWeather_3D_Lab.html'
+      - 'android/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'scripts/**'
   push:
     branches:
       - main
@@ -13,7 +25,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
-      - 'scripts/build-web.mjs'
+      - 'scripts/**'
 
 permissions:
   contents: read
@@ -53,8 +65,20 @@ jobs:
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile
 
+      - name: Apply deterministic v4.3.1 gameplay-source patch
+        run: npm run patch:v431
+
       - name: Build and synchronize offline game assets
         run: npm run cap:sync
+
+      - name: Verify packaged gameplay identity
+        shell: bash
+        run: |
+          grep -q 'v4.3.1' www/index.html
+          grep -q 'MOBILE COMFORT' www/index.html
+          ! grep -q 'enemyVehicles' www/index.html
+          ! grep -q 'Police/Fire/Guard resistance' www/index.html
+          cmp -s www/index.html android/app/src/main/assets/public/index.html
 
       - name: Assemble debug APK
         shell: bash
@@ -63,19 +87,21 @@ jobs:
           cd android
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Verify and hash APK
+      - name: Verify, rename, and hash APK
         shell: bash
         run: |
-          test -f android/app/build/outputs/apk/debug/app-debug.apk
-          sha256sum android/app/build/outputs/apk/debug/app-debug.apk \
-            > android/app/build/outputs/apk/debug/app-debug.apk.sha256
+          source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          named_apk="android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk"
+          test -f "$source_apk"
+          cp "$source_apk" "$named_apk"
+          sha256sum "$named_apk" > "${named_apk}.sha256"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: severe-weather-v4.0.0-debug-${{ github.run_number }}
+          name: severe-weather-v4.3.1-mobile-comfort-${{ github.run_number }}
           path: |
-            android/app/build/outputs/apk/debug/app-debug.apk
-            android/app/build/outputs/apk/debug/app-debug.apk.sha256
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk.sha256
           if-no-files-found: error
           retention-days: 7
