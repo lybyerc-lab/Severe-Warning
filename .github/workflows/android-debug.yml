@@ -63,19 +63,21 @@ jobs:
           cd android
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Verify and hash APK
+      - name: Verify, rename, and hash APK
         shell: bash
         run: |
-          test -f android/app/build/outputs/apk/debug/app-debug.apk
-          sha256sum android/app/build/outputs/apk/debug/app-debug.apk \
-            > android/app/build/outputs/apk/debug/app-debug.apk.sha256
+          source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          named_apk="android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk"
+          test -f "$source_apk"
+          cp "$source_apk" "$named_apk"
+          sha256sum "$named_apk" > "${named_apk}.sha256"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: severe-weather-v4.0.0-debug-${{ github.run_number }}
+          name: severe-weather-v4.3.1-mobile-comfort-${{ github.run_number }}
           path: |
-            android/app/build/outputs/apk/debug/app-debug.apk
-            android/app/build/outputs/apk/debug/app-debug.apk.sha256
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk.sha256
           if-no-files-found: error
           retention-days: 7
