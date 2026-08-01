@@ -61,6 +61,16 @@ jobs:
             android/**/*.gradle*
             android/gradle/wrapper/gradle-wrapper.properties
 
+      - name: Install and verify FFmpeg
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          command -v ffmpeg
+          command -v ffprobe
+          ffmpeg -version
+          ffprobe -version
+
       - name: Install pinned JavaScript dependencies
         shell: bash
         run: |
@@ -114,7 +124,7 @@ jobs:
           cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
           cmp -s www/audio/storm-feel-manifest.json android/app/src/main/assets/public/audio/storm-feel-manifest.json
           cmp -s www/audio/LICENSE.md android/app/src/main/assets/public/audio/LICENSE.md
-          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const count=Object.keys(manifest.clips || {}).length; if (count !== 41) throw new Error('Expected 41 generated audio clips, found ' + count);"
+          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const count=Object.keys(manifest.clips || {}).length; if (count !== 41) throw new Error('Expected 41 generated audio clips, found ' + count); if (manifest.recordedEffectRevision !== 2) throw new Error('Recorded effect revision 2 was not packaged'); const sources=manifest.recordedSources || []; if (sources.length !== 15) throw new Error('Expected 15 pinned recorded sources, found ' + sources.length); for (const source of sources) { if (!/^[a-f0-9]{64}$/.test(source.sha256 || '')) throw new Error('Missing valid SHA-256 for recorded source ' + (source.name || 'unknown')); }"
 
       - name: Assemble debug APK
         shell: bash
