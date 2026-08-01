@@ -8,6 +8,7 @@ const projectRoot = path.resolve(scriptDir, '..');
 const sourceHtml = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const outputDir = path.join(projectRoot, 'www');
 const outputFonts = path.join(outputDir, 'fonts');
+const buildVersion = '4.3.1';
 
 const fontFiles = [
   ['@fontsource/inter/files/inter-latin-400-normal.woff2', 'inter-latin-400-normal.woff2'],
@@ -26,6 +27,12 @@ if (forbiddenRemoteResources.length > 0) {
 if (!html.includes('Content-Security-Policy')) {
   throw new Error('The game must define a Content Security Policy before Android packaging.');
 }
+if (!html.includes(`v${buildVersion}`) || html.includes('v4.3.0')) {
+  throw new Error(`Gameplay source identity must be v${buildVersion} before packaging.`);
+}
+if (/enemyVehicles|Police\/Fire\/Guard resistance/.test(html)) {
+  throw new Error('Hostile vehicle terminology is not allowed in the production gameplay source.');
+}
 
 for (const [packagePath] of fontFiles) {
   await access(path.join(projectRoot, 'node_modules', packagePath));
@@ -42,8 +49,8 @@ for (const [packagePath, outputName] of fontFiles) {
 const sourceSha256 = createHash('sha256').update(html).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
-  `${JSON.stringify({ version: '4.0.0', source: 'MechanicsLab/SevereWeather_3D_Lab.html', sourceSha256 }, null, 2)}\n`,
+  `${JSON.stringify({ version: buildVersion, label: 'Mobile Comfort & Identity', source: 'MechanicsLab/SevereWeather_3D_Lab.html', sourceSha256 }, null, 2)}\n`,
   'utf8'
 );
 
-console.log(`Built offline web bundle: www/index.html (${sourceSha256})`);
+console.log(`Built offline web bundle v${buildVersion}: www/index.html (${sourceSha256})`);
