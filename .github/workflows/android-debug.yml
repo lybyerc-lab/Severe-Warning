@@ -111,6 +111,13 @@ jobs:
           grep -q 'activeGustEffects' www/index.html
           grep -q 'triggerGridZapCascade' www/index.html
           grep -q 'MeshToonMaterial' www/index.html
+          grep -q 'rampageFeedbackLayer' www/index.html
+          grep -q 'spawnRampageHudPopup' www/index.html
+          grep -q 'MAXIMUM MAYHEM!' www/index.html
+          grep -q 'music_drive_low' www/index.html
+          grep -q 'music_drive_high' www/index.html
+          grep -q 'music_rampage_stinger' www/index.html
+          grep -q "options.bus === 'music'" www/index.html
           ! grep -q 'enemyVehicles' www/index.html
           ! grep -q 'Police/Fire/Guard resistance' www/index.html
           ! grep -q 'v4.4.2' www/index.html
@@ -124,7 +131,7 @@ jobs:
           cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
           cmp -s www/audio/storm-feel-manifest.json android/app/src/main/assets/public/audio/storm-feel-manifest.json
           cmp -s www/audio/LICENSE.md android/app/src/main/assets/public/audio/LICENSE.md
-          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const count=Object.keys(manifest.clips || {}).length; if (count !== 41) throw new Error('Expected 41 generated audio clips, found ' + count); if (manifest.recordedEffectRevision !== 2) throw new Error('Recorded effect revision 2 was not packaged'); const sources=manifest.recordedSources || []; if (sources.length !== 15) throw new Error('Expected 15 pinned recorded sources, found ' + sources.length); for (const source of sources) { if (!/^[a-f0-9]{64}$/.test(source.sha256 || '')) throw new Error('Missing valid SHA-256 for recorded source ' + (source.name || 'unknown')); }"
+          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const clips=manifest.clips || {}; const count=Object.keys(clips).length; if (count !== 44) throw new Error('Expected 44 generated audio clips, found ' + count); for (const name of ['music_drive_low','music_drive_high','music_rampage_stinger']) if (!clips[name]) throw new Error('Missing dynamic music clip ' + name); if (manifest.musicRevision !== 1) throw new Error('Dynamic music revision 1 was not packaged'); if (manifest.recordedEffectRevision !== 2) throw new Error('Recorded effect revision 2 was not packaged'); const sources=manifest.recordedSources || []; if (sources.length !== 15) throw new Error('Expected 15 pinned recorded sources, found ' + sources.length); for (const source of sources) { if (!/^[a-f0-9]{64}$/.test(source.sha256 || '')) throw new Error('Missing valid SHA-256 for recorded source ' + (source.name || 'unknown')); }"
 
       - name: Assemble debug APK
         shell: bash
