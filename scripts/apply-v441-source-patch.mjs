@@ -64,6 +64,44 @@ function clearGustEffects() {
   while (activeGustEffects.length) disposeGustEffect(activeGustEffects.pop());
 }
 
+function spawnTreeLeafBurst(target, directionX, directionZ, strength) {
+  const baseY = terrainHeightAt(target.x, target.z) + 4.4;
+  for (let i = 0; i < 2; i++) {
+    const leaf = registerGustEffect(new THREE.Mesh(
+      new THREE.TetrahedronGeometry(0.34 + Math.random() * 0.18, 0),
+      new THREE.MeshBasicMaterial({
+        color: i === 0 ? '#a3e635' : '#fde047',
+        transparent: true,
+        opacity: 0.94,
+        depthWrite: false
+      })
+    ));
+    const startX = target.x + (Math.random() - 0.5) * 1.6;
+    const startZ = target.z + (Math.random() - 0.5) * 1.6;
+    const side = i === 0 ? -1 : 1;
+    const duration = 430 + Math.random() * 110;
+    const start = performance.now();
+
+    function step(now) {
+      if (!leaf.parent) return;
+      const t = Math.min(1, (now - start) / duration);
+      const distance = (4.5 + strength * 5.5) * t;
+      leaf.position.set(
+        startX + directionX * distance + directionZ * side * Math.sin(t * Math.PI) * 1.2,
+        baseY + Math.sin(t * Math.PI) * 2.0,
+        startZ + directionZ * distance - directionX * side * Math.sin(t * Math.PI) * 1.2
+      );
+      leaf.rotation.x += 0.24;
+      leaf.rotation.y += 0.31;
+      leaf.material.opacity = 0.94 * (1 - t);
+      if (t < 1) requestAnimationFrame(step);
+      else removeGustEffect(leaf);
+    }
+
+    requestAnimationFrame(step);
+  }
+}
+
 function animateTreeGust(target, directionX, directionZ, strength) {
   if (!target || target.destroyed || target.damageStage !== 0 || !target.meshData || !target.meshData.group) return;
   const group = target.meshData.group;
@@ -71,12 +109,13 @@ function animateTreeGust(target, directionX, directionZ, strength) {
   group.userData.gustToken = token;
   const baseX = group.rotation.x;
   const baseZ = group.rotation.z;
-  const tilt = 0.12 + strength * 0.16;
+  const tilt = 0.18 + strength * 0.22;
   const bendX = baseX + directionZ * tilt;
   const bendZ = baseZ - directionX * tilt;
   const start = performance.now();
-  const bendDuration = 150;
-  const recoverDuration = 520;
+  const bendDuration = 180;
+  const holdDuration = 100;
+  const recoverDuration = 680;
 
   function step(now) {
     if (group.userData.gustToken !== token) return;
@@ -90,8 +129,15 @@ function animateTreeGust(target, directionX, directionZ, strength) {
       return;
     }
 
-    const recoverT = Math.min(1, (elapsed - bendDuration) / recoverDuration);
-    const spring = Math.exp(-4.2 * recoverT) * Math.cos(recoverT * Math.PI * 4.5);
+    if (elapsed <= bendDuration + holdDuration) {
+      group.rotation.x = bendX;
+      group.rotation.z = bendZ;
+      requestAnimationFrame(step);
+      return;
+    }
+
+    const recoverT = Math.min(1, (elapsed - bendDuration - holdDuration) / recoverDuration);
+    const spring = Math.exp(-3.6 * recoverT) * Math.cos(recoverT * Math.PI * 4.0);
     group.rotation.x = baseX + (bendX - baseX) * spring;
     group.rotation.z = baseZ + (bendZ - baseZ) * spring;
     if (recoverT < 1) requestAnimationFrame(step);
@@ -101,6 +147,7 @@ function animateTreeGust(target, directionX, directionZ, strength) {
     }
   }
 
+  spawnTreeLeafBurst(target, directionX, directionZ, strength);
   requestAnimationFrame(step);
 }
 
@@ -124,7 +171,7 @@ function pushLightComedyProps() {
     const directionX = deltaX / distance;
     const directionZ = deltaZ / distance;
     const falloff = 1 - Math.min(1, distance / range);
-    const pushDistance = 1.0 + falloff * 3.2;
+    const pushDistance = 1.5 + falloff * 4.5;
     const startX = prop.x;
     const startZ = prop.z;
     const endX = THREE.MathUtils.clamp(startX + directionX * pushDistance, -245, 245);
@@ -135,7 +182,7 @@ function pushLightComedyProps() {
     const token = (group.userData.gustToken || 0) + 1;
     group.userData.gustToken = token;
     const start = performance.now();
-    const duration = 280;
+    const duration = 340;
 
     function step(now) {
       if (group.userData.gustToken !== token) return;
@@ -144,7 +191,7 @@ function pushLightComedyProps() {
       const currentX = THREE.MathUtils.lerp(startX, endX, eased);
       const currentZ = THREE.MathUtils.lerp(startZ, endZ, eased);
       group.position.set(currentX, terrainHeightAt(currentX, currentZ), currentZ);
-      const wobble = Math.sin(t * Math.PI) * 0.10 * (0.45 + falloff);
+      const wobble = Math.sin(t * Math.PI) * 0.18 * (0.45 + falloff);
       group.rotation.x = baseRotX + directionZ * wobble;
       group.rotation.z = baseRotZ - directionX * wobble;
       if (t < 1) requestAnimationFrame(step);
@@ -227,12 +274,19 @@ function triggerGustFeedback() {
   clearGustEffects();
   spawnGustWave();
   const range = storm.radius * 3.0;
-  targets.forEach(target => {
-    if (!target.isTree || target.destroyed || target.damageStage !== 0) return;
+  const nearbyTrees = targets
+    .filter(target => target.isTree && !target.destroyed && target.damageStage === 0)
+    .map(target => ({
+      target,
+      distance: Math.hypot(target.x - storm.pos.x, target.z - storm.pos.z)
+    }))
+    .filter(entry => entry.distance <= range)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 8);
+
+  nearbyTrees.forEach(({ target, distance }) => {
     let deltaX = target.x - storm.pos.x;
     let deltaZ = target.z - storm.pos.z;
-    let distance = Math.hypot(deltaX, deltaZ);
-    if (distance > range) return;
     if (distance < 0.01) {
       const angle = Math.random() * Math.PI * 2;
       deltaX = Math.cos(angle);
@@ -301,7 +355,7 @@ replaceExact(
   'Gust replay cleanup'
 );
 
-if (!html.includes('triggerGustFeedback') || !html.includes('activeGustEffects') || !html.includes('lightGustKinds')) {
+if (!html.includes('triggerGustFeedback') || !html.includes('activeGustEffects') || !html.includes('lightGustKinds') || !html.includes('spawnTreeLeafBurst')) {
   throw new Error('v4.4.1 Gust Feedback implementation is incomplete.');
 }
 if (!html.includes('v4.4.1') || html.includes('v4.4.0') || html.includes('v4.3.1')) {
