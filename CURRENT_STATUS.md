@@ -3,7 +3,7 @@
 Last updated: 2026-07-31
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active release: HTML/WebGL `4.3.1 Mobile Comfort & Identity`
+Active release: HTML/WebGL `4.4.0 Illustrated Storm Feedback`
 Primary target: single-player Android landscape
 Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
 Android packaging: Capacitor 8.5.0 with local offline assets
@@ -44,67 +44,78 @@ Severe Weather is a humorous, replayable mobile arcade destruction game in which
 
 The complete approved direction is recorded in `Docs/PRODUCT_VISION_AND_ROADMAP.md`.
 
-## v4.3.1 release contents
+## v4.4.0 accepted contents
 
-- Raised the mobile movement joystick above the phone edge.
-- Reduced the NOAA banner footprint on short landscape screens.
-- Hid the persistent banner build badge on compact displays.
-- Realigned HUD and toast offsets.
-- Removed hostile-vehicle terminology.
-- Preserved media crews as invincible observers.
-- Synchronized package, Android, in-game, build-info, and artifact identity to `4.3.1`.
-- Android `versionCode`: `431`.
-- APK name: `Severe-Weather-v4.3.1-Mobile-Comfort-debug.apk`.
-- Added fail-fast build checks for stale version identity and hostile-vehicle references.
-- Added the durable product vision and roadmap.
+- Replaced Tornado Grid Zap's silent pole scoring with a bounded electrical cascade.
+- Added storm-to-pole and pole-to-pole utility hops.
+- Added bright core arcs, additive glow, traveling pulse markers, and automatic cleanup.
+- Limited the cascade to a bounded utility chain to protect mobile performance.
+- Preserved substation and blackout systems.
+- Added the first narrow `MeshToonMaterial` test on utility assets.
+- Advanced package, Android, in-game, build-info, and artifact identity to `4.4.0`.
+- Android `versionCode`: `440`.
+- APK name: `Severe-Weather-v4.4.0-Illustrated-Storm-debug.apk`.
+- Replaced brittle hard-coded packaging identity with `package.json` as the version source of truth.
+- Replaced legacy Android system-UI flags with modern immersive fullscreen handling.
+- Restores fullscreen after WebView attachment, app resume, and window-focus return.
 
 ## Build and physical evidence
 
-- Tested commit: `5ef95e1e774cf80d9612c25fe780b1db81ea73bb`
-- GitHub Actions run: `30680592594` (`Build Android Debug APK #21`)
-- Artifact: `severe-weather-v4.3.1-mobile-comfort-21`
-- APK SHA-256: `00f927ece76fd0eccaea429d77ec37d2f1ae8e553f733867c892090e29f25359`
+### Grid Zap gameplay pass
+
+- Tested commit: `f6754c3124ef7bf32d82bfcd369afc05c2252a66`
+- GitHub Actions run: `30681407457` (`Build Android Debug APK #26`)
+- Artifact: `severe-weather-v4.4.0-illustrated-storm-26`
+- APK SHA-256: `5036b118aae1fb86b1e98c5cbed3b1416cff4dfe859a5edf0c5e82dbb38ceb4c`
 - Device: Galaxy S26 Ultra
 - User verdict: `Good build`
 
 A full Tornado Warning run reached the results and retry screen without a reported crash:
 
 - Rank: `S+`
-- Final score: `56185`
+- Final score: `60737`
 - Maximum combo: `3.5x`
 - Objectives: `3/3`
 - Landmarks: `2/2`
-- Substations: `0/3`
-- Bonus challenges: `3/3`
-- Blocks cleared: `34`
+- Substations: `1/3`
+- Bonus challenges: `2/3`
+- Blocks cleared: `29`
 - Chain reactions: `4`
-- Media moments: `20`
-- Footage bonus: `+1869`
-- Neon Funnel unlocked
+- Media moments: `18`
+- Footage bonus: `+2783`
 
-The mobile-comfort gate is accepted on the target high-end Android device.
+### Immersive fullscreen pass
 
-## Known evidence gap
+- Tested commit: `3bdbf528fd5ed48448299e3a2098b957154f1b20`
+- GitHub Actions run: `30682005730` (`Build Android Debug APK #28`)
+- Artifact: `severe-weather-v4.4.0-illustrated-storm-28`
+- Device: Galaxy S26 Ultra
+- User verdict: `It's good`
 
-The highest grade remains reachable with `0/3` substations. This is not a release blocker, but it is scoring-balance evidence. Review substation signaling and grade weighting during a later gameplay-balance pass.
+The persistent landscape status bar is accepted as resolved on the target device. System bars may be revealed temporarily by swipe and the game reclaims immersive fullscreen afterward.
+
+Full evidence is recorded in `Docs/RELEASE_ACCEPTANCE_v4.4.0.md`.
+
+## Known evidence gaps
 
 Still unproven:
 
 - ordinary or older Android performance
 - sustained heat and battery behavior
-- interruption recovery
-- close/reopen persistence
-- broader repeated-run cleanup testing
+- repeated Grid Zap stress across many runs
+- interruption and close/reopen persistence beyond fullscreen focus return
+- full-scene toon shading performance
 
 ## Immediate next milestone
 
-Begin v4.4.0 as an illustrated storm-feedback pass, starting with one exceptional ability rather than upgrading everything at once.
+Continue the illustrated storm-feedback roadmap without turning the entire scene into a shader experiment at once.
 
-Recommended first slice:
+Recommended next slice:
 
-1. Grid Zap follows actual power connections and visibly arcs through poles, lines, transformers, and substations.
-2. Add matching electrical sound layers and lighting feedback.
-3. Establish soft toon materials and selective outline rules on a limited target set.
-4. Validate browser performance and one Android APK before expanding the treatment to Gust and Pull.
+1. Make Gust visibly bend small trees and vegetation.
+2. Push light props and already-loose debris slightly without moving heavy structures.
+3. Add readable dust, leaf, and pressure-wave feedback.
+4. Verify the effect budget on the Galaxy S26 Ultra before expanding to Pull.
+5. Keep replacement production audio as a separate controlled milestone.
 
-Do not bundle regional campaigns, Moo Brew cinematics, animals, and the complete replacement audio library into the first v4.4.0 slice.
+Do not bundle regional campaigns, the Moo Brew cinematic, farm animals, and the complete audio replacement into the next corrective slice.
