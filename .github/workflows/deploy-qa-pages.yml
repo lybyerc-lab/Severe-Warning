@@ -54,6 +54,7 @@ jobs:
           node --check scripts/apply-qa4-mobile-input-fix.mjs
           node --check scripts/apply-qa4-run-lock-fix.mjs
           node --check scripts/apply-qa4-pause-forensics.mjs
+          node --check scripts/apply-pause-overlay-hit-test-fix.mjs
 
       - name: Restore verified QA audio cache
         id: audio-cache
@@ -137,6 +138,11 @@ jobs:
           grep -Fq 'QA4_PAUSE_FORENSICS_V1' www/index.html
           grep -Fq '__SW_QA_PAUSE_TRACE__' www/index.html
           grep -Fq "qa4Mode === 'forensic'" www/index.html
+          grep -Fq 'PAUSE_OVERLAY_HIT_TEST_V1' www/index.html
+          grep -Fq '#pauseOverlay:not(.active) .pause-btn' www/index.html
+          grep -Fq '<div id="pauseOverlay" inert aria-hidden="true">' www/index.html
+          grep -Fq 'function setPauseOverlayActive(active)' www/index.html
+          grep -Fq 'overlay.inert = !enabled' www/index.html
           ! grep -Fq "getCachedEl('visualLabRun')?.addEventListener('click', runQa4DeterministicTest)" www/index.html
           ! grep -Fq 'Math.min(2999, targetScore)' www/index.html
           ! grep -Fq 'Math.min(3999, targetScore)' www/index.html
@@ -144,6 +150,7 @@ jobs:
           ! grep -Fq 'STRICT STAGE SCORE HARD CAPS' www/index.html
           ! grep -Fq 'left: 50%; top: 33%; width: max-content; max-width: 88vw' www/index.html
           ! grep -Fq "playSound('click');\n  playSound('glass');" www/index.html
+          ! grep -Fq '.pause-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 10px 20px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; pointer-events: auto !important;' www/index.html
           node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const clips=Object.keys(manifest.clips || {}); if (clips.length !== 44) throw new Error('Expected 44 clips, found ' + clips.length); for (const name of ['music_drive_low','music_drive_high','music_rampage_stinger']) if (!clips.includes(name)) throw new Error('Missing ' + name);"
 
       - name: Configure GitHub Pages
