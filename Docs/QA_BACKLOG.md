@@ -1,6 +1,6 @@
 # QA Backlog
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 ## Blockers
 
@@ -84,20 +84,25 @@ Acceptance still required:
 
 ## High priority
 
-### UI-001: Rampage popup congestion
+### UI-001: Rampage popup congestion and center-screen obstruction
 
-Status: correction committed on `qa`; browser verification pending
-Correction candidate: `7e600462520223930db1e255638bb9fcf83330c3`
+Status: second correction committed on `qa`; browser verification pending
+Initial correction candidate: `7e600462520223930db1e255638bb9fcf83330c3`
+Latest polish commits: `531a9361ef4f7a5c33492465dc7ae37d7cd755c0`, `66e3438b8c7d28ea8a9602b24077488ac6d5ff33`, `b534ab323dfc63c4c6276a64a3f1eca03077a763`
 
 Implemented correction:
 - One major banner remains active at a time.
 - Local damage callouts are capped at three.
 - Hits within a 90-millisecond window aggregate into one chain-reaction result.
 - Popup placement avoids the storm and uses wider HUD-safe margins.
+- Major rampage banners now use a compact top-band pill instead of a large center-screen title.
+- Major banner animation duration was reduced from 1.18 seconds to 0.86 seconds.
+- The Pages build gate rejects the legacy center-screen banner signature.
 
 Acceptance still required:
 - Popups remain readable during dense destruction.
-- Popups do not cover the storm or objective panel.
+- Popups do not cover the storm, objective panel, or active destruction.
+- The compact banner remains celebratory without becoming visually timid.
 
 ### UI-002: Rampage thresholds trigger too early
 
@@ -107,6 +112,38 @@ Candidate thresholds:
 - Wrecking Spree: 2.2x
 - Rampage: 2.8x
 - Maximum Mayhem: 3.5x
+
+### UI-003: District transition obscures active play
+
+Status: correction committed on `qa`; browser verification pending
+Observed during recovered browser playtest evidence
+Correction commits: `531a9361ef4f7a5c33492465dc7ae37d7cd755c0`, `66e3438b8c7d28ea8a9602b24077488ac6d5ff33`, `b534ab323dfc63c4c6276a64a3f1eca03077a763`
+
+Implemented correction:
+- Replaced the full-screen darkened transition card with a compact top ribbon.
+- Kept the district name, subtitle, and bonus challenge visible.
+- Reduced normal transition dwell from 1.9 seconds to 1.25 seconds.
+- Reduced bot transition dwell from 0.7 seconds to 0.45 seconds.
+- Added `contain: layout paint` to limit layout and paint spill.
+
+Acceptance still required:
+- District identity is immediately readable.
+- Gameplay remains visible throughout the transition.
+- Transition does not interfere with controls or obscure the storm.
+
+### PERF-001: Main Street transition captured at 11 FPS in headless browser
+
+Status: open; not yet reproduced under controlled instrumentation
+Observed in: recovered Chromium playtest capture at the Main Street boundary
+
+Interpretation boundary:
+- The captured value may be a transient headless-renderer hitch and is not evidence of Galaxy S26 Ultra performance.
+- The UI polish reduces overlay area and animation duration, but no performance improvement is claimed without measurement.
+
+Verification required:
+- Capture frame-time samples before, during, and after both district transitions.
+- Separate simulation, DOM/layout, and renderer stalls where practical.
+- Repeat in the browser QA lane and later on the target Android device.
 
 ### INFRA-001: APK cannot update in place
 
