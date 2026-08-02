@@ -24,8 +24,6 @@ jobs:
 
     env:
       SEVERE_WEATHER_APPLICATION_ID: com.lybyerclab.severeweather.qa
-      SEVERE_WEATHER_VERSION_CODE: ${{ 450000 + github.run_number }}
-      SEVERE_WEATHER_VERSION_NAME: 4.5.0-qa.${{ github.run_number }}
       SEVERE_WEATHER_QA_KEYSTORE_PATH: ${{ github.workspace }}/.qa-signing/severe-weather-qa.jks
       SEVERE_WEATHER_QA_KEYSTORE_PASSWORD: ${{ secrets.SEVERE_WEATHER_QA_KEYSTORE_PASSWORD }}
       SEVERE_WEATHER_QA_KEY_ALIAS: ${{ secrets.SEVERE_WEATHER_QA_KEY_ALIAS }}
@@ -36,6 +34,20 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ inputs.source_ref }}
+
+      - name: Resolve source and package identity
+        shell: bash
+        run: |
+          source_commit="$(git rev-parse HEAD)"
+          version_code="$((450000 + GITHUB_RUN_NUMBER))"
+          version_name="4.5.0-qa.${GITHUB_RUN_NUMBER}"
+          echo "SEVERE_WEATHER_SOURCE_COMMIT=$source_commit" >> "$GITHUB_ENV"
+          echo "SEVERE_WEATHER_VERSION_CODE=$version_code" >> "$GITHUB_ENV"
+          echo "SEVERE_WEATHER_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
+          echo "Source commit: $source_commit"
+          echo "Application ID: $SEVERE_WEATHER_APPLICATION_ID"
+          echo "Version code: $version_code"
+          echo "Version name: $version_name"
 
       - name: Verify signing secrets are configured
         shell: bash
@@ -94,11 +106,16 @@ jobs:
           npm run patch:v442
           npm run patch:v450
 
-      - name: Build and synchronize offline Android assets
-        run: node scripts/build-web.mjs && node node_modules/@capacitor/cli/bin/capacitor sync android
-
-      - name: Verify packaged QA4 candidate
-        run: node scripts/verify-qa-package.mjs
+      - name: Build, stamp, and synchronize offline Android assets
+        shell: bash
+        run: |
+          node scripts/build-web.mjs
+          GITHUB_SHA="$SEVERE_WEATHER_SOURCE_COMMIT" node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          node node_modules/@capacitor/cli/bin/capacitor sync android
+          cmp -s www/index.html android/app/src/main/assets/public/index.html
+          cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
+          cmp -s www/audio/storm-feel-manifest.json android/app/src/main/assets/public/audio/storm-feel-manifest.json
 
       - name: Restore persistent QA signing key
         shell: bash
@@ -154,7 +171,7 @@ jobs:
           cat > "$output_dir/package-manifest.json" <<EOF
           {
             "sourceRef": "${{ inputs.source_ref }}",
-            "sourceCommit": "$GITHUB_SHA",
+            "sourceCommit": "$SEVERE_WEATHER_SOURCE_COMMIT",
             "workflowRun": $GITHUB_RUN_NUMBER,
             "applicationId": "$actual_application_id",
             "versionCode": $actual_version_code,
