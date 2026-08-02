@@ -52,6 +52,7 @@ jobs:
           node --check scripts/apply-score-continuity-fix.mjs
           node --check scripts/apply-qa4-deterministic-lab-patch.mjs
           node --check scripts/apply-qa4-mobile-input-fix.mjs
+          node --check scripts/apply-qa4-run-lock-fix.mjs
 
       - name: Restore verified QA audio cache
         id: audio-cache
@@ -127,6 +128,9 @@ jobs:
           grep -Fq '[SW:QA:INPUT_ISOLATION]' www/index.html
           grep -Fq 'window.__SW_QA_INPUT_SHIELD_UNTIL__' www/index.html
           grep -Fq "qa4SetCheck('inputIsolation'" www/index.html
+          grep -Fq 'QA4_RUN_LOCK_V1' www/index.html
+          grep -Fq 'window.__SW_QA_TEST_LOCK__ = true' www/index.html
+          grep -Fq 'blockedPauseAttempts' www/index.html
           ! grep -Fq "getCachedEl('visualLabRun')?.addEventListener('click', runQa4DeterministicTest)" www/index.html
           ! grep -Fq 'Math.min(2999, targetScore)' www/index.html
           ! grep -Fq 'Math.min(3999, targetScore)' www/index.html
