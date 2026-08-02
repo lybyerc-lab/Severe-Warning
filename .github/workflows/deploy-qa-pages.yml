@@ -55,6 +55,7 @@ jobs:
           node --check scripts/apply-qa4-run-lock-fix.mjs
           node --check scripts/apply-qa4-pause-forensics.mjs
           node --check scripts/apply-pause-overlay-hit-test-fix.mjs
+          node --check scripts/apply-pause-overlay-hard-hide.mjs
 
       - name: Restore verified QA audio cache
         id: audio-cache
@@ -140,9 +141,14 @@ jobs:
           grep -Fq "qa4Mode === 'forensic'" www/index.html
           grep -Fq 'PAUSE_OVERLAY_HIT_TEST_V1' www/index.html
           grep -Fq '#pauseOverlay:not(.active) .pause-btn' www/index.html
-          grep -Fq '<div id="pauseOverlay" inert aria-hidden="true">' www/index.html
+          grep -Fq '<div id="pauseOverlay" hidden inert aria-hidden="true">' www/index.html
           grep -Fq 'function setPauseOverlayActive(active)' www/index.html
           grep -Fq 'overlay.inert = !enabled' www/index.html
+          grep -Fq 'PAUSE_OVERLAY_HARD_HIDE_V2' www/index.html
+          grep -Fq '#pauseOverlay[hidden]' www/index.html
+          grep -Fq 'overlay.hidden = !enabled' www/index.html
+          grep -Fq "overlay.style.display = enabled ? 'flex' : 'none'" www/index.html
+          grep -Fq 'buildIdentity:' www/index.html
           ! grep -Fq "getCachedEl('visualLabRun')?.addEventListener('click', runQa4DeterministicTest)" www/index.html
           ! grep -Fq 'Math.min(2999, targetScore)' www/index.html
           ! grep -Fq 'Math.min(3999, targetScore)' www/index.html
