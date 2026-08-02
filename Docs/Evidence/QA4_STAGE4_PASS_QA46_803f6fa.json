@@ -1,0 +1,89 @@
+{
+  "evidenceDate": "2026-08-02T17:24:11-05:00",
+  "device": "Galaxy S26 Ultra",
+  "deliveryChannel": "GitHub Pages in Chrome",
+  "visibleBuildBadge": "QA Stage 4 · QA #46 · 803f6fa",
+  "exactCommit": "803f6fa8e80686afb97a9bb0cbee5cf6e085130d",
+  "stageResult": "PASS",
+  "report": {
+    "version": "QA4_DETERMINISTIC_V1",
+    "passed": true,
+    "durationMs": 30001,
+    "score": 8011,
+    "stage": 3,
+    "transitions": [1, 2, 3],
+    "checks": {
+      "inputIsolation": {
+        "passed": true,
+        "detail": "isPaused=false overlayActive=false blockedPauseAttempts=0"
+      },
+      "pull": {
+        "passed": true,
+        "detail": "activePullVortex=true"
+      },
+      "gust": {
+        "passed": true,
+        "detail": "treeHealth=42->0"
+      },
+      "treeResponse": {
+        "passed": true,
+        "detail": "destroyed=true"
+      },
+      "gridZap": {
+        "passed": true,
+        "detail": "sparked=0->2 effects=0"
+      },
+      "popup": {
+        "passed": true,
+        "detail": "layerFound=true queuedHits=1 rampagePopups=0->1 connected=true text=\"DEMOLISHED!+3211.6x\""
+      },
+      "collapse": {
+        "passed": true,
+        "detail": "destroyed=true"
+      },
+      "scoreBeyond3999": {
+        "passed": true,
+        "detail": "score=4011 awarded=21"
+      },
+      "districtProgression": {
+        "passed": true,
+        "detail": "transitions=1>2>3"
+      },
+      "scoreBeyond7999": {
+        "passed": true,
+        "detail": "score=8011 awarded=21"
+      },
+      "results": {
+        "passed": true,
+        "detail": "overlayActive=true"
+      },
+      "audioCleanup": {
+        "passed": true,
+        "detail": "voices=0 context=running"
+      },
+      "consoleErrors": {
+        "passed": true,
+        "detail": "count=0"
+      },
+      "duration": {
+        "passed": true,
+        "detail": "durationMs=30001"
+      },
+      "progressionMonotonic": {
+        "passed": true,
+        "detail": "transitions=1>2>3"
+      }
+    },
+    "eventCount": 31,
+    "audioVoiceCount": 7,
+    "blockedPauseAttempts": 0,
+    "consoleErrors": [],
+    "failedChecks": []
+  },
+  "interpretation": {
+    "browserQaPassed": true,
+    "stage4ExitCriteriaSatisfied": true,
+    "androidApkPhysicallyAccepted": false,
+    "nextBuildTrainStage": "Stage 5: Android QA Packaging"
+  }
+}
