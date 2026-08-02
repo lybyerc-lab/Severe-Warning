@@ -85,12 +85,14 @@ replaceExact(
 replaceExact(
   `  gameStarted = true;
   isPaused = false;
+  resetStormAudioState();
   resetWarningRun();`,
   `  gameStarted = true;
   isPaused = false;
   setPauseOverlayActive(false);
+  resetStormAudioState();
   resetWarningRun();`,
-  'run start pause reset'
+  'run start pause reset after audio reset patch'
 );
 
 replaceExact(
@@ -132,7 +134,8 @@ for (const marker of [
   '#pauseOverlay:not(.active) .pause-btn',
   '<div id="pauseOverlay" inert aria-hidden="true">',
   'function setPauseOverlayActive(active)',
-  'overlay.inert = !enabled'
+  'overlay.inert = !enabled',
+  'setPauseOverlayActive(false);\n  resetStormAudioState();'
 ]) {
   if (!html.includes(marker)) throw new Error(`Pause overlay fix verification failed: missing ${marker}`);
 }
