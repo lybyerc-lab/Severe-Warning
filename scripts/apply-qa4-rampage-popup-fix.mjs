@@ -41,24 +41,26 @@ replaceAllExact(
 
 replaceExact(
   `function qa4ExercisePopup() {\n  // QA4_POPUP_ASSERTION_V2: score popups are THREE.Sprite objects, not DOM children.\n  const beforeCount = activeScorePopups.length;\n  spawnScorePopup(storm.pos.x, terrainHeightAt(storm.pos.x, storm.pos.z) + 8, storm.pos.z, '+321', '#fbbf24');\n  const afterCount = activeScorePopups.length;\n  const latestPopup = activeScorePopups[afterCount - 1] || null;\n  const sceneAttached = Boolean(latestPopup?.sprite && latestPopup.sprite.parent === scene);\n  const alive = Boolean(latestPopup && latestPopup.life > 0);\n  qa4SetCheck(\n    'popup',\n    afterCount > beforeCount && sceneAttached && alive,\n    'activeScorePopups=' + beforeCount + '->' + afterCount + ' sceneAttached=' + sceneAttached + ' alive=' + alive\n  );\n}`,
-  `function qa4ExercisePopup() {\n  // QA4_POPUP_ASSERTION_V3: v4.5.0 popups are connected screen-space DOM nodes.\n  const layer = getRampageFeedbackLayer();\n  const beforeCount = layer ? layer.querySelectorAll('.rampage-popup').length : 0;\n  spawnScorePopup(storm.pos.x, terrainHeightAt(storm.pos.x, storm.pos.z) + 8, storm.pos.z, '+321', '#fbbf24');\n  const popups = layer ? Array.from(layer.querySelectorAll('.rampage-popup')) : [];\n  const afterCount = popups.length;\n  const latestPopup = popups[afterCount - 1] || null;\n  const connected = Boolean(latestPopup?.isConnected && latestPopup.parentElement === layer);\n  const text = latestPopup?.textContent || '';\n  const correctContent = text.includes('DEMOLISHED!') && text.includes('+321');\n  qa4SetCheck(\n    'popup',\n    Boolean(layer) && afterCount > beforeCount && connected && correctContent,\n    'layerFound=' + Boolean(layer) + ' rampagePopups=' + beforeCount + '->' + afterCount + ' connected=' + connected + ' text=' + JSON.stringify(text)\n  );\n}`,
-  'QA4 DOM popup assertion'
+  `function qa4ExercisePopup() {\n  // QA4_POPUP_ASSERTION_V4: exercise the real 90 ms batching queue, then inspect its DOM output.\n  const layer = getRampageFeedbackLayer();\n  clearRampageFeedback();\n  const beforeCount = layer ? layer.querySelectorAll('.rampage-popup').length : 0;\n  spawnScorePopup(storm.pos.x, terrainHeightAt(storm.pos.x, storm.pos.z) + 8, storm.pos.z, '+321', '#fbbf24');\n  const queuedHits = pendingRampageHits.length;\n  if (rampagePopupFlushTimer) {\n    window.clearTimeout(rampagePopupFlushTimer);\n    rampagePopupFlushTimer = 0;\n  }\n  flushRampageHudPopups();\n  const popups = layer ? Array.from(layer.querySelectorAll('.rampage-popup')) : [];\n  const afterCount = popups.length;\n  const latestPopup = popups[afterCount - 1] || null;\n  const connected = Boolean(latestPopup?.isConnected && latestPopup.parentElement === layer);\n  const text = latestPopup?.textContent || '';\n  const correctContent = text.includes('DEMOLISHED!') && text.includes('+321');\n  qa4SetCheck(\n    'popup',\n    Boolean(layer) && queuedHits === 1 && afterCount > beforeCount && connected && correctContent,\n    'layerFound=' + Boolean(layer) + ' queuedHits=' + queuedHits + ' rampagePopups=' + beforeCount + '->' + afterCount + ' connected=' + connected + ' text=' + JSON.stringify(text)\n  );\n}`,
+  'QA4 batched DOM popup assertion'
 );
 
 for (const marker of [
   'QA4_RAMPAGE_LAYER_LOOKUP_V1',
   'function getRampageFeedbackLayer()',
   "document.getElementById('rampageFeedbackLayer')",
-  'QA4_POPUP_ASSERTION_V3',
+  'QA4_POPUP_ASSERTION_V4',
+  'const queuedHits = pendingRampageHits.length',
+  'flushRampageHudPopups();',
   "querySelectorAll('.rampage-popup')",
   "text.includes('DEMOLISHED!')"
 ]) {
   if (!html.includes(marker)) throw new Error(`QA4 rampage popup verification failed: missing ${marker}`);
 }
 
-if (html.includes('QA4_POPUP_ASSERTION_V2')) {
-  throw new Error('QA4 rampage popup verification failed: stale THREE.Sprite assertion remains');
+for (const staleMarker of ['QA4_POPUP_ASSERTION_V2', 'QA4_POPUP_ASSERTION_V3']) {
+  if (html.includes(staleMarker)) throw new Error(`QA4 rampage popup verification failed: stale marker remains: ${staleMarker}`);
 }
 
 await writeFile(sourcePath, html, 'utf8');
-console.log(`Applied QA4 rampage popup lookup and assertion fix to ${sourcePath}`);
+console.log(`Applied QA4 rampage popup lookup and batched assertion fix to ${sourcePath}`);
