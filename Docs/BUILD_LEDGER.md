@@ -136,6 +136,64 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
   - physical Android APK acceptance
 - Follow-up: run `?qa4=run`, inspect the generated report, and repeat once for consistency
 
+### QA4 deterministic physical run on QA #42
+
+- Visible build stamp: `QA Stage 4 · QA #42 · 699da8e`
+- Delivery channel: GitHub Pages opened in Chrome on Galaxy S26 Ultra
+- Duration: `30005 ms`
+- Score: `8055`
+- District transitions: `1 > 2 > 3`
+- Passed:
+  - input isolation
+  - Pull
+  - Gust
+  - tree response
+  - Grid Zap
+  - structure collapse
+  - score beyond `3999`
+  - district progression
+  - score beyond `7999`
+  - results
+  - audio cleanup
+  - console error check
+  - duration
+  - monotonic progression
+- Failed:
+  - popup only
+- Popup detail: `layerFound=true rampagePopups=0->0 connected=false text=""`
+- Important result: the hidden pause overlay defect was resolved and the deterministic test completed end to end.
+- Status: browser-QA not passed because one assertion remained.
+
+### QA4 popup batching correction candidate
+
+- Exact commit: `74ac33a4117d163c28ed5785c910095023bf9d81`
+- Change: exercise the real `90 ms` popup batching queue synchronously before inspecting `.rampage-popup` output
+- Workflow run: `30769528427`
+- Patch syntax: passed
+- Full patch chain: passed
+- Web build: passed
+- QA identity: stamped as build `#43`
+- Package verification: failed
+- Deploy: skipped
+- Root cause: stale workflow gate required `QA4_POPUP_ASSERTION_V3` while the corrected artifact contained `QA4_POPUP_ASSERTION_V4`
+- Classification: process/gate failure, not gameplay failure
+
+### QA4 workflow stabilization candidate
+
+- Named package verifier: `c9a2ef31e8c41a0945e2a300ce625d4da73cac77`
+- Headless browser runner: `c50fe8006c5fb6fc5295f8a4372590cdd7630091`
+- Workflow integration: `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
+- Active handoff refresh: `97e7115e51bd03f843b2b4effb7272a957d34a81`
+- Purpose:
+  - replace anonymous shell marker failures with named verification output
+  - run the full 30-second QA4 test automatically in headless Chrome
+  - capture JSON report and screenshot
+  - prevent Pages deployment unless QA4 passes
+- CI result: not yet verified
+- Browser-QA result: not yet verified
+- Physical Android result: not tested
+- Immediate follow-up: inspect the exact workflow run for the stabilization commit, fix only observed automated failures, then request one final Galaxy acceptance run after CI passes
+
 ## Entry template
 
 ### Build or QA identifier
