@@ -82,6 +82,30 @@ Acceptance still required:
 - Completed transitions never replay.
 - Stage-three substations never relock after a time pickup.
 
+### GAMEPLAY-002: Score freezes at district ceilings while damage continues
+
+Status: correction committed on `qa`; browser verification pending
+Observed by user during live QA play on 2026-08-02
+Observed ceilings: `3999` and `7999`
+Correction commits: `db4f270a999ed4ad515326b727e4a76283290c5d`, `2d56b422329109fa373502516409aaadcdb34296`, `42e1aa4d788c1e250015558a77655266e0d171be`
+
+Root cause:
+- `addScore()` hard-clamped total score by district.
+- Damage still resolved after the ceiling, but the score delta returned zero.
+- Stage-specific EF limits and total score accumulation were incorrectly coupled.
+
+Implemented correction:
+- Total destruction score now accumulates continuously for every awarded hit.
+- Stage-specific EF and storm-size limits remain owned by `updateEFRating()`.
+- Added the `SCORE_CONTINUITY_V1` source marker.
+- Pages verification rejects the legacy `2999`, `3999`, and `7999` score clamps.
+
+Acceptance still required:
+- Score crosses 3999 during continued damage without pausing or changing districts.
+- Score crosses 7999 during continued damage.
+- Stage-one and stage-two EF caps remain unchanged.
+- Popup awards and final results match the actual accumulated score.
+
 ## High priority
 
 ### UI-001: Rampage popup congestion and center-screen obstruction
