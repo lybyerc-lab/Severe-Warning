@@ -1,14 +1,86 @@
 apply plugin: 'com.android.application'
 
+def resolveBuildValue = { String propertyName, String environmentName, String fallback ->
+    def propertyValue = project.findProperty(propertyName)
+    if (propertyValue != null && !propertyValue.toString().trim().isEmpty()) {
+        return propertyValue.toString().trim()
+    }
+    def environmentValue = System.getenv(environmentName)
+    if (environmentValue != null && !environmentValue.trim().isEmpty()) {
+        return environmentValue.trim()
+    }
+    return fallback
+}
+
+def severeWeatherApplicationId = resolveBuildValue(
+    'severeWeatherApplicationId',
+    'SEVERE_WEATHER_APPLICATION_ID',
+    'com.lybyerclab.severeweather'
+)
+def severeWeatherVersionCodeText = resolveBuildValue(
+    'severeWeatherVersionCode',
+    'SEVERE_WEATHER_VERSION_CODE',
+    '450'
+)
+def severeWeatherVersionName = resolveBuildValue(
+    'severeWeatherVersionName',
+    'SEVERE_WEATHER_VERSION_NAME',
+    '4.5.0'
+)
+
+if (!(severeWeatherVersionCodeText ==~ /[0-9]+/)) {
+    throw new GradleException("Invalid Severe Weather version code: ${severeWeatherVersionCodeText}")
+}
+
+def severeWeatherVersionCode = severeWeatherVersionCodeText.toInteger()
+def qaKeystorePath = resolveBuildValue(
+    'severeWeatherQaKeystorePath',
+    'SEVERE_WEATHER_QA_KEYSTORE_PATH',
+    ''
+)
+def qaKeystorePassword = resolveBuildValue(
+    'severeWeatherQaKeystorePassword',
+    'SEVERE_WEATHER_QA_KEYSTORE_PASSWORD',
+    ''
+)
+def qaKeyAlias = resolveBuildValue(
+    'severeWeatherQaKeyAlias',
+    'SEVERE_WEATHER_QA_KEY_ALIAS',
+    ''
+)
+def qaKeyPassword = resolveBuildValue(
+    'severeWeatherQaKeyPassword',
+    'SEVERE_WEATHER_QA_KEY_PASSWORD',
+    ''
+)
+def qaSigningReady = [
+    qaKeystorePath,
+    qaKeystorePassword,
+    qaKeyAlias,
+    qaKeyPassword
+].every { value -> value != null && !value.trim().isEmpty() }
+
 android {
     namespace = "com.lybyerclab.severeweather"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    signingConfigs {
+        qa {
+            if (qaSigningReady) {
+                storeFile file(qaKeystorePath)
+                storePassword qaKeystorePassword
+                keyAlias qaKeyAlias
+                keyPassword qaKeyPassword
+            }
+        }
+    }
+
     defaultConfig {
-        applicationId "com.lybyerclab.severeweather"
+        applicationId severeWeatherApplicationId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 450
-        versionName "4.5.0"
+        versionCode severeWeatherVersionCode
+        versionName severeWeatherVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,11 +88,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
     buildTypes {
         release {
+            if (qaSigningReady) {
+                signingConfig signingConfigs.qa
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    def releaseRequested = graph.allTasks.any { task ->
+        task.name.toLowerCase().contains('release')
+    }
+    if (releaseRequested && !qaSigningReady) {
+        throw new GradleException(
+            'Release signing is not configured. Provide the Severe Weather QA keystore path, store password, alias, and key password.'
+        )
     }
 }
 
