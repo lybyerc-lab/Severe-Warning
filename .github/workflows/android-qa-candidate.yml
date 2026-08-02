@@ -1,0 +1,126 @@
+name: Build Android QA Candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qa
+    paths:
+      - '.github/workflows/android-qa-candidate.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-qa-candidate
+  cancel-in-progress: true
+
+jobs:
+  build-debug-apk:
+    name: Build QA debug APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out exact QA candidate
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install and verify FFmpeg
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          command -v ffmpeg
+          command -v ffprobe
+          ffmpeg -hide_banner -version | head -n 1
+
+      - name: Install pinned JavaScript dependencies
+        shell: bash
+        run: |
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+
+      - name: Verify deterministic patch syntax
+        shell: bash
+        run: |
+          node --check scripts/apply-qa-corrections-patch.mjs
+          node --check scripts/apply-audio-mix-followup-patch.mjs
+
+      - name: Apply deterministic gameplay patches
+        shell: bash
+        run: |
+          npm run patch:v431
+          npm run patch:v440
+          npm run patch:v441
+          npm run patch:v442
+          npm run patch:v450
+
+      - name: Build and synchronize offline game assets
+        run: npm run cap:sync
+
+      - name: Verify QA correction identity
+        shell: bash
+        run: |
+          grep -Fq 'v4.5.0' www/index.html
+          grep -Fq 'STORM FEEL' www/index.html
+          grep -Fq 'audioLabPanel' www/index.html
+          grep -Fq '[SW:AUDIO:EVENT_LOG]' www/index.html
+          grep -Fq 'glass-throttled' www/index.html
+          grep -Fq 'effects: 0.68, music: 1.00' www/index.html
+          grep -Fq 'disabled-synthetic-source' www/index.html
+          grep -Fq 'effectActivity >= 5 ? 0.54' www/index.html
+          grep -Fq 'CHAIN REACTION x' www/index.html
+          grep -Fq 'comboMultiplier >= 3.5' www/index.html
+          grep -Fq '[SW:LAW:DISTRICTS-FORWARD-ONLY]' www/index.html
+          grep -Fq 'const nextStage = Math.max(currentStage, timeStage)' www/index.html
+          grep -Fq 'stage3ElapsedSeconds' www/index.html
+          ! grep -Fq "playSound('click');\n  playSound('glass');" www/index.html
+          test -s www/audio/storm-feel-sprite.wav
+          test -s www/audio/storm-feel-manifest.json
+          test -s www/audio/LICENSE.md
+          cmp -s www/index.html android/app/src/main/assets/public/index.html
+          cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
+          cmp -s www/audio/storm-feel-manifest.json android/app/src/main/assets/public/audio/storm-feel-manifest.json
+          cmp -s www/audio/LICENSE.md android/app/src/main/assets/public/audio/LICENSE.md
+          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const clips=manifest.clips || {}; if (Object.keys(clips).length !== 44) throw new Error('Expected 44 audio clips'); for (const name of ['music_drive_low','music_drive_high','music_rampage_stinger']) if (!clips[name]) throw new Error('Missing ' + name);"
+
+      - name: Assemble debug APK
+        shell: bash
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Verify, rename, and hash APK
+        shell: bash
+        run: |
+          source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          named_apk="android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-QA-Audio-Mix-debug.apk"
+          test -f "$source_apk"
+          cp "$source_apk" "$named_apk"
+          sha256sum "$named_apk" > "${named_apk}.sha256"
+
+      - name: Upload QA debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: severe-weather-v4.5.0-qa-audio-mix-${{ github.run_number }}
+          path: |
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-QA-Audio-Mix-debug.apk
+            android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-QA-Audio-Mix-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
