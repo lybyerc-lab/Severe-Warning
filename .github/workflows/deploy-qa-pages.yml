@@ -43,7 +43,7 @@ jobs:
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile
 
-      - name: Verify QA patch syntax
+      - name: Verify QA patch and harness syntax
         shell: bash
         run: |
           node --check scripts/apply-qa-corrections-patch.mjs
@@ -58,6 +58,8 @@ jobs:
           node --check scripts/apply-pause-overlay-hard-hide.mjs
           node --check scripts/apply-qa4-popup-assertion-fix.mjs
           node --check scripts/apply-qa4-rampage-popup-fix.mjs
+          node --check scripts/verify-qa-package.mjs
+          node --check scripts/run-qa4-headless.mjs
 
       - name: Restore verified QA audio cache
         id: audio-cache
@@ -93,80 +95,56 @@ jobs:
       - name: Stamp QA build identity
         run: node scripts/stamp-qa-pages.mjs
 
-      - name: Verify QA package
+      - name: Verify QA package with named checks
+        run: node scripts/verify-qa-package.mjs
+
+      - name: Run deterministic QA4 in headless Chrome
         shell: bash
         run: |
-          test -s www/index.html
-          test -s www/404.html
-          test -s www/qa-build.json
-          test -s www/audio/storm-feel-sprite.wav
-          test -s www/audio/storm-feel-manifest.json
-          grep -Fq 'QA_BUILD_STAMP' www/index.html
-          grep -Fq 'rampageFeedbackLayer' www/index.html
-          grep -Fq 'music_drive_low' www/index.html
-          grep -Fq 'music_drive_high' www/index.html
-          grep -Fq 'audioLabPanel' www/index.html
-          grep -Fq '[SW:AUDIO:EVENT_LOG]' www/index.html
-          grep -Fq 'decodedClipEnergy' www/index.html
-          grep -Fq 'glass-throttled' www/index.html
-          grep -Fq 'AUDIO_BUS_BASE_GAINS' www/index.html
-          grep -Fq 'effects: 0.68, music: 1.00' www/index.html
-          grep -Fq 'disabled-synthetic-source' www/index.html
-          grep -Fq 'effectActivity >= 5 ? 0.54' www/index.html
-          grep -Fq 'CHAIN REACTION x' www/index.html
-          grep -Fq 'comboMultiplier >= 3.5' www/index.html
-          grep -Fq '[SW:LAW:DISTRICTS-FORWARD-ONLY]' www/index.html
-          grep -Fq 'const nextStage = Math.max(currentStage, timeStage)' www/index.html
-          grep -Fq 'stage3ElapsedSeconds' www/index.html
-          grep -Fq 'UI_POLISH_TOP_BAND_V1' www/index.html
-          grep -Fq 'UI_POLISH_DISTRICT_RIBBON_V1' www/index.html
-          grep -Fq 'isBotMode ? 450 : 1250' www/index.html
-          grep -Fq 'SCORE_CONTINUITY_V1' www/index.html
-          grep -Fq 'destructionScore += added' www/index.html
-          grep -Fq '[SW:UI:QA4_VISUAL_LAB]' www/index.html
-          grep -Fq '[SW:QA:DETERMINISTIC_TEST]' www/index.html
-          grep -Fq 'QA4_DETERMINISTIC_V1' www/index.html
-          grep -Fq '__SEVERE_WEATHER_QA4_REPORT__' www/index.html
-          grep -Fq 'qa4ExerciseScoreBoundary(3999)' www/index.html
-          grep -Fq 'qa4ExerciseScoreBoundary(7999)' www/index.html
-          grep -Fq '[SW:UI:QA4_INPUT_ISOLATION_V1]' www/index.html
-          grep -Fq '[SW:QA:INPUT_ISOLATION]' www/index.html
-          grep -Fq 'window.__SW_QA_INPUT_SHIELD_UNTIL__' www/index.html
-          grep -Fq "qa4SetCheck('inputIsolation'" www/index.html
-          grep -Fq 'QA4_RUN_LOCK_V1' www/index.html
-          grep -Fq 'window.__SW_QA_TEST_LOCK__ = true' www/index.html
-          grep -Fq 'blockedPauseAttempts' www/index.html
-          grep -Fq '[SW:UI:QA4_PAUSE_FORENSICS_V1]' www/index.html
-          grep -Fq '[SW:QA:PAUSE_FORENSICS]' www/index.html
-          grep -Fq 'QA4_PAUSE_FORENSICS_V1' www/index.html
-          grep -Fq '__SW_QA_PAUSE_TRACE__' www/index.html
-          grep -Fq "qa4Mode === 'forensic'" www/index.html
-          grep -Fq 'PAUSE_OVERLAY_HIT_TEST_V1' www/index.html
-          grep -Fq '#pauseOverlay:not(.active) .pause-btn' www/index.html
-          grep -Fq '<div id="pauseOverlay" hidden inert aria-hidden="true">' www/index.html
-          grep -Fq 'function setPauseOverlayActive(active)' www/index.html
-          grep -Fq 'overlay.inert = !enabled' www/index.html
-          grep -Fq 'PAUSE_OVERLAY_HARD_HIDE_V2' www/index.html
-          grep -Fq '#pauseOverlay[hidden]' www/index.html
-          grep -Fq 'overlay.hidden = !enabled' www/index.html
-          grep -Fq "overlay.style.display = enabled ? 'flex' : 'none'" www/index.html
-          grep -Fq 'buildIdentity:' www/index.html
-          grep -Fq 'QA4_RAMPAGE_LAYER_LOOKUP_V1' www/index.html
-          grep -Fq 'function getRampageFeedbackLayer()' www/index.html
-          grep -Fq "document.getElementById('rampageFeedbackLayer')" www/index.html
-          grep -Fq 'QA4_POPUP_ASSERTION_V3' www/index.html
-          grep -Fq "querySelectorAll('.rampage-popup')" www/index.html
-          grep -Fq "text.includes('DEMOLISHED!')" www/index.html
-          ! grep -Fq 'QA4_POPUP_ASSERTION_V2' www/index.html
-          ! grep -Fq "getCachedEl('visualLabRun')?.addEventListener('click', runQa4DeterministicTest)" www/index.html
-          ! grep -Fq 'Math.min(2999, targetScore)' www/index.html
-          ! grep -Fq 'Math.min(3999, targetScore)' www/index.html
-          ! grep -Fq 'Math.min(7999, targetScore)' www/index.html
-          ! grep -Fq 'STRICT STAGE SCORE HARD CAPS' www/index.html
-          ! grep -Fq 'left: 50%; top: 33%; width: max-content; max-width: 88vw' www/index.html
-          ! grep -Fq "playSound('click');\n  playSound('glass');" www/index.html
-          ! grep -Fq '.pause-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 10px 20px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; pointer-events: auto !important;' www/index.html
-          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const clips=Object.keys(manifest.clips || {}); if (clips.length !== 44) throw new Error('Expected 44 clips, found ' + clips.length); for (const name of ['music_drive_low','music_drive_high','music_rampage_stinger']) if (!clips.includes(name)) throw new Error('Missing ' + name);"
+          set -euo pipefail
+          mkdir -p qa-artifacts
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_BIN"
+          echo "Using Chrome: $CHROME_BIN"
+
+          python3 -m http.server 4173 --directory www > qa-artifacts/server.log 2>&1 &
+          SERVER_PID=$!
+          "$CHROME_BIN" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --autoplay-policy=no-user-gesture-required \
+            --remote-debugging-port=9222 \
+            --remote-allow-origins='*' \
+            --user-data-dir=/tmp/severe-weather-qa4-chrome \
+            'http://127.0.0.1:4173/?qa4=run' \
+            > qa-artifacts/chrome.log 2>&1 &
+          CHROME_PID=$!
+
+          cleanup() {
+            kill "$CHROME_PID" "$SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 40); do
+            if curl --silent --fail http://127.0.0.1:4173/ > /dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+
+          curl --silent --fail http://127.0.0.1:4173/ > /dev/null
+          node scripts/run-qa4-headless.mjs
+
+      - name: Upload QA4 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa4-diagnostics-${{ github.run_number }}
+          path: qa-artifacts
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
