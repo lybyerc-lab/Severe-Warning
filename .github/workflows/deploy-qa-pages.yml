@@ -43,6 +43,9 @@ jobs:
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile
 
+      - name: Verify QA correction patch syntax
+        run: node --check scripts/apply-qa-corrections-patch.mjs
+
       - name: Restore verified QA audio cache
         id: audio-cache
         uses: actions/cache@v5
@@ -85,10 +88,21 @@ jobs:
           test -s www/qa-build.json
           test -s www/audio/storm-feel-sprite.wav
           test -s www/audio/storm-feel-manifest.json
-          grep -q 'QA_BUILD_STAMP' www/index.html
-          grep -q 'rampageFeedbackLayer' www/index.html
-          grep -q 'music_drive_low' www/index.html
-          grep -q 'music_drive_high' www/index.html
+          grep -Fq 'QA_BUILD_STAMP' www/index.html
+          grep -Fq 'rampageFeedbackLayer' www/index.html
+          grep -Fq 'music_drive_low' www/index.html
+          grep -Fq 'music_drive_high' www/index.html
+          grep -Fq 'audioLabPanel' www/index.html
+          grep -Fq '[SW:AUDIO:EVENT_LOG]' www/index.html
+          grep -Fq 'decodedClipEnergy' www/index.html
+          grep -Fq 'glass-throttled' www/index.html
+          grep -Fq 'AUDIO_BUS_BASE_GAINS' www/index.html
+          grep -Fq 'CHAIN REACTION x' www/index.html
+          grep -Fq 'comboMultiplier >= 3.5' www/index.html
+          grep -Fq '[SW:LAW:DISTRICTS-FORWARD-ONLY]' www/index.html
+          grep -Fq 'const nextStage = Math.max(currentStage, timeStage)' www/index.html
+          grep -Fq 'stage3ElapsedSeconds' www/index.html
+          ! grep -Fq "playSound('click');\n  playSound('glass');" www/index.html
           node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const clips=Object.keys(manifest.clips || {}); if (clips.length !== 44) throw new Error('Expected 44 clips, found ' + clips.length); for (const name of ['music_drive_low','music_drive_high','music_rampage_stinger']) if (!clips.includes(name)) throw new Error('Missing ' + name);"
 
       - name: Configure GitHub Pages
