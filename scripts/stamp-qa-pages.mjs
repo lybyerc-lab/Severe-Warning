@@ -12,7 +12,7 @@ const commitSha = process.env.GITHUB_SHA || 'local';
 const shortSha = commitSha.slice(0, 7);
 const branchName = process.env.GITHUB_REF_NAME || 'local';
 const builtAt = new Date().toISOString();
-const buildTrainStage = 'QA Stages 1-3';
+const buildTrainStage = 'QA Stage 4';
 
 const escapeHtml = value => String(value)
   .replaceAll('&', '&amp;')
