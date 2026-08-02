@@ -103,6 +103,39 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
   - forward-only district progression and monotonic stage-three clock
 - Follow-up: verify the exact Pages candidate, then test on Galaxy S26 Ultra browser before requesting another APK
 
+### QA Pages run #20 full-round evidence
+
+- Visible build stamp: `QA Stages 1-3 · QA #20 · 5ad8277`
+- Delivery channel: GitHub Pages opened in Chrome on Galaxy S26 Ultra
+- Evidence date: 2026-08-02
+- Browser result: complete Tornado warning run reached the results screen
+- Grade: `S+`
+- Final score: `125462`
+- Maximum combo: `3.5x`
+- Objectives: `3/3`
+- Landmarks: `2/2`
+- Substations: `3/3`
+- Bonus challenges: `2/3`
+- Blocks cleared: `25`
+- Chain reactions: `4`
+- Media moments: `20`
+- Footage bonus: `+5228`
+- District score snapshots:
+  - Pine Ridge: `19767`
+  - Main Street: `70821`
+  - County Fair finale: `125462`
+- Proven by this run:
+  - total score continued well beyond the former `3999` and `7999` ceilings
+  - all three districts completed in one round
+  - final results matched the accumulated total score
+  - QA Visual and QA Audio controls were present and reachable
+- Not proven by this screenshot alone:
+  - Stage 4 deterministic report pass
+  - all Audio Lab acceptance checks
+  - exact popup-award arithmetic during each boundary crossing
+  - physical Android APK acceptance
+- Follow-up: run `?qa4=run`, inspect the generated report, and repeat once for consistency
+
 ## Entry template
 
 ### Build or QA identifier
