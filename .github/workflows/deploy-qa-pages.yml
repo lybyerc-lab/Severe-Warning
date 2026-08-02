@@ -56,6 +56,8 @@ jobs:
           node --check scripts/apply-qa4-pause-forensics.mjs
           node --check scripts/apply-pause-overlay-hit-test-fix.mjs
           node --check scripts/apply-pause-overlay-hard-hide.mjs
+          node --check scripts/apply-qa4-popup-assertion-fix.mjs
+          node --check scripts/apply-qa4-rampage-popup-fix.mjs
 
       - name: Restore verified QA audio cache
         id: audio-cache
@@ -149,6 +151,13 @@ jobs:
           grep -Fq 'overlay.hidden = !enabled' www/index.html
           grep -Fq "overlay.style.display = enabled ? 'flex' : 'none'" www/index.html
           grep -Fq 'buildIdentity:' www/index.html
+          grep -Fq 'QA4_RAMPAGE_LAYER_LOOKUP_V1' www/index.html
+          grep -Fq 'function getRampageFeedbackLayer()' www/index.html
+          grep -Fq "document.getElementById('rampageFeedbackLayer')" www/index.html
+          grep -Fq 'QA4_POPUP_ASSERTION_V3' www/index.html
+          grep -Fq "querySelectorAll('.rampage-popup')" www/index.html
+          grep -Fq "text.includes('DEMOLISHED!')" www/index.html
+          ! grep -Fq 'QA4_POPUP_ASSERTION_V2' www/index.html
           ! grep -Fq "getCachedEl('visualLabRun')?.addEventListener('click', runQa4DeterministicTest)" www/index.html
           ! grep -Fq 'Math.min(2999, targetScore)' www/index.html
           ! grep -Fq 'Math.min(3999, targetScore)' www/index.html
