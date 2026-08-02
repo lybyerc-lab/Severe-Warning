@@ -48,6 +48,7 @@ jobs:
         run: |
           node --check scripts/apply-qa-corrections-patch.mjs
           node --check scripts/apply-audio-mix-followup-patch.mjs
+          node --check scripts/apply-ui-polish-followup-patch.mjs
 
       - name: Restore verified QA audio cache
         id: audio-cache
@@ -108,6 +109,10 @@ jobs:
           grep -Fq '[SW:LAW:DISTRICTS-FORWARD-ONLY]' www/index.html
           grep -Fq 'const nextStage = Math.max(currentStage, timeStage)' www/index.html
           grep -Fq 'stage3ElapsedSeconds' www/index.html
+          grep -Fq 'UI_POLISH_TOP_BAND_V1' www/index.html
+          grep -Fq 'UI_POLISH_DISTRICT_RIBBON_V1' www/index.html
+          grep -Fq 'isBotMode ? 450 : 1250' www/index.html
+          ! grep -Fq 'left: 50%; top: 33%; width: max-content; max-width: 88vw' www/index.html
           ! grep -Fq "playSound('click');\n  playSound('glass');" www/index.html
           node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const clips=Object.keys(manifest.clips || {}); if (clips.length !== 44) throw new Error('Expected 44 clips, found ' + clips.length); for (const name of ['music_drive_low','music_drive_high','music_rampage_stinger']) if (!clips.includes(name)) throw new Error('Missing ' + name);"
 
