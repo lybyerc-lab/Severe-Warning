@@ -1,9 +1,9 @@
 # Active Handoff
 
-Last updated: 2026-08-02 17:22 America/Chicago
+Last updated: 2026-08-02 17:27 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Current milestone: `v4.5.0 Storm Feel Overhaul`
-Current build-train gate: Stage 4 automated deterministic browser QA
+Current build-train gate: Stage 5 Android QA Packaging
 
 ## Start here
 
@@ -15,7 +15,7 @@ Required startup sequence:
 2. Read every file listed by `AGENTS.md`.
 3. Inspect branch `qa`.
 4. Inspect draft PR `#10`.
-5. Inspect the latest QA Pages workflow before changing code.
+5. Inspect the latest QA Pages and Android workflows before changing code.
 6. Continue from the exact state below.
 
 ## Active branches and pull request
@@ -25,173 +25,146 @@ Required startup sequence:
 - Browser QA branch: `qa`
 - Accepted baseline on `main`: v4.4.2
 
-## Current exact state
+## Stage 4 exit evidence
 
-Latest QA stabilization commits on branch `qa`:
+Stage 4 passed on the Galaxy S26 Ultra through GitHub Pages in Chrome.
 
-- Batched popup assertion fix: `74ac33a4117d163c28ed5785c910095023bf9d81`
-- Named package verifier: `c9a2ef31e8c41a0945e2a300ce625d4da73cac77`
-- Headless QA4 browser runner: `c50fe8006c5fb6fc5295f8a4372590cdd7630091`
-- Workflow stabilization and automated QA gate: `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
+Visible build badge:
 
-Status of `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`:
+- `QA Stage 4 · QA #46 · 803f6fa`
+
+Exact commit:
+
+- `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
+
+Deterministic report:
+
+- version: `QA4_DETERMINISTIC_V1`
+- passed: `true`
+- duration: `30001 ms`
+- score: `8011`
+- final stage: `3`
+- transitions: `1 > 2 > 3`
+- failed checks: none
+- console errors: none
+- blocked pause attempts: `0`
+- audio cleanup: passed with `voices=0`
+
+Passed checks:
+
+- input isolation
+- Pull
+- Gust
+- tree response
+- Grid Zap
+- popup batching and DOM rendering
+- collapse
+- score beyond `3999`
+- district progression
+- score beyond `7999`
+- results
+- audio cleanup
+- console errors
+- duration
+- monotonic progression
+
+Popup evidence:
+
+- `layerFound=true`
+- `queuedHits=1`
+- `rampagePopups=0->1`
+- `connected=true`
+- text: `DEMOLISHED!+3211.6x`
+
+Durable evidence file:
+
+- `Docs/Evidence/QA4_STAGE4_PASS_QA46_803f6fa.json`
+- Evidence commit: `5753e6ee68267858de09e6f1c43d5ae6521e245e`
+
+## Stage 4 status
 
 - Committed: yes
-- Building: not directly verified
-- Built: not verified
-- Browser-QA passed: no evidence yet
-- Physically accepted: no
+- Built: yes, evidenced by the deployed QA #46 page
+- Browser-QA passed: yes
+- Physically tested in mobile Chrome: yes
+- Android APK physically accepted: no
 - Merged: no
 
-Do not describe it more positively without workflow and artifact evidence.
+Stage 4 exit criteria are satisfied. Do not reopen QA4 unless a later regression is demonstrated.
 
-## What is actually proven
+## Normal browser-round evidence
 
-### Normal full browser round
+Earlier Galaxy S26 Ultra Chrome evidence from QA build `5ad8277` also proved:
 
-Galaxy S26 Ultra Chrome evidence from QA build `5ad8277`:
+- complete Tornado warning run reached results
+- final score `125462`
+- grade `S+`
+- objectives `3/3`
+- all three districts completed
+- score continued beyond former `3999` and `7999` ceilings
+- final results matched accumulated score
 
-- Complete Tornado run reached results.
-- Final score: `125462`.
-- Grade: `S+`.
-- Objectives: `3/3`.
-- All three districts completed.
-- Score continued beyond the former `3999` and `7999` ceilings.
-- QA Visual and QA Audio controls were present.
-
-This proves the normal browser gameplay loop and score continuity. It does not prove Stage 4 deterministic QA.
-
-### QA4 deterministic test
-
-The deterministic test now runs end to end on the Galaxy S26 Ultra.
-
-Latest physically observed report from visible badge `QA Stage 4 · QA #42 · 699da8e`:
-
-- Duration: `30005 ms`.
-- Score: `8055`.
-- District transitions: `1 > 2 > 3`.
-- Passed checks:
-  - input isolation
-  - Pull
-  - Gust
-  - tree response
-  - Grid Zap
-  - collapse
-  - score beyond `3999`
-  - district progression
-  - score beyond `7999`
-  - results
-  - audio cleanup
-  - console errors
-  - duration
-  - monotonic progression
-- Only failed check: `popup`.
-- Popup detail: `layerFound=true rampagePopups=0->0 connected=false text=""`.
-
-This is major progress. The pause-overlay defect is resolved and the full deterministic sequence executes.
+Together, the normal full round and passing deterministic test satisfy the Stage 4 browser gate.
 
 ## Resolved QA4 defects
 
 ### Hidden pause overlay intercepted QA taps
 
-Forensic evidence showed the test handler never entered and the tap landed on `button.pause-btn` under the Visual Lab.
-
-Resolved through:
-
-- inactive overlay hit-test isolation
-- `visibility: hidden`
-- `inert`
-- HTML `hidden`
-- hard `display: none !important`
-- centralized pause overlay state ownership
-
-The later QA4 reports prove input isolation now passes and the test runs.
+Resolved with inactive hit-test isolation, `visibility: hidden`, `inert`, HTML `hidden`, hard `display: none`, and centralized pause-overlay state ownership.
 
 ### Popup layer lookup
 
-The v4.5.0 feedback layer was added after the static element cache was formed. A direct DOM fallback was added through `getRampageFeedbackLayer()`.
+Resolved with `getRampageFeedbackLayer()` and direct `document.getElementById('rampageFeedbackLayer')` fallback.
 
-The latest physical report proves `layerFound=true`.
+### Popup ownership and timing
 
-### Popup assertion ownership
+Resolved by testing the actual v4.5.0 DOM `.rampage-popup` output and flushing the real `90 ms` batching queue before assertion.
 
-The old test incorrectly inspected a 3D sprite array. v4.5.0 uses DOM `.rampage-popup` nodes.
+### Fragile verification process
 
-The test now checks the real DOM feedback system.
+Resolved by:
 
-### Popup batching timing
+- `scripts/verify-qa-package.mjs`
+- `scripts/run-qa4-headless.mjs`
+- workflow stabilization commit `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
 
-The QA corrections intentionally queue popup hits for `90 ms` before rendering. The test was checking immediately.
+## Active next stage: Stage 5 Android QA Packaging
 
-Commit `74ac33a4117d163c28ed5785c910095023bf9d81` now:
+Goal: produce a QA APK that installs over the previous QA build and is traceable to an exact commit.
 
-1. clears prior feedback
-2. calls the real `spawnScorePopup()`
-3. verifies one queued hit
-4. cancels the pending timer
-5. calls the real `flushRampageHudPopups()`
-6. verifies the connected `.rampage-popup` and expected text
+Required work:
 
-## Latest failed workflow
+1. Inspect the current Android workflow and package identity.
+2. Establish a persistent QA-only signing key through GitHub Secrets.
+3. Preserve a stable QA application ID.
+4. Increase version code monotonically.
+5. Build only from the accepted Stage 4 candidate or an exact descendant that changes packaging only.
+6. Publish the APK through a stable GitHub prerelease or equivalent download location.
+7. Record exact commit, workflow run, version code, APK SHA-256, and artifact name.
+8. Verify installation over the prior QA APK without uninstalling.
 
-GitHub Actions run: `30769528427`
+Security rule:
 
-Exact commit: `74ac33a4117d163c28ed5785c910095023bf9d81`
+- Never commit signing key material.
+- Never expose secrets in workflow logs.
+- Use a QA-only key, not a production distribution key.
 
-Result:
+## Stage 6 after packaging
 
-- patch syntax passed
-- all deterministic patches applied
-- web bundle built
-- QA build `#43` stamped
-- package verification failed
-- Pages deployment skipped
+After Stage 5 succeeds, perform one meaningful Galaxy S26 Ultra APK acceptance run covering:
 
-Root cause:
+- audible and responsive music
+- accepted wind ambience
+- believable ability and destruction audio
+- glass not overrepresented
+- no unidentified synthetic sound
+- readable rampage feedback
+- forward-only districts
+- complete three-minute run
+- retry and cleanup
+- fullscreen, controls, frame pacing, heat, and battery
 
-- the workflow still required `QA4_POPUP_ASSERTION_V3`
-- the corrected build generated `QA4_POPUP_ASSERTION_V4`
-- this was a stale verification gate, not a gameplay or build failure
-
-## Process correction now committed
-
-The previous workflow duplicated truth across dozens of anonymous shell `grep` lines. That caused correct builds to fail on stale markers.
-
-The stabilization candidate `803f6fa8e80686afb97a9bb0cbee5cf6e085130d` changes the process:
-
-- `scripts/verify-qa-package.mjs` performs named package checks and reports exact failures.
-- `scripts/run-qa4-headless.mjs` serves `www`, launches headless Chrome, runs `?qa4=run`, waits for `window.__SEVERE_WEATHER_QA4_REPORT__`, saves the report and screenshot, and fails CI when `passed !== true`.
-- the Pages workflow deploys only after automated QA4 passes.
-- failure artifacts include the QA report, screenshot, Chrome log, and server log.
-
-## Immediate next action
-
-Do not ask the user to run another phone test yet.
-
-1. Inspect the workflow generated by commit `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`.
-2. If it failed, open the exact failing job log and the uploaded QA4 artifacts.
-3. Fix only the observed automated failure.
-4. Repeat automated CI until the report says `passed: true`.
-5. Deploy the passing Pages artifact.
-6. Ask for one final Galaxy S26 Ultra acceptance run.
-7. Record the result in `Docs/BUILD_LEDGER.md` and `Docs/QA_BACKLOG.md`.
-8. Advance to Stage 5 only after Stage 4 passes.
-
-## Expected remaining passes
-
-Best estimate:
-
-1. One automated stabilization pass in GitHub Actions.
-2. One final Galaxy S26 Ultra acceptance pass.
-
-A third pass is justified only if automation or the physical device reveals a genuine new defect. Do not create another patch loop for stale verification markers.
-
-## Build-train rule
-
-- Stage 4 must pass automated browser QA before another Android APK is requested.
-- Stage 5 signing and update-in-place work remains locked.
-- A cloud build is not physical acceptance.
-- A browser pass is not Android acceptance.
+Only explicit approval of the exact APK completes v4.5.0 and permits PR #10 to be marked ready for merge.
 
 ## Latest Android APK
 
@@ -211,8 +184,10 @@ Do not regress:
 - realistic recorded-effect direction from APK #46
 - continuous scoring across district boundaries
 - forward-only district progression
-- working QA4 input isolation
+- QA4 input isolation
+- QA4 popup batching and rendering
+- zero-error deterministic cleanup
 
 ## New-chat prompt
 
-> Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md` and every file it lists. Then inspect PR #10, branch `qa`, and `Docs/ACTIVE_HANDOFF.md`. Continue from workflow stabilization commit `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`. Do not restart QA4 diagnosis from scratch and do not request another phone test until the automated QA4 workflow passes.
+> Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md` and every file it lists. Then inspect PR #10, branch `qa`, `Docs/ACTIVE_HANDOFF.md`, and the Android packaging workflows. Stage 4 passed on `QA #46 · 803f6fa`. Begin Stage 5 Android QA Packaging. Do not reopen QA4 without evidence of a regression, and do not alter accepted gameplay while working on signing, versioning, or APK delivery.
