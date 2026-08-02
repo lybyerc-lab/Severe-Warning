@@ -1,5 +1,6 @@
 name: QA Automated Full Round
 
+# Trigger refresh: 2026-08-01 full-round playtest
 on:
   workflow_dispatch:
   push:
