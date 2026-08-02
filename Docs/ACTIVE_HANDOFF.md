@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-02 17:27 America/Chicago
+Last updated: 2026-08-02 17:39 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Current milestone: `v4.5.0 Storm Feel Overhaul`
 Current build-train gate: Stage 5 Android QA Packaging
@@ -29,125 +29,140 @@ Required startup sequence:
 
 Stage 4 passed on the Galaxy S26 Ultra through GitHub Pages in Chrome.
 
-Visible build badge:
+- Visible build badge: `QA Stage 4 · QA #46 · 803f6fa`
+- Exact commit: `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
+- Report version: `QA4_DETERMINISTIC_V1`
+- Passed: `true`
+- Duration: `30001 ms`
+- Score: `8011`
+- Final stage: `3`
+- Transitions: `1 > 2 > 3`
+- Failed checks: none
+- Console errors: none
+- Blocked pause attempts: `0`
+- Audio cleanup: passed with `voices=0`
 
-- `QA Stage 4 · QA #46 · 803f6fa`
-
-Exact commit:
-
-- `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
-
-Deterministic report:
-
-- version: `QA4_DETERMINISTIC_V1`
-- passed: `true`
-- duration: `30001 ms`
-- score: `8011`
-- final stage: `3`
-- transitions: `1 > 2 > 3`
-- failed checks: none
-- console errors: none
-- blocked pause attempts: `0`
-- audio cleanup: passed with `voices=0`
-
-Passed checks:
-
-- input isolation
-- Pull
-- Gust
-- tree response
-- Grid Zap
-- popup batching and DOM rendering
-- collapse
-- score beyond `3999`
-- district progression
-- score beyond `7999`
-- results
-- audio cleanup
-- console errors
-- duration
-- monotonic progression
-
-Popup evidence:
-
-- `layerFound=true`
-- `queuedHits=1`
-- `rampagePopups=0->1`
-- `connected=true`
-- text: `DEMOLISHED!+3211.6x`
-
-Durable evidence file:
+Durable evidence:
 
 - `Docs/Evidence/QA4_STAGE4_PASS_QA46_803f6fa.json`
 - Evidence commit: `5753e6ee68267858de09e6f1c43d5ae6521e245e`
 
-## Stage 4 status
+Stage 4 is closed unless a later regression is demonstrated.
 
-- Committed: yes
-- Built: yes, evidenced by the deployed QA #46 page
-- Browser-QA passed: yes
-- Physically tested in mobile Chrome: yes
-- Android APK physically accepted: no
-- Merged: no
+## Stage 5 implementation now committed
 
-Stage 4 exit criteria are satisfied. Do not reopen QA4 unless a later regression is demonstrated.
+### Signing-aware Android configuration on `qa`
 
-## Normal browser-round evidence
+Commit: `ee09167fd82f3394d38e7334cf11e960e1daefcc`
 
-Earlier Galaxy S26 Ultra Chrome evidence from QA build `5ad8277` also proved:
+`android/app/build.gradle` now accepts externally supplied:
 
-- complete Tornado warning run reached results
-- final score `125462`
-- grade `S+`
-- objectives `3/3`
-- all three districts completed
-- score continued beyond former `3999` and `7999` ceilings
-- final results matched accumulated score
+- application ID
+- version code
+- version name
+- QA keystore path
+- keystore password
+- key alias
+- key password
 
-Together, the normal full round and passing deterministic test satisfy the Stage 4 browser gate.
+Release builds fail closed when signing values are absent. No fallback release certificate is permitted.
 
-## Resolved QA4 defects
+### One-time signing setup helper on `qa`
 
-### Hidden pause overlay intercepted QA taps
+Commit: `daa677771fb01adb030249151e6ad9c140a5382b`
 
-Resolved with inactive hit-test isolation, `visibility: hidden`, `inert`, HTML `hidden`, hard `display: none`, and centralized pause-overlay state ownership.
+File:
 
-### Popup layer lookup
+- `scripts/setup-qa-signing.sh`
 
-Resolved with `getRampageFeedbackLayer()` and direct `document.getElementById('rampageFeedbackLayer')` fallback.
+Purpose:
 
-### Popup ownership and timing
+- generate one persistent QA-only JKS locally
+- retain the key outside the repository
+- upload base64 key material and passwords to GitHub repository secrets
+- refuse to overwrite an existing key
 
-Resolved by testing the actual v4.5.0 DOM `.rampage-popup` output and flushing the real `90 ms` batching queue before assertion.
+Required secrets:
 
-### Fragile verification process
+- `SEVERE_WEATHER_QA_KEYSTORE_BASE64`
+- `SEVERE_WEATHER_QA_KEYSTORE_PASSWORD`
+- `SEVERE_WEATHER_QA_KEY_ALIAS`
+- `SEVERE_WEATHER_QA_KEY_PASSWORD`
 
-Resolved by:
+### Signing-material exclusions on `qa`
 
-- `scripts/verify-qa-package.mjs`
-- `scripts/run-qa4-headless.mjs`
-- workflow stabilization commit `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
+Commit: `1d138fd731a76404e27f7e67a6b4fb491d64db71`
 
-## Active next stage: Stage 5 Android QA Packaging
+`.gitignore` now rejects common keystore, private-key, certificate, and signing directories.
 
-Goal: produce a QA APK that installs over the previous QA build and is traceable to an exact commit.
+### Manual signed-QA workflow on `main`
 
-Required work:
+Initial workflow commit: `aa5ee7e9e9631dd69233e20443f0ce6dcaf9857c`
 
-1. Inspect the current Android workflow and package identity.
-2. Establish a persistent QA-only signing key through GitHub Secrets.
-3. Preserve a stable QA application ID.
-4. Increase version code monotonically.
-5. Build only from the accepted Stage 4 candidate or an exact descendant that changes packaging only.
-6. Publish the APK through a stable GitHub prerelease or equivalent download location.
-7. Record exact commit, workflow run, version code, APK SHA-256, and artifact name.
-8. Verify installation over the prior QA APK without uninstalling.
+Hardened workflow commit: `1368a290d8fa4a8257b8e0659398ff22dfc89541`
 
-Security rule:
+File:
+
+- `.github/workflows/android-qa-signed.yml`
+
+Workflow behavior:
+
+- manually packages an exact source ref, defaulting to `qa`
+- checks out the proven gameplay branch without merging it
+- derives a monotonically increasing version code as `450000 + workflow run number`
+- uses stable QA application ID `com.lybyerclab.severeweather.qa`
+- uses version name `4.5.0-qa.<run number>`
+- applies the accepted deterministic patch chain
+- rebuilds, stamps, verifies, and synchronizes the offline web bundle
+- restores the persistent signing key only inside the runner
+- assembles a signed release APK
+- verifies the APK signature and certificate digest
+- verifies package ID, version code, and version name
+- records APK SHA-256 and package metadata
+- uploads the signed package for 30 days
+- deletes restored signing material even after failure
+
+## Current Stage 5 status
+
+- Packaging source changes committed: yes
+- Manual workflow available on `main`: yes
+- Persistent QA signing secrets configured: not yet proven
+- Signed APK built: no
+- Update-in-place verified: no
+- Stage 5 complete: no
+
+## Immediate next action
+
+A human with repository access must perform the one-time key ceremony from a trusted computer:
+
+```bash
+bash scripts/setup-qa-signing.sh lybyerc-lab/Severe-Warning
+```
+
+Requirements:
+
+- Java `keytool`
+- GitHub CLI `gh`
+- authenticated `gh auth status`
+- secure storage for the generated JKS and both passwords
+
+After secrets exist:
+
+1. Run `Build Signed Android QA APK` from GitHub Actions with `source_ref=qa`.
+2. Inspect the artifact manifest, signer digest, version code, and SHA-256.
+3. Install that first dedicated QA APK on the Galaxy S26 Ultra.
+4. Run the workflow again to create a higher version code.
+5. Install the second APK over the first without uninstalling.
+6. Record update-in-place evidence in `Docs/BUILD_LEDGER.md`.
+7. Advance to Stage 6 physical gameplay acceptance.
+
+## Security rule
 
 - Never commit signing key material.
+- Never paste passwords or base64 key data into chat.
 - Never expose secrets in workflow logs.
-- Use a QA-only key, not a production distribution key.
+- Use this QA-only key, not a production distribution key.
+- Back up the JKS and credentials in an encrypted vault. Losing the key permanently breaks update continuity for this QA application ID.
 
 ## Stage 6 after packaging
 
@@ -166,13 +181,6 @@ After Stage 5 succeeds, perform one meaningful Galaxy S26 Ultra APK acceptance r
 
 Only explicit approval of the exact APK completes v4.5.0 and permits PR #10 to be marked ready for merge.
 
-## Latest Android APK
-
-- Build: `#46`
-- Exact head: `ead2beb7eb0b4358894909d558690ef718dca488`
-- SHA-256: `c5523eb86e5fbd45089ff194587475b92be00b4c2de77722a0d74706f42c5ed4`
-- Status: physically tested, not accepted
-
 ## Protected behavior
 
 Do not regress:
@@ -190,4 +198,4 @@ Do not regress:
 
 ## New-chat prompt
 
-> Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md` and every file it lists. Then inspect PR #10, branch `qa`, `Docs/ACTIVE_HANDOFF.md`, and the Android packaging workflows. Stage 4 passed on `QA #46 · 803f6fa`. Begin Stage 5 Android QA Packaging. Do not reopen QA4 without evidence of a regression, and do not alter accepted gameplay while working on signing, versioning, or APK delivery.
+> Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md` and every file it lists. Then inspect PR #10, branch `qa`, `Docs/ACTIVE_HANDOFF.md`, and `.github/workflows/android-qa-signed.yml` on `main`. Stage 4 passed on `QA #46 · 803f6fa`. Stage 5 packaging code is committed. Confirm whether the four QA signing secrets exist, then run the signed workflow with `source_ref=qa`. Do not reopen QA4 or alter accepted gameplay while completing signing and update-in-place verification.
