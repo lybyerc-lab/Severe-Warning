@@ -64,44 +64,14 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 
 ## Browser QA lane
 
-### Pages run #1
-
-- Result: failed
-- Cause: initial Pages workflow structure
-
-### Pages run #2
-
-- Commit: `b2cc0f7bd4cafa28c85e61c8f99f946047436392`
-- Result: failed before jobs
-- Cause: YAML syntax error at line 116
-
 ### Pages run #3
 
 - QA branch commit: `62a2dc861539be917ea3305fb7e5a651655a15d5`
 - Build job: passed
-- Deploy job: initially blocked by `github-pages` environment branch protection
-- Rerun after allowing branch `qa`: passed in 17 seconds
+- Deploy job: passed after allowing branch `qa` in the Pages environment
 - Artifact: produced
 - URL: `https://lybyerc-lab.github.io/Severe-Warning/`
 - Physical browser result: opened successfully on Galaxy S26 Ultra
-
-### Audio Lab and QA correction candidate
-
-- Correction script commit: `0b54ce1d30e280e9f68376fbb122a7790e6ab5c0`
-- Patch-chain commit: `6e1395664c3990f0d2349efd527113eeb09e3153`
-- Exact gameplay delivery candidate: `7e600462520223930db1e255638bb9fcf83330c3`
-- Delivery channel: GitHub Pages QA branch
-- Source verification: correction script passed local Node syntax checking and a representative generated-source fixture before commit
-- CI result: awaiting verified Pages result
-- Browser QA result: not yet tested
-- Physical Android result: not tested; no APK built for this candidate
-- Included corrections:
-  - Audio Lab and bounded recent-event log
-  - music gain and diagnostic visibility
-  - strict glass routing and throttling
-  - rampage aggregation, callout cap, and candidate thresholds
-  - forward-only district progression and monotonic stage-three clock
-- Follow-up: verify the exact Pages candidate, then test on Galaxy S26 Ultra browser before requesting another APK
 
 ### QA Pages run #20 full-round evidence
 
@@ -124,17 +94,11 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
   - Pine Ridge: `19767`
   - Main Street: `70821`
   - County Fair finale: `125462`
-- Proven by this run:
-  - total score continued well beyond the former `3999` and `7999` ceilings
+- Proven:
+  - total score continued beyond former `3999` and `7999` ceilings
   - all three districts completed in one round
-  - final results matched the accumulated total score
+  - final results matched accumulated score
   - QA Visual and QA Audio controls were present and reachable
-- Not proven by this screenshot alone:
-  - Stage 4 deterministic report pass
-  - all Audio Lab acceptance checks
-  - exact popup-award arithmetic during each boundary crossing
-  - physical Android APK acceptance
-- Follow-up: run `?qa4=run`, inspect the generated report, and repeat once for consistency
 
 ### QA4 deterministic physical run on QA #42
 
@@ -143,26 +107,10 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Duration: `30005 ms`
 - Score: `8055`
 - District transitions: `1 > 2 > 3`
-- Passed:
-  - input isolation
-  - Pull
-  - Gust
-  - tree response
-  - Grid Zap
-  - structure collapse
-  - score beyond `3999`
-  - district progression
-  - score beyond `7999`
-  - results
-  - audio cleanup
-  - console error check
-  - duration
-  - monotonic progression
-- Failed:
-  - popup only
+- All checks passed except popup
 - Popup detail: `layerFound=true rampagePopups=0->0 connected=false text=""`
-- Important result: the hidden pause overlay defect was resolved and the deterministic test completed end to end.
-- Status: browser-QA not passed because one assertion remained.
+- Important result: hidden pause overlay defect was resolved and the deterministic test completed end to end
+- Status: Browser-QA not passed because one assertion remained
 
 ### QA4 popup batching correction candidate
 
@@ -183,16 +131,40 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Named package verifier: `c9a2ef31e8c41a0945e2a300ce625d4da73cac77`
 - Headless browser runner: `c50fe8006c5fb6fc5295f8a4372590cdd7630091`
 - Workflow integration: `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
-- Active handoff refresh: `97e7115e51bd03f843b2b4effb7272a957d34a81`
 - Purpose:
   - replace anonymous shell marker failures with named verification output
   - run the full 30-second QA4 test automatically in headless Chrome
   - capture JSON report and screenshot
   - prevent Pages deployment unless QA4 passes
-- CI result: not yet verified
-- Browser-QA result: not yet verified
-- Physical Android result: not tested
-- Immediate follow-up: inspect the exact workflow run for the stabilization commit, fix only observed automated failures, then request one final Galaxy acceptance run after CI passes
+
+### QA Stage 4 pass on QA #46
+
+- Visible build stamp: `QA Stage 4 · QA #46 · 803f6fa`
+- Exact commit: `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
+- Delivery channel: GitHub Pages in Chrome on Galaxy S26 Ultra
+- Evidence date: 2026-08-02 17:24 America/Chicago
+- Deterministic report version: `QA4_DETERMINISTIC_V1`
+- Result: `passed=true`
+- Duration: `30001 ms`
+- Score: `8011`
+- Final stage: `3`
+- District transitions: `1 > 2 > 3`
+- Event count: `31`
+- Audio voice count observed during run: `7`
+- Blocked pause attempts: `0`
+- Console errors: `0`
+- Failed checks: none
+- Popup evidence: `layerFound=true queuedHits=1 rampagePopups=0->1 connected=true text="DEMOLISHED!+3211.6x"`
+- Audio cleanup evidence: `voices=0 context=running`
+- Durable evidence file: `Docs/Evidence/QA4_STAGE4_PASS_QA46_803f6fa.json`
+- Evidence commit: `5753e6ee68267858de09e6f1c43d5ae6521e245e`
+- Classification:
+  - Built: yes
+  - Browser-QA passed: yes
+  - Mobile Chrome physical browser test: passed
+  - Android APK physically accepted: no
+  - Merged: no
+- Build-train consequence: Stage 4 complete; Stage 5 Android QA Packaging is now active
 
 ## Entry template
 
