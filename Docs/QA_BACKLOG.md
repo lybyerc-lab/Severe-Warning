@@ -4,22 +4,31 @@ Last updated: 2026-08-01
 
 ## Blockers
 
-### AUDIO-001: Gameplay music is inaudible
+### AUDIO-001: Gameplay music is inaudible beneath effects
 
-Status: correction committed on `qa`; browser and physical verification pending
-Observed in: APK #46
-Correction candidate: `7e600462520223930db1e255638bb9fcf83330c3`
+Status: second correction committed on `qa`; browser and physical verification pending
+Observed in: APK #46 and QA browser feedback on 2026-08-01
+Latest correction candidate: `9e26252b12ea951590e10d6e111183f19ace41d4`
+
+Confirmed user finding:
+- Music exists but cannot be heard over destruction and ability effects.
 
 Implemented diagnostics and correction:
 - Log music clip start and gain-change events.
 - Display music bus gain and active music voices.
 - Display decoded clip RMS energy.
-- Raise the music bus and low/high drive targets while keeping music below weather, effects, and news.
+- Raise music bus base gain from 0.78 to 1.00.
+- Raise low-intensity music target from 0.14 to 0.22.
+- Raise high-intensity music contribution from 0.16 to 0.24.
+- Reduce effects bus base gain from 0.92 to 0.68.
+- Dynamically reduce the effects bus to 0.61 with three or more active effects voices and 0.54 with five or more.
+- Preserve the accepted wind ambience levels.
 
 Acceptance still required:
 - Low-intensity music becomes audible within three seconds of beginning a run.
 - Higher-intensity layer increases with combo or EF progression.
-- Music remains below wind, destruction, and news announcements.
+- Music remains supportive rather than dominant.
+- Wind, major destruction, and news remain intelligible.
 
 ### AUDIO-002: Glass sound is overused
 
@@ -38,21 +47,24 @@ Acceptance still required:
 - Glass plays only for glass-bearing targets or explicit window events.
 - Repeated destruction does not produce glass as the dominant material sound.
 
-### AUDIO-003: Unidentified synthetic sound
+### AUDIO-003: Synthetic moo sounds like a “synth fart”
 
-Status: diagnostics committed on `qa`; offending clip not yet identified
-Observed in: APK #46
-User description: intermittent “synth fart” sound
-Diagnostic candidate: `7e600462520223930db1e255638bb9fcf83330c3`
+Status: offending clip identified and disabled in gameplay; replacement pending
+Observed in: QA browser feedback on 2026-08-01
+Offending clip: `moo_1`
+Latest correction candidate: `9e26252b12ea951590e10d6e111183f19ace41d4`
 
-Implemented diagnostics:
-- Recent-sound event log records clip, trigger, gain, pan, bus, and playback status.
-- Ability, material, legacy, loop, music, news, and QA-audition events are labeled.
+Root cause:
+- `moo_1` is generated from descending saw-wave tones and does not resemble a believable cow vocal.
 
-Acceptance still required:
-- Reproduce the sound in browser QA or Android QA.
-- Use the event log to identify the exact clip and trigger.
-- Remove, replace, or reroute the offending clip after identification.
+Implemented correction:
+- Disable `moo_1` during normal gameplay playback.
+- Log attempted moo playback as `disabled-synthetic-source`.
+- Leave the clip available in Audio Lab for diagnosis only.
+
+Replacement requirement:
+- Replace with a commercially usable real cow vocal, verified CC0/public-domain recording, or a higher-quality original recording.
+- Do not restore the synthetic source to gameplay.
 
 ### GAMEPLAY-001: District progression can move backward
 
