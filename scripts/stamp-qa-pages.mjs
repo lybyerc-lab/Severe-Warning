@@ -12,6 +12,7 @@ const commitSha = process.env.GITHUB_SHA || 'local';
 const shortSha = commitSha.slice(0, 7);
 const branchName = process.env.GITHUB_REF_NAME || 'local';
 const builtAt = new Date().toISOString();
+const buildTrainStage = 'QA Stages 1-3';
 
 const escapeHtml = value => String(value)
   .replaceAll('&', '&amp;')
@@ -47,7 +48,7 @@ const style = `
   }
 </style>`;
 
-const badge = `<div id="qaBuildStamp" aria-hidden="true">QA #${escapeHtml(runNumber)} · ${escapeHtml(shortSha)}</div>`;
+const badge = `<div id="qaBuildStamp" aria-hidden="true">${escapeHtml(buildTrainStage)} · QA #${escapeHtml(runNumber)} · ${escapeHtml(shortSha)}</div>`;
 html = html.replace('</head>', `${style}\n</head>`);
 html = html.replace(/<body(\s[^>]*)?>/i, match => `${match}\n${badge}`);
 
@@ -58,6 +59,7 @@ await writeFile(
   path.join(outputDir, 'qa-build.json'),
   `${JSON.stringify({
     channel: 'qa',
+    buildTrainStage,
     runNumber,
     commitSha,
     shortSha,
@@ -67,4 +69,4 @@ await writeFile(
   'utf8'
 );
 
-console.log(`Stamped GitHub Pages QA build #${runNumber} at ${shortSha}.`);
+console.log(`Stamped ${buildTrainStage} GitHub Pages QA build #${runNumber} at ${shortSha}.`);
