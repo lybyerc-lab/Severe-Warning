@@ -129,7 +129,7 @@ export class BenchmarkWorld {
     silo.receiveShadows = true;
 
     const landmark = cylinder(this.scene, this.materials, 'water-tower-tank', 8.5, 6.5, [60, 22, 21], '#c9d4d1', this.root, 16);
-    for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) {
+    for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3]] as const) {
       const leg = cylinder(this.scene, this.materials, `tower-leg-${x}-${z}`, 0.42, 20, [60 + x, 10, 21 + z], '#6c7a7d', this.root, 8);
       leg.rotation.z = (x / 3) * 0.08;
     }
