@@ -2,49 +2,31 @@ name: Build Android Debug APK
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/android-debug.yml'
-      - 'MechanicsLab/SevereWeather_3D_Lab.html'
-      - 'android/**'
-      - 'assets/audio/**'
-      - 'capacitor.config.json'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'scripts/**'
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/android-debug.yml'
-      - 'MechanicsLab/SevereWeather_3D_Lab.html'
-      - 'android/**'
-      - 'assets/audio/**'
-      - 'capacitor.config.json'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'scripts/**'
+    inputs:
+      source_ref:
+        description: Branch, tag, or commit to package
+        required: true
+        default: qa
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-debug-${{ github.ref }}
+  group: android-debug-mobile
   cancel-in-progress: true
 
 jobs:
   build-debug-apk:
-    name: Build debug APK
+    name: Build mobile test APK
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
-      - name: Check out source
+      - name: Check out requested source
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.source_ref }}
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
@@ -61,77 +43,50 @@ jobs:
             android/**/*.gradle*
             android/gradle/wrapper/gradle-wrapper.properties
 
-      - name: Install and verify FFmpeg
+      - name: Install FFmpeg and pinned JavaScript dependencies
         shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg
-          command -v ffmpeg
-          command -v ffprobe
-          ffmpeg -version
-          ffprobe -version
-
-      - name: Install pinned JavaScript dependencies
-        shell: bash
-        run: |
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile
 
-      - name: Apply deterministic v4.3.1 mobile-comfort patch
-        run: npm run patch:v431
+      - name: Restore verified QA audio cache
+        id: audio-cache
+        uses: actions/cache@v5
+        with:
+          path: assets/audio
+          key: qa-audio-${{ hashFiles('scripts/generate-storm-audio.mjs', 'scripts/apply-recorded-storm-effects.mjs', 'scripts/append-rampage-music.mjs') }}
 
-      - name: Apply deterministic v4.4.0 illustrated-storm patch
-        run: npm run patch:v440
+      - name: Generate verified audio on cache miss
+        if: steps.audio-cache.outputs.cache-hit != 'true'
+        run: npm run audio:generate
 
-      - name: Apply deterministic v4.4.1 Gust Feedback patch
-        run: npm run patch:v441
-
-      - name: Apply deterministic v4.4.2 Pull Feedback patch
-        run: npm run patch:v442
-
-      - name: Apply deterministic v4.5.0 Storm Feel patch
-        run: npm run patch:v450
-
-      - name: Build and synchronize offline game assets
-        run: npm run cap:sync
-
-      - name: Verify packaged gameplay and audio identity
+      - name: Apply accepted deterministic patch chain
         shell: bash
         run: |
-          grep -q 'v4.5.0' www/index.html
-          grep -q 'STORM FEEL' www/index.html
-          grep -q 'updateStormSoundscape' www/index.html
-          grep -q 'playMaterialSound' www/index.html
-          grep -q 'MAX_AUDIO_VOICES' www/index.html
-          grep -q 'storm-feel-sprite.wav' www/index.html
-          grep -q 'targetMaterialFamily' www/index.html
-          grep -q 'triggerPullFeedback' www/index.html
-          grep -q 'activePullEffects' www/index.html
-          grep -q 'triggerGustFeedback' www/index.html
-          grep -q 'activeGustEffects' www/index.html
-          grep -q 'triggerGridZapCascade' www/index.html
-          grep -q 'MeshToonMaterial' www/index.html
-          grep -q 'rampageFeedbackLayer' www/index.html
-          grep -q 'spawnRampageHudPopup' www/index.html
-          grep -q 'MAXIMUM MAYHEM!' www/index.html
-          grep -q 'music_drive_low' www/index.html
-          grep -q 'music_drive_high' www/index.html
-          grep -q 'music_rampage_stinger' www/index.html
-          grep -q "options.bus === 'music'" www/index.html
-          ! grep -q 'enemyVehicles' www/index.html
-          ! grep -q 'Police/Fire/Guard resistance' www/index.html
-          ! grep -q 'v4.4.2' www/index.html
-          ! grep -q 'v4.4.1' www/index.html
-          ! grep -q 'v4.4.0' www/index.html
-          ! grep -q 'v4.3.1' www/index.html
-          test -s www/audio/storm-feel-sprite.wav
-          test -s www/audio/storm-feel-manifest.json
-          test -s www/audio/LICENSE.md
+          npm run patch:v431
+          npm run patch:v440
+          npm run patch:v441
+          npm run patch:v442
+          npm run patch:v450
+
+      - name: Build, stamp, and synchronize offline game assets
+        shell: bash
+        run: |
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node node_modules/@capacitor/cli/bin/capacitor sync android
+
+      - name: Verify packaged QA4 candidate
+        run: node scripts/verify-qa-package.mjs
+
+      - name: Verify Android asset synchronization
+        shell: bash
+        run: |
           cmp -s www/index.html android/app/src/main/assets/public/index.html
           cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
           cmp -s www/audio/storm-feel-manifest.json android/app/src/main/assets/public/audio/storm-feel-manifest.json
-          cmp -s www/audio/LICENSE.md android/app/src/main/assets/public/audio/LICENSE.md
-          node --input-type=module -e "import fs from 'node:fs'; const manifest=JSON.parse(fs.readFileSync('www/audio/storm-feel-manifest.json','utf8')); const clips=manifest.clips || {}; const count=Object.keys(clips).length; if (count !== 44) throw new Error('Expected 44 generated audio clips, found ' + count); for (const name of ['music_drive_low','music_drive_high','music_rampage_stinger']) if (!clips[name]) throw new Error('Missing dynamic music clip ' + name); if (manifest.musicRevision !== 1) throw new Error('Dynamic music revision 1 was not packaged'); if (manifest.recordedEffectRevision !== 2) throw new Error('Recorded effect revision 2 was not packaged'); const sources=manifest.recordedSources || []; if (sources.length !== 15) throw new Error('Expected 15 pinned recorded sources, found ' + sources.length); for (const source of sources) { if (!/^[a-f0-9]{64}$/.test(source.sha256 || '')) throw new Error('Missing valid SHA-256 for recorded source ' + (source.name || 'unknown')); }"
 
       - name: Assemble debug APK
         shell: bash
@@ -140,21 +95,39 @@ jobs:
           cd android
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Verify, rename, and hash APK
+      - name: Verify, rename, and record APK
+        id: package
         shell: bash
         run: |
           source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
-          named_apk="android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-Storm-Feel-debug.apk"
-          test -f "$source_apk"
-          cp "$source_apk" "$named_apk"
-          sha256sum "$named_apk" > "${named_apk}.sha256"
+          output_dir="dist/android-debug"
+          output_apk="$output_dir/Severe-Weather-v4.5.0-Mobile-Test-${GITHUB_RUN_NUMBER}.apk"
+          test -s "$source_apk"
+          mkdir -p "$output_dir"
+          cp "$source_apk" "$output_apk"
+          sha256sum "$output_apk" | tee "$output_apk.sha256"
 
-      - name: Upload debug APK
+          cat > "$output_dir/package-manifest.json" <<EOF
+          {
+            "sourceRef": "${{ inputs.source_ref }}",
+            "sourceCommit": "$GITHUB_SHA",
+            "workflowRun": $GITHUB_RUN_NUMBER,
+            "applicationId": "com.lybyerclab.severeweather",
+            "versionCode": 450,
+            "versionName": "4.5.0",
+            "signingMode": "ephemeral-debug-key",
+            "updateInPlaceExpected": false,
+            "apkFile": "$(basename "$output_apk")",
+            "apkSha256": "$(sha256sum "$output_apk" | awk '{print $1}')"
+          }
+          EOF
+
+          echo "artifact_name=severe-weather-v4.5.0-mobile-test-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload mobile test package
         uses: actions/upload-artifact@v7
         with:
-          name: severe-weather-v4.5.0-storm-feel-${{ github.run_number }}
-          path: |
-            android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-Storm-Feel-debug.apk
-            android/app/build/outputs/apk/debug/Severe-Weather-v4.5.0-Storm-Feel-debug.apk.sha256
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: dist/android-debug/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
