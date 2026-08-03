@@ -2,6 +2,21 @@
 
 This ledger records meaningful build and QA outcomes. CI success and physical acceptance are separate states.
 
+## Visual Engine Laboratory Foundation
+
+### Source foundation and static verification
+
+- Base commit: `d366cc9a1d6ec97192e5245a41bd193a21a769bc`
+- Branch: `agent/visual-engine-lab-foundation`
+- Production renderer inspected: embedded Three.js r128
+- Intro audit: no coded Moo Brew opening found; durable beat sheet is the recoverable source truth
+- Babylon package requested: pinned `@babylonjs/core` `9.19.0` in isolated package
+- Implemented: neutral events/snapshots, quality profiles, metrics, benchmark world, camera, tornado, barn destruction, Cow 17, replay, reset, diagnostics, and disposal
+- Static verification: passed
+- Production file boundary: no changes under `MechanicsLab/`, production workflows, Android configuration, root packages, audio assets, or V5 patch chain
+- Dependency result: registry operation blocked because workspace approval credits were exhausted
+- Classification: committed source foundation; not built, not automated-test passed, not browser benchmark passed, not physically accepted, not merged
+
 ## v5.0.0 Heartland Campaign Foundation
 
 ### Signed QA-5 continuity acceptance

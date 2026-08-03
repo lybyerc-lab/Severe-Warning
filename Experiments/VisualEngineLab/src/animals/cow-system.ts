@@ -2,6 +2,9 @@ import { Mesh, MeshBuilder, Scene, TransformNode, Vector3 } from '@babylonjs/cor
 import type { QualityProfile } from '../contracts/quality-profile';
 import { MaterialLibrary } from '../materials/material-library';
 
+// [SW:LAB:SAFE_COW]
+// Cow 17 is recognizable, invincible, non-targetable, and never damage-scored.
+
 export const COW_STATES = [
   'idle', 'graze', 'notice', 'double-take', 'brace', 'slide', 'front-lift',
   'launch', 'orbit', 'safe-landing', 'recovery', 'offended-stare'

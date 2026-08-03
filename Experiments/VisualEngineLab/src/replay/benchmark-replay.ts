@@ -2,6 +2,9 @@ import type { VisualEvent } from '../contracts/visual-events';
 import { VisualEventBus } from '../events/event-bus';
 import { buildBenchmarkTimeline } from './benchmark-timeline';
 
+// [SW:LAB:DETERMINISTIC_REPLAY]
+// The timeline emits neutral events; systems consume rather than consult the clock directly.
+
 export class BenchmarkReplay {
   private readonly timeline: readonly VisualEvent[];
   private cursor = 0;

@@ -110,3 +110,15 @@ Decision:
 - Cow-Cam is rare and brief; it may change presentation and cow animation but must not slow player controls or the warning clock.
 - Moo Brew sponsors the media circus without becoming a real-world brand or an intrusive advertisement.
 - Animal injuries remain zero by design.
+
+## D-011: Babylon is an isolated visual laboratory
+
+Date: 2026-08-03
+Status: accepted experiment boundary; production migration not approved
+
+Decision:
+- Three.js r128 remains the production renderer and the existing game remains the control build.
+- Babylon.js may execute only under `Experiments/VisualEngineLab/` until it passes the gates in `Docs/DECISION_VISUAL_RENDERER_LAB.md`.
+- Gameplay, input, abilities, damage, scoring, campaign, clocks, UI, audio, and persistence remain renderer-neutral owners.
+- Successful Babylon ideas may be reimplemented in Three.js instead of migrating engines.
+- No laboratory result is physical Android acceptance or permission to modify PR #13.

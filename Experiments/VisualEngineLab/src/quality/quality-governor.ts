@@ -2,6 +2,9 @@ import type { Engine } from '@babylonjs/core';
 import type { QualityProfile, QualityTier } from '../contracts/quality-profile';
 import { QUALITY_PROFILES } from './profiles';
 
+// [SW:LAB:QUALITY_GOVERNOR]
+// Quality may reduce presentation cost but never gameplay behavior.
+
 type QualityListener = (profile: QualityProfile) => void;
 
 export class QualityGovernor {

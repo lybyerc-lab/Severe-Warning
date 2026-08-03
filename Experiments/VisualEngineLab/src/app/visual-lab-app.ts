@@ -17,6 +17,9 @@ import { BENCHMARK_SEED } from '../replay/benchmark-timeline';
 import { TornadoSystem } from '../storm/tornado-system';
 import { BenchmarkWorld } from '../world/benchmark-world';
 
+// [SW:LAB:ENGINE_LIFECYCLE]
+// Own one Babylon engine/scene and dispose every listener and resource explicitly.
+
 export interface VisualLabQaState {
   ready: boolean;
   completed: boolean;

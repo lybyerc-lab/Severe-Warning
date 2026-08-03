@@ -4,6 +4,9 @@ import type { QualityGovernor } from '../quality/quality-governor';
 import type { VisualEventBus } from '../events/event-bus';
 import type { BenchmarkReplay } from '../replay/benchmark-replay';
 
+// [SW:LAB:DIAGNOSTICS]
+// Measurements are evidence only and must stay clear of the mobile benchmark view.
+
 export class DiagnosticsHud {
   private visible = true;
   private lastRender = 0;

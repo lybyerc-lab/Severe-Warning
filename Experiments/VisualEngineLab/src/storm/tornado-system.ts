@@ -2,6 +2,9 @@ import { Mesh, MeshBuilder, Scene, TransformNode, Vector3 } from '@babylonjs/cor
 import type { QualityProfile } from '../contracts/quality-profile';
 import { MaterialLibrary } from '../materials/material-library';
 
+// [SW:LAB:TORNADO]
+// Layered bounded proxy with quality-aware dust and debris budgets.
+
 export interface TornadoParameters {
   height: number;
   baseRadius: number;

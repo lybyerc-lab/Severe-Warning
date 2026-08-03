@@ -2,6 +2,32 @@
 
 Last updated: 2026-08-03
 
+## Visual Engine Laboratory
+
+### VISUAL-LAB-001: Install, build, and browser benchmark gate
+
+Status: source implemented; dependency/install verification blocked by workspace approval-credit exhaustion
+
+Implemented on `agent/visual-engine-lab-foundation`:
+
+- isolated pinned Babylon.js/TypeScript/Vite package
+- renderer-neutral schema and rejection tests
+- four runtime quality tiers and diagnostics
+- farm-to-town benchmark, layered tornado, five-stage barn, procedural Cow 17, deterministic replay, reset, and disposal
+- static verification passed with no runtime CDN markers or `Math.random()` use
+
+Required before Browser benchmark passed:
+
+- generate and commit `package-lock.json` using the approved registry path
+- `npm ci` succeeds inside `Experiments/VisualEngineLab/`
+- typecheck, unit tests, contract tests, replay tests, and production build pass
+- accelerated replay reaches barn wreckage and safe cow recovery, then returns debris and states to baseline
+- zero page errors, console errors, and unhandled rejections
+- controls and diagnostics remain usable at 1365×630, 932×430, 915×412, and 740×360
+- built runtime makes no CDN or external asset request
+
+Physical Android/WebView testing is a later gate and is not authorized by laboratory browser success.
+
 ## V5 campaign foundation
 
 ### QA-004: Full-round workflow Playwright setup

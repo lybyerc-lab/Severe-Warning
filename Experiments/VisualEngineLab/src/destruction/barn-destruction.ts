@@ -3,6 +3,9 @@ import type { QualityProfile } from '../contracts/quality-profile';
 import { MaterialLibrary } from '../materials/material-library';
 import { DESTRUCTION_STAGES, destructionStageIndex, type DestructionStage } from './destruction-state';
 
+// [SW:LAB:DESTRUCTION]
+// Authored staged damage and pooled readable debris; no structural-physics authority.
+
 interface DebrisBody {
   mesh: Mesh;
   velocity: Vector3;

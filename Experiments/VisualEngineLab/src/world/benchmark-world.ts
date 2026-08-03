@@ -4,6 +4,9 @@ import {
 import type { QualityProfile } from '../contracts/quality-profile';
 import { MaterialLibrary } from '../materials/material-library';
 
+// [SW:LAB:BENCHMARK_WORLD]
+// Compact procedural proving ground; no production level or third-party asset code.
+
 function box(scene: Scene, materials: MaterialLibrary, name: string, size: [number, number, number], position: [number, number, number], color: string, parent: TransformNode): Mesh {
   const mesh = MeshBuilder.CreateBox(name, { width: size[0], height: size[1], depth: size[2] }, scene);
   mesh.position.set(...position);

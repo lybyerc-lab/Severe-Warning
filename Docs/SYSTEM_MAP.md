@@ -140,6 +140,32 @@ Scratch builds may set `SEVERE_WEATHER_SOURCE_PATH` and `SEVERE_WEATHER_WWW_DIR`
 8. Acceptance evidence recorded
 9. PR merged
 
+## Isolated Babylon visual laboratory
+
+Location:
+- `Experiments/VisualEngineLab/`
+
+Evidence:
+- `Docs/Evidence/VisualEngineLab/`
+
+Architecture:
+- `src/contracts`: versioned visual events, world snapshots, assets, quality, metrics, and validators
+- `src/events`: validated synchronous event bus
+- `src/app`: engine/scene lifecycle and system composition
+- `src/quality`: Low/Balanced/High/Showcase governor
+- `src/diagnostics`: frame and resource HUD
+- `src/world`: procedural farm-to-town benchmark
+- `src/storm`: layered tornado proxy
+- `src/destruction`: authored five-state barn and bounded debris pool
+- `src/animals`: safe procedural Cow 17 and twelve-state animation proxy
+- `src/replay`: 180-second/accelerated deterministic event sequence
+- `src/tests`: contract/version and replay/reset tests
+
+Boundary:
+- laboratory code imports no production runtime and production imports no laboratory code
+- no CDN or external asset runtime is permitted
+- future production communication begins only with a separately reviewed read-only adapter
+
 ## Near-term architecture work
 
 - Add Audio Lab and event logging.

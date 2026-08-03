@@ -2,6 +2,9 @@ import type { MaterialFamily } from './asset-contract';
 import type { VisualSchemaVersion } from './schema-version';
 import type { Vec3 } from './world-snapshot';
 
+// [SW:LAB:VISUAL_CONTRACT]
+// Presentation receives immutable decisions; it never owns gameplay outcomes.
+
 export const VISUAL_EVENT_TYPES = [
   'round.started', 'round.paused', 'round.resumed', 'round.ended', 'retry.requested',
   'storm.spawned', 'storm.moved', 'storm.intensity.changed', 'storm.form.changed',

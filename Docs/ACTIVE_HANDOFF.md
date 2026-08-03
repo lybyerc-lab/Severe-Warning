@@ -5,6 +5,18 @@ Repository: `lybyerc-lab/Severe-Warning`
 Current milestone: `v5.0.0 Heartland Campaign Foundation`
 Current build-train gate: Cow Signature CI and signed Android acceptance
 
+## Isolated visual-engine R&D workstream
+
+- Laboratory branch: `agent/visual-engine-lab-foundation`
+- Stacked base: `d366cc9a1d6ec97192e5245a41bd193a21a769bc` from `agent/v500-heartland-campaign`
+- Purpose: compare a self-contained Babylon.js benchmark against the Three.js r128 control without touching production gameplay, workflows, packaging, or PR #13
+- Source boundary: executable laboratory code exists only under `Experiments/VisualEngineLab/`; evidence lives under `Docs/Evidence/VisualEngineLab/`
+- Implemented source: versioned event contract, quality governor, diagnostics, farm-town scene, layered tornado, staged barn destruction, procedural Cow 17, accelerated replay, reset, and explicit disposal
+- Static verifier: passed
+- Dependency gate: blocked on 2026-08-03 because registry escalation was rejected when workspace approval credits were exhausted
+- Not yet claimed: clean `npm ci`, TypeScript pass, unit-test pass, production build, browser benchmark, Android behavior, physical acceptance, or Babylon production adoption
+- Production boundary: `MechanicsLab/`, `.github/workflows/`, Android configuration, active patch chain, root package files, and PR #13 behavior remain unchanged
+
 ## V5 fast-track override
 
 On 2026-08-03, the user explicitly approved advancing directly to V5 instead of waiting for the remaining v4.5.0 signing ceremony. This satisfies the build-train requirement for explicit approval before widening or skipping a stage.
