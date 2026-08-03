@@ -4,7 +4,7 @@ import { MaterialLibrary } from '../materials/material-library';
 import { DESTRUCTION_STAGES, destructionStageIndex, type DestructionStage } from './destruction-state';
 
 // [SW:LAB:DESTRUCTION]
-// Authored staged damage and pooled readable debris; no structural-physics authority.
+// Authored staged damage and pooled readable debris with baseline and showcase treatments.
 
 interface DebrisBody {
   mesh: Mesh;
@@ -19,9 +19,12 @@ export class BarnDestructionSystem {
   private readonly intactShell: TransformNode;
   private readonly exposedFrame: TransformNode;
   private readonly wreckage: TransformNode;
+  private readonly roofPeelLeft: Mesh;
+  private readonly roofPeelRight: Mesh;
   private readonly debrisPool: DebrisBody[] = [];
   private stageValue: DestructionStage = 'intact';
   private quality: QualityProfile;
+  private treatment: 'baseline' | 'showcase' = 'baseline';
 
   constructor(private readonly scene: Scene, private readonly materials: MaterialLibrary, quality: QualityProfile) {
     this.quality = quality;
@@ -33,13 +36,32 @@ export class BarnDestructionSystem {
     this.intactShell.parent = this.root;
     this.exposedFrame.parent = this.root;
     this.wreckage.parent = this.root;
+
+    this.roofPeelLeft = MeshBuilder.CreateBox('barn-roof-peel-left', { width: 7.2, height: 0.35, depth: 15.5 }, scene);
+    this.roofPeelLeft.position.set(-3.6, 11.2, 0);
+    this.roofPeelLeft.rotation.z = Math.PI / 6;
+    this.roofPeelLeft.material = materials.get('barn-roofing-peel', '#24323c');
+    this.roofPeelLeft.parent = this.root;
+
+    this.roofPeelRight = MeshBuilder.CreateBox('barn-roof-peel-right', { width: 7.2, height: 0.35, depth: 15.5 }, scene);
+    this.roofPeelRight.position.set(3.6, 11.2, 0);
+    this.roofPeelRight.rotation.z = -Math.PI / 6;
+    this.roofPeelRight.material = materials.get('barn-roofing-peel', '#24323c');
+    this.roofPeelRight.parent = this.root;
+
     this.buildBarn();
     this.buildDebrisPool(30);
+    this.setTreatment('baseline');
     this.applyVisualState();
   }
 
   get stage(): DestructionStage {
     return this.stageValue;
+  }
+
+  setTreatment(treatment: 'baseline' | 'showcase'): void {
+    this.treatment = treatment;
+    this.applyVisualState();
   }
 
   setStage(stage: DestructionStage): void {
@@ -55,6 +77,20 @@ export class BarnDestructionSystem {
   }
 
   update(deltaSeconds: number): void {
+    const stage = destructionStageIndex(this.stageValue);
+    if (this.treatment === 'showcase' && stage >= 2) {
+      if (this.roofPeelLeft.isEnabled()) {
+        this.roofPeelLeft.position.x -= deltaSeconds * 6.5;
+        this.roofPeelLeft.position.y += deltaSeconds * 4.2;
+        this.roofPeelLeft.rotation.z += deltaSeconds * 1.8;
+      }
+      if (this.roofPeelRight.isEnabled()) {
+        this.roofPeelRight.position.x += deltaSeconds * 7.2;
+        this.roofPeelRight.position.y += deltaSeconds * 4.8;
+        this.roofPeelRight.rotation.z -= deltaSeconds * 2.1;
+      }
+    }
+
     for (const body of this.debrisPool) {
       if (!body.mesh.isEnabled()) continue;
       body.age += deltaSeconds;
@@ -76,6 +112,10 @@ export class BarnDestructionSystem {
   reset(): void {
     this.stageValue = 'intact';
     for (const body of this.debrisPool) this.retire(body);
+    this.roofPeelLeft.position.set(-3.6, 11.2, 0);
+    this.roofPeelLeft.rotation.z = Math.PI / 6;
+    this.roofPeelRight.position.set(3.6, 11.2, 0);
+    this.roofPeelRight.rotation.z = -Math.PI / 6;
     this.applyVisualState();
   }
 
@@ -85,6 +125,8 @@ export class BarnDestructionSystem {
 
   dispose(): void {
     this.root.dispose(false, true);
+    this.roofPeelLeft.dispose(false, true);
+    this.roofPeelRight.dispose(false, true);
     for (const body of this.debrisPool) body.mesh.dispose(false, true);
     this.debrisPool.length = 0;
   }
@@ -170,9 +212,15 @@ export class BarnDestructionSystem {
 
   private applyVisualState(): void {
     const stage = destructionStageIndex(this.stageValue);
+    const isShowcase = this.treatment === 'showcase';
+
     this.intactShell.setEnabled(stage < 3);
     this.exposedFrame.setEnabled(stage >= 1 && stage < 4);
     this.wreckage.setEnabled(stage >= 4);
+
+    this.roofPeelLeft.setEnabled(isShowcase && stage >= 2 && stage < 4);
+    this.roofPeelRight.setEnabled(isShowcase && stage >= 2 && stage < 4);
+
     this.intactShell.rotation.z = stage === 1 ? -0.025 : stage === 2 ? -0.07 : 0;
     this.intactShell.scaling.y = stage === 2 ? 0.9 : 1;
   }

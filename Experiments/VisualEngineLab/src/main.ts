@@ -10,6 +10,7 @@ declare global {
       replay: () => void;
       setAccelerated: (enabled: boolean) => void;
       setQuality: (tier: QualityTier) => void;
+      setTreatment: (treatment: 'baseline' | 'showcase') => void;
       dispose: () => void;
       capabilities: { webgpuDetected: boolean; productionRenderer: 'three-r128'; laboratoryRenderer: 'babylon-9.19.0' };
     };
@@ -26,15 +27,20 @@ try {
   const quality: QualityTier = ['low', 'balanced', 'high', 'showcase'].includes(requestedQuality ?? '')
     ? requestedQuality as QualityTier
     : 'balanced';
+  const treatment: 'baseline' | 'showcase' = params.get('treatment') === 'showcase' ? 'showcase' : 'baseline';
+
   const app = new VisualLabApp(canvas, quality);
+  if (treatment === 'showcase') app.setTreatment('showcase');
   app.replay.setAccelerated(params.get('speed') !== 'normal');
   app.start();
+
   window.__SEVERE_WARNING_VISUAL_LAB__ = {
     getQaState: () => app.getQaState(),
     reset: () => app.reset(),
     replay: () => app.replayFromStart(),
     setAccelerated: (enabled) => app.replay.setAccelerated(enabled),
     setQuality: (tier) => app.applyQuality(tier),
+    setTreatment: (t) => app.setTreatment(t),
     dispose: () => app.dispose(),
     capabilities: {
       webgpuDetected: 'gpu' in navigator,

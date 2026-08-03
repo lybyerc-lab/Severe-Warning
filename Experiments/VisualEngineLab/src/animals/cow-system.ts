@@ -27,6 +27,7 @@ export class CowSystem {
   private landingOrigin = new Vector3(-5, 15, 5);
   private landingTarget = new Vector3(-17, 1.4, 14);
   private quality: QualityProfile;
+  private treatment: 'baseline' | 'showcase' = 'baseline';
 
   constructor(private readonly scene: Scene, private readonly materials: MaterialLibrary, quality: QualityProfile) {
     this.quality = quality;
@@ -43,11 +44,22 @@ export class CowSystem {
     this.collisionProxy.position.y = 2.7;
     this.collisionProxy.isVisible = false;
     this.collisionProxy.isPickable = false;
+    this.setTreatment('baseline');
     this.applyQuality(quality);
   }
 
   get state(): CowState {
     return this.stateValue;
+  }
+
+  setTreatment(treatment: 'baseline' | 'showcase'): void {
+    this.treatment = treatment;
+    if (treatment === 'showcase') {
+      this.root.scaling.setAll(1.22); // slightly larger, readable Cow 17 silhouette
+    } else {
+      this.root.scaling.setAll(1.08);
+    }
+    this.applyQuality(this.quality);
   }
 
   setLandingTarget(target: Vector3): void {
@@ -65,7 +77,7 @@ export class CowSystem {
   applyQuality(quality: QualityProfile): void {
     this.quality = quality;
     const detailMeshes = this.root.getChildMeshes().filter((mesh) => mesh.name.includes('spot') || mesh.name.includes('hoof') || mesh.name.includes('ear-tag-number'));
-    for (const mesh of detailMeshes) mesh.setEnabled(quality.animalLod >= 1);
+    for (const mesh of detailMeshes) mesh.setEnabled(this.treatment === 'showcase' || quality.animalLod >= 1);
   }
 
   update(deltaSeconds: number): void {
@@ -93,7 +105,7 @@ export class CowSystem {
         this.body.position.y = t < 0.3 ? 0 : 0.12;
         break;
       case 'brace':
-        this.root.scaling.y = 0.94;
+        this.root.scaling.y = (this.treatment === 'showcase' ? 1.22 : 1.08) * 0.88;
         this.body.rotation.z = -0.08;
         this.legs.forEach((leg, index) => leg.rotation.z = index < 2 ? 0.18 : -0.18);
         break;
@@ -130,7 +142,7 @@ export class CowSystem {
       }
       case 'recovery':
         this.root.position.copyFrom(this.landingTarget);
-        this.root.scaling.y = 0.82 + Math.min(1, t / 0.8) * 0.26;
+        this.root.scaling.y = (this.treatment === 'showcase' ? 1.22 : 1.08) * (0.82 + Math.min(1, t / 0.8) * 0.26);
         this.body.rotation.z = Math.sin(t * 18) * 0.06 * Math.max(0, 1 - t / 1.2);
         break;
       case 'offended-stare':
@@ -140,7 +152,7 @@ export class CowSystem {
         break;
     }
     if (this.stateValue !== 'graze') this.head.position.set(2.75, 3.7, 0);
-    if (!['brace', 'recovery'].includes(this.stateValue)) this.root.scaling.setAll(1.08);
+    if (!['brace', 'recovery'].includes(this.stateValue)) this.root.scaling.setAll(this.treatment === 'showcase' ? 1.22 : 1.08);
   }
 
   reset(): void {
@@ -148,7 +160,7 @@ export class CowSystem {
     this.stateTime = 0;
     this.root.position.set(-16, 0, 27);
     this.root.rotation.setAll(0);
-    this.root.scaling.setAll(1.08);
+    this.root.scaling.setAll(this.treatment === 'showcase' ? 1.22 : 1.08);
     this.body.position.setAll(0);
     this.body.rotation.setAll(0);
     this.head.position.set(2.75, 3.7, 0);

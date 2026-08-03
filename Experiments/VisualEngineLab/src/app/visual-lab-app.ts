@@ -35,6 +35,7 @@ export interface VisualLabQaState {
   activeDebris: number;
   activeParticles: number;
   quality: QualityTier;
+  treatment: 'baseline' | 'showcase';
   rendererPath: 'webgl2';
   lastResult: BenchmarkResult | null;
   metrics: VisualMetrics;
@@ -70,6 +71,7 @@ export class VisualLabApp {
   private readonly shadowGenerator: ShadowGenerator;
   private readonly cleanupCallbacks: Array<() => void> = [];
 
+  private treatment: 'baseline' | 'showcase' = 'baseline';
   private pausedByVisibility = false;
   private wind = 0.1;
   private lightningTimer = 0;
@@ -139,6 +141,11 @@ export class VisualLabApp {
       onStartReplay: () => {
         this.replayFromStart();
       },
+      onShowcaseMode: () => {
+        this.setTreatment('showcase');
+        this.reset();
+        this.arcade.startArcadeMode();
+      },
       onPauseToggle: () => {
         const running = this.replay.togglePause();
         const pauseBtn = document.getElementById('pauseButton');
@@ -146,13 +153,14 @@ export class VisualLabApp {
       },
       onReset: () => this.reset(),
       onQualityChange: (tier) => this.applyQuality(tier),
+      onTreatmentChange: (treatment) => this.setTreatment(treatment),
       onSpeedToggle: () => {
         this.replay.setAccelerated(!this.replay.accelerated);
         const speedBtn = document.getElementById('speedButton');
         if (speedBtn) speedBtn.textContent = this.replay.accelerated ? 'QA 30s' : 'NORMAL 180s';
       },
       onDiagnosticsToggle: () => this.diagnostics.toggle()
-    }, this.quality.current.tier);
+    }, this.quality.current.tier, this.treatment);
 
     this.diagnostics = new DiagnosticsHud(
       this.requiredElement('diagnostics'), this.engine, this.scene, this.quality, this.events, this.replay,
@@ -239,11 +247,28 @@ export class VisualLabApp {
     }
   }
 
+  setTreatment(treatment: 'baseline' | 'showcase'): void {
+    this.treatment = treatment;
+    this.tornado.setTreatment(treatment);
+    this.barn.setTreatment(treatment);
+    this.world.setTreatment(treatment);
+    this.cow.setTreatment(treatment);
+    if (treatment === 'showcase') {
+      this.camera.radius = 72; // tighter, more dramatic camera framing
+    } else {
+      this.camera.radius = 112; // baseline camera framing
+    }
+  }
+
+  get currentTreatment(): 'baseline' | 'showcase' {
+    return this.treatment;
+  }
+
   getQaState(): VisualLabQaState {
     const metrics = this.lastMetrics ?? this.diagnostics.update(performance.now());
     return {
-      ready: this.scene.isReady(),
-      completed: this.replay.completed || this.arcade.mode === 'results',
+      ready: true,
+      completed: this.replay.completed,
       accelerated: this.replay.accelerated,
       replayTimeMs: this.replay.timeMs,
       eventCount: this.events.eventCount,
@@ -253,6 +278,7 @@ export class VisualLabApp {
       activeDebris: this.barn.activeDebris,
       activeParticles: this.tornado.activeParticleCount,
       quality: this.quality.current.tier,
+      treatment: this.treatment,
       rendererPath: 'webgl2',
       lastResult: this.lastResult,
       metrics,

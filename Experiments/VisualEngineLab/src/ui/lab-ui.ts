@@ -7,9 +7,11 @@ declare const __BUILD_COMMIT__: string;
 export interface UiCallbacks {
   onStartPlay: () => void;
   onStartReplay: () => void;
+  onShowcaseMode?: () => void;
   onPauseToggle: () => void;
   onReset: () => void;
   onQualityChange: (tier: QualityTier) => void;
+  onTreatmentChange?: (treatment: 'baseline' | 'showcase') => void;
   onSpeedToggle: () => void;
   onDiagnosticsToggle: () => void;
 }
@@ -27,6 +29,7 @@ export class LabUiManager {
   private gustBtn: HTMLButtonElement;
   private zapBtn: HTMLButtonElement;
   private qualitySelect: HTMLSelectElement;
+  private treatmentSelect: HTMLSelectElement;
 
   private cleanupCallbacks: Array<() => void> = [];
 
@@ -35,9 +38,10 @@ export class LabUiManager {
     private readonly arcade: PlayableArcadeManager,
     private readonly input: PlayerInputManager,
     private readonly callbacks: UiCallbacks,
-    currentQuality: QualityTier
+    currentQuality: QualityTier,
+    currentTreatment: 'baseline' | 'showcase' = 'baseline'
   ) {
-    this.injectUiDom(currentQuality);
+    this.injectUiDom(currentQuality, currentTreatment);
     this.menuOverlay = this.getElement('menuOverlay');
     this.resultsOverlay = this.getElement('resultsOverlay');
     this.playableHud = this.getElement('playableHud');
@@ -50,6 +54,7 @@ export class LabUiManager {
     this.gustBtn = this.getElement('btnGust') as HTMLButtonElement;
     this.zapBtn = this.getElement('btnZap') as HTMLButtonElement;
     this.qualitySelect = this.getElement('menuQualitySelect') as HTMLSelectElement;
+    this.treatmentSelect = this.getElement('menuTreatmentSelect') as HTMLSelectElement;
 
     const commitCode = this.getElement('labCommitDisplay');
     commitCode.textContent = typeof __BUILD_COMMIT__ !== 'undefined' ? __BUILD_COMMIT__.slice(0, 11) : 'HEAD';
@@ -121,7 +126,7 @@ export class LabUiManager {
     }
   }
 
-  private injectUiDom(currentQuality: QualityTier): void {
+  private injectUiDom(currentQuality: QualityTier, currentTreatment: 'baseline' | 'showcase'): void {
     const menuHtml = `
       <div id="menuOverlay" class="lab-modal-overlay">
         <div class="lab-modal-box">
@@ -132,8 +137,9 @@ export class LabUiManager {
           </div>
           <div class="lab-modal-body">
             <div class="action-row">
-              <button id="btnPlayBenchmark" type="button" class="btn-primary">⚡ PLAY BENCHMARK</button>
-              <button id="btnRunReplay" type="button" class="btn-secondary">▶ RUN AUTOMATED REPLAY</button>
+              <button id="btnShowcaseMode" type="button" class="btn-primary btn-showcase">✨ VISUAL SHOWCASE</button>
+              <button id="btnPlayBenchmark" type="button" class="btn-secondary">⚡ PLAY BENCHMARK</button>
+              <button id="btnRunReplay" type="button" class="btn-outline">▶ AUTOMATED REPLAY</button>
             </div>
             <div class="options-grid">
               <label>QUALITY TIER
@@ -142,6 +148,12 @@ export class LabUiManager {
                   <option value="balanced" ${currentQuality === 'balanced' ? 'selected' : ''}>BALANCED (Primary)</option>
                   <option value="high" ${currentQuality === 'high' ? 'selected' : ''}>HIGH</option>
                   <option value="showcase" ${currentQuality === 'showcase' ? 'selected' : ''}>SHOWCASE</option>
+                </select>
+              </label>
+              <label>RENDERER TREATMENT
+                <select id="menuTreatmentSelect">
+                  <option value="baseline" ${currentTreatment === 'baseline' ? 'selected' : ''}>Baseline Lab</option>
+                  <option value="showcase" ${currentTreatment === 'showcase' ? 'selected' : ''}>Showcase Treatment</option>
                 </select>
               </label>
               <button id="btnMenuDiagnostics" type="button" class="btn-outline">METRICS HUD</button>
@@ -228,6 +240,16 @@ export class LabUiManager {
       this.cleanupCallbacks.push(() => el.removeEventListener(type, handler as EventListener));
     };
 
+    listen('btnShowcaseMode', 'click', () => {
+      if (this.callbacks.onShowcaseMode) {
+        this.callbacks.onShowcaseMode();
+      } else {
+        if (this.callbacks.onTreatmentChange) this.callbacks.onTreatmentChange('showcase');
+        this.showPlayableHud();
+        this.callbacks.onStartPlay();
+      }
+    });
+
     listen('btnPlayBenchmark', 'click', () => {
       this.showPlayableHud();
       this.callbacks.onStartPlay();
@@ -244,6 +266,12 @@ export class LabUiManager {
 
     listen('menuQualitySelect', 'change', () => {
       this.callbacks.onQualityChange(this.qualitySelect.value as QualityTier);
+    });
+
+    listen('menuTreatmentSelect', 'change', () => {
+      if (this.callbacks.onTreatmentChange) {
+        this.callbacks.onTreatmentChange(this.treatmentSelect.value as 'baseline' | 'showcase');
+      }
     });
 
     listen('btnMenuDiagnostics', 'click', () => this.callbacks.onDiagnosticsToggle());

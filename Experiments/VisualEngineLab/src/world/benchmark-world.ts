@@ -1,11 +1,11 @@
 import {
-  Color3, Mesh, MeshBuilder, Scene, TransformNode, Vector3
+  Color3, DirectionalLight, HemisphericLight, Mesh, MeshBuilder, Scene, TransformNode, Vector3
 } from '@babylonjs/core';
 import type { QualityProfile } from '../contracts/quality-profile';
 import { MaterialLibrary } from '../materials/material-library';
 
 // [SW:LAB:BENCHMARK_WORLD]
-// Compact procedural proving ground; no production level or third-party asset code.
+// Compact procedural proving ground with baseline and showcase treatment controls.
 
 function box(scene: Scene, materials: MaterialLibrary, name: string, size: [number, number, number], position: [number, number, number], color: string, parent: TransformNode): Mesh {
   const mesh = MeshBuilder.CreateBox(name, { width: size[0], height: size[1], depth: size[2] }, scene);
@@ -74,19 +74,75 @@ export class BenchmarkWorld {
   readonly root: TransformNode;
   readonly hayLanding = new Vector3(-17, 1.4, 14);
   private readonly animatedTrees: TransformNode[] = [];
+  private readonly skyLight: HemisphericLight | null = null;
+  private readonly sunLight: DirectionalLight | null = null;
+  private treatment: 'baseline' | 'showcase' = 'baseline';
 
   constructor(private readonly scene: Scene, private readonly materials: MaterialLibrary, quality: QualityProfile) {
     this.root = new TransformNode('farm-town-benchmark', scene);
+
+    const skyLightMesh = scene.getLightByName('storm-sky-light');
+    if (skyLightMesh instanceof HemisphericLight) this.skyLight = skyLightMesh;
+
+    const sunLightMesh = scene.getLightByName('late-day-directional');
+    if (sunLightMesh instanceof DirectionalLight) this.sunLight = sunLightMesh;
+
     this.build(quality);
     this.applyQuality(quality);
+  }
+
+  setTreatment(treatment: 'baseline' | 'showcase'): void {
+    this.treatment = treatment;
+    if (treatment === 'showcase') {
+      if (this.skyLight) {
+        this.skyLight.intensity = 0.95;
+        this.skyLight.diffuse = new Color3(0.52, 0.68, 0.82);
+        this.skyLight.groundColor = new Color3(0.22, 0.18, 0.14);
+      }
+      if (this.sunLight) {
+        this.sunLight.intensity = 1.75;
+        this.sunLight.diffuse = new Color3(1, 0.85, 0.62);
+      }
+      this.scene.fogColor = new Color3(0.14, 0.22, 0.28);
+      this.scene.fogDensity = 0.0075;
+    } else {
+      if (this.skyLight) {
+        this.skyLight.intensity = 0.82;
+        this.skyLight.diffuse = new Color3(0.64, 0.76, 0.88);
+        this.skyLight.groundColor = new Color3(0.3, 0.22, 0.16);
+      }
+      if (this.sunLight) {
+        this.sunLight.intensity = 1.55;
+        this.sunLight.diffuse = new Color3(1, 0.82, 0.57);
+      }
+      this.scene.fogColor = new Color3(0.16, 0.24, 0.3);
+      this.scene.fogDensity = 0.0065;
+    }
+  }
+
+  setStormProgress(progress: number): void {
+    const p = Math.max(0, Math.min(1, progress));
+    if (this.treatment === 'showcase') {
+      if (this.sunLight) {
+        this.sunLight.intensity = 1.75 - p * 1.15;
+        this.sunLight.diffuse = Color3.Lerp(new Color3(1, 0.85, 0.62), new Color3(0.38, 0.46, 0.55), p);
+      }
+      if (this.skyLight) {
+        this.skyLight.intensity = 0.95 - p * 0.45;
+        this.skyLight.diffuse = Color3.Lerp(new Color3(0.52, 0.68, 0.82), new Color3(0.25, 0.35, 0.45), p);
+      }
+      this.scene.fogDensity = 0.0075 + p * 0.0085;
+      this.scene.fogColor = Color3.Lerp(new Color3(0.14, 0.22, 0.28), new Color3(0.08, 0.12, 0.16), p);
+    }
   }
 
   update(timeSeconds: number, wind: number): void {
     for (let index = 0; index < this.animatedTrees.length; index += 1) {
       const treeRoot = this.animatedTrees[index];
       if (!treeRoot) continue;
-      treeRoot.rotation.z = Math.sin(timeSeconds * 1.9 + index * 0.7) * 0.025 * wind;
-      treeRoot.rotation.x = Math.cos(timeSeconds * 1.4 + index) * 0.018 * wind;
+      const mult = this.treatment === 'showcase' ? 1.6 : 1.0;
+      treeRoot.rotation.z = Math.sin(timeSeconds * 1.9 + index * 0.7) * 0.025 * wind * mult;
+      treeRoot.rotation.x = Math.cos(timeSeconds * 1.4 + index) * 0.018 * wind * mult;
     }
   }
 
