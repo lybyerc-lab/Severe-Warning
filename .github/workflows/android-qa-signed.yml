@@ -1,5 +1,7 @@
 name: Build Signed Android QA APK
 
+# Every qa push produces a higher version code so installed QA builds can update in place.
+
 on:
   workflow_dispatch:
     inputs:
