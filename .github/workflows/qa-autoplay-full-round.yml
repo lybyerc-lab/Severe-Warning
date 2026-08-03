@@ -69,6 +69,7 @@ jobs:
           node --check scripts/apply-audio-mix-followup-patch.mjs
           node --check scripts/qa-play-full-round.mjs
           node --check scripts/apply-v500-campaign-patch.mjs
+          node --check scripts/apply-v500-realtime-clock-fix.mjs
           node --check scripts/verify-v500-campaign.mjs
           npm run patch:v431
           npm run patch:v440

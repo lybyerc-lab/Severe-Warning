@@ -37,6 +37,21 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Correction: pin Playwright in project development dependencies and use `pnpm exec` instead of injecting it with npm after a pnpm install
 - Verification: rerun pending
 
+### V5 Pages run #49 and automated full-round run #4
+
+- Exact commit: `8b193b594b6cb0f7087823340fc68dd40d08be39`
+- Pages workflow run: `30827683623`
+- Pages result: success
+- Full-round workflow run: `30827683132`
+- Workflow execution result: success
+- Report result: failed `roundCompleted` and `reachedDistrictThree`
+- Runtime evidence: 205 wall-clock seconds, approximately 47 game-clock seconds elapsed, final district 1, about `3 FPS`
+- Root cause: the warning countdown consumed the same `0.1 s`-capped delta used to protect simulation stability
+- Gate defect: the report process returned success when named checks failed unless the browser harness itself threw
+- Durable failed-run evidence: `Docs/QA_AUTOPLAY_REPORT.md`, `Docs/QA_AUTOPLAY_REPORT.json`, and `Docs/QA_AUTOPLAY_SCREENSHOT.png`
+- Correction: monotonic real-time warning clock plus strict failed-check exit status
+- Classification: infrastructure ran successfully, gameplay acceptance failed, correction pending rerun
+
 ## Accepted milestones
 
 ### v4.4.0

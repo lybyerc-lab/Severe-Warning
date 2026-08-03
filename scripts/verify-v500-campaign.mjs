@@ -29,6 +29,8 @@ for (const [name, marker] of [
   ['campaign next stop', 'function startNextCampaignLevel'],
   ['campaign presentation', 'function applyCampaignPresentation'],
   ['campaign score modifier', 'campaignScoreMultiplier()'],
+  ['real-time run clock', 'V500_REALTIME_RUN_CLOCK_V1'],
+  ['run clock stable anchor', '[SW:GAMEPLAY:RUN_CLOCK]'],
   ['persistent save', 'localStorage.setItem(CAMPAIGN_STORAGE_KEY'],
   ['persistent load', 'localStorage.getItem(CAMPAIGN_STORAGE_KEY'],
   ['locked-level guard', 'index > campaignProgress.unlockedLevel'],
@@ -44,6 +46,9 @@ check('three-star contracts', (html.match(/scoreTarget: \d+/g) || []).length ===
 check('distinct district contracts', (html.match(/districts: \[/g) || []).length === 4);
 check('campaign applies after world reset', html.includes('init3DWorld();\n  applyCampaignPresentation();'));
 check('campaign completion precedes results', html.includes('completeCampaignRun(grade, destructionScore, doneCount);'));
+check('countdown uses real-time clock', html.includes('runTimeRemaining - runClockDelta'));
+check('countdown pauses with gameplay', html.includes('if (runActive && !isPaused)'));
+check('countdown rejects simulation delta', !html.includes('runTimeRemaining - dt'));
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1])

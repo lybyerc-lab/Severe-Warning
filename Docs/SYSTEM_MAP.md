@@ -103,6 +103,7 @@ Purpose:
 
 Primary patch:
 - `scripts/apply-v500-campaign-patch.mjs`
+- `scripts/apply-v500-realtime-clock-fix.mjs`
 
 Verification:
 - `scripts/verify-v500-campaign.mjs`
@@ -113,6 +114,7 @@ Responsibilities:
 - persistent unlock, star, best-score, and run-count state
 - per-stop broadcast identity, district identity, spawn, palette, score target, and score modifier
 - next-stop results flow
+- monotonic real-time warning countdown independent of capped simulation delta
 
 ## Verification ladder
 

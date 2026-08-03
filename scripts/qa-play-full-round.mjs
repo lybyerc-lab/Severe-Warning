@@ -303,4 +303,11 @@ This automated browser round verifies control flow, progression, event routing, 
 `;
 await writeFile(path.join(outputDir, 'QA_AUTOPLAY_REPORT.md'), markdown);
 
-if (harnessError) process.exitCode = 1;
+const failedChecks = Object.entries(checks)
+  .filter(([, passed]) => !passed)
+  .map(([name]) => name);
+
+if (failedChecks.length > 0) {
+  console.error(`Full-round QA failed required checks: ${failedChecks.join(', ')}`);
+  process.exitCode = 1;
+}

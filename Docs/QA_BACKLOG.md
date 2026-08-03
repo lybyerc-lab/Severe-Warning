@@ -6,7 +6,7 @@ Last updated: 2026-08-03
 
 ### QA-004: Full-round workflow Playwright setup
 
-Status: correction prepared; rerun pending
+Status: Playwright setup corrected; run-clock and report-gate correction prepared; rerun pending
 
 Observed:
 - V5 full-round run #3 failed in `Install Playwright browser harness` before gameplay.
@@ -20,6 +20,22 @@ Correction:
 Acceptance:
 - dependency installation succeeds with `pnpm install --frozen-lockfile`
 - the complete normal-audio browser round executes and records its report
+
+Run #4 finding:
+- Playwright installation and browser launch succeeded.
+- The workflow was green, but the report failed `roundCompleted` and `reachedDistrictThree`.
+- Headless rendering averaged about `3 FPS`; the capped simulation delta advanced only about 47 seconds during 205 seconds of wall time.
+- The report writer exited successfully unless the harness threw, so failed required checks did not fail CI.
+
+Correction:
+- drive the warning countdown with monotonic real time while keeping the physics delta capped
+- do not charge warning time while paused, hidden, or recovering from a long OS suspension
+- fail the playtest process whenever any required named check fails
+
+Acceptance:
+- full-round workflow reaches district three and results in approximately three wall-clock minutes
+- every named required check passes
+- a failed required check produces a failed workflow
 
 ### V5-001: Heartland campaign progression
 

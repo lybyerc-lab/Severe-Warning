@@ -12,12 +12,14 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - Active integration branch: `agent/v500-heartland-campaign`
 - Source base: browser-QA-passed `qa` gameplay plus current `main` build infrastructure
 - V5 contract: `Docs/V5_BUILD_TRAIN.md`
-- V5 implementation: deterministic `scripts/apply-v500-campaign-patch.mjs`
+- V5 implementation: deterministic campaign and real-time clock patches
 - V5 verifier: `scripts/verify-v500-campaign.mjs`
 - Integration commit: `d6365d5a` (`Build V5 Heartland campaign foundation`)
-- Pages run #48: built, deterministic browser-QA passed, and deployed from exact commit `5fa7b1b`
-- Full-round run #3: failed in inherited Playwright installation before gameplay; package-manager correction pending rerun
-- Current status: V5 source committed and deployed to QA Pages; physical browser and Android acceptance pending
+- Pages run #49: built, deterministic browser-QA passed, and deployed from exact commit `8b193b5`
+- Full-round run #4: workflow execution was green, but its report correctly recorded `roundCompleted=FAIL` and `reachedDistrictThree=FAIL`; the workflow did not yet enforce failed report checks
+- Root cause: the three-minute countdown used the simulation delta capped at `0.1 s`; at headless `3 FPS`, 205 wall-clock seconds advanced only about 47 game seconds
+- Correction candidate: `scripts/apply-v500-realtime-clock-fix.mjs` separates the warning clock from capped simulation time, preserves pause/background behavior, and makes any failed required playtest check fail CI
+- Current status: V5 campaign source is deployed; the run-clock correction has passed `30/30` deterministic checks and requires a fresh full-round workflow before browser-QA acceptance
 - Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
 
 ## Start here
@@ -149,8 +151,8 @@ Workflow behavior:
 
 ## Immediate next action
 
-1. Commit and publish `agent/v500-heartland-campaign`.
-2. Run the Pages workflow against the V5 source and require both QA4 and V5 verifiers to pass.
+1. Publish the real-time warning-clock and strict full-round CI corrections.
+2. Require the automated round to finish all three districts with every named check passing.
 3. Play the four-stop weather-map progression in the browser lane.
 4. Correct any campaign UI, persistence, or inherited gameplay regression.
 5. Build the V5 Android candidate from the exact accepted source ref.

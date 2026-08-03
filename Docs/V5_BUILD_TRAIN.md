@@ -19,10 +19,13 @@ Required:
 - next-stop flow from results
 - corrupt-save fallback
 - deterministic build patch and named verification
+- a three-minute warning clock based on monotonic elapsed time rather than frame count
 
 Exit criteria:
 
 - campaign verifier passes
+- low-render-rate automation still completes the warning run in approximately three wall-clock minutes
+- failed required full-round checks fail the workflow
 - existing QA4 verifier still passes
 - all browser and Android workflows package v5.0.0 identity
 
