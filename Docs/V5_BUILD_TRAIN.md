@@ -28,6 +28,7 @@ Exit criteria:
 - failed required full-round checks fail the workflow
 - existing QA4 verifier still passes
 - all browser and Android workflows package v5.0.0 identity
+- relevant V5 pull-request updates automatically produce a debug APK from the exact head commit
 
 ## Phase 2: Playable Heartland tour
 

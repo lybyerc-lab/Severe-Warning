@@ -8,6 +8,18 @@ on:
         required: true
         default: qa
         type: string
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/android-debug.yml'
+      - 'MechanicsLab/**'
+      - 'android/**'
+      - 'assets/**'
+      - 'scripts/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
@@ -26,7 +38,7 @@ jobs:
       - name: Check out requested source
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.source_ref }}
+          ref: ${{ inputs.source_ref || github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
@@ -103,6 +115,7 @@ jobs:
         id: package
         shell: bash
         run: |
+          source_commit="$(git rev-parse HEAD)"
           source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
           output_dir="dist/android-debug"
           output_apk="$output_dir/Severe-Weather-v5.0.0-Mobile-Test-${GITHUB_RUN_NUMBER}.apk"
@@ -113,8 +126,8 @@ jobs:
 
           cat > "$output_dir/package-manifest.json" <<EOF
           {
-            "sourceRef": "${{ inputs.source_ref }}",
-            "sourceCommit": "$GITHUB_SHA",
+            "sourceRef": "${{ inputs.source_ref || github.head_ref || github.ref_name }}",
+            "sourceCommit": "$source_commit",
             "workflowRun": $GITHUB_RUN_NUMBER,
             "applicationId": "com.lybyerclab.severeweather",
             "versionCode": 500,

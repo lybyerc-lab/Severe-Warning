@@ -22,6 +22,7 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - Pages run #50: passed and deployed exact commit `c445324`
 - Strict full-round run #5: passed all `11/11` required checks in 185 seconds; reached district 3, finished at time 0, and recorded no page errors, console errors, or harness exception
 - Current status: V5 campaign foundation and inherited three-district run are automated-browser-QA passed; four-stop campaign play and physical Android acceptance remain pending
+- Android debug delivery: relevant pull-request updates now automatically package the exact PR head; manual workflow dispatch remains available for arbitrary refs
 - Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
 
 ## Start here
