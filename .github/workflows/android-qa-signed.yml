@@ -181,7 +181,7 @@ jobs:
           [[ "$actual_version_name" == "$SEVERE_WEATHER_VERSION_NAME" ]]
 
           sha256sum "$output_apk" | tee "$output_apk.sha256"
-          cert_sha256="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$output_dir/apksigner-report.txt" | head -n 1)"
+          cert_sha256="$(awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' "$output_dir/apksigner-report.txt")"
           test -n "$cert_sha256"
 
           cat > "$output_dir/package-manifest.json" <<EOF
