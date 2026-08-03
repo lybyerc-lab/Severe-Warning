@@ -15,12 +15,14 @@
     "test:replay": "vitest run src/tests/replay.test.ts",
     "audit:baseline": "node ../../scripts/audit-visual-engine-readiness.mjs",
     "verify:static": "node scripts/verify-static.mjs",
+    "test:browser": "node scripts/run-visual-lab-browser-qa.mjs",
     "verify": "npm run verify:static && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@babylonjs/core": "9.19.0"
   },
   "devDependencies": {
+    "npm": "^12.0.2",
     "typescript": "7.0.2",
     "vite": "8.2.0",
     "vitest": "4.1.10"
