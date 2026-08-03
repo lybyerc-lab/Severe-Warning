@@ -2,6 +2,20 @@
 
 This ledger records meaningful build and QA outcomes. CI success and physical acceptance are separate states.
 
+## v5.0.0 Heartland Campaign Foundation
+
+### Initial campaign integration
+
+- Branch: `agent/v500-heartland-campaign`
+- Main/QA infrastructure merge: `2cc16f6`
+- Campaign implementation commit: `d6365d5`
+- Scope: four-stop Heartland weather map, ordered unlocks, stars, persistent campaign progress, per-stop presentation and scoring rules, next-stop results flow, V5 workflow identity
+- Deterministic patch chain: passed locally from base source through v5.0.0
+- V5 structural verifier: `25/25` passed
+- Browser QA: pending
+- Android physical result: pending
+- Classification: committed, not yet browser-QA passed, not physically accepted, not merged
+
 ## Accepted milestones
 
 ### v4.4.0

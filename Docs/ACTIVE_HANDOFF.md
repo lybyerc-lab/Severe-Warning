@@ -14,7 +14,8 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - V5 contract: `Docs/V5_BUILD_TRAIN.md`
 - V5 implementation: deterministic `scripts/apply-v500-campaign-patch.mjs`
 - V5 verifier: `scripts/verify-v500-campaign.mjs`
-- Current status: implemented locally; structural verification passed; browser and physical acceptance pending
+- Integration commit: `d6365d5a` (`Build V5 Heartland campaign foundation`)
+- Current status: committed; structural verification passed; browser and physical acceptance pending
 - Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
 
 ## Start here
