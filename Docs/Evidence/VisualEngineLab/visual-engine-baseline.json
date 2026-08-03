@@ -1,8 +1,8 @@
 {
   "schemaVersion": "visual-engine-baseline.v1",
-  "generatedAt": "2026-08-03T20:47:50.085Z",
-  "sourceCommit": "d366cc9a1d6ec97192e5245a41bd193a21a769bc",
-  "sourceBranch": "agent/v500-heartland-campaign",
+  "generatedAt": "2026-08-03T21:18:01.727Z",
+  "sourceCommit": "ef25675283182ee368c6b0dc9332b0245c521fed",
+  "sourceBranch": "agent/visual-engine-lab-foundation",
   "sourceFile": "MechanicsLab/SevereWeather_3D_Lab.html",
   "sourceBytes": 775543,
   "sourceLines": 3977,
