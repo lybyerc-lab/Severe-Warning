@@ -1,0 +1,379 @@
+{
+  "schemaVersion": "visual-engine-baseline.v1",
+  "generatedAt": "2026-08-03T20:47:50.085Z",
+  "sourceCommit": "d366cc9a1d6ec97192e5245a41bd193a21a769bc",
+  "sourceBranch": "agent/v500-heartland-campaign",
+  "sourceFile": "MechanicsLab/SevereWeather_3D_Lab.html",
+  "sourceBytes": 775543,
+  "sourceLines": 3977,
+  "inlineScripts": 2,
+  "inlineScriptBytes": [
+    603475,
+    145830
+  ],
+  "threeJs": {
+    "revision": "128",
+    "delivery": "embedded minified UMD distribution",
+    "rendererConstructors": [
+      "WebGLRenderer"
+    ],
+    "sceneConstructors": [
+      "Scene"
+    ],
+    "cameraConstructors": [
+      "PerspectiveCamera"
+    ],
+    "lightConstructors": [
+      "AmbientLight",
+      "DirectionalLight",
+      "HemisphereLight"
+    ],
+    "materialFamilies": [
+      "LineBasicMaterial",
+      "MeshBasicMaterial",
+      "MeshStandardMaterial",
+      "PointsMaterial",
+      "SpriteMaterial"
+    ],
+    "geometryFamilies": [
+      "BoxGeometry",
+      "BufferGeometry",
+      "ConeGeometry",
+      "CylinderGeometry",
+      "DodecahedronGeometry",
+      "ExtrudeGeometry",
+      "OctahedronGeometry",
+      "PlaneGeometry",
+      "RingGeometry",
+      "SphereGeometry",
+      "TorusGeometry"
+    ]
+  },
+  "counts": {
+    "meshes": 48,
+    "groups": 21,
+    "instancedMeshes": 2,
+    "pointsSystems": 2,
+    "requestAnimationFrameMarkers": 4,
+    "disposeCalls": 38,
+    "addEventListeners": 35,
+    "removeEventListeners": 15
+  },
+  "detectedSystems": [
+    {
+      "name": "animation-loop",
+      "confidence": 1,
+      "detected": 3,
+      "expected": 3,
+      "markers": [
+        {
+          "marker": "function animate(now)",
+          "detected": true
+        },
+        {
+          "marker": "requestAnimationFrame(animate)",
+          "detected": true
+        },
+        {
+          "marker": "renderer.render(scene, camera)",
+          "detected": true
+        }
+      ]
+    },
+    {
+      "name": "world-generation",
+      "confidence": 1,
+      "detected": 4,
+      "expected": 4,
+      "markers": [
+        {
+          "marker": "function init3DWorld()",
+          "detected": true
+        },
+        {
+          "marker": "function buildLivingCounty()",
+          "detected": true
+        },
+        {
+          "marker": "function terrainHeightAt(",
+          "detected": true
+        },
+        {
+          "marker": "createTerrainRoad(",
+          "detected": true
+        }
+      ]
+    },
+    {
+      "name": "tornado-system",
+      "confidence": 1,
+      "detected": 4,
+      "expected": 4,
+      "markers": [
+        {
+          "marker": "const tornadoGroup",
+          "detected": true
+        },
+        {
+          "marker": "const funnelMesh",
+          "detected": true
+        },
+        {
+          "marker": "const outerFunnelMesh",
+          "detected": true
+        },
+        {
+          "marker": "const dustBowlGroup",
+          "detected": true
+        }
+      ]
+    },
+    {
+      "name": "animal-system",
+      "confidence": 0.67,
+      "detected": 2,
+      "expected": 3,
+      "markers": [
+        {
+          "marker": "animal",
+          "detected": true
+        },
+        {
+          "marker": "cow",
+          "detected": true
+        },
+        {
+          "marker": "[SW:LAW:SAFE-ANIMALS]",
+          "detected": false
+        }
+      ]
+    },
+    {
+      "name": "destruction",
+      "confidence": 1,
+      "detected": 4,
+      "expected": 4,
+      "markers": [
+        {
+          "marker": "function damageTarget(",
+          "detected": true
+        },
+        {
+          "marker": "function destroyTarget(",
+          "detected": true
+        },
+        {
+          "marker": "function explodeStructure(",
+          "detected": true
+        },
+        {
+          "marker": "spawnPersistentRuin(",
+          "detected": true
+        }
+      ]
+    },
+    {
+      "name": "cleanup",
+      "confidence": 1,
+      "detected": 3,
+      "expected": 3,
+      "markers": [
+        {
+          "marker": "function resetWarningRun()",
+          "detected": true
+        },
+        {
+          "marker": ".dispose()",
+          "detected": true
+        },
+        {
+          "marker": "visibilitychange",
+          "detected": true
+        }
+      ]
+    },
+    {
+      "name": "intro",
+      "confidence": 0,
+      "detected": 0,
+      "expected": 4,
+      "markers": [
+        {
+          "marker": "newspaper",
+          "detected": false
+        },
+        {
+          "marker": "Moo Brew",
+          "detected": false
+        },
+        {
+          "marker": "cup drop",
+          "detected": false
+        },
+        {
+          "marker": "camera rises",
+          "detected": false
+        }
+      ]
+    }
+  ],
+  "particleRelatedSystems": [
+    "dustBowlGroup",
+    "particleSystem"
+  ],
+  "animationLoopMarkers": [
+    "function animate(now)",
+    "renderer.render(scene, camera)",
+    "requestAnimationFrame(animate)"
+  ],
+  "worldGenerationMarkers": [
+    "terrainHeightAt",
+    "createTerrainRoad",
+    "buildLivingCounty",
+    "init3DWorld"
+  ],
+  "tornadoSystemMarkers": [
+    "tornadoGroup",
+    "funnelMesh",
+    "outerFunnelMesh",
+    "dustBowlGroup",
+    "particleSystem"
+  ],
+  "animalSystemMarkers": [
+    "animals",
+    "cow"
+  ],
+  "destructionMarkers": [
+    "damageTarget",
+    "destroyTarget",
+    "explodeStructure",
+    "spawnPersistentRuin"
+  ],
+  "cleanupMarkers": [
+    "resetWarningRun",
+    "visibilitychange",
+    ".dispose()"
+  ],
+  "introMarkers": [
+    {
+      "marker": "newspaper",
+      "occurrences": 0
+    },
+    {
+      "marker": "Moo Brew",
+      "occurrences": 0
+    },
+    {
+      "marker": "coffee",
+      "occurrences": 3
+    },
+    {
+      "marker": "cup",
+      "occurrences": 0
+    },
+    {
+      "marker": "barn",
+      "occurrences": 1
+    },
+    {
+      "marker": "touchdown",
+      "occurrences": 8
+    }
+  ],
+  "stableAnchors": [
+    {
+      "anchor": "[SW:AUDIO:ENGINE]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:AUDIO:MUSIC]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:AUDIO:AMBIENCE]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:GAMEPLAY:STORM_CONTROL]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:GAMEPLAY:ABILITIES]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:GAMEPLAY:DISTRICT_PROGRESSION]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:GAMEPLAY:RUN_CLOCK]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:UI:RAMPAGE_FEEDBACK]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:UI:RESULTS]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:WORLD:TREE_RESPONSE]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:WORLD:DESTRUCTION]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:WORLD:MEDIA]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:WORLD:ANIMALS]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:WORLD:BOVINE_SIGNATURE]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:WORLD:POWER_GRID]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:RUNTIME:LIFECYCLE]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:RUNTIME:CLEANUP]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:LAW:PLAYER-IS-STORM]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:LAW:MEDIA-NOT-COMBAT]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:LAW:SAFE-ANIMALS]",
+      "detected": false
+    },
+    {
+      "anchor": "[SW:LAW:OFFLINE-RUNTIME]",
+      "detected": false
+    }
+  ],
+  "limitations": [
+    "The checked-in HTML is an immutable baseline; active V5 behavior is reconstructed by ordered patch scripts during builds.",
+    "Regex-based detection proves markers and constructors, not runtime reachability or visual quality.",
+    "Historical branches, generated build outputs, and physical-device behavior require separate audits."
+  ],
+  "warnings": [
+    "intro confidence is below 0.50",
+    "No runtime renderer.info performance instrumentation detected in the checked-in source.",
+    "No explicit WebGL renderer disposal detected in the checked-in source."
+  ]
+}
