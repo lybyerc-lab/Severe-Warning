@@ -96,7 +96,23 @@ Purpose:
 - `agent/v450-storm-feel-overhaul`: active gameplay milestone
 - PR `#10`: draft v4.5.0 integration
 - `qa`: browser QA delivery branch
+- `agent/v500-heartland-campaign`: active V5 integration branch based on tested QA gameplay plus current main infrastructure
 - `agent/project-memory-foundation`: repository-memory documentation
+
+### V5 campaign layer
+
+Primary patch:
+- `scripts/apply-v500-campaign-patch.mjs`
+
+Verification:
+- `scripts/verify-v500-campaign.mjs`
+
+Responsibilities:
+- Heartland stop definitions
+- weather-map selection and locked-state presentation
+- persistent unlock, star, best-score, and run-count state
+- per-stop broadcast identity, district identity, spawn, palette, score target, and score modifier
+- next-stop results flow
 
 ## Verification ladder
 

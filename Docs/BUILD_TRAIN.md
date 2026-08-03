@@ -1,8 +1,12 @@
 # Severe Weather Build Train
 
-Last updated: 2026-08-01
-Current milestone: `v4.5.0 Storm Feel Overhaul`
+Last updated: 2026-08-03
+Current milestone: `v5.0.0 Heartland Campaign Foundation`
 Authority: repository memory
+
+## Active V5 fast track
+
+The user explicitly approved advancing directly to V5 on 2026-08-03. The active requirements are defined in `Docs/V5_BUILD_TRAIN.md`. The v4.5 stages below remain historical verification context and protected-regression coverage; they are no longer the active roadmap gate.
 
 ## Purpose
 

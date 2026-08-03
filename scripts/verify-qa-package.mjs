@@ -46,6 +46,14 @@ try {
 }
 
 const requiredMarkers = [
+  ['v5 campaign identity', 'v5.0.0'],
+  ['v5 campaign foundation', 'V500_CAMPAIGN_FOUNDATION_V1'],
+  ['Heartland campaign anchor', '[SW:CAMPAIGN:HEARTLAND]'],
+  ['Heartland level contracts', 'HEARTLAND_CAMPAIGN'],
+  ['persistent campaign save', 'severe_weather_campaign_v1'],
+  ['campaign weather map', 'campaignMapGrid'],
+  ['campaign unlock guard', 'index > campaignProgress.unlockedLevel'],
+  ['campaign completion', 'function completeCampaignRun'],
   ['QA build stamp', 'QA_BUILD_STAMP'],
   ['rampage feedback layer', 'rampageFeedbackLayer'],
   ['dynamic music low', 'music_drive_low'],
@@ -111,6 +119,7 @@ for (const [name, marker] of requiredMarkers) {
 }
 
 const forbiddenMarkers = [
+  ['stale v4.5 identity', 'v4.5.0'],
   ['direct unisolated QA click binding', "getCachedEl('visualLabRun')?.addEventListener('click', runQa4DeterministicTest)"],
   ['2999 score hard cap', 'Math.min(2999, targetScore)'],
   ['3999 score hard cap', 'Math.min(3999, targetScore)'],

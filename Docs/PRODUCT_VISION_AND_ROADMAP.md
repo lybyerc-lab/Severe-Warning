@@ -1,7 +1,7 @@
 # Severe Weather Product Vision and Roadmap
 
 Last updated: 2026-07-31
-Status: Approved product direction
+Status: Approved product direction; v5.0.0 foundation active
 Repository: `lybyerc-lab/Severe-Warning`
 Primary platform: Android landscape
 Active gameplay source: `MechanicsLab/SevereWeather_3D_Lab.html`

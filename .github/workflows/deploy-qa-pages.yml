@@ -58,6 +58,8 @@ jobs:
           node --check scripts/apply-pause-overlay-hard-hide.mjs
           node --check scripts/apply-qa4-popup-assertion-fix.mjs
           node --check scripts/apply-qa4-rampage-popup-fix.mjs
+          node --check scripts/apply-v500-campaign-patch.mjs
+          node --check scripts/verify-v500-campaign.mjs
           node --check scripts/verify-qa-package.mjs
           node --check scripts/run-qa4-headless.mjs
 
@@ -88,6 +90,10 @@ jobs:
           npm run patch:v441
           npm run patch:v442
           npm run patch:v450
+          npm run patch:v500
+
+      - name: Verify v5 campaign foundation
+        run: npm run verify:v500
 
       - name: Build web game without regenerating audio
         run: node scripts/build-web.mjs

@@ -84,3 +84,14 @@ Decision:
 - Use searchable subsystem and design-law anchors defined in `Docs/CODE_ANCHORS.md`.
 - Do not use labels such as “latest fix,” “new code,” or version-number-only comments.
 - Anchors describe responsibility and invariants, not implementation history.
+
+## D-009: V5 fast-track campaign foundation
+
+Date: 2026-08-03
+Status: explicitly approved by user
+
+Decision:
+- Advance directly to `v5.0.0 Heartland Campaign Foundation` using the browser-tested `qa` gameplay as the base.
+- Preserve accepted and QA-proven storm gameplay while adding campaign structure around it.
+- Do not relabel the single-run game; V5 must include real selection, unlock, progression, results, and persistence systems.
+- Carry the unresolved signed update-in-place check forward as packaging work rather than blocking campaign implementation.

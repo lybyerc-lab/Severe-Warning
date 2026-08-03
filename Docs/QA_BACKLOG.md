@@ -1,6 +1,40 @@
 # QA Backlog
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
+
+## V5 campaign foundation
+
+### V5-001: Heartland campaign progression
+
+Status: implemented on `agent/v500-heartland-campaign`; browser QA pending
+
+Acceptance:
+- four Heartland stops are visible on the weather map
+- only Lincoln County is initially unlocked
+- clearing a stop unlocks the next stop
+- stars and best scores update without erasing storm high scores or cosmetics
+- Next Stop begins the newly unlocked county without reloading the app
+
+### V5-002: Durable campaign save
+
+Status: implemented; physical Android lifecycle verification pending
+
+Acceptance:
+- unlocked stop, selected stop, stars, best score, and run count survive Android close and reopen
+- corrupt or missing save data safely falls back to Lincoln County
+- the schema remains `severe_weather_campaign_v1`
+
+### V5-003: Heartland stop identity
+
+Status: first foundation implemented; visual/content depth remains open
+
+Implemented:
+- distinct station, brief, district names, color treatment, spawn point, target score, and score modifier for each stop
+
+Still required before calling V5 physically accepted:
+- confirm all four stops feel meaningfully different on the Galaxy S26 Ultra
+- add more stop-specific landmarks or layouts if palette, spawn, and rules are not enough
+- preserve mobile frame pacing while increasing authored distinction
 
 ## Blockers
 

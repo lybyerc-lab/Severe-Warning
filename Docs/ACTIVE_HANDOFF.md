@@ -1,9 +1,21 @@
 # Active Handoff
 
-Last updated: 2026-08-02 17:39 America/Chicago
+Last updated: 2026-08-03 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
-Current milestone: `v4.5.0 Storm Feel Overhaul`
-Current build-train gate: Stage 5 Android QA Packaging
+Current milestone: `v5.0.0 Heartland Campaign Foundation`
+Current build-train gate: V5 Phase 1 campaign integration and browser QA
+
+## V5 fast-track override
+
+On 2026-08-03, the user explicitly approved advancing directly to V5 instead of waiting for the remaining v4.5.0 signing ceremony. This satisfies the build-train requirement for explicit approval before widening or skipping a stage.
+
+- Active integration branch: `agent/v500-heartland-campaign`
+- Source base: browser-QA-passed `qa` gameplay plus current `main` build infrastructure
+- V5 contract: `Docs/V5_BUILD_TRAIN.md`
+- V5 implementation: deterministic `scripts/apply-v500-campaign-patch.mjs`
+- V5 verifier: `scripts/verify-v500-campaign.mjs`
+- Current status: implemented locally; structural verification passed; browser and physical acceptance pending
+- Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
 
 ## Start here
 
@@ -20,6 +32,7 @@ Required startup sequence:
 
 ## Active branches and pull request
 
+- V5 integration branch: `agent/v500-heartland-campaign`
 - Gameplay branch: `agent/v450-storm-feel-overhaul`
 - Draft gameplay PR: `#10`
 - Browser QA branch: `qa`
@@ -29,7 +42,7 @@ Required startup sequence:
 
 Stage 4 passed on the Galaxy S26 Ultra through GitHub Pages in Chrome.
 
-- Visible build badge: `QA Stage 4 · QA #46 · 803f6fa`
+- Visible build badge: `QA Stage 4 Â· QA #46 Â· 803f6fa`
 - Exact commit: `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
 - Report version: `QA4_DETERMINISTIC_V1`
 - Passed: `true`
@@ -122,7 +135,7 @@ Workflow behavior:
 - uploads the signed package for 30 days
 - deletes restored signing material even after failure
 
-## Current Stage 5 status
+## Inherited v4.5 Stage 5 status
 
 - Packaging source changes committed: yes
 - Manual workflow available on `main`: yes
@@ -133,28 +146,14 @@ Workflow behavior:
 
 ## Immediate next action
 
-A human with repository access must perform the one-time key ceremony from a trusted computer:
+1. Commit and publish `agent/v500-heartland-campaign`.
+2. Run the Pages workflow against the V5 source and require both QA4 and V5 verifiers to pass.
+3. Play the four-stop weather-map progression in the browser lane.
+4. Correct any campaign UI, persistence, or inherited gameplay regression.
+5. Build the V5 Android candidate from the exact accepted source ref.
+6. Verify campaign persistence across Android close and reopen.
 
-```bash
-bash scripts/setup-qa-signing.sh lybyerc-lab/Severe-Warning
-```
-
-Requirements:
-
-- Java `keytool`
-- GitHub CLI `gh`
-- authenticated `gh auth status`
-- secure storage for the generated JKS and both passwords
-
-After secrets exist:
-
-1. Run `Build Signed Android QA APK` from GitHub Actions with `source_ref=qa`.
-2. Inspect the artifact manifest, signer digest, version code, and SHA-256.
-3. Install that first dedicated QA APK on the Galaxy S26 Ultra.
-4. Run the workflow again to create a higher version code.
-5. Install the second APK over the first without uninstalling.
-6. Record update-in-place evidence in `Docs/BUILD_LEDGER.md`.
-7. Advance to Stage 6 physical gameplay acceptance.
+The signing ceremony remains inherited packaging work, but it no longer blocks V5 source development.
 
 ## Security rule
 
@@ -164,7 +163,7 @@ After secrets exist:
 - Use this QA-only key, not a production distribution key.
 - Back up the JKS and credentials in an encrypted vault. Losing the key permanently breaks update continuity for this QA application ID.
 
-## Stage 6 after packaging
+## Inherited v4.5 physical checklist
 
 After Stage 5 succeeds, perform one meaningful Galaxy S26 Ultra APK acceptance run covering:
 
@@ -179,7 +178,7 @@ After Stage 5 succeeds, perform one meaningful Galaxy S26 Ultra APK acceptance r
 - retry and cleanup
 - fullscreen, controls, frame pacing, heat, and battery
 
-Only explicit approval of the exact APK completes v4.5.0 and permits PR #10 to be marked ready for merge.
+These checks remain regression coverage for V5. They do not prevent the V5 branch from advancing through browser QA.
 
 ## Protected behavior
 
@@ -198,4 +197,4 @@ Do not regress:
 
 ## New-chat prompt
 
-> Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md` and every file it lists. Then inspect PR #10, branch `qa`, `Docs/ACTIVE_HANDOFF.md`, and `.github/workflows/android-qa-signed.yml` on `main`. Stage 4 passed on `QA #46 · 803f6fa`. Stage 5 packaging code is committed. Confirm whether the four QA signing secrets exist, then run the signed workflow with `source_ref=qa`. Do not reopen QA4 or alter accepted gameplay while completing signing and update-in-place verification.
+> Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md` and every file it lists, including `Docs/V5_BUILD_TRAIN.md`. Inspect `agent/v500-heartland-campaign`, branch `qa`, and the latest workflows. Continue V5 browser QA without weakening inherited storm gameplay. Do not describe V5 as physically accepted until the exact APK passes on the Galaxy S26 Ultra.

@@ -39,8 +39,8 @@ jobs:
         shell: bash
         run: |
           source_commit="$(git rev-parse HEAD)"
-          version_code="$((450000 + GITHUB_RUN_NUMBER))"
-          version_name="4.5.0-qa.${GITHUB_RUN_NUMBER}"
+          version_code="$((500000 + GITHUB_RUN_NUMBER))"
+          version_name="5.0.0-qa.${GITHUB_RUN_NUMBER}"
           echo "SEVERE_WEATHER_SOURCE_COMMIT=$source_commit" >> "$GITHUB_ENV"
           echo "SEVERE_WEATHER_VERSION_CODE=$version_code" >> "$GITHUB_ENV"
           echo "SEVERE_WEATHER_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
@@ -105,6 +105,7 @@ jobs:
           npm run patch:v441
           npm run patch:v442
           npm run patch:v450
+          npm run patch:v500
 
       - name: Build, stamp, and synchronize offline Android assets
         shell: bash
@@ -112,6 +113,7 @@ jobs:
           node scripts/build-web.mjs
           GITHUB_SHA="$SEVERE_WEATHER_SOURCE_COMMIT" node scripts/stamp-qa-pages.mjs
           node scripts/verify-qa-package.mjs
+          node scripts/verify-v500-campaign.mjs
           node node_modules/@capacitor/cli/bin/capacitor sync android
           cmp -s www/index.html android/app/src/main/assets/public/index.html
           cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
@@ -144,7 +146,7 @@ jobs:
         run: |
           source_apk="android/app/build/outputs/apk/release/app-release.apk"
           output_dir="dist/android-qa"
-          output_apk="$output_dir/Severe-Weather-v4.5.0-QA-${GITHUB_RUN_NUMBER}.apk"
+          output_apk="$output_dir/Severe-Weather-v5.0.0-QA-${GITHUB_RUN_NUMBER}.apk"
           metadata="android/app/build/outputs/apk/release/output-metadata.json"
 
           test -s "$source_apk"
@@ -183,7 +185,7 @@ jobs:
           EOF
 
           echo "apk_path=$output_apk" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=severe-weather-v4.5.0-qa-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=severe-weather-v5.0.0-qa-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
       - name: Upload signed QA package
         uses: actions/upload-artifact@v7
