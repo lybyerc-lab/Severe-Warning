@@ -6,7 +6,7 @@ Last updated: 2026-08-03
 
 ### QA-004: Full-round workflow Playwright setup
 
-Status: Playwright setup corrected; run-clock and report-gate correction prepared; rerun pending
+Status: closed by strict full-round run #5
 
 Observed:
 - V5 full-round run #3 failed in `Install Playwright browser harness` before gameplay.
@@ -37,9 +37,17 @@ Acceptance:
 - every named required check passes
 - a failed required check produces a failed workflow
 
+Accepted evidence:
+- exact tested commit: `c445324951311efdd0bc1da80f28b53c47d49e81`
+- workflow run: `30828701004` / run #5
+- runtime: 185 seconds
+- district three reached and results completed at time 0
+- all `11/11` checks passed
+- page errors: 0; console errors: 0; harness exception: none
+
 ### V5-001: Heartland campaign progression
 
-Status: implemented on `agent/v500-heartland-campaign`; browser QA pending
+Status: implemented on `agent/v500-heartland-campaign`; structural and inherited full-round browser QA passed, four-stop tour play pending
 
 Acceptance:
 - four Heartland stops are visible on the weather map

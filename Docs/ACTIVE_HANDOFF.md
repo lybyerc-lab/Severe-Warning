@@ -18,8 +18,10 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - Pages run #49: built, deterministic browser-QA passed, and deployed from exact commit `8b193b5`
 - Full-round run #4: workflow execution was green, but its report correctly recorded `roundCompleted=FAIL` and `reachedDistrictThree=FAIL`; the workflow did not yet enforce failed report checks
 - Root cause: the three-minute countdown used the simulation delta capped at `0.1 s`; at headless `3 FPS`, 205 wall-clock seconds advanced only about 47 game seconds
-- Correction candidate: `scripts/apply-v500-realtime-clock-fix.mjs` separates the warning clock from capped simulation time, preserves pause/background behavior, and makes any failed required playtest check fail CI
-- Current status: V5 campaign source is deployed; the run-clock correction has passed `30/30` deterministic checks and requires a fresh full-round workflow before browser-QA acceptance
+- Correction: `scripts/apply-v500-realtime-clock-fix.mjs` separates the warning clock from capped simulation time, preserves pause/background behavior, and makes any failed required playtest check fail CI
+- Pages run #50: passed and deployed exact commit `c445324`
+- Strict full-round run #5: passed all `11/11` required checks in 185 seconds; reached district 3, finished at time 0, and recorded no page errors, console errors, or harness exception
+- Current status: V5 campaign foundation and inherited three-district run are automated-browser-QA passed; four-stop campaign play and physical Android acceptance remain pending
 - Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
 
 ## Start here
@@ -151,12 +153,10 @@ Workflow behavior:
 
 ## Immediate next action
 
-1. Publish the real-time warning-clock and strict full-round CI corrections.
-2. Require the automated round to finish all three districts with every named check passing.
-3. Play the four-stop weather-map progression in the browser lane.
-4. Correct any campaign UI, persistence, or inherited gameplay regression.
-5. Build the V5 Android candidate from the exact accepted source ref.
-6. Verify campaign persistence across Android close and reopen.
+1. Play the four-stop weather-map progression in the browser lane.
+2. Correct any campaign UI, persistence, or inherited gameplay regression.
+3. Build the V5 Android candidate from the exact accepted source ref.
+4. Verify campaign persistence across Android close and reopen.
 
 The signing ceremony remains inherited packaging work, but it no longer blocks V5 source development.
 

@@ -52,6 +52,26 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Correction: monotonic real-time warning clock plus strict failed-check exit status
 - Classification: infrastructure ran successfully, gameplay acceptance failed, correction pending rerun
 
+### V5 Pages run #50 and strict automated full-round run #5
+
+- Exact commit: `c445324951311efdd0bc1da80f28b53c47d49e81`
+- Pages workflow run: `30828700285` / run #50
+- Pages result: success and deployed
+- V5 structural verifier: `30/30` passed
+- Full-round workflow run: `30828701004` / run #5
+- Full-round result: success with strict failed-check exit status active
+- Runtime: 185 seconds
+- Required checks: `11/11` passed
+- Final district: 3
+- Final time: 0
+- Final destruction score: `24170`
+- Maximum combo: `3.5x`
+- Page errors: 0
+- Console errors: 0
+- Harness exception: none
+- Durable evidence: `Docs/QA_AUTOPLAY_REPORT.md`, `Docs/QA_AUTOPLAY_REPORT.json`, and `Docs/QA_AUTOPLAY_SCREENSHOT.png`
+- Classification: built, deployed, and automated-browser-QA passed; four-stop campaign play and physical Android acceptance pending
+
 ## Accepted milestones
 
 ### v4.4.0
