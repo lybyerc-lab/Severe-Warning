@@ -59,6 +59,7 @@ jobs:
           node --check scripts/apply-qa4-popup-assertion-fix.mjs
           node --check scripts/apply-qa4-rampage-popup-fix.mjs
           node --check scripts/apply-v500-campaign-patch.mjs
+          node --check scripts/apply-v500-cow-signature-patch.mjs
           node --check scripts/verify-v500-campaign.mjs
           node --check scripts/verify-qa-package.mjs
           node --check scripts/run-qa4-headless.mjs

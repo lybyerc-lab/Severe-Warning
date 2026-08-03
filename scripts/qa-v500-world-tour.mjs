@@ -63,7 +63,10 @@ try {
       document.getElementById('mainMenu')?.classList.add('hidden');
       document.getElementById('resultsOverlay')?.classList.remove('active');
       isPaused = true;
-      return window.getCampaignWorldQaState();
+      return {
+        ...window.getCampaignWorldQaState(),
+        bovine: typeof window.getBovineQaState === 'function' ? window.getBovineQaState() : null
+      };
     }, index);
     states.push(state);
     await page.waitForTimeout(350);
@@ -98,6 +101,10 @@ const checks = {
   uniqueRegionalChallenges: challengeSet.size === 4,
   uniqueBroadcastIdentity: broadcastSet.size === 4,
   intentionalAnimalDensity: JSON.stringify(animalCounts) === JSON.stringify([38, 24, 18, 8]),
+  cow17PresentAtEveryStop: states.every(state => state.bovine?.cow17?.id === 17),
+  cow17EarTagPersists: states.every(state => state.bovine?.cow17?.tagged === true),
+  fourHayBaleLandingZones: states.every(state => state.bovine?.hayBales === 4),
+  animalsRemainUnharmed: states.every(state => state.bovine?.invariant === 'Cow injuries: 0'),
   noPageErrors: pageErrors.length === 0,
   noConsoleErrors: consoleErrors.length === 0,
   harnessCompletedWithoutException: harnessError === null
@@ -137,9 +144,9 @@ ${Object.entries(checks).map(([name, value]) => `| ${name} | ${status(value)} |`
 
 ## Stop contracts
 
-| Stop | Profile | Scenery | Landmarks | Animals | Terrain samples |
-|---|---:|---:|---|---:|---|
-${states.map(state => `| ${state.levelId} | ${state.profile} | ${state.sceneryCount} | ${(state.landmarks || []).join(', ')} | ${state.animals} | ${(state.terrainSamples || []).join(' / ')} |`).join('\n')}
+| Stop | Profile | Scenery | Landmarks | Animals | Cow 17 | Terrain samples |
+|---|---:|---:|---|---:|---|---|
+${states.map(state => `| ${state.levelId} | ${state.profile} | ${state.sceneryCount} | ${(state.landmarks || []).join(', ')} | ${state.animals} | ${state.bovine?.cow17?.tagged ? 'tagged' : 'missing'} | ${(state.terrainSamples || []).join(' / ')} |`).join('\n')}
 
 ## Errors
 

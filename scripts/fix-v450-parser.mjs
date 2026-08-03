@@ -1,5 +1,4 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,11 +22,7 @@ if (unsafeCount === 1) {
   throw new Error(`Expected one unsafe or one repaired material-audio expression; found unsafe=${unsafeCount}, repaired=${safeCount}.`);
 }
 
-const check = spawnSync(process.execPath, ['--check', targetPath], { encoding: 'utf8' });
-if (check.status !== 0) {
-  if (check.stdout) process.stdout.write(check.stdout);
-  if (check.stderr) process.stderr.write(check.stderr);
-  throw new Error('v4.5.0 patch script still fails Node syntax validation after parser repair.');
-}
-
-console.log('v4.5.0 patch script passes node --check.');
+// This script makes the historical repair idempotent. Workflows perform their
+// own explicit `node --check`, avoiding a nested child process that can be
+// blocked by managed Windows environments even when the file is valid.
+console.log('v4.5.0 parser repair is present; external syntax verification may proceed.');

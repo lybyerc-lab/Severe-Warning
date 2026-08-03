@@ -5,10 +5,14 @@ import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
-const sourceHtml = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const sourceHtml = process.env.SEVERE_WEATHER_SOURCE_PATH
+  ? path.resolve(process.env.SEVERE_WEATHER_SOURCE_PATH)
+  : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const sourceAudioDir = path.join(projectRoot, 'assets', 'audio');
-const outputDir = path.join(projectRoot, 'www');
+const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
+  ? path.resolve(process.env.SEVERE_WEATHER_WWW_DIR)
+  : path.join(projectRoot, 'www');
 const outputFonts = path.join(outputDir, 'fonts');
 const outputAudio = path.join(outputDir, 'audio');
 
@@ -75,7 +79,7 @@ const sourceSha256 = createHash('sha256').update(html).digest('hex');
 const audioSha256 = createHash('sha256').update(await readFile(path.join(sourceAudioDir, 'storm-feel-sprite.wav'))).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
-  `${JSON.stringify({ version: buildVersion, label: buildLabel, source: 'MechanicsLab/SevereWeather_3D_Lab.html', sourceSha256, audioSha256 }, null, 2)}\n`,
+  `${JSON.stringify({ version: buildVersion, label: buildLabel, source: path.relative(projectRoot, sourceHtml).replaceAll('\\', '/'), sourceSha256, audioSha256 }, null, 2)}\n`,
   'utf8'
 );
 

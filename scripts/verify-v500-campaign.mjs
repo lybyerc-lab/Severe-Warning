@@ -33,6 +33,14 @@ for (const [name, marker] of [
   ['run clock stable anchor', '[SW:GAMEPLAY:RUN_CLOCK]'],
   ['world tour marker', 'V500_WORLD_TOUR_V1'],
   ['mobile layout fix marker', 'V500_MOBILE_LAYOUT_FIX_V2'],
+  ['bovine signature marker', 'V500_BOVINE_SIGNATURE_V1'],
+  ['bovine stable anchor', '[SW:WORLD:BOVINE_SIGNATURE]'],
+  ['safe animal invariant', '[SW:LAW:SAFE-ANIMALS]'],
+  ['bovine save schema', 'severe_weather_bovine_v1'],
+  ['Cow 17 QA state', 'getBovineQaState'],
+  ['Cow-Cam QA trigger', 'triggerCowCamQa'],
+  ['bovine results report', 'BOVINE SITUATION REPORT'],
+  ['Moo Brew liability line', 'Moo Brew accepts no responsibility for atmospheric cattle'],
   ['scaled landscape breakpoint', '(max-height: 720px), (orientation: landscape) and (pointer: coarse)'],
   ['results use border-box sizing', '.results-card { box-sizing: border-box; }'],
   ['results respect dynamic viewport', 'max-height: calc(100dvh'],
@@ -72,6 +80,10 @@ check('four distinct terrain profiles', (html.match(/profile: [0-3], biome:/g) |
 check('campaign scenery is lazy initialized', html.includes('let campaignSceneryGroup = null;') && html.includes('function ensureCampaignSceneryGroup'));
 check('campaign scenery animates', html.includes('updateCampaignScenery(dt);'));
 check('campaign challenges replace generic pool', html.includes('campaignChallengeFor(stage, pool[index])'));
+check('Cow 17 is density-safe first spawn', html.includes('const id = index === 0 ? 17'));
+check('cow motion uses frame delta', html.includes('cow.orbitAngle += 5.4 * dt * cowMotionScale'));
+check('rejected synthetic moo remains disabled', html.includes('disabled-synthetic-source'));
+check('bovine result finalizes before campaign result', html.includes('finalizeBovineRun();\n  updateHighScore'));
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1])

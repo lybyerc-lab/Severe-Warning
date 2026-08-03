@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
-const sourcePath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
+  ? path.resolve(process.env.SEVERE_WEATHER_SOURCE_PATH)
+  : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 let html = await readFile(sourcePath, 'utf8');
 
 function replaceExact(before, after, label) {
@@ -278,7 +280,7 @@ function playMaterialSound(family, x = storm.pos.x, z = storm.pos.z, intensity =
   if (!MATERIAL_AUDIO_FAMILIES.has(family)) family = 'masonry';
   const variant = Math.random() < 0.5 ? 1 : 2;
   const distanceGain = distanceGainFromWorld(x, z, options.maxDistance ?? 145);
-  return playStormClip(`material_${family}_${variant}`, {
+  return playStormClip('material_' + family + '_' + variant, {
     gain: (options.gain ?? 0.70) * THREE.MathUtils.clamp(intensity, 0.35, 1.4) * distanceGain,
     pan: panFromWorldX(x),
     priority: options.priority ?? 2,
