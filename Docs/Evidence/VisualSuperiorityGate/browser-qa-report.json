@@ -1,0 +1,194 @@
+{
+  "timestamp": "2026-08-03T22:04:59.063Z",
+  "commit": "f439db0623543308730386964f31668b76a0f7dc",
+  "commitShort": "f439db0",
+  "viewportsTested": [
+    "932x430",
+    "1365x630"
+  ],
+  "treatmentsTested": [
+    "baseline",
+    "showcase"
+  ],
+  "pairedScreenshots": [
+    {
+      "viewport": "932x430",
+      "treatment": "baseline",
+      "keyframe": "calm_opening",
+      "file": "lab_932x430_baseline_calm_opening_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "baseline",
+      "keyframe": "tornado_near_barn",
+      "file": "lab_932x430_baseline_tornado_near_barn_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "baseline",
+      "keyframe": "roof_peel",
+      "file": "lab_932x430_baseline_roof_peel_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "baseline",
+      "keyframe": "cow_launch",
+      "file": "lab_932x430_baseline_cow_launch_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "baseline",
+      "keyframe": "final_wreckage",
+      "file": "lab_932x430_baseline_final_wreckage_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "showcase",
+      "keyframe": "calm_opening",
+      "file": "lab_932x430_showcase_calm_opening_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "showcase",
+      "keyframe": "tornado_near_barn",
+      "file": "lab_932x430_showcase_tornado_near_barn_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "showcase",
+      "keyframe": "roof_peel",
+      "file": "lab_932x430_showcase_roof_peel_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "showcase",
+      "keyframe": "cow_launch",
+      "file": "lab_932x430_showcase_cow_launch_f439db0.png"
+    },
+    {
+      "viewport": "932x430",
+      "treatment": "showcase",
+      "keyframe": "final_wreckage",
+      "file": "lab_932x430_showcase_final_wreckage_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "baseline",
+      "keyframe": "calm_opening",
+      "file": "lab_1365x630_baseline_calm_opening_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "baseline",
+      "keyframe": "tornado_near_barn",
+      "file": "lab_1365x630_baseline_tornado_near_barn_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "baseline",
+      "keyframe": "roof_peel",
+      "file": "lab_1365x630_baseline_roof_peel_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "baseline",
+      "keyframe": "cow_launch",
+      "file": "lab_1365x630_baseline_cow_launch_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "baseline",
+      "keyframe": "final_wreckage",
+      "file": "lab_1365x630_baseline_final_wreckage_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "showcase",
+      "keyframe": "calm_opening",
+      "file": "lab_1365x630_showcase_calm_opening_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "showcase",
+      "keyframe": "tornado_near_barn",
+      "file": "lab_1365x630_showcase_tornado_near_barn_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "showcase",
+      "keyframe": "roof_peel",
+      "file": "lab_1365x630_showcase_roof_peel_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "showcase",
+      "keyframe": "cow_launch",
+      "file": "lab_1365x630_showcase_cow_launch_f439db0.png"
+    },
+    {
+      "viewport": "1365x630",
+      "treatment": "showcase",
+      "keyframe": "final_wreckage",
+      "file": "lab_1365x630_showcase_final_wreckage_f439db0.png"
+    }
+  ],
+  "performanceComparison": {
+    "932x430_baseline": {
+      "viewport": "932x430",
+      "treatment": "baseline",
+      "averageFps": 60,
+      "minimumFps": 60,
+      "avgFrameTimeMs": "16.67",
+      "activeMeshes": 206,
+      "materials": 155,
+      "textures": 2,
+      "particleSystems": 1,
+      "activeParticles": 45,
+      "activeDebris": 14,
+      "rendererPath": "WebGL 2"
+    },
+    "932x430_showcase": {
+      "viewport": "932x430",
+      "treatment": "showcase",
+      "averageFps": 60,
+      "minimumFps": 60,
+      "avgFrameTimeMs": "16.67",
+      "activeMeshes": 230,
+      "materials": 157,
+      "textures": 2,
+      "particleSystems": 1,
+      "activeParticles": 62,
+      "activeDebris": 14,
+      "rendererPath": "WebGL 2"
+    },
+    "1365x630_baseline": {
+      "viewport": "1365x630",
+      "treatment": "baseline",
+      "averageFps": 60,
+      "minimumFps": 60,
+      "avgFrameTimeMs": "16.67",
+      "activeMeshes": 211,
+      "materials": 155,
+      "textures": 2,
+      "particleSystems": 1,
+      "activeParticles": 45,
+      "activeDebris": 14,
+      "rendererPath": "WebGL 2"
+    },
+    "1365x630_showcase": {
+      "viewport": "1365x630",
+      "treatment": "showcase",
+      "averageFps": 60,
+      "minimumFps": 60,
+      "avgFrameTimeMs": "16.67",
+      "activeMeshes": 240,
+      "materials": 157,
+      "textures": 2,
+      "particleSystems": 1,
+      "activeParticles": 62,
+      "activeDebris": 14,
+      "rendererPath": "WebGL 2"
+    }
+  },
+  "overallPass": true
+}
