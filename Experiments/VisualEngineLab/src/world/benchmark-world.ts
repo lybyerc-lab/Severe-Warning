@@ -78,6 +78,7 @@ export class BenchmarkWorld {
   constructor(private readonly scene: Scene, private readonly materials: MaterialLibrary, quality: QualityProfile) {
     this.root = new TransformNode('farm-town-benchmark', scene);
     this.build(quality);
+    this.applyQuality(quality);
   }
 
   update(timeSeconds: number, wind: number): void {
@@ -87,6 +88,11 @@ export class BenchmarkWorld {
       treeRoot.rotation.z = Math.sin(timeSeconds * 1.9 + index * 0.7) * 0.025 * wind;
       treeRoot.rotation.x = Math.cos(timeSeconds * 1.4 + index) * 0.018 * wind;
     }
+  }
+
+  applyQuality(quality: QualityProfile): void {
+    const visibleTrees = Math.round(18 * quality.vegetationDensity);
+    this.animatedTrees.forEach((treeRoot, index) => treeRoot.setEnabled(index < visibleTrees));
   }
 
   dispose(): void {
@@ -168,7 +174,7 @@ export class BenchmarkWorld {
       wire.parent = this.root;
     }
 
-    const treeCount = Math.round(18 * quality.vegetationDensity);
+    const treeCount = 22;
     for (let index = 0; index < treeCount; index += 1) {
       const x = -66 + ((index * 23) % 132);
       const z = index % 2 ? 38 - ((index * 9) % 18) : -36 + ((index * 7) % 16);

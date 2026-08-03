@@ -96,6 +96,15 @@ export class TornadoSystem {
     this.outerLayer.setEnabled(quality.atmosphereLayers > 1);
   }
 
+  configure(parameters: Partial<TornadoParameters>): void {
+    this.params = { ...this.params, ...parameters };
+    this.params.intensity = Math.max(0, Math.min(1, this.params.intensity));
+    this.innerCore.scaling.y = this.params.height / DEFAULT_TORNADO_PARAMETERS.height;
+    this.outerLayer.scaling.y = this.params.height / DEFAULT_TORNADO_PARAMETERS.height;
+    this.setIntensity(this.params.intensity);
+    this.applyQuality(this.quality);
+  }
+
   setPosition(position: Vector3): void {
     this.root.position.copyFrom(position);
   }

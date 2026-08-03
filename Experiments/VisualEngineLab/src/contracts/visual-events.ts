@@ -13,8 +13,9 @@ export const VISUAL_EVENT_TYPES = [
   'object.detached', 'debris.spawned', 'debris.retired',
   'utility.chain.started', 'utility.node.energized', 'utility.node.failed',
   'landmark.damaged', 'landmark.destroyed', 'media.moment.captured',
-  'cow.noticed-storm', 'cow.braced', 'cow.slid', 'cow.launched', 'cow.entered-orbit',
-  'cow.landed-safely', 'cow.recovered', 'cow-cam.triggered', 'news.headline.triggered',
+  'cow.noticed-storm', 'cow.double-take', 'cow.braced', 'cow.slid', 'cow.front-lift',
+  'cow.launched', 'cow.entered-orbit', 'cow.landed-safely', 'cow.recovered',
+  'cow.offended-stare', 'cow-cam.triggered', 'news.headline.triggered',
   'district.atmosphere.changed', 'world.reset', 'scene.cleanup.requested'
 ] as const;
 

@@ -159,6 +159,7 @@ export class VisualLabApp {
   applyQuality(tier: QualityTier): void {
     this.quality.setTier(tier);
     const profile = this.quality.current;
+    this.world.applyQuality(profile);
     this.tornado.applyQuality(profile);
     this.barn.applyQuality(profile);
     this.cow.applyQuality(profile);
@@ -228,9 +229,11 @@ export class VisualLabApp {
     }
     if (event.type === 'building.collapsed') this.barn.setStage('wreckage');
     const cowStateByEvent: Partial<Record<VisualEvent['type'], CowState>> = {
-      'cow.noticed-storm': 'notice', 'cow.braced': 'brace', 'cow.slid': 'slide',
+      'cow.noticed-storm': 'notice', 'cow.double-take': 'double-take',
+      'cow.braced': 'brace', 'cow.slid': 'slide', 'cow.front-lift': 'front-lift',
       'cow.launched': 'launch', 'cow.entered-orbit': 'orbit',
-      'cow.landed-safely': 'safe-landing', 'cow.recovered': 'recovery'
+      'cow.landed-safely': 'safe-landing', 'cow.recovered': 'recovery',
+      'cow.offended-stare': 'offended-stare'
     };
     const cowState = cowStateByEvent[event.type];
     if (cowState) this.cow.setState(cowState);

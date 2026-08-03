@@ -24,6 +24,7 @@ export class CowSystem {
   private stateValue: CowState = 'idle';
   private stateTime = 0;
   private launchOrigin = new Vector3(-16, 0, 27);
+  private landingOrigin = new Vector3(-5, 15, 5);
   private landingTarget = new Vector3(-17, 1.4, 14);
   private quality: QualityProfile;
 
@@ -58,6 +59,7 @@ export class CowSystem {
     this.stateValue = state;
     this.stateTime = 0;
     if (state === 'launch') this.launchOrigin.copyFrom(this.root.position);
+    if (state === 'safe-landing') this.landingOrigin.copyFrom(this.root.position);
   }
 
   applyQuality(quality: QualityProfile): void {
@@ -72,6 +74,7 @@ export class CowSystem {
     this.body.rotation.setAll(0);
     this.head.rotation.setAll(0);
     this.root.rotation.z = 0;
+    this.legs.forEach((leg) => leg.rotation.setAll(0));
     switch (this.stateValue) {
       case 'idle':
         this.body.position.y = Math.sin(t * 1.5) * 0.04;
@@ -119,10 +122,9 @@ export class CowSystem {
       }
       case 'safe-landing': {
         const progress = Math.min(1, t / 1.4);
-        const start = new Vector3(-5, 15, 5);
-        this.root.position.x = start.x + (this.landingTarget.x - start.x) * progress;
-        this.root.position.z = start.z + (this.landingTarget.z - start.z) * progress;
-        this.root.position.y = Math.max(this.landingTarget.y, 15 * (1 - progress) + Math.sin(progress * Math.PI) * 3);
+        this.root.position.x = this.landingOrigin.x + (this.landingTarget.x - this.landingOrigin.x) * progress;
+        this.root.position.z = this.landingOrigin.z + (this.landingTarget.z - this.landingOrigin.z) * progress;
+        this.root.position.y = Math.max(this.landingTarget.y, this.landingOrigin.y * (1 - progress) + Math.sin(progress * Math.PI) * 3);
         this.root.rotation.z = (1 - progress) * 0.5;
         break;
       }
