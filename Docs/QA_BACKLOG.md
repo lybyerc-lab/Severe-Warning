@@ -270,8 +270,11 @@ Expected:
 
 ### BOVINE-001: Cow Signature physical acceptance
 
-Status: committed and local-browser-QA passed; exact signed APK pending
+Status: automated-browser-QA passed and signed QA-6 built; physical acceptance pending
 Implementation commit: `cffbeb2`
+Exact CI candidate: `4917d16`
+Signed artifact: `severe-weather-v5.0.0-qa-6` from workflow `30849403030`
+APK SHA-256: `eb7299af09b1888307cc91507028b44d00b3ae5b01a90969a67c28a8eb23a0d8`
 
 Verify on the Galaxy S26 Ultra:
 - Cow 17 is visually recognizable and remains present across all four campaign stops.

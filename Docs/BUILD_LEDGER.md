@@ -27,7 +27,20 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Mobile layout checks: passed at 1365x630 and 932x430; full results, report, campaign outcome, and result buttons fit without overlap
 - Cow-Cam layout check: passed at 932x430; broadcast frame remained clear of touch actions
 - Audio boundary: rejected synthetic moo remains disabled; Cow-Cam timing hook is ready for a licensed real moo
-- Classification: committed and local-browser-QA passed; exact-commit CI, signed APK, and physical acceptance pending
+- Pages workflow: run `30849402299` / Pages #53 passed from exact head `4917d16`
+- Strict QA workflow: run `30849402452` / full-round #8 passed in `4m 17s`
+- Full-round checks: `11/11` passed; district 3 reached, time `0`, score `21606`, no page errors, no console errors
+- World-tour checks: `17/17` passed; all four stops loaded, Cow 17 stayed tagged at densities `38/24/18/8`, four hay-bale zones loaded per stop, animals remained unharmed
+- Automated evidence commit: `80bd3bd`
+- Signed Android workflow: run `30849403030` / signed QA #6 passed
+- Signed artifact: `severe-weather-v5.0.0-qa-6` (`4.88 MB`)
+- Application ID: `com.lybyerclab.severeweather.qa`
+- Version code: `500006`
+- Version name: `5.0.0-qa.6`
+- APK SHA-256: `eb7299af09b1888307cc91507028b44d00b3ae5b01a90969a67c28a8eb23a0d8`
+- Artifact SHA-256: `2f3b4440927cbb4e764dd98f52f7891e3fe793659c632c0377c3b34eb46f1d7d`
+- QA signer certificate SHA-256: `a7ee109798f915f05c320c2b9a4fd7fde4a3915d27cf51f876784baf3397144a`
+- Classification: committed, deployed, automated-browser-QA passed, and signed APK built; physical Galaxy S26 Ultra acceptance pending
 
 ### Initial campaign integration
 

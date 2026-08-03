@@ -8,6 +8,12 @@ on:
       - qa
     paths:
       - '.github/workflows/qa-autoplay-full-round.yml'
+      - 'MechanicsLab/**'
+      - 'assets/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
 
 permissions:
   contents: write
