@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "testedCommit": "519a7467394a3d456b230e922b0720be394ad58c",
+  "workflowRun": "6",
+  "startedAt": "2026-08-03T16:26:31.221Z",
+  "finishedAt": "2026-08-03T16:26:38.814Z",
+  "url": "http://127.0.0.1:4173/",
+  "mode": "mobile-landscape four-stop authored-world sweep",
+  "checks": {
+    "allFourStopsLoaded": true,
+    "uniqueTerrainProfiles": true,
+    "uniqueTerrainSamples": true,
+    "twoLandmarksPerStop": true,
+    "eightUniqueLandmarks": true,
+    "authoredSceneryPresent": true,
+    "animatedSpectaclePresent": true,
+    "uniqueRegionalChallenges": true,
+    "uniqueBroadcastIdentity": true,
+    "intentionalAnimalDensity": true,
+    "noPageErrors": true,
+    "noConsoleErrors": true,
+    "harnessCompletedWithoutException": true
+  },
+  "states": [
+    {
+      "levelId": "lincoln-county",
+      "profile": 0,
+      "biome": "WOODED RIDGES + CREEK COUNTRY",
+      "broadcast": "RIDGE COUNTY LOCAL",
+      "sceneryCount": 14,
+      "animatedCount": 0,
+      "landmarks": [
+        "LINCOLN WATER TOWER",
+        "COUNTY COURTHOUSE"
+      ],
+      "challenge": "MAILBOX MIXER: Launch 3 yard decorations",
+      "media": [
+        "LIVE 8",
+        "TEAM MESO",
+        "VORTEX VAN",
+        "COUNTY 5",
+        "HOOK ECHO",
+        "ACTION 12",
+        "DEBRIS DESK",
+        "SKY 4",
+        "CORE PUNCH"
+      ],
+      "animals": 38,
+      "terrainSamples": [
+        0.73,
+        3.89,
+        -1.79
+      ]
+    },
+    {
+      "levelId": "prairie-junction",
+      "profile": 1,
+      "biome": "OPEN PRAIRIE + RAIL CORRIDOR",
+      "broadcast": "CROSSWIND COUNTRY",
+      "sceneryCount": 21,
+      "animatedCount": 4,
+      "landmarks": [
+        "PRAIRIE GRAIN ELEVATOR",
+        "JUNCTION WINDMILL"
+      ],
+      "challenge": "PRAIRIE CLEANUP: Launch 3 yard props",
+      "media": [
+        "PRAIRIE 4",
+        "CROSSWIND",
+        "DRYLINE ONE",
+        "RAIL CAM",
+        "TEAM CAPROCK",
+        "LIVE RANGE",
+        "MESO MOBILE",
+        "RODEO CAM",
+        "GUST BUS"
+      ],
+      "animals": 24,
+      "terrainSamples": [
+        0.16,
+        1.69,
+        -0.39
+      ]
+    },
+    {
+      "levelId": "grain-belt",
+      "profile": 2,
+      "biome": "HARVEST SHELVES + INDUSTRIAL SKYLINE",
+      "broadcast": "THE HARVEST CHANNEL",
+      "sceneryCount": 11,
+      "animatedCount": 1,
+      "landmarks": [
+        "NORTH SILO BANK",
+        "HEARTLAND FOUNDRY"
+      ],
+      "challenge": "CROP CIRCLE: Remove 3 roadside props",
+      "media": [
+        "GRAIN 11",
+        "BIN CAM",
+        "HARVEST LIVE",
+        "DUST DESK",
+        "BELT WEATHER",
+        "SHIFT CAM",
+        "RUST VAN",
+        "ELEVATOR EYE",
+        "COMBINE CAM"
+      ],
+      "animals": 18,
+      "terrainSamples": [
+        0.35,
+        3.74,
+        -0.86
+      ]
+    },
+    {
+      "levelId": "state-fair-finale",
+      "profile": 3,
+      "biome": "FAIRGROUND BOWL + NEON MIDWAY",
+      "broadcast": "NATIONAL DISASTER DESK",
+      "sceneryCount": 23,
+      "animatedCount": 1,
+      "landmarks": [
+        "CHAMPIONSHIP FERRIS WHEEL",
+        "HEARTLAND GRANDSTAND"
+      ],
+      "challenge": "PARKING LOT PANIC: Launch 3 lawn props",
+      "media": [
+        "NETWORK LIVE",
+        "MIDWAY CAM",
+        "PRIME STORM",
+        "SKY TRUCK",
+        "FERRIS FEED",
+        "GRANDSTAND",
+        "NATIONAL 1",
+        "CHAMP CAM",
+        "LAST RIDE"
+      ],
+      "animals": 8,
+      "terrainSamples": [
+        0.23,
+        -0.47,
+        -0.57
+      ]
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "harnessError": null
+}
