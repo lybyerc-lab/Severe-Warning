@@ -2,6 +2,8 @@ import type { QualityTier } from '../contracts/quality-profile';
 import type { ArcadeStats, PlayableArcadeManager } from '../gameplay/playable-arcade';
 import type { PlayerInputManager } from '../input/player-input';
 
+declare const __BUILD_COMMIT__: string;
+
 export interface UiCallbacks {
   onStartPlay: () => void;
   onStartReplay: () => void;
@@ -48,6 +50,9 @@ export class LabUiManager {
     this.gustBtn = this.getElement('btnGust') as HTMLButtonElement;
     this.zapBtn = this.getElement('btnZap') as HTMLButtonElement;
     this.qualitySelect = this.getElement('menuQualitySelect') as HTMLSelectElement;
+
+    const commitCode = this.getElement('labCommitDisplay');
+    commitCode.textContent = typeof __BUILD_COMMIT__ !== 'undefined' ? __BUILD_COMMIT__.slice(0, 11) : 'HEAD';
 
     this.bindEvents();
     this.showMenu();
@@ -152,7 +157,7 @@ export class LabUiManager {
               </div>
             </div>
             <div class="build-meta">
-              <span>Commit: <code>ef256752831</code></span>
+              <span>Commit: <code id="labCommitDisplay">HEAD</code></span>
               <span>Engine: Babylon.js 9.19.0</span>
               <span>Path: WebGL 2 Baseline</span>
             </div>

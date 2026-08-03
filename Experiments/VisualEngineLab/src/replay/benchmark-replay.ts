@@ -43,7 +43,7 @@ export class BenchmarkReplay {
 
   update(realDeltaSeconds: number): void {
     if (!this.runningValue || this.completedValue) return;
-    const speed = this.acceleratedValue ? 6 : 1;
+    const speed = this.acceleratedValue ? 10 : 1;
     this.timeMsValue = Math.min(this.durationMs, this.timeMsValue + realDeltaSeconds * 1000 * speed);
     while (this.cursor < this.timeline.length) {
       const event = this.timeline[this.cursor];
