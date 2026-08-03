@@ -10,7 +10,7 @@ const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
 
 let html = await readFile(sourcePath, 'utf8');
 
-const marker = 'V500_MOBILE_LAYOUT_FIX_V1';
+const marker = 'V500_MOBILE_LAYOUT_FIX_V2';
 const requiredMarkers = [
   marker,
   'qa-tools-enabled',
@@ -35,7 +35,7 @@ function replaceExact(before, after, label) {
 
 replaceExact(
   '</head>',
-  String.raw`<!-- V500_MOBILE_LAYOUT_FIX_V1: S26-class landscape results containment and opt-in QA tools. -->
+  String.raw`<!-- V500_MOBILE_LAYOUT_FIX_V2: S26 WebView landscape containment and opt-in QA tools. -->
 <style id="v500MobileLayoutFix">
   .results-card { box-sizing: border-box; }
 
@@ -46,7 +46,10 @@ replaceExact(
   html:not(.qa-tools-enabled) #visualLabPanel,
   html:not(.qa-tools-enabled) #audioLabPanel { display: none !important; }
 
-  @media (max-width: 850px), (max-height: 540px) {
+  /* The S26 Ultra WebView reports about 1365x630 CSS px in landscape despite
+     producing a 2048x945 screenshot. Use orientation/input traits as well as
+     dimensions so display scaling cannot bypass the compact results layout. */
+  @media (max-width: 850px), (max-height: 720px), (orientation: landscape) and (pointer: coarse) {
     #resultsOverlay {
       align-items: flex-start;
       box-sizing: border-box;
@@ -55,7 +58,7 @@ replaceExact(
       padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
     }
     .results-card {
-      width: min(430px, 100%);
+      width: min(520px, 100%);
       max-height: calc(100vh - 12px);
       max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)));
       overflow-y: auto;
@@ -63,13 +66,17 @@ replaceExact(
       padding: 6px 10px 8px;
       border-radius: 14px;
     }
-    .results-card h2 { font-size: 16px; line-height: 1.05; }
-    .grade-stamp { margin: 1px 0; font-size: 25px; line-height: 1; }
-    .results-stats { margin: 4px 0; padding: 6px 8px; font-size: 9px; line-height: 1.25; }
+    .results-card h2 { font-size: 18px; line-height: 1.05; }
+    .grade-stamp { margin: 1px 0; font-size: 30px; line-height: 1; }
+    .results-stats { margin: 4px 0; padding: 7px 9px; font-size: 10.5px; line-height: 1.28; }
     .stage-breakdown { margin-top: 3px; padding-top: 3px; }
-    .campaign-result { margin-top: 4px; padding: 5px 7px; font-size: 9px; line-height: 1.2; }
+    .campaign-result { margin-top: 4px; padding: 6px 8px; font-size: 10.5px; line-height: 1.2; }
     .results-actions { gap: 5px; margin-top: 5px; }
-    .results-actions .retry-btn { flex: 1 1 105px; min-height: 32px; padding: 7px 4px; font-size: 10px; line-height: 1.05; }
+    .results-actions .retry-btn { flex: 1 1 120px; min-height: 34px; padding: 8px 4px; font-size: 11px; line-height: 1.05; }
+  }
+
+  @media (max-width: 850px) {
+    .results-card { width: min(430px, 100%); }
   }
 </style>
 </head>`,
