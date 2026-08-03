@@ -8,6 +8,8 @@ Last updated: 2026-08-03
 
 Status: source implemented; dependency/install verification blocked by workspace approval-credit exhaustion
 
+Publish status: local commits only. Remote push and draft PR creation were also blocked by approval-credit exhaustion; this is not a code or Git authentication failure.
+
 Implemented on `agent/visual-engine-lab-foundation`:
 
 - isolated pinned Babylon.js/TypeScript/Vite package

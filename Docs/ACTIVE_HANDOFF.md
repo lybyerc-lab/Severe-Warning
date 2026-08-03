@@ -14,8 +14,10 @@ Current build-train gate: Cow Signature CI and signed Android acceptance
 - Implemented source: versioned event contract, quality governor, diagnostics, farm-town scene, layered tornado, staged barn destruction, procedural Cow 17, accelerated replay, reset, and explicit disposal
 - Static verifier: passed
 - Dependency gate: blocked on 2026-08-03 because registry escalation was rejected when workspace approval credits were exhausted
+- Publish gate: `git push` was rejected for the same approval-credit exhaustion; the local GitHub CLI is also absent, so no remote branch or draft PR was created
 - Not yet claimed: clean `npm ci`, TypeScript pass, unit-test pass, production build, browser benchmark, Android behavior, physical acceptance, or Babylon production adoption
 - Production boundary: `MechanicsLab/`, `.github/workflows/`, Android configuration, active patch chain, root package files, and PR #13 behavior remain unchanged
+- Resume order: restore workspace approval credits, generate the package lock through npm, run every laboratory gate, correct any failures, then push and open a draft PR targeting `agent/v500-heartland-campaign`
 
 ## V5 fast-track override
 

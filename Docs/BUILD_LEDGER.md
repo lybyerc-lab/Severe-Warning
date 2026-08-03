@@ -15,6 +15,7 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Static verification: passed
 - Production file boundary: no changes under `MechanicsLab/`, production workflows, Android configuration, root packages, audio assets, or V5 patch chain
 - Dependency result: registry operation blocked because workspace approval credits were exhausted
+- Publish result: branch push rejected by the same approval-credit gate; no draft PR exists yet
 - Classification: committed source foundation; not built, not automated-test passed, not browser benchmark passed, not physically accepted, not merged
 
 ## v5.0.0 Heartland Campaign Foundation
