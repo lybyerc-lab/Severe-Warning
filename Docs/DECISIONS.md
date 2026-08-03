@@ -67,7 +67,7 @@ Decision:
 
 ## D-007: Stable QA signing
 
-Status: planned and approved
+Status: physically verified
 
 Decision:
 - Use a dedicated persistent QA signing key, stable application ID, and increasing version codes.
@@ -75,6 +75,9 @@ Decision:
 
 Goal:
 - Future APKs update in place without deleting the installed QA app.
+
+Evidence:
+- Signed QA-5 installed over signed QA-3 on the Galaxy S26 Ultra without uninstalling.
 
 ## D-008: Stable code anchors
 
@@ -95,3 +98,15 @@ Decision:
 - Preserve accepted and QA-proven storm gameplay while adding campaign structure around it.
 - Do not relabel the single-run game; V5 must include real selection, unlock, progression, results, and persistence systems.
 - Carry the unresolved signed update-in-place check forward as packaging work rather than blocking campaign implementation.
+
+## D-010: Cow humor is a signature system
+
+Date: 2026-08-03
+Status: approved product direction; implementation awaiting physical acceptance
+
+Decision:
+- Cow 17 is a recurring, numbered, invincible campaign mascot.
+- Cow comedy is measured and reported through safe relocations, airtime, distance, soft landings, broadcast callouts, and the Bovine Situation Report.
+- Cow-Cam is rare and brief; it may change presentation and cow animation but must not slow player controls or the warning clock.
+- Moo Brew sponsors the media circus without becoming a real-world brand or an intrusive advertisement.
+- Animal injuries remain zero by design.

@@ -3,7 +3,7 @@
 Last updated: 2026-08-03 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Current milestone: `v5.0.0 Heartland Campaign Foundation`
-Current build-train gate: V5 Phase 2 authored-world CI and Android acceptance
+Current build-train gate: Cow Signature CI and signed Android acceptance
 
 ## V5 fast-track override
 
@@ -12,9 +12,9 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - Active integration branch: `agent/v500-heartland-campaign`
 - Source base: browser-QA-passed `qa` gameplay plus current `main` build infrastructure
 - V5 contract: `Docs/V5_BUILD_TRAIN.md`
-- V5 implementation: deterministic campaign, real-time clock, and authored world-tour patches
+- V5 implementation: deterministic campaign, real-time clock, authored world-tour, mobile results containment, and Cow Signature patches
 - V5 verifier: `scripts/verify-v500-campaign.mjs`
-- Integration commit: `d6365d5a` (`Build V5 Heartland campaign foundation`)
+- Current gameplay commit: `cffbeb2` (`Add Cow 17 signature system`)
 - Pages run #49: built, deterministic browser-QA passed, and deployed from exact commit `8b193b5`
 - Full-round run #4: workflow execution was green, but its report correctly recorded `roundCompleted=FAIL` and `reachedDistrictThree=FAIL`; the workflow did not yet enforce failed report checks
 - Root cause: the three-minute countdown used the simulation delta capped at `0.1 s`; at headless `3 FPS`, 205 wall-clock seconds advanced only about 47 game seconds
@@ -23,11 +23,15 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - Strict full-round run #5: passed all `11/11` required checks in 185 seconds; reached district 3, finished at time 0, and recorded no page errors, console errors, or harness exception
 - Current authored-world candidate: four road-safe terrain profiles, regional scenery and challenges, eight destructible signature landmarks, distinct media rosters, and controlled animal density
 - Local mobile-landscape sweep: all four stops constructed successfully with unique contracts and no page or console errors; exact-commit CI evidence remains pending
-- Current status: V5 campaign foundation and inherited three-district run are automated-browser-QA passed; authored-world CI and physical Android acceptance remain pending
+- Cow Signature candidate: persistent Cow 17, frame-rate-independent safe cattle flight, Cow-Cam, broadcast callouts, Moo Brew sponsorship, hay-bale landings, and Bovine Situation Report
+- Local Cow Signature verification: full patch train passed from untouched base, V5 verifier `66/66`, offline web bundle built, and 1365x630 plus 932x430 mobile-landscape layouts showed no results or control overlap
+- Current status: Cow Signature source is committed and local-browser-QA passed; exact-commit CI, signed APK packaging, and Galaxy S26 Ultra acceptance remain pending
 - Android debug delivery: relevant pull-request updates now automatically package the exact PR head; manual workflow dispatch remains available for arbitrary refs
 - V5 Android debug run #47: passed from exact commit `b3dcc63`; artifact `severe-weather-v5.0.0-mobile-test-47` contains `Severe-Weather-v5.0.0-Mobile-Test-47.apk`
 - APK SHA-256: `d21a30878f090b20e4ceb0a8e9c3acaf770f4ede0c4f7d7409094fe717ea6a07`
-- Physical status: exact APK install and four-stop Galaxy S26 Ultra acceptance pending
+- Signed QA run #5: workflow `30842904406`, exact source `569e688`, artifact `severe-weather-v5.0.0-qa-5`, package `com.lybyerclab.severeweather.qa`, version code `500005`, version name `5.0.0-qa.5`
+- Physical update status: QA-5 installed over QA-3 without uninstalling; update-in-place is verified for the signed QA application ID
+- Physical gameplay status: QA-5 looked and played like the HTML on the Galaxy S26 Ultra; Cow Signature commit `cffbeb2` has not yet been physically tested
 - Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
 
 ## Start here
@@ -39,7 +43,7 @@ Required startup sequence:
 1. Read `AGENTS.md`.
 2. Read every file listed by `AGENTS.md`.
 3. Inspect branch `qa`.
-4. Inspect draft PR `#10`.
+4. Inspect draft PR `#13`.
 5. Inspect the latest QA Pages and Android workflows before changing code.
 6. Continue from the exact state below.
 
@@ -47,7 +51,7 @@ Required startup sequence:
 
 - V5 integration branch: `agent/v500-heartland-campaign`
 - Gameplay branch: `agent/v450-storm-feel-overhaul`
-- Draft gameplay PR: `#10`
+- Draft V5 PR: `#13`
 - Browser QA branch: `qa`
 - Accepted baseline on `main`: v4.4.2
 
@@ -148,21 +152,21 @@ Workflow behavior:
 - uploads the signed package for 30 days
 - deletes restored signing material even after failure
 
-## Inherited v4.5 Stage 5 status
+## Signed QA continuity status
 
 - Packaging source changes committed: yes
 - Manual workflow available on `main`: yes
-- Persistent QA signing secrets configured: not yet proven
-- Signed APK built: no
-- Update-in-place verified: no
-- Stage 5 complete: no
+- Persistent QA signing secrets configured: proven
+- Signed APK built: yes, through QA-5
+- Update-in-place verified: yes, QA-3 to QA-5 on Galaxy S26 Ultra
+- Packaging continuity gate: complete for the QA application ID
 
 ## Immediate next action
 
-1. Run strict full-round plus four-stop authored-world QA from the exact candidate commit.
-2. Build a new debug APK only after that exact gameplay candidate is green.
-3. Install and play the new APK on the Galaxy S26 Ultra; judge district distinction, controls, frame pacing, heat, and battery.
-4. Verify campaign progress across Android close and reopen.
+1. Push `cffbeb2` and its documentation update to the V5 branch and `qa`.
+2. Require strict full-round, four-stop world-tour, Pages, and signed-APK workflows to pass from that exact candidate.
+3. Install the new signed QA APK over QA-5 and play one full Galaxy S26 Ultra run focused on Cow-Cam timing, report readability, cattle visibility, frame pacing, heat, and battery.
+4. Verify campaign and Cow 17 career progress across Android close and reopen.
 
 The signing ceremony remains inherited packaging work, but it no longer blocks V5 source development.
 

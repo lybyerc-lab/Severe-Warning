@@ -4,6 +4,31 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 
 ## v5.0.0 Heartland Campaign Foundation
 
+### Signed QA-5 continuity acceptance
+
+- Exact source commit: `569e688`
+- Workflow run: `30842904406` / signed QA run #5
+- Artifact: `severe-weather-v5.0.0-qa-5`
+- Application ID: `com.lybyerclab.severeweather.qa`
+- Version code: `500005`
+- Version name: `5.0.0-qa.5`
+- Physical result: installed over signed QA-3 without uninstalling on Galaxy S26 Ultra
+- Gameplay result: user reported it looked and played like the HTML
+- Classification: signed QA update continuity physically accepted; legacy debug `5.0.0` remains a separate application identity
+
+### Cow Signature candidate
+
+- Gameplay commit: `cffbeb2`
+- Scope: persistent Cow 17, safe flight telemetry, Cow-Cam, bovine combo/news callouts, Moo Brew sponsor dressing, hay-bale landing zones, and end-of-run Bovine Situation Report
+- Build-system correction: all historical patch stages and the web builder now honor isolated source/output paths; the managed-Windows nested parser check no longer contaminates or blocks scratch builds
+- Deterministic patch chain: passed from untouched base source
+- V5 structural verifier: `66/66` passed
+- Offline web build: passed
+- Mobile layout checks: passed at 1365x630 and 932x430; full results, report, campaign outcome, and result buttons fit without overlap
+- Cow-Cam layout check: passed at 932x430; broadcast frame remained clear of touch actions
+- Audio boundary: rejected synthetic moo remains disabled; Cow-Cam timing hook is ready for a licensed real moo
+- Classification: committed and local-browser-QA passed; exact-commit CI, signed APK, and physical acceptance pending
+
 ### Initial campaign integration
 
 - Branch: `agent/v500-heartland-campaign`

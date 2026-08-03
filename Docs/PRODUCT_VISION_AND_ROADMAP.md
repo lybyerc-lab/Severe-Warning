@@ -218,6 +218,20 @@ Approved bonuses include:
 - PASTURE PRESS CONFERENCE
 - BARNYARD BEDLAM
 
+### Cow 17 signature system
+
+Cow 17 is the recurring accidental mascot of the Heartland campaign. A small numbered ear tag identifies the same invincible cow across campaign stops, while persistent career statistics let the broadcasts become increasingly invested in its improbable travels.
+
+The signature presentation includes:
+
+- rotating bovine combo callouts such as `MOOmentum`, `Udder Chaos`, `Bovine Airspace Violation`, and `The Steaks Are High`
+- a rare, brief Cow-Cam that never slows player controls or the warning clock
+- a Bovine Situation Report covering safe relocations, airtime, longest flight, hay-bale landings, zero injuries, and dignity under review
+- recurring news coverage of Cow 17
+- Moo Brew news sponsorship, kiosks, cups, and liability jokes
+
+Cow humor should remain surprising rather than constant. It is a comedy layer and replayability reward, not a mandatory objective or target system.
+
 ### Chicken behavior
 
 - flap furiously while making limited progress
@@ -373,6 +387,7 @@ A strong near-term advanced form. Small suction vortices orbit the parent funnel
 - establish level selection through a television weather map
 - add progression between compact Heartland levels
 - establish reusable region data, news, palette, prop, audio, and finale contracts
+- establish Cow 17 and the Cow Signature System as recurring Heartland campaign comedy
 
 ### Later regional milestones
 

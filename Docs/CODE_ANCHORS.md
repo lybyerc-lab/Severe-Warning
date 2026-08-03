@@ -58,6 +58,7 @@ End marker:
 - `[SW:WORLD:DESTRUCTION]`
 - `[SW:WORLD:MEDIA]`
 - `[SW:WORLD:ANIMALS]`
+- `[SW:WORLD:BOVINE_SIGNATURE]`
 - `[SW:WORLD:POWER_GRID]`
 
 ### Build and runtime

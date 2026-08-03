@@ -70,7 +70,8 @@ Important files:
 - `.github/workflows/android-debug.yml`
 
 Current problem:
-- Debug builds do not reliably update in place because QA signing is not yet persistent.
+- The legacy debug application and signed QA application can coexist as two icons because they have different application IDs.
+- Signed QA continuity itself is proven: QA-5 updated QA-3 in place on the Galaxy S26 Ultra.
 
 ### Browser QA
 
@@ -105,6 +106,8 @@ Primary patch:
 - `scripts/apply-v500-campaign-patch.mjs`
 - `scripts/apply-v500-realtime-clock-fix.mjs`
 - `scripts/apply-v500-world-tour-patch.mjs`
+- `scripts/apply-v500-mobile-layout-fix.mjs`
+- `scripts/apply-v500-cow-signature-patch.mjs`
 
 Verification:
 - `scripts/verify-v500-campaign.mjs`
@@ -120,6 +123,10 @@ Responsibilities:
 - four road-safe terrain profiles and ground palettes
 - regional scenery, animation, landmark, challenge, media, and crowd-density contracts
 - four-stop mobile-landscape runtime sweep with screenshot and machine-readable report
+- persistent Cow 17 career state in the separate `severe_weather_bovine_v1` schema
+- frame-rate-independent safe cattle flight, Cow-Cam, Moo Brew broadcast comedy, and results telemetry
+
+Scratch builds may set `SEVERE_WEATHER_SOURCE_PATH` and `SEVERE_WEATHER_WWW_DIR`; every patch stage must honor the isolated source path so QA never mutates the checked-in base HTML.
 
 ## Verification ladder
 

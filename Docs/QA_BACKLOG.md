@@ -253,13 +253,35 @@ Verification required:
 
 ### INFRA-001: APK cannot update in place
 
-Status: open
+Status: passed on Galaxy S26 Ultra
+
+Evidence:
+- Signed QA-3 was already installed.
+- Signed QA-5 from workflow `30842904406` installed over QA-3 without uninstalling.
+- Stable application ID: `com.lybyerclab.severeweather.qa`.
+- QA-5 version code: `500005`; version name: `5.0.0-qa.5`.
+- The separate legacy `5.0.0` icon is the older debug application identity, not a failed QA update.
 
 Expected:
 - Dedicated persistent QA signing key.
 - Stable application ID.
 - Increasing version code per QA build.
 - Later APKs install over the existing QA app without deleting it.
+
+### BOVINE-001: Cow Signature physical acceptance
+
+Status: committed and local-browser-QA passed; exact signed APK pending
+Implementation commit: `cffbeb2`
+
+Verify on the Galaxy S26 Ultra:
+- Cow 17 is visually recognizable and remains present across all four campaign stops.
+- Cow-Cam is rare, funny, brief, and does not steal control or hide Pull, Gust, or Zap.
+- the Bovine Situation Report is readable with both result buttons visible
+- reported relocations, airtime, distance, and hay-bale landings behave plausibly
+- cows remain invincible and visibly unharmed
+- Moo Brew jokes do not overwhelm ordinary news coverage
+- cattle detail does not cause unacceptable frame pacing, heat, or battery use
+- Cow 17 career state survives app close and reopen
 
 ## QA infrastructure
 
