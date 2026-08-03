@@ -10,11 +10,14 @@ import { BarnDestructionSystem } from '../destruction/barn-destruction';
 import type { DestructionStage } from '../destruction/destruction-state';
 import { DiagnosticsHud } from '../diagnostics/diagnostics-hud';
 import { VisualEventBus } from '../events/event-bus';
+import { PlayableArcadeManager } from '../gameplay/playable-arcade';
+import { PlayerInputManager } from '../input/player-input';
 import { MaterialLibrary } from '../materials/material-library';
 import { QualityGovernor } from '../quality/quality-governor';
 import { BenchmarkReplay } from '../replay/benchmark-replay';
 import { BENCHMARK_SEED } from '../replay/benchmark-timeline';
 import { TornadoSystem } from '../storm/tornado-system';
+import { LabUiManager } from '../ui/lab-ui';
 import { BenchmarkWorld } from '../world/benchmark-world';
 
 // [SW:LAB:ENGINE_LIFECYCLE]
@@ -35,6 +38,8 @@ export interface VisualLabQaState {
   rendererPath: 'webgl2';
   lastResult: BenchmarkResult | null;
   metrics: VisualMetrics | null;
+  mode: string;
+  score: number;
 }
 
 export class VisualLabApp {
@@ -43,6 +48,10 @@ export class VisualLabApp {
   readonly events = new VisualEventBus();
   readonly replay: BenchmarkReplay;
   readonly quality: QualityGovernor;
+  readonly arcade: PlayableArcadeManager;
+  readonly input: PlayerInputManager;
+  readonly ui: LabUiManager;
+
   private readonly materials: MaterialLibrary;
   private readonly world: BenchmarkWorld;
   private readonly tornado: TornadoSystem;
@@ -52,6 +61,7 @@ export class VisualLabApp {
   private readonly camera: ArcRotateCamera;
   private readonly shadowGenerator: ShadowGenerator;
   private readonly cleanupCallbacks: Array<() => void> = [];
+
   private pausedByVisibility = false;
   private wind = 0.1;
   private lightningTimer = 0;
@@ -62,6 +72,7 @@ export class VisualLabApp {
   private peakParticles = 0;
   private peakActiveMeshes = 0;
   private peakMaterials = 0;
+  private fpsHistory: number[] = [];
   private stateTransitions: string[] = [];
   private consoleErrors: string[] = [];
   private unhandledRejections: string[] = [];
@@ -105,10 +116,41 @@ export class VisualLabApp {
     this.cow = new CowSystem(this.scene, this.materials, this.quality.current);
     this.cow.setLandingTarget(this.world.hayLanding);
     this.replay = new BenchmarkReplay(this.events);
+
+    const shell = this.requiredElement('lab-shell');
+    this.input = new PlayerInputManager(shell);
+    this.arcade = new PlayableArcadeManager(
+      this.scene, this.materials, this.tornado, this.barn, this.cow, this.world, this.events, this.input
+    );
+
+    this.ui = new LabUiManager(shell, this.arcade, this.input, {
+      onStartPlay: () => {
+        this.reset();
+        this.arcade.startArcadeMode();
+      },
+      onStartReplay: () => {
+        this.replayFromStart();
+      },
+      onPauseToggle: () => {
+        const running = this.replay.togglePause();
+        const pauseBtn = document.getElementById('pauseButton');
+        if (pauseBtn) pauseBtn.textContent = running ? 'PAUSE' : 'RESUME';
+      },
+      onReset: () => this.reset(),
+      onQualityChange: (tier) => this.applyQuality(tier),
+      onSpeedToggle: () => {
+        this.replay.setAccelerated(!this.replay.accelerated);
+        const speedBtn = document.getElementById('speedButton');
+        if (speedBtn) speedBtn.textContent = this.replay.accelerated ? 'QA 30s' : 'NORMAL 180s';
+      },
+      onDiagnosticsToggle: () => this.diagnostics.toggle()
+    }, this.quality.current.tier);
+
     this.diagnostics = new DiagnosticsHud(
       this.requiredElement('diagnostics'), this.engine, this.scene, this.quality, this.events, this.replay,
       () => ({ activeDebris: this.barn.activeDebris, activeAnimals: 1, activeParticles: this.tornado.activeParticleCount })
     );
+
     this.bindEvents();
     this.bindControls();
     this.bindLifecycle();
@@ -118,7 +160,23 @@ export class VisualLabApp {
   start(): void {
     this.engine.runRenderLoop(() => {
       const dt = Math.min(0.05, this.engine.getDeltaTime() / 1000);
-      this.replay.update(dt);
+      const currentFps = this.engine.getFps();
+      if (currentFps > 0 && currentFps < 300) this.fpsHistory.push(currentFps);
+
+      if (this.arcade.mode === 'playing') {
+        this.arcade.update(dt, currentFps);
+        this.ui.updateHud();
+        // Camera smooth follow in Play Mode
+        const targetPos = new Vector3(this.arcade.tornadoPosition.x + 4, 3, this.arcade.tornadoPosition.z + 2);
+        this.camera.setTarget(Vector3.Lerp(this.camera.target, targetPos, 0.08));
+      } else if (this.arcade.mode === 'results') {
+        const avgFps = this.fpsHistory.length > 0 ? this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length : currentFps;
+        const minFps = this.fpsHistory.length > 0 ? Math.min(...this.fpsHistory) : currentFps;
+        this.ui.showResults(this.arcade.getStats(), avgFps, minFps);
+      } else {
+        this.replay.update(dt);
+      }
+
       const time = this.replay.timeMs / 1000;
       this.world.update(time, this.wind);
       this.tornado.update(time, dt);
@@ -129,10 +187,10 @@ export class VisualLabApp {
       this.capturePeaks(this.lastMetrics);
       this.scene.render();
     });
-    this.replay.start();
   }
 
   reset(): void {
+    this.arcade.reset();
     this.replay.reset();
     this.events.resetCount();
     this.tornado.reset();
@@ -144,15 +202,17 @@ export class VisualLabApp {
     this.camera.setTarget(new Vector3(4, 3, 2));
     this.camera.radius = 112;
     this.stateTransitions = [];
+    this.fpsHistory = [];
     this.peakDebris = 0;
     this.peakParticles = 0;
     this.peakActiveMeshes = 0;
     this.peakMaterials = 0;
-    this.setStatus('CALM TOWN · REPLAY READY');
+    this.setStatus('CALM TOWN · READY');
   }
 
   replayFromStart(): void {
     this.reset();
+    this.arcade.mode = 'replay';
     this.replay.start();
   }
 
@@ -174,7 +234,7 @@ export class VisualLabApp {
   getQaState(): VisualLabQaState {
     return {
       ready: this.scene.isReady(),
-      completed: this.replay.completed,
+      completed: this.replay.completed || this.arcade.mode === 'results',
       accelerated: this.replay.accelerated,
       replayTimeMs: this.replay.timeMs,
       eventCount: this.events.eventCount,
@@ -186,13 +246,18 @@ export class VisualLabApp {
       quality: this.quality.current.tier,
       rendererPath: 'webgl2',
       lastResult: this.lastResult,
-      metrics: this.lastMetrics
+      metrics: this.lastMetrics,
+      mode: this.arcade.mode,
+      score: this.arcade.score
     };
   }
 
   dispose(): void {
     this.engine.stopRenderLoop();
     for (const callback of this.cleanupCallbacks.splice(0)) callback();
+    this.ui.dispose();
+    this.input.dispose();
+    this.arcade.reset();
     this.events.dispose();
     this.quality.dispose();
     this.cow.dispose();
@@ -212,8 +277,10 @@ export class VisualLabApp {
   private consumeEvent(event: VisualEvent): void {
     this.stateTransitions.push(event.type);
     const position = event.payload.position;
-    if (event.type === 'storm.spawned' || event.type === 'storm.moved') {
-      if (position) this.tornado.setPosition(new Vector3(position.x, position.y, position.z));
+    if (this.arcade.mode !== 'playing') {
+      if (event.type === 'storm.spawned' || event.type === 'storm.moved') {
+        if (position) this.tornado.setPosition(new Vector3(position.x, position.y, position.z));
+      }
     }
     if (event.type === 'storm.intensity.changed') this.tornado.setIntensity(event.payload.intensity ?? 0.5);
     if (event.type === 'district.atmosphere.changed') this.wind = Number(event.payload.presentationHints?.wind ?? 0.25);
@@ -243,7 +310,7 @@ export class VisualLabApp {
     }
     if (event.payload.headline) this.setBroadcast(event.payload.headline);
     if (event.type === 'media.moment.captured') this.setStatus('MOO BREW LIVE · COW-CAM FOOTAGE CAPTURED');
-    if (event.type === 'world.reset') this.completeAndReset();
+    if (event.type === 'world.reset' && this.arcade.mode === 'replay') this.completeAndReset();
   }
 
   private completeAndReset(): void {
@@ -285,7 +352,7 @@ export class VisualLabApp {
       const cowPosition = this.cow.root.position;
       this.camera.setTarget(Vector3.Lerp(this.camera.target, cowPosition.add(new Vector3(0, 2.5, 0)), 0.08));
       this.camera.radius += (70 - this.camera.radius) * 0.08;
-    } else {
+    } else if (this.arcade.mode !== 'playing') {
       this.camera.setTarget(Vector3.Lerp(this.camera.target, new Vector3(4, 3, 2), 0.045));
       this.camera.radius += (112 - this.camera.radius) * 0.045;
     }
@@ -299,26 +366,35 @@ export class VisualLabApp {
   }
 
   private bindControls(): void {
-    const pause = this.requiredElement('pauseButton') as HTMLButtonElement;
-    const reset = this.requiredElement('resetButton') as HTMLButtonElement;
-    const replay = this.requiredElement('replayButton') as HTMLButtonElement;
-    const speed = this.requiredElement('speedButton') as HTMLButtonElement;
-    const diagnostics = this.requiredElement('diagnosticsButton') as HTMLButtonElement;
-    const quality = this.requiredElement('qualitySelect') as HTMLSelectElement;
-    for (const tier of ['low', 'balanced', 'high', 'showcase'] as const) quality.add(new Option(tier.toUpperCase(), tier, tier === this.quality.current.tier, tier === this.quality.current.tier));
-    const listen = <K extends keyof HTMLElementEventMap>(element: HTMLElement, type: K, handler: (event: HTMLElementEventMap[K]) => void) => {
+    const pause = document.getElementById('pauseButton') as HTMLButtonElement;
+    const reset = document.getElementById('resetButton') as HTMLButtonElement;
+    const replay = document.getElementById('replayButton') as HTMLButtonElement;
+    const speed = document.getElementById('speedButton') as HTMLButtonElement;
+    const diagnostics = document.getElementById('diagnosticsButton') as HTMLButtonElement;
+    const quality = document.getElementById('qualitySelect') as HTMLSelectElement;
+
+    if (quality) {
+      quality.innerHTML = '';
+      for (const tier of ['low', 'balanced', 'high', 'showcase'] as const) {
+        quality.add(new Option(tier.toUpperCase(), tier, tier === this.quality.current.tier, tier === this.quality.current.tier));
+      }
+    }
+
+    const listen = <K extends keyof HTMLElementEventMap>(element: HTMLElement | null, type: K, handler: (event: HTMLElementEventMap[K]) => void) => {
+      if (!element) return;
       element.addEventListener(type, handler as EventListener);
       this.cleanupCallbacks.push(() => element.removeEventListener(type, handler as EventListener));
     };
+
     listen(pause, 'click', () => {
       const running = this.replay.togglePause();
-      pause.textContent = running ? 'PAUSE' : 'RESUME';
+      if (pause) pause.textContent = running ? 'PAUSE' : 'RESUME';
     });
     listen(reset, 'click', () => this.reset());
     listen(replay, 'click', () => this.replayFromStart());
     listen(speed, 'click', () => {
       this.replay.setAccelerated(!this.replay.accelerated);
-      speed.textContent = this.replay.accelerated ? 'QA 30s' : 'NORMAL 180s';
+      if (speed) speed.textContent = this.replay.accelerated ? 'QA 30s' : 'NORMAL 180s';
     });
     listen(diagnostics, 'click', () => this.diagnostics.toggle());
     listen(quality, 'change', () => this.applyQuality(quality.value as QualityTier));
@@ -356,11 +432,13 @@ export class VisualLabApp {
   }
 
   private setBroadcast(message: string): void {
-    this.requiredElement('broadcast').textContent = message;
+    const el = document.getElementById('broadcast');
+    if (el) el.textContent = message;
   }
 
   private setStatus(message: string): void {
-    this.requiredElement('status').textContent = message;
+    const el = document.getElementById('status');
+    if (el) el.textContent = message;
   }
 }
 
