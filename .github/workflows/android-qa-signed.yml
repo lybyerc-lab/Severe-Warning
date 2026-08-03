@@ -8,6 +8,18 @@ on:
         required: true
         default: qa
         type: string
+  push:
+    branches:
+      - qa
+    paths:
+      - '.github/workflows/android-qa-signed.yml'
+      - 'MechanicsLab/**'
+      - 'android/**'
+      - 'assets/**'
+      - 'scripts/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
@@ -33,7 +45,7 @@ jobs:
       - name: Check out requested source
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.source_ref }}
+          ref: ${{ inputs.source_ref || github.sha }}
 
       - name: Resolve source and package identity
         shell: bash
@@ -41,7 +53,9 @@ jobs:
           source_commit="$(git rev-parse HEAD)"
           version_code="$((500000 + GITHUB_RUN_NUMBER))"
           version_name="5.0.0-qa.${GITHUB_RUN_NUMBER}"
+          source_ref="${{ inputs.source_ref || github.ref_name }}"
           echo "SEVERE_WEATHER_SOURCE_COMMIT=$source_commit" >> "$GITHUB_ENV"
+          echo "SEVERE_WEATHER_SOURCE_REF=$source_ref" >> "$GITHUB_ENV"
           echo "SEVERE_WEATHER_VERSION_CODE=$version_code" >> "$GITHUB_ENV"
           echo "SEVERE_WEATHER_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
           echo "Source commit: $source_commit"
@@ -172,7 +186,7 @@ jobs:
 
           cat > "$output_dir/package-manifest.json" <<EOF
           {
-            "sourceRef": "${{ inputs.source_ref }}",
+            "sourceRef": "$SEVERE_WEATHER_SOURCE_REF",
             "sourceCommit": "$SEVERE_WEATHER_SOURCE_COMMIT",
             "workflowRun": $GITHUB_RUN_NUMBER,
             "applicationId": "$actual_application_id",
