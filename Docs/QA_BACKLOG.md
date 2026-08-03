@@ -60,6 +60,8 @@ Acceptance:
 
 Status: implemented; physical Android lifecycle verification pending
 
+Candidate: `Severe-Weather-v5.0.0-Mobile-Test-47.apk` from exact commit `b3dcc63`
+
 Acceptance:
 - unlocked stop, selected stop, stars, best score, and run count survive Android close and reopen
 - corrupt or missing save data safely falls back to Lincoln County

@@ -23,6 +23,9 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - Strict full-round run #5: passed all `11/11` required checks in 185 seconds; reached district 3, finished at time 0, and recorded no page errors, console errors, or harness exception
 - Current status: V5 campaign foundation and inherited three-district run are automated-browser-QA passed; four-stop campaign play and physical Android acceptance remain pending
 - Android debug delivery: relevant pull-request updates now automatically package the exact PR head; manual workflow dispatch remains available for arbitrary refs
+- V5 Android debug run #47: passed from exact commit `b3dcc63`; artifact `severe-weather-v5.0.0-mobile-test-47` contains `Severe-Weather-v5.0.0-Mobile-Test-47.apk`
+- APK SHA-256: `d21a30878f090b20e4ceb0a8e9c3acaf770f4ede0c4f7d7409094fe717ea6a07`
+- Physical status: exact APK install and four-stop Galaxy S26 Ultra acceptance pending
 - Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
 
 ## Start here
@@ -156,7 +159,7 @@ Workflow behavior:
 
 1. Play the four-stop weather-map progression in the browser lane.
 2. Correct any campaign UI, persistence, or inherited gameplay regression.
-3. Build the V5 Android candidate from the exact accepted source ref.
+3. Install and play `Severe-Weather-v5.0.0-Mobile-Test-47.apk` on the Galaxy S26 Ultra.
 4. Verify campaign persistence across Android close and reopen.
 
 The signing ceremony remains inherited packaging work, but it no longer blocks V5 source development.

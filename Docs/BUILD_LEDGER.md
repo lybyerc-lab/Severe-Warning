@@ -72,6 +72,22 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Durable evidence: `Docs/QA_AUTOPLAY_REPORT.md`, `Docs/QA_AUTOPLAY_REPORT.json`, and `Docs/QA_AUTOPLAY_SCREENSHOT.png`
 - Classification: built, deployed, and automated-browser-QA passed; four-stop campaign play and physical Android acceptance pending
 
+### V5 Android debug APK run #47
+
+- Exact source commit: `b3dcc63cbaf922c4d2e5e03df00fc4b92e3597b0`
+- Workflow run: `30829379621` / run #47
+- Result: success
+- Package verification: passed
+- Android asset synchronization: passed byte comparison
+- Gradle result: `BUILD SUCCESSFUL`; 93 tasks executed
+- Artifact: `severe-weather-v5.0.0-mobile-test-47`
+- APK: `Severe-Weather-v5.0.0-Mobile-Test-47.apk`
+- APK SHA-256: `d21a30878f090b20e4ceb0a8e9c3acaf770f4ede0c4f7d7409094fe717ea6a07`
+- Artifact archive SHA-256: `6636d571218f4934a6f9faa4e748cb6f3f95fb4d7475d69844149a5c5cc01e4d`
+- Artifact retention: through 2026-08-17
+- Signing mode: ephemeral debug key; update-in-place is not expected
+- Classification: exact V5 debug APK built and verified; physical Galaxy S26 Ultra acceptance pending
+
 ## Accepted milestones
 
 ### v4.4.0
