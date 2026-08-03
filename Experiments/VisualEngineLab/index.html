@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07111d" />
+    <title>Severe Warning Visual Engine Laboratory</title>
+  </head>
+  <body>
+    <main id="lab-shell">
+      <canvas id="renderCanvas" aria-label="Babylon visual benchmark scene"></canvas>
+      <section id="lab-title" aria-label="Laboratory identity">
+        <span>SEVERE WARNING</span>
+        <strong>VISUAL ENGINE LAB</strong>
+        <small>FARM → TOWN · COW 17 SAFE</small>
+      </section>
+      <section id="diagnostics" aria-live="polite"></section>
+      <section id="controls" aria-label="Benchmark controls">
+        <button id="pauseButton" type="button">PAUSE</button>
+        <button id="resetButton" type="button">RESET</button>
+        <button id="replayButton" type="button">REPLAY</button>
+        <label>QUALITY <select id="qualitySelect"></select></label>
+        <button id="speedButton" type="button">QA 30s</button>
+        <button id="diagnosticsButton" type="button">METRICS</button>
+      </section>
+      <section id="broadcast" aria-live="polite">MOO BREW SKYWATCH: CONDITIONS ARE BECOMING UNNECESSARY.</section>
+      <section id="status" aria-live="polite">CALM TOWN · REPLAY READY</section>
+      <div id="bootError" role="alert" hidden></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

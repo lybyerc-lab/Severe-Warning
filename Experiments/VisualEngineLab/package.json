@@ -1,0 +1,28 @@
+{
+  "name": "@severe-warning/visual-engine-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:contracts": "vitest run src/tests/contracts.test.ts",
+    "test:replay": "vitest run src/tests/replay.test.ts",
+    "audit:baseline": "node ../../scripts/audit-visual-engine-readiness.mjs",
+    "verify:static": "node scripts/verify-static.mjs",
+    "verify": "npm run verify:static && npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@babylonjs/core": "9.19.0"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.2.0",
+    "vitest": "4.1.10"
+  }
+}
