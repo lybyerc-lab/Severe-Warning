@@ -1,11 +1,11 @@
 # QA Automated Full-Round Report
 
-- Tested commit: `d8f64297113ae2996e774252dc7f226ff1fca878`
-- Workflow run: `7`
+- Tested commit: `4917d1622541c63a88c9de3196b59c8933cce190`
+- Workflow run: `8`
 - Mode: normal-audio scripted full round
-- Started: 2026-08-03T18:19:48.263Z
-- Finished: 2026-08-03T18:22:56.889Z
-- Runtime: 180 seconds
+- Started: 2026-08-03T20:16:21.168Z
+- Finished: 2026-08-03T20:19:38.003Z
+- Runtime: 185 seconds
 
 ## Checks
 
@@ -27,13 +27,13 @@
 
 - Final district: 3
 - Time remaining: 0
-- Destruction score: 43828
-- Base score: 13547
+- Destruction score: 21606
+- Base score: 7102
 - Maximum combo: 3.5
-- Maximum simultaneous visible popups: 2
+- Maximum simultaneous visible popups: 0
 - Music low/high decoded energy: 0.159472 / 0.077905
-- Music events observed: 11
-- Moo events observed: 9
+- Music events observed: 9
+- Moo events observed: 10
 - Glass events observed: 18
 - Final active voices: 7
 

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "testedCommit": "d8f64297113ae2996e774252dc7f226ff1fca878",
-  "workflowRun": "7",
-  "startedAt": "2026-08-03T18:22:57.074Z",
-  "finishedAt": "2026-08-03T18:23:02.731Z",
+  "testedCommit": "4917d1622541c63a88c9de3196b59c8933cce190",
+  "workflowRun": "8",
+  "startedAt": "2026-08-03T20:19:38.322Z",
+  "finishedAt": "2026-08-03T20:19:46.167Z",
   "url": "http://127.0.0.1:4173/",
   "mode": "mobile-landscape four-stop authored-world sweep",
   "checks": {
@@ -17,6 +17,10 @@
     "uniqueRegionalChallenges": true,
     "uniqueBroadcastIdentity": true,
     "intentionalAnimalDensity": true,
+    "cow17PresentAtEveryStop": true,
+    "cow17EarTagPersists": true,
+    "fourHayBaleLandingZones": true,
+    "animalsRemainUnharmed": true,
     "noPageErrors": true,
     "noConsoleErrors": true,
     "harnessCompletedWithoutException": true
@@ -50,7 +54,41 @@
         0.73,
         3.89,
         -1.79
-      ]
+      ],
+      "bovine": {
+        "marker": "V500_BOVINE_SIGNATURE_V1",
+        "invariant": "Cow injuries: 0",
+        "storageKey": "severe_weather_bovine_v1",
+        "cow17": {
+          "id": 17,
+          "airborne": false,
+          "altitude": 0.8,
+          "x": 34,
+          "z": -28,
+          "tagged": true
+        },
+        "round": {
+          "cowsRelocated": 0,
+          "combinedAirtime": 0,
+          "longestFlight": 0,
+          "hayLandings": 0,
+          "cow17Seen": false
+        },
+        "career": {
+          "schema": 1,
+          "totalRelocations": 0,
+          "totalAirtime": 0,
+          "longestFlight": 0,
+          "hayLandings": 0,
+          "cow17Flights": 0,
+          "cow17Stops": {}
+        },
+        "cowCam": {
+          "active": false,
+          "triggered": false
+        },
+        "hayBales": 4
+      }
     },
     {
       "levelId": "prairie-junction",
@@ -80,7 +118,41 @@
         0.16,
         1.69,
         -0.39
-      ]
+      ],
+      "bovine": {
+        "marker": "V500_BOVINE_SIGNATURE_V1",
+        "invariant": "Cow injuries: 0",
+        "storageKey": "severe_weather_bovine_v1",
+        "cow17": {
+          "id": 17,
+          "airborne": false,
+          "altitude": 0.8,
+          "x": -46,
+          "z": 52,
+          "tagged": true
+        },
+        "round": {
+          "cowsRelocated": 0,
+          "combinedAirtime": 0,
+          "longestFlight": 0,
+          "hayLandings": 0,
+          "cow17Seen": false
+        },
+        "career": {
+          "schema": 1,
+          "totalRelocations": 0,
+          "totalAirtime": 0,
+          "longestFlight": 0,
+          "hayLandings": 0,
+          "cow17Flights": 0,
+          "cow17Stops": {}
+        },
+        "cowCam": {
+          "active": false,
+          "triggered": false
+        },
+        "hayBales": 4
+      }
     },
     {
       "levelId": "grain-belt",
@@ -110,7 +182,41 @@
         0.35,
         3.74,
         -0.86
-      ]
+      ],
+      "bovine": {
+        "marker": "V500_BOVINE_SIGNATURE_V1",
+        "invariant": "Cow injuries: 0",
+        "storageKey": "severe_weather_bovine_v1",
+        "cow17": {
+          "id": 17,
+          "airborne": false,
+          "altitude": 0.8,
+          "x": 62,
+          "z": 68,
+          "tagged": true
+        },
+        "round": {
+          "cowsRelocated": 0,
+          "combinedAirtime": 0,
+          "longestFlight": 0,
+          "hayLandings": 0,
+          "cow17Seen": false
+        },
+        "career": {
+          "schema": 1,
+          "totalRelocations": 0,
+          "totalAirtime": 0,
+          "longestFlight": 0,
+          "hayLandings": 0,
+          "cow17Flights": 0,
+          "cow17Stops": {}
+        },
+        "cowCam": {
+          "active": false,
+          "triggered": false
+        },
+        "hayBales": 4
+      }
     },
     {
       "levelId": "state-fair-finale",
@@ -140,7 +246,41 @@
         0.23,
         -0.47,
         -0.57
-      ]
+      ],
+      "bovine": {
+        "marker": "V500_BOVINE_SIGNATURE_V1",
+        "invariant": "Cow injuries: 0",
+        "storageKey": "severe_weather_bovine_v1",
+        "cow17": {
+          "id": 17,
+          "airborne": false,
+          "altitude": 0.8,
+          "x": -38,
+          "z": 96,
+          "tagged": true
+        },
+        "round": {
+          "cowsRelocated": 0,
+          "combinedAirtime": 0,
+          "longestFlight": 0,
+          "hayLandings": 0,
+          "cow17Seen": false
+        },
+        "career": {
+          "schema": 1,
+          "totalRelocations": 0,
+          "totalAirtime": 0,
+          "longestFlight": 0,
+          "hayLandings": 0,
+          "cow17Flights": 0,
+          "cow17Stops": {}
+        },
+        "cowCam": {
+          "active": false,
+          "triggered": false
+        },
+        "hayBales": 4
+      }
     }
   ],
   "consoleErrors": [],
