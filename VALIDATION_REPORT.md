@@ -1,10 +1,18 @@
 # Validation Report
 
-Last updated: 2026-07-31
+Last updated: 2026-08-03
 
 ## Evidence scope
 
 The active playable is `MechanicsLab/SevereWeather_3D_Lab.html`. This report separates browser validation, repository integrity, Android packaging, and physical-device acceptance. Passing one gate does not imply the others.
+
+## v5.0.0 authored-world candidate
+
+The V5 campaign foundation and real-time warning clock passed deterministic source verification. Strict full-round workflow run #5 completed in 185 seconds and passed all `11/11` required checks, including district three and results at time zero, with no page errors, console errors, or harness exception.
+
+A local `932 x 430` mobile-landscape sweep loaded Lincoln County, Prairie Junction, Grain Belt, and the State Fair finale. It observed four unique terrain profiles, eight unique destructible landmark contracts, regional scenery and animation, four challenge and broadcast identities, distinct media call-sign rosters, and intentional animal counts of `38`, `24`, `18`, and `8`. No page or console errors were observed.
+
+This local sweep is implementation evidence, not release acceptance. The exact authored-world commit must still pass CI, produce a new APK, and pass Galaxy S26 Ultra gameplay and close/reopen persistence checks.
 
 ## v3.2.0 browser acceptance
 

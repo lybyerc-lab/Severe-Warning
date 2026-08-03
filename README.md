@@ -4,7 +4,7 @@ Severe Weather is a mobile-first, single-player arcade destruction game. The pla
 
 The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.html`. A Capacitor 8 Android wrapper now packages that exact game and its fonts locally while preserving offline play and the existing browser feel.
 
-## Current gameplay baseline
+## Inherited gameplay baseline
 
 Version `4.0.0 Living County Edition` contains:
 
@@ -31,6 +31,21 @@ Version `4.0.0 Living County Edition` contains:
 - two visible damage stages before collapse, footprint-sized persistent rubble, and ballistic debris that bounces across the terrain
 - block-clear bonuses and four optional chain-reaction businesses with collateral destruction, shockwaves, radar diamonds, and original local-news jokes
 
+## Active V5 candidate
+
+`v5.0.0 Heartland Campaign Foundation` layers a four-stop mobile campaign over the accepted destruction loop:
+
+- television weather-map selection with locked progression
+- persistent stars, best scores, run counts, selected stop, and furthest unlock
+- Lincoln County, Prairie Junction, Grain Belt, and State Fair finale
+- distinct road-safe terrain profiles, ground palettes, regional scenery, broadcasts, media rosters, challenges, and animal density
+- eight destructible signature landmarks across the tour
+- per-stop scoring targets and modifiers
+- a monotonic three-minute warning clock that remains correct at low render rates
+- deterministic structural verification and a mobile-landscape four-stop browser sweep
+
+The candidate is not physically accepted until the exact APK passes on the Galaxy S26 Ultra, including close/reopen campaign persistence.
+
 The design reference is the readable, humorous, replayable city-block destruction structure associated with classic arcade destruction games. This project must develop its own storms, districts, humor, names, art, and progression rather than copying another game's protected characters or assets.
 
 ## Product constraints
@@ -53,6 +68,8 @@ The design reference is the readable, humorous, replayable city-block destructio
 - `Tools/validate_project.py`: repository structure and source validation
 
 ## Current evidence
+
+The V5 campaign foundation passed its structural verifier and the inherited strict full-round browser run passed all `11/11` required checks in 185 seconds with no browser errors. A local mobile-landscape authored-world sweep constructed all four stops with unique terrain, scenery, landmark, challenge, media, and density contracts and no page or console errors. Exact-commit CI and physical Android acceptance for the authored-world candidate remain pending.
 
 Automated browser testing of v3.2.0 completed a full Tornado run at approximately 60 FPS with all three district challenges, both landmarks, all three sequential substations, eight captured media moments, a `+1289` footage bonus, and a successful mobile retry. The offline bundle also passed a separate `844x390` mobile-landscape layout check with local fonts loaded and no document overflow.
 

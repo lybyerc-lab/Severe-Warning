@@ -68,8 +68,10 @@ jobs:
           node --check scripts/apply-qa-corrections-patch.mjs
           node --check scripts/apply-audio-mix-followup-patch.mjs
           node --check scripts/qa-play-full-round.mjs
+          node --check scripts/qa-v500-world-tour.mjs
           node --check scripts/apply-v500-campaign-patch.mjs
           node --check scripts/apply-v500-realtime-clock-fix.mjs
+          node --check scripts/apply-v500-world-tour-patch.mjs
           node --check scripts/verify-v500-campaign.mjs
           npm run patch:v431
           npm run patch:v440
@@ -101,20 +103,30 @@ jobs:
           QA_PLAY_OUTPUT: Docs
         run: node scripts/qa-play-full-round.mjs
 
+      - name: Sweep all four authored Heartland worlds
+        env:
+          QA_PLAY_URL: http://127.0.0.1:4173/
+          QA_PLAY_OUTPUT: Docs
+        run: node scripts/qa-v500-world-tour.mjs
+
       - name: Verify report exists
         shell: bash
         run: |
           test -s Docs/QA_AUTOPLAY_REPORT.json
           test -s Docs/QA_AUTOPLAY_REPORT.md
           test -s Docs/QA_AUTOPLAY_SCREENSHOT.png
+          test -s Docs/QA_V500_WORLD_TOUR_REPORT.json
+          test -s Docs/QA_V500_WORLD_TOUR_REPORT.md
+          test -s Docs/QA_V500_WORLD_TOUR_SCREENSHOT.png
           node --input-type=module -e "import fs from 'node:fs'; const report=JSON.parse(fs.readFileSync('Docs/QA_AUTOPLAY_REPORT.json','utf8')); if (!report.snapshots?.length) throw new Error('No play snapshots'); console.log(JSON.stringify(report.checks, null, 2));"
+          node --input-type=module -e "import fs from 'node:fs'; const report=JSON.parse(fs.readFileSync('Docs/QA_V500_WORLD_TOUR_REPORT.json','utf8')); if (report.states?.length !== 4) throw new Error('Four-stop sweep incomplete'); console.log(JSON.stringify(report.checks, null, 2));"
 
       - name: Commit playtest evidence to QA branch
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add Docs/QA_AUTOPLAY_REPORT.json Docs/QA_AUTOPLAY_REPORT.md Docs/QA_AUTOPLAY_SCREENSHOT.png
+          git add Docs/QA_AUTOPLAY_REPORT.json Docs/QA_AUTOPLAY_REPORT.md Docs/QA_AUTOPLAY_SCREENSHOT.png Docs/QA_V500_WORLD_TOUR_REPORT.json Docs/QA_V500_WORLD_TOUR_REPORT.md Docs/QA_V500_WORLD_TOUR_SCREENSHOT.png
           if git diff --cached --quiet; then
             echo 'No report changes to commit.'
             exit 0
@@ -130,5 +142,8 @@ jobs:
             Docs/QA_AUTOPLAY_REPORT.json
             Docs/QA_AUTOPLAY_REPORT.md
             Docs/QA_AUTOPLAY_SCREENSHOT.png
+            Docs/QA_V500_WORLD_TOUR_REPORT.json
+            Docs/QA_V500_WORLD_TOUR_REPORT.md
+            Docs/QA_V500_WORLD_TOUR_SCREENSHOT.png
           if-no-files-found: error
           retention-days: 14

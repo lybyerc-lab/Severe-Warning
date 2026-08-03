@@ -69,14 +69,19 @@ Acceptance:
 
 ### V5-003: Heartland stop identity
 
-Status: first foundation implemented; visual/content depth remains open
+Status: authored four-stop world-tour candidate implemented; automated CI and physical Android acceptance pending
 
 Implemented:
 - distinct station, brief, district names, color treatment, spawn point, target score, and score modifier for each stop
+- four road-safe terrain profiles and ground palettes
+- stop-specific ridge, prairie/rail, harvest/industrial, and neon-fair scenery
+- eight unique destructible landmarks, including water tower, courthouse, grain elevator, windmill, silo bank, foundry, Ferris wheel, and grandstand
+- regional media call signs, broadcast identity, bonus challenges, fog treatment, target tint, and animal density
+- local mobile-landscape browser sweep loaded all four stops with no page or console errors
 
-Still required before calling V5 physically accepted:
+Still required before calling V5 accepted:
+- pass the strict full-round plus four-stop world-tour CI workflow from the exact candidate commit
 - confirm all four stops feel meaningfully different on the Galaxy S26 Ultra
-- add more stop-specific landmarks or layouts if palette, spawn, and rules are not enough
 - preserve mobile frame pacing while increasing authored distinction
 
 ## Blockers

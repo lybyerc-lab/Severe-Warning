@@ -3,7 +3,7 @@
 Last updated: 2026-08-03 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Current milestone: `v5.0.0 Heartland Campaign Foundation`
-Current build-train gate: V5 Phase 1 campaign integration and browser QA
+Current build-train gate: V5 Phase 2 authored-world CI and Android acceptance
 
 ## V5 fast-track override
 
@@ -12,7 +12,7 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - Active integration branch: `agent/v500-heartland-campaign`
 - Source base: browser-QA-passed `qa` gameplay plus current `main` build infrastructure
 - V5 contract: `Docs/V5_BUILD_TRAIN.md`
-- V5 implementation: deterministic campaign and real-time clock patches
+- V5 implementation: deterministic campaign, real-time clock, and authored world-tour patches
 - V5 verifier: `scripts/verify-v500-campaign.mjs`
 - Integration commit: `d6365d5a` (`Build V5 Heartland campaign foundation`)
 - Pages run #49: built, deterministic browser-QA passed, and deployed from exact commit `8b193b5`
@@ -21,7 +21,9 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - Correction: `scripts/apply-v500-realtime-clock-fix.mjs` separates the warning clock from capped simulation time, preserves pause/background behavior, and makes any failed required playtest check fail CI
 - Pages run #50: passed and deployed exact commit `c445324`
 - Strict full-round run #5: passed all `11/11` required checks in 185 seconds; reached district 3, finished at time 0, and recorded no page errors, console errors, or harness exception
-- Current status: V5 campaign foundation and inherited three-district run are automated-browser-QA passed; four-stop campaign play and physical Android acceptance remain pending
+- Current authored-world candidate: four road-safe terrain profiles, regional scenery and challenges, eight destructible signature landmarks, distinct media rosters, and controlled animal density
+- Local mobile-landscape sweep: all four stops constructed successfully with unique contracts and no page or console errors; exact-commit CI evidence remains pending
+- Current status: V5 campaign foundation and inherited three-district run are automated-browser-QA passed; authored-world CI and physical Android acceptance remain pending
 - Android debug delivery: relevant pull-request updates now automatically package the exact PR head; manual workflow dispatch remains available for arbitrary refs
 - V5 Android debug run #47: passed from exact commit `b3dcc63`; artifact `severe-weather-v5.0.0-mobile-test-47` contains `Severe-Weather-v5.0.0-Mobile-Test-47.apk`
 - APK SHA-256: `d21a30878f090b20e4ceb0a8e9c3acaf770f4ede0c4f7d7409094fe717ea6a07`
@@ -157,10 +159,10 @@ Workflow behavior:
 
 ## Immediate next action
 
-1. Play the four-stop weather-map progression in the browser lane.
-2. Correct any campaign UI, persistence, or inherited gameplay regression.
-3. Install and play `Severe-Weather-v5.0.0-Mobile-Test-47.apk` on the Galaxy S26 Ultra.
-4. Verify campaign persistence across Android close and reopen.
+1. Run strict full-round plus four-stop authored-world QA from the exact candidate commit.
+2. Build a new debug APK only after that exact gameplay candidate is green.
+3. Install and play the new APK on the Galaxy S26 Ultra; judge district distinction, controls, frame pacing, heat, and battery.
+4. Verify campaign progress across Android close and reopen.
 
 The signing ceremony remains inherited packaging work, but it no longer blocks V5 source development.
 

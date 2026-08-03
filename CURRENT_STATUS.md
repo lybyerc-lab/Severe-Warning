@@ -1,9 +1,9 @@
 # Severe Weather Current Status
 
-Last updated: 2026-07-31
+Last updated: 2026-08-03
 Repository: `lybyerc-lab/Severe-Warning`
 Default branch: `main`
-Active release: HTML/WebGL `4.4.0 Illustrated Storm Feedback`
+Active candidate: HTML/WebGL `5.0.0 Heartland Campaign Foundation`
 Primary target: single-player Android landscape
 Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
 Android packaging: Capacitor 8.5.0 with local offline assets
@@ -43,6 +43,24 @@ Severe Weather is a humorous, replayable mobile arcade destruction game in which
 - The audio system must advance to layered weather ambience and material-specific destruction sounds.
 
 The complete approved direction is recorded in `Docs/PRODUCT_VISION_AND_ROADMAP.md`.
+
+## Active v5.0.0 candidate
+
+The V5 integration branch now contains a deterministic four-stop Heartland campaign, real-time warning clock, and authored-world pass. Each stop has its own terrain profile, regional scenery, broadcast and media identity, bonus challenges, controlled animal density, and two destructible signature landmarks.
+
+Automated evidence already accepted for the foundation:
+
+- V5 structural verifier passed
+- inherited strict full-round browser run passed all `11/11` checks in 185 seconds
+- no page errors, console errors, or harness exception in that full round
+
+Candidate-local evidence:
+
+- all four authored worlds loaded in a `932 x 430` mobile-landscape browser
+- unique terrain, scenery, landmark, challenge, broadcast, media, and density contracts were observed
+- no page or console errors were observed
+
+The authored-world commit still requires exact-commit CI, a new APK, Galaxy S26 Ultra play, and close/reopen persistence acceptance.
 
 ## v4.4.0 accepted contents
 
@@ -100,6 +118,9 @@ Full evidence is recorded in `Docs/RELEASE_ACCEPTANCE_v4.4.0.md`.
 
 Still unproven:
 
+- exact-commit CI for the authored four-stop world pass
+- V5 campaign persistence across Android close and reopen
+- meaningful four-stop visual distinction on the Galaxy S26 Ultra
 - ordinary or older Android performance
 - sustained heat and battery behavior
 - repeated Grid Zap stress across many runs
@@ -108,14 +129,10 @@ Still unproven:
 
 ## Immediate next milestone
 
-Continue the illustrated storm-feedback roadmap without turning the entire scene into a shader experiment at once.
+Close V5 as one release candidate rather than returning to incremental visual experiments:
 
-Recommended next slice:
-
-1. Make Gust visibly bend small trees and vegetation.
-2. Push light props and already-loose debris slightly without moving heavy structures.
-3. Add readable dust, leaf, and pressure-wave feedback.
-4. Verify the effect budget on the Galaxy S26 Ultra before expanding to Pull.
-5. Keep replacement production audio as a separate controlled milestone.
-
-Do not bundle regional campaigns, the Moo Brew cinematic, farm animals, and the complete audio replacement into the next corrective slice.
+1. Pass strict full-round and four-stop authored-world CI from the exact candidate commit.
+2. Build a new debug APK from that commit.
+3. Play the four stops on the Galaxy S26 Ultra and judge distinction, controls, performance, heat, battery, and sound.
+4. Close and reopen the app to verify campaign persistence.
+5. Correct only release-blocking findings before merging V5.

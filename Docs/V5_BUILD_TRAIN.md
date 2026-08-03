@@ -39,6 +39,8 @@ Required:
 - Grain Belt
 - State Fair finale
 - distinct station, brief, districts, palette, spawn, target, and scoring rule per stop
+- distinct terrain profile, regional scenery, media roster, and challenge pool per stop
+- two destructible signature landmarks per stop
 - no locked stop can be launched
 - every cleared stop unlocks exactly the next stop
 
@@ -63,4 +65,4 @@ V5 is physically accepted only after the user approves the exact APK.
 
 ## Honest scope boundary
 
-This milestone establishes the Heartland campaign framework and a complete four-stop progression loop using the current county world as the reusable foundation. More authored landmarks, layouts, farmyard comedy, and region-specific set pieces can deepen the stops after the foundation is stable; they must not be misrepresented as already complete.
+This milestone establishes the Heartland campaign framework and a complete four-stop progression loop. The current candidate also authors four terrain/scenery contracts, eight destructible signature landmarks, regional challenge pools, distinct media crews, and intentional crowd density. It does not claim bespoke road topology, character animation, high-detail art assets, or Galaxy S26 Ultra acceptance until those are actually tested.

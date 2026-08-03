@@ -104,9 +104,11 @@ Purpose:
 Primary patch:
 - `scripts/apply-v500-campaign-patch.mjs`
 - `scripts/apply-v500-realtime-clock-fix.mjs`
+- `scripts/apply-v500-world-tour-patch.mjs`
 
 Verification:
 - `scripts/verify-v500-campaign.mjs`
+- `scripts/qa-v500-world-tour.mjs`
 
 Responsibilities:
 - Heartland stop definitions
@@ -115,6 +117,9 @@ Responsibilities:
 - per-stop broadcast identity, district identity, spawn, palette, score target, and score modifier
 - next-stop results flow
 - monotonic real-time warning countdown independent of capped simulation delta
+- four road-safe terrain profiles and ground palettes
+- regional scenery, animation, landmark, challenge, media, and crowd-density contracts
+- four-stop mobile-landscape runtime sweep with screenshot and machine-readable report
 
 ## Verification ladder
 
