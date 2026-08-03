@@ -4,6 +4,23 @@ Last updated: 2026-08-03
 
 ## V5 campaign foundation
 
+### QA-004: Full-round workflow Playwright setup
+
+Status: correction prepared; rerun pending
+
+Observed:
+- V5 full-round run #3 failed in `Install Playwright browser harness` before gameplay.
+- Historical runs #1 and #2 also failed, so the workflow has no prior green baseline.
+
+Correction:
+- pin Playwright `1.55.0` in project dev dependencies and the pnpm lockfile
+- use `pnpm exec playwright install --with-deps chromium`
+- remove mixed npm/pnpm installation
+
+Acceptance:
+- dependency installation succeeds with `pnpm install --frozen-lockfile`
+- the complete normal-audio browser round executes and records its report
+
 ### V5-001: Heartland campaign progression
 
 Status: implemented on `agent/v500-heartland-campaign`; browser QA pending

@@ -42,8 +42,7 @@ jobs:
       - name: Install Playwright browser harness
         shell: bash
         run: |
-          npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
+          pnpm exec playwright install --with-deps chromium
 
       - name: Restore verified QA audio cache
         id: audio-cache

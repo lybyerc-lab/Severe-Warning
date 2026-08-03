@@ -16,6 +16,27 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Android physical result: pending
 - Classification: committed, not yet browser-QA passed, not physically accepted, not merged
 
+### V5 Pages run #48
+
+- Exact commit: `5fa7b1babf3603c1d6a28feae9e18467e6125041`
+- Workflow run: `30827107115`
+- Result: success
+- V5 package verification: passed
+- QA4 deterministic browser verification: passed
+- GitHub Pages deployment: passed
+- Physical Galaxy S26 Ultra browser result: pending
+- Classification: built and automated browser-QA passed; not physically accepted; not merged
+
+### V5 automated full-round run #3
+
+- Exact commit: `5fa7b1babf3603c1d6a28feae9e18467e6125041`
+- Workflow run: `30827107150`
+- Result: failed before gameplay
+- Failed step: `Install Playwright browser harness`
+- Historical finding: runs #1 and #2 failed in the same workflow, so this is inherited QA infrastructure rather than a V5 gameplay regression
+- Correction: pin Playwright in project development dependencies and use `pnpm exec` instead of injecting it with npm after a pnpm install
+- Verification: rerun pending
+
 ## Accepted milestones
 
 ### v4.4.0

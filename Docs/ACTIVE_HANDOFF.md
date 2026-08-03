@@ -15,7 +15,9 @@ On 2026-08-03, the user explicitly approved advancing directly to V5 instead of 
 - V5 implementation: deterministic `scripts/apply-v500-campaign-patch.mjs`
 - V5 verifier: `scripts/verify-v500-campaign.mjs`
 - Integration commit: `d6365d5a` (`Build V5 Heartland campaign foundation`)
-- Current status: committed; structural verification passed; browser and physical acceptance pending
+- Pages run #48: built, deterministic browser-QA passed, and deployed from exact commit `5fa7b1b`
+- Full-round run #3: failed in inherited Playwright installation before gameplay; package-manager correction pending rerun
+- Current status: V5 source committed and deployed to QA Pages; physical browser and Android acceptance pending
 - Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
 
 ## Start here
