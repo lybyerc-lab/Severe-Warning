@@ -41,6 +41,7 @@ async function captureFailure(page, viewport, url, phase, error, pageErrors, con
     architecture: globalThis.__SEVERE_WEATHER__?.architecture ?? null,
     lifecycle: globalThis.__SEVERE_WEATHER__?.app?.getStatus?.() ?? null,
     legacyStatus: globalThis.__SEVERE_WEATHER__?.qa?.getStatus?.() ?? null,
+    clockBridge: globalThis.__SEVERE_WEATHER__?.qa?.getClockBridgeSnapshot?.() ?? null,
     qaState: globalThis.__SEVERE_WEATHER__?.qa?.getSnapshot?.() ?? null,
     documentState: document.readyState,
     title: document.title,
@@ -83,6 +84,11 @@ async function prepareAndSampleScenario(page) {
   }
 
   throw new Error(`Production slice did not stabilize after ${maxSamples} bounded samples: ${JSON.stringify(state)}`);
+}
+
+function expectedLifecycleForLegacy(legacy) {
+  if (!legacy?.runActive || legacy.remainingSeconds <= 0) return 'ready';
+  return legacy.paused ? 'paused' : 'running';
 }
 
 for (const viewport of viewports) {
@@ -133,8 +139,10 @@ for (const viewport of viewports) {
     architecture: globalThis.__SEVERE_WEATHER__?.architecture ?? null,
     lifecycle: globalThis.__SEVERE_WEATHER__?.app?.getStatus?.() ?? null,
     legacyStatus: globalThis.__SEVERE_WEATHER__?.qa?.getStatus?.() ?? null,
+    clockBridge: globalThis.__SEVERE_WEATHER__?.qa?.getClockBridgeSnapshot?.() ?? null,
     documentArchitecture: document.documentElement.dataset.swArchitecture ?? null
   }));
+  const expectedLifecycle = expectedLifecycleForLegacy(shellState.clockBridge?.legacy);
   const screenshotPath = path.join(outputDir, `${viewport.name}.png`);
   await page.screenshot({ path: screenshotPath, fullPage: false });
 
@@ -142,7 +150,8 @@ for (const viewport of viewports) {
     modernShell: shellState.architecture === 'modern-shell-v1'
       && acceptedLifecycleStates.has(shellState.lifecycle?.state)
       && shellState.documentArchitecture === 'modern-shell-v1',
-    lifecycleSynchronized: shellState.lifecycle?.state === 'running',
+    lifecycleSynchronized: shellState.lifecycle?.state === expectedLifecycle,
+    clockAuthorityAttached: shellState.clockBridge?.attached === true,
     formalQaBridge: Object.values(shellState.legacyStatus ?? {}).every(Boolean),
     marker: state.marker === 'V510_THREEJS_PRODUCTION_SLICE_V1',
     renderer: state.renderer === 'Three.js r128',
@@ -161,6 +170,7 @@ for (const viewport of viewports) {
     viewport,
     url: url.toString(),
     screenshot: path.relative(projectRoot, screenshotPath).replaceAll('\\', '/'),
+    expectedLifecycle,
     shellState,
     state,
     checks,
