@@ -202,6 +202,12 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     if (id !== 'production-hero') throw new Error(`Unsupported QA scenario: ${id}`);
     const prepared = this.#globals.triggerProductionSliceQa?.('hero');
     if (prepared !== true) throw new Error('Legacy production hero scenario did not initialize.');
+
+    // Scenario setup mutates legacy run, scoring, district, and campaign state
+    // outside the normal animation-loop sampling path. Synchronize every typed
+    // mirror immediately so QA truth never depends on viewport timing.
+    this.synchronizeClockFromLegacy();
+    this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.syncFromLegacy();
   }
 
   advance(milliseconds: number): void {
@@ -225,6 +231,19 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.reset();
     this.#globals.__SW_V510_REBUILD__?.();
     this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.reset();
+    this.synchronizeClockFromLegacy();
+  }
+
+  private synchronizeClockFromLegacy(): LegacyClockSample {
+    const bridge = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__;
+    if (!bridge) throw new Error('Legacy runtime clock bridge is unavailable.');
+    const state = bridge.getLegacyRunState();
+    return bridge.sample({
+      nowMs: performance.now(),
+      runActive: state.runActive,
+      paused: state.paused,
+      remainingSeconds: state.remainingSeconds,
+    });
   }
 
   private assertRequiredContracts(): void {
