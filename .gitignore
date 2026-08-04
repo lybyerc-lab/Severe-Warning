@@ -22,6 +22,8 @@ Recordings/
 *.unitypackage
 .DS_Store
 Assets/__GeneratedBuild/
+Assets/audio/
+Experiments/
 
 # Capacitor / Node workspace
 node_modules/

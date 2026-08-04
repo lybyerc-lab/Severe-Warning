@@ -1,7 +1,6 @@
 // ============================================================================
 // [SW:ARCH:GAME_CONTEXT]
-// Shared Phase 4 ownership for clocks, input, abilities, scoring, districts,
-// campaign, persistence, and legacy boundary.
+// Shared Phase 5 ownership for presentation, world, and legacy boundary.
 // ============================================================================
 
 import type { AbilitySystem } from '../abilities/ability-system';
@@ -11,6 +10,13 @@ import type { ScoringSystem } from '../gameplay/scoring/scoring-system';
 import type { DistrictSystem } from '../gameplay/districts/district-system';
 import type { CampaignSystem } from '../gameplay/campaign/campaign-system';
 import type { CampaignStore } from '../platform/persistence/campaign-store';
+import type { RendererSystem } from '../presentation/renderer/renderer-system';
+import type { SceneSystem } from '../presentation/scene/scene-system';
+import type { CameraSystem } from '../presentation/camera/camera-system';
+import type { AtmosphereSystem } from '../presentation/atmosphere/atmosphere-system';
+import type { TornadoPresentationSystem } from '../presentation/tornado/tornado-presentation-system';
+import type { WorldSystem } from '../world/world-system';
+import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system';
 import type { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 
 export interface BuildIdentity {
@@ -19,7 +25,7 @@ export interface BuildIdentity {
   readonly label: string;
   readonly renderer: 'Three.js r128';
   readonly architecture: 'modern-shell-v1';
-  readonly modernizationPhase: 'phase-4-scoring-campaign';
+  readonly modernizationPhase: 'phase-5-rendering-world';
 }
 
 export interface GameContext {
@@ -31,6 +37,14 @@ export interface GameContext {
   readonly district: DistrictSystem;
   readonly campaign: CampaignSystem;
   readonly persistence: CampaignStore;
+  readonly renderer: RendererSystem;
+  readonly scene: SceneSystem;
+  readonly camera: CameraSystem;
+  readonly atmosphere: AtmosphereSystem;
+  readonly tornado: TornadoPresentationSystem;
+  readonly world: WorldSystem;
+  readonly hartFarm: DestructibleSetpieceSystem;
+  readonly silo: DestructibleSetpieceSystem;
   readonly legacy: LegacyRuntimeAdapter;
   readonly document: Document;
   readonly window: Window;
@@ -45,6 +59,14 @@ export function createGameContext(
   district: DistrictSystem,
   campaign: CampaignSystem,
   persistence: CampaignStore,
+  renderer: RendererSystem,
+  scene: SceneSystem,
+  camera: CameraSystem,
+  atmosphere: AtmosphereSystem,
+  tornado: TornadoPresentationSystem,
+  world: WorldSystem,
+  hartFarm: DestructibleSetpieceSystem,
+  silo: DestructibleSetpieceSystem,
   version: string,
   label: string,
 ): GameContext {
@@ -55,7 +77,7 @@ export function createGameContext(
       label,
       renderer: 'Three.js r128',
       architecture: 'modern-shell-v1',
-      modernizationPhase: 'phase-4-scoring-campaign',
+      modernizationPhase: 'phase-5-rendering-world',
     }),
     clocks,
     input,
@@ -64,6 +86,14 @@ export function createGameContext(
     district,
     campaign,
     persistence,
+    renderer,
+    scene,
+    camera,
+    atmosphere,
+    tornado,
+    world,
+    hartFarm,
+    silo,
     legacy,
     document,
     window,

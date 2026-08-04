@@ -1,7 +1,7 @@
 // ============================================================================
 // [SW:ARCH:BOOTSTRAP]
 // Creates the modern shell and attaches Phase 2 clocks, Phase 3 controls,
-// and Phase 4 scoring, district, campaign, and persistence authorities.
+// Phase 4 scoring/campaign, and Phase 5 rendering/world authorities.
 // ============================================================================
 
 import { AbilitySystem } from '../abilities/ability-system';
@@ -11,6 +11,15 @@ import { ScoringSystem } from '../gameplay/scoring/scoring-system';
 import { DistrictSystem } from '../gameplay/districts/district-system';
 import { CampaignSystem } from '../gameplay/campaign/campaign-system';
 import { CampaignStore } from '../platform/persistence/campaign-store';
+import { RendererSystem } from '../presentation/renderer/renderer-system';
+import { SceneSystem } from '../presentation/scene/scene-system';
+import { CameraSystem } from '../presentation/camera/camera-system';
+import { AtmosphereSystem } from '../presentation/atmosphere/atmosphere-system';
+import { TornadoPresentationSystem } from '../presentation/tornado/tornado-presentation-system';
+import { WorldSystem } from '../world/world-system';
+import { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system';
+import { HART_FARM_SETPIECE_DEFINITION } from '../world/setpieces/hart-farm-definition';
+import { GRAIN_SILO_SETPIECE_DEFINITION } from '../world/setpieces/second-structure-definition';
 import { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 import { GameApp } from './game-app';
 import { createGameContext } from './game-context';
@@ -27,9 +36,17 @@ export interface SevereWeatherModernShell {
   readonly district: DistrictSystem;
   readonly campaign: CampaignSystem;
   readonly persistence: CampaignStore;
+  readonly renderer: RendererSystem;
+  readonly scene: SceneSystem;
+  readonly camera: CameraSystem;
+  readonly atmosphere: AtmosphereSystem;
+  readonly tornado: TornadoPresentationSystem;
+  readonly world: WorldSystem;
+  readonly hartFarm: DestructibleSetpieceSystem;
+  readonly silo: DestructibleSetpieceSystem;
   readonly qa: LegacyRuntimeAdapter;
   readonly architecture: 'modern-shell-v1';
-  readonly modernizationPhase: 'phase-4-scoring-campaign';
+  readonly modernizationPhase: 'phase-5-rendering-world';
 }
 
 export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell> {
@@ -41,6 +58,14 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
   const district = new DistrictSystem();
   const persistence = new CampaignStore();
   const campaign = new CampaignSystem(persistence);
+  const renderer = new RendererSystem();
+  const scene = new SceneSystem();
+  const camera = new CameraSystem();
+  const atmosphere = new AtmosphereSystem();
+  const tornado = new TornadoPresentationSystem();
+  const world = new WorldSystem();
+  const hartFarm = new DestructibleSetpieceSystem(HART_FARM_SETPIECE_DEFINITION);
+  const silo = new DestructibleSetpieceSystem(GRAIN_SILO_SETPIECE_DEFINITION);
 
   const context = createGameContext(
     legacy,
@@ -51,6 +76,14 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
     district,
     campaign,
     persistence,
+    renderer,
+    scene,
+    camera,
+    atmosphere,
+    tornado,
+    world,
+    hartFarm,
+    silo,
     __SW_BUILD_VERSION__,
     __SW_BUILD_LABEL__,
   );
@@ -67,8 +100,16 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
     district,
     campaign,
     persistence,
+    renderer,
+    scene,
+    camera,
+    atmosphere,
+    tornado,
+    world,
+    hartFarm,
+    silo,
     qa: legacy,
     architecture: 'modern-shell-v1',
-    modernizationPhase: 'phase-4-scoring-campaign',
+    modernizationPhase: 'phase-5-rendering-world',
   });
 }
