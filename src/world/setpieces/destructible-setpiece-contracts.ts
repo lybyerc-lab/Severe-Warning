@@ -1,15 +1,21 @@
 // ============================================================================
 // [SW:ARCH:PHASE5_SETPIECE_CONTRACTS]
-// Reusable data-driven setpiece destruction contracts and stage definitions.
+// Reusable read-only destruction contracts mapped from accepted legacy stages.
 // ============================================================================
 
-export type DestructionStageId = 'intact' | 'damaged' | 'roof-peel' | 'exposed' | 'wreckage';
+export type DestructionStageId =
+  | 'intact'
+  | 'damaged'
+  | 'roof-peel'
+  | 'exposed'
+  | 'wreckage'
+  | 'destroyed';
 
 export interface SetpieceStageDefinition {
   readonly stageId: DestructionStageId;
-  readonly stageIndex: number; // 1-indexed (1 to 5)
-  readonly name: string;
-  readonly damageThresholdRatio: number; // 0.0 to 1.0
+  readonly legacyStage: number;
+  readonly label: string;
+  readonly remainingHealthAtOrBelow: number | null;
   readonly scorePoints: number;
   readonly audioEventName: string | null;
 }
@@ -17,15 +23,19 @@ export interface SetpieceStageDefinition {
 export interface SetpieceDefinition {
   readonly id: string;
   readonly name: string;
-  readonly category: 'farmstead' | 'industrial' | 'commercial' | 'civic';
+  readonly category: 'farmstead' | 'landmark';
   readonly stages: readonly SetpieceStageDefinition[];
 }
 
 export interface SetpieceStateSnapshot {
   readonly setpieceId: string;
+  readonly displayName: string;
   readonly currentStageId: DestructionStageId;
-  readonly currentStageIndex: number;
-  readonly damageRatio: number;
+  readonly legacyStage: number;
+  readonly health: number;
+  readonly maxHealth: number;
+  readonly remainingHealthRatio: number;
   readonly isFullyDestroyed: boolean;
   readonly scoreAwardedTotal: number;
+  readonly detachedPieceCount: number;
 }
