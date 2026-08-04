@@ -1,0 +1,95 @@
+import { access, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(scriptDir, '..');
+const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
+  ? path.resolve(process.env.SEVERE_WEATHER_SOURCE_PATH)
+  : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+
+const checks = [];
+function check(name, passed, detail = '') {
+  checks.push({ name, passed: Boolean(passed), detail });
+  console.log(`${passed ? 'PASS' : 'FAIL'} ${name}${detail ? ` :: ${detail}` : ''}`);
+}
+
+const packageJson = JSON.parse(await readFile(path.join(projectRoot, 'package.json'), 'utf8'));
+const gradle = await readFile(path.join(projectRoot, 'android', 'app', 'build.gradle'), 'utf8');
+const html = await readFile(sourcePath, 'utf8');
+const runtimeFiles = [
+  'v510-foundation.js',
+  'v510-tornado.js',
+  'v510-world.js',
+  'v510-runtime.js'
+];
+const runtimeText = {};
+for (const file of runtimeFiles) {
+  const filePath = path.join(projectRoot, 'runtime', file);
+  try {
+    await access(filePath);
+    runtimeText[file] = await readFile(filePath, 'utf8');
+    check(`runtime file ${file}`, runtimeText[file].length > 100, `${runtimeText[file].length} chars`);
+  } catch (error) {
+    check(`runtime file ${file}`, false, error.message);
+  }
+}
+const runtime = Object.values(runtimeText).join('\n');
+
+check('package version', packageJson.version === '5.1.0', packageJson.version);
+check('package build label', packageJson.buildLabel === 'Three.js Production Slice', packageJson.buildLabel);
+check('patch command', packageJson.scripts?.['patch:v510'] === 'node scripts/apply-v510-production-slice.mjs');
+check('verify command', packageJson.scripts?.['verify:v510'] === 'node scripts/verify-v510-production-slice.mjs');
+check('QA command', packageJson.scripts?.['qa:v510'] === 'node scripts/qa-v510-production-slice.mjs');
+check('Android version code', gradle.includes("'510'"));
+check('Android version name', gradle.includes("'5.1.0'"));
+
+for (const marker of [
+  'V510_THREEJS_PRODUCTION_SLICE_V1',
+  'v510ProductionSliceStyles',
+  'btnProductionQuality',
+  '__SW_V510_UPDATE__',
+  '__SW_V510_REBUILD__',
+  'runtime/v510-foundation.js',
+  'runtime/v510-tornado.js',
+  'runtime/v510-world.js',
+  'runtime/v510-runtime.js'
+]) {
+  check(`HTML marker ${marker}`, html.includes(marker));
+}
+check('single v5.1.0 identity', html.includes('v5.1.0') && !html.includes('v5.0.0'));
+check('accepted district law preserved', html.includes('[SW:LAW:DISTRICTS-FORWARD-ONLY]'));
+check('accepted Cow 17 law preserved', html.includes('[SW:LAW:SAFE-ANIMALS]'));
+check('accepted QA4 preserved', html.includes('QA4_DETERMINISTIC_V1'));
+check('accepted score continuity preserved', html.includes('SCORE_CONTINUITY_V1'));
+
+for (const marker of [
+  '[SW:VISUAL:PRODUCTION_SLICE]',
+  '[SW:VISUAL:TORNADO_LAYERS]',
+  '[SW:WORLD:PRODUCTION_DRESSING]',
+  '[SW:WORLD:SIGNATURE_BARN]',
+  '[SW:QA:PRODUCTION_SLICE]',
+  'PRODUCTION_QUALITY_LEVELS',
+  'ProductionMiddleVortex',
+  'ProductionDarkCore',
+  'HART FARM ROOF FILES A FLIGHT PLAN',
+  'getProductionSliceQaState',
+  'triggerProductionSliceQa',
+  'productionMeasuredFps',
+  'return null;'
+]) {
+  check(`runtime marker ${marker}`, runtime.includes(marker));
+}
+
+check('quality tiers complete', ['LOW', 'BALANCED', 'HIGH', 'SHOWCASE'].every(level => runtime.includes(level)));
+check('five barn states', [0, 1, 2, 3, 4].every(stage => runtime.includes(`stage === ${stage}`) || stage === 0));
+check('Cow 17 readable scale', runtime.includes('cow.mesh.scale.setScalar(1.32)'));
+check('no synthetic FPS fallback', !/productionMeasuredFps\(\)\s*\|\|\s*60/.test(runtime) && !/\?\?\s*60/.test(runtime));
+check('Three.js remains renderer', runtime.includes("renderer: 'Three.js r128'"));
+
+const failures = checks.filter(item => !item.passed);
+console.log(`\nv5.1.0 production slice verification: ${checks.length - failures.length}/${checks.length} checks passed.`);
+if (failures.length) {
+  console.error(`Failed checks: ${failures.map(item => item.name).join(', ')}`);
+  process.exitCode = 1;
+}
