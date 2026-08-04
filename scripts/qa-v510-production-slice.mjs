@@ -43,7 +43,35 @@ for (const viewport of viewports) {
   const url = new URL(baseUrl);
   url.searchParams.set('sliceqa', '1');
   await page.goto(url.toString(), { waitUntil: 'networkidle', timeout: 60000 });
-  await page.waitForFunction(() => globalThis.__SW_PRODUCTION_SLICE_READY__ === true, null, { timeout: 30000 });
+
+  try {
+    await page.waitForFunction(() => globalThis.__SW_PRODUCTION_SLICE_READY__ === true, null, { timeout: 15000 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      ready: globalThis.__SW_PRODUCTION_SLICE_READY__ === true,
+      hasQaState: typeof globalThis.getProductionSliceQaState === 'function',
+      hasRebuild: typeof globalThis.__SW_V510_REBUILD__ === 'function',
+      hasUpdate: typeof globalThis.__SW_V510_UPDATE__ === 'function',
+      documentState: document.readyState,
+      title: document.title,
+      bodyClass: document.body.className
+    })).catch(evaluationError => ({ evaluationError: evaluationError.message }));
+    const failure = {
+      viewport,
+      url: url.toString(),
+      waitError: error.message,
+      diagnostic,
+      pageErrors,
+      consoleErrors
+    };
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-startup-failure.png`), fullPage: false }).catch(() => {});
+    await writeFile(path.join(outputDir, `${viewport.name}-startup-failure.json`), `${JSON.stringify(failure, null, 2)}\n`, 'utf8');
+    console.error(`Production slice startup failure: ${JSON.stringify(failure)}`);
+    await context.close();
+    await browser.close();
+    throw error;
+  }
+
   await page.waitForFunction(() => {
     const state = globalThis.getProductionSliceQaState?.();
     return state && state.barn && state.barn.stage >= 2 && state.frameSampleCount >= 45;
