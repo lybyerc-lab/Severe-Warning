@@ -48,20 +48,28 @@ for (const marker of [
   'V510_THREEJS_PRODUCTION_SLICE_V1',
   'v510ProductionSliceStyles',
   'btnProductionQuality',
+  '[SW:VISUAL:PRODUCTION_SLICE_BUNDLE]',
+  '[SW:SOURCE:v510-foundation.js]',
+  '[SW:SOURCE:v510-tornado.js]',
+  '[SW:SOURCE:v510-world.js]',
+  '[SW:SOURCE:v510-runtime.js]',
   '__SW_V510_UPDATE__',
   '__SW_V510_REBUILD__',
-  'runtime/v510-foundation.js',
-  'runtime/v510-tornado.js',
-  'runtime/v510-world.js',
-  'runtime/v510-runtime.js'
+  'getProductionSliceQaState',
+  'triggerProductionSliceQa'
 ]) {
   check(`HTML marker ${marker}`, html.includes(marker));
 }
+check('runtime is lexically bundled', !html.includes('<script src="runtime/v510-'));
 check('single v5.1.0 identity', html.includes('v5.1.0') && !html.includes('v5.0.0'));
 check('accepted district law preserved', html.includes('[SW:LAW:DISTRICTS-FORWARD-ONLY]'));
 check('accepted Cow 17 law preserved', html.includes('[SW:LAW:SAFE-ANIMALS]'));
 check('accepted QA4 preserved', html.includes('QA4_DETERMINISTIC_V1'));
 check('accepted score continuity preserved', html.includes('SCORE_CONTINUITY_V1'));
+
+for (const [file, source] of Object.entries(runtimeText)) {
+  check(`bundled source ${file}`, html.includes(source.trim()), `${source.length} chars`);
+}
 
 for (const marker of [
   '[SW:VISUAL:PRODUCTION_SLICE]',
@@ -86,6 +94,17 @@ check('five barn states', [0, 1, 2, 3, 4].every(stage => runtime.includes(`stage
 check('Cow 17 readable scale', runtime.includes('cow.mesh.scale.setScalar(1.32)'));
 check('no synthetic FPS fallback', !/productionMeasuredFps\(\)\s*\|\|\s*60/.test(runtime) && !/\?\?\s*60/.test(runtime));
 check('Three.js remains renderer', runtime.includes("renderer: 'Three.js r128'"));
+
+const inlineScripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]);
+check('inline scripts found', inlineScripts.length >= 1, `${inlineScripts.length} scripts`);
+inlineScripts.forEach((source, index) => {
+  try {
+    new Function(source);
+    check(`inline script ${index + 1} syntax`, true);
+  } catch (error) {
+    check(`inline script ${index + 1} syntax`, false, error.message);
+  }
+});
 
 const failures = checks.filter(item => !item.passed);
 console.log(`\nv5.1.0 production slice verification: ${checks.length - failures.length}/${checks.length} checks passed.`);
