@@ -119,6 +119,40 @@ function productionMaterial(color, options = {}) {
   });
 }
 
+function productionSignMaterial(text, background = '#7c2d12', foreground = '#fff7ed') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  context.fillStyle = background;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.strokeStyle = foreground;
+  context.lineWidth = 10;
+  context.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+  context.fillStyle = foreground;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.font = '900 46px sans-serif';
+  const lines = String(text).split('|').slice(0, 2);
+  if (lines.length === 1) {
+    context.fillText(lines[0], canvas.width / 2, canvas.height / 2, canvas.width - 48);
+  } else {
+    context.font = '900 40px sans-serif';
+    context.fillText(lines[0], canvas.width / 2, 45, canvas.width - 48);
+    context.font = '800 24px sans-serif';
+    context.fillText(lines[1], canvas.width / 2, 91, canvas.width - 48);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  if (typeof THREE.sRGBEncoding !== 'undefined') texture.encoding = THREE.sRGBEncoding;
+  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  return new THREE.MeshStandardMaterial({
+    map: texture,
+    color: '#ffffff',
+    roughness: 0.7,
+    metalness: 0.02
+  });
+}
+
 function addProductionPart(parent, geometry, color, x, y, z, options = {}) {
   const material = options.material || productionMaterial(color, options);
   const mesh = new THREE.Mesh(geometry, material);
