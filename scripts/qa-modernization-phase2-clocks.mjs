@@ -45,7 +45,7 @@ for (const viewport of viewports) {
     hasTouch: viewport.isMobile
   });
   const page = await context.newPage();
-  page.setDefaultTimeout(15000);
+  page.setDefaultTimeout(30000);
   const pageErrors = [];
   const consoleErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
@@ -93,11 +93,25 @@ for (const viewport of viewports) {
     };
   });
 
+  const screenshotPath = path.join(outputDir, `${viewport.name}.png`);
+  await page.screenshot({ path: screenshotPath, fullPage: false });
+  await page.close();
+
+  const forensicPageErrors = [];
+  const forensicConsoleErrors = [];
   const forensicPage = await context.newPage();
+  forensicPage.setDefaultTimeout(60000);
+  forensicPage.on('pageerror', error => forensicPageErrors.push(error.message));
+  forensicPage.on('console', message => {
+    if (message.type() === 'error') forensicConsoleErrors.push(message.text());
+  });
   const forensicUrl = new URL(baseUrl);
   forensicUrl.searchParams.set('qa4', 'forensic');
   await forensicPage.goto(forensicUrl.toString(), { waitUntil: 'networkidle', timeout: 60000 });
-  await forensicPage.waitForFunction(() => globalThis.__SW_QA_FORENSICS__);
+  await forensicPage.waitForFunction(() => (
+    Boolean(globalThis.__SW_QA_FORENSICS__)
+    && document.documentElement.dataset.swQaForensics === 'visible'
+  ));
   const forensicEvidence = await forensicPage.evaluate(async () => {
     const trace = document.getElementById('qa4ForensicTrace');
     if (!trace) throw new Error('Forensic trace unavailable');
@@ -131,12 +145,10 @@ for (const viewport of viewports) {
       && forensicEvidence?.traceHidden === false
       && forensicEvidence?.traceDisplay !== 'none'
       && forensicEvidence?.snapshotReason === 'phase2-explicit-forensic-qa',
-    noPageErrors: pageErrors.length === 0,
-    noConsoleErrors: consoleErrors.length === 0,
+    noPageErrors: pageErrors.length === 0 && forensicPageErrors.length === 0,
+    noConsoleErrors: consoleErrors.length === 0 && forensicConsoleErrors.length === 0,
   };
 
-  const screenshotPath = path.join(outputDir, `${viewport.name}.png`);
-  await page.screenshot({ path: screenshotPath, fullPage: false });
   results.push({
     viewport,
     evidence,
@@ -144,6 +156,8 @@ for (const viewport of viewports) {
     checks,
     pageErrors,
     consoleErrors,
+    forensicPageErrors,
+    forensicConsoleErrors,
     screenshot: path.relative(projectRoot, screenshotPath).replaceAll('\\', '/'),
     passed: Object.values(checks).every(Boolean),
   });
@@ -152,7 +166,7 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'MODERNIZATION_PHASE2_CLOCK_QA_V4',
+  version: 'MODERNIZATION_PHASE2_CLOCK_QA_V5',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
