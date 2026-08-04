@@ -176,8 +176,10 @@ replaceExact(
 
 replaceExact(
   `  init3DWorld();
+  applyCampaignPresentation();
   selectStormClass(currentStorm);`,
   `  init3DWorld();
+  applyCampaignPresentation();
   if (globalThis.__SW_V510_REBUILD__) globalThis.__SW_V510_REBUILD__();
   selectStormClass(currentStorm);`,
   'production slice replay rebuild hook'
