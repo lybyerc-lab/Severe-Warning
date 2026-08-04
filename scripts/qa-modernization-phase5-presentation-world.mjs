@@ -66,7 +66,12 @@ for (const viewport of viewports) {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     await shell.qa.prepareScenario('production-hero');
-    await sleep(120);
+    if (bridge.latchPresentationFrame) {
+      bridge.latchPresentationFrame(1000);
+    } else if (shell.qa.latchPresentationFrame) {
+      shell.qa.latchPresentationFrame(1000);
+    }
+
     const snapshot = bridge.getSnapshot();
     const probe = bridge.runContractProbe();
     const productionQa = shell.qa.getSnapshot();
@@ -75,9 +80,17 @@ for (const viewport of viewports) {
     for (let cycle = 0; cycle < 5; cycle += 1) {
       const memoryBefore = { ...bridge.getSnapshot().renderer.memory };
       shell.app.reset();
-      await sleep(40);
+      if (bridge.latchPresentationFrame) {
+        bridge.latchPresentationFrame(1000);
+      } else if (shell.qa.latchPresentationFrame) {
+        shell.qa.latchPresentationFrame(1000);
+      }
       await shell.qa.prepareScenario('production-hero');
-      await sleep(100);
+      if (bridge.latchPresentationFrame) {
+        bridge.latchPresentationFrame(1000);
+      } else if (shell.qa.latchPresentationFrame) {
+        shell.qa.latchPresentationFrame(1000);
+      }
       const cycleSnapshot = bridge.getSnapshot();
       const memoryAfter = { ...cycleSnapshot.renderer.memory };
       cycles.push({
@@ -87,6 +100,11 @@ for (const viewport of viewports) {
         sceneChildCount: cycleSnapshot.scene.childCount,
         sceneMeshCount: cycleSnapshot.scene.meshCount,
         uniqueMaterialCount: cycleSnapshot.scene.uniqueMaterialCount,
+        uniqueGeometryCount: cycleSnapshot.scene.uniqueGeometryCount,
+        uniqueTextureCount: cycleSnapshot.scene.uniqueTextureCount,
+        geometries: cycleSnapshot.scene.geometries,
+        materials: cycleSnapshot.scene.materials,
+        textures: cycleSnapshot.scene.textures,
         targetsCount: cycleSnapshot.world.targetsCount,
         landmarksCount: cycleSnapshot.world.landmarksCount,
         mediaCrewsCount: cycleSnapshot.world.mediaCrewsCount,

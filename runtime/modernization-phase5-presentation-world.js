@@ -14,6 +14,18 @@ let phase5WorldAuthority = null;
 let phase5HartFarmSetpiece = null;
 let phase5SecondSetpiece = null;
 
+let phase5PresentationLatched = false;
+let phase5LatchedTimestamp = 0;
+let phase5LatchedFrameId = 0;
+
+globalThis.isPhase5PresentationLatched = function isPhase5PresentationLatched() {
+  return phase5PresentationLatched;
+};
+
+globalThis.getPhase5LatchedTimestamp = function getPhase5LatchedTimestamp() {
+  return phase5LatchedTimestamp;
+};
+
 function phase5ColorHex(color) {
   return color && typeof color.getHexString === 'function'
     ? `#${color.getHexString()}`
@@ -21,17 +33,54 @@ function phase5ColorHex(color) {
 }
 
 function phase5CountSceneResources() {
-  const materialIds = new Set();
+  const geometries = new Map();
+  const materials = new Map();
+  const textures = new Map();
   let meshCount = 0;
+
   scene.traverse((object) => {
-    if (object && object.isMesh) meshCount += 1;
-    if (!object || !object.material) return;
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    materials.forEach((material) => {
-      if (material && material.uuid) materialIds.add(material.uuid);
-    });
+    if (!object) return;
+    if (object.isMesh) {
+      meshCount += 1;
+      if (object.geometry && object.geometry.uuid) {
+        geometries.set(object.geometry.uuid, {
+          uuid: object.geometry.uuid,
+          type: object.geometry.type || 'BufferGeometry',
+          name: object.geometry.name || '',
+          objectName: object.name || '',
+          objectType: object.type || 'Mesh',
+        });
+      }
+    }
+    if (object.material) {
+      const matList = Array.isArray(object.material) ? object.material : [object.material];
+      matList.forEach((material) => {
+        if (!material || !material.uuid) return;
+        materials.set(material.uuid, {
+          uuid: material.uuid,
+          type: material.type || 'Material',
+          name: material.name || '',
+        });
+        if (material.map && material.map.uuid) {
+          textures.set(material.map.uuid, {
+            uuid: material.map.uuid,
+            name: material.map.name || '',
+            source: material.map.image ? (material.map.image.src || 'canvas') : 'none',
+          });
+        }
+      });
+    }
   });
-  return { meshCount, uniqueMaterialCount: materialIds.size };
+
+  return {
+    meshCount,
+    uniqueMaterialCount: materials.size,
+    uniqueGeometryCount: geometries.size,
+    uniqueTextureCount: textures.size,
+    geometryDetails: Array.from(geometries.values()),
+    materialDetails: Array.from(materials.values()),
+    textureDetails: Array.from(textures.values()),
+  };
 }
 
 function phase5ReadLegacySnapshot() {
@@ -60,6 +109,9 @@ function phase5ReadLegacySnapshot() {
   const landmarkMaxHealth = primaryLandmark ? Number(primaryLandmark.maxHealth) : 0;
 
   return Object.freeze({
+    presentationLatched: phase5PresentationLatched,
+    latchedFrameId: phase5LatchedFrameId,
+    latchedTimestamp: phase5LatchedTimestamp,
     renderer: Object.freeze({
       rendererName: 'Three.js WebGLRenderer',
       version: 'r128',
@@ -88,6 +140,11 @@ function phase5ReadLegacySnapshot() {
       childCount: Number(scene.children.length),
       meshCount: sceneResources.meshCount,
       uniqueMaterialCount: sceneResources.uniqueMaterialCount,
+      uniqueGeometryCount: sceneResources.uniqueGeometryCount,
+      uniqueTextureCount: sceneResources.uniqueTextureCount,
+      geometries: sceneResources.geometryDetails,
+      materials: sceneResources.materialDetails,
+      textures: sceneResources.textureDetails,
       fog: Object.freeze({
         type: scene.fog && scene.fog.isFogExp2 ? 'FogExp2' : (scene.fog ? 'unknown' : 'none'),
         color: scene.fog ? phase5ColorHex(scene.fog.color) : null,
@@ -256,6 +313,34 @@ const phase5PresentationWorldBridge = {
     return true;
   },
 
+  latchPresentationFrame(timestamp = 1000) {
+    phase5PresentationLatched = true;
+    phase5LatchedTimestamp = Number(timestamp || 1000);
+    phase5LatchedFrameId += 1;
+    if (typeof globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause === 'function') {
+      globalThis.__SW_PHASE2_CLOCK_BRIDGE__.pause();
+    }
+    if (typeof cameraShakeIntensity !== 'undefined') {
+      cameraShakeIntensity = 0;
+    }
+    if (typeof productionQaPrepared !== 'undefined' && productionQaPrepared && typeof productionBarn !== 'undefined' && productionBarn && typeof storm !== 'undefined' && storm) {
+      camera.position.set(storm.pos.x + 52, storm.pos.y + 50, storm.pos.z + 68);
+      camera.lookAt(productionBarn.x, terrainHeightAt(productionBarn.x, productionBarn.z) + 8, productionBarn.z);
+    }
+    renderer.render(scene, camera);
+    this.syncFromLegacy();
+    return Object.freeze({
+      presentationLatched: true,
+      latchedFrameId: phase5LatchedFrameId,
+      latchedTimestamp: phase5LatchedTimestamp,
+    });
+  },
+
+  unlatchPresentation() {
+    phase5PresentationLatched = false;
+    return false;
+  },
+
   syncFromLegacy() {
     if (!phase5AuthoritiesAttached()) return null;
     const live = phase5ReadLegacySnapshot();
@@ -264,6 +349,7 @@ const phase5PresentationWorldBridge = {
   },
 
   reset() {
+    phase5PresentationLatched = false;
     if (!phase5AuthoritiesAttached()) return;
     this.syncFromLegacy();
   },

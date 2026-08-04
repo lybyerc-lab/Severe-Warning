@@ -167,15 +167,18 @@ function updateProductionSlice(dt, now, isMoving) {
   if (!productionSliceRoot || productionCurrentCampaignId !== (typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel().id : 'lincoln-county')) {
     rebuildProductionSlice();
   }
-  if (dt > 0 && dt < 0.2) {
-    productionFrameSamples.push(1 / dt);
+  const isLatched = typeof globalThis.isPhase5PresentationLatched === 'function' && globalThis.isPhase5PresentationLatched();
+  const effectiveDt = isLatched ? 0 : dt;
+  const effectiveNow = (isLatched && typeof globalThis.getPhase5LatchedTimestamp === 'function') ? globalThis.getPhase5LatchedTimestamp() : now;
+  if (effectiveDt > 0 && effectiveDt < 0.2) {
+    productionFrameSamples.push(1 / effectiveDt);
     if (productionFrameSamples.length > 180) productionFrameSamples.shift();
   }
-  updateProductionTornado(dt, now);
-  updateProductionAtmosphere(dt);
-  updateProductionBarn(dt, isMoving);
-  updateProductionPulseEffects(dt);
-  updateProductionCow17(dt);
+  updateProductionTornado(effectiveDt, effectiveNow);
+  updateProductionAtmosphere(effectiveDt);
+  updateProductionBarn(effectiveDt, isMoving);
+  updateProductionPulseEffects(effectiveDt);
+  updateProductionCow17(effectiveDt);
   document.body.classList.toggle('production-run', runActive);
 }
 

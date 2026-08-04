@@ -120,6 +120,8 @@ interface LegacyPresentationWorldBridge {
     hartFarm: DestructibleSetpieceSystem,
     secondStructure: DestructibleSetpieceSystem,
   ): boolean;
+  latchPresentationFrame(timestamp?: number): unknown;
+  unlatchPresentation(): boolean;
   syncFromLegacy(): unknown;
   reset(): void;
   runContractProbe(): unknown;
@@ -272,6 +274,21 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
   runPresentationWorldContractProbe(): unknown {
     this.assertRequiredContracts();
     return this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.runContractProbe();
+  }
+
+  latchPresentationFrame(timestamp = 1000): unknown {
+    this.assertRequiredContracts();
+    return this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.latchPresentationFrame(timestamp);
+  }
+
+  unlatchPresentation(): boolean {
+    this.assertRequiredContracts();
+    return Boolean(this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.unlatchPresentation());
+  }
+
+  renderFrame(): void {
+    this.assertRequiredContracts();
+    this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.latchPresentationFrame(1000);
   }
 
   async prepareScenario(id: QaScenarioId): Promise<void> {

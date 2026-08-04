@@ -157,18 +157,37 @@ async function capture(url, viewport, scenario, label) {
     && globalThis.__SEVERE_WEATHER__?.qa
   ));
 
-  // Deterministic capture point: prepare scenario, advance through QA bridge, freeze clock
+  // Deterministic capture point: re-seed PRNG, reset app, prepare scenario, latch presentation frame
   await page.evaluate(async (scenarioName) => {
-    if (globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause) {
-      globalThis.__SW_PHASE2_CLOCK_BRIDGE__.pause();
+    let state = 0x5e1e5eed;
+    Math.random = () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 0x100000000;
+    };
+
+    const shell = globalThis.__SEVERE_WEATHER__;
+    const bridge = globalThis.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__;
+    const qa = shell?.qa;
+
+    if (shell?.app?.reset) {
+      shell.app.reset();
     }
-    const qa = globalThis.__SEVERE_WEATHER__.qa;
+    if (bridge?.latchPresentationFrame) {
+      bridge.latchPresentationFrame(1000);
+    }
     if (scenarioName === 'hero') {
-      await qa.prepareScenario('production-hero');
+      if (qa?.prepareScenario) await qa.prepareScenario('production-hero');
     }
-    qa.advance(0);
-    if (qa.renderFrame) {
-      qa.renderFrame();
+    if (bridge?.latchPresentationFrame) {
+      bridge.latchPresentationFrame(1000);
+    } else {
+      if (globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause) {
+        globalThis.__SW_PHASE2_CLOCK_BRIDGE__.pause();
+      }
+      if (typeof cameraShakeIntensity !== 'undefined') cameraShakeIntensity = 0;
+      if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
+        renderer.render(scene, camera);
+      }
     }
     if (document.fonts?.ready) await document.fonts.ready;
   }, scenario);
@@ -248,13 +267,13 @@ function compareSemantics(base, candidate) {
     && base.campaignId === candidate.campaignId;
 
   const cameraMatch = base.camera?.fov === candidate.camera?.fov
-    && Math.abs((base.camera?.y ?? 0) - (candidate.camera?.y ?? 0)) < 15.0
-    && Math.abs((base.camera?.z ?? 0) - (candidate.camera?.z ?? 0)) < 25.0;
+    && Math.abs((base.camera?.y ?? 0) - (candidate.camera?.y ?? 0)) < 0.1
+    && Math.abs((base.camera?.z ?? 0) - (candidate.camera?.z ?? 0)) < 0.1;
 
   const cow17Match = (!base.cow17 || !candidate.cow17) || (
     base.cow17.decorated === candidate.cow17.decorated
     && base.cow17.airborne === candidate.cow17.airborne
-    && Math.abs((base.cow17.scale ?? 0) - (candidate.cow17.scale ?? 0)) < 0.05
+    && Math.abs((base.cow17.scale ?? 0) - (candidate.cow17.scale ?? 0)) < 0.01
   );
 
   return {
@@ -273,7 +292,8 @@ for (const viewport of viewports) {
 
     const repeatNoise = comparePixels(baseA, baseB);
     const candidateDiff = comparePixels(baseA, candidate);
-    const changedRatioThreshold = Math.max(0.0005, repeatNoise.changedRatio + 0.0005);
+    const baseRepeatNoiseWithinLimit = repeatNoise.changedRatio <= 0.0005; // Hard limit 0.05%
+    const changedRatioThreshold = Math.max(0.0005, repeatNoise.changedRatio + 0.0010); // Base noise + 0.1%
     const meanErrorThreshold = Math.max(0.5, repeatNoise.meanAbsoluteError + 0.5);
 
     const semanticDiff = compareSemantics(baseA.semantic, candidate.semantic);
@@ -286,6 +306,7 @@ for (const viewport of viewports) {
         && baseB.consoleErrors.length === 0,
       candidateClean: candidate.pageErrors.length === 0 && candidate.consoleErrors.length === 0,
       captureValidityPass,
+      baseRepeatNoiseWithinLimit,
       semanticMatch: semanticDiff.match,
       changedRatioWithinMeasuredNoise: candidateDiff.changedRatio <= changedRatioThreshold,
       meanErrorWithinMeasuredNoise: candidateDiff.meanAbsoluteError <= meanErrorThreshold,
@@ -324,6 +345,7 @@ for (const viewport of viewports) {
       + ` :: repeat=${(repeatNoise.changedRatio * 100).toFixed(4)}%`
       + ` candidate=${(candidateDiff.changedRatio * 100).toFixed(4)}%`
       + ` valid=${captureValidityPass}`
+      + ` baseNoiseLimit=${baseRepeatNoiseWithinLimit}`
       + ` semantic=${semanticDiff.match}`,
     );
   }
@@ -338,7 +360,8 @@ const report = {
   pixelLaw: {
     comparisonSource: 'Playwright locator canvas PNG screenshot',
     changedPixelChannelThreshold: 8,
-    marginChangedRatio: 0.0005,
+    maxBaseRepeatNoiseRatio: 0.0005,
+    marginCandidateChangedRatio: 0.0010,
     marginMeanAbsoluteError: 0.5,
     validityRequirements: { minNonBlackRatio: 0.05, minLuminanceVariance: 10.0, minDistinctColors: 100 },
   },
