@@ -80,9 +80,11 @@ interface LegacyScoringCampaignBridge {
     scoringAuthority: ScoringSystem,
     districtAuthority: DistrictSystem,
     campaignAuthority: CampaignSystem,
-    persistenceAuthority: CampaignStore
+    persistenceAuthority: CampaignStore,
   ): boolean;
+  syncFromLegacy(): unknown;
   reset(): void;
+  runContractProbe(): unknown;
   getSnapshot(): LegacyScoringCampaignBridgeSnapshot;
 }
 
@@ -124,7 +126,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       hasQaSnapshot: typeof this.#globals.getProductionSliceQaState === 'function',
       hasClockBridge: this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.version === 'MODERNIZATION_PHASE2_CLOCKS_V1',
       hasInputAbilityBridge: this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.version === 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1',
-      hasScoringCampaignBridge: this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.version === 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V1',
+      hasScoringCampaignBridge: this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.version === 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2',
     });
   }
 
@@ -155,11 +157,16 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     scoring: ScoringSystem,
     district: DistrictSystem,
     campaign: CampaignSystem,
-    persistence: CampaignStore
+    persistence: CampaignStore,
   ): void {
     this.assertRequiredContracts();
-    const attached = this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.attach(scoring, district, campaign, persistence);
-    if (attached !== true) throw new Error('Legacy runtime rejected the Phase 4 scoring and campaign authorities.');
+    const attached = this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.attach(
+      scoring,
+      district,
+      campaign,
+      persistence,
+    );
+    if (attached !== true) throw new Error('Legacy runtime rejected the Phase 4 scoring and campaign mirrors.');
   }
 
   getRunState(): LegacyRunState {
@@ -216,8 +223,8 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
   reset(): void {
     this.assertRequiredContracts();
     this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.reset();
-    this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.reset();
     this.#globals.__SW_V510_REBUILD__?.();
+    this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.reset();
   }
 
   private assertRequiredContracts(): void {
