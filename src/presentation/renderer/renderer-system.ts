@@ -1,45 +1,29 @@
 // ============================================================================
 // [SW:ARCH:PHASE5_RENDERER_SYSTEM]
-// Renderer authority: observes legacy WebGLRenderer settings and viewport bounds.
+// Passive mirror of the live legacy WebGLRenderer. It never creates or drives
+// a renderer and owns no presentation behavior.
 // ============================================================================
 
-import { DEFAULT_RENDERER_CONFIG, type RendererConfig, type RendererSnapshot } from './renderer-contracts';
+import type { RendererSnapshot } from './renderer-contracts';
 
 export class RendererSystem {
-  private renderCalls = 0;
-  private width = 1365;
-  private height = 768;
-  private currentPixelRatio = 1.0;
+  private snapshot: RendererSnapshot | null = null;
 
-  constructor(private readonly config: RendererConfig = DEFAULT_RENDERER_CONFIG) {}
-
-  updateViewport(width: number, height: number, pixelRatio: number = 1.0): void {
-    this.width = Math.max(1, Math.round(Number(width) || 1365));
-    this.height = Math.max(1, Math.round(Number(height) || 768));
-    this.currentPixelRatio = Math.min(this.config.maxPixelRatio, Math.max(1.0, Number(pixelRatio) || 1.0));
-  }
-
-  recordRenderCall(): void {
-    this.renderCalls += 1;
+  synchronize(snapshot: RendererSnapshot): void {
+    this.snapshot = Object.freeze({
+      ...snapshot,
+      memory: Object.freeze({ ...snapshot.memory }),
+      frame: Object.freeze({ ...snapshot.frame }),
+    });
   }
 
   reset(): void {
-    this.renderCalls = 0;
+    // The accepted legacy renderer owns reset and disposal. The bridge will
+    // synchronize this mirror after the legacy rebuild completes.
   }
 
   getSnapshot(): RendererSnapshot {
-    return Object.freeze({
-      rendererName: 'Three.js WebGLRenderer',
-      version: 'r128',
-      antialias: this.config.antialias,
-      shadowMapEnabled: this.config.shadowMapEnabled,
-      shadowMapType: 'PCFSoftShadowMap',
-      toneMapping: 'ACESFilmicToneMapping',
-      exposure: 1.0,
-      pixelRatio: this.currentPixelRatio,
-      viewportWidth: this.width,
-      viewportHeight: this.height,
-      renderCallsCount: this.renderCalls
-    });
+    if (!this.snapshot) throw new Error('RendererSystem has not synchronized with the live renderer.');
+    return this.snapshot;
   }
 }
