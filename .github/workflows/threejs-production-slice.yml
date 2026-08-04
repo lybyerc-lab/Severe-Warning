@@ -66,6 +66,7 @@ jobs:
           node --check scripts/apply-v510-production-slice.mjs
           node --check scripts/verify-v510-production-slice.mjs
           node --check scripts/qa-v510-production-slice.mjs
+          node --check scripts/verify-qa-package.mjs
           node --check runtime/v510-foundation.js
           node --check runtime/v510-tornado.js
           node --check runtime/v510-world.js
@@ -93,11 +94,12 @@ jobs:
           npm run patch:v510
           npm run verify:v510
 
-      - name: Build offline web package
+      - name: Build and verify offline web package
         shell: bash
         run: |
           node scripts/build-web.mjs
           node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
           test -s www/runtime/v510-foundation.js
           test -s www/runtime/v510-tornado.js
           test -s www/runtime/v510-world.js
