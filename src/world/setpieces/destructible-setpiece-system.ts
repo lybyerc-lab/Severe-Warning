@@ -1,24 +1,19 @@
 // ============================================================================
 // [SW:ARCH:PHASE5_SETPIECE_SYSTEM]
-// Setpiece destruction authority: manages state transitions for setpiece definitions.
+// Passive mirror of an accepted legacy destructible setpiece.
 // ============================================================================
 
-import { HART_FARM_SETPIECE_DEFINITION } from './hart-farm-definition';
 import type {
-  DestructionStageId,
   SetpieceDefinition,
-  SetpieceStageDefinition,
-  SetpieceStateSnapshot
+  SetpieceStateSnapshot,
 } from './destructible-setpiece-contracts';
 
 export class DestructibleSetpieceSystem {
-  private currentDamageRatio = 0.0;
-  private currentStageIndex = 0; // 0-indexed into definition.stages
-  private scoreAwarded = 0;
+  private snapshot: SetpieceStateSnapshot | null = null;
 
-  constructor(private readonly definition: SetpieceDefinition = HART_FARM_SETPIECE_DEFINITION) {
-    if (!definition || !definition.stages || definition.stages.length === 0) {
-      throw new Error('DestructibleSetpieceSystem requires valid setpiece definition.');
+  constructor(private readonly definition: SetpieceDefinition) {
+    if (!definition.stages.length) {
+      throw new Error('DestructibleSetpieceSystem requires at least one accepted legacy stage.');
     }
   }
 
@@ -26,49 +21,26 @@ export class DestructibleSetpieceSystem {
     return this.definition.id;
   }
 
-  get currentStage(): SetpieceStageDefinition {
-    return this.definition.stages[this.currentStageIndex] ?? this.definition.stages[0]!;
+  getDefinition(): SetpieceDefinition {
+    return this.definition;
   }
 
-  get currentStageId(): DestructionStageId {
-    return this.currentStage.stageId;
-  }
-
-  applyDamage(damageRatio: number): SetpieceStageDefinition | null {
-    const validDamage = Math.min(1.0, Math.max(0.0, Number(damageRatio) || 0.0));
-    this.currentDamageRatio = Math.max(this.currentDamageRatio, validDamage);
-
-    let highestEligibleIndex = this.currentStageIndex;
-    for (let i = 0; i < this.definition.stages.length; i++) {
-      if (this.currentDamageRatio >= this.definition.stages[i]!.damageThresholdRatio) {
-        highestEligibleIndex = i;
-      }
+  synchronize(snapshot: SetpieceStateSnapshot): void {
+    if (snapshot.setpieceId !== this.definition.id) {
+      throw new Error(`Setpiece snapshot ${snapshot.setpieceId} does not match ${this.definition.id}.`);
     }
-
-    if (highestEligibleIndex > this.currentStageIndex) {
-      this.currentStageIndex = highestEligibleIndex;
-      const newStage = this.currentStage;
-      this.scoreAwarded += newStage.scorePoints;
-      return newStage;
+    if (!this.definition.stages.some((stage) => stage.stageId === snapshot.currentStageId)) {
+      throw new Error(`Unsupported ${this.definition.id} stage: ${snapshot.currentStageId}.`);
     }
-
-    return null;
+    this.snapshot = Object.freeze({ ...snapshot });
   }
 
   reset(): void {
-    this.currentDamageRatio = 0.0;
-    this.currentStageIndex = 0;
-    this.scoreAwarded = 0;
+    // The accepted legacy setpiece owns damage, score, audio, reset, and debris.
   }
 
   getSnapshot(): SetpieceStateSnapshot {
-    return Object.freeze({
-      setpieceId: this.definition.id,
-      currentStageId: this.currentStageId,
-      currentStageIndex: this.currentStage.stageIndex,
-      damageRatio: Number(this.currentDamageRatio.toFixed(2)),
-      isFullyDestroyed: this.currentStageIndex >= this.definition.stages.length - 1,
-      scoreAwardedTotal: this.scoreAwarded
-    });
+    if (!this.snapshot) throw new Error(`${this.definition.id} has not synchronized with the live setpiece.`);
+    return this.snapshot;
   }
 }
