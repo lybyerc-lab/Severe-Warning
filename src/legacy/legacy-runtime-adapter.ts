@@ -1,18 +1,46 @@
 // ============================================================================
 // [SW:ARCH:LEGACY_ADAPTER]
-// The only Phase 1 module allowed to know legacy global names.
+// The only modern module allowed to know legacy global names.
 // ============================================================================
 
+import type { GameClocks, ClockSnapshot, LegacyClockSampleInput, LegacyClockSample } from '../core/clocks';
 import type {
   QaScenarioId,
   QaSnapshot,
   SevereWeatherQaBridge,
 } from '../qa/bridge/severe-weather-qa-bridge';
 
+interface LegacyRunState {
+  readonly runActive: boolean;
+  readonly paused: boolean;
+  readonly remainingSeconds: number;
+  readonly stage: number;
+  readonly gameStarted: boolean;
+}
+
+interface LegacyClockBridgeSnapshot {
+  readonly version: string;
+  readonly attached: boolean;
+  readonly latestSample: LegacyClockSample;
+  readonly authority: ClockSnapshot | null;
+  readonly legacy: LegacyRunState;
+}
+
+interface LegacyClockBridge {
+  readonly version: string;
+  attach(authority: GameClocks): boolean;
+  sample(input: LegacyClockSampleInput): LegacyClockSample;
+  reset(durationSeconds: number, nowMs?: number): void;
+  resume(nowMs?: number): void;
+  getLegacyRunState(): LegacyRunState;
+  getSnapshot(): LegacyClockBridgeSnapshot;
+}
+
 interface LegacyRuntimeGlobals {
   __SW_PRODUCTION_SLICE_READY__?: boolean;
   __SW_V510_UPDATE__?: (deltaSeconds: number, nowMs: number, isMoving: boolean) => void;
   __SW_V510_REBUILD__?: () => void;
+  __SW_PHASE2_CLOCK_BRIDGE__?: LegacyClockBridge;
   triggerProductionSliceQa?: (mode?: string) => boolean;
   getProductionSliceQaState?: () => QaSnapshot;
 }
@@ -23,6 +51,7 @@ export interface LegacyRuntimeStatus {
   readonly hasRebuild: boolean;
   readonly hasQaTrigger: boolean;
   readonly hasQaSnapshot: boolean;
+  readonly hasClockBridge: boolean;
 }
 
 export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
@@ -39,6 +68,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       hasRebuild: typeof this.#globals.__SW_V510_REBUILD__ === 'function',
       hasQaTrigger: typeof this.#globals.triggerProductionSliceQa === 'function',
       hasQaSnapshot: typeof this.#globals.getProductionSliceQaState === 'function',
+      hasClockBridge: this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.version === 'MODERNIZATION_PHASE2_CLOCKS_V1',
     });
   }
 
@@ -53,15 +83,31 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.assertRequiredContracts();
   }
 
+  attachClocks(clocks: GameClocks): void {
+    this.assertRequiredContracts();
+    const attached = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.attach(clocks);
+    if (attached !== true) throw new Error('Legacy runtime rejected the Phase 2 clock authority.');
+  }
+
+  getRunState(): LegacyRunState {
+    this.assertRequiredContracts();
+    const state = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.getLegacyRunState();
+    if (!state) throw new Error('Legacy runtime returned no run-state snapshot.');
+    return Object.freeze({ ...state });
+  }
+
+  getClockBridgeSnapshot(): LegacyClockBridgeSnapshot {
+    this.assertRequiredContracts();
+    const snapshot = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.getSnapshot();
+    if (!snapshot) throw new Error('Legacy runtime returned no clock-bridge snapshot.');
+    return snapshot;
+  }
+
   async prepareScenario(id: QaScenarioId): Promise<void> {
     this.assertRequiredContracts();
-    if (id !== 'production-hero') {
-      throw new Error(`Unsupported QA scenario: ${id}`);
-    }
+    if (id !== 'production-hero') throw new Error(`Unsupported QA scenario: ${id}`);
     const prepared = this.#globals.triggerProductionSliceQa?.('hero');
-    if (prepared !== true) {
-      throw new Error('Legacy production hero scenario did not initialize.');
-    }
+    if (prepared !== true) throw new Error('Legacy production hero scenario did not initialize.');
   }
 
   advance(milliseconds: number): void {
@@ -76,9 +122,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
   getSnapshot(): QaSnapshot {
     this.assertRequiredContracts();
     const snapshot = this.#globals.getProductionSliceQaState?.();
-    if (!snapshot) {
-      throw new Error('Legacy runtime returned no QA snapshot.');
-    }
+    if (!snapshot) throw new Error('Legacy runtime returned no QA snapshot.');
     return Object.freeze({ ...snapshot });
   }
 
@@ -92,8 +136,6 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     const missing = Object.entries(status)
       .filter(([, present]) => present !== true)
       .map(([name]) => name);
-    if (missing.length > 0) {
-      throw new Error(`Legacy runtime contract is incomplete: ${missing.join(', ')}`);
-    }
+    if (missing.length > 0) throw new Error(`Legacy runtime contract is incomplete: ${missing.join(', ')}`);
   }
 }
