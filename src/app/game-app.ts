@@ -1,9 +1,10 @@
 // ============================================================================
 // [SW:ARCH:GAME_APP]
-// Owns Phase 1 bootstrap and lifecycle state. Gameplay remains legacy-owned.
+// Owns bootstrap and mirrors lifecycle from the authoritative run clock.
 // ============================================================================
 
 import type { GameContext } from './game-context';
+import type { RunClockState } from '../core/clocks';
 import type { GameLifecycleState, LifecycleStatus } from '../core/lifecycle';
 
 export class GameApp {
@@ -32,6 +33,8 @@ export class GameApp {
     this.transition('initializing');
     try {
       await this.#context.legacy.waitUntilReady();
+      this.#context.clocks.setRunStateListener((state) => this.syncRunState(state));
+      this.#context.legacy.attachClocks(this.#context.clocks);
       this.#initializedAt = new Date().toISOString();
       this.transition('ready');
     } catch (error) {
@@ -41,25 +44,25 @@ export class GameApp {
     }
   }
 
-  startRun(): void {
-    this.requireState('ready', 'paused');
-    this.transition('running');
-  }
-
-  pause(): void {
-    this.requireState('running');
-    this.transition('paused');
-  }
-
   reset(): void {
     this.requireState('ready', 'running', 'paused');
     this.#context.legacy.reset();
+    const legacy = this.#context.legacy.getRunState();
+    this.#context.clocks.resetRun(Math.max(0, legacy.remainingSeconds) * 1000, performance.now());
     this.transition('ready');
   }
 
   dispose(): void {
     if (this.#state === 'disposed') return;
+    this.#context.clocks.setRunStateListener(() => {});
     this.transition('disposed');
+  }
+
+  private syncRunState(runState: RunClockState): void {
+    if (this.#state === 'initializing' || this.#state === 'failed' || this.#state === 'disposed') return;
+    if (runState === 'running') this.transition('running');
+    else if (runState === 'paused') this.transition('paused');
+    else this.transition('ready');
   }
 
   private requireState(...allowed: GameLifecycleState[]): void {
