@@ -98,7 +98,7 @@ check('bestGrade semantics preserved', campaign.includes('bestStars > previous.s
 check('legacy campaign completion remains executor', runtime.includes('phase4OriginalCompleteCampaignRun.apply(this, arguments)'));
 
 check('storage key preserved', schema.includes("'severe_weather_campaign_v1'"));
-check('legacy schema field preserved', schema.includes('readonly schema: 1'));
+check('legacy schema field preserved', campaignContracts.includes('readonly schema: 1') && schema.includes('CAMPAIGN_SCHEMA_VERSION = 1 as const'));
 check('legacy unlockedLevel preserved', schema.includes('unlockedLevel'));
 check('legacy selectedLevel preserved', schema.includes('selectedLevel'));
 check('legacy levels map preserved', schema.includes('levels'));
