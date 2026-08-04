@@ -60,38 +60,62 @@ for (const viewport of viewports) {
     const bridge = globalThis.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__;
     if (!shell || !bridge) throw new Error('Phase 4 shell or lexical bridge unavailable');
 
-    bridge.reset();
-    bridge.addScore(500, 'test_barn');
-    bridge.addScore(500, 'test_silo');
-    const scoreSnap = shell.scoring.getSnapshot();
-
-    const initialDist = shell.district.getSnapshot();
-    bridge.advanceDistrict();
-    const advancedDist = shell.district.getSnapshot();
-
-    const campaignProgress = shell.campaign.getProgressMap();
+    const storageKey = 'severe_weather_campaign_v1';
+    const playerSaveBefore = localStorage.getItem(storageKey);
+    const contractProbe = bridge.runContractProbe();
+    const snapshot = shell.qa.getScoringCampaignBridgeSnapshot();
+    const playerSaveAfter = localStorage.getItem(storageKey);
+    const stopIds = shell.campaign.stops.map((stop) => stop.id);
     const forensicPanel = document.getElementById('qa4ForensicTrace');
 
     return {
       architecture: shell.architecture,
       modernizationPhase: shell.modernizationPhase,
       documentPhase: document.documentElement.dataset.swModernizationPhase ?? null,
-      scoreSnap,
-      initialDist,
-      advancedDist,
-      campaignProgress,
+      bridgeVersion: snapshot.version,
+      contractProbe,
+      snapshot,
+      stopIds,
+      playerSaveUnchanged: playerSaveBefore === playerSaveAfter,
       forensicHidden: forensicPanel?.hidden === true,
     };
   });
 
+  const scoreAuthority = evidence.snapshot?.score?.authority;
+  const scoreLegacy = evidence.snapshot?.score?.legacy;
+  const districtAuthority = evidence.snapshot?.district?.authority;
+  const districtLegacy = evidence.snapshot?.district?.legacy;
+  const campaignSave = evidence.snapshot?.campaign?.save;
+  const campaignLegacy = evidence.snapshot?.campaign?.legacy;
+
   const checks = {
     phaseIdentity: evidence.modernizationPhase === 'phase-4-scoring-campaign'
       && evidence.documentPhase === 'phase-4-scoring-campaign',
-    scoreAccumulation: evidence.scoreSnap?.score === 1050, // 500*1.0 + 500*1.1 = 1050
-    comboActive: evidence.scoreSnap?.combo?.count === 2,
-    districtAdvancement: evidence.initialDist?.currentDistrictIndex === 1
-      && evidence.advancedDist?.currentDistrictIndex === 2,
-    campaignUnlocked: evidence.campaignProgress?.['lincoln-county']?.unlocked === true,
+    bridgeIdentity: evidence.bridgeVersion === 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2',
+    scoringContract: evidence.contractProbe?.scoring?.passed === true,
+    exactComboCap: evidence.contractProbe?.scoring?.checks?.maxComboIsThreePointFive === true,
+    exactComboStep: evidence.contractProbe?.scoring?.checks?.comboStepIsPointZeroFive === true,
+    exactComboDecay: evidence.contractProbe?.scoring?.checks?.decayIsFourPointFiveSeconds === true,
+    campaignMultiplierPreserved: evidence.contractProbe?.scoring?.checks?.campaignMultiplierApplied === true,
+    scoreDoublerPreserved: evidence.contractProbe?.scoring?.checks?.scoreDoublerApplied === true,
+    districtContract: evidence.contractProbe?.districts?.passed === true,
+    districtForwardOnly: evidence.contractProbe?.districts?.checks?.regressionRejected === true,
+    campaignContract: evidence.contractProbe?.campaign?.passed === true,
+    exactCampaignIds: evidence.stopIds?.join('|')
+      === 'lincoln-county|prairie-junction|grain-belt|state-fair-finale',
+    starFormulaPreserved: evidence.contractProbe?.campaign?.checks?.threeStarsNeedsTargetAndObjectives === true,
+    positiveStarsUnlockNext: evidence.contractProbe?.campaign?.checks?.anyPositiveStarsUnlockNext === true,
+    persistenceContract: evidence.contractProbe?.persistence?.passed === true,
+    legacySchemaPreserved: evidence.contractProbe?.persistence?.checks?.exactLevelFieldsPreserved === true,
+    corruptSaveRecovery: evidence.contractProbe?.persistence?.checks?.malformedSaveRecovers === true,
+    qaStorageIsolated: evidence.contractProbe?.persistence?.checks?.qaStoreIsIsolated === true,
+    playerSaveUntouchedByProbe: evidence.playerSaveUnchanged === true,
+    scoringMirrorMatchesLegacy: scoreAuthority?.destructionScore === scoreLegacy?.destructionScore
+      && scoreAuthority?.baseScore === scoreLegacy?.baseScore
+      && scoreAuthority?.comboMultiplier === scoreLegacy?.comboMultiplier,
+    districtMirrorMatchesLegacy: districtAuthority?.currentStage === districtLegacy?.stage,
+    campaignMirrorMatchesLegacy: campaignSave?.selectedLevel === campaignLegacy?.selectedLevel
+      && campaignSave?.unlockedLevel === campaignLegacy?.unlockedLevel,
     playerForensicsHidden: evidence.forensicHidden === true,
     noPageErrors: pageErrors.length === 0,
     noConsoleErrors: consoleErrors.length === 0,
@@ -113,7 +137,7 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_QA_V1',
+  version: 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_QA_V2',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
