@@ -1,10 +1,10 @@
 # Severe Weather Warning Modernization Plan
 
-**Status:** Phases 1 through 3 implemented, automated, packaged, and physically accepted  
+**Status:** Phases 1 through 4 implemented, automated, packaged, and physically accepted  
 **Updated:** 2026-08-04 Central Time  
 **Behavioral reference:** PR #15 at `c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72`  
-**Current accepted modernization head:** PR #19 at `b9d55188f91ade720a50837f15591c91209098ad`  
-**Next phase:** Phase 4, scoring, districts, campaign, and persistence
+**Current accepted modernization head:** PR #21 at `38125918bffdd712ae10731d4472adbf2051d838`  
+**Next phase:** Phase 5, rendering, camera, world, buildings, and destruction
 
 ## Purpose
 
@@ -21,17 +21,19 @@ This is a controlled strangler migration, not a rewrite.
 - Capacitor remains the Android packaging path.
 - Accepted gameplay does not change without explicit owner approval.
 - People, animals, and media safety laws remain protected.
-- PR #13 through PR #19 remain protected draft history until an integration plan is approved.
+- The protected PR chain remains unmerged until an integration plan is approved.
 - PR #14 remains archived Babylon.js research and is not part of production.
 - Defold remains Plan B for a specific measured blocker only.
 - Netlify is excluded.
 - No synthetic FPS fallback.
 - No broad rewrite disguised as cleanup.
 - One writer per branch.
+- Generated V5.1 output must never be committed over the historical V4.3 source baseline.
+- Every modernization workflow must verify source provenance before applying the accepted patch chain.
 
 ## Approved target stack
 
-- Three.js
+- Three.js r128 during modernization
 - Vite
 - strict TypeScript
 - ES modules
@@ -49,7 +51,7 @@ src/
   app/               bootstrap, GameApp, GameContext
   core/              lifecycle, clocks, events, configuration
   gameplay/          storm, abilities, scoring, districts, campaign, destruction
-  presentation/      renderer, camera, atmosphere, tornado, effects
+  presentation/      renderer, scene, camera, atmosphere, tornado, effects
   world/             entities, buildings, landmarks, Heartland content
   platform/          input, audio, persistence, Android lifecycle
   ui/                HUD, menus, pause, results, campaign map
@@ -92,6 +94,21 @@ The warning countdown remains monotonic and independent of render slowdown. Paus
 ### Formal QA access
 
 QA should use deliberate runtime contracts rather than arbitrary globals. The bridge must support deterministic setup, typed snapshots, viewport checks, real frame samples, reset, cleanup, and exact build metadata.
+
+### Legacy-executor rule
+
+A new typed system must not become a competing authority before parity is proven.
+
+Use this order:
+
+1. map the accepted legacy behavior
+2. capture exact formulas, state transitions, ownership, and cleanup
+3. add typed contracts and mirrors
+4. wrap or observe the accepted executor
+5. prove parity
+6. replace the legacy executor only in a separately reviewed milestone
+
+Phase 4 proved why this law is necessary. Class presence is not behavior parity.
 
 ## Phase record
 
@@ -140,7 +157,7 @@ Implemented:
 
 Accepted head:
 
-`381014d3d7f4a128e5c6e285200fdb2790af94b5`
+`381014d3d7f4ca6424b8bf32b282abae0dbfc28`
 
 ### Phase 3: input and abilities
 
@@ -160,100 +177,189 @@ Accepted head:
 
 `b9d55188f91ade720a50837f15591c91209098ad`
 
-## Phase 4: scoring, districts, campaign, and persistence
+### Phase 4: scoring, districts, campaign, and persistence
 
-**Status:** next
+**Status:** complete, physically accepted, and promoted for review
 
-### Extract
+Implemented:
 
-- score accumulation
-- combo state
-- footage and media bonuses
-- challenge scoring
-- district progression and thresholds
-- campaign progression
-- stars and best scores
-- ordered unlocks
-- selected stop, furthest unlock, and run counts
-- save schema, migration, validation, reset, and recovery
+- typed scoring mirrors and exact legacy contracts
+- typed time-driven district mirror
+- typed campaign mirror and exact Heartland definitions
+- exact `severe_weather_campaign_v1` schema and recovery behavior
+- legacy-executor wrappers for scoring, district, campaign, selection, save, load, retry, and next-stop paths
+- clean-source provenance guard
+- dedicated Phase 4 GitHub Actions and Android packaging gate
+- exact-parity verification rather than marker-only checks
 
-### Data-driven direction
+Protected values proven:
 
-Create explicit definitions for:
+- combo cap `3.5x`
+- combo increment `+0.05`
+- combo decay `4.5 seconds`
+- campaign score multipliers `1.0`, `1.1`, `1.15`, and `1.25`
+- district boundaries at 120 and 60 seconds remaining
+- forward-only stages 1 through 3
+- exact Heartland stop IDs and targets
+- exact star and unlock behavior
+- exact save shape and malformed-save recovery
 
-- campaigns and stops
-- district order and contracts
-- terrain and palette identity
-- landmarks and objectives
-- challenge pools
-- score targets and modifiers
-- unlock conditions
-- quality-tier density
-- next-stop relationships
+Accepted head:
 
-Add validators for duplicate IDs, missing references, invalid order, impossible thresholds, broken links, and incompatible save versions.
+`38125918bffdd712ae10731d4472adbf2051d838`
 
-### Protected behavior
+Sealed evidence:
 
-- score remains continuous across district boundaries
-- district progression remains forward-only
-- combo behavior remains compatible
-- three-minute clock remains unchanged
-- campaign save compatibility is preserved
-- retry does not duplicate rewards
-- next-stop opens the correct stop
-- QA and bot scenarios do not contaminate player saves
-
-### Required automated evidence
-
-- deterministic full run
-- district-boundary score continuity
-- combo continuity
-- forward-only district transition
-- star thresholds
-- unlock order
-- retry behavior
-- save creation and reload
-- older-save compatibility or deterministic migration
-- corrupt-save recovery
-- QA save isolation
-- repeated reset and cleanup
-- inherited Phase 1 through Phase 3 QA
-- Android synchronization and APK assembly
-
-### Physical exit gate
-
-On the exact packaged APK:
-
-- played results equal the displayed score and objectives
-- best score persists after process restart
-- stars and unlocks persist
-- retry does not duplicate progress
-- next-stop opens the correct level
-- no timing, control, pause, background, or results regression
+- workflow run `30921480977`
+- artifact `8897403311`
+- artifact digest `sha256:91b94190e089a64028eb1497eecfdb4cd25a976282a0c0d529a42624ac8dbb05`
+- APK SHA-256 `9e1f94e269cf4eeb5d6f58300752af61efb7e778a97c1d692fdd899e2ecda295`
+- Phase 4 exact-parity verification `72/72`
+- owner verdict `Everything was good.`
 
 ## Phase 5: rendering and world
 
-Extract:
+**Status:** next
 
-- renderer and scene ownership
-- camera
-- atmosphere
-- tornado presentation
-- world dressing
-- buildings and landmarks
-- destruction setpieces
-- quality-tier presentation
+Phase 5 will be executed as controlled checkpoints. Do not combine architectural extraction with a Three.js upgrade or visual redesign.
 
-Exit gate:
+### Checkpoint A: exact presentation source map
 
-- fixed before-and-after visual comparisons
-- measured performance budget
-- no quality-tier gameplay differences
-- Hart Farm remains readable
-- Cow 17 remains readable
+Map:
 
-Hart Farm should become the first reusable five-stage setpiece definition, then prove reuse on a second structure.
+- scene creation and global ownership
+- renderer construction and configuration
+- canvas ownership
+- resize handling
+- camera construction, positioning, look target, and shake
+- lighting
+- fog and background
+- atmosphere and weather layers
+- tornado group and funnel layers
+- suction rings and debris presentation
+- world root and district dressing
+- buildings, landmarks, media, animals, and effects
+- Hart Farm construction and destruction state paths
+- Cow 17 construction, updates, and reset paths
+- quality-tier inputs and presentation-only differences
+- material, geometry, texture, and render-target creation
+- reset, removal, geometry disposal, material disposal, texture disposal, listener cleanup, and renderer disposal
+
+Capture accepted constants and behavior. Do not infer replacements.
+
+### Checkpoint B: presentation lifecycle and typed mirrors
+
+Introduce explicit contracts for:
+
+- renderer snapshot
+- scene snapshot
+- camera snapshot
+- atmosphere snapshot
+- tornado presentation snapshot
+- world population snapshot
+- resource and listener counts
+- reset and disposal results
+
+The first implementation should observe or wrap the accepted runtime. It must not replace visible behavior merely to create cleaner classes.
+
+### Checkpoint C: fixed visual baselines
+
+Preserve fixed captures for at least:
+
+- desktop `1365x768`
+- mobile landscape `915x412`
+- the wide landscape geometry that previously exposed results-title crowding
+- production hero scenario
+- active gameplay with tornado, debris, dressing, Hart Farm, and Cow 17 visible
+- each Hart Farm destruction state that can be deterministically prepared
+
+Required existing production-slice truths include:
+
+- Three.js r128 renderer identity
+- at least three funnel layers
+- three suction rings
+- at least ten debris instances in the production scenario
+- authored Hart Farm roof separation
+- readable and decorated Cow 17
+- at least twelve crop rows
+- at least eighteen trees
+- visible fences
+- real measured frame samples rather than synthetic FPS
+
+### Checkpoint D: Hart Farm reusable setpiece definition
+
+Represent the accepted five-state language:
+
+1. intact
+2. damaged
+3. roof peel
+4. exposed or partial collapse
+5. wreckage
+
+The first reusable definition must preserve:
+
+- existing geometry and visible composition
+- stage thresholds
+- visible meshes by stage
+- detachable pieces
+- score and audio event timing
+- debris behavior
+- reset behavior
+- scene removal and disposal
+
+Then prove the same contract on one second existing structure without inventing a new landmark or changing gameplay balance.
+
+### Checkpoint E: quality and performance evidence
+
+Quality tiers may alter presentation density only. They must not alter:
+
+- score
+- objectives
+- collision
+- ability range
+- storm speed
+- damage thresholds
+- district timing
+- campaign behavior
+
+Evidence must include:
+
+- real median FPS samples on desktop and mobile QA viewports
+- draw-call, triangle, geometry, material, and texture counts where available
+- before-and-after resource counts across repeated reset cycles
+- no unbounded growth after repeated scenario setup and disposal
+- Android artifact and physical device review
+
+### Phase 5 automated exit gate
+
+- clean historical source provenance
+- strict TypeScript
+- all inherited V5 through Phase 4 verification
+- all inherited visual, clock, input, ability, score, district, campaign, and persistence QA
+- fixed presentation snapshots
+- scene and renderer contract probes
+- deterministic camera and atmosphere snapshots
+- Hart Farm five-state contract checks
+- second-structure reuse proof
+- resource cleanup and repeated-reset tests
+- no page or console errors
+- no player-visible QA diagnostics
+- Capacitor synchronization
+- Android APK assembly
+
+### Phase 5 physical exit gate
+
+On the exact packaged APK:
+
+- camera framing and storm feel remain unchanged
+- tornado, dust, debris, and atmosphere remain visually equivalent
+- Hart Farm destruction remains readable through its stages
+- Cow 17 remains readable and safe
+- buildings, landmarks, media, and dressing remain present
+- no flicker, missing meshes, frozen effects, or stale debris after retry
+- no control, ability, clock, score, district, campaign, save, pause, or background regression
+- repeated retry or next-stop does not leave duplicated world objects
+- heat and performance observations are recorded for the tested device
 
 ## Phase 6: audio, UI, storage, Android lifecycle, and QA completion
 
@@ -325,7 +431,7 @@ Player-facing builds must not display QA badges, forensic panels, direct test co
 
 ## Build cadence
 
-1. implement one coherent phase
+1. implement one coherent phase or checkpoint
 2. run static, type, structural, deterministic, and inherited parity checks
 3. provide one browser review point
 4. perform one consolidated correction pass
