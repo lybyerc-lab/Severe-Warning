@@ -3,7 +3,9 @@
 // The only modern module allowed to know legacy global names.
 // ============================================================================
 
+import type { AbilitySnapshot, AbilitySystem } from '../abilities/ability-system';
 import type { GameClocks, ClockSnapshot, LegacyClockSampleInput, LegacyClockSample } from '../core/clocks';
+import type { InputSnapshot, InputSystem, MovementVector } from '../input/input-system';
 import type {
   QaScenarioId,
   QaSnapshot,
@@ -36,11 +38,35 @@ interface LegacyClockBridge {
   getSnapshot(): LegacyClockBridgeSnapshot;
 }
 
+export interface LegacyInputAbilityBridgeSnapshot {
+  readonly version: string;
+  readonly attached: boolean;
+  readonly movement: MovementVector;
+  readonly input: InputSnapshot | null;
+  readonly abilities: AbilitySnapshot | null;
+  readonly abilityRequests: number;
+  readonly suppressedDuplicates: number;
+  readonly legacy: Readonly<{
+    joystickActive: boolean;
+    joystickX: number;
+    joystickZ: number;
+  }>;
+}
+
+interface LegacyInputAbilityBridge {
+  readonly version: string;
+  attach(inputAuthority: InputSystem, abilityAuthority: AbilitySystem): boolean;
+  getMovement(): MovementVector;
+  getSnapshot(): LegacyInputAbilityBridgeSnapshot;
+  reset(): void;
+}
+
 interface LegacyRuntimeGlobals {
   __SW_PRODUCTION_SLICE_READY__?: boolean;
   __SW_V510_UPDATE__?: (deltaSeconds: number, nowMs: number, isMoving: boolean) => void;
   __SW_V510_REBUILD__?: () => void;
   __SW_PHASE2_CLOCK_BRIDGE__?: LegacyClockBridge;
+  __SW_PHASE3_INPUT_ABILITY_BRIDGE__?: LegacyInputAbilityBridge;
   triggerProductionSliceQa?: (mode?: string) => boolean;
   getProductionSliceQaState?: () => QaSnapshot;
 }
@@ -52,6 +78,7 @@ export interface LegacyRuntimeStatus {
   readonly hasQaTrigger: boolean;
   readonly hasQaSnapshot: boolean;
   readonly hasClockBridge: boolean;
+  readonly hasInputAbilityBridge: boolean;
 }
 
 export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
@@ -69,6 +96,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       hasQaTrigger: typeof this.#globals.triggerProductionSliceQa === 'function',
       hasQaSnapshot: typeof this.#globals.getProductionSliceQaState === 'function',
       hasClockBridge: this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.version === 'MODERNIZATION_PHASE2_CLOCKS_V1',
+      hasInputAbilityBridge: this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.version === 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1',
     });
   }
 
@@ -89,6 +117,12 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     if (attached !== true) throw new Error('Legacy runtime rejected the Phase 2 clock authority.');
   }
 
+  attachInputAbilities(input: InputSystem, abilities: AbilitySystem): void {
+    this.assertRequiredContracts();
+    const attached = this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.attach(input, abilities);
+    if (attached !== true) throw new Error('Legacy runtime rejected the Phase 3 input and ability authorities.');
+  }
+
   getRunState(): LegacyRunState {
     this.assertRequiredContracts();
     const state = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.getLegacyRunState();
@@ -100,6 +134,13 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.assertRequiredContracts();
     const snapshot = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.getSnapshot();
     if (!snapshot) throw new Error('Legacy runtime returned no clock-bridge snapshot.');
+    return snapshot;
+  }
+
+  getInputAbilityBridgeSnapshot(): LegacyInputAbilityBridgeSnapshot {
+    this.assertRequiredContracts();
+    const snapshot = this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.getSnapshot();
+    if (!snapshot) throw new Error('Legacy runtime returned no input and ability bridge snapshot.');
     return snapshot;
   }
 
@@ -128,6 +169,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
 
   reset(): void {
     this.assertRequiredContracts();
+    this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.reset();
     this.#globals.__SW_V510_REBUILD__?.();
   }
 
