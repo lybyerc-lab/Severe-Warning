@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { access, copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,11 +10,13 @@ const sourceHtml = process.env.SEVERE_WEATHER_SOURCE_PATH
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const sourceAudioDir = path.join(projectRoot, 'assets', 'audio');
+const sourceRuntimeDir = path.join(projectRoot, 'runtime');
 const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
   ? path.resolve(process.env.SEVERE_WEATHER_WWW_DIR)
   : path.join(projectRoot, 'www');
 const outputFonts = path.join(outputDir, 'fonts');
 const outputAudio = path.join(outputDir, 'audio');
+const outputRuntime = path.join(outputDir, 'runtime');
 
 const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
 const buildVersion = packageJson.version;
@@ -31,6 +33,12 @@ const fontFiles = [
   ['@fontsource/inter/files/inter-latin-900-normal.woff2', 'inter-latin-900-normal.woff2'],
   ['@fontsource/outfit/files/outfit-latin-700-normal.woff2', 'outfit-latin-700-normal.woff2'],
   ['@fontsource/outfit/files/outfit-latin-900-normal.woff2', 'outfit-latin-900-normal.woff2']
+];
+const runtimeFiles = [
+  'v510-foundation.js',
+  'v510-tornado.js',
+  'v510-world.js',
+  'v510-runtime.js'
 ];
 
 const html = await readFile(sourceHtml, 'utf8');
@@ -62,10 +70,14 @@ for (const [packagePath] of fontFiles) {
 for (const requiredAudioFile of ['storm-feel-sprite.wav', 'storm-feel-manifest.json', 'LICENSE.md']) {
   await access(path.join(sourceAudioDir, requiredAudioFile));
 }
+for (const runtimeFile of runtimeFiles) {
+  await access(path.join(sourceRuntimeDir, runtimeFile));
+}
 
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputFonts, { recursive: true });
 await mkdir(outputAudio, { recursive: true });
+await mkdir(outputRuntime, { recursive: true });
 await writeFile(path.join(outputDir, 'index.html'), html, 'utf8');
 
 for (const [packagePath, outputName] of fontFiles) {
@@ -74,13 +86,14 @@ for (const [packagePath, outputName] of fontFiles) {
 for (const audioFile of await readdir(sourceAudioDir)) {
   await copyFile(path.join(sourceAudioDir, audioFile), path.join(outputAudio, audioFile));
 }
+await cp(sourceRuntimeDir, outputRuntime, { recursive: true });
 
 const sourceSha256 = createHash('sha256').update(html).digest('hex');
 const audioSha256 = createHash('sha256').update(await readFile(path.join(sourceAudioDir, 'storm-feel-sprite.wav'))).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
-  `${JSON.stringify({ version: buildVersion, label: buildLabel, source: path.relative(projectRoot, sourceHtml).replaceAll('\\', '/'), sourceSha256, audioSha256 }, null, 2)}\n`,
+  `${JSON.stringify({ version: buildVersion, label: buildLabel, source: path.relative(projectRoot, sourceHtml).replaceAll('\\', '/'), sourceSha256, audioSha256, runtimeFiles }, null, 2)}\n`,
   'utf8'
 );
 
-console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), audio (${audioSha256})`);
+console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files)`);
