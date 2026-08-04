@@ -3,9 +3,9 @@
 // Owns bootstrap and mirrors lifecycle from the authoritative run clock.
 // ============================================================================
 
-import type { GameContext } from './game-context';
 import type { RunClockState } from '../core/clocks';
 import type { GameLifecycleState, LifecycleStatus } from '../core/lifecycle';
+import type { GameContext } from './game-context';
 
 export class GameApp {
   readonly #context: GameContext;
@@ -35,6 +35,7 @@ export class GameApp {
       await this.#context.legacy.waitUntilReady();
       this.#context.clocks.setRunStateListener((state) => this.syncRunState(state));
       this.#context.legacy.attachClocks(this.#context.clocks);
+      this.#context.legacy.attachInputAbilities(this.#context.input, this.#context.abilities);
       this.#initializedAt = new Date().toISOString();
       this.transition('ready');
     } catch (error) {
@@ -55,6 +56,7 @@ export class GameApp {
   dispose(): void {
     if (this.#state === 'disposed') return;
     this.#context.clocks.setRunStateListener(() => {});
+    this.#context.input.reset();
     this.transition('disposed');
   }
 
