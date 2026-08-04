@@ -1,135 +1,77 @@
 # Severe Weather Warning Modernization Plan
 
-**Status:** Approved direction, implementation not yet started  
-**Prepared:** 2026-08-03 Central Time  
-**Starting reference:** PR #15 at `c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72`
+**Status:** Phases 1 through 3 implemented, automated, packaged, and physically accepted  
+**Updated:** 2026-08-04 Central Time  
+**Behavioral reference:** PR #15 at `c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72`  
+**Current accepted modernization head:** PR #19 at `b9d55188f91ade720a50837f15591c91209098ad`  
+**Next phase:** Phase 4, scoring, districts, campaign, and persistence
 
 ## Purpose
 
-Modernize the production structure because the current patch-chain and generated single-file runtime are slowing development and increasing regression risk.
+Modernize the working Three.js game because the historical patch chain, generated single-file runtime, shared lexical scope, broad globals, and incidental QA hooks slow development and increase regression risk.
 
-This is a controlled migration of the working Three.js game, not a rewrite.
+This is a controlled strangler migration, not a rewrite.
 
 ## Non-negotiable constraints
 
 - Product name remains **Severe Weather Warning**.
-- Three.js remains the production renderer.
+- Three.js remains production during the architecture migration.
+- Three.js remains at r128 until a separate upgrade milestone.
 - Heartland remains campaign terminology.
 - Capacitor remains the Android packaging path.
-- Accepted gameplay behavior must remain unchanged unless the owner explicitly approves a design change.
-- PR #13, PR #14, and PR #15 remain protected and unmerged until explicitly approved.
-- Babylon.js remains archived research.
-- Defold remains Plan B, not an active port.
-- Netlify is not part of this project.
+- Accepted gameplay does not change without explicit owner approval.
+- People, animals, and media safety laws remain protected.
+- PR #13 through PR #19 remain protected draft history until an integration plan is approved.
+- PR #14 remains archived Babylon.js research and is not part of production.
+- Defold remains Plan B for a specific measured blocker only.
+- Netlify is excluded.
 - No synthetic FPS fallback.
 - No broad rewrite disguised as cleanup.
-
-## Problem statement
-
-The active build currently depends on:
-
-- historical patch scripts
-- exact-string HTML replacement
-- large generated inline scripts
-- runtime fragments sharing lexical scope
-- broad global state
-- QA access through incidental `globalThis` hooks
-- source, generated output, and test fixture responsibilities overlapping
-
-These methods supported rapid iteration, but now create unnecessary friction for ordinary feature and art work.
+- One writer per branch.
 
 ## Approved target stack
 
 - Three.js
 - Vite
-- TypeScript with `strict` checking
+- strict TypeScript
 - ES modules
 - Capacitor
-- Playwright
+- Playwright and headless Chromium QA
 - Blender to GLB/glTF
-- optional KTX2 texture compression after measured need
+- optional KTX2 after measured need
+- GitHub Actions for verification and packaging
+- GitHub Pages for an approved hosted QA preview
 
-Do not upgrade the Three.js version during the first architecture migration.
-
-## Target source layout
+## Target ownership boundaries
 
 ```text
 src/
-  app/
-    bootstrap.ts
-    game-app.ts
-    game-context.ts
-
-  core/
-    clocks.ts
-    lifecycle.ts
-    events.ts
-    config.ts
-
-  gameplay/
-    storm/
-    abilities/
-    scoring/
-    districts/
-    campaign/
-    destruction/
-
-  presentation/
-    renderer/
-    camera/
-    atmosphere/
-    tornado/
-    effects/
-
-  world/
-    entities/
-    buildings/
-    landmarks/
-    heartland/
-
-  platform/
-    input/
-    audio/
-    persistence/
-    android/
-
-  ui/
-    hud/
-    menus/
-    results/
-
-  qa/
-    bridge/
-    scenarios/
-    snapshots/
-
-  legacy/
-    legacy-runtime-adapter.ts
-
+  app/               bootstrap, GameApp, GameContext
+  core/              lifecycle, clocks, events, configuration
+  gameplay/          storm, abilities, scoring, districts, campaign, destruction
+  presentation/      renderer, camera, atmosphere, tornado, effects
+  world/             entities, buildings, landmarks, Heartland content
+  platform/          input, audio, persistence, Android lifecycle
+  ui/                HUD, menus, pause, results, campaign map
+  qa/                bridge, scenarios, snapshots, visual evidence
+  legacy/            temporary compatibility boundary
 assets/
-  models/
-  textures/
-  audio/
-  data/
-
+  models/ textures/ audio/ data/
 tests/
-  unit/
-  integration/
-  visual/
-  device/
+  unit/ integration/ visual/ device/
 ```
 
-The final structure may vary where implementation evidence supports a better division. The ownership boundaries are more important than matching this tree character for character.
+The exact directory tree may evolve. Explicit ownership matters more than matching this sketch character for character.
 
-## Runtime contracts
+## Runtime laws already established
 
-### Game lifecycle
+### Lifecycle
 
-Every major system should have explicit lifecycle ownership.
+Major systems use explicit lifecycle ownership:
 
 ```ts
-export interface GameSystem {
-  initialize(context: GameContext): Promise<void> | void;
+export interface GameSystem<TContext> {
+  initialize(context: TContext): Promise<void> | void;
   startRun(): void;
   update(frame: GameFrame): void;
   reset(): void;
@@ -137,259 +79,283 @@ export interface GameSystem {
 }
 ```
 
-### Shared context
-
-```ts
-export interface GameContext {
-  scene: THREE.Scene;
-  renderer: THREE.WebGLRenderer;
-  camera: THREE.Camera;
-  clocks: GameClocks;
-  events: GameEvents;
-  assets: AssetRegistry;
-  input: InputSystem;
-  audio: AudioSystem;
-  campaign: CampaignState;
-}
-```
-
-The exact interface should evolve through implementation, but shared access must be deliberate and typed.
-
 ### Clock separation
 
-Maintain three explicit time concepts:
+Maintain separate:
 
 - render time
 - simulation time
-- real run-clock time
+- real warning-run time
 
-The three-minute warning countdown must remain monotonic and independent of render slowdown.
+The warning countdown remains monotonic and independent of render slowdown. Pause, resume transition, background suspension, and long suspension gaps charge zero warning time.
 
-## Data-driven content direction
+### Formal QA access
 
-Move these definitions out of hardcoded renderer logic where practical:
+QA should use deliberate runtime contracts rather than arbitrary globals. The bridge must support deterministic setup, typed snapshots, viewport checks, real frame samples, reset, cleanup, and exact build metadata.
 
-- campaigns and stops
-- district contracts
-- terrain and palette identity
-- landmark definitions
-- building placement
-- destructible setpieces
-- destruction-state thresholds
-- challenges
-- score targets and modifiers
-- quality-tier density
-
-Example:
-
-```ts
-export interface DestructibleSetpieceDefinition {
-  id: string;
-  position: [number, number, number];
-  stages: Array<{
-    id: string;
-    threshold: number;
-  }>;
-}
-```
-
-Hart Farm should become the first proven reusable setpiece definition.
-
-## Formal QA bridge
-
-QA should use an intentional runtime interface rather than probing arbitrary globals.
-
-```ts
-export interface SevereWeatherQaBridge {
-  prepareScenario(id: QaScenarioId): Promise<void>;
-  advance(milliseconds: number): void;
-  getSnapshot(): QaSnapshot;
-  captureFrame(name: string): Promise<void>;
-}
-```
-
-The bridge must support:
-
-- deterministic scenario setup
-- gameplay-state snapshots
-- responsive viewport checks
-- visual captures
-- real frame samples
-- reset and cleanup verification
-- exact build metadata
-
-## Migration strategy
-
-Use a strangler pattern.
+## Phase record
 
 ### Phase 0: preserve the reference
 
-- keep PR #15 unchanged
-- retain its exact artifact and QA evidence
-- record owner gameplay findings
-- use it as the behavioral and visual comparison baseline
+**Status:** accepted reference preserved
+
+- PR #15 remains intact
+- exact artifact and automated evidence retained
+- hands-on reference behavior reviewed
+- Three.js V5.1 production slice remains the comparison baseline
 
 ### Phase 1: modern shell
 
-Create:
+**Status:** complete and physically accepted
+
+Implemented:
 
 - Vite build
-- strict TypeScript configuration
-- module entrypoint
+- strict TypeScript
+- ES-module entrypoint
 - `GameApp`
 - `GameContext`
 - lifecycle contracts
 - build metadata
 - legacy runtime adapter
-- canonical product title
+- formal QA bridge foundation
+- Capacitor-compatible packaging
 
-Exit gate:
+Accepted head:
 
-- game boots through the modern shell
-- accepted controls and run behavior remain intact
-- browser QA passes
-- Android package builds
+`710ee8537e3d4ca6424b8bf32b282abae0dbfc28`
 
 ### Phase 2: clocks and run state
 
-Extract:
+**Status:** complete and physically accepted
 
-- run activation
-- pause state
-- render clock
-- simulation clock
-- warning countdown
-- reset/dispose lifecycle
+Implemented:
 
-Exit gate:
+- render, simulation, and run-clock authority
+- run activation and pause synchronization
+- zero-time pause and suspension behavior
+- lifecycle synchronization from real run state
+- explicit clock-law QA
+- player-mode forensic UI guard
 
-- real-time warning behavior matches the reference
-- pause and resume remain correct
-- deterministic reset passes repeatedly
+Accepted head:
+
+`381014d3d7f4a128e5c6e285200fdb2790af94b5`
 
 ### Phase 3: input and abilities
 
-Extract:
+**Status:** complete and physically accepted
 
-- mobile joystick
-- keyboard support
-- Pull
-- Gust
-- Grid Zap
-- input isolation
+Implemented:
 
-Exit gate:
+- typed keyboard and touch input authority
+- normalized movement snapshot
+- ability-command authority and telemetry
+- Pull, Gust, and Grid Zap delegation to the accepted legacy executor
+- Android touch plus synthetic-click duplicate suppression
+- atomic typed and compatibility joystick state
+- inherited visual, clock, and control QA
 
-- controls feel unchanged in browser and APK
-- QA4 input isolation remains intact
+Accepted head:
 
-### Phase 4: scoring, districts, and campaign
+`b9d55188f91ade720a50837f15591c91209098ad`
 
-Extract:
+## Phase 4: scoring, districts, campaign, and persistence
+
+**Status:** next
+
+### Extract
 
 - score accumulation
-- combos
-- district progression
+- combo state
+- footage and media bonuses
+- challenge scoring
+- district progression and thresholds
 - campaign progression
-- persistence
+- stars and best scores
+- ordered unlocks
+- selected stop, furthest unlock, and run counts
+- save schema, migration, validation, reset, and recovery
 
-Exit gate:
+### Data-driven direction
 
-- score remains continuous
+Create explicit definitions for:
+
+- campaigns and stops
+- district order and contracts
+- terrain and palette identity
+- landmarks and objectives
+- challenge pools
+- score targets and modifiers
+- unlock conditions
+- quality-tier density
+- next-stop relationships
+
+Add validators for duplicate IDs, missing references, invalid order, impossible thresholds, broken links, and incompatible save versions.
+
+### Protected behavior
+
+- score remains continuous across district boundaries
 - district progression remains forward-only
+- combo behavior remains compatible
+- three-minute clock remains unchanged
 - campaign save compatibility is preserved
+- retry does not duplicate rewards
+- next-stop opens the correct stop
+- QA and bot scenarios do not contaminate player saves
 
-### Phase 5: rendering and world
+### Required automated evidence
+
+- deterministic full run
+- district-boundary score continuity
+- combo continuity
+- forward-only district transition
+- star thresholds
+- unlock order
+- retry behavior
+- save creation and reload
+- older-save compatibility or deterministic migration
+- corrupt-save recovery
+- QA save isolation
+- repeated reset and cleanup
+- inherited Phase 1 through Phase 3 QA
+- Android synchronization and APK assembly
+
+### Physical exit gate
+
+On the exact packaged APK:
+
+- played results equal the displayed score and objectives
+- best score persists after process restart
+- stars and unlocks persist
+- retry does not duplicate progress
+- next-stop opens the correct level
+- no timing, control, pause, background, or results regression
+
+## Phase 5: rendering and world
 
 Extract:
 
-- renderer ownership
+- renderer and scene ownership
 - camera
 - atmosphere
-- tornado visuals
+- tornado presentation
 - world dressing
-- buildings
+- buildings and landmarks
 - destruction setpieces
+- quality-tier presentation
 
 Exit gate:
 
-- fixed before/after visual comparisons
-- no performance regression beyond agreed budget
-- Hart Farm and Cow 17 remain readable
+- fixed before-and-after visual comparisons
+- measured performance budget
+- no quality-tier gameplay differences
+- Hart Farm remains readable
+- Cow 17 remains readable
 
-### Phase 6: audio, UI, persistence, and QA
+Hart Farm should become the first reusable five-stage setpiece definition, then prove reuse on a second structure.
+
+## Phase 6: audio, UI, storage, Android lifecycle, and QA completion
 
 Finish separation of:
 
-- audio buses and events
-- HUD and menus
-- results
-- storage
-- formal QA bridge
+- audio buses and event routing
+- HUD, menus, pause, results, and campaign map
+- storage and save migration
+- Android lifecycle
+- formal QA scenarios, snapshots, and captures
+- QA build and player build separation
 
 Exit gate:
 
-- all accepted automated tests pass
+- all inherited and new automated tests pass
 - Android lifecycle tests pass
+- player builds expose no QA UI
 - no stale patch dependency remains for migrated systems
 
-### Phase 7: retire patch archaeology
+## Phase 7: retire patch archaeology
 
 Only after parity is proven:
 
-- stop rebuilding the game through the full historical patch chain
+- stop rebuilding ordinary production through the historical patch chain
+- make TypeScript modules the production source
 - archive patch scripts with provenance
 - keep reproducible release tags and migration documentation
+- preserve the accepted legacy baseline
+
+## Data-driven content direction
+
+Move these definitions out of hardcoded renderer and gameplay forests where practical:
+
+- campaigns and stops
+- districts
+- terrain and palette identity
+- landmarks
+- building placement
+- destructible setpieces
+- destruction thresholds
+- challenges
+- scoring targets and modifiers
+- quality-tier density
+
+Reference details and deferred product scope are preserved in `Docs/RECOVERED_KNOWLEDGE_BASE.md`.
 
 ## GitHub Pages QA preview
 
-The current workflow packages `web-preview` but does not deploy it.
-
-Add a GitHub Pages QA-preview workflow that:
+Add a QA-preview workflow that:
 
 - deploys only from approved preview branches or explicit dispatch
 - stamps exact source commit and workflow run
-- exposes build metadata visibly in QA mode
-- does not alter the production branch
-- supports rollback by artifact/commit
-- does not claim physical-device acceptance
+- exposes build metadata only in QA mode
+- does not mutate production branches
+- supports rollback by artifact or commit
+- never claims physical acceptance
+- does not use Netlify
 
-Do not use Netlify.
+## QA and player package separation
+
+Produce explicit modes:
+
+- QA browser preview
+- QA Android APK
+- player release candidate
+- production release
+
+Player-facing builds must not display QA badges, forensic panels, direct test controls, or debug telemetry.
 
 ## Build cadence
 
-Work in substantial milestones:
-
-1. implement a coherent phase
-2. complete automated verification
-3. provide one browser QA review point
+1. implement one coherent phase
+2. run static, type, structural, deterministic, and inherited parity checks
+3. provide one browser review point
 4. perform one consolidated correction pass
-5. assemble APK
-6. complete physical-device acceptance
+5. synchronize Android and build one APK
+6. complete physical Android acceptance
+7. record exact evidence in the repository
 
-Do not create a separate owner test build for every small internal refactor.
+Do not generate owner test builds for every internal refactor.
 
 ## Three.js upgrade policy
-
-The current runtime identifies as Three.js r128.
 
 Do not combine:
 
 - architecture modernization
-- renderer-version upgrade
+- Three.js version upgrade
 - major visual redesign
+- gameplay redesign
 
-First establish the modern structure and golden tests on the current renderer behavior. Upgrade Three.js in a dedicated later milestone with official migration guidance and controlled visual comparisons.
+After the modern TypeScript source becomes authoritative, perform a dedicated upgrade using official migration guidance, fixed visual captures, GLB and material checks, WebView testing, and a physical Android matrix.
 
 ## Completion definition
 
 Modernization is complete when:
 
-- the game boots from a real TypeScript module entrypoint
-- historical patch scripts are no longer required for ordinary production builds
-- major systems have explicit ownership and lifecycle
-- campaign and destruction content are data-driven enough to extend safely
-- QA uses a formal bridge
-- browser preview and Android packaging remain reproducible
+- the game boots from real TypeScript modules
+- historical patch scripts are not required for normal production builds
+- major systems have explicit lifecycle and ownership
+- campaign and destruction content can be extended through validated data
+- QA uses formal contracts
+- QA and player package modes are distinct
+- GitHub Pages preview and Android packaging are reproducible
 - accepted gameplay remains intact
-- the owner approves the resulting browser and APK behavior
+- owner-approved browser and APK evidence is recorded
