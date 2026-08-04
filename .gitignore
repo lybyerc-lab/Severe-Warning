@@ -27,6 +27,8 @@ Assets/__GeneratedBuild/
 node_modules/
 .pnpm-store/
 www/
+modern-dist/
+qa-artifacts/
 npm-debug.log*
 pnpm-debug.log*
 android/.gradle/

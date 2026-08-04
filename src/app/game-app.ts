@@ -36,6 +36,12 @@ export class GameApp {
       this.#context.clocks.setRunStateListener((state) => this.syncRunState(state));
       this.#context.legacy.attachClocks(this.#context.clocks);
       this.#context.legacy.attachInputAbilities(this.#context.input, this.#context.abilities);
+      this.#context.legacy.attachScoringCampaign(
+        this.#context.scoring,
+        this.#context.district,
+        this.#context.campaign,
+        this.#context.persistence
+      );
       this.#initializedAt = new Date().toISOString();
       this.transition('ready');
     } catch (error) {
@@ -50,6 +56,8 @@ export class GameApp {
     this.#context.legacy.reset();
     const legacy = this.#context.legacy.getRunState();
     this.#context.clocks.resetRun(Math.max(0, legacy.remainingSeconds) * 1000, performance.now());
+    this.#context.scoring.reset();
+    this.#context.district.reset();
     this.transition('ready');
   }
 
@@ -57,6 +65,8 @@ export class GameApp {
     if (this.#state === 'disposed') return;
     this.#context.clocks.setRunStateListener(() => {});
     this.#context.input.reset();
+    this.#context.scoring.reset();
+    this.#context.district.reset();
     this.transition('disposed');
   }
 

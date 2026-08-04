@@ -6,6 +6,10 @@
 import type { AbilitySnapshot, AbilitySystem } from '../abilities/ability-system';
 import type { GameClocks, ClockSnapshot, LegacyClockSampleInput, LegacyClockSample } from '../core/clocks';
 import type { InputSnapshot, InputSystem, MovementVector } from '../input/input-system';
+import type { ScoringSystem } from '../gameplay/scoring/scoring-system';
+import type { DistrictSystem } from '../gameplay/districts/district-system';
+import type { CampaignSystem } from '../gameplay/campaign/campaign-system';
+import type { CampaignStore } from '../platform/persistence/campaign-store';
 import type {
   QaScenarioId,
   QaSnapshot,
@@ -61,12 +65,34 @@ interface LegacyInputAbilityBridge {
   reset(): void;
 }
 
+export interface LegacyScoringCampaignBridgeSnapshot {
+  readonly version: string;
+  readonly attached: boolean;
+  readonly score: unknown;
+  readonly district: unknown;
+  readonly campaign: unknown;
+  readonly persistence: unknown;
+}
+
+interface LegacyScoringCampaignBridge {
+  readonly version: string;
+  attach(
+    scoringAuthority: ScoringSystem,
+    districtAuthority: DistrictSystem,
+    campaignAuthority: CampaignSystem,
+    persistenceAuthority: CampaignStore
+  ): boolean;
+  reset(): void;
+  getSnapshot(): LegacyScoringCampaignBridgeSnapshot;
+}
+
 interface LegacyRuntimeGlobals {
   __SW_PRODUCTION_SLICE_READY__?: boolean;
   __SW_V510_UPDATE__?: (deltaSeconds: number, nowMs: number, isMoving: boolean) => void;
   __SW_V510_REBUILD__?: () => void;
   __SW_PHASE2_CLOCK_BRIDGE__?: LegacyClockBridge;
   __SW_PHASE3_INPUT_ABILITY_BRIDGE__?: LegacyInputAbilityBridge;
+  __SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?: LegacyScoringCampaignBridge;
   triggerProductionSliceQa?: (mode?: string) => boolean;
   getProductionSliceQaState?: () => QaSnapshot;
 }
@@ -79,6 +105,7 @@ export interface LegacyRuntimeStatus {
   readonly hasQaSnapshot: boolean;
   readonly hasClockBridge: boolean;
   readonly hasInputAbilityBridge: boolean;
+  readonly hasScoringCampaignBridge: boolean;
 }
 
 export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
@@ -97,6 +124,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       hasQaSnapshot: typeof this.#globals.getProductionSliceQaState === 'function',
       hasClockBridge: this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.version === 'MODERNIZATION_PHASE2_CLOCKS_V1',
       hasInputAbilityBridge: this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.version === 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1',
+      hasScoringCampaignBridge: this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.version === 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V1',
     });
   }
 
@@ -123,6 +151,17 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     if (attached !== true) throw new Error('Legacy runtime rejected the Phase 3 input and ability authorities.');
   }
 
+  attachScoringCampaign(
+    scoring: ScoringSystem,
+    district: DistrictSystem,
+    campaign: CampaignSystem,
+    persistence: CampaignStore
+  ): void {
+    this.assertRequiredContracts();
+    const attached = this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.attach(scoring, district, campaign, persistence);
+    if (attached !== true) throw new Error('Legacy runtime rejected the Phase 4 scoring and campaign authorities.');
+  }
+
   getRunState(): LegacyRunState {
     this.assertRequiredContracts();
     const state = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.getLegacyRunState();
@@ -141,6 +180,13 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.assertRequiredContracts();
     const snapshot = this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.getSnapshot();
     if (!snapshot) throw new Error('Legacy runtime returned no input and ability bridge snapshot.');
+    return snapshot;
+  }
+
+  getScoringCampaignBridgeSnapshot(): LegacyScoringCampaignBridgeSnapshot {
+    this.assertRequiredContracts();
+    const snapshot = this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.getSnapshot();
+    if (!snapshot) throw new Error('Legacy runtime returned no scoring and campaign bridge snapshot.');
     return snapshot;
   }
 
@@ -170,6 +216,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
   reset(): void {
     this.assertRequiredContracts();
     this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.reset();
+    this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.reset();
     this.#globals.__SW_V510_REBUILD__?.();
   }
 
