@@ -33,6 +33,34 @@ const viewports = [
 ];
 const results = [];
 
+async function captureFailure(page, viewport, url, phase, error, pageErrors, consoleErrors) {
+  const diagnostic = await page.evaluate(() => ({
+    ready: globalThis.__SW_PRODUCTION_SLICE_READY__ === true,
+    hasQaState: typeof globalThis.getProductionSliceQaState === 'function',
+    hasQaTrigger: typeof globalThis.triggerProductionSliceQa === 'function',
+    hasRebuild: typeof globalThis.__SW_V510_REBUILD__ === 'function',
+    hasUpdate: typeof globalThis.__SW_V510_UPDATE__ === 'function',
+    qaState: typeof globalThis.getProductionSliceQaState === 'function'
+      ? globalThis.getProductionSliceQaState()
+      : null,
+    documentState: document.readyState,
+    title: document.title,
+    bodyClass: document.body.className
+  })).catch(evaluationError => ({ evaluationError: evaluationError.message }));
+  const failure = {
+    phase,
+    viewport,
+    url: url.toString(),
+    waitError: error.message,
+    diagnostic,
+    pageErrors,
+    consoleErrors
+  };
+  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${phase}-failure.png`), fullPage: false }).catch(() => {});
+  await writeFile(path.join(outputDir, `${viewport.name}-${phase}-failure.json`), `${JSON.stringify(failure, null, 2)}\n`, 'utf8');
+  console.error(`Production slice ${phase} failure: ${JSON.stringify(failure)}`);
+}
+
 for (const viewport of viewports) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
@@ -49,41 +77,66 @@ for (const viewport of viewports) {
   });
 
   const url = new URL(baseUrl);
-  url.searchParams.set('sliceqa', '1');
   await page.goto(url.toString(), { waitUntil: 'networkidle', timeout: 60000 });
 
   try {
     await page.waitForFunction(() => globalThis.__SW_PRODUCTION_SLICE_READY__ === true, null, { timeout: 15000 });
   } catch (error) {
-    const diagnostic = await page.evaluate(() => ({
-      ready: globalThis.__SW_PRODUCTION_SLICE_READY__ === true,
-      hasQaState: typeof globalThis.getProductionSliceQaState === 'function',
-      hasRebuild: typeof globalThis.__SW_V510_REBUILD__ === 'function',
-      hasUpdate: typeof globalThis.__SW_V510_UPDATE__ === 'function',
-      documentState: document.readyState,
-      title: document.title,
-      bodyClass: document.body.className
-    })).catch(evaluationError => ({ evaluationError: evaluationError.message }));
-    const failure = {
-      viewport,
-      url: url.toString(),
-      waitError: error.message,
-      diagnostic,
-      pageErrors,
-      consoleErrors
-    };
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-startup-failure.png`), fullPage: false }).catch(() => {});
-    await writeFile(path.join(outputDir, `${viewport.name}-startup-failure.json`), `${JSON.stringify(failure, null, 2)}\n`, 'utf8');
-    console.error(`Production slice startup failure: ${JSON.stringify(failure)}`);
+    await captureFailure(page, viewport, url, 'startup', error, pageErrors, consoleErrors);
     await context.close();
     await browser.close();
     throw error;
   }
 
-  await page.waitForFunction(() => {
-    const state = globalThis.getProductionSliceQaState?.();
-    return state && state.barn && state.barn.stage >= 2 && state.frameSampleCount >= 45;
-  }, null, { timeout: 30000 });
+  try {
+    await page.evaluate(async () => {
+      if (typeof globalThis.triggerProductionSliceQa !== 'function') {
+        throw new Error('triggerProductionSliceQa is unavailable');
+      }
+      if (typeof globalThis.__SW_V510_UPDATE__ !== 'function') {
+        throw new Error('__SW_V510_UPDATE__ is unavailable');
+      }
+      if (globalThis.triggerProductionSliceQa('hero') !== true) {
+        throw new Error('Production slice hero setup did not initialize');
+      }
+
+      await new Promise((resolve, reject) => {
+        let frames = 0;
+        let previousNow = performance.now();
+        const maxFrames = 240;
+
+        const sampleFrame = now => {
+          const dt = (now - previousNow) / 1000;
+          previousNow = now;
+          globalThis.__SW_V510_UPDATE__(dt, now, false);
+          frames += 1;
+
+          const state = globalThis.getProductionSliceQaState?.();
+          if (state?.barn?.stage >= 2 && state.frameSampleCount >= 60) {
+            resolve();
+            return;
+          }
+          if (frames >= maxFrames) {
+            reject(new Error(`Production slice did not stabilize after ${frames} real animation frames: ${JSON.stringify(state)}`));
+            return;
+          }
+          requestAnimationFrame(sampleFrame);
+        };
+
+        requestAnimationFrame(sampleFrame);
+      });
+    }, { timeout: 60000 });
+
+    await page.waitForFunction(() => {
+      const state = globalThis.getProductionSliceQaState?.();
+      return state && state.barn && state.barn.stage >= 2 && state.frameSampleCount >= 60;
+    }, null, { timeout: 5000 });
+  } catch (error) {
+    await captureFailure(page, viewport, url, 'runtime', error, pageErrors, consoleErrors);
+    await context.close();
+    await browser.close();
+    throw error;
+  }
 
   const state = await page.evaluate(() => globalThis.getProductionSliceQaState());
   const screenshotPath = path.join(outputDir, `${viewport.name}.png`);
@@ -98,7 +151,7 @@ for (const viewport of viewports) {
     authoredBarn: state.barn?.stage >= 2 && state.barn?.roofLeftDetached === true,
     cow17: state.cow17?.scale >= 1.3 && state.cow17?.decorated === true,
     dressing: state.dressing?.cropRows >= 12 && state.dressing?.trees >= 18 && state.dressing?.fences > 0,
-    realFpsSamples: state.frameSampleCount >= 45 && Number.isFinite(state.productionMeasuredFps) && state.productionMeasuredFps > 0,
+    realFpsSamples: state.frameSampleCount >= 60 && Number.isFinite(state.productionMeasuredFps) && state.productionMeasuredFps > 0,
     noPageErrors: pageErrors.length === 0,
     noConsoleErrors: consoleErrors.length === 0
   };
@@ -118,7 +171,7 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'V510_PRODUCTION_SLICE_QA_V1',
+  version: 'V510_PRODUCTION_SLICE_QA_V2',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
