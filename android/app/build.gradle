@@ -20,12 +20,12 @@ def severeWeatherApplicationId = resolveBuildValue(
 def severeWeatherVersionCodeText = resolveBuildValue(
     'severeWeatherVersionCode',
     'SEVERE_WEATHER_VERSION_CODE',
-    '500'
+    '510'
 )
 def severeWeatherVersionName = resolveBuildValue(
     'severeWeatherVersionName',
     'SEVERE_WEATHER_VERSION_NAME',
-    '5.0.0'
+    '5.1.0'
 )
 
 if (!(severeWeatherVersionCodeText ==~ /[0-9]+/)) {
@@ -124,8 +124,8 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
-    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    androidTestImplementation "androidx.test.ext:junit:$junitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$espressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
 }
 
