@@ -110,12 +110,17 @@ const requiredMarkers = [
   ['v5.1 production slice', 'V510_THREEJS_PRODUCTION_SLICE_V1'],
   ['v5.1 production styling', 'v510ProductionSliceStyles'],
   ['v5.1 production quality control', 'btnProductionQuality'],
+  ['v5.1 lexical bundle', '[SW:VISUAL:PRODUCTION_SLICE_BUNDLE]'],
   ['v5.1 update hook', '__SW_V510_UPDATE__'],
   ['v5.1 rebuild hook', '__SW_V510_REBUILD__']
 ];
 
 for (const [name, marker] of requiredMarkers) record(name, html.includes(marker), marker);
-for (const runtimeFile of runtimeFiles) record(`runtime reference ${runtimeFile}`, html.includes(runtimeFile), runtimeFile);
+for (const runtimeFile of runtimeFiles) {
+  const sourceMarker = `[SW:SOURCE:${path.basename(runtimeFile)}]`;
+  record(`bundled source marker ${runtimeFile}`, html.includes(sourceMarker), sourceMarker);
+}
+record('runtime avoids isolated script scope', !html.includes('<script src="runtime/v510-'));
 
 const forbiddenMarkers = [
   ['stale v4.5 identity', 'v4.5.0'],
@@ -142,7 +147,8 @@ try {
 }
 
 try {
-  const runtime = (await Promise.all(runtimeFiles.map(file => readFile(path.join(wwwDir, file), 'utf8')))).join('\n');
+  const runtimeSources = await Promise.all(runtimeFiles.map(file => readFile(path.join(wwwDir, file), 'utf8')));
+  const runtime = runtimeSources.join('\n');
   for (const marker of [
     '[SW:VISUAL:PRODUCTION_SLICE]',
     '[SW:VISUAL:TORNADO_LAYERS]',
@@ -153,10 +159,24 @@ try {
     'triggerProductionSliceQa',
     'productionMeasuredFps'
   ]) record(`runtime marker ${marker}`, runtime.includes(marker), marker);
+  runtimeSources.forEach((source, index) => {
+    record(`packaged runtime bundled ${runtimeFiles[index]}`, html.includes(source.trim()), `${source.length} chars`);
+  });
   record('runtime has no synthetic FPS fallback', !/productionMeasuredFps\(\)\s*(?:\|\||\?\?)\s*60/.test(runtime));
 } catch (error) {
   record('runtime parse inputs', false, error.message);
 }
+
+const inlineScripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]);
+record('inline scripts found', inlineScripts.length >= 1, `${inlineScripts.length} scripts`);
+inlineScripts.forEach((source, index) => {
+  try {
+    new Function(source);
+    record(`inline script ${index + 1} syntax`, true);
+  } catch (error) {
+    record(`inline script ${index + 1} syntax`, false, error.message);
+  }
+});
 
 const failures = results.filter(result => !result.passed);
 console.log(`\nQA package verification: ${results.length - failures.length}/${results.length} checks passed.`);
