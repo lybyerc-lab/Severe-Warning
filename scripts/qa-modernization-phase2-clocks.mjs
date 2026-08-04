@@ -10,7 +10,11 @@ const outputDir = process.env.SEVERE_WEATHER_QA_DIR
   : path.join(projectRoot, 'qa-artifacts', 'modernization-phase-2');
 const baseUrl = process.env.SEVERE_WEATHER_QA_URL || 'http://127.0.0.1:4173/';
 const executablePath = process.env.CHROME_BIN || undefined;
-const phase2CompatibleIdentities = new Set(['phase-2-clocks', 'phase-3-input-abilities']);
+const phase2CompatibleIdentities = new Set([
+  'phase-2-clocks',
+  'phase-3-input-abilities',
+  'phase-4-scoring-campaign',
+]);
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({
@@ -52,7 +56,9 @@ for (const viewport of viewports) {
   await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForFunction(() => (
     globalThis.__SW_MODERN_SHELL_READY__ === true
-    && ['phase-2-clocks', 'phase-3-input-abilities'].includes(globalThis.__SEVERE_WEATHER__?.modernizationPhase)
+    && ['phase-2-clocks', 'phase-3-input-abilities', 'phase-4-scoring-campaign'].includes(
+      globalThis.__SEVERE_WEATHER__?.modernizationPhase,
+    )
     && globalThis.__SEVERE_WEATHER__?.qa?.getClockBridgeSnapshot?.().attached === true
     && globalThis.__SW_QA_FORENSICS__
   ));
@@ -146,7 +152,7 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'MODERNIZATION_PHASE2_CLOCK_QA_V3',
+  version: 'MODERNIZATION_PHASE2_CLOCK_QA_V4',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
