@@ -141,7 +141,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source_commit="$(git rev-parse HEAD)"
+          source_commit="${{ github.event.pull_request.head.sha || github.sha }}"
           output_dir="dist/modernization-phase-1"
           mkdir -p "$output_dir"
 
