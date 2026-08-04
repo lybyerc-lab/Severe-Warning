@@ -2,7 +2,7 @@
 
 **Recorded:** 2026-08-04 Central Time  
 **Primary reported device:** Galaxy S26 Ultra  
-**Purpose:** Preserve owner-observed browser and installed-APK behavior for modernization Phases 1 through 3.
+**Purpose:** Preserve owner-observed browser and installed-APK behavior for modernization Phases 1 through 4.
 
 Automated verification is necessary but does not replace this record.
 
@@ -45,7 +45,7 @@ Owner verdict:
 ### Sealed automated evidence
 
 - Branch: `agent/modernization-phase-2-clocks`
-- Final corrected commit: `381014d3d7f4a128e5c6e285200fdb2790af94b5`
+- Final corrected commit: `381014d3d7f4ca6424b8bf32b282abae0dbfc28`
 - Workflow run: `30884351261`
 - Artifact ID: `8882537816`
 - Artifact digest: `sha256:b35dcac9b266c21a9affc8aabcee0c999ce30904e02d43aba05179d38b28c9a6`
@@ -84,11 +84,11 @@ Correction:
 - the panel displays only through explicit `?qa4=forensic` mode
 - desktop and mobile-landscape regression tests prove both sides of the gate
 
-The corrected guard was inherited by the physically accepted Phase 3 build.
+The corrected guard was inherited by later physically accepted builds.
 
 ### Responsive observation
 
-One Phase 2 results screenshot showed the warning-run heading crowded or clipped at the top in a wide landscape geometry. The lower results content and controls remained usable. A later Phase 3 screenshot fit correctly.
+One Phase 2 results screenshot showed the warning-run heading crowded or clipped at the top in a wide landscape geometry. The lower results content and controls remained usable. Later Phase 3 and Phase 4 result screens fit correctly.
 
 Treat this as a responsive regression case to preserve in tests, not a universal active defect.
 
@@ -140,6 +140,60 @@ Phase 3 is physically accepted for the tested high-end Android device.
 
 This acceptance covers the normalized input and ability-command authority as inherited with the accepted Phase 1 and Phase 2 behavior.
 
+## Phase 4: scoring, districts, campaign, and persistence
+
+### Sealed automated evidence
+
+- Branch: `agent/phase4-scoring-campaign-antigravity`
+- Final audited commit: `38125918bffdd712ae10731d4472adbf2051d838`
+- Workflow run: `30921480977`
+- Artifact ID: `8897403311`
+- Artifact name: `severe-weather-modernization-phase-4-46`
+- Artifact digest: `sha256:91b94190e089a64028eb1497eecfdb4cd25a976282a0c0d529a42624ac8dbb05`
+- APK: `Severe-Weather-v5.1.0-Phase-4-Scoring-Campaign-46.apk`
+- APK SHA-256: `9e1f94e269cf4eeb5d6f58300752af61efb7e778a97c1d692fdd899e2ecda295`
+- Phase 4 exact-parity verification: `72/72`
+- inherited QA package verification: `104/104`
+
+### Owner evidence
+
+The exact installed Android candidate completed a Tornado Warning run.
+
+Observed result included:
+
+- rank `S+`
+- final score `141866`
+- maximum combo `3.5x`
+- objectives `3/3`
+- landmarks `2/2`
+- substations `3/3`
+- bonus challenges `3/3`
+- Pine Ridge score `50472`
+- Main Street score `120293`
+- County Fair final score `141866`
+- three-star Lincoln County completion
+- Prairie Junction unlocked
+- complete Bovine Situation Report
+- Retry County, Next Stop, and Weather Map actions visible
+
+The owner reported:
+
+> Everything was good.
+
+### Accepted meaning
+
+- score remained continuous through both district transitions
+- the accepted 3.5x combo cap remained visible
+- final score and district score checkpoints agreed with the played run
+- stars and ordered unlock behavior remained correct
+- results and campaign actions rendered correctly
+- no inherited input, ability, pause, background, or QA-panel regression was reported
+- Phase 4 is physically accepted on the tested high-end Android device
+
+### Review state
+
+PR #21 was promoted from draft to ready for review. It remains unmerged.
+
 ## What this ledger does not prove
 
 The following remain incompletely measured:
@@ -150,8 +204,9 @@ The following remain incompletely measured:
 - battery consumption
 - repeated multi-stop sessions
 - process death and recovery
-- close and reopen save behavior on Phase 4 data
 - multiple device safe-area geometries
+- renderer and world resource disposal across long sessions
+- repeated retry or next-stop world-object duplication
 - player release packaging without visible QA identity
 
 ## Acceptance law for future phases
