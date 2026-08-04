@@ -1,54 +1,36 @@
 // ============================================================================
 // [SW:ARCH:PHASE5_SECOND_STRUCTURE_DEFINITION]
-// Data-driven definition proving contract reuse on a 2nd existing structure (Grain Silo).
+// Reuse proof for the existing primary campaign landmark. Legacy landmarks have
+// two authored states only: intact and destroyed. No intermediate silo art or
+// behavior is invented.
 // ============================================================================
 
 import type { SetpieceDefinition } from './destructible-setpiece-contracts';
 
-export const GRAIN_SILO_SETPIECE_DEFINITION: SetpieceDefinition = Object.freeze({
-  id: 'lincoln-grain-silo',
-  name: 'Lincoln County Grain Silo',
-  category: 'industrial',
+export const PRIMARY_LANDMARK_SETPIECE_DEFINITION: SetpieceDefinition = Object.freeze({
+  id: 'primary-campaign-landmark',
+  name: 'Primary Campaign Landmark',
+  category: 'landmark',
   stages: Object.freeze([
     Object.freeze({
       stageId: 'intact',
-      stageIndex: 1,
-      name: 'Intact Concrete Silo',
-      damageThresholdRatio: 0.0,
+      legacyStage: 0,
+      label: 'INTACT',
+      remainingHealthAtOrBelow: null,
       scorePoints: 0,
-      audioEventName: null
+      audioEventName: null,
     }),
     Object.freeze({
-      stageId: 'damaged',
-      stageIndex: 2,
-      name: 'Scorched & Chipped Surface',
-      damageThresholdRatio: 0.20,
-      scorePoints: 150,
-      audioEventName: 'metal_impact'
-    }),
-    Object.freeze({
-      stageId: 'roof-peel',
-      stageIndex: 3,
-      name: 'Dome Cap Detachment',
-      damageThresholdRatio: 0.45,
-      scorePoints: 300,
-      audioEventName: 'cap_pop'
-    }),
-    Object.freeze({
-      stageId: 'exposed',
-      stageIndex: 4,
-      name: 'Structural Wall Fracture',
-      damageThresholdRatio: 0.70,
+      stageId: 'destroyed',
+      legacyStage: 1,
+      label: 'DESTROYED',
+      remainingHealthAtOrBelow: 0,
       scorePoints: 500,
-      audioEventName: 'concrete_crack'
+      audioEventName: null,
     }),
-    Object.freeze({
-      stageId: 'wreckage',
-      stageIndex: 5,
-      name: 'Silo Collapse Rubble',
-      damageThresholdRatio: 0.95,
-      scorePoints: 900,
-      audioEventName: 'silo_collapse'
-    })
-  ])
+  ]),
 });
+
+// Compatibility export retained inside the unaccepted Phase 5 branch while the
+// application context is migrated from the original Antigravity naming.
+export const GRAIN_SILO_SETPIECE_DEFINITION = PRIMARY_LANDMARK_SETPIECE_DEFINITION;
