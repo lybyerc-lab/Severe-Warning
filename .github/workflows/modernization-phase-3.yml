@@ -54,6 +54,7 @@ jobs:
         run: |
           node --check scripts/apply-modernization-phase3-input-abilities.mjs
           node --check scripts/verify-modernization-phase3-input-abilities.mjs
+          node --check scripts/qa-modernization-phase2-clocks.mjs
           node --check scripts/qa-modernization-phase3-input-abilities.mjs
           node --check runtime/modernization-phase3-input-abilities.js
           npm run modern:typecheck
