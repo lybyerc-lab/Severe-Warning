@@ -2,6 +2,9 @@ name: Three.js Production Slice
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - agent/v500-heartland-campaign
   push:
     branches:
       - agent/threejs-production-slice
@@ -21,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: threejs-production-slice
+  group: threejs-production-slice-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
