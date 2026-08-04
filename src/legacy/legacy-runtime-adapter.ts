@@ -105,6 +105,7 @@ export interface LegacyPresentationWorldBridgeSnapshot {
   readonly tornado: unknown;
   readonly world: unknown;
   readonly setpieces: unknown;
+  readonly live: unknown;
 }
 
 interface LegacyPresentationWorldBridge {
@@ -117,9 +118,11 @@ interface LegacyPresentationWorldBridge {
     tornado: TornadoPresentationSystem,
     world: WorldSystem,
     hartFarm: DestructibleSetpieceSystem,
-    silo: DestructibleSetpieceSystem,
+    secondStructure: DestructibleSetpieceSystem,
   ): boolean;
+  syncFromLegacy(): unknown;
   reset(): void;
+  runContractProbe(): unknown;
   getSnapshot(): LegacyPresentationWorldBridgeSnapshot;
 }
 
@@ -164,7 +167,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       hasClockBridge: this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.version === 'MODERNIZATION_PHASE2_CLOCKS_V1',
       hasInputAbilityBridge: this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.version === 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1',
       hasScoringCampaignBridge: this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.version === 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2',
-      hasPresentationWorldBridge: this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.version === 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V1',
+      hasPresentationWorldBridge: this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.version === 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2',
     });
   }
 
@@ -215,7 +218,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     tornado: TornadoPresentationSystem,
     world: WorldSystem,
     hartFarm: DestructibleSetpieceSystem,
-    silo: DestructibleSetpieceSystem,
+    secondStructure: DestructibleSetpieceSystem,
   ): void {
     this.assertRequiredContracts();
     const attached = this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.attach(
@@ -226,7 +229,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       tornado,
       world,
       hartFarm,
-      silo,
+      secondStructure,
     );
     if (attached !== true) throw new Error('Legacy runtime rejected the Phase 5 presentation and world mirrors.');
   }
@@ -266,6 +269,11 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     return snapshot;
   }
 
+  runPresentationWorldContractProbe(): unknown {
+    this.assertRequiredContracts();
+    return this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.runContractProbe();
+  }
+
   async prepareScenario(id: QaScenarioId): Promise<void> {
     this.assertRequiredContracts();
     if (id !== 'production-hero') throw new Error(`Unsupported QA scenario: ${id}`);
@@ -274,6 +282,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
 
     this.synchronizeClockFromLegacy();
     this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.syncFromLegacy();
+    this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.syncFromLegacy();
   }
 
   advance(milliseconds: number): void {
@@ -283,6 +292,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     }
     const now = performance.now();
     this.#globals.__SW_V510_UPDATE__?.(milliseconds / 1000, now, false);
+    this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.syncFromLegacy();
   }
 
   getSnapshot(): QaSnapshot {
