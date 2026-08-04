@@ -1,118 +1,159 @@
 // ============================================================================
 // [SW:ARCH:PHASE4_SCORING_SYSTEM]
-// Scoring authority: accumulates score, manages combo state, preserves score continuity.
+// Typed mirror and verifier for the accepted legacy scoring executor.
 // ============================================================================
 
 import {
+  DEFAULT_LEGACY_SCORE_STATE,
   DEFAULT_SCORING_RULES,
-  type ComboSnapshot,
+  type LegacyScoreState,
   type ScoreEvent,
   type ScoreSnapshot,
-  type ScoringRules
+  type ScoringContractProbe,
+  type ScoringRules,
 } from './scoring-contracts';
 
+function finiteNonNegative(value: number, fallback = 0): number {
+  return Number.isFinite(value) ? Math.max(0, value) : fallback;
+}
+
+function normalizeStage(value: number): 1 | 2 | 3 {
+  if (value >= 3) return 3;
+  if (value >= 2) return 2;
+  return 1;
+}
+
 export class ScoringSystem {
-  private currentScore = 0;
-  private currentBaseScore = 0;
-  private comboCount = 0;
-  private comboMultiplier = 1.0;
-  private comboTimeRemainingMs = 0;
-  private peakScoreValue = 0;
-  private peakComboCountValue = 0;
-  private peakComboMultiplierValue = 1.0;
+  private state: LegacyScoreState = DEFAULT_LEGACY_SCORE_STATE;
   private readonly events: ScoreEvent[] = [];
 
   constructor(private readonly rules: ScoringRules = DEFAULT_SCORING_RULES) {}
 
   get score(): number {
-    return this.currentScore;
+    return this.state.destructionScore;
   }
 
-  get multiplier(): number {
-    return this.comboMultiplier;
+  get baseScore(): number {
+    return this.state.baseScore;
   }
 
-  get combo(): ComboSnapshot {
-    return Object.freeze({
-      count: this.comboCount,
-      multiplier: this.comboMultiplier,
-      active: this.comboTimeRemainingMs > 0,
-      timeRemainingMs: Math.max(0, this.comboTimeRemainingMs),
-      timeoutMs: this.rules.comboTimeoutMs
+  get comboMultiplier(): number {
+    return this.state.comboMultiplier;
+  }
+
+  synchronize(legacy: LegacyScoreState): ScoreSnapshot {
+    this.state = Object.freeze({
+      destructionScore: Math.round(finiteNonNegative(legacy.destructionScore)),
+      baseScore: Math.round(finiteNonNegative(legacy.baseScore)),
+      comboMultiplier: finiteNonNegative(legacy.comboMultiplier, 1),
+      maxComboReached: finiteNonNegative(legacy.maxComboReached, 1),
+      comboDecayTimerSeconds: finiteNonNegative(legacy.comboDecayTimerSeconds),
+      scoreDoublerTimerSeconds: finiteNonNegative(legacy.scoreDoublerTimerSeconds),
+      campaignScoreMultiplier: finiteNonNegative(legacy.campaignScoreMultiplier, 1),
+      currentStage: normalizeStage(legacy.currentStage),
     });
+    return this.getSnapshot();
   }
 
-  addScore(basePoints: number, label: string, nowMs: number = performance.now(), position?: { x: number; y: number; z: number }): ScoreEvent {
+  predictAward(basePoints: number, legacy: LegacyScoreState = this.state): Readonly<{
+    nextComboMultiplier: number;
+    awardedPoints: number;
+  }> {
     const validBase = Math.max(0, Math.round(Number(basePoints) || 0));
-    this.registerComboHit(nowMs);
+    const nextComboMultiplier = Math.min(
+      this.rules.maxComboMultiplier,
+      Number((finiteNonNegative(legacy.comboMultiplier, 1) + this.rules.comboStep).toFixed(2)),
+    );
+    let awardedPoints = Math.round(
+      validBase * nextComboMultiplier * finiteNonNegative(legacy.campaignScoreMultiplier, 1),
+    );
+    if (legacy.scoreDoublerTimerSeconds > 0) awardedPoints *= 2;
+    return Object.freeze({ nextComboMultiplier, awardedPoints });
+  }
 
-    const points = Math.round(validBase * this.comboMultiplier);
-    this.currentScore += points;
-    this.currentBaseScore += validBase;
-    this.peakScoreValue = Math.max(this.peakScoreValue, this.currentScore);
-
+  recordLegacyAward(
+    basePoints: number,
+    awardedPoints: number,
+    label: string,
+    legacyAfter: LegacyScoreState,
+    nowMs = performance.now(),
+  ): ScoreEvent {
+    const beforeDoubler = this.state.scoreDoublerTimerSeconds > 0;
+    this.synchronize(legacyAfter);
     const event: ScoreEvent = Object.freeze({
-      points,
-      basePoints: validBase,
-      comboMultiplier: this.comboMultiplier,
+      basePoints: Math.max(0, Math.round(Number(basePoints) || 0)),
+      awardedPoints: Math.max(0, Math.round(Number(awardedPoints) || 0)),
+      comboMultiplier: this.state.comboMultiplier,
+      campaignMultiplier: this.state.campaignScoreMultiplier,
+      doubled: beforeDoubler || this.state.scoreDoublerTimerSeconds > 0,
       label: String(label || 'points'),
-      timestampMs: nowMs,
-      ...(position ? { targetPosition: Object.freeze({ ...position }) } : {})
+      timestampMs: finiteNonNegative(nowMs),
     });
-
     this.events.push(event);
     return event;
   }
 
-  registerComboHit(_nowMs: number = performance.now()): ComboSnapshot {
-    this.comboCount += 1;
-    this.comboMultiplier = Math.min(
-      this.rules.maxComboMultiplier,
-      Number((1.0 + (this.comboCount - 1) * this.rules.comboStep).toFixed(1))
-    );
-    this.comboTimeRemainingMs = this.rules.comboTimeoutMs;
-
-    this.peakComboCountValue = Math.max(this.peakComboCountValue, this.comboCount);
-    this.peakComboMultiplierValue = Math.max(this.peakComboMultiplierValue, this.comboMultiplier);
-
-    return this.combo;
-  }
-
-  update(deltaMs: number): void {
-    if (this.comboTimeRemainingMs > 0) {
-      this.comboTimeRemainingMs -= Math.max(0, deltaMs);
-      if (this.comboTimeRemainingMs <= 0) {
-        this.resetCombo();
-      }
-    }
-  }
-
-  resetCombo(): void {
-    this.comboCount = 0;
-    this.comboMultiplier = 1.0;
-    this.comboTimeRemainingMs = 0;
-  }
-
-  reset(): void {
-    this.currentScore = 0;
-    this.currentBaseScore = 0;
-    this.resetCombo();
-    this.peakScoreValue = 0;
-    this.peakComboCountValue = 0;
-    this.peakComboMultiplierValue = 1.0;
+  reset(legacy: LegacyScoreState = DEFAULT_LEGACY_SCORE_STATE): void {
     this.events.length = 0;
+    this.synchronize(legacy);
   }
 
   getSnapshot(): ScoreSnapshot {
     return Object.freeze({
-      score: this.currentScore,
-      baseScore: this.currentBaseScore,
-      combo: this.combo,
-      peakScore: this.peakScoreValue,
-      peakComboCount: this.peakComboCountValue,
-      peakComboMultiplier: this.peakComboMultiplierValue,
+      ...this.state,
       eventsRecorded: this.events.length,
-      lastEvent: this.events.length > 0 ? this.events[this.events.length - 1] ?? null : null
+      lastEvent: this.events.length > 0 ? this.events[this.events.length - 1] ?? null : null,
+    });
+  }
+
+  runContractProbe(): ScoringContractProbe {
+    const firstState: LegacyScoreState = { ...DEFAULT_LEGACY_SCORE_STATE };
+    const first = this.predictAward(500, firstState);
+    const secondState: LegacyScoreState = {
+      ...firstState,
+      destructionScore: first.awardedPoints,
+      baseScore: 500,
+      comboMultiplier: first.nextComboMultiplier,
+      maxComboReached: first.nextComboMultiplier,
+      comboDecayTimerSeconds: this.rules.comboDecaySeconds,
+    };
+    const second = this.predictAward(500, secondState);
+    const campaign = this.predictAward(1000, {
+      ...DEFAULT_LEGACY_SCORE_STATE,
+      campaignScoreMultiplier: 1.25,
+    });
+    const doubled = this.predictAward(1000, {
+      ...DEFAULT_LEGACY_SCORE_STATE,
+      scoreDoublerTimerSeconds: 1,
+    });
+    const capped = this.predictAward(100, {
+      ...DEFAULT_LEGACY_SCORE_STATE,
+      comboMultiplier: 3.49,
+      maxComboReached: 3.49,
+    });
+
+    const checks = Object.freeze({
+      maxComboIsThreePointFive: this.rules.maxComboMultiplier === 3.5,
+      comboStepIsPointZeroFive: this.rules.comboStep === 0.05,
+      decayIsFourPointFiveSeconds: this.rules.comboDecaySeconds === 4.5,
+      firstAwardUsesOnePointZeroFive: first.nextComboMultiplier === 1.05 && first.awardedPoints === 525,
+      secondAwardUsesOnePointOne: second.nextComboMultiplier === 1.1 && second.awardedPoints === 550,
+      continuousTotalIsOneZeroSevenFive: first.awardedPoints + second.awardedPoints === 1075,
+      campaignMultiplierApplied: campaign.awardedPoints === 1313,
+      scoreDoublerApplied: doubled.awardedPoints === 2100,
+      comboCapPreserved: capped.nextComboMultiplier === 3.5,
+    });
+
+    return Object.freeze({
+      passed: Object.values(checks).every(Boolean),
+      checks,
+      samples: Object.freeze({
+        firstAward: first.awardedPoints,
+        secondAward: second.awardedPoints,
+        campaignAward: campaign.awardedPoints,
+        doubledAward: doubled.awardedPoints,
+        cappedMultiplier: capped.nextComboMultiplier,
+      }),
     });
   }
 }
