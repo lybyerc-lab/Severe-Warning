@@ -211,20 +211,22 @@ replaceExact(
   'production slice frame hook'
 );
 
-replaceExact(
-  'requestAnimationFrame(animate);\n</script>\n</body>',
-  `requestAnimationFrame(animate);
-
-// ============================================================================
+const mainScriptCloseIndex = html.lastIndexOf('</script>');
+const bodyCloseIndex = html.lastIndexOf('</body>');
+const animateRequestIndex = html.lastIndexOf('requestAnimationFrame(animate);');
+if (mainScriptCloseIndex < 0 || bodyCloseIndex < 0 || mainScriptCloseIndex > bodyCloseIndex) {
+  throw new Error('production runtime lexical bundle: could not locate the final game script boundary');
+}
+if (animateRequestIndex < 0 || animateRequestIndex > mainScriptCloseIndex) {
+  throw new Error('production runtime lexical bundle: final game script is missing the animation bootstrap');
+}
+const bundledRuntime = `\n\n// ============================================================================
 // [SW:VISUAL:PRODUCTION_SLICE_BUNDLE]
 // Generated from the maintained runtime/v510-*.js sources. Bundling inside
 // the established game script preserves direct access to accepted V5 state.
 // ============================================================================
-${productionRuntimeBundle}
-</script>
-</body>`,
-  'production runtime lexical bundle'
-);
+${productionRuntimeBundle}\n`;
+html = html.slice(0, mainScriptCloseIndex) + bundledRuntime + html.slice(mainScriptCloseIndex);
 
 requiredHtmlMarkers.forEach(required => {
   if (!html.includes(required)) throw new Error(`v5.1.0 production slice verification failed: missing ${required}`);
