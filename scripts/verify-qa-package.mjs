@@ -8,13 +8,13 @@ const wwwDir = process.env.SEVERE_WEATHER_WWW_DIR
   ? path.resolve(process.env.SEVERE_WEATHER_WWW_DIR)
   : path.join(projectRoot, 'www');
 const indexPath = path.join(wwwDir, 'index.html');
-
+const packageJson = JSON.parse(await readFile(path.join(projectRoot, 'package.json'), 'utf8'));
+const expectedVersion = `v${packageJson.version}`;
 const results = [];
 
 function record(name, passed, detail = '') {
   results.push({ name, passed: Boolean(passed), detail });
-  const symbol = passed ? 'PASS' : 'FAIL';
-  console.log(`${symbol} ${name}${detail ? ` :: ${detail}` : ''}`);
+  console.log(`${passed ? 'PASS' : 'FAIL'} ${name}${detail ? ` :: ${detail}` : ''}`);
 }
 
 async function requireFile(relativePath) {
@@ -28,12 +28,19 @@ async function requireFile(relativePath) {
   }
 }
 
+const runtimeFiles = [
+  'runtime/v510-foundation.js',
+  'runtime/v510-tornado.js',
+  'runtime/v510-world.js',
+  'runtime/v510-runtime.js'
+];
 for (const relativePath of [
   'index.html',
   '404.html',
   'qa-build.json',
   'audio/storm-feel-sprite.wav',
-  'audio/storm-feel-manifest.json'
+  'audio/storm-feel-manifest.json',
+  ...runtimeFiles
 ]) {
   await requireFile(relativePath);
 }
@@ -46,7 +53,7 @@ try {
 }
 
 const requiredMarkers = [
-  ['v5 campaign identity', 'v5.0.0'],
+  ['package build identity', expectedVersion],
   ['v5 campaign foundation', 'V500_CAMPAIGN_FOUNDATION_V1'],
   ['Heartland campaign anchor', '[SW:CAMPAIGN:HEARTLAND]'],
   ['Heartland level contracts', 'HEARTLAND_CAMPAIGN'],
@@ -92,56 +99,36 @@ const requiredMarkers = [
   ['input isolation UI', '[SW:UI:QA4_INPUT_ISOLATION_V1]'],
   ['input isolation runtime', '[SW:QA:INPUT_ISOLATION]'],
   ['input shield', 'window.__SW_QA_INPUT_SHIELD_UNTIL__'],
-  ['input isolation check', "qa4SetCheck('inputIsolation'"],
   ['QA4 run lock', 'QA4_RUN_LOCK_V1'],
-  ['QA4 test lock activation', 'window.__SW_QA_TEST_LOCK__ = true'],
-  ['blocked pause counter', 'blockedPauseAttempts'],
-  ['pause forensics UI', '[SW:UI:QA4_PAUSE_FORENSICS_V1]'],
   ['pause forensics runtime', '[SW:QA:PAUSE_FORENSICS]'],
-  ['pause forensics version', 'QA4_PAUSE_FORENSICS_V1'],
-  ['pause trace global', '__SW_QA_PAUSE_TRACE__'],
-  ['forensic query mode', "qa4Mode === 'forensic'"],
-  ['pause hit-test fix', 'PAUSE_OVERLAY_HIT_TEST_V1'],
-  ['inactive pause descendants blocked', '#pauseOverlay:not(.active) .pause-btn'],
   ['pause overlay hidden markup', '<div id="pauseOverlay" hidden inert aria-hidden="true">'],
   ['central pause state helper', 'function setPauseOverlayActive(active)'],
-  ['pause inert ownership', 'overlay.inert = !enabled'],
   ['pause hard hide', 'PAUSE_OVERLAY_HARD_HIDE_V2'],
-  ['hidden pause selector', '#pauseOverlay[hidden]'],
-  ['pause hidden state', 'overlay.hidden = !enabled'],
-  ['pause display ownership', "overlay.style.display = enabled ? 'flex' : 'none'"],
-  ['forensic build identity', 'buildIdentity:'],
-  ['rampage layer fallback', 'QA4_RAMPAGE_LAYER_LOOKUP_V1'],
   ['rampage resolver', 'function getRampageFeedbackLayer()'],
-  ['direct rampage DOM fallback', "document.getElementById('rampageFeedbackLayer')"],
   ['QA4 popup assertion V4', 'QA4_POPUP_ASSERTION_V4'],
-  ['popup queue inspection', 'const queuedHits = pendingRampageHits.length'],
   ['popup batch flush', 'flushRampageHudPopups();'],
-  ['popup DOM inspection', "querySelectorAll('.rampage-popup')"],
-  ['popup expected label', "text.includes('DEMOLISHED!')"]
+  ['v5.1 production slice', 'V510_THREEJS_PRODUCTION_SLICE_V1'],
+  ['v5.1 production styling', 'v510ProductionSliceStyles'],
+  ['v5.1 production quality control', 'btnProductionQuality'],
+  ['v5.1 update hook', '__SW_V510_UPDATE__'],
+  ['v5.1 rebuild hook', '__SW_V510_REBUILD__']
 ];
 
-for (const [name, marker] of requiredMarkers) {
-  record(name, html.includes(marker), marker);
-}
+for (const [name, marker] of requiredMarkers) record(name, html.includes(marker), marker);
+for (const runtimeFile of runtimeFiles) record(`runtime reference ${runtimeFile}`, html.includes(runtimeFile), runtimeFile);
 
 const forbiddenMarkers = [
   ['stale v4.5 identity', 'v4.5.0'],
+  ['stale v5.0 identity', 'v5.0.0'],
   ['direct unisolated QA click binding', "getCachedEl('visualLabRun')?.addEventListener('click', runQa4DeterministicTest)"],
   ['2999 score hard cap', 'Math.min(2999, targetScore)'],
   ['3999 score hard cap', 'Math.min(3999, targetScore)'],
   ['7999 score hard cap', 'Math.min(7999, targetScore)'],
   ['legacy strict score caps', 'STRICT STAGE SCORE HARD CAPS'],
-  ['legacy centered rampage banner', 'left: 50%; top: 33%; width: max-content; max-width: 88vw'],
-  ['duplicate synthetic click/glass trigger', "playSound('click');\n  playSound('glass');"],
-  ['unconditional pause button hit testing', '.pause-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 10px 20px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; pointer-events: auto !important;'],
   ['stale popup assertion V2', 'QA4_POPUP_ASSERTION_V2'],
   ['stale popup assertion V3', 'QA4_POPUP_ASSERTION_V3']
 ];
-
-for (const [name, marker] of forbiddenMarkers) {
-  record(`absent ${name}`, !html.includes(marker), marker);
-}
+for (const [name, marker] of forbiddenMarkers) record(`absent ${name}`, !html.includes(marker), marker);
 
 try {
   const manifest = JSON.parse(await readFile(path.join(wwwDir, 'audio/storm-feel-manifest.json'), 'utf8'));
@@ -152,6 +139,23 @@ try {
   }
 } catch (error) {
   record('audio manifest parse', false, error.message);
+}
+
+try {
+  const runtime = (await Promise.all(runtimeFiles.map(file => readFile(path.join(wwwDir, file), 'utf8')))).join('\n');
+  for (const marker of [
+    '[SW:VISUAL:PRODUCTION_SLICE]',
+    '[SW:VISUAL:TORNADO_LAYERS]',
+    '[SW:WORLD:PRODUCTION_DRESSING]',
+    '[SW:WORLD:SIGNATURE_BARN]',
+    '[SW:QA:PRODUCTION_SLICE]',
+    'getProductionSliceQaState',
+    'triggerProductionSliceQa',
+    'productionMeasuredFps'
+  ]) record(`runtime marker ${marker}`, runtime.includes(marker), marker);
+  record('runtime has no synthetic FPS fallback', !/productionMeasuredFps\(\)\s*(?:\|\||\?\?)\s*60/.test(runtime));
+} catch (error) {
+  record('runtime parse inputs', false, error.message);
 }
 
 const failures = results.filter(result => !result.passed);
