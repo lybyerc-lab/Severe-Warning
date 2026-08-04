@@ -11,16 +11,19 @@ const sourceHtml = process.env.SEVERE_WEATHER_SOURCE_PATH
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const sourceAudioDir = path.join(projectRoot, 'assets', 'audio');
 const sourceRuntimeDir = path.join(projectRoot, 'runtime');
+const modernDistDir = path.join(projectRoot, 'modern-dist');
+const modernEntryPath = path.join(modernDistDir, 'modern-shell.js');
 const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
   ? path.resolve(process.env.SEVERE_WEATHER_WWW_DIR)
   : path.join(projectRoot, 'www');
 const outputFonts = path.join(outputDir, 'fonts');
 const outputAudio = path.join(outputDir, 'audio');
 const outputRuntime = path.join(outputDir, 'runtime');
+const outputModern = path.join(outputDir, 'modern');
 
 const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
 const buildVersion = packageJson.version;
-const buildLabel = packageJson.buildLabel ?? 'Severe Weather';
+const buildLabel = packageJson.buildLabel ?? 'Severe Weather Warning';
 
 if (!/^\d+\.\d+\.\d+$/.test(buildVersion)) {
   throw new Error(`package.json version must be semantic x.y.z, received: ${buildVersion}`);
@@ -41,7 +44,7 @@ const runtimeFiles = [
   'v510-runtime.js'
 ];
 
-const html = await readFile(sourceHtml, 'utf8');
+let html = await readFile(sourceHtml, 'utf8');
 const forbiddenRemoteResources = [...html.matchAll(/<(?:script|link)[^>]+(?:src|href)=["']https?:\/\/[^"']+/gi)];
 if (forbiddenRemoteResources.length > 0) {
   throw new Error(`Remote runtime resource found: ${forbiddenRemoteResources[0][0]}`);
@@ -73,6 +76,17 @@ for (const requiredAudioFile of ['storm-feel-sprite.wav', 'storm-feel-manifest.j
 for (const runtimeFile of runtimeFiles) {
   await access(path.join(sourceRuntimeDir, runtimeFile));
 }
+await access(modernEntryPath);
+
+const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';
+if (html.includes(modernScriptTag)) {
+  throw new Error('Source gameplay HTML must not contain the generated modern-shell script tag.');
+}
+const bodyCloseIndex = html.lastIndexOf('</body>');
+if (bodyCloseIndex < 0) {
+  throw new Error('Gameplay source is missing </body>; cannot attach the modern shell.');
+}
+html = `${html.slice(0, bodyCloseIndex)}${modernScriptTag}\n${html.slice(bodyCloseIndex)}`;
 
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputFonts, { recursive: true });
@@ -87,13 +101,26 @@ for (const audioFile of await readdir(sourceAudioDir)) {
   await copyFile(path.join(sourceAudioDir, audioFile), path.join(outputAudio, audioFile));
 }
 await cp(sourceRuntimeDir, outputRuntime, { recursive: true });
+await cp(modernDistDir, outputModern, { recursive: true });
 
 const sourceSha256 = createHash('sha256').update(html).digest('hex');
 const audioSha256 = createHash('sha256').update(await readFile(path.join(sourceAudioDir, 'storm-feel-sprite.wav'))).digest('hex');
+const modernShellSha256 = createHash('sha256').update(await readFile(modernEntryPath)).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
-  `${JSON.stringify({ version: buildVersion, label: buildLabel, source: path.relative(projectRoot, sourceHtml).replaceAll('\\', '/'), sourceSha256, audioSha256, runtimeFiles }, null, 2)}\n`,
+  `${JSON.stringify({
+    productName: 'Severe Weather Warning',
+    version: buildVersion,
+    label: buildLabel,
+    renderer: 'Three.js r128',
+    architecture: 'modern-shell-v1',
+    source: path.relative(projectRoot, sourceHtml).replaceAll('\\', '/'),
+    sourceSha256,
+    audioSha256,
+    modernShellSha256,
+    runtimeFiles
+  }, null, 2)}\n`,
   'utf8'
 );
 
-console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files)`);
+console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files)`);
