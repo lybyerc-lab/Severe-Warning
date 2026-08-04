@@ -1,162 +1,224 @@
 // ============================================================================
 // [SW:ARCH:PHASE4_SCORING_CAMPAIGN_BRIDGE]
-// Lexical bridge attaching legacy score, combo, district, campaign, and
-// persistence functions to typed authorities.
+// The accepted legacy functions remain the execution authority in Phase 4.
+// Typed systems mirror their exact inputs, outputs, transitions, and save data.
 // ============================================================================
-const PHASE4_SCORING_CAMPAIGN_BRIDGE_VERSION = 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V1';
+const PHASE4_SCORING_CAMPAIGN_BRIDGE_VERSION = 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2';
 
 const phase4OriginalAddScore = typeof addScore === 'function' ? addScore : null;
-const phase4OriginalRegisterComboHit = typeof registerComboHit === 'function' ? registerComboHit : null;
-const phase4OriginalAdvanceDistrict = typeof advanceDistrict === 'function' ? advanceDistrict : null;
-const phase4OriginalSaveCampaignData = typeof saveCampaignData === 'function' ? saveCampaignData : null;
-const phase4OriginalLoadCampaignData = typeof loadCampaignData === 'function' ? loadCampaignData : null;
+const phase4OriginalShowDistrictTransition = typeof showDistrictTransition === 'function' ? showDistrictTransition : null;
+const phase4OriginalCompleteCampaignRun = typeof completeCampaignRun === 'function' ? completeCampaignRun : null;
+const phase4OriginalSelectCampaignLevel = typeof selectCampaignLevel === 'function' ? selectCampaignLevel : null;
+const phase4OriginalStartNextCampaignLevel = typeof startNextCampaignLevel === 'function' ? startNextCampaignLevel : null;
+const phase4OriginalSaveCampaignProgress = typeof saveCampaignProgress === 'function' ? saveCampaignProgress : null;
+const phase4OriginalLoadCampaignProgress = typeof loadCampaignProgress === 'function' ? loadCampaignProgress : null;
+const phase4OriginalResetWarningRun = typeof resetWarningRun === 'function' ? resetWarningRun : null;
 
 let phase4ScoringAuthority = null;
 let phase4DistrictAuthority = null;
 let phase4CampaignAuthority = null;
 let phase4PersistenceAuthority = null;
 
+function phase4LegacyScoreState() {
+  return Object.freeze({
+    destructionScore: Number(typeof destructionScore === 'undefined' ? 0 : destructionScore) || 0,
+    baseScore: Number(typeof baseScore === 'undefined' ? 0 : baseScore) || 0,
+    comboMultiplier: Number(typeof comboMultiplier === 'undefined' ? 1 : comboMultiplier) || 1,
+    maxComboReached: Number(typeof maxComboReached === 'undefined' ? 1 : maxComboReached) || 1,
+    comboDecayTimerSeconds: Number(typeof comboDecayTimer === 'undefined' ? 0 : comboDecayTimer) || 0,
+    scoreDoublerTimerSeconds: Number(typeof scoreDoublerTimer === 'undefined' ? 0 : scoreDoublerTimer) || 0,
+    campaignScoreMultiplier: typeof campaignScoreMultiplier === 'function'
+      ? Number(campaignScoreMultiplier()) || 1
+      : 1,
+    currentStage: Math.max(1, Math.min(3, Number(typeof currentStage === 'undefined' ? 1 : currentStage) || 1))
+  });
+}
+
+function phase4LegacyDistrictState() {
+  const stage = Math.max(1, Math.min(3, Number(typeof currentStage === 'undefined' ? 1 : currentStage) || 1));
+  const definition = typeof DISTRICTS === 'undefined' ? null : DISTRICTS[stage];
+  return Object.freeze({
+    stage,
+    destructionScore: Number(typeof destructionScore === 'undefined' ? 0 : destructionScore) || 0,
+    title: definition && definition.name ? String(definition.name) : `DISTRICT ${stage}`,
+    subtitle: definition && definition.subtitle ? String(definition.subtitle) : ''
+  });
+}
+
+function phase4LegacyCampaignState() {
+  return typeof campaignProgress === 'undefined'
+    ? Object.freeze({ schema: 1, unlockedLevel: 0, selectedLevel: 0, levels: Object.freeze({}) })
+    : campaignProgress;
+}
+
+function phase4SynchronizeAll() {
+  const scoreState = phase4LegacyScoreState();
+  const districtState = phase4LegacyDistrictState();
+  const campaignState = phase4LegacyCampaignState();
+  if (phase4ScoringAuthority) phase4ScoringAuthority.synchronize(scoreState);
+  if (phase4DistrictAuthority) {
+    phase4DistrictAuthority.observeLegacyState(
+      districtState.stage,
+      districtState.destructionScore,
+      districtState.title,
+      districtState.subtitle,
+      performance.now()
+    );
+  }
+  if (phase4PersistenceAuthority) phase4PersistenceAuthority.synchronize(campaignState);
+  if (phase4CampaignAuthority) phase4CampaignAuthority.synchronize(campaignState);
+  return Object.freeze({ scoreState, districtState, campaignState });
+}
+
 const phase4ScoringCampaignBridge = {
   version: PHASE4_SCORING_CAMPAIGN_BRIDGE_VERSION,
 
   attach(scoringAuthority, districtAuthority, campaignAuthority, persistenceAuthority) {
-    if (!scoringAuthority || typeof scoringAuthority.addScore !== 'function') {
-      throw new Error('Phase 4 scoring authority is missing required methods.');
+    if (!scoringAuthority || typeof scoringAuthority.synchronize !== 'function' || typeof scoringAuthority.recordLegacyAward !== 'function') {
+      throw new Error('Phase 4 scoring mirror is missing required methods.');
     }
-    if (!districtAuthority || typeof districtAuthority.advance !== 'function') {
-      throw new Error('Phase 4 district authority is missing required methods.');
+    if (!districtAuthority || typeof districtAuthority.observeLegacyState !== 'function') {
+      throw new Error('Phase 4 district mirror is missing required methods.');
     }
-    if (!campaignAuthority || typeof campaignAuthority.recordRunResult !== 'function') {
-      throw new Error('Phase 4 campaign authority is missing required methods.');
+    if (!campaignAuthority || typeof campaignAuthority.synchronize !== 'function') {
+      throw new Error('Phase 4 campaign mirror is missing required methods.');
     }
-    if (!persistenceAuthority || typeof persistenceAuthority.save !== 'function') {
-      throw new Error('Phase 4 persistence authority is missing required methods.');
+    if (!persistenceAuthority || typeof persistenceAuthority.synchronize !== 'function') {
+      throw new Error('Phase 4 persistence mirror is missing required methods.');
     }
-
     phase4ScoringAuthority = scoringAuthority;
     phase4DistrictAuthority = districtAuthority;
     phase4CampaignAuthority = campaignAuthority;
     phase4PersistenceAuthority = persistenceAuthority;
+    phase4SynchronizeAll();
     return true;
   },
 
-  addScore(points, label, position) {
-    if (phase4ScoringAuthority) {
-      const event = phase4ScoringAuthority.addScore(points, label, performance.now(), position);
-      score = phase4ScoringAuthority.score;
-      comboCount = phase4ScoringAuthority.combo.count;
-      comboMultiplier = phase4ScoringAuthority.combo.multiplier;
-      return event;
-    }
-    if (phase4OriginalAddScore) {
-      return phase4OriginalAddScore(points, label, position);
-    }
-    score = (score || 0) + (points || 0);
-    return { points, label };
-  },
-
-  registerComboHit() {
-    if (phase4ScoringAuthority) {
-      const combo = phase4ScoringAuthority.registerComboHit(performance.now());
-      comboCount = combo.count;
-      comboMultiplier = combo.multiplier;
-      return combo;
-    }
-    if (phase4OriginalRegisterComboHit) {
-      return phase4OriginalRegisterComboHit();
-    }
-    comboCount = (comboCount || 0) + 1;
-    comboMultiplier = Math.min(4.0, 1.0 + comboCount * 0.1);
-    return { count: comboCount, multiplier: comboMultiplier };
-  },
-
-  advanceDistrict() {
-    if (phase4DistrictAuthority) {
-      const event = phase4DistrictAuthority.advance(score, performance.now());
-      if (event) {
-        currentDistrict = phase4DistrictAuthority.currentDistrictIndex;
-      }
-      return event;
-    }
-    if (phase4OriginalAdvanceDistrict) {
-      return phase4OriginalAdvanceDistrict();
-    }
-    currentDistrict = (currentDistrict || 1) + 1;
-    return { currentDistrict };
-  },
-
-  saveCampaignData(data) {
-    if (phase4PersistenceAuthority) {
-      return phase4PersistenceAuthority.save(data || (phase4CampaignAuthority ? phase4CampaignAuthority.store.getSnapshot() : {}));
-    }
-    if (phase4OriginalSaveCampaignData) {
-      return phase4OriginalSaveCampaignData(data);
-    }
-    return true;
-  },
-
-  loadCampaignData() {
-    if (phase4PersistenceAuthority) {
-      return phase4PersistenceAuthority.load();
-    }
-    if (phase4OriginalLoadCampaignData) {
-      return phase4OriginalLoadCampaignData();
-    }
-    return {};
+  syncFromLegacy() {
+    return phase4SynchronizeAll();
   },
 
   reset() {
-    if (phase4ScoringAuthority) phase4ScoringAuthority.reset();
-    if (phase4DistrictAuthority) phase4DistrictAuthority.reset();
-    score = 0;
-    comboCount = 0;
-    comboMultiplier = 1.0;
-    currentDistrict = 1;
+    const districtState = phase4LegacyDistrictState();
+    if (phase4ScoringAuthority) phase4ScoringAuthority.reset(phase4LegacyScoreState());
+    if (phase4DistrictAuthority) phase4DistrictAuthority.reset(districtState.title, districtState.subtitle);
+    phase4SynchronizeAll();
+  },
+
+  runContractProbe() {
+    return Object.freeze({
+      scoring: phase4ScoringAuthority ? phase4ScoringAuthority.runContractProbe() : null,
+      districts: phase4DistrictAuthority ? phase4DistrictAuthority.runContractProbe() : null,
+      campaign: phase4CampaignAuthority ? phase4CampaignAuthority.runContractProbe() : null,
+      persistence: phase4PersistenceAuthority ? phase4PersistenceAuthority.runContractProbe() : null
+    });
   },
 
   getSnapshot() {
+    const legacy = phase4SynchronizeAll();
     return Object.freeze({
       version: PHASE4_SCORING_CAMPAIGN_BRIDGE_VERSION,
       attached: Boolean(phase4ScoringAuthority && phase4DistrictAuthority && phase4CampaignAuthority && phase4PersistenceAuthority),
-      score: phase4ScoringAuthority ? phase4ScoringAuthority.getSnapshot() : { score: Number(score) || 0 },
-      district: phase4DistrictAuthority ? phase4DistrictAuthority.getSnapshot() : { currentDistrictIndex: Number(currentDistrict) || 1 },
-      campaign: phase4CampaignAuthority ? {
-        activeStop: phase4CampaignAuthority.activeStopId,
-        furthestUnlocked: phase4CampaignAuthority.furthestUnlockedStopId,
-        progress: phase4CampaignAuthority.getProgressMap()
-      } : null,
+      score: Object.freeze({
+        authority: phase4ScoringAuthority ? phase4ScoringAuthority.getSnapshot() : null,
+        legacy: legacy.scoreState
+      }),
+      district: Object.freeze({
+        authority: phase4DistrictAuthority ? phase4DistrictAuthority.getSnapshot() : null,
+        legacy: legacy.districtState
+      }),
+      campaign: Object.freeze({
+        activeStop: phase4CampaignAuthority ? phase4CampaignAuthority.activeStopId : null,
+        furthestUnlocked: phase4CampaignAuthority ? phase4CampaignAuthority.furthestUnlockedStopId : null,
+        progress: phase4CampaignAuthority ? phase4CampaignAuthority.getProgressMap() : null,
+        save: phase4CampaignAuthority ? phase4CampaignAuthority.getSnapshot() : null,
+        legacy: legacy.campaignState
+      }),
       persistence: phase4PersistenceAuthority ? phase4PersistenceAuthority.getSnapshot() : null
     });
   }
 };
 
-if (typeof addScore === 'function') {
-  addScore = function phase4RoutedAddScore(points, label, pos) {
-    return phase4ScoringCampaignBridge.addScore(points, label, pos);
+if (phase4OriginalAddScore) {
+  addScore = function phase4ObservedAddScore(points, label) {
+    const before = phase4LegacyScoreState();
+    const result = phase4OriginalAddScore.apply(this, arguments);
+    const after = phase4LegacyScoreState();
+    if (phase4ScoringAuthority) {
+      const awarded = Number.isFinite(Number(result))
+        ? Number(result)
+        : after.destructionScore - before.destructionScore;
+      phase4ScoringAuthority.recordLegacyAward(points, awarded, label || 'points', after, performance.now());
+    }
+    return result;
   };
 }
 
-if (typeof registerComboHit === 'function') {
-  registerComboHit = function phase4RoutedRegisterComboHit() {
-    return phase4ScoringCampaignBridge.registerComboHit();
+if (phase4OriginalShowDistrictTransition) {
+  showDistrictTransition = function phase4ObservedDistrictTransition(stage) {
+    const result = phase4OriginalShowDistrictTransition.apply(this, arguments);
+    const districtState = phase4LegacyDistrictState();
+    if (phase4DistrictAuthority) {
+      phase4DistrictAuthority.observeLegacyState(
+        stage,
+        districtState.destructionScore,
+        districtState.title,
+        districtState.subtitle,
+        performance.now()
+      );
+    }
+    return result;
   };
 }
 
-if (typeof advanceDistrict === 'function') {
-  advanceDistrict = function phase4RoutedAdvanceDistrict() {
-    return phase4ScoringCampaignBridge.advanceDistrict();
+if (phase4OriginalCompleteCampaignRun) {
+  completeCampaignRun = function phase4ObservedCampaignCompletion() {
+    const result = phase4OriginalCompleteCampaignRun.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
   };
 }
 
-if (typeof saveCampaignData === 'function') {
-  saveCampaignData = function phase4RoutedSaveCampaignData(data) {
-    return phase4ScoringCampaignBridge.saveCampaignData(data);
+if (phase4OriginalSelectCampaignLevel) {
+  selectCampaignLevel = function phase4ObservedCampaignSelection() {
+    const result = phase4OriginalSelectCampaignLevel.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
   };
 }
 
-if (typeof loadCampaignData === 'function') {
-  loadCampaignData = function phase4RoutedLoadCampaignData() {
-    return phase4ScoringCampaignBridge.loadCampaignData();
+if (phase4OriginalStartNextCampaignLevel) {
+  startNextCampaignLevel = function phase4ObservedNextCampaignLevel() {
+    const result = phase4OriginalStartNextCampaignLevel.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+if (phase4OriginalSaveCampaignProgress) {
+  saveCampaignProgress = function phase4ObservedCampaignSave() {
+    const result = phase4OriginalSaveCampaignProgress.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+if (phase4OriginalLoadCampaignProgress) {
+  loadCampaignProgress = function phase4ObservedCampaignLoad() {
+    const result = phase4OriginalLoadCampaignProgress.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+if (phase4OriginalResetWarningRun) {
+  resetWarningRun = function phase4ObservedWarningReset() {
+    const result = phase4OriginalResetWarningRun.apply(this, arguments);
+    const districtState = phase4LegacyDistrictState();
+    if (phase4ScoringAuthority) phase4ScoringAuthority.reset(phase4LegacyScoreState());
+    if (phase4DistrictAuthority) phase4DistrictAuthority.reset(districtState.title, districtState.subtitle);
+    phase4SynchronizeAll();
+    return result;
   };
 }
 
