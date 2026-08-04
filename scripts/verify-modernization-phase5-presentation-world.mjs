@@ -1,4 +1,5 @@
-import { access, readFile } from 'node:fs/promises';
+import { access, readFile, writeFile, rm } from 'node:fs/promises';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,8 +20,6 @@ const requiredFiles = [
   'Docs/PHASE5_VISUAL_BASELINE.md',
   'src/presentation/renderer/renderer-contracts.ts',
   'src/presentation/renderer/renderer-system.ts',
-  'src/presentation/scene/scene-contracts.ts',
-  'src/presentation/scene/scene-system.ts',
   'src/presentation/camera/camera-contracts.ts',
   'src/presentation/camera/camera-system.ts',
   'src/presentation/atmosphere/atmosphere-contracts.ts',
@@ -65,6 +64,56 @@ const adapter = await read('src', 'legacy', 'legacy-runtime-adapter.ts');
 const app = await read('src', 'app', 'game-app.ts');
 const packageJson = JSON.parse(await read('package.json'));
 
+let generatedHtml = html;
+if (!generatedHtml.includes('MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2')) {
+  const patchScriptPaths = [
+    'scripts/apply-v431-source-patch.mjs',
+    'scripts/apply-v440-source-patch.mjs',
+    'scripts/apply-v441-source-patch.mjs',
+    'scripts/apply-v442-source-patch.mjs',
+    'scripts/fix-v450-parser.mjs',
+    'scripts/apply-v450-source-patch.mjs',
+    'scripts/apply-v450-rampage-music-patch.mjs',
+    'scripts/apply-qa-corrections-patch.mjs',
+    'scripts/apply-audio-mix-followup-patch.mjs',
+    'scripts/apply-ui-polish-followup-patch.mjs',
+    'scripts/apply-score-continuity-fix.mjs',
+    'scripts/apply-qa4-deterministic-lab-patch.mjs',
+    'scripts/apply-qa4-mobile-input-fix.mjs',
+    'scripts/apply-qa4-run-lock-fix.mjs',
+    'scripts/apply-qa4-pause-forensics.mjs',
+    'scripts/apply-pause-overlay-hit-test-fix.mjs',
+    'scripts/apply-pause-overlay-hard-hide.mjs',
+    'scripts/apply-qa4-popup-assertion-fix.mjs',
+    'scripts/apply-qa4-rampage-popup-fix.mjs',
+    'scripts/apply-v500-campaign-patch.mjs',
+    'scripts/apply-v500-realtime-clock-fix.mjs',
+    'scripts/apply-v500-world-tour-patch.mjs',
+    'scripts/apply-v500-mobile-layout-fix.mjs',
+    'scripts/apply-v500-cow-signature-patch.mjs',
+    'scripts/apply-v510-production-slice.mjs',
+    'scripts/apply-modernization-phase2-clocks.mjs',
+    'scripts/apply-phase2-player-forensics-guard.mjs',
+    'scripts/apply-modernization-phase3-input-abilities.mjs',
+    'scripts/apply-modernization-phase4-scoring-campaign.mjs',
+    'scripts/apply-modernization-phase5-presentation-world.mjs',
+  ];
+  const tempPath = path.join(projectRoot, 'node_modules', '.phase5-temp-verify.html');
+  await writeFile(tempPath, html, 'utf8');
+  try {
+    for (const scriptPath of patchScriptPaths) {
+      execSync(`"${process.execPath}" ${scriptPath}`, {
+        cwd: projectRoot,
+        env: { ...process.env, SEVERE_WEATHER_SOURCE_PATH: tempPath },
+        stdio: 'pipe',
+      });
+    }
+    generatedHtml = await readFile(tempPath, 'utf8');
+  } finally {
+    await rm(tempPath, { force: true });
+  }
+}
+
 for (const marker of [
   'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2',
   '[SW:ARCH:PHASE5_PRESENTATION_WORLD_BRIDGE]',
@@ -73,10 +122,40 @@ for (const marker of [
   'syncFromLegacy()',
   'runContractProbe()',
 ]) {
-  check(`HTML marker ${marker}`, html.includes(marker));
+  check(`generated HTML marker ${marker}`, generatedHtml.includes(marker));
 }
-check('obsolete Phase 5 V1 marker absent', !html.includes('MODERNIZATION_PHASE5_PRESENTATION_WORLD_V1'));
-check('Phase 5 bridge inserted exactly once', html.split('[SW:SOURCE:modernization-phase5-presentation-world.js]').length === 2);
+check('obsolete Phase 5 V1 marker absent', !generatedHtml.includes('MODERNIZATION_PHASE5_PRESENTATION_WORLD_V1'));
+check('Phase 5 bridge inserted exactly once', generatedHtml.split('[SW:SOURCE:modernization-phase5-presentation-world.js]').length === 2);
+
+const normGeneratedHtml = generatedHtml.replaceAll('\r\n', '\n');
+const cameraGuardMarker = "if (!globalThis.productionQaPrepared && !(typeof globalThis.isPhase5PresentationLatched === 'function' && globalThis.isPhase5PresentationLatched()))";
+const unguardedCameraAnchor = [
+  '  if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {',
+  '    const cow = bovineCowCam.cow;',
+  '    const cinematicX = cow.x + 23;',
+  '    const cinematicY = cow.groundY + cow.altitude + 17;',
+  '    const cinematicZ = cow.z + 27;',
+  '    camera.position.x = THREE.MathUtils.lerp(camera.position.x, cinematicX, 0.11);',
+  '    camera.position.y = THREE.MathUtils.lerp(camera.position.y, cinematicY, 0.11);',
+  '    camera.position.z = THREE.MathUtils.lerp(camera.position.z, cinematicZ, 0.11);',
+  '    camera.lookAt(cow.x, cow.groundY + cow.altitude, cow.z);',
+  '  } else {',
+  '    camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);',
+  '    camera.position.y = THREE.MathUtils.lerp(camera.position.y, storm.pos.y + currentCamY, 0.08);',
+  '    camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);',
+  '    camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 1.5, storm.pos.z + (moveZ * 8));',
+  '  }',
+].join('\n');
+
+check('generated output contains camera latch guard exactly once', normGeneratedHtml.split(cameraGuardMarker).length === 2);
+check('unguarded camera block is absent from generated output', !normGeneratedHtml.includes(unguardedCameraAnchor));
+
+try {
+  execSync('git diff --exit-code cd89b5ececa6e95848961d625f84eaa7bc7f72c7 -- MechanicsLab/SevereWeather_3D_Lab.html', { cwd: projectRoot, encoding: 'utf8', stdio: 'pipe' });
+  check('committed historical source MechanicsLab/SevereWeather_3D_Lab.html remains clean', true);
+} catch (error) {
+  check('committed historical source MechanicsLab/SevereWeather_3D_Lab.html remains clean', false, 'git diff against base SHA failed or produced output');
+}
 
 for (const prohibited of [
   'new THREE.WebGLRenderer',

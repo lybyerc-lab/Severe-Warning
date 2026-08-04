@@ -54,8 +54,10 @@ replaceExact(
     if (!trace || !text || !snapshot) return;
     if (!qa4ForensicUiEnabled()) {
       trace.hidden = true;
+      document.documentElement.dataset.swQaForensics = 'hidden';
       return;
-    }`,
+    }
+    document.documentElement.dataset.swQaForensics = 'visible';`,
   'defensive forensic render guard'
 );
 

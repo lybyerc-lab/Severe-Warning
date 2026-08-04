@@ -133,8 +133,7 @@ const qa4Forensics = {
     this.currentStep = 'run-handler-entered';
     this.snapshots = [];
     this.lastSnapshot = null;
-    const trace = getCachedEl('qa4ForensicTrace');
-    if (trace) trace.hidden = true;
+    this.snapshot('qa4-test-started');
   },
 
   capturePauseRequest() {
@@ -192,10 +191,15 @@ const qa4Forensics = {
       stack ? 'stack:\n' + stack : 'stack=none'
     ].join('\n');
     trace.hidden = false;
+    document.documentElement.dataset.swQaForensics = 'visible';
   },
 
   install() {
     if (this.observer) return;
+    const qa4Mode = new URLSearchParams(window.location.search).get('qa4');
+    if (qa4Mode === 'forensic') {
+      this.snapshot('forensic-url-opened');
+    }
     for (const type of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click']) {
       document.addEventListener(type, event => this.recordInput(event), true);
     }

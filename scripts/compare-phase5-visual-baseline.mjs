@@ -36,11 +36,73 @@ const viewports = [
 const scenarios = ['initial', 'hero'];
 const results = [];
 
-function deterministicRandomScript() {
+function installQaRafController() {
   let state = 0x5e1e5eed;
   Math.random = () => {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
     return state / 0x100000000;
+  };
+
+  const nativeRaf = window.requestAnimationFrame.bind(window);
+  const nativeCancel = window.cancelAnimationFrame.bind(window);
+
+  let frozen = false;
+  const queuedCallbacks = new Map();
+  let nextCallbackId = 1;
+  let steppedFrameCount = 0;
+  let simulatedTimestamp = 0;
+
+  window.requestAnimationFrame = (callback) => {
+    const id = nextCallbackId++;
+    if (frozen) {
+      queuedCallbacks.set(id, callback);
+      return id;
+    }
+    return nativeRaf((timestamp) => {
+      simulatedTimestamp = timestamp;
+      callback(timestamp);
+    });
+  };
+
+  window.cancelAnimationFrame = (id) => {
+    queuedCallbacks.delete(id);
+    nativeCancel(id);
+  };
+
+  globalThis.__SW_QA_RAF_CONTROLLER__ = {
+    freeze() {
+      frozen = true;
+      return true;
+    },
+    isFrozen() {
+      return frozen;
+    },
+    getQueueSize() {
+      return queuedCallbacks.size;
+    },
+    stepFrame(timestamp) {
+      frozen = true;
+      simulatedTimestamp = timestamp;
+      steppedFrameCount += 1;
+      const currentQueue = Array.from(queuedCallbacks.values());
+      queuedCallbacks.clear();
+      for (const cb of currentQueue) {
+        cb(timestamp);
+      }
+      return Object.freeze({
+        steppedFrameCount,
+        simulatedTimestamp,
+        queueSize: queuedCallbacks.size,
+      });
+    },
+    getStatus() {
+      return Object.freeze({
+        frozen,
+        queueSize: queuedCallbacks.size,
+        steppedFrameCount,
+        simulatedTimestamp,
+      });
+    },
   };
 }
 
@@ -140,7 +202,7 @@ async function capture(url, viewport, scenario, label) {
     isMobile: viewport.isMobile,
     hasTouch: viewport.isMobile,
   });
-  await context.addInitScript(deterministicRandomScript);
+  await context.addInitScript(installQaRafController);
   const page = await context.newPage();
   page.setDefaultTimeout(60_000);
   const pageErrors = [];
@@ -157,8 +219,22 @@ async function capture(url, viewport, scenario, label) {
     && globalThis.__SEVERE_WEATHER__?.qa
   ));
 
-  // Deterministic capture point: re-seed PRNG, reset app, prepare scenario, latch presentation frame
-  await page.evaluate(async (scenarioName) => {
+  // Deterministic capture sequence owned by the Playwright test harness
+  const controllerStatus = await page.evaluate(async (scenarioName) => {
+    const controller = globalThis.__SW_QA_RAF_CONTROLLER__;
+    if (!controller) throw new Error('QA rAF controller is missing in page context.');
+
+    // 1. Freeze future animation callbacks
+    controller.freeze();
+
+    // 2. Wait until animation loop has entered the frozen queue
+    const startWait = performance.now();
+    while (controller.getQueueSize() === 0 && performance.now() - startWait < 2000) {
+      controller.stepFrame(performance.now());
+      await new Promise((r) => setTimeout(r, 20));
+    }
+
+    // Re-seed PRNG deterministically before scenario preparation
     let state = 0x5e1e5eed;
     Math.random = () => {
       state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
@@ -169,27 +245,43 @@ async function capture(url, viewport, scenario, label) {
     const bridge = globalThis.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__;
     const qa = shell?.qa;
 
+    if (globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause) {
+      globalThis.__SW_PHASE2_CLOCK_BRIDGE__.pause();
+    }
+
+    // 3. Reset and prepare scenario while frozen
     if (shell?.app?.reset) {
       shell.app.reset();
     }
+    if (scenarioName === 'hero' && qa?.prepareScenario) {
+      await qa.prepareScenario('production-hero');
+    }
+
+    // Candidate Phase 5 bridge latch for Phase 5 contract & reset testing
     if (bridge?.latchPresentationFrame) {
-      bridge.latchPresentationFrame(1000);
+      bridge.latchPresentationFrame(1000.0);
     }
-    if (scenarioName === 'hero') {
-      if (qa?.prepareScenario) await qa.prepareScenario('production-hero');
+
+    // 4. Advance both builds through the same fixed timestamps and frame count (5 steps at 1000.0ms)
+    for (let frame = 0; frame < 5; frame += 1) {
+      controller.stepFrame(1000.0);
     }
-    if (bridge?.latchPresentationFrame) {
-      bridge.latchPresentationFrame(1000);
-    } else {
-      if (globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause) {
-        globalThis.__SW_PHASE2_CLOCK_BRIDGE__.pause();
-      }
-      if (typeof cameraShakeIntensity !== 'undefined') cameraShakeIntensity = 0;
-      if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
-        renderer.render(scene, camera);
-      }
+
+    // 5. Lock camera & cameraShakeIntensity deterministically on both builds
+    if (typeof cameraShakeIntensity !== 'undefined') cameraShakeIntensity = 0;
+    if (scenarioName === 'hero' && typeof productionBarn !== 'undefined' && productionBarn && typeof storm !== 'undefined' && storm && typeof camera !== 'undefined') {
+      camera.position.set(storm.pos.x + 52, storm.pos.y + 50, storm.pos.z + 68);
+      camera.lookAt(productionBarn.x, terrainHeightAt(productionBarn.x, productionBarn.z) + 8, productionBarn.z);
     }
+
+    // 6. Render the same final deterministic frame
+    if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
+      renderer.render(scene, camera);
+    }
+
     if (document.fonts?.ready) await document.fonts.ready;
+
+    return controller.getStatus();
   }, scenario);
 
   const canvasLocator = page.locator('#webgl, canvas#gameCanvas, canvas').first();
@@ -225,6 +317,7 @@ async function capture(url, viewport, scenario, label) {
     pixels: decoded.pixels,
     validity,
     semantic,
+    controllerStatus,
     pageErrors,
     consoleErrors,
     screenshot: path.relative(projectRoot, screenshotPath).replaceAll('\\', '/'),
@@ -318,6 +411,7 @@ for (const viewport of viewports) {
       height: cap.height,
       validity: cap.validity,
       semantic: cap.semantic,
+      controllerStatus: cap.controllerStatus,
       pageErrors: cap.pageErrors,
       consoleErrors: cap.consoleErrors,
       screenshot: cap.screenshot,
