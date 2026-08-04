@@ -212,7 +212,7 @@ globalThis.getProductionSliceQaState = function getProductionSliceQaState() {
       maxHealth: productionBarn.maxHealth,
       stage: productionBarn.stage,
       destroyed: productionBarn.destroyed,
-      roofLeftDetached: !productionBarn.roofLeft.parent
+      roofLeftDetached: productionBarn.roofLeft.parent !== productionBarn.group
     } : null,
     cow17: cow17 ? {
       scale: Number(cow17.mesh.scale.x.toFixed(2)),
