@@ -11,7 +11,7 @@ const bridgePath = path.join(projectRoot, 'runtime', 'modernization-phase4-scori
 
 let html = await readFile(sourcePath, 'utf8');
 const bridgeSource = (await readFile(bridgePath, 'utf8')).trim();
-const marker = 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V1';
+const marker = 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2';
 
 if (html.includes(marker)) {
   console.log(`Phase 4 scoring and campaign bridge already present in ${sourcePath}`);
@@ -23,7 +23,16 @@ for (const prerequisite of [
   'MODERNIZATION_PHASE2_CLOCKS_V1',
   'V510_THREEJS_PRODUCTION_SLICE_V1',
   'function addScore(',
-  'function saveCampaignProgress('
+  'function showDistrictTransition(',
+  'function completeCampaignRun(',
+  'function selectCampaignLevel(',
+  'function startNextCampaignLevel(',
+  'function saveCampaignProgress(',
+  'function loadCampaignProgress(',
+  'function resetWarningRun(',
+  'let destructionScore = 0;',
+  'let currentStage = 1;',
+  "const CAMPAIGN_STORAGE_KEY = 'severe_weather_campaign_v1';",
 ]) {
   if (!html.includes(prerequisite)) {
     throw new Error(`Phase 4 requires the accepted Phase 3 runtime: missing ${prerequisite}`);
@@ -46,10 +55,13 @@ for (const required of [
   marker,
   '[SW:ARCH:PHASE4_SCORING_CAMPAIGN_BRIDGE]',
   '__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__',
-  'addScore = function phase4RoutedAddScore'
+  'addScore = function phase4ObservedAddScore',
+  'showDistrictTransition = function phase4ObservedDistrictTransition',
+  'completeCampaignRun = function phase4ObservedCampaignCompletion',
+  'saveCampaignProgress = function phase4ObservedCampaignSave',
 ]) {
   if (!html.includes(required)) throw new Error(`Phase 4 verification failed: missing ${required}`);
 }
 
 await writeFile(sourcePath, html, 'utf8');
-console.log(`Applied Phase 4 scoring, district, campaign, and persistence bridge to ${sourcePath}`);
+console.log(`Applied Phase 4 scoring, district, campaign, and persistence mirror to ${sourcePath}`);
