@@ -179,14 +179,32 @@ jobs:
           export CHROME_BIN
           export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
 
-          SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4174/' \
-            SEVERE_WEATHER_VISUAL_DIR='qa-artifacts/modernization-phase-5/visual-baseline' \
-            pnpm run qa:phase5:visual
-          SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/visual' pnpm run qa:v510
-          SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/clocks' pnpm run qa:phase2
-          SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/controls' pnpm run qa:phase3
-          SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/scoring-campaign' pnpm run qa:phase4
-          SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/presentation-world' pnpm run qa:phase5
+          SUITE_FAILED=0
+          run_suite() {
+            local suite_name="$1"
+            shift
+            echo "========================================================"
+            echo "--- Running test suite: ${suite_name} ---"
+            echo "========================================================"
+            if ! "$@"; then
+              echo "!!! Test suite ${suite_name} FAILED !!!"
+              SUITE_FAILED=1
+            else
+              echo "--- Test suite ${suite_name} PASSED ---"
+            fi
+          }
+
+          run_suite "qa:phase5:visual" env SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4174/' SEVERE_WEATHER_VISUAL_DIR='qa-artifacts/modernization-phase-5/visual-baseline' pnpm run qa:phase5:visual
+          run_suite "qa:v510" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/visual' pnpm run qa:v510
+          run_suite "qa:phase2" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/clocks' pnpm run qa:phase2
+          run_suite "qa:phase3" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/controls' pnpm run qa:phase3
+          run_suite "qa:phase4" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/scoring-campaign' pnpm run qa:phase4
+          run_suite "qa:phase5" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/presentation-world' pnpm run qa:phase5
+
+          if [ "$SUITE_FAILED" -ne 0 ]; then
+            echo "One or more browser QA test suites failed."
+            exit 1
+          fi
 
       - name: Upload Phase 5 diagnostics on failure
         if: failure()

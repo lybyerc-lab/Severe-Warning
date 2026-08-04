@@ -73,12 +73,16 @@ for (const viewport of viewports) {
 
     const cycles = [];
     for (let cycle = 0; cycle < 5; cycle += 1) {
+      const memoryBefore = { ...bridge.getSnapshot().renderer.memory };
       shell.app.reset();
       await sleep(40);
       await shell.qa.prepareScenario('production-hero');
       await sleep(100);
       const cycleSnapshot = bridge.getSnapshot();
+      const memoryAfter = { ...cycleSnapshot.renderer.memory };
       cycles.push({
+        memoryBefore,
+        memoryAfter,
         rendererMemory: { ...cycleSnapshot.renderer.memory },
         sceneChildCount: cycleSnapshot.scene.childCount,
         sceneMeshCount: cycleSnapshot.scene.meshCount,
