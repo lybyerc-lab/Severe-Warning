@@ -151,10 +151,11 @@ check('generated output contains camera latch guard exactly once', normGenerated
 check('unguarded camera block is absent from generated output', !normGeneratedHtml.includes(unguardedCameraAnchor));
 
 try {
-  execSync('git diff --exit-code cd89b5ececa6e95848961d625f84eaa7bc7f72c7 -- MechanicsLab/SevereWeather_3D_Lab.html', { cwd: projectRoot, encoding: 'utf8', stdio: 'pipe' });
+  execSync('git diff --exit-code cd89b5ececa6e95848961d625f84eaa7bc7f72c7 HEAD -- MechanicsLab/SevereWeather_3D_Lab.html', { cwd: projectRoot, encoding: 'utf8', stdio: 'pipe' });
   check('committed historical source MechanicsLab/SevereWeather_3D_Lab.html remains clean', true);
 } catch (error) {
-  check('committed historical source MechanicsLab/SevereWeather_3D_Lab.html remains clean', false, 'git diff against base SHA failed or produced output');
+  const diffOutput = (error.stdout || error.stderr || error.message || '').trim();
+  check('committed historical source MechanicsLab/SevereWeather_3D_Lab.html remains clean', false, `committed tree diff:\n${diffOutput}`);
 }
 
 for (const prohibited of [
