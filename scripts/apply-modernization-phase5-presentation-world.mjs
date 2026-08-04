@@ -11,18 +11,21 @@ const bridgePath = path.join(projectRoot, 'runtime', 'modernization-phase5-prese
 
 let html = await readFile(sourcePath, 'utf8');
 const bridgeSource = (await readFile(bridgePath, 'utf8')).trim();
-const marker = 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V1';
+const marker = 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2';
 
 if (html.includes(marker)) {
   console.log(`Phase 5 presentation and world bridge already present in ${sourcePath}`);
   process.exit(0);
+}
+if (html.includes('MODERNIZATION_PHASE5_PRESENTATION_WORLD_V1')) {
+  throw new Error('Obsolete Phase 5 V1 mannequin bridge is present. Rebuild from the clean historical source.');
 }
 
 for (const prerequisite of [
   'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2',
   'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1',
   'MODERNIZATION_PHASE2_CLOCKS_V1',
-  'V510_THREEJS_PRODUCTION_SLICE_V1'
+  'V510_THREEJS_PRODUCTION_SLICE_V1',
 ]) {
   if (!html.includes(prerequisite)) {
     throw new Error(`Phase 5 requires the accepted Phase 4 runtime: missing ${prerequisite}`);
@@ -37,6 +40,16 @@ if (mainScriptCloseIndex < 0 || bodyCloseIndex < 0 || mainScriptCloseIndex > bod
 if (bridgeSource.includes('</script>')) {
   throw new Error('Phase 5 bridge contains a closing script tag.');
 }
+for (const prohibited of [
+  'new THREE.WebGLRenderer',
+  'new THREE.Scene',
+  'new THREE.PerspectiveCamera',
+  'requestAnimationFrame(',
+]) {
+  if (bridgeSource.includes(prohibited)) {
+    throw new Error(`Phase 5 passive bridge may not create presentation authority: ${prohibited}`);
+  }
+}
 
 const bundledBridge = `\n\n// [SW:SOURCE:modernization-phase5-presentation-world.js]\n${bridgeSource}\n`;
 html = html.slice(0, mainScriptCloseIndex) + bundledBridge + html.slice(mainScriptCloseIndex);
@@ -44,10 +57,13 @@ html = html.slice(0, mainScriptCloseIndex) + bundledBridge + html.slice(mainScri
 for (const required of [
   marker,
   '[SW:ARCH:PHASE5_PRESENTATION_WORLD_BRIDGE]',
-  '__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__'
+  '__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__',
+  'phase5ReadLegacySnapshot',
+  'syncFromLegacy()',
+  'runContractProbe()',
 ]) {
   if (!html.includes(required)) throw new Error(`Phase 5 verification failed: missing ${required}`);
 }
 
 await writeFile(sourcePath, html, 'utf8');
-console.log(`Applied Phase 5 rendering, world, and setpiece destruction bridge to ${sourcePath}`);
+console.log(`Applied passive Phase 5 live presentation/world mirror to ${sourcePath}`);
