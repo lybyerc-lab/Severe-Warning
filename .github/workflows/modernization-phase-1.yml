@@ -19,7 +19,7 @@ on:
       - agent/project-context-modernization
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: modernization-phase-1-${{ github.event_name }}-${{ github.ref }}
@@ -50,28 +50,13 @@ jobs:
             android/**/*.gradle*
             android/gradle/wrapper/gradle-wrapper.properties
 
-      - name: Install build dependencies and resolve modernization lock
+      - name: Install frozen build dependencies
         shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg
           npm install --global pnpm@11.9.0
-          pnpm install --no-frozen-lockfile
-
-      - name: Commit resolved modernization lock
-        if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git diff --quiet -- pnpm-lock.yaml; then
-            echo 'pnpm-lock.yaml already matches package.json'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add pnpm-lock.yaml
-          git commit -m 'Lock modernization toolchain'
-          git push origin HEAD:agent/modernization-phase-1-shell
+          pnpm install --frozen-lockfile
 
       - name: Verify script syntax and strict TypeScript
         shell: bash
