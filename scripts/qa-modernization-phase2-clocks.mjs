@@ -10,6 +10,7 @@ const outputDir = process.env.SEVERE_WEATHER_QA_DIR
   : path.join(projectRoot, 'qa-artifacts', 'modernization-phase-2');
 const baseUrl = process.env.SEVERE_WEATHER_QA_URL || 'http://127.0.0.1:4173/';
 const executablePath = process.env.CHROME_BIN || undefined;
+const phase2CompatibleIdentities = new Set(['phase-2-clocks', 'phase-3-input-abilities']);
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({
@@ -51,7 +52,7 @@ for (const viewport of viewports) {
   await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForFunction(() => (
     globalThis.__SW_MODERN_SHELL_READY__ === true
-    && globalThis.__SEVERE_WEATHER__?.modernizationPhase === 'phase-2-clocks'
+    && ['phase-2-clocks', 'phase-3-input-abilities'].includes(globalThis.__SEVERE_WEATHER__?.modernizationPhase)
     && globalThis.__SEVERE_WEATHER__?.qa?.getClockBridgeSnapshot?.().attached === true
     && globalThis.__SW_QA_FORENSICS__
   ));
@@ -106,8 +107,8 @@ for (const viewport of viewports) {
   await forensicPage.close();
 
   const checks = {
-    phaseIdentity: evidence.modernizationPhase === 'phase-2-clocks'
-      && evidence.documentPhase === 'phase-2-clocks',
+    phaseIdentity: phase2CompatibleIdentities.has(evidence.modernizationPhase)
+      && evidence.documentPhase === evidence.modernizationPhase,
     bridgeAttached: evidence.bridge?.attached === true
       && evidence.bridge?.version === 'MODERNIZATION_PHASE2_CLOCKS_V1',
     clockContract: evidence.clockProbe?.passed === true,
@@ -145,7 +146,7 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'MODERNIZATION_PHASE2_CLOCK_QA_V2',
+  version: 'MODERNIZATION_PHASE2_CLOCK_QA_V3',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
