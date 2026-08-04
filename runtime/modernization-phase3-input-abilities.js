@@ -69,6 +69,7 @@ const phase3InputAbilityBridge = {
     phase3InputAuthority = inputAuthority;
     phase3AbilityAuthority = abilityAuthority;
     abilityAuthority.attachExecutor(phase3ExecuteLegacyAbility);
+    inputAuthority.setJoystick(Number(joystickDir.x) || 0, Number(joystickDir.z) || 0, Boolean(joystickActive));
     return true;
   },
 
@@ -85,7 +86,9 @@ const phase3InputAbilityBridge = {
   },
 
   getMovement() {
-    return phase3InputAuthority ? phase3InputAuthority.getMovement() : phase3ResolveMovementFallback();
+    if (!phase3InputAuthority) return phase3ResolveMovementFallback();
+    this.setJoystick(joystickDir.x, joystickDir.z, joystickActive);
+    return phase3InputAuthority.getMovement();
   },
 
   requestAbility(slot, explicitSource) {
@@ -134,7 +137,16 @@ document.addEventListener('touchstart', () => { phase3LastEventSource = 'touch';
 document.addEventListener('pointerdown', event => {
   phase3LastEventSource = event.pointerType === 'touch' ? 'touch' : 'keyboard';
 }, true);
-document.addEventListener('keydown', () => { phase3LastEventSource = 'keyboard'; }, true);
+document.addEventListener('keydown', event => {
+  phase3LastEventSource = 'keyboard';
+  phase3InputAbilityBridge.setKeyboard(event.code || '', event.key || '', true);
+}, true);
+document.addEventListener('keyup', event => {
+  phase3InputAbilityBridge.setKeyboard(event.code || '', event.key || '', false);
+}, true);
+window.addEventListener('blur', () => {
+  if (phase3InputAuthority && typeof phase3InputAuthority.reset === 'function') phase3InputAuthority.reset();
+});
 
 triggerAbility = function phase3RoutedAbility(slot) {
   return phase3InputAbilityBridge.requestAbility(slot);
