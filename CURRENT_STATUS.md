@@ -1,192 +1,177 @@
 # Severe Weather Warning Current Status
 
-**Last updated:** 2026-08-03 Central Time  
+**Last updated:** 2026-08-04 08:54 Central Time  
 **Repository:** `lybyerc-lab/Severe-Warning`  
-**Default branch:** `main`  
-**Production renderer:** Three.js  
+**Production renderer:** Three.js r128  
 **Primary target:** single-player Android landscape  
-**Active gameplay source:** `MechanicsLab/SevereWeather_3D_Lab.html`  
+**Active gameplay source:** `MechanicsLab/SevereWeather_3D_Lab.html` plus the verified modernization bridge layers  
 **Android packaging:** Capacitor 8.5.0 with offline local assets
 
-## Canonical project identity
+## Canonical identity
 
-The full game name is **Severe Weather Warning**.
+The full product name is **Severe Weather Warning**.
 
-- `Heartland` is the current campaign/content family.
-- `Production Slice` is a temporary engineering milestone label.
-- Neither replaces the product name.
+- `Heartland` is campaign and regional-content terminology.
+- `Production Slice`, `Mechanics Lab`, and numbered modernization phases are engineering labels only.
+- The player directly controls the storm.
+- The response is a media circus, not a battle.
+- People remain protected and are never targets.
+- Animals and media crews remain invincible, non-targetable witnesses or safe slapstick participants.
 
 ## Canonical memory order
 
+Use this order when sources conflict:
+
 1. Current repository code and exact-commit build evidence
 2. This file
-3. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-4. `Docs/MODERNIZATION_PLAN.md`
-5. `Docs/DECISION_2026-08-03_PRODUCTION_DIRECTION.md`
-6. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
-7. `Docs/DECISION_LOG.md`
-8. `Docs/NO_DRIFT_POLICY.md`
-9. `Docs/DEVICE_TEST_LOG.md`
-10. Historical Unity, Godot, and renderer-laboratory records
+3. `Docs/RECOVERED_KNOWLEDGE_BASE.md`
+4. `Docs/ANTIGRAVITY_PHASE4_HANDOFF.md`
+5. `Docs/MODERNIZATION_PLAN.md`
+6. `Docs/MODERNIZATION_DEVICE_ACCEPTANCE_2026-08-04.md`
+7. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
+8. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
+9. `Docs/DECISION_LOG.md` and dated decision records
+10. Historical Unity, Godot, Babylon.js, and renderer-laboratory records
 
-Important decisions and physical evidence must be committed to the repository. Chat is working context, not durable project memory.
+Chat is working context. Important decisions, deferred concepts, physical findings, and build evidence must be written back to the repository.
 
 ## Production decision
 
-The enjoyable Three.js/WebGL game is the production gameplay source. Capacitor packages that game locally for Android.
+The enjoyable Three.js/WebGL game remains production. Capacitor packages the same local web build for Android.
 
 - Three.js remains production.
-- Unity and Godot remain preserved historical experiments.
-- Babylon.js remains archived renderer-laboratory evidence and should not be merged into production.
-- Defold is the strongest Plan B engine, but only for a narrowly defined proof tied to a specific measured Three.js limitation.
-- No migration is justified by visual dissatisfaction alone.
-
-## Protected product direction
-
-Severe Weather Warning is a humorous, replayable mobile arcade destruction game in which the player directly controls the storm.
-
-- Android landscape is the primary target.
-- The response is a media circus, not a battle.
-- People remain protected and off-limits.
-- Animals are invincible, non-targetable, and may appear in safe slapstick sequences.
-- News vans and storm chasers are invincible witnesses, never enemies or rewarded targets.
-- `Moo Brew` remains the approved opening-cinematic coffee brand.
-- The visual target is a readable stylized American town with strong silhouettes, authored destruction, atmospheric depth, and modern weather spectacle.
-- The gameplay loop must remain direct, physical, readable, and replayable.
+- Unity and Godot remain historical experiments.
+- Babylon.js remains archived research and must not be merged into production.
+- Defold remains Plan B only for a narrowly measured blocker.
+- Netlify is not part of this project.
+- GitHub Actions remains the build and verification path.
+- GitHub Pages is the approved future hosted QA-preview path.
 
 ## Protected accepted behavior
 
 Future work must preserve:
 
 - direct storm controls
+- mobile joystick and keyboard support
 - Pull, Gust, and Grid Zap behavior
+- no duplicate mobile ability activation
 - continuous scoring across district boundaries
 - forward-only district progression
 - three-minute real-time warning clock behavior
+- pause and background time holding correctly
 - Heartland campaign progression and persistence contracts
 - QA4 input isolation
-- QA4 deterministic runtime coverage
+- deterministic reset and cleanup
 - popup batching and rendering
-- deterministic cleanup and reset
-- recorded-effect direction and continuous wind ambience
-- safe animals and protected people
+- continuous wind ambience and recorded-effect direction
+- protected people, safe animals, and invincible media crews
 
-## Active branch and pull-request state
+## Modernization status
 
-### PR #13: V5 Heartland campaign foundation
+The modernization is active and physically accepted through Phase 3.
 
-- State: open, draft, unmerged
-- Base: `main`
-- Head: `agent/v500-heartland-campaign`
-- Head commit: `d366cc9a1d6ec97192e5245a41bd193a21a769bc`
-- Boundary: preserve as the campaign foundation branch
+| Phase | Scope | Status | Draft PR | Accepted head |
+|---|---|---|---|---|
+| 0 | Preserve V5.1 Three.js reference | Automated and hands-on reference accepted | #15 | `c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72` |
+| 1 | Vite, strict TypeScript, lifecycle, context, adapter, QA bridge | Automated and physical browser behavior accepted | #17 | `710ee8537e3d4ca6424b8bf32b282abae0dbfc28` |
+| 2 | Render, simulation, and real run clocks; pause and run state | Automated and physical timing behavior accepted | #18 | `381014d3d7f4a128e5c6e285200fdb2790af94b5` |
+| 3 | Typed keyboard/touch input and ability-command authority | Automated and physical control behavior accepted | #19 | `b9d55188f91ade720a50837f15591c91209098ad` |
+| 4 | Scoring, districts, campaign, and persistence | Next implementation phase | not opened | not started |
+| 5 | Rendering, camera, world, buildings, destruction | Planned | not opened | not started |
+| 6 | Audio, UI, storage, platform lifecycle, formal QA completion | Planned | not opened | not started |
+| 7 | Retire historical patch-chain production builds | Planned after parity | not opened | not started |
 
-### PR #14: Babylon.js Visual Engine Laboratory
+### Phase 1 sealed evidence
 
-- State: open, draft, unmerged
-- Base: `agent/v500-heartland-campaign`
-- Head: `agent/visual-engine-lab-foundation`
-- Head commit: `f439db0623543308730386964f31668b76a0f7dc`
-- Decision: archive as research evidence; do not merge into production
+- Workflow run: `30870506335`
+- Artifact ID: `8877735187`
+- Artifact digest: `sha256:12274df6fed420048575ca8aeb380c7cdd0a8f67e6d04d03500108234273aa20`
+- Owner verdict: `Good build`
 
-### PR #15: Three.js production visual slice
+### Phase 2 sealed evidence
 
-- State: open, draft, unmerged
-- Base: `agent/v500-heartland-campaign`
-- Head: `agent/threejs-production-slice`
-- Accepted candidate commit: `c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72`
-- GitHub Actions run: `30868496726`
-- Workflow result: success
-- Artifact ID: `8877035856`
-- Artifact archive digest: `sha256:f689133f9200d6847034ebce2d9933c7150f0c879c2aada69c64d091ebbb950a`
+- Final corrected head: `381014d3d7f4a128e5c6e285200fdb2790af94b5`
+- Workflow run: `30884351261`
+- Artifact ID: `8882537816`
+- Artifact digest: `sha256:b35dcac9b266c21a9affc8aabcee0c999ce30904e02d43aba05179d38b28c9a6`
+- Physical findings: manual pause held the clock; backgrounding held the clock; return did not jump the countdown
+- A QA4 forensic overlay leaked into normal pause, was corrected, and the correction was inherited by the accepted Phase 3 build
 
-The successful workflow completed:
+### Phase 3 sealed evidence
 
-- new-script syntax checks
-- verified audio generation
-- accepted gameplay patch chain
-- V5 foundation verification
-- V5.1 structural verification
-- offline web package verification
-- deterministic desktop browser QA
-- deterministic mobile-landscape browser QA
-- Android asset synchronization
-- debug APK assembly
-- package creation and artifact upload
+- Head: `b9d55188f91ade720a50837f15591c91209098ad`
+- Workflow run: `30910503447`
+- Artifact ID: `8892944447`
+- Artifact digest: `sha256:039e4e7697e5cee64ce2b7a9f514fa5979a5fd376a117a4a25b4c98740c202fa`
+- APK SHA-256: `35be5607e44a0401b1843b3428450390b48b8620292a0b112e4a5a56944c0de5`
+- Physical findings: joystick direction and release were good; Pull, Gust, and Grid Zap responded correctly; no duplicate activation, cooldown anomaly, stuck movement, pause problem, or background/resume defect was reported
+- Owner verdict: `Everything was good!`
 
-PR #15 still requires hands-on browser and physical Android gameplay acceptance before merge consideration.
+## Pull-request stack
 
-## Current V5.1 production-slice contents
+The current production and modernization history is an intentional descendant chain:
 
-- layered Three.js tornado shell
-- vapor ribbons, suction rings, dust, debris, and canopy depth
-- authored crop rows, fences, tree bands, parking details, mailboxes, and commercial awnings
-- Hart Farm five-stage destruction setpiece
-- roof peel and readable wreckage
-- improved Cow 17 scale and silhouette
-- tighter camera composition
-- progressive storm atmosphere
-- Low, Balanced, High, and Showcase visual tiers
-- real frame samples in deterministic browser QA
+`PR #13 -> PR #15 -> PR #16 -> PR #17 -> PR #18 -> PR #19`
 
-The candidate removes visible prototype symptoms, but it is not the end-state art pipeline.
+- PR #13: Heartland campaign foundation
+- PR #15: Three.js production visual slice
+- PR #16: restored production context and modernization plan
+- PR #17: Phase 1 modern shell
+- PR #18: Phase 2 clocks and run state
+- PR #19: Phase 3 input and abilities
 
-## Current performance evidence
+PR #14 is the archived Babylon.js laboratory and is not part of the production chain.
 
-The successful deterministic QA run reported real sampled frame rates for desktop and mobile-landscape browser tests. These measurements are CI software-rendering evidence, not a substitute for physical-device performance.
+All listed PRs remain draft and unmerged. Do not merge, retarget, close, or rewrite this stack without explicit owner approval and a reviewed integration plan.
 
-Physical Android acceptance remains authoritative for:
+## Recovered knowledge and deferred product work
 
-- touch feel
-- visual readability
-- sustained frame pacing
-- heat
-- battery use
-- audio
-- pause and resume
-- orientation and safe areas
-- close and reopen behavior
+The detailed recovered backlog is now preserved in:
 
-## QA-site status
+`Docs/RECOVERED_KNOWLEDGE_BASE.md`
 
-The current GitHub Actions workflow packages a complete `web-preview` and QA evidence directory.
+That document includes work that was present in prior chats or older repository records but was not fully represented in the immediate modernization status, including:
 
-It does **not** currently publish a permanent hosted QA URL.
+- Moo Brew opening cinematic and generated newspaper recap
+- deeper Cow 17 and farmyard behavior
+- media and regional broadcast expansion
+- complete Pull, Gust, and Grid Zap presentation contracts
+- Heartland stop expansion and later regional campaigns
+- advanced tornado forms and special variants
+- storm progression and mastery questions
+- terrain and objects that diminish storm power
+- art pipeline, data-driven world assembly, and reusable destruction definitions
+- GitHub Pages QA preview
+- release-vs-QA package separation
+- broader Android device, heat, battery, safe-area, and process-restart testing
 
-Approved direction:
+## Known remaining gaps
 
-- add a GitHub Pages preview deployment after the current gate
-- keep the preview tied to exact commit and build metadata
-- do not use Netlify unless the owner explicitly reverses that decision
-- never describe a packaged preview as a deployed site
+- The normal production build still depends on a long historical patch chain.
+- Large generated inline runtime sections and shared lexical scope remain.
+- Phase 4 gameplay state is not yet extracted.
+- Campaign, district, challenge, building, and destruction definitions are not yet data-driven enough for safe expansion.
+- GitHub Pages QA preview is not deployed.
+- Most physical evidence comes from a high-end Galaxy S26 Ultra rather than a device matrix.
+- Heat, battery, prolonged session behavior, process death, and older-device performance remain incompletely measured.
+- A Phase 2 screenshot showed top-title crowding in one landscape geometry; a later Phase 3 result fit correctly. Keep this as a responsive regression case rather than a universal active defect.
+- QA build identity remains visible by design in QA artifacts and must be removed from a player release candidate.
+- Three.js r128 remains intentionally frozen until architecture parity is established.
 
-## Immediate next milestone
+## Immediate next action
 
-Modernize the production structure because the historical patch chain, generated single-file HTML, lexical runtime bundling, and broad global state are slowing development.
+1. Preserve this documentation branch as the handoff baseline.
+2. Give Antigravity the bounded Phase 4 assignment in `Docs/ANTIGRAVITY_PHASE4_HANDOFF.md`.
+3. Require Antigravity to create its own descendant branch. One writer per branch.
+4. Extract scoring, districts, campaign progression, and persistence without redesigning behavior.
+5. Run the complete inherited parity suite plus new score, district, campaign, and save tests.
+6. Produce one consolidated browser review and one Android APK for physical acceptance.
 
-The modernization must:
+## Working protocol
 
-1. Keep Three.js and current gameplay.
-2. Introduce Vite and strict TypeScript.
-3. Replace generated inline concatenation with real ES modules.
-4. Establish `GameApp`, lifecycle, and explicit shared-context contracts.
-5. Separate gameplay, rendering, world, input, audio, persistence, UI, and QA ownership.
-6. Move campaigns, districts, landmarks, buildings, and destruction stages toward data-driven definitions.
-7. Provide a formal deterministic QA bridge.
-8. Preserve Capacitor Android packaging.
-9. Retire patch scripts only after parity is proven.
-10. Work in substantial migration milestones, not a long chain of tiny builds.
-
-## Current known risks
-
-- PR #15 has not yet received hands-on acceptance.
-- The active source still depends on a long historical patch chain.
-- The generated game remains a large inline runtime.
-- Runtime fragments rely on shared lexical scope and globals.
-- A hosted QA site is not yet deployed.
-- High-end phone success will not prove older-device performance.
-- Renderer modernization and a Three.js version upgrade must not be combined into one uncontrolled change.
-
-## Next action
-
-Use `agent/project-context-modernization` to preserve the latest decisions and prepare the modernization work. Do not merge PR #15 or alter protected branches until the owner completes gameplay review and explicitly approves the next transition.
+- Repository truth outranks chat memory.
+- One writer per branch.
+- Work in coherent milestones, not tiny build fragments.
+- Preserve accepted behavior before cleanup.
+- Do not mix architecture migration, Three.js upgrade, major visual redesign, and gameplay redesign.
+- Automated success is necessary but never substitutes for physical Android acceptance.
