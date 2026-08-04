@@ -10,6 +10,10 @@ const outputDir = process.env.SEVERE_WEATHER_QA_DIR
   : path.join(projectRoot, 'qa-artifacts', 'modernization-phase-3');
 const baseUrl = process.env.SEVERE_WEATHER_QA_URL || 'http://127.0.0.1:4173/';
 const executablePath = process.env.CHROME_BIN || undefined;
+const phase3CompatibleIdentities = new Set([
+  'phase-3-input-abilities',
+  'phase-4-scoring-campaign',
+]);
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({
@@ -51,7 +55,9 @@ for (const viewport of viewports) {
   await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 60_000 });
   await page.waitForFunction(() => (
     globalThis.__SW_MODERN_SHELL_READY__ === true
-    && globalThis.__SEVERE_WEATHER__?.modernizationPhase === 'phase-3-input-abilities'
+    && ['phase-3-input-abilities', 'phase-4-scoring-campaign'].includes(
+      globalThis.__SEVERE_WEATHER__?.modernizationPhase,
+    )
     && globalThis.__SEVERE_WEATHER__?.qa?.getInputAbilityBridgeSnapshot?.().attached === true
   ));
 
@@ -96,8 +102,8 @@ for (const viewport of viewports) {
   });
 
   const checks = {
-    phaseIdentity: evidence.modernizationPhase === 'phase-3-input-abilities'
-      && evidence.documentPhase === 'phase-3-input-abilities',
+    phaseIdentity: phase3CompatibleIdentities.has(evidence.modernizationPhase)
+      && evidence.documentPhase === evidence.modernizationPhase,
     inputContract: evidence.inputProbe?.passed === true,
     abilityContract: evidence.abilityProbe?.passed === true,
     keyboardMovement: evidence.keyboard?.movement?.x === 1
@@ -132,7 +138,7 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'MODERNIZATION_PHASE3_INPUT_ABILITY_QA_V1',
+  version: 'MODERNIZATION_PHASE3_INPUT_ABILITY_QA_V2',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
