@@ -35,14 +35,12 @@ const results = [];
 
 async function captureFailure(page, viewport, url, phase, error, pageErrors, consoleErrors) {
   const diagnostic = await page.evaluate(() => ({
-    ready: globalThis.__SW_PRODUCTION_SLICE_READY__ === true,
-    hasQaState: typeof globalThis.getProductionSliceQaState === 'function',
-    hasQaTrigger: typeof globalThis.triggerProductionSliceQa === 'function',
-    hasRebuild: typeof globalThis.__SW_V510_REBUILD__ === 'function',
-    hasUpdate: typeof globalThis.__SW_V510_UPDATE__ === 'function',
-    qaState: typeof globalThis.getProductionSliceQaState === 'function'
-      ? globalThis.getProductionSliceQaState()
-      : null,
+    legacyReady: globalThis.__SW_PRODUCTION_SLICE_READY__ === true,
+    modernReady: globalThis.__SW_MODERN_SHELL_READY__ === true,
+    architecture: globalThis.__SEVERE_WEATHER__?.architecture ?? null,
+    lifecycle: globalThis.__SEVERE_WEATHER__?.app?.getStatus?.() ?? null,
+    legacyStatus: globalThis.__SEVERE_WEATHER__?.qa?.getStatus?.() ?? null,
+    qaState: globalThis.__SEVERE_WEATHER__?.qa?.getSnapshot?.() ?? null,
     documentState: document.readyState,
     title: document.title,
     bodyClass: document.body.className
@@ -62,15 +60,11 @@ async function captureFailure(page, viewport, url, phase, error, pageErrors, con
 }
 
 async function prepareAndSampleScenario(page) {
-  const prepared = await page.evaluate(() => {
-    if (typeof globalThis.triggerProductionSliceQa !== 'function') {
-      throw new Error('triggerProductionSliceQa is unavailable');
-    }
-    if (typeof globalThis.__SW_V510_UPDATE__ !== 'function') {
-      throw new Error('__SW_V510_UPDATE__ is unavailable');
-    }
-    globalThis.__SW_QA_SAMPLE_PREVIOUS_NOW__ = performance.now();
-    return globalThis.triggerProductionSliceQa('hero');
+  const prepared = await page.evaluate(async () => {
+    const bridge = globalThis.__SEVERE_WEATHER__?.qa;
+    if (!bridge) throw new Error('Formal Severe Weather QA bridge is unavailable');
+    await bridge.prepareScenario('production-hero');
+    return true;
   });
   if (prepared !== true) throw new Error('Production slice hero setup did not initialize');
 
@@ -79,17 +73,15 @@ async function prepareAndSampleScenario(page) {
   for (let sample = 0; sample < maxSamples; sample += 1) {
     await page.waitForTimeout(16);
     state = await page.evaluate(() => {
-      const now = performance.now();
-      const previousNow = globalThis.__SW_QA_SAMPLE_PREVIOUS_NOW__;
-      globalThis.__SW_QA_SAMPLE_PREVIOUS_NOW__ = now;
-      const dt = Number.isFinite(previousNow) ? (now - previousNow) / 1000 : 0;
-      globalThis.__SW_V510_UPDATE__(dt, now, false);
-      return globalThis.getProductionSliceQaState?.() ?? null;
+      const bridge = globalThis.__SEVERE_WEATHER__?.qa;
+      if (!bridge) throw new Error('Formal Severe Weather QA bridge disappeared');
+      bridge.advance(16);
+      return bridge.getSnapshot();
     });
     if (state?.barn?.stage >= 2 && state.frameSampleCount >= 60) return state;
   }
 
-  throw new Error(`Production slice did not stabilize after ${maxSamples} bounded real-time samples: ${JSON.stringify(state)}`);
+  throw new Error(`Production slice did not stabilize after ${maxSamples} bounded samples: ${JSON.stringify(state)}`);
 }
 
 for (const viewport of viewports) {
@@ -112,7 +104,12 @@ for (const viewport of viewports) {
   await page.goto(url.toString(), { waitUntil: 'networkidle', timeout: 60000 });
 
   try {
-    await page.waitForFunction(() => globalThis.__SW_PRODUCTION_SLICE_READY__ === true, null, { timeout: 15000 });
+    await page.waitForFunction(() => (
+      globalThis.__SW_PRODUCTION_SLICE_READY__ === true
+      && globalThis.__SW_MODERN_SHELL_READY__ === true
+      && globalThis.__SEVERE_WEATHER__?.architecture === 'modern-shell-v1'
+      && globalThis.__SEVERE_WEATHER__?.app?.getStatus?.().state === 'ready'
+    ), null, { timeout: 15000 });
   } catch (error) {
     await captureFailure(page, viewport, url, 'startup', error, pageErrors, consoleErrors);
     await context.close();
@@ -130,10 +127,20 @@ for (const viewport of viewports) {
     throw error;
   }
 
+  const shellState = await page.evaluate(() => ({
+    architecture: globalThis.__SEVERE_WEATHER__?.architecture ?? null,
+    lifecycle: globalThis.__SEVERE_WEATHER__?.app?.getStatus?.() ?? null,
+    legacyStatus: globalThis.__SEVERE_WEATHER__?.qa?.getStatus?.() ?? null,
+    documentArchitecture: document.documentElement.dataset.swArchitecture ?? null
+  }));
   const screenshotPath = path.join(outputDir, `${viewport.name}.png`);
   await page.screenshot({ path: screenshotPath, fullPage: false });
 
   const checks = {
+    modernShell: shellState.architecture === 'modern-shell-v1'
+      && shellState.lifecycle?.state === 'ready'
+      && shellState.documentArchitecture === 'modern-shell-v1',
+    formalQaBridge: Object.values(shellState.legacyStatus ?? {}).every(Boolean),
     marker: state.marker === 'V510_THREEJS_PRODUCTION_SLICE_V1',
     renderer: state.renderer === 'Three.js r128',
     funnelLayers: state.funnelLayers >= 3,
@@ -151,6 +158,7 @@ for (const viewport of viewports) {
     viewport,
     url: url.toString(),
     screenshot: path.relative(projectRoot, screenshotPath).replaceAll('\\', '/'),
+    shellState,
     state,
     checks,
     pageErrors,
@@ -162,7 +170,7 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'V510_PRODUCTION_SLICE_QA_V2',
+  version: 'MODERN_SHELL_V1_QA',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
