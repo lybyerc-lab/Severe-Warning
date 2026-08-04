@@ -46,14 +46,13 @@ function phase3ResolveAbilitySource(explicitSource) {
 }
 
 function phase3ShouldSuppressDuplicate(slot, source, nowMs) {
-  if (source === 'touch') {
-    phase3LastTouchAbility = { slot, atMs: nowMs };
-    return false;
-  }
-  if (source === 'keyboard' && phase3LastTouchAbility.slot === slot && nowMs - phase3LastTouchAbility.atMs <= 450) {
+  const followsTouch = phase3LastTouchAbility.slot === slot
+    && nowMs - phase3LastTouchAbility.atMs <= 450;
+  if (followsTouch) {
     phase3SuppressedDuplicates += 1;
     return true;
   }
+  if (source === 'touch') phase3LastTouchAbility = { slot, atMs: nowMs };
   return false;
 }
 
