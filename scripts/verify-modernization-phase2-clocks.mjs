@@ -18,6 +18,7 @@ const requiredFiles = [
   'src/core/clocks.ts',
   'runtime/modernization-phase2-clocks.js',
   'scripts/apply-modernization-phase2-clocks.mjs',
+  'scripts/apply-phase2-player-forensics-guard.mjs',
 ];
 for (const file of requiredFiles) {
   try {
@@ -40,6 +41,9 @@ for (const marker of [
   'modernClockSample.runDeltaMs / 1000',
   '__SW_PHASE2_CLOCK_BRIDGE__?.reset',
   '__SW_PHASE2_CLOCK_BRIDGE__?.resume',
+  'PHASE2_PLAYER_FORENSICS_GUARD_V1',
+  'function qa4ForensicUiEnabled()',
+  "dataset.swQaForensics = qa4ForensicUiEnabled() ? 'visible' : 'silent'",
 ]) check(`HTML marker ${marker}`, html.includes(marker));
 
 check('legacy raw clock removed', !html.includes('const rawRunClockDelta'));
@@ -52,6 +56,8 @@ check('resume contract probe', clocks.includes('resumeTransitionChargesZero'));
 check('suspension contract probe', clocks.includes('suspensionChargesZero'));
 check('legacy adapter attaches clocks', adapter.includes('attachClocks(clocks: GameClocks)'));
 check('lifecycle follows run clock', app.includes('syncRunState(runState: RunClockState)'));
+check('player trace capture remains silent', html.includes('if (qa4ForensicUiEnabled())') && html.includes('if (trace) trace.hidden = true'));
+check('defensive render guard present', html.includes('if (!qa4ForensicUiEnabled())'));
 
 const failures = checks.filter(item => !item.passed);
 console.log(`\nPhase 2 clock verification: ${checks.length - failures.length}/${checks.length} checks passed.`);
