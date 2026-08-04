@@ -1,80 +1,113 @@
-# Severe Weather
+# Severe Weather Warning
 
-Severe Weather is a mobile-first, single-player arcade destruction game. The player directly controls a tornado, supercell, or derecho across stylized town and city districts.
+**Severe Weather Warning** is a mobile-first, single-player arcade destruction game in which the player directly controls the storm.
 
-The active game is the HTML/WebGL build at `MechanicsLab/SevereWeather_3D_Lab.html`. A Capacitor 8 Android wrapper now packages that exact game and its fonts locally while preserving offline play and the existing browser feel.
+The active production game is the Three.js/WebGL build rooted at `MechanicsLab/SevereWeather_3D_Lab.html`. Capacitor packages the same offline web build for Android landscape play. Unity, Godot, and Babylon.js work remain preserved as experiments or historical evidence and are not the active production path.
 
-## Inherited gameplay baseline
+## Canonical identity
 
-Version `4.0.0 Living County Edition` contains:
+- Full product name: **Severe Weather Warning**
+- Current campaign/content family: **Heartland**
+- Production renderer: **Three.js**
+- Primary platform: **Android landscape**
+- Browser build: QA and rapid gameplay review
+- Android build: physical touch, performance, audio, lifecycle, heat, and battery acceptance
 
-- three-minute single-player warning runs
-- Pine Ridge, Main Street, and County Fair districts
-- Tornado, Supercell, and Derecho storm classes
-- mobile joystick and three action buttons
-- pulled-back tactical camera and movement look-ahead
-- score, combo, EF progression, objectives, radar, and results
-- buildings, landmarks, power infrastructure, persistent ruins, and invincible airborne animals
-- distinct news vans and storm-chaser SUVs that film destruction, retreat from danger, stay on the road grid, and never act as enemies or targets
-- camera flashes, live reporting chatter, captured-footage scoring, media radar markers, and an end-of-run coverage recap
-- thirteen destructible comedy props with slapstick callouts
-- one randomized bonus challenge per district
-- sequential County Fair substation finale
-- persistent Neon Funnel cosmetic unlock
-- deterministic browser playtest mode through `?bot=true`
-- district-shaped elevation: Pine Ridge, the Main Street rise, rolling County Fair ground, and an eastern drainage creek
-- terrain-following roads, shoulders, lane markings, structures, storm effects, animals, and media crews
-- GPU-instanced road markings, low-cost ridge silhouettes, restrained contour cues, and stormier color/lighting treatment
-- an extended county terrain apron, softened under-road damage scars, layered road/creek surfaces, and varied office/warehouse silhouettes
-- a 36-block authored county layout that replaces the old randomized building scatter
-- recognizable homes, garages, porches, barns, storefronts, offices, workshops, windows, signs, chimneys, and rooftop equipment
-- two visible damage stages before collapse, footprint-sized persistent rubble, and ballistic debris that bounces across the terrain
-- block-clear bonuses and four optional chain-reaction businesses with collateral destruction, shockwaves, radar diamonds, and original local-news jokes
+“Heartland” is campaign terminology, not a replacement title for the game.
 
-## Active V5 candidate
+## Current candidate
 
-`v5.0.0 Heartland Campaign Foundation` layers a four-stop mobile campaign over the accepted destruction loop:
+Draft PR #15, `agent/threejs-production-slice`, builds the V5.1 Three.js production visual slice on top of the V5 Heartland campaign foundation.
 
-- television weather-map selection with locked progression
-- persistent stars, best scores, run counts, selected stop, and furthest unlock
-- Lincoln County, Prairie Junction, Grain Belt, and State Fair finale
-- distinct road-safe terrain profiles, ground palettes, regional scenery, broadcasts, media rosters, challenges, and animal density
-- eight destructible signature landmarks across the tour
-- per-stop scoring targets and modifiers
-- a monotonic three-minute warning clock that remains correct at low render rates
-- deterministic structural verification and a mobile-landscape four-stop browser sweep
+Its current accepted automated gate is tied to commit:
 
-The candidate is not physically accepted until the exact APK passes on the Galaxy S26 Ultra, including close/reopen campaign persistence.
+`c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72`
 
-The design reference is the readable, humorous, replayable city-block destruction structure associated with classic arcade destruction games. This project must develop its own storms, districts, humor, names, art, and progression rather than copying another game's protected characters or assets.
+GitHub Actions run `30868496726` completed successfully, including:
 
-## Product constraints
+- accepted gameplay patch-chain verification
+- V5 foundation verification
+- V5.1 structural verification
+- offline web packaging
+- deterministic desktop browser QA
+- deterministic mobile-landscape browser QA
+- Android asset synchronization
+- debug APK assembly
+- test-package creation and artifact upload
 
-- Android landscape is the primary target.
-- The game is single-player; multiplayer is out of scope.
-- People remain protected and off-limits as targets.
-- Humor comes from fictional signs, props, excitable local reporting, reckless-but-invincible storm chasers, animals with safe landings, and environmental slapstick.
-- News crews and storm chasers are witnesses. They report, film, reposition, and retreat; the player is never rewarded for targeting them.
-- Physical Android testing is authoritative for touch comfort, performance, heat, battery, audio, and final readability.
+PR #15 remains draft and unmerged until the packaged browser build and APK receive hands-on gameplay acceptance.
 
-## Repository layout
+## Protected gameplay baseline
 
-- `MechanicsLab/`: active HTML game and preserved browser experiments
-- `android/`: generated Capacitor Android Studio project
-- `scripts/build-web.mjs`: deterministic offline web-bundle builder
-- `Docs/`: product direction, decisions, validation history, and historical checkpoints
+Modernization and visual work must preserve the accepted behavior already proven in the current production game:
+
+- direct storm control
+- Pull, Gust, and Grid Zap behavior
+- continuous scoring across district boundaries
+- forward-only district progression
+- three-minute real-time warning clock
+- Heartland campaign progression and persistence contracts
+- QA4 input isolation and deterministic runtime checks
+- popup batching and rendering behavior
+- deterministic cleanup and reset behavior
+- recorded-effect and continuous wind-audio direction
+- people protected and never targetable
+- animals invincible, non-targetable, and used only for safe slapstick
+- news crews and storm chasers as invincible witnesses, never enemies
+
+## Engine decisions
+
+- Three.js remains the production renderer.
+- Babylon.js is archived laboratory evidence and should not receive continued migration investment.
+- Defold is the strongest current Plan B engine, but only for a tightly bounded proof that tests a specific measured Three.js limitation.
+- No engine rewrite is justified by visual dissatisfaction alone.
+- The immediate strategy is to improve the Three.js asset, art, destruction, rendering, and authoring pipeline.
+
+## Next milestone: production modernization
+
+The current patch-chain and single-file construction method are slowing development. The next engineering milestone is a controlled modernization that preserves the working game while replacing prototype scaffolding.
+
+Planned direction:
+
+- Vite-based build and development server
+- strict TypeScript
+- real ES modules instead of generated inline script concatenation
+- explicit `GameApp`, lifecycle, and shared game-context contracts
+- clear ownership for gameplay, rendering, world, audio, input, persistence, UI, and QA systems
+- data-driven campaign, district, landmark, building, and destruction definitions
+- a formal QA bridge instead of incidental `globalThis` access
+- continued Capacitor Android packaging
+- retirement of historical patch scripts only after verified parity
+
+The modernization must be performed as a controlled migration, not a ground-up gameplay rewrite.
+
+## QA and hosting boundary
+
+The current workflow packages a complete `web-preview` and QA evidence bundle. It does **not** currently publish a permanent hosted QA site.
+
+- Use GitHub Actions and an approved GitHub Pages preview workflow for hosted QA.
+- Do not use Netlify for this project unless the owner explicitly changes that decision.
+- Do not describe a packaged preview as a deployed site.
+
+## Repository map
+
+- `MechanicsLab/`: active Three.js game source and preserved browser laboratories
+- `runtime/`: maintained V5.1 Three.js runtime source fragments
+- `android/`: Capacitor Android project
+- `scripts/`: build, patch, verification, QA, and packaging tools
+- `Docs/`: product direction, current decisions, device evidence, and historical records
+- `Experiments/`: isolated renderer and visual-engine research
 - `Godot/`: preserved migration experiment
-- `Assets/`, `Packages/`, `ProjectSettings/`: preserved Unity implementation history
-- `Tools/validate_project.py`: repository structure and source validation
+- `Assets/`, `Packages/`, `ProjectSettings/`: preserved Unity history
 
-## Current evidence
+## Required reading before implementation
 
-The V5 campaign foundation passed its structural verifier and the inherited strict full-round browser run passed all `11/11` required checks in 185 seconds with no browser errors. A local mobile-landscape authored-world sweep constructed all four stops with unique terrain, scenery, landmark, challenge, media, and density contracts and no page or console errors. Exact-commit CI and physical Android acceptance for the authored-world candidate remain pending.
+1. `CURRENT_STATUS.md`
+2. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
+3. `Docs/MODERNIZATION_PLAN.md`
+4. `Docs/DECISION_2026-08-03_PRODUCTION_DIRECTION.md`
+5. `Docs/NO_DRIFT_POLICY.md`
+6. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
+7. `Docs/DEVICE_TEST_LOG.md`
 
-Automated browser testing of v3.2.0 completed a full Tornado run at approximately 60 FPS with all three district challenges, both landmarks, all three sequential substations, eight captured media moments, a `+1289` footage bonus, and a successful mobile retry. The offline bundle also passed a separate `844x390` mobile-landscape layout check with local fonts loaded and no document overflow.
-
-GitHub Actions compiled the v3.2.0 debug APK successfully. The APK installed on a Galaxy S26 Ultra, looked and played like the HTML build, and completed a full Tornado run with an `S+` rank, score `23621`, all objectives, both landmarks, all substations, all district bonuses, seventeen media moments, and the Neon Funnel unlock. This proves the Capacitor strategy on the primary high-end test phone; it does not represent a broad Android device matrix.
-
-The v3.3.1 County Roads APK compiled in GitHub Actions and the user confirmed that it looked and played like the HTML build on a Galaxy S26 Ultra. The first v4.0.0 browser startup/visual pass rendered the authored blocks and richer structures at a reported 60-61 FPS with no observed console warnings or errors. The offline builder and inline-script parser also pass. A complete v4.0.0 bot run, retry check, synchronized APK build, and physical-device acceptance are still required before v4 is called stable.
-
-Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work.
+The repository is the durable project record. Chat is working context until the resulting decisions and evidence are committed here.
