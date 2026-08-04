@@ -16,7 +16,15 @@ await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({
   headless: true,
   executablePath,
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=swiftshader', '--enable-webgl']
+  args: [
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--enable-webgl',
+    '--use-angle=swiftshader',
+    '--enable-unsafe-swiftshader',
+    '--ignore-gpu-blocklist',
+    '--disable-gpu-sandbox'
+  ]
 });
 
 const viewports = [
