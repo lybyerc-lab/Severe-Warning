@@ -153,6 +153,10 @@ function productionSignMaterial(text, background = '#7c2d12', foreground = '#fff
   });
 }
 
+if (typeof globalThis.createSignMaterial !== 'function') {
+  globalThis.createSignMaterial = productionSignMaterial;
+}
+
 function addProductionPart(parent, geometry, color, x, y, z, options = {}) {
   const material = options.material || productionMaterial(color, options);
   const mesh = new THREE.Mesh(geometry, material);
