@@ -7,6 +7,20 @@ const projectRoot = path.resolve(scriptDir, '..');
 const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
   ? path.resolve(process.env.SEVERE_WEATHER_SOURCE_PATH)
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const runtimeFileNames = [
+  'v510-foundation.js',
+  'v510-tornado.js',
+  'v510-world.js',
+  'v510-runtime.js'
+];
+const runtimeParts = await Promise.all(runtimeFileNames.map(async fileName => {
+  const source = await readFile(path.join(projectRoot, 'runtime', fileName), 'utf8');
+  if (source.includes('</script>')) {
+    throw new Error(`Runtime source ${fileName} contains a closing script tag and cannot be safely bundled.`);
+  }
+  return `\n// [SW:SOURCE:${fileName}]\n${source.trim()}\n`;
+}));
+const productionRuntimeBundle = runtimeParts.join('\n');
 
 let html = await readFile(sourcePath, 'utf8');
 
@@ -15,12 +29,14 @@ const requiredHtmlMarkers = [
   marker,
   'v510ProductionSliceStyles',
   'btnProductionQuality',
-  'runtime/v510-foundation.js',
-  'runtime/v510-tornado.js',
-  'runtime/v510-world.js',
-  'runtime/v510-runtime.js',
+  '[SW:SOURCE:v510-foundation.js]',
+  '[SW:SOURCE:v510-tornado.js]',
+  '[SW:SOURCE:v510-world.js]',
+  '[SW:SOURCE:v510-runtime.js]',
   '__SW_V510_UPDATE__',
-  '__SW_V510_REBUILD__'
+  '__SW_V510_REBUILD__',
+  'getProductionSliceQaState',
+  'triggerProductionSliceQa'
 ];
 
 if (html.includes(marker)) {
@@ -196,19 +212,25 @@ replaceExact(
 );
 
 replaceExact(
-  '</body>',
-  `  <script src="runtime/v510-foundation.js"></script>
-  <script src="runtime/v510-tornado.js"></script>
-  <script src="runtime/v510-world.js"></script>
-  <script src="runtime/v510-runtime.js"></script>
+  'requestAnimationFrame(animate);\n</script>\n</body>',
+  `requestAnimationFrame(animate);
+
+// ============================================================================
+// [SW:VISUAL:PRODUCTION_SLICE_BUNDLE]
+// Generated from the maintained runtime/v510-*.js sources. Bundling inside
+// the established game script preserves direct access to accepted V5 state.
+// ============================================================================
+${productionRuntimeBundle}
+</script>
 </body>`,
-  'production runtime loading order'
+  'production runtime lexical bundle'
 );
 
 requiredHtmlMarkers.forEach(required => {
   if (!html.includes(required)) throw new Error(`v5.1.0 production slice verification failed: missing ${required}`);
 });
 if (html.includes('v5.0.0')) throw new Error('stale v5.0.0 identity remains after v5.1.0 patch');
+if (html.includes('<script src="runtime/v510-')) throw new Error('v5.1.0 runtime must be lexically bundled, not loaded as isolated scripts');
 
 await writeFile(sourcePath, html, 'utf8');
 console.log(`Applied v5.1.0 Three.js production slice to ${sourcePath}`);
