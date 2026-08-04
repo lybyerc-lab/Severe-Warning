@@ -49,9 +49,14 @@ jobs:
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile
 
-      - name: Verify syntax and strict TypeScript
+      - name: Verify clean historical source and script syntax
         shell: bash
         run: |
+          grep -F '<title>Severe Weather - 3D Lab v4.3.0 RAMPAGE</title>' MechanicsLab/SevereWeather_3D_Lab.html
+          if grep -F 'V510_THREEJS_PRODUCTION_SLICE_V1' MechanicsLab/SevereWeather_3D_Lab.html; then
+            echo 'Generated V5.1 output was committed over the historical source baseline.' >&2
+            exit 1
+          fi
           node --check scripts/apply-modernization-phase2-clocks.mjs
           node --check scripts/apply-phase2-player-forensics-guard.mjs
           node --check scripts/apply-modernization-phase3-input-abilities.mjs
@@ -99,7 +104,7 @@ jobs:
           node scripts/build-web.mjs
           node scripts/stamp-qa-pages.mjs
           node scripts/verify-qa-package.mjs
-          grep -F 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V1' www/index.html
+          grep -F 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2' www/index.html
           grep -F 'phase-4-scoring-campaign' www/modern/modern-shell.js
 
       - name: Run inherited and Phase 4 browser QA
@@ -165,6 +170,7 @@ jobs:
             "renderer": "Three.js r128",
             "architecture": "modern-shell-v1",
             "modernizationPhase": "phase-4-scoring-campaign",
+            "phase4Bridge": "MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2",
             "storageKey": "severe_weather_campaign_v1",
             "apkFile": "$(basename "$output_apk")",
             "apkSha256": "$(sha256sum "$output_apk" | awk '{print $1}')"
