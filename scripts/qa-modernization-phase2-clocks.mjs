@@ -53,22 +53,57 @@ for (const viewport of viewports) {
     globalThis.__SW_MODERN_SHELL_READY__ === true
     && globalThis.__SEVERE_WEATHER__?.modernizationPhase === 'phase-2-clocks'
     && globalThis.__SEVERE_WEATHER__?.qa?.getClockBridgeSnapshot?.().attached === true
+    && globalThis.__SW_QA_FORENSICS__
   ));
 
-  const evidence = await page.evaluate(() => {
+  const evidence = await page.evaluate(async () => {
     const shell = globalThis.__SEVERE_WEATHER__;
     if (!shell) throw new Error('Modern shell unavailable');
     const probe = shell.clocks.runContractProbe();
     const bridge = shell.qa.getClockBridgeSnapshot();
+    const overlay = document.getElementById('pauseOverlay');
+    const trace = document.getElementById('qa4ForensicTrace');
+    if (!overlay || !trace) throw new Error('Pause or forensic UI unavailable');
+
+    overlay.classList.add('active');
+    await new Promise(resolve => setTimeout(resolve, 50));
+    const playerPause = {
+      mode: document.documentElement.dataset.swQaForensics ?? null,
+      traceHidden: trace.hidden,
+      traceDisplay: getComputedStyle(trace).display,
+      snapshotReason: globalThis.__SW_QA_PAUSE_TRACE__?.reason ?? null,
+    };
+    overlay.classList.remove('active');
+
     return {
       architecture: shell.architecture,
       modernizationPhase: shell.modernizationPhase,
       lifecycle: shell.app.getStatus(),
       clockProbe: probe,
       bridge,
+      playerPause,
       documentPhase: document.documentElement.dataset.swModernizationPhase ?? null,
     };
   });
+
+  const forensicPage = await context.newPage();
+  const forensicUrl = new URL(baseUrl);
+  forensicUrl.searchParams.set('qa4', 'forensic');
+  await forensicPage.goto(forensicUrl.toString(), { waitUntil: 'networkidle', timeout: 60000 });
+  await forensicPage.waitForFunction(() => globalThis.__SW_QA_FORENSICS__);
+  const forensicEvidence = await forensicPage.evaluate(async () => {
+    const trace = document.getElementById('qa4ForensicTrace');
+    if (!trace) throw new Error('Forensic trace unavailable');
+    globalThis.__SW_QA_FORENSICS__.snapshot('phase2-explicit-forensic-qa');
+    await new Promise(resolve => setTimeout(resolve, 20));
+    return {
+      mode: document.documentElement.dataset.swQaForensics ?? null,
+      traceHidden: trace.hidden,
+      traceDisplay: getComputedStyle(trace).display,
+      snapshotReason: globalThis.__SW_QA_PAUSE_TRACE__?.reason ?? null,
+    };
+  });
+  await forensicPage.close();
 
   const checks = {
     phaseIdentity: evidence.modernizationPhase === 'phase-2-clocks'
@@ -81,6 +116,14 @@ for (const viewport of viewports) {
     resumeChargesZero: evidence.clockProbe?.checks?.resumeTransitionChargesZero === true,
     suspensionChargesZero: evidence.clockProbe?.checks?.suspensionChargesZero === true,
     simulationCapped: evidence.clockProbe?.checks?.simulationDeltaIsCapped === true,
+    playerPauseForensicsHidden: evidence.playerPause?.mode === 'silent'
+      && evidence.playerPause?.traceHidden === true
+      && evidence.playerPause?.traceDisplay === 'none'
+      && evidence.playerPause?.snapshotReason === 'pause-overlay-became-active',
+    explicitForensicModeVisible: forensicEvidence?.mode === 'visible'
+      && forensicEvidence?.traceHidden === false
+      && forensicEvidence?.traceDisplay !== 'none'
+      && forensicEvidence?.snapshotReason === 'phase2-explicit-forensic-qa',
     noPageErrors: pageErrors.length === 0,
     noConsoleErrors: consoleErrors.length === 0,
   };
@@ -90,6 +133,7 @@ for (const viewport of viewports) {
   results.push({
     viewport,
     evidence,
+    forensicEvidence,
     checks,
     pageErrors,
     consoleErrors,
@@ -101,7 +145,7 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'MODERNIZATION_PHASE2_CLOCK_QA_V1',
+  version: 'MODERNIZATION_PHASE2_CLOCK_QA_V2',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
