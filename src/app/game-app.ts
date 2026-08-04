@@ -40,7 +40,7 @@ export class GameApp {
         this.#context.scoring,
         this.#context.district,
         this.#context.campaign,
-        this.#context.persistence
+        this.#context.persistence,
       );
       this.#context.legacy.attachPresentationWorld(
         this.#context.renderer,
@@ -50,7 +50,7 @@ export class GameApp {
         this.#context.tornado,
         this.#context.world,
         this.#context.hartFarm,
-        this.#context.silo
+        this.#context.silo,
       );
       this.#initializedAt = new Date().toISOString();
       this.transition('ready');
@@ -63,19 +63,12 @@ export class GameApp {
 
   reset(): void {
     this.requireState('ready', 'running', 'paused');
+    // The legacy adapter owns the authoritative rebuild and synchronizes every
+    // passive mirror afterward. Direct mirror resets here would erase accepted
+    // scoring, district, world, or presentation state a second time.
     this.#context.legacy.reset();
     const legacy = this.#context.legacy.getRunState();
     this.#context.clocks.resetRun(Math.max(0, legacy.remainingSeconds) * 1000, performance.now());
-    this.#context.scoring.reset();
-    this.#context.district.reset();
-    this.#context.renderer.reset();
-    this.#context.scene.reset();
-    this.#context.camera.reset();
-    this.#context.atmosphere.reset();
-    this.#context.tornado.reset();
-    this.#context.world.reset();
-    this.#context.hartFarm.reset();
-    this.#context.silo.reset();
     this.transition('ready');
   }
 
@@ -83,16 +76,8 @@ export class GameApp {
     if (this.#state === 'disposed') return;
     this.#context.clocks.setRunStateListener(() => {});
     this.#context.input.reset();
-    this.#context.scoring.reset();
-    this.#context.district.reset();
-    this.#context.renderer.reset();
-    this.#context.scene.reset();
-    this.#context.camera.reset();
-    this.#context.atmosphere.reset();
-    this.#context.tornado.reset();
-    this.#context.world.reset();
-    this.#context.hartFarm.reset();
-    this.#context.silo.reset();
+    // Phase 4 and Phase 5 systems are passive mirrors. They own no legacy
+    // renderer, scene, world, scoring, district, or destruction resources.
     this.transition('disposed');
   }
 
