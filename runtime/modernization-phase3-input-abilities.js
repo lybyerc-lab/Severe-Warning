@@ -80,14 +80,20 @@ const phase3InputAbilityBridge = {
   },
 
   setJoystick(x, z, active) {
+    const nextX = active ? Number(x) || 0 : 0;
+    const nextZ = active ? Number(z) || 0 : 0;
+    const nextActive = Boolean(active);
+    joystickDir.x = nextX;
+    joystickDir.z = nextZ;
+    joystickActive = nextActive;
     if (phase3InputAuthority && typeof phase3InputAuthority.setJoystick === 'function') {
-      phase3InputAuthority.setJoystick(Number(x) || 0, Number(z) || 0, Boolean(active));
+      phase3InputAuthority.setJoystick(nextX, nextZ, nextActive);
     }
   },
 
   getMovement() {
     if (!phase3InputAuthority) return phase3ResolveMovementFallback();
-    this.setJoystick(joystickDir.x, joystickDir.z, joystickActive);
+    phase3InputAuthority.setJoystick(Number(joystickDir.x) || 0, Number(joystickDir.z) || 0, Boolean(joystickActive));
     return phase3InputAuthority.getMovement();
   },
 
@@ -104,6 +110,7 @@ const phase3InputAbilityBridge = {
   },
 
   reset() {
+    this.setJoystick(0, 0, false);
     if (phase3InputAuthority && typeof phase3InputAuthority.reset === 'function') phase3InputAuthority.reset();
     if (phase3AbilityAuthority && typeof phase3AbilityAuthority.resetTelemetry === 'function') phase3AbilityAuthority.resetTelemetry();
     phase3LastTouchAbility = { slot: null, atMs: -Infinity };
