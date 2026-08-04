@@ -32,6 +32,7 @@ const viewports = [
   { name: 'mobile-915x412', width: 915, height: 412, isMobile: true }
 ];
 const results = [];
+const acceptedLifecycleStates = new Set(['ready', 'running', 'paused']);
 
 async function captureFailure(page, viewport, url, phase, error, pageErrors, consoleErrors) {
   const diagnostic = await page.evaluate(() => ({
@@ -104,12 +105,13 @@ for (const viewport of viewports) {
   await page.goto(url.toString(), { waitUntil: 'networkidle', timeout: 60000 });
 
   try {
-    await page.waitForFunction(() => (
-      globalThis.__SW_PRODUCTION_SLICE_READY__ === true
-      && globalThis.__SW_MODERN_SHELL_READY__ === true
-      && globalThis.__SEVERE_WEATHER__?.architecture === 'modern-shell-v1'
-      && globalThis.__SEVERE_WEATHER__?.app?.getStatus?.().state === 'ready'
-    ), null, { timeout: 15000 });
+    await page.waitForFunction(() => {
+      const lifecycle = globalThis.__SEVERE_WEATHER__?.app?.getStatus?.().state;
+      return globalThis.__SW_PRODUCTION_SLICE_READY__ === true
+        && globalThis.__SW_MODERN_SHELL_READY__ === true
+        && globalThis.__SEVERE_WEATHER__?.architecture === 'modern-shell-v1'
+        && ['ready', 'running', 'paused'].includes(lifecycle);
+    }, null, { timeout: 15000 });
   } catch (error) {
     await captureFailure(page, viewport, url, 'startup', error, pageErrors, consoleErrors);
     await context.close();
@@ -138,8 +140,9 @@ for (const viewport of viewports) {
 
   const checks = {
     modernShell: shellState.architecture === 'modern-shell-v1'
-      && shellState.lifecycle?.state === 'ready'
+      && acceptedLifecycleStates.has(shellState.lifecycle?.state)
       && shellState.documentArchitecture === 'modern-shell-v1',
+    lifecycleSynchronized: shellState.lifecycle?.state === 'running',
     formalQaBridge: Object.values(shellState.legacyStatus ?? {}).every(Boolean),
     marker: state.marker === 'V510_THREEJS_PRODUCTION_SLICE_V1',
     renderer: state.renderer === 'Three.js r128',
