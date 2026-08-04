@@ -1,8 +1,9 @@
 // ============================================================================
 // [SW:ARCH:GAME_CONTEXT]
-// Deliberately narrow in Phase 1. Legacy state remains behind the adapter.
+// Shared Phase 2 ownership for build identity, clocks, and legacy boundary.
 // ============================================================================
 
+import type { GameClocks } from '../core/clocks';
 import type { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 
 export interface BuildIdentity {
@@ -11,10 +12,12 @@ export interface BuildIdentity {
   readonly label: string;
   readonly renderer: 'Three.js r128';
   readonly architecture: 'modern-shell-v1';
+  readonly modernizationPhase: 'phase-2-clocks';
 }
 
 export interface GameContext {
   readonly build: BuildIdentity;
+  readonly clocks: GameClocks;
   readonly legacy: LegacyRuntimeAdapter;
   readonly document: Document;
   readonly window: Window;
@@ -22,6 +25,7 @@ export interface GameContext {
 
 export function createGameContext(
   legacy: LegacyRuntimeAdapter,
+  clocks: GameClocks,
   version: string,
   label: string,
 ): GameContext {
@@ -32,7 +36,9 @@ export function createGameContext(
       label,
       renderer: 'Three.js r128',
       architecture: 'modern-shell-v1',
+      modernizationPhase: 'phase-2-clocks',
     }),
+    clocks,
     legacy,
     document,
     window,
