@@ -1,94 +1,99 @@
 // ============================================================================
 // [SW:ARCH:PHASE4_SAVE_SCHEMA]
-// Storage key, typed schema, defaults, and validators for severe_weather_campaign_v1.
+// Exact severe_weather_campaign_v1 schema with deterministic recovery and
+// preservation of unknown future-safe fields.
 // ============================================================================
 
-import type { StopId } from '../../gameplay/campaign/campaign-contracts';
+import type {
+  CampaignLevelProgress,
+  CampaignSaveSnapshot,
+  StopId,
+} from '../../gameplay/campaign/campaign-contracts';
 
 export const CAMPAIGN_STORAGE_KEY = 'severe_weather_campaign_v1';
-
-export interface RawStopProgressData {
-  bestScore?: number;
-  stars?: number;
-  runsCompleted?: number;
-}
-
-export interface RawCampaignSaveData {
-  version?: number;
-  selectedStop?: string;
-  furthestUnlockedStop?: string;
-  stops?: Record<string, RawStopProgressData>;
-  [key: string]: unknown;
-}
-
-export interface ValidatedCampaignSave {
-  readonly version: number;
-  readonly selectedStop: StopId;
-  readonly furthestUnlockedStop: StopId;
-  readonly stops: Readonly<Record<StopId, {
-    readonly bestScore: number;
-    readonly stars: number;
-    readonly runsCompleted: number;
-  }>>;
-}
+export const CAMPAIGN_SCHEMA_VERSION = 1 as const;
 
 export const VALID_STOP_IDS: readonly StopId[] = Object.freeze([
   'lincoln-county',
   'prairie-junction',
   'grain-belt',
-  'state-fair'
+  'state-fair-finale',
 ]);
 
-export function isKnownStopId(id: unknown): id is StopId {
-  return typeof id === 'string' && (VALID_STOP_IDS as readonly string[]).includes(id);
+export interface RawCampaignLevelProgress {
+  stars?: number;
+  bestScore?: number;
+  runs?: number;
+  bestGrade?: string;
+  [key: string]: unknown;
+}
+
+export interface RawCampaignSaveData {
+  schema?: number;
+  unlockedLevel?: number;
+  selectedLevel?: number;
+  levels?: Record<string, RawCampaignLevelProgress>;
+  [key: string]: unknown;
+}
+
+export type ValidatedCampaignSave = CampaignSaveSnapshot;
+
+function clampInteger(value: unknown, minimum: number, maximum: number, fallback: number): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.max(minimum, Math.min(maximum, Math.round(numeric)));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function isKnownStopId(value: unknown): value is StopId {
+  return typeof value === 'string' && (VALID_STOP_IDS as readonly string[]).includes(value);
 }
 
 export function createDefaultSave(): ValidatedCampaignSave {
   return Object.freeze({
-    version: 1,
-    selectedStop: 'lincoln-county',
-    furthestUnlockedStop: 'lincoln-county',
-    stops: Object.freeze({
-      'lincoln-county': Object.freeze({ bestScore: 0, stars: 0, runsCompleted: 0 }),
-      'prairie-junction': Object.freeze({ bestScore: 0, stars: 0, runsCompleted: 0 }),
-      'grain-belt': Object.freeze({ bestScore: 0, stars: 0, runsCompleted: 0 }),
-      'state-fair': Object.freeze({ bestScore: 0, stars: 0, runsCompleted: 0 })
-    })
+    schema: CAMPAIGN_SCHEMA_VERSION,
+    unlockedLevel: 0,
+    selectedLevel: 0,
+    levels: Object.freeze({}),
+  });
+}
+
+export function normalizeCampaignLevelProgress(raw: unknown): CampaignLevelProgress {
+  const source = isRecord(raw) ? raw : {};
+  return Object.freeze({
+    ...source,
+    stars: clampInteger(source.stars, 0, 3, 0),
+    bestScore: clampInteger(source.bestScore, 0, Number.MAX_SAFE_INTEGER, 0),
+    runs: clampInteger(source.runs, 0, Number.MAX_SAFE_INTEGER, 0),
+    bestGrade: typeof source.bestGrade === 'string' && source.bestGrade.trim()
+      ? source.bestGrade
+      : 'F',
   });
 }
 
 export function validateCampaignSave(raw: unknown): ValidatedCampaignSave {
-  const defaults = createDefaultSave();
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return defaults;
+  if (!isRecord(raw)) return createDefaultSave();
 
-  const data = raw as RawCampaignSaveData;
-  const selectedStop = isKnownStopId(data.selectedStop) ? data.selectedStop : defaults.selectedStop;
-  const furthestUnlockedStop = isKnownStopId(data.furthestUnlockedStop) ? data.furthestUnlockedStop : defaults.furthestUnlockedStop;
-
-  const rawStops = data.stops && typeof data.stops === 'object' && !Array.isArray(data.stops) ? data.stops : {};
-
-  const validatedStops: Record<StopId, { bestScore: number; stars: number; runsCompleted: number }> = {
-    'lincoln-county': { bestScore: 0, stars: 0, runsCompleted: 0 },
-    'prairie-junction': { bestScore: 0, stars: 0, runsCompleted: 0 },
-    'grain-belt': { bestScore: 0, stars: 0, runsCompleted: 0 },
-    'state-fair': { bestScore: 0, stars: 0, runsCompleted: 0 }
-  };
-
-  for (const stopId of VALID_STOP_IDS) {
-    const rawStop = rawStops[stopId];
-    if (rawStop && typeof rawStop === 'object' && !Array.isArray(rawStop)) {
-      validatedStops[stopId] = {
-        bestScore: Math.max(0, Math.round(Number(rawStop.bestScore) || 0)),
-        stars: Math.min(3, Math.max(0, Math.round(Number(rawStop.stars) || 0))),
-        runsCompleted: Math.max(0, Math.round(Number(rawStop.runsCompleted) || 0))
-      };
-    }
+  const source = raw as RawCampaignSaveData;
+  const unlockedLevel = clampInteger(source.unlockedLevel, 0, VALID_STOP_IDS.length - 1, 0);
+  const selectedLevel = Math.min(
+    unlockedLevel,
+    clampInteger(source.selectedLevel, 0, VALID_STOP_IDS.length - 1, 0),
+  );
+  const rawLevels = isRecord(source.levels) ? source.levels : {};
+  const levels: Record<string, CampaignLevelProgress> = {};
+  for (const [levelId, value] of Object.entries(rawLevels)) {
+    levels[levelId] = normalizeCampaignLevelProgress(value);
   }
 
   return Object.freeze({
-    version: 1,
-    selectedStop,
-    furthestUnlockedStop,
-    stops: Object.freeze(validatedStops)
+    ...source,
+    schema: CAMPAIGN_SCHEMA_VERSION,
+    unlockedLevel,
+    selectedLevel,
+    levels: Object.freeze(levels),
   });
 }
