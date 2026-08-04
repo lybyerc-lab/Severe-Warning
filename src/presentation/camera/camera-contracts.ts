@@ -1,6 +1,6 @@
 // ============================================================================
 // [SW:ARCH:PHASE5_CAMERA_CONTRACTS]
-// Typed contracts for elevated tactical perspective camera and shake state.
+// Read-only contracts captured from the live tactical camera.
 // ============================================================================
 
 export interface Vector3Snapshot {
@@ -13,11 +13,8 @@ export interface CameraSnapshot {
   readonly fov: number;
   readonly near: number;
   readonly far: number;
-  readonly position: Vector3Snapshot;
-  readonly target: Vector3Snapshot;
-  readonly shakeAmount: number;
   readonly aspect: number;
+  readonly position: Vector3Snapshot;
+  readonly forward: Vector3Snapshot;
+  readonly shakeAmount: number;
 }
-
-export const DEFAULT_CAMERA_POSITION: Vector3Snapshot = Object.freeze({ x: 0, y: 48, z: 64 });
-export const DEFAULT_CAMERA_TARGET: Vector3Snapshot = Object.freeze({ x: 0, y: 0, z: 0 });
