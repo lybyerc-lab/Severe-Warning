@@ -61,6 +61,37 @@ async function captureFailure(page, viewport, url, phase, error, pageErrors, con
   console.error(`Production slice ${phase} failure: ${JSON.stringify(failure)}`);
 }
 
+async function prepareAndSampleScenario(page) {
+  const prepared = await page.evaluate(() => {
+    if (typeof globalThis.triggerProductionSliceQa !== 'function') {
+      throw new Error('triggerProductionSliceQa is unavailable');
+    }
+    if (typeof globalThis.__SW_V510_UPDATE__ !== 'function') {
+      throw new Error('__SW_V510_UPDATE__ is unavailable');
+    }
+    globalThis.__SW_QA_SAMPLE_PREVIOUS_NOW__ = performance.now();
+    return globalThis.triggerProductionSliceQa('hero');
+  });
+  if (prepared !== true) throw new Error('Production slice hero setup did not initialize');
+
+  let state = null;
+  const maxSamples = 300;
+  for (let sample = 0; sample < maxSamples; sample += 1) {
+    await page.waitForTimeout(16);
+    state = await page.evaluate(() => {
+      const now = performance.now();
+      const previousNow = globalThis.__SW_QA_SAMPLE_PREVIOUS_NOW__;
+      globalThis.__SW_QA_SAMPLE_PREVIOUS_NOW__ = now;
+      const dt = Number.isFinite(previousNow) ? (now - previousNow) / 1000 : 0;
+      globalThis.__SW_V510_UPDATE__(dt, now, false);
+      return globalThis.getProductionSliceQaState?.() ?? null;
+    });
+    if (state?.barn?.stage >= 2 && state.frameSampleCount >= 60) return state;
+  }
+
+  throw new Error(`Production slice did not stabilize after ${maxSamples} bounded real-time samples: ${JSON.stringify(state)}`);
+}
+
 for (const viewport of viewports) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
@@ -69,6 +100,7 @@ for (const viewport of viewports) {
     hasTouch: viewport.isMobile
   });
   const page = await context.newPage();
+  page.setDefaultTimeout(15000);
   const pageErrors = [];
   const consoleErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
@@ -88,49 +120,9 @@ for (const viewport of viewports) {
     throw error;
   }
 
+  let state;
   try {
-    await page.evaluate(async () => {
-      if (typeof globalThis.triggerProductionSliceQa !== 'function') {
-        throw new Error('triggerProductionSliceQa is unavailable');
-      }
-      if (typeof globalThis.__SW_V510_UPDATE__ !== 'function') {
-        throw new Error('__SW_V510_UPDATE__ is unavailable');
-      }
-      if (globalThis.triggerProductionSliceQa('hero') !== true) {
-        throw new Error('Production slice hero setup did not initialize');
-      }
-
-      await new Promise((resolve, reject) => {
-        let frames = 0;
-        let previousNow = performance.now();
-        const maxFrames = 240;
-
-        const sampleFrame = now => {
-          const dt = (now - previousNow) / 1000;
-          previousNow = now;
-          globalThis.__SW_V510_UPDATE__(dt, now, false);
-          frames += 1;
-
-          const state = globalThis.getProductionSliceQaState?.();
-          if (state?.barn?.stage >= 2 && state.frameSampleCount >= 60) {
-            resolve();
-            return;
-          }
-          if (frames >= maxFrames) {
-            reject(new Error(`Production slice did not stabilize after ${frames} real animation frames: ${JSON.stringify(state)}`));
-            return;
-          }
-          requestAnimationFrame(sampleFrame);
-        };
-
-        requestAnimationFrame(sampleFrame);
-      });
-    }, { timeout: 60000 });
-
-    await page.waitForFunction(() => {
-      const state = globalThis.getProductionSliceQaState?.();
-      return state && state.barn && state.barn.stage >= 2 && state.frameSampleCount >= 60;
-    }, null, { timeout: 5000 });
+    state = await prepareAndSampleScenario(page);
   } catch (error) {
     await captureFailure(page, viewport, url, 'runtime', error, pageErrors, consoleErrors);
     await context.close();
@@ -138,7 +130,6 @@ for (const viewport of viewports) {
     throw error;
   }
 
-  const state = await page.evaluate(() => globalThis.getProductionSliceQaState());
   const screenshotPath = path.join(outputDir, `${viewport.name}.png`);
   await page.screenshot({ path: screenshotPath, fullPage: false });
 
