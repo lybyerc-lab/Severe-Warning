@@ -1,75 +1,131 @@
 // ============================================================================
 // [SW:ARCH:PHASE4_CAMPAIGN_STORE]
-// Campaign persistence store: load, save, recover, reset, and isolate storage.
+// Exact campaign persistence boundary for severe_weather_campaign_v1.
 // ============================================================================
 
 import {
   CAMPAIGN_STORAGE_KEY,
   createDefaultSave,
   validateCampaignSave,
-  type ValidatedCampaignSave
+  type ValidatedCampaignSave,
 } from './campaign-save-schema';
 
-export class CampaignStore {
-  private inMemorySave: ValidatedCampaignSave;
-  private readonly storageKey: string;
-  private readonly useLocalStorage: boolean;
+export interface StorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
 
-  constructor(key: string = CAMPAIGN_STORAGE_KEY, isolateQa: boolean = false) {
-    this.storageKey = isolateQa ? `${key}_qa_inmemory` : key;
-    this.useLocalStorage = !isolateQa && typeof localStorage !== 'undefined';
-    this.inMemorySave = createDefaultSave();
+export interface PersistenceContractProbe {
+  readonly passed: boolean;
+  readonly checks: Readonly<Record<string, boolean>>;
+}
+
+export class CampaignStore {
+  private inMemorySave: ValidatedCampaignSave = createDefaultSave();
+  private readonly storage: StorageLike | null;
+
+  constructor(
+    private readonly storageKey: string = CAMPAIGN_STORAGE_KEY,
+    isolateQa = false,
+    storageOverride?: StorageLike | null,
+  ) {
+    this.storage = isolateQa
+      ? null
+      : storageOverride === undefined
+        ? (typeof localStorage === 'undefined' ? null : localStorage)
+        : storageOverride;
     this.load();
   }
 
   load(): ValidatedCampaignSave {
-    if (!this.useLocalStorage) {
-      return this.inMemorySave;
-    }
+    if (!this.storage) return this.inMemorySave;
     try {
-      const rawString = localStorage.getItem(this.storageKey);
-      if (!rawString) {
-        this.inMemorySave = createDefaultSave();
-        return this.inMemorySave;
-      }
-      const parsed = JSON.parse(rawString);
-      this.inMemorySave = validateCampaignSave(parsed);
-      return this.inMemorySave;
-    } catch (err) {
-      // Malformed save recovery: revert to defaults without throwing
+      const rawString = this.storage.getItem(this.storageKey);
+      this.inMemorySave = rawString ? validateCampaignSave(JSON.parse(rawString)) : createDefaultSave();
+    } catch {
       this.inMemorySave = createDefaultSave();
-      return this.inMemorySave;
     }
+    return this.inMemorySave;
   }
 
-  save(data: ValidatedCampaignSave): boolean {
-    const validated = validateCampaignSave(data);
-    this.inMemorySave = validated;
+  synchronize(raw: unknown): ValidatedCampaignSave {
+    this.inMemorySave = validateCampaignSave(raw);
+    return this.inMemorySave;
+  }
 
-    if (!this.useLocalStorage) return true;
-
+  save(raw: unknown): boolean {
+    const validated = this.synchronize(raw);
+    if (!this.storage) return true;
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(validated));
+      this.storage.setItem(this.storageKey, JSON.stringify(validated));
       return true;
-    } catch (err) {
+    } catch {
       return false;
     }
   }
 
   reset(): ValidatedCampaignSave {
-    const defaults = createDefaultSave();
-    this.inMemorySave = defaults;
-    if (this.useLocalStorage) {
+    this.inMemorySave = createDefaultSave();
+    if (this.storage) {
       try {
-        localStorage.removeItem(this.storageKey);
-      } catch (err) {
-        // Ignore storage clear errors
+        this.storage.removeItem(this.storageKey);
+      } catch {
+        // A storage clear failure must not crash the game.
       }
     }
-    return defaults;
+    return this.inMemorySave;
   }
 
   getSnapshot(): ValidatedCampaignSave {
     return this.inMemorySave;
+  }
+
+  runContractProbe(): PersistenceContractProbe {
+    const values = new Map<string, string>();
+    const memoryStorage: StorageLike = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => { values.set(key, value); },
+      removeItem: (key) => { values.delete(key); },
+    };
+    const key = `${CAMPAIGN_STORAGE_KEY}_contract_probe`;
+    const probe = new CampaignStore(key, false, memoryStorage);
+    const exactLegacySave = {
+      schema: 1,
+      unlockedLevel: 2,
+      selectedLevel: 1,
+      futureTopLevel: 'preserve-me',
+      levels: {
+        'lincoln-county': {
+          stars: 3,
+          bestScore: 45678,
+          runs: 7,
+          bestGrade: 'S+',
+          futureLevelField: 17,
+        },
+      },
+    };
+    const writeSucceeded = probe.save(exactLegacySave);
+    const reloaded = new CampaignStore(key, false, memoryStorage).getSnapshot();
+    memoryStorage.setItem(key, '{not-json');
+    const recovered = new CampaignStore(key, false, memoryStorage).getSnapshot();
+    const isolated = new CampaignStore(key, true, memoryStorage);
+    isolated.save({ schema: 1, unlockedLevel: 3, selectedLevel: 3, levels: {} });
+    const storedAfterIsolation = memoryStorage.getItem(key);
+
+    const checks = Object.freeze({
+      storageKeyPreserved: CAMPAIGN_STORAGE_KEY === 'severe_weather_campaign_v1',
+      writeSucceeded,
+      exactIndicesPreserved: reloaded.unlockedLevel === 2 && reloaded.selectedLevel === 1,
+      exactLevelFieldsPreserved: reloaded.levels['lincoln-county']?.runs === 7
+        && reloaded.levels['lincoln-county']?.bestGrade === 'S+',
+      unknownTopLevelPreserved: reloaded.futureTopLevel === 'preserve-me',
+      unknownLevelFieldPreserved: reloaded.levels['lincoln-county']?.futureLevelField === 17,
+      malformedSaveRecovers: recovered.unlockedLevel === 0
+        && recovered.selectedLevel === 0
+        && Object.keys(recovered.levels).length === 0,
+      qaStoreIsIsolated: storedAfterIsolation === '{not-json',
+    });
+    return Object.freeze({ passed: Object.values(checks).every(Boolean), checks });
   }
 }
