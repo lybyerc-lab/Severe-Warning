@@ -52,7 +52,7 @@ jobs:
       - name: Verify clean historical source and script syntax
         shell: bash
         run: |
-          grep -F '<title>Severe Weather - 3D Lab v4.3.0 RAMPAGE</title>' MechanicsLab/SevereWeather_3D_Lab.html
+          grep -F '<title>Severe Weather 3D Lab v4.3.0 - Rampage Layer</title>' MechanicsLab/SevereWeather_3D_Lab.html
           if grep -F 'V510_THREEJS_PRODUCTION_SLICE_V1' MechanicsLab/SevereWeather_3D_Lab.html; then
             echo 'Generated V5.1 output was committed over the historical source baseline.' >&2
             exit 1
