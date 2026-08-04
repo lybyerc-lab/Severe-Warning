@@ -1,32 +1,32 @@
 // ============================================================================
 // [SW:ARCH:PHASE5_RENDERER_CONTRACTS]
-// Typed contracts for WebGL renderer options, canvas bounds, and pixel ratio.
+// Read-only contracts captured from the live Three.js r128 renderer.
 // ============================================================================
+
+export interface RendererMemorySnapshot {
+  readonly geometries: number;
+  readonly textures: number;
+}
+
+export interface RendererFrameSnapshot {
+  readonly calls: number;
+  readonly triangles: number;
+  readonly points: number;
+  readonly lines: number;
+}
 
 export interface RendererSnapshot {
   readonly rendererName: 'Three.js WebGLRenderer';
   readonly version: 'r128';
-  readonly antialias: boolean;
+  readonly antialias: boolean | null;
   readonly shadowMapEnabled: boolean;
-  readonly shadowMapType: 'PCFSoftShadowMap';
-  readonly toneMapping: 'ACESFilmicToneMapping';
+  readonly shadowMapType: 'PCFSoftShadowMap' | 'unknown';
+  readonly toneMapping: 'ACESFilmicToneMapping' | 'unknown';
   readonly exposure: number;
+  readonly outputEncoding: 'sRGBEncoding' | 'unknown';
   readonly pixelRatio: number;
   readonly viewportWidth: number;
   readonly viewportHeight: number;
-  readonly renderCallsCount: number;
+  readonly memory: RendererMemorySnapshot;
+  readonly frame: RendererFrameSnapshot;
 }
-
-export interface RendererConfig {
-  readonly antialias: boolean;
-  readonly alpha: boolean;
-  readonly shadowMapEnabled: boolean;
-  readonly maxPixelRatio: number;
-}
-
-export const DEFAULT_RENDERER_CONFIG: RendererConfig = Object.freeze({
-  antialias: true,
-  alpha: false,
-  shadowMapEnabled: true,
-  maxPixelRatio: 2.0
-});
