@@ -92,12 +92,26 @@ jobs:
           npm run patch:v442
           npm run patch:v450
           npm run patch:v500
+          npm run patch:v510
+          npm run patch:phase2
+          npm run patch:phase3
+          npm run patch:phase4
+          npm run patch:phase5
 
       - name: Verify v5 campaign foundation
-        run: npm run verify:v500
+        run: |
+          npm run verify:v500
+          npm run verify:v510
+          npm run verify:phase2
+          npm run verify:phase3
+          npm run verify:phase4
+          npm run verify:phase5
 
       - name: Build web game without regenerating audio
-        run: node scripts/build-web.mjs
+        run: |
+          pnpm run modern:typecheck
+          pnpm run modern:build
+          node scripts/build-web.mjs
 
       - name: Stamp QA build identity
         run: node scripts/stamp-qa-pages.mjs
