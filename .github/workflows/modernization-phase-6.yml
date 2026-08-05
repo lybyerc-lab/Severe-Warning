@@ -30,6 +30,7 @@ jobs:
         with:
           ref: 182f916807f3195dfe0546775a1fff7dc8c64aaa
           path: phase6-base
+          fetch-depth: 0
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
@@ -165,11 +166,13 @@ jobs:
             kill "$HEAD_SERVER_PID" 2>/dev/null || true
           }
           trap cleanup EXIT
+
           for attempt in $(seq 1 60); do
             if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
             sleep 0.25
           done
           curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+
           export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
           env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-6/v510' pnpm run qa:v510
           env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-6/clocks' pnpm run qa:phase2
@@ -264,17 +267,20 @@ jobs:
           source_commit='${{ github.event.pull_request.head.sha || github.sha }}'
           output_dir='dist/modernization-phase-6'
           mkdir -p "$output_dir"
+
           source_apk='android/app/build/outputs/apk/debug/app-debug.apk'
           output_apk="$output_dir/Severe-Weather-v5.1.0-Phase-6-Android-Performance-${GITHUB_RUN_NUMBER}.apk"
           test -s "$source_apk"
           cp "$source_apk" "$output_apk"
           sha256sum "$output_apk" | tee "$output_apk.sha256"
+
           test -s qa-artifacts/modernization-phase-6/performance/baseline-report.json
           test -s qa-artifacts/modernization-phase-6/performance/candidate-report.json
           test -s qa-artifacts/modernization-phase-6/performance/comparison-report.json
           test -s qa-artifacts/modernization-phase-6/performance/phase6-performance-report.md
           test -s qa-artifacts/modernization-phase-6/phase6/phase6-qa-report.json
           test "$(find qa-artifacts/modernization-phase-6 -name '*.png' -type f | wc -l)" -ge 4
+
           cp -R www "$output_dir/web-preview"
           cp -R qa-artifacts/modernization-phase-6 "$output_dir/qa-evidence"
           cp Docs/PHASE6_PERFORMANCE_SOURCE_MAP.md "$output_dir/"
@@ -289,6 +295,7 @@ jobs:
           });
           fs.writeFileSync(output, JSON.stringify({ files: rows }, null, 2));
           NODE
+
           cat > "$output_dir/package-manifest.json" <<MANIFEST
           {
             "sourceBranch": "agent/phase6-android-performance-antigravity",
@@ -303,7 +310,16 @@ jobs:
             "apkType": "debug",
             "apkFile": "$(basename "$output_apk")",
             "apkSha256": "$(sha256sum "$output_apk" | awk '{print $1}')",
-            "evidence": ["baseline-report.json", "candidate-report.json", "comparison-report.json", "phase6-performance-report.md", "phase6-qa-report.json", "screenshots", "browser logs", "changed-module-ledger.json"]
+            "evidence": [
+              "baseline-report.json",
+              "candidate-report.json",
+              "comparison-report.json",
+              "phase6-performance-report.md",
+              "phase6-qa-report.json",
+              "screenshots",
+              "browser logs",
+              "changed-module-ledger.json"
+            ]
           }
           MANIFEST
           echo "$source_commit" > "$output_dir/SOURCE_COMMIT.txt"
