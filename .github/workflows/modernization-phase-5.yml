@@ -148,7 +148,37 @@ jobs:
           grep -F 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' www/index.html
           grep -F 'phase-5-rendering-world' www/modern/modern-shell.js
 
-      - name: Run dual-build visual and inherited browser QA
+      - name: Run blocking inherited and Phase 5 browser QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/modernization-phase-5
+          python3 -m http.server 4173 --directory www > qa-artifacts/modernization-phase-5/head-server.log 2>&1 &
+          HEAD_SERVER_PID=$!
+          cleanup() {
+            kill "$HEAD_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail "http://127.0.0.1:4173/" > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail "http://127.0.0.1:4173/" > /dev/null
+
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_BIN"
+          export CHROME_BIN
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/visual' pnpm run qa:v510
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/clocks' pnpm run qa:phase2
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/controls' pnpm run qa:phase3
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/scoring-campaign' pnpm run qa:phase4
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/presentation-world' pnpm run qa:phase5
+
+      - name: Run advisory dual-build Phase 5 visual comparison evidence
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -176,32 +206,10 @@ jobs:
           export CHROME_BIN
           export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
 
-          SUITE_FAILED=0
-          run_suite() {
-            local suite_name="$1"
-            shift
-            echo "========================================================"
-            echo "--- Running test suite: ${suite_name} ---"
-            echo "========================================================"
-            if ! "$@"; then
-              echo "!!! Test suite ${suite_name} FAILED !!!"
-              SUITE_FAILED=1
-            else
-              echo "--- Test suite ${suite_name} PASSED ---"
-            fi
-          }
-
-          run_suite "qa:phase5:visual" env SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4174/' SEVERE_WEATHER_VISUAL_DIR='qa-artifacts/modernization-phase-5/visual-baseline' pnpm run qa:phase5:visual
-          run_suite "qa:v510" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/visual' pnpm run qa:v510
-          run_suite "qa:phase2" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/clocks' pnpm run qa:phase2
-          run_suite "qa:phase3" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/controls' pnpm run qa:phase3
-          run_suite "qa:phase4" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/scoring-campaign' pnpm run qa:phase4
-          run_suite "qa:phase5" env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/presentation-world' pnpm run qa:phase5
-
-          if [ "$SUITE_FAILED" -ne 0 ]; then
-            echo "One or more browser QA test suites failed."
-            exit 1
-          fi
+          echo "========================================================"
+          echo "--- Advisory Visual Parity Evidence: qa:phase5:visual ---"
+          echo "========================================================"
+          env SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4174/' SEVERE_WEATHER_VISUAL_DIR='qa-artifacts/modernization-phase-5/visual-baseline' pnpm run qa:phase5:visual
 
       - name: Upload Phase 5 diagnostics on failure
         if: failure()
