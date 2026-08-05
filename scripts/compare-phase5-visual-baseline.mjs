@@ -55,6 +55,7 @@ function installQaTimeController() {
   let steppedFrameCount = 0;
   const timestampSequence = [];
   const queuedRafCallbacks = new Map();
+  const activeNativeRafCallbacks = new Map();
 
   performance.now = () => (frozen ? simulatedTimestamp : nativePerformanceNow());
   Date.now = () => (frozen ? Math.round(simulatedTimestamp) : nativeDateNow());
@@ -65,20 +66,31 @@ function installQaTimeController() {
       queuedRafCallbacks.set(id, callback);
       return id;
     }
-    return nativeRaf((timestamp) => {
+    const nativeId = nativeRaf((timestamp) => {
+      activeNativeRafCallbacks.delete(id);
       simulatedTimestamp = timestamp;
       callback(timestamp);
     });
+    activeNativeRafCallbacks.set(id, { nativeId, callback });
+    return id;
   };
 
   window.cancelAnimationFrame = (id) => {
     queuedRafCallbacks.delete(id);
-    nativeCancelRaf(id);
+    const activeEntry = activeNativeRafCallbacks.get(id);
+    if (activeEntry) nativeCancelRaf(activeEntry.nativeId);
+    activeNativeRafCallbacks.delete(id);
   };
 
   globalThis.__SW_QA_TIME_CONTROLLER__ = {
     freeze() {
+      if (frozen) return true;
       frozen = true;
+      for (const [id, entry] of activeNativeRafCallbacks) {
+        nativeCancelRaf(entry.nativeId);
+        queuedRafCallbacks.set(id, entry.callback);
+      }
+      activeNativeRafCallbacks.clear();
       return true;
     },
     reset() {
@@ -101,6 +113,7 @@ function installQaTimeController() {
       return Object.freeze({
         frozen,
         queueSize: queuedRafCallbacks.size,
+        activeNativeRafCount: activeNativeRafCallbacks.size,
         steppedFrameCount,
         simulatedTimestamp,
         timestampSequence: [...timestampSequence],
@@ -270,7 +283,6 @@ async function capture(url, viewport, scenario, label) {
   const controllerStatus = await page.evaluate(async ({ scenarioName, timestamps }) => {
     const controller = globalThis.__SW_QA_TIME_CONTROLLER__;
     if (!controller) throw new Error('QA time controller is missing in page context.');
-    controller.freeze();
     controller.reset();
 
     let randomState = 0x5e1e5eed;
@@ -298,6 +310,8 @@ async function capture(url, viewport, scenario, label) {
       }
     }
 
+    controller.freeze();
+    controller.reset();
     for (const timestamp of timestamps) controller.stepFrame(timestamp);
     if (typeof cameraShakeIntensity !== 'undefined') cameraShakeIntensity = 0;
     if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
