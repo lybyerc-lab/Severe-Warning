@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
-const historicalSourcePath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const historicalSourceGitPath = 'MechanicsLab/SevereWeather_3D_Lab.html';
 const checks = [];
 
 function check(name, condition, detail = '') {
@@ -24,7 +24,11 @@ const apply = await read('scripts', 'apply-modernization-phase6-performance.mjs'
 const qa = await read('scripts', 'qa-modernization-phase6-performance.mjs');
 const measure = await read('scripts', 'measure-phase6-performance.mjs');
 const workflow = await read('.github', 'workflows', 'modernization-phase-6.yml');
-const source = await readFile(historicalSourcePath, 'utf8');
+const committedSource = execFileSync(
+  'git',
+  ['-C', projectRoot, 'show', `HEAD:${historicalSourceGitPath}`],
+  { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 },
+);
 
 const patchScripts = [
   'scripts/apply-v431-source-patch.mjs',
@@ -61,7 +65,7 @@ const patchScripts = [
 ];
 
 const tempPath = path.join(projectRoot, 'node_modules', '.phase6-integrated-verify.html');
-await writeFile(tempPath, source, 'utf8');
+await writeFile(tempPath, committedSource, 'utf8');
 let generatedHtml = '';
 try {
   for (const scriptPath of patchScripts) {
@@ -103,7 +107,7 @@ check('Phase 6 QA uses real hero destruction path', qa.includes("triggerProducti
 check('performance script compares base and candidate', measure.includes('baseline-report.json') && measure.includes('candidate-report.json') && measure.includes('comparison-report.json'));
 check('workflow is single-trigger', !/^\s{2}push:/m.test(workflow));
 check('workflow artifact is fail-fast', workflow.includes('if-no-files-found: error'));
-check('historical source remains ungenerated', !source.includes('MODERNIZATION_PHASE6_PERFORMANCE_V2'));
+check('committed historical source remains ungenerated', !committedSource.includes('MODERNIZATION_PHASE6_PERFORMANCE_V2'));
 check('runtime bridge source declares V2', runtime.includes('MODERNIZATION_PHASE6_PERFORMANCE_V2'));
 check('apply source declares exact executor integration', apply.includes('production dust executor integration'));
 
