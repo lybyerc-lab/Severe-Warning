@@ -72,12 +72,12 @@ jobs:
           ffmpeg -hide_banner -version | head -n 1
 
       - name: Generate verified audio
-        run: npm run audio:generate
+        run: pnpm run audio:generate
 
-      - name: Apply deterministic gameplay patches and verify foundation
+      - name: Build and verify Phase 5 web package
         shell: bash
         run: |
-          set -exuo pipefail
+          set -euo pipefail
           pnpm run patch:v431
           pnpm run patch:v440
           pnpm run patch:v441
@@ -95,18 +95,13 @@ jobs:
           pnpm run verify:phase4
           pnpm run patch:phase5
           pnpm run verify:phase5
-
-      - name: Build web game without regenerating audio
-        run: |
           pnpm run modern:typecheck
           pnpm run modern:build
           node scripts/build-web.mjs
-
-      - name: Stamp QA build identity
-        run: node scripts/stamp-qa-pages.mjs
-
-      - name: Verify QA package with named checks
-        run: node scripts/verify-qa-package.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          grep -F 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' www/index.html
+          grep -F 'phase-5-rendering-world' www/modern/modern-shell.js
 
       - name: Run deterministic QA4 in headless Chrome
         shell: bash
