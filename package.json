@@ -29,6 +29,7 @@
     "verify:phase4": "node scripts/verify-modernization-phase4-scoring-campaign.mjs",
     "verify:phase5": "node scripts/verify-modernization-phase5-presentation-world.mjs",
     "verify:phase6": "node scripts/verify-modernization-phase6-performance.mjs",
+    "verify:process": "node scripts/verify-implementation-truth.mjs",
     "qa:v510": "node scripts/qa-v510-production-slice.mjs",
     "qa:phase2": "node scripts/qa-modernization-phase2-clocks.mjs",
     "qa:phase3": "node scripts/qa-modernization-phase3-input-abilities.mjs",

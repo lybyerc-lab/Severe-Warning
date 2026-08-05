@@ -1,142 +1,182 @@
 import { chromium } from 'playwright';
-import { createServer } from 'node:http';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
-const artifactsDir = path.join(projectRoot, 'qa-artifacts', 'phase6-performance');
+const outputDir = process.env.SEVERE_WEATHER_PERF_DIR
+  ? path.resolve(process.env.SEVERE_WEATHER_PERF_DIR)
+  : path.join(projectRoot, 'qa-artifacts', 'modernization-phase-6', 'performance');
+const baselineUrl = process.env.SEVERE_WEATHER_BASE_URL;
+const candidateUrl = process.env.SEVERE_WEATHER_CANDIDATE_URL || process.env.SEVERE_WEATHER_QA_URL;
+if (!baselineUrl || !candidateUrl) {
+  throw new Error('Phase 6 performance evidence requires SEVERE_WEATHER_BASE_URL and SEVERE_WEATHER_CANDIDATE_URL.');
+}
+await mkdir(outputDir, { recursive: true });
 
-await mkdir(artifactsDir, { recursive: true });
+function percentile(values, ratio) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * ratio))];
+}
 
-const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.wav': 'audio/wav',
+function summarizeFrameTimes(frameTimesMs) {
+  const median = percentile(frameTimesMs, 0.5);
+  const p95 = percentile(frameTimesMs, 0.95);
+  return {
+    sampleCount: frameTimesMs.length,
+    frameTimeMedianMs: Number(median.toFixed(3)),
+    frameTimeP95Ms: Number(p95.toFixed(3)),
+    fpsMedian: median > 0 ? Number((1000 / median).toFixed(2)) : 0,
+    fpsP95: p95 > 0 ? Number((1000 / p95).toFixed(2)) : 0,
+    longFrame33Count: frameTimesMs.filter((value) => value > 33.3).length,
+    longFrame50Count: frameTimesMs.filter((value) => value > 50).length,
+  };
+}
+
+async function collectRafFrames(page, count = 90) {
+  return page.evaluate((sampleCount) => new Promise((resolve) => {
+    const samples = [];
+    let previous = performance.now();
+    function next(now) {
+      samples.push(now - previous);
+      previous = now;
+      if (samples.length >= sampleCount) resolve(samples);
+      else requestAnimationFrame(next);
+    }
+    requestAnimationFrame(next);
+  }), count);
+}
+
+async function runtimeMetrics(page) {
+  return page.evaluate(() => {
+    const phase5 = globalThis.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.getSnapshot?.() || null;
+    const phase6 = globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.getSnapshot?.() || null;
+    const live = phase5?.live || null;
+    const memory = performance.memory && Number.isFinite(performance.memory.usedJSHeapSize)
+      ? Number((performance.memory.usedJSHeapSize / (1024 * 1024)).toFixed(3))
+      : null;
+    return {
+      renderer: live?.renderer?.frame || null,
+      rendererMemory: live?.renderer?.memory || null,
+      scene: live?.scene ? {
+        meshCount: live.scene.meshCount,
+        uniqueMaterialCount: live.scene.uniqueMaterialCount,
+        uniqueGeometryCount: live.scene.uniqueGeometryCount,
+        uniqueTextureCount: live.scene.uniqueTextureCount,
+      } : null,
+      heapUsageMbProxy: memory,
+      phase6,
+    };
+  });
+}
+
+async function captureScenario(page, label, setup, sampleCount = 90) {
+  if (setup) await setup();
+  await page.waitForTimeout(150);
+  const frameTimes = await collectRafFrames(page, sampleCount);
+  const metrics = await runtimeMetrics(page);
+  await page.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true });
+  return {
+    ...summarizeFrameTimes(frameTimes),
+    ...metrics,
+  };
+}
+
+async function measureBuild(browser, url, label) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const errors = [];
+  const logs = [];
+  page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+  page.on('console', (message) => {
+    logs.push(`[${message.type()}] ${message.text()}`);
+    if (message.type() === 'error') errors.push(`console: ${message.text()}`);
+  });
+  await page.goto(`${url}?qa=1&phase6perf=1`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => typeof globalThis.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.getSnapshot === 'function');
+
+  const scenarios = {};
+  scenarios.initial = await captureScenario(page, `${label}-initial`, null, 90);
+  scenarios.movement = await captureScenario(page, `${label}-movement`, async () => {
+    await page.keyboard.down('ArrowUp');
+    await page.waitForTimeout(500);
+  }, 90);
+  await page.keyboard.up('ArrowUp');
+  scenarios.heavyDestruction = await captureScenario(page, `${label}-heavy-destruction`, async () => {
+    await page.evaluate(() => globalThis.triggerProductionSliceQa('hero'));
+  }, 120);
+  scenarios.afterReset = await captureScenario(page, `${label}-after-reset`, async () => {
+    await page.evaluate(() => globalThis.__SW_V510_REBUILD__());
+  }, 60);
+
+  await writeFile(path.join(outputDir, `${label}-browser.log`), `${logs.join('\n')}\n`, 'utf8');
+  await page.close();
+  return {
+    label,
+    url,
+    capturedAt: new Date().toISOString(),
+    scenarios,
+    errors,
+  };
+}
+
+function compareScenario(baseline, candidate) {
+  const numericDelta = (key) => Number((Number(candidate[key] || 0) - Number(baseline[key] || 0)).toFixed(3));
+  return {
+    frameTimeMedianMsDelta: numericDelta('frameTimeMedianMs'),
+    frameTimeP95MsDelta: numericDelta('frameTimeP95Ms'),
+    fpsMedianDelta: numericDelta('fpsMedian'),
+    longFrame33Delta: numericDelta('longFrame33Count'),
+    longFrame50Delta: numericDelta('longFrame50Count'),
+    drawCallsDelta: Number((candidate.renderer?.calls || 0) - (baseline.renderer?.calls || 0)),
+    trianglesDelta: Number((candidate.renderer?.triangles || 0) - (baseline.renderer?.triangles || 0)),
+    meshCountDelta: Number((candidate.scene?.meshCount || 0) - (baseline.scene?.meshCount || 0)),
+    geometryCountDelta: Number((candidate.scene?.uniqueGeometryCount || 0) - (baseline.scene?.uniqueGeometryCount || 0)),
+    materialCountDelta: Number((candidate.scene?.uniqueMaterialCount || 0) - (baseline.scene?.uniqueMaterialCount || 0)),
+  };
+}
+
+const browser = await chromium.launch({
+  headless: true,
+  args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'],
+});
+let baseline;
+let candidate;
+try {
+  baseline = await measureBuild(browser, baselineUrl, 'baseline');
+  candidate = await measureBuild(browser, candidateUrl, 'candidate');
+} finally {
+  await browser.close();
+}
+
+const comparison = {
+  version: 'MODERNIZATION_PHASE6_DUAL_BUILD_PERFORMANCE_V2',
+  generatedAt: new Date().toISOString(),
+  runnerNote: 'Frame timings are same-runner advisory evidence. Integration and bounded-resource contracts remain blocking.',
+  scenarios: Object.fromEntries(
+    Object.keys(baseline.scenarios).map((name) => [name, compareScenario(baseline.scenarios[name], candidate.scenarios[name])]),
+  ),
+  candidateIntegration: candidate.scenarios.heavyDestruction.phase6?.integration || null,
+  candidatePool: candidate.scenarios.heavyDestruction.phase6?.debrisPool || null,
+  errors: { baseline: baseline.errors, candidate: candidate.errors },
 };
 
-let server;
-let baseUrl = process.env.SEVERE_WEATHER_QA_URL;
-
-if (!baseUrl) {
-  server = createServer(async (req, res) => {
-    try {
-      const reqUrl = req.url ? req.url.split('?')[0] : '/';
-      const safePath = reqUrl === '/' ? '/index.html' : reqUrl;
-      const filePath = path.join(projectRoot, 'www', path.normalize(safePath));
-      if (!filePath.startsWith(path.join(projectRoot, 'www'))) {
-        res.statusCode = 403;
-        res.end('Forbidden');
-        return;
-      }
-      const data = await readFile(filePath);
-      const ext = path.extname(filePath).toLowerCase();
-      res.setHeader('Content-Type', MIME_TYPES[ext] || 'application/octet-stream');
-      res.statusCode = 200;
-      res.end(data);
-    } catch {
-      res.statusCode = 404;
-      res.end('Not Found');
-    }
-  });
-  await new Promise((resolve) => server.listen(4180, resolve));
-  baseUrl = 'http://127.0.0.1:4180/';
-  console.log('[SW:PERF] Local server started on http://127.0.0.1:4180');
+const integration = comparison.candidateIntegration;
+if (!integration || integration.productionUpdateSamples <= 0 || integration.productionDustBurstCalls <= 0 || integration.pooledDustSpawned <= 0) {
+  throw new Error(`Phase 6 candidate did not prove real executor integration: ${JSON.stringify(integration)}`);
+}
+if (baseline.errors.length || candidate.errors.length) {
+  throw new Error(`Performance capture saw browser errors: ${JSON.stringify(comparison.errors)}`);
 }
 
-let browser;
-try {
-  browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-gpu', '--autoplay-policy=no-user-gesture-required'],
-  });
+await writeFile(path.join(outputDir, 'baseline-report.json'), JSON.stringify(baseline, null, 2), 'utf8');
+await writeFile(path.join(outputDir, 'candidate-report.json'), JSON.stringify(candidate, null, 2), 'utf8');
+await writeFile(path.join(outputDir, 'comparison-report.json'), JSON.stringify(comparison, null, 2), 'utf8');
 
-  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-  await page.goto(`${baseUrl}?qa=1&perf=1`);
-
-  await page.waitForFunction(() => typeof globalThis.getPhase6PerformanceSnapshot === 'function');
-
-  // Scenario 1: Initial Gameplay
-  console.log('[SW:PERF] Benchmarking Scenario 1: Initial Gameplay...');
-  await page.waitForTimeout(2000);
-  const initialSnapshot = await page.evaluate(() => globalThis.getPhase6PerformanceSnapshot());
-
-  // Scenario 2: Movement & Active Storm
-  console.log('[SW:PERF] Benchmarking Scenario 2: Movement & Active Storm...');
-  await page.keyboard.down('ArrowUp');
-  await page.waitForTimeout(3000);
-  await page.keyboard.up('ArrowUp');
-  const movementSnapshot = await page.evaluate(() => globalThis.getPhase6PerformanceSnapshot());
-
-  // Scenario 3: Heavy Destruction
-  console.log('[SW:PERF] Benchmarking Scenario 3: Heavy Destruction...');
-  await page.evaluate(() => {
-    if (typeof globalThis.phase6SpawnDebris === 'function') {
-      for (let i = 0; i < 15; i++) {
-        globalThis.phase6SpawnDebris('#ef4444', 1.2, i * 4, 3.0, i * 4, 8, 12, 8, 0.3, 0.3, 2.5);
-      }
-    }
-  });
-  await page.waitForTimeout(2000);
-  const destructionSnapshot = await page.evaluate(() => globalThis.getPhase6PerformanceSnapshot());
-
-  const perfReport = {
-    version: 'MODERNIZATION_PHASE6_PERFORMANCE_V1',
-    timestamp: new Date().toISOString(),
-    scenarios: {
-      initialGameplay: initialSnapshot,
-      movement: movementSnapshot,
-      heavyDestruction: destructionSnapshot,
-    },
-    metricsSummary: {
-      debrisPoolCapacity: destructionSnapshot.debrisPool.poolCapacity,
-      debrisHighWaterMark: destructionSnapshot.debrisPool.highWaterMark,
-      activeQualityTier: destructionSnapshot.adaptiveQuality.tier,
-      recycledDebrisCount: destructionSnapshot.debrisPool.recycledCount,
-    },
-  };
-
-  const jsonPath = path.join(artifactsDir, 'phase6-performance-report.json');
-  await writeFile(jsonPath, JSON.stringify(perfReport, null, 2), 'utf8');
-
-  const mdReport = `# Phase 6 Android Performance Evidence Report
-
-**Generated:** ${perfReport.timestamp}  
-**Engine Version:** ${perfReport.version}  
-
-## Key Telemetry & Pool Bounds
-
-- **Debris Pool Capacity:** ${perfReport.metricsSummary.debrisPoolCapacity}
-- **Debris Pool High-Water Mark:** ${perfReport.metricsSummary.debrisHighWaterMark}
-- **Recycled Debris Count:** ${perfReport.metricsSummary.recycledDebrisCount}
-- **Active Quality Tier:** ${perfReport.metricsSummary.activeQualityTier}
-
-## Scenario Performance Snapshots
-
-### 1. Initial Gameplay
-- Active Debris: ${initialSnapshot.debrisPool.activeCount}
-- Quality Tier: ${initialSnapshot.adaptiveQuality.tier}
-
-### 2. Movement & Active Storm
-- Active Debris: ${movementSnapshot.debrisPool.activeCount}
-- Quality Tier: ${movementSnapshot.adaptiveQuality.tier}
-
-### 3. Heavy Destruction Load
-- Active Debris: ${destructionSnapshot.debrisPool.activeCount}
-- High-Water Mark: ${destructionSnapshot.debrisPool.highWaterMark}
-- Quality Tier: ${destructionSnapshot.adaptiveQuality.tier}
-`;
-
-  const mdPath = path.join(artifactsDir, 'phase6-performance-report.md');
-  await writeFile(mdPath, mdReport, 'utf8');
-
-  console.log(`[SW:PERF] Performance evidence saved to:\n  - ${jsonPath}\n  - ${mdPath}`);
-} finally {
-  if (browser) await browser.close();
-  if (server) server.close();
-}
+const scenarioRows = Object.entries(comparison.scenarios)
+  .map(([name, metrics]) => `| ${name} | ${metrics.frameTimeMedianMsDelta} | ${metrics.frameTimeP95MsDelta} | ${metrics.drawCallsDelta} | ${metrics.trianglesDelta} |`)
+  .join('\n');
+const markdown = `# Phase 6 Dual-Build Performance Evidence\n\nGenerated: ${comparison.generatedAt}\n\nThis report compares the accepted Phase 5 base and the Phase 6 candidate on the same GitHub Actions runner. Timing values are advisory; executor integration, bounded pools, reset behavior, and telemetry integrity are blocking.\n\n| Scenario | Median frame delta ms | P95 frame delta ms | Draw-call delta | Triangle delta |\n|---|---:|---:|---:|---:|\n${scenarioRows}\n\n## Candidate integration proof\n\n- Production update samples: ${integration.productionUpdateSamples}\n- Production dust burst calls: ${integration.productionDustBurstCalls}\n- Pooled dust spawned: ${integration.pooledDustSpawned}\n- Pool high-water mark: ${comparison.candidatePool?.highWaterMark ?? 'n/a'} / ${comparison.candidatePool?.poolCapacity ?? 'n/a'}\n`;
+await writeFile(path.join(outputDir, 'phase6-performance-report.md'), markdown, 'utf8');
+console.log(`[SW:PERF] Wrote dual-build evidence to ${outputDir}`);
