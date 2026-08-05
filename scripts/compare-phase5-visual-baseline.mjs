@@ -53,7 +53,7 @@ function installQaTimeController() {
   const nativeSetInterval = window.setInterval.bind(window);
   const nativeClearInterval = window.clearInterval.bind(window);
 
-  let frozen = true;
+  let frozen = false;
   let timersFrozen = false;
   let simulatedTimestamp = 1000.0;
   let nextCallbackId = 1;
