@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import serveStatic from 'serve-handler';
@@ -11,13 +11,17 @@ const artifactsDir = path.join(projectRoot, 'qa-artifacts', 'phase6-performance'
 
 await mkdir(artifactsDir, { recursive: true });
 
-// Start local HTTP server serving www
-const server = createServer((req, res) => {
-  return serveStatic(req, res, { public: path.join(projectRoot, 'www') });
-});
+let server;
+let baseUrl = process.env.SEVERE_WEATHER_QA_URL;
 
-await new Promise((resolve) => server.listen(4180, resolve));
-console.log('[SW:PERF] Local server started on http://127.0.0.1:4180');
+if (!baseUrl) {
+  server = createServer((req, res) => {
+    return serveStatic(req, res, { public: path.join(projectRoot, 'www') });
+  });
+  await new Promise((resolve) => server.listen(4180, resolve));
+  baseUrl = 'http://127.0.0.1:4180/';
+  console.log('[SW:PERF] Local server started on http://127.0.0.1:4180');
+}
 
 let browser;
 try {
@@ -27,7 +31,7 @@ try {
   });
 
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-  await page.goto('http://127.0.0.1:4180/?qa=1&perf=1');
+  await page.goto(`${baseUrl}?qa=1&perf=1`);
 
   await page.waitForFunction(() => typeof globalThis.getPhase6PerformanceSnapshot === 'function');
 
@@ -108,5 +112,5 @@ try {
   console.log(`[SW:PERF] Performance evidence saved to:\n  - ${jsonPath}\n  - ${mdPath}`);
 } finally {
   if (browser) await browser.close();
-  server.close();
+  if (server) server.close();
 }

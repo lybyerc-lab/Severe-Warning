@@ -109,6 +109,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p qa-artifacts/modernization-phase-6
+          python3 -m http.server 4173 --directory www > qa-artifacts/modernization-phase-6/head-server.log 2>&1 &
+          HEAD_SERVER_PID=$!
+          cleanup() {
+            kill "$HEAD_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail "http://127.0.0.1:4173/" > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail "http://127.0.0.1:4173/" > /dev/null
+
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
           pnpm run qa:v510
           pnpm run qa:phase2
           pnpm run qa:phase3

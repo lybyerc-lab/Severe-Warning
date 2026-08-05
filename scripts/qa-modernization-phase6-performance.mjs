@@ -1,6 +1,5 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import serveStatic from 'serve-handler';
@@ -15,11 +14,16 @@ function check(name, condition, detail = '') {
   console.log(`${passed ? 'PASS' : 'FAIL'} ${name}${detail ? ` :: ${detail}` : ''}`);
 }
 
-const server = createServer((req, res) => {
-  return serveStatic(req, res, { public: path.join(projectRoot, 'www') });
-});
+let server;
+let baseUrl = process.env.SEVERE_WEATHER_QA_URL;
 
-await new Promise((resolve) => server.listen(4181, resolve));
+if (!baseUrl) {
+  server = createServer((req, res) => {
+    return serveStatic(req, res, { public: path.join(projectRoot, 'www') });
+  });
+  await new Promise((resolve) => server.listen(4181, resolve));
+  baseUrl = 'http://127.0.0.1:4181/';
+}
 
 let browser;
 try {
@@ -32,7 +36,7 @@ try {
   const pageErrors = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
 
-  await page.goto('http://127.0.0.1:4181/');
+  await page.goto(baseUrl);
 
   await page.waitForFunction(() => typeof globalThis.getPhase6PerformanceSnapshot === 'function');
 
@@ -59,7 +63,7 @@ try {
 
 } finally {
   if (browser) await browser.close();
-  server.close();
+  if (server) server.close();
 }
 
 const failedCount = checks.filter((c) => !c.passed).length;
