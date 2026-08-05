@@ -20,11 +20,14 @@ function requireMarker(value) {
 if (html.includes(marker)) {
   [
     '[SW:ARCH:PHASE6_PERFORMANCE_BRIDGE]',
+    '[SW:ARCH:PHASE6_STABLE_EXECUTOR_REBIND]',
     '__SW_PHASE6_PERFORMANCE_BRIDGE__',
     'phase6PooledProductionDustBurst',
     'phase6MeasuredProductionUpdate',
     'phase6BoundedProductionClear',
     'phase6AwareDisposeProductionObject',
+    'globalThis.__SW_V510_UPDATE__ = updateProductionSlice',
+    'globalThis.__SW_V510_REBUILD__ = rebuildProductionSlice',
   ].forEach(requireMarker);
   console.log(`Phase 6 performance contracts already applied to ${sourcePath}`);
   process.exit(0);
@@ -43,6 +46,8 @@ for (const prerequisite of [
   'function updateProductionSlice(dt, now, isMoving)',
   'function clearProductionSlice()',
   'function disposeProductionObject(root)',
+  'globalThis.__SW_V510_UPDATE__ = updateProductionSlice',
+  'globalThis.__SW_V510_REBUILD__ = rebuildProductionSlice',
 ]) {
   if (!html.includes(prerequisite)) {
     throw new Error(`Phase 6 requires the accepted Phase 5 runtime: missing ${prerequisite}`);
@@ -59,7 +64,12 @@ if (bridgeSource.includes('</script>')) {
 }
 
 const newline = html.includes('\r\n') ? '\r\n' : '\n';
-const bundledBridge = `${newline}${newline}// [SW:SOURCE:modernization-phase6-performance.js]${newline}${bridgeSource}${newline}`;
+const stableExecutorRebind = [
+  '// [SW:ARCH:PHASE6_STABLE_EXECUTOR_REBIND]',
+  'globalThis.__SW_V510_UPDATE__ = updateProductionSlice;',
+  'globalThis.__SW_V510_REBUILD__ = rebuildProductionSlice;',
+].join(newline);
+const bundledBridge = `${newline}${newline}// [SW:SOURCE:modernization-phase6-performance.js]${newline}${bridgeSource}${newline}${stableExecutorRebind}${newline}`;
 html = html.slice(0, mainScriptCloseIndex) + bundledBridge + html.slice(mainScriptCloseIndex);
 
 const headTag = '</head>';
@@ -71,6 +81,7 @@ await writeFile(sourcePath, html, 'utf8');
 for (const required of [
   marker,
   '[SW:ARCH:PHASE6_PERFORMANCE_BRIDGE]',
+  '[SW:ARCH:PHASE6_STABLE_EXECUTOR_REBIND]',
   '[SW:SOURCE:modernization-phase6-performance.js]',
   '__SW_PHASE6_PERFORMANCE_BRIDGE__',
   'phase6PooledProductionDustBurst',
@@ -78,6 +89,8 @@ for (const required of [
   'phase6BoundedProductionClear',
   'phase6AwareDisposeProductionObject',
   'phase6ResetLiveInput',
+  'globalThis.__SW_V510_UPDATE__ = updateProductionSlice',
+  'globalThis.__SW_V510_REBUILD__ = rebuildProductionSlice',
 ]) {
   requireMarker(required);
 }

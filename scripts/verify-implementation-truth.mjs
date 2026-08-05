@@ -39,8 +39,11 @@ check('runtime protects pooled shared geometry from legacy disposal', runtime.in
 check('runtime resets the Phase 3 input authority', runtime.includes('__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.reset'));
 check('runtime does not write ineffective global move variables', !runtime.includes('globalThis.moveX') && !runtime.includes('globalThis.moveZ'));
 check('apply script appends the bridge instead of rewriting accepted runtime modules', !apply.includes('replaceRegex(') && apply.includes('wrapper-integrated'));
+check('apply script rebinds the stable V5.1 update pointer after wrapper installation', apply.includes('[SW:ARCH:PHASE6_STABLE_EXECUTOR_REBIND]') && apply.includes('globalThis.__SW_V510_UPDATE__ = updateProductionSlice'));
+check('apply script rebinds the stable V5.1 rebuild pointer after wrapper installation', apply.includes('globalThis.__SW_V510_REBUILD__ = rebuildProductionSlice'));
 check('verification proves accepted runtime modules remain byte-for-byte bundled', verify.includes('remains byte-for-byte bundled'));
 check('QA proves real Hart Farm execution instead of direct helper-only allocation', qa.includes("triggerProductionSliceQa('hero')") && qa.includes('productionDustBurstCalls > dustBefore'));
+check('QA proves production update samples arrive through the stable executor', qa.includes('productionUpdateSamples > 0'));
 check('QA proves retry cleanup and listener stability', qa.includes('activeCount === 0') && qa.includes('listenerCount === 2'));
 check('performance evidence is dual-build', measure.includes('SEVERE_WEATHER_BASE_URL') && measure.includes('SEVERE_WEATHER_CANDIDATE_URL'));
 check('performance evidence measures frame percentiles and renderer work', measure.includes('frameTimeP95Ms') && measure.includes('drawCallsDelta') && measure.includes('trianglesDelta'));
