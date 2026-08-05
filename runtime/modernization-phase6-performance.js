@@ -1,7 +1,7 @@
 // ============================================================================
 // [SW:ARCH:PHASE6_PERFORMANCE_BRIDGE]
-// Runtime-integrated Android performance contracts. This bridge is called by
-// the accepted production update, destruction, cleanup, and input paths.
+// Runtime-integrated Android performance contracts. The accepted V5.1 runtime
+// modules remain byte-for-byte bundled; this bridge wraps their live functions.
 // ============================================================================
 const PHASE6_PERFORMANCE_BRIDGE_VERSION = 'MODERNIZATION_PHASE6_PERFORMANCE_V2';
 
@@ -48,6 +48,8 @@ class Phase6DustPool {
       mesh.castShadow = false;
       mesh.receiveShadow = false;
       mesh.name = `Phase6PooledDust-${id}`;
+      mesh.userData.phase6PooledDust = true;
+      mesh.userData.phase6PoolItemId = id;
       return { id, active: false, mesh, effect: null };
     });
   }
@@ -97,29 +99,33 @@ class Phase6DustPool {
     return effect;
   }
 
-  releaseEffect(effect) {
-    if (!effect || effect.phase6Pooled !== true) return false;
-    const item = this.items[Number(effect.phase6PoolItemId)];
-    if (!item || !item.active) return false;
+  releaseItem(item) {
+    if (!item) return false;
     if (item.mesh.parent) item.mesh.parent.remove(item.mesh);
     item.mesh.visible = false;
     item.mesh.material.opacity = 0;
     item.mesh.scale.setScalar(1);
+    const wasActive = item.active;
     item.active = false;
     item.effect = null;
-    this.releasedCount += 1;
+    if (wasActive) this.releasedCount += 1;
     return true;
   }
 
+  releaseEffect(effect) {
+    if (!effect || effect.phase6Pooled !== true) return false;
+    const item = this.items[Number(effect.phase6PoolItemId)];
+    return this.releaseItem(item);
+  }
+
+  releaseMesh(mesh) {
+    if (!mesh?.userData?.phase6PooledDust) return false;
+    const item = this.items[Number(mesh.userData.phase6PoolItemId)];
+    return this.releaseItem(item);
+  }
+
   reset() {
-    this.items.forEach((item) => {
-      if (item.mesh.parent) item.mesh.parent.remove(item.mesh);
-      item.mesh.visible = false;
-      item.mesh.material.opacity = 0;
-      item.mesh.scale.setScalar(1);
-      item.active = false;
-      item.effect = null;
-    });
+    this.items.forEach((item) => this.releaseItem(item));
   }
 
   snapshot() {
@@ -233,6 +239,7 @@ const phase6Integration = {
   lastResetReason: 'boot',
   lastInputInterruptionReason: null,
   listenerCount: 0,
+  wrappersInstalled: false,
 };
 
 function phase6ResetLiveInput(reason) {
@@ -286,6 +293,10 @@ const phase6PerformanceBridge = {
     return phase6DustPool.releaseEffect(effect);
   },
 
+  releaseDustMesh(mesh) {
+    return phase6DustPool.releaseMesh(mesh);
+  },
+
   recordFrame(effectiveDt, effectiveNow) {
     const frameTimeMs = Number(effectiveDt) * 1000;
     if (!Number.isFinite(frameTimeMs) || frameTimeMs <= 0 || frameTimeMs >= 250) return;
@@ -294,6 +305,11 @@ const phase6PerformanceBridge = {
   },
 
   resetTransientState(reason = 'unknown') {
+    productionPulseEffects = productionPulseEffects.filter((effect) => {
+      if (effect?.phase6Pooled !== true) return true;
+      phase6DustPool.releaseEffect(effect);
+      return false;
+    });
     phase6DustPool.reset();
     phase6QualityController.resetSamples();
     phase6Integration.resetCount += 1;
@@ -361,6 +377,34 @@ const phase6PerformanceBridge = {
   },
 };
 
+const phase6OriginalSpawnProductionDustBurst = spawnProductionDustBurst;
+const phase6OriginalUpdateProductionSlice = updateProductionSlice;
+const phase6OriginalClearProductionSlice = clearProductionSlice;
+const phase6OriginalDisposeProductionObject = disposeProductionObject;
+
+disposeProductionObject = function phase6AwareDisposeProductionObject(root) {
+  if (root?.userData?.phase6PooledDust) {
+    phase6PerformanceBridge.releaseDustMesh(root);
+    return;
+  }
+  return phase6OriginalDisposeProductionObject(root);
+};
+
+spawnProductionDustBurst = function phase6PooledProductionDustBurst(x, y, z, color = '#b99a72', count = 7) {
+  return phase6PerformanceBridge.spawnDustBurst(x, y, z, color, count);
+};
+
+updateProductionSlice = function phase6MeasuredProductionUpdate(dt, now, isMoving) {
+  phase6PerformanceBridge.recordFrame(dt, now);
+  return phase6OriginalUpdateProductionSlice(dt, now, isMoving);
+};
+
+clearProductionSlice = function phase6BoundedProductionClear() {
+  phase6PerformanceBridge.resetTransientState('clear-production-slice');
+  return phase6OriginalClearProductionSlice();
+};
+
+phase6Integration.wrappersInstalled = true;
 phase6QualityController.apply();
 globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__ = phase6PerformanceBridge;
 globalThis.getPhase6PerformanceSnapshot = () => phase6PerformanceBridge.getSnapshot();

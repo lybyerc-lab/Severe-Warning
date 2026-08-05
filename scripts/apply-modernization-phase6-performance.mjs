@@ -17,21 +17,14 @@ function requireMarker(value) {
   if (!html.includes(value)) throw new Error(`Phase 6 performance verification failed: missing ${value}`);
 }
 
-function replaceRegex(pattern, replacement, label) {
-  const matches = [...html.matchAll(pattern)];
-  if (matches.length !== 1) {
-    throw new Error(`${label}: expected exactly one source match, found ${matches.length}`);
-  }
-  html = html.replace(pattern, replacement);
-}
-
 if (html.includes(marker)) {
   [
     '[SW:ARCH:PHASE6_PERFORMANCE_BRIDGE]',
     '__SW_PHASE6_PERFORMANCE_BRIDGE__',
-    'phase6Pooled',
-    'recordFrame(effectiveDt, effectiveNow)',
-    "resetTransientState('clear-production-slice')",
+    'phase6PooledProductionDustBurst',
+    'phase6MeasuredProductionUpdate',
+    'phase6BoundedProductionClear',
+    'phase6AwareDisposeProductionObject',
   ].forEach(requireMarker);
   console.log(`Phase 6 performance contracts already applied to ${sourcePath}`);
   process.exit(0);
@@ -43,39 +36,18 @@ if (html.includes('MODERNIZATION_PHASE6_PERFORMANCE_V1')) {
 
 for (const prerequisite of [
   'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2',
+  '[SW:SOURCE:v510-foundation.js]',
+  '[SW:SOURCE:v510-world.js]',
+  '[SW:SOURCE:v510-runtime.js]',
   'function spawnProductionDustBurst(',
-  'function updateProductionPulseEffects(dt)',
   'function updateProductionSlice(dt, now, isMoving)',
-  'productionPulseEffects.forEach(effect => disposeProductionObject(effect.mesh));',
+  'function clearProductionSlice()',
+  'function disposeProductionObject(root)',
 ]) {
   if (!html.includes(prerequisite)) {
     throw new Error(`Phase 6 requires the accepted Phase 5 runtime: missing ${prerequisite}`);
   }
 }
-
-replaceRegex(
-  /function spawnProductionDustBurst\(x, y, z, color = '#b99a72', count = 7\) \{[\s\S]*?\n\}\n\nfunction detachProductionBarnPart/g,
-  `function spawnProductionDustBurst(x, y, z, color = '#b99a72', count = 7) {\n  const bridge = globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__;\n  if (!bridge || typeof bridge.spawnDustBurst !== 'function') {\n    throw new Error('Phase 6 performance bridge is required for production dust bursts.');\n  }\n  return bridge.spawnDustBurst(x, y, z, color, count);\n}\n\nfunction detachProductionBarnPart`,
-  'production dust executor integration',
-);
-
-replaceRegex(
-  /    if \(effect\.life <= 0\) \{\n      disposeProductionObject\(effect\.mesh\);\n      productionPulseEffects\.splice\(i, 1\);\n    \}/g,
-  `    if (effect.life <= 0) {\n      if (effect.phase6Pooled === true) {\n        globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.releaseDustEffect(effect);\n      } else {\n        disposeProductionObject(effect.mesh);\n      }\n      productionPulseEffects.splice(i, 1);\n    }`,
-  'pooled effect release integration',
-);
-
-replaceRegex(
-  /  productionPulseEffects\.forEach\(effect => disposeProductionObject\(effect\.mesh\)\);\n  productionPulseEffects = \[\];/g,
-  `  productionPulseEffects.forEach(effect => {\n    if (effect.phase6Pooled === true) {\n      globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.releaseDustEffect(effect);\n    } else {\n      disposeProductionObject(effect.mesh);\n    }\n  });\n  productionPulseEffects = [];\n  globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.resetTransientState('clear-production-slice');`,
-  'production reset integration',
-);
-
-replaceRegex(
-  /  if \(effectiveDt > 0 && effectiveDt < 0\.2\) \{\n    productionFrameSamples\.push\(1 \/ effectiveDt\);\n    if \(productionFrameSamples\.length > 180\) productionFrameSamples\.shift\(\);\n  \}/g,
-  `  if (effectiveDt > 0 && effectiveDt < 0.2) {\n    productionFrameSamples.push(1 / effectiveDt);\n    if (productionFrameSamples.length > 180) productionFrameSamples.shift();\n    globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.recordFrame(effectiveDt, effectiveNow);\n  }`,
-  'production frame integration',
-);
 
 const mainScriptCloseIndex = html.lastIndexOf('</script>');
 const bodyCloseIndex = html.lastIndexOf('</body>');
@@ -101,12 +73,13 @@ for (const required of [
   '[SW:ARCH:PHASE6_PERFORMANCE_BRIDGE]',
   '[SW:SOURCE:modernization-phase6-performance.js]',
   '__SW_PHASE6_PERFORMANCE_BRIDGE__',
-  'phase6Pooled',
-  'recordFrame(effectiveDt, effectiveNow)',
-  "resetTransientState('clear-production-slice')",
+  'phase6PooledProductionDustBurst',
+  'phase6MeasuredProductionUpdate',
+  'phase6BoundedProductionClear',
+  'phase6AwareDisposeProductionObject',
   'phase6ResetLiveInput',
 ]) {
   requireMarker(required);
 }
 
-console.log(`Applied integrated Phase 6 Android performance contracts to ${sourcePath}`);
+console.log(`Applied wrapper-integrated Phase 6 Android performance contracts to ${sourcePath}`);

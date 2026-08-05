@@ -24,6 +24,12 @@ const apply = await read('scripts', 'apply-modernization-phase6-performance.mjs'
 const qa = await read('scripts', 'qa-modernization-phase6-performance.mjs');
 const measure = await read('scripts', 'measure-phase6-performance.mjs');
 const workflow = await read('.github', 'workflows', 'modernization-phase-6.yml');
+const v510RuntimeSources = await Promise.all([
+  read('runtime', 'v510-foundation.js'),
+  read('runtime', 'v510-tornado.js'),
+  read('runtime', 'v510-world.js'),
+  read('runtime', 'v510-runtime.js'),
+]);
 const committedSource = execFileSync(
   'git',
   ['-C', projectRoot, 'show', `HEAD:${historicalSourceGitPath}`],
@@ -64,7 +70,7 @@ const patchScripts = [
   'scripts/apply-modernization-phase6-performance.mjs',
 ];
 
-const tempPath = path.join(projectRoot, 'node_modules', '.phase6-integrated-verify.html');
+const tempPath = path.join(projectRoot, 'node_modules', '.phase6-wrapper-verify.html');
 await writeFile(tempPath, committedSource, 'utf8');
 let generatedHtml = '';
 try {
@@ -86,24 +92,24 @@ for (const marker of [
   '[SW:ARCH:PHASE6_PERFORMANCE_BRIDGE]',
   '[SW:SOURCE:modernization-phase6-performance.js]',
   '__SW_PHASE6_PERFORMANCE_BRIDGE__',
-  'recordFrame(effectiveDt, effectiveNow)',
-  "resetTransientState('clear-production-slice')",
+  'phase6PooledProductionDustBurst',
+  'phase6MeasuredProductionUpdate',
+  'phase6BoundedProductionClear',
+  'phase6AwareDisposeProductionObject',
   'phase6Pooled',
 ]) {
   check(`generated HTML includes ${marker}`, generatedHtml.includes(marker));
 }
 
 check('Phase 6 bridge is inserted exactly once', generatedHtml.split('[SW:SOURCE:modernization-phase6-performance.js]').length === 2);
-const productionDustExecutorMatch = generatedHtml.match(
-  /function spawnProductionDustBurst\([\s\S]*?\n}\n\nfunction detachProductionBarnPart/,
-);
-const productionDustExecutor = productionDustExecutorMatch?.[0] || '';
-check('real production dust executor is uniquely locatable', Boolean(productionDustExecutorMatch));
-check('real production dust executor delegates to Phase 6', productionDustExecutor.includes('__SW_PHASE6_PERFORMANCE_BRIDGE__') && productionDustExecutor.includes('spawnDustBurst'));
-check('legacy production dust function no longer allocates geometry per burst', !productionDustExecutor.includes('new THREE.DodecahedronGeometry'));
-check('pooled effects are released instead of disposing shared geometry', generatedHtml.includes('effect.phase6Pooled === true') && generatedHtml.includes('releaseDustEffect(effect)'));
-check('accepted production update loop feeds Phase 6 telemetry', generatedHtml.includes('globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.recordFrame(effectiveDt, effectiveNow)'));
-check('accepted production reset feeds Phase 6 cleanup', generatedHtml.includes("globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.resetTransientState('clear-production-slice')"));
+for (const [index, source] of v510RuntimeSources.entries()) {
+  check(`accepted V5.1 runtime module ${index + 1} remains byte-for-byte bundled`, generatedHtml.includes(source.trim()), `${source.length} chars`);
+}
+check('live production dust function is wrapped by bounded Phase 6 executor', generatedHtml.includes('spawnProductionDustBurst = function phase6PooledProductionDustBurst'));
+check('live production update function feeds Phase 6 telemetry', generatedHtml.includes('updateProductionSlice = function phase6MeasuredProductionUpdate'));
+check('live production cleanup function feeds Phase 6 reset', generatedHtml.includes('clearProductionSlice = function phase6BoundedProductionClear'));
+check('pooled mesh disposal bypasses shared-geometry disposal', generatedHtml.includes('disposeProductionObject = function phase6AwareDisposeProductionObject'));
+check('runtime installs wrappers before declaring integration ready', runtime.includes('phase6Integration.wrappersInstalled = true'));
 check('input interruption resets Phase 3 authority', runtime.includes('__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.reset'));
 check('no ineffective global movement writes remain', !runtime.includes('globalThis.moveX') && !runtime.includes('globalThis.moveZ'));
 check('package exposes verify:process', packageJson.scripts['verify:process'] === 'node scripts/verify-implementation-truth.mjs');
@@ -114,8 +120,8 @@ check('workflow is single-trigger', !/^\s{2}push:/m.test(workflow));
 check('workflow artifact is fail-fast', workflow.includes('if-no-files-found: error'));
 check('committed historical source remains ungenerated', !committedSource.includes('MODERNIZATION_PHASE6_PERFORMANCE_V2'));
 check('runtime bridge source declares V2', runtime.includes('MODERNIZATION_PHASE6_PERFORMANCE_V2'));
-check('apply source declares exact executor integration', apply.includes('production dust executor integration'));
+check('apply script appends wrapper bridge without rewriting accepted modules', !apply.includes('replaceRegex(') && apply.includes('wrapper-integrated'));
 
 const failed = checks.filter((entry) => !entry.passed);
-console.log(`\nPhase 6 integrated performance verification: ${checks.length - failed.length}/${checks.length} checks passed.`);
+console.log(`\nPhase 6 wrapper-integrated performance verification: ${checks.length - failed.length}/${checks.length} checks passed.`);
 if (failed.length) process.exit(1);
