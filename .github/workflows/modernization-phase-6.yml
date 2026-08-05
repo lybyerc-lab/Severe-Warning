@@ -1,0 +1,168 @@
+name: Modernization Phase 6 Android Performance Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - agent/phase4-knowledge-antigravity-handoff
+      - agent/phase6-android-performance-antigravity
+  push:
+    branches:
+      - agent/phase6-android-performance-antigravity
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modernization-phase-6-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    name: Build verify and package performance proof
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out Phase 6 head
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+
+      - name: Verify script syntax and TypeScript types
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            scripts/apply-modernization-phase6-performance.mjs \
+            scripts/verify-modernization-phase6-performance.mjs \
+            scripts/qa-modernization-phase6-performance.mjs \
+            scripts/measure-phase6-performance.mjs \
+            runtime/modernization-phase6-performance.js; do
+            node --check "$file"
+          done
+          pnpm run modern:typecheck
+
+      - name: Generate verified audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run audio:generate
+
+      - name: Build and verify Phase 6 head
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run modern:build
+          node scripts/build-web.mjs
+
+      - name: Install Playwright browsers for QA & Benchmarking
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+
+      - name: Run blocking QA suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run qa:v510
+          pnpm run qa:phase2
+          pnpm run qa:phase3
+          pnpm run qa:phase4
+          pnpm run qa:phase5
+          pnpm run qa:phase6
+
+      - name: Run advisory visual comparison
+        shell: bash
+        continue-on-error: true
+        run: |
+          pnpm run qa:phase5:visual
+
+      - name: Run Phase 6 performance evidence benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run perf:phase6
+
+      - name: Sync Capacitor Android and assemble debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p phase6-artifacts
+          pnpm run cap:sync
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+          APK_BUILD_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK_BUILD_PATH"
+
+          TARGET_APK="phase6-artifacts/Severe-Weather-v5.1.0-Phase-6-Android-Performance-${{ github.run_number }}.apk"
+          cp "$APK_BUILD_PATH" "../$TARGET_APK"
+          cd ..
+          sha256sum "$TARGET_APK" > "$TARGET_APK.sha256"
+          echo "Phase 6 APK SHA-256:"
+          cat "$TARGET_APK.sha256"
+
+      - name: Package Phase 6 evidence artifact
+        shell: bash
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p phase6-artifacts
+          cp -r qa-artifacts/phase6-performance/* phase6-artifacts/ 2>/dev/null || true
+          git rev-parse HEAD > phase6-artifacts/SOURCE_COMMIT.txt
+          echo "${{ github.run_id }}" > phase6-artifacts/WORKFLOW_RUN_ID.txt
+
+      - name: Upload Phase 6 APK and performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: severe-weather-modernization-phase-6-${{ github.run_number }}
+          path: phase6-artifacts
+          if-no-files-found: warn
+          retention-days: 14
