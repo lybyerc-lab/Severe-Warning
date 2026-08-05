@@ -86,26 +86,19 @@ jobs:
       - name: Apply deterministic gameplay patches
         shell: bash
         run: |
-          npm run patch:v431
-          npm run patch:v440
-          npm run patch:v441
-          npm run patch:v442
-          npm run patch:v450
-          npm run patch:v500
-          npm run patch:v510
-          npm run patch:phase2
-          npm run patch:phase3
-          npm run patch:phase4
-          npm run patch:phase5
+          pnpm run patch:v510
+          pnpm run patch:phase2
+          pnpm run patch:phase3
+          pnpm run patch:phase4
+          pnpm run patch:phase5
 
       - name: Verify v5 campaign foundation
         run: |
-          npm run verify:v500
-          npm run verify:v510
-          npm run verify:phase2
-          npm run verify:phase3
-          npm run verify:phase4
-          npm run verify:phase5
+          pnpm run verify:v510
+          pnpm run verify:phase2
+          pnpm run verify:phase3
+          pnpm run verify:phase4
+          pnpm run verify:phase5
 
       - name: Build web game without regenerating audio
         run: |
