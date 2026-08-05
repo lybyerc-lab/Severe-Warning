@@ -77,7 +77,7 @@ jobs:
       - name: Apply deterministic gameplay patches and verify foundation
         shell: bash
         run: |
-          set -euo pipefail
+          set -exuo pipefail
           pnpm run patch:v431
           pnpm run patch:v440
           pnpm run patch:v441
