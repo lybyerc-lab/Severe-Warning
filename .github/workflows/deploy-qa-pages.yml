@@ -86,6 +86,12 @@ jobs:
       - name: Apply deterministic gameplay patches
         shell: bash
         run: |
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
           pnpm run patch:v510
           pnpm run patch:phase2
           pnpm run patch:phase3
@@ -94,6 +100,7 @@ jobs:
 
       - name: Verify v5 campaign foundation
         run: |
+          pnpm run verify:v500
           pnpm run verify:v510
           pnpm run verify:phase2
           pnpm run verify:phase3
