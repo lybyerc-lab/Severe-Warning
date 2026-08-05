@@ -94,8 +94,13 @@ for (const marker of [
 }
 
 check('Phase 6 bridge is inserted exactly once', generatedHtml.split('[SW:SOURCE:modernization-phase6-performance.js]').length === 2);
-check('real production dust executor delegates to Phase 6', /function spawnProductionDustBurst\([\s\S]*?__SW_PHASE6_PERFORMANCE_BRIDGE__[\s\S]*?spawnDustBurst/.test(generatedHtml));
-check('legacy production dust function no longer allocates geometry per burst', !/function spawnProductionDustBurst\([\s\S]*?new THREE\.DodecahedronGeometry/.test(generatedHtml));
+const productionDustExecutorMatch = generatedHtml.match(
+  /function spawnProductionDustBurst\([\s\S]*?\n}\n\nfunction detachProductionBarnPart/,
+);
+const productionDustExecutor = productionDustExecutorMatch?.[0] || '';
+check('real production dust executor is uniquely locatable', Boolean(productionDustExecutorMatch));
+check('real production dust executor delegates to Phase 6', productionDustExecutor.includes('__SW_PHASE6_PERFORMANCE_BRIDGE__') && productionDustExecutor.includes('spawnDustBurst'));
+check('legacy production dust function no longer allocates geometry per burst', !productionDustExecutor.includes('new THREE.DodecahedronGeometry'));
 check('pooled effects are released instead of disposing shared geometry', generatedHtml.includes('effect.phase6Pooled === true') && generatedHtml.includes('releaseDustEffect(effect)'));
 check('accepted production update loop feeds Phase 6 telemetry', generatedHtml.includes('globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.recordFrame(effectiveDt, effectiveNow)'));
 check('accepted production reset feeds Phase 6 cleanup', generatedHtml.includes("globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.resetTransientState('clear-production-slice')"));
