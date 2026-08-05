@@ -1,9 +1,8 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import serveStatic from 'serve-handler';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -11,12 +10,39 @@ const artifactsDir = path.join(projectRoot, 'qa-artifacts', 'phase6-performance'
 
 await mkdir(artifactsDir, { recursive: true });
 
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.wav': 'audio/wav',
+};
+
 let server;
 let baseUrl = process.env.SEVERE_WEATHER_QA_URL;
 
 if (!baseUrl) {
-  server = createServer((req, res) => {
-    return serveStatic(req, res, { public: path.join(projectRoot, 'www') });
+  server = createServer(async (req, res) => {
+    try {
+      const reqUrl = req.url ? req.url.split('?')[0] : '/';
+      const safePath = reqUrl === '/' ? '/index.html' : reqUrl;
+      const filePath = path.join(projectRoot, 'www', path.normalize(safePath));
+      if (!filePath.startsWith(path.join(projectRoot, 'www'))) {
+        res.statusCode = 403;
+        res.end('Forbidden');
+        return;
+      }
+      const data = await readFile(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      res.setHeader('Content-Type', MIME_TYPES[ext] || 'application/octet-stream');
+      res.statusCode = 200;
+      res.end(data);
+    } catch {
+      res.statusCode = 404;
+      res.end('Not Found');
+    }
   });
   await new Promise((resolve) => server.listen(4180, resolve));
   baseUrl = 'http://127.0.0.1:4180/';
