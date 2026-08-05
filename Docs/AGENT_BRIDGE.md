@@ -1,6 +1,6 @@
 # Severe Weather Warning Cross-Agent Project Bridge
 
-**Last updated:** 2026-08-05T09:12:00-05:00  
+**Last updated:** 2026-08-05T16:19:00-05:00  
 **Purpose:** Live coordination bridge between Antigravity and ChatGPT for Severe Weather Warning.
 
 ---
@@ -9,67 +9,33 @@
 
 - **Product Name:** Severe Weather Warning
 - **Repository:** `lybyerc-lab/Severe-Warning`
-- **Current Branch:** `agent/phase5-rendering-world-antigravity`
-- **Upstream Branch:** `origin/agent/phase5-rendering-world-antigravity`
-- **Base Branch:** `origin/agent/phase4-knowledge-antigravity-handoff` (`cd89b5ececa6e95848961d625f84eaa7bc7f72c7`)
-- **Implementation Parent SHA:** `6477d73e67055d3f81bca2c46c9904a986906a5a`
-- **Bridge Snapshot Parent SHA:** `6477d73e67055d3f81bca2c46c9904a986906a5a`
-- **Current Remote HEAD:** `6477d73e67055d3f81bca2c46c9904a986906a5a`
-- **Last Completed Workflow Known:** GitHub Actions run 39 (`30983226344`)
-- **Active PR:** PR #23 (Phase 5 rendering, world, setpieces, and visual baseline)
-- **APK Status:** Android build unblocked via advisory visual comparison workflow split
-- **Working-Tree Status:** `MechanicsLab/SevereWeather_3D_Lab.html` 100% clean (0 diff lines against `cd89b5ececa6e95848961d625f84eaa7bc7f72c7`).
+- **Long-Lived Base Branch:** `agent/phase4-knowledge-antigravity-handoff`
+- **QA Promotion Branch:** `qa`
+- **Accepted Phase 5 Source SHA:** `ef6001c355314580463001ff7c7673eecb469542`
+- **QA Promotion SHA:** `d5498e51f8b40efa417dfd2d98ea02da6bc1f018`
+- **Pull Request:** PR #23 (Phase 5 rendering, world, setpieces, and visual baseline) — **MERGED**
+- **Merge Commit SHA:** `7f939f172f5d75b9a25e3616d39f223e5de040f8`
+- **Phase 5 Source Branch Status:** Deleted (`agent/phase5-rendering-world-antigravity` deleted post-merge)
+- **GitHub Pages Workflow:** `Deploy QA Pages` (Run ID: `31043818076` / Run 65) — **SUCCESS**
+- **Live Pages URL:** `https://lybyerc-lab.github.io/Severe-Warning/`
+- **Verified Phase 5 Artifact:** `severe-weather-modernization-phase-5-40` (Run 40: `31014055811`)
+- **Signed Android APK:** `Severe-Weather-v5.1.0-Phase-5-Presentation-World-40.apk`
+- **APK SHA-256:** `46b9310ebed5f97399e9fd8a6309e1dd30f93eade216511a925c4a66c38c3fa7`
+- **Phase 6 Status:** No Phase 6 work has begun.
 
 ---
 
-## 2. Bounded Assignment Scope
+## 2. Phase 5 Final Acceptance & Verification Record
 
-Modernization Phase 5: Rendering, Camera, World, and Destruction.
-- CI Workflow Split: Split Step 11 into blocking browser QA (`qa:v510`, `qa:phase2`, `qa:phase3`, `qa:phase4`, `qa:phase5`) and advisory visual comparison (`qa:phase5:visual` with `continue-on-error: true`).
-- Visual Parity Advisory Classification: Due to proven Playwright harness nondeterminism (Run 39: 5/6 scenarios at `0.0000%` base-repeat noise, desktop initial at `13.7805%` base-repeat noise), visual comparison runs as advisory evidence without blocking healthy CI or preventing APK assembly.
-
----
-
-## 3. Files Changed in Recent Session
-
-- `.github/workflows/modernization-phase-5.yml` (Split Step 11 into blocking inherited/Phase 5 browser QA and advisory dual-build visual comparison evidence with `continue-on-error: true`)
-- `Docs/AGENT_BRIDGE.md` (Updated cross-agent project coordination bridge with Run 39 findings, exact commit metadata, and advisory visual parity classification)
+- **User Acceptance Status:** Completed & Explicitly Accepted.
+- **Physical Android Smoke Test:** Passed. Signed APK installed successfully on physical Android hardware. Short physical Android gameplay smoke test executed; user confirmed gameplay feel was good and explicitly accepted Phase 5.
+- **Full Round Duration Note:** A full 180-second gameplay round was not completed during the physical smoke test. Recorded accurately for project record, non-blocking per explicit user acceptance.
+- **Advisory Visual Parity Classification:** Known `desktop-initial` visual-comparator Playwright WebGL timing noise (`13.7805%` base-repeat noise on Linux runners) remains advisory (`qa:phase5:visual` with `continue-on-error: true`). All functional browser QA suites (`qa:v510`, `qa:phase2`, `qa:phase3`, `qa:phase4`, `qa:phase5`) passed 100% cleanly (blocking).
+- **GitHub Pages Live Verification:** `qa-build.json` (`runNumber: 65`, `shortSha: d5498e5`), `MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2` in live HTML, and `phase-5-rendering-world` in `modern-shell.js` verified live on `https://lybyerc-lab.github.io/Severe-Warning/`.
 
 ---
 
-## 4. Diagnoses Confirmed
+## 3. Next Intended Action
 
-1. **Run 39 CI Findings & Harness Nondeterminism**:
-   - In GitHub Actions run 39 (`30983226344`), 5 out of 6 visual scenarios recorded `0.0000%` base-repeat noise.
-   - `desktop-1365x768 initial` exhibited `13.7805%` base-repeat noise due to Playwright WebGL rendering timing variance on Linux runners.
-   - All inherited and Phase 5 functional browser QA suites (`qa:v510`, `qa:phase2`, `qa:phase3`, `qa:phase4`, `qa:phase5`) passed 100% cleanly.
-   - Classifying `qa:phase5:visual` as advisory with `continue-on-error: true` allows full visual evidence artifact generation without blocking healthy pipeline execution or Android APK assembly.
-
----
-
-## 5. Corrections Completed
-
-- Updated `.github/workflows/modernization-phase-5.yml` to isolate `qa:phase5:visual` with `continue-on-error: true`.
-- Preserved single-trigger workflow definition and blocking functional browser QA.
-- Verified historical source baseline cleanliness (`MechanicsLab/SevereWeather_3D_Lab.html` has 0 diff lines against `cd89b5ececa6e95848961d625f84eaa7bc7f72c7`).
-
----
-
-## 6. Tests Executed and Results
-
-1. **Clean Historical Source Guard**:
-   - `git diff --exit-code cd89b5ececa6e95848961d625f84eaa7bc7f72c7 -- MechanicsLab/SevereWeather_3D_Lab.html` -> **0 diff lines (100% clean)**
-2. **Strict TypeScript Typecheck**:
-   - `tsc --noEmit` -> **0 errors (100% clean)**
-3. **Automated Verification Suite**:
-   - `verify:phase5`: **111 / 111 checks passed (100% success)**
-4. **Blocking Browser QA Suites**:
-   - `qa:v510`, `qa:phase2`, `qa:phase3`, `qa:phase4`, `qa:phase5` -> **All PASS (blocking)**
-5. **Advisory Visual Comparison**:
-   - `qa:phase5:visual` -> **Advisory evidence upload with `continue-on-error: true`**
-
----
-
-## 7. Next Intended Action
-
-- Commit workflow updates, push to remote without force, monitor automated CI execution on GitHub Actions, and update PR #23 description with the final green run results.
+- Preserve the accepted Phase 5 baseline.
+- Begin Phase 6 only after a separate explicit user instruction and fresh handoff.
