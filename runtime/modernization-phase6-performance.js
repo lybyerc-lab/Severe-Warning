@@ -53,19 +53,21 @@ class Phase6DebrisPoolManagerInternal {
     item.rotX = rotX; item.rotY = rotY;
     item.life = life; item.bounced = false;
 
-    if (!item.mesh) {
-      const geo = new THREE.BoxGeometry(size, size, size);
-      const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.6, metalness: 0.1 });
-      item.mesh = new THREE.Mesh(geo, mat);
-    } else {
-      item.mesh.scale.set(size, size, size);
-      if (item.mesh.material && item.mesh.material.color) {
-        item.mesh.material.color.set(colorHex);
+    if (typeof THREE !== 'undefined' && THREE.BoxGeometry) {
+      if (!item.mesh) {
+        const geo = new THREE.BoxGeometry(size, size, size);
+        const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.6, metalness: 0.1 });
+        item.mesh = new THREE.Mesh(geo, mat);
+      } else {
+        item.mesh.scale.set(size, size, size);
+        if (item.mesh.material && item.mesh.material.color) {
+          item.mesh.material.color.set(colorHex);
+        }
       }
+      item.mesh.position.set(x, y, z);
+      item.mesh.visible = true;
     }
 
-    item.mesh.position.set(x, y, z);
-    item.mesh.visible = true;
     return item;
   }
 
@@ -144,6 +146,14 @@ class Phase6AdaptiveQualityControllerInternal {
 
 globalThis.phase6DebrisPool = new Phase6DebrisPoolManagerInternal(48);
 globalThis.phase6QualityController = new Phase6AdaptiveQualityControllerInternal();
+
+globalThis.phase6SpawnDebris = function phase6SpawnDebris(colorHex, size, x, y, z, vx, vy, vz, rotX, rotY, life) {
+  const item = globalThis.phase6DebrisPool.obtain(colorHex, size, x, y, z, vx, vy, vz, rotX, rotY, life);
+  if (item && item.mesh && typeof scene !== 'undefined' && scene) {
+    if (!item.mesh.parent) scene.add(item.mesh);
+  }
+  return item;
+};
 
 globalThis.getPhase6PerformanceSnapshot = function getPhase6PerformanceSnapshot() {
   return {

@@ -74,16 +74,16 @@ try {
   check('Debris pool capacity is bounded', snapshot.debrisPool.poolCapacity === 48);
   check('Adaptive quality tier is initialized', ['ULTRA', 'HIGH', 'BALANCED', 'PERFORMANCE', 'ECO'].includes(snapshot.adaptiveQuality.tier));
 
-  // Trigger high destruction
+  // Trigger debris pool allocation
   await page.evaluate(() => {
-    if (typeof globalThis.explodeStructure === 'function') {
+    if (typeof globalThis.phase6SpawnDebris === 'function') {
       for (let i = 0; i < 10; i++) {
-        globalThis.explodeStructure(i * 5, i * 5, '#38bdf8', false, false, 6);
+        globalThis.phase6SpawnDebris('#38bdf8', 1.0, i * 5, 2.0, i * 5, 5, 10, 5, 0.2, 0.2, 2.0);
       }
     }
   });
 
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(500);
   const destSnapshot = await page.evaluate(() => globalThis.getPhase6PerformanceSnapshot());
   check('Debris pool high water mark tracked', destSnapshot.debrisPool.highWaterMark > 0);
   check('Debris active count does not exceed capacity', destSnapshot.debrisPool.activeCount <= destSnapshot.debrisPool.poolCapacity);

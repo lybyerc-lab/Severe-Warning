@@ -76,9 +76,9 @@ try {
   // Scenario 3: Heavy Destruction
   console.log('[SW:PERF] Benchmarking Scenario 3: Heavy Destruction...');
   await page.evaluate(() => {
-    if (typeof globalThis.explodeStructure === 'function') {
-      for (let i = 0; i < 5; i++) {
-        globalThis.explodeStructure(i * 10, i * 10, '#ef4444', false, false, 8);
+    if (typeof globalThis.phase6SpawnDebris === 'function') {
+      for (let i = 0; i < 15; i++) {
+        globalThis.phase6SpawnDebris('#ef4444', 1.2, i * 4, 3.0, i * 4, 8, 12, 8, 0.3, 0.3, 2.5);
       }
     }
   });
