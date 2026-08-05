@@ -10,6 +10,8 @@ const outputDir = process.env.SEVERE_WEATHER_PERF_DIR
   : path.join(projectRoot, 'qa-artifacts', 'modernization-phase-6', 'performance');
 const baselineUrl = process.env.SEVERE_WEATHER_BASE_URL;
 const candidateUrl = process.env.SEVERE_WEATHER_CANDIDATE_URL || process.env.SEVERE_WEATHER_QA_URL;
+const FRAME_CAPTURE_TIMEOUT_MS = 15000;
+const NAVIGATION_TIMEOUT_MS = 20000;
 if (!baselineUrl || !candidateUrl) {
   throw new Error('Phase 6 performance evidence requires SEVERE_WEATHER_BASE_URL and SEVERE_WEATHER_CANDIDATE_URL.');
 }
@@ -35,18 +37,30 @@ function summarizeFrameTimes(frameTimesMs) {
   };
 }
 
-async function collectRafFrames(page, count = 90) {
-  return page.evaluate((sampleCount) => new Promise((resolve) => {
-    const samples = [];
-    let previous = performance.now();
-    function next(now) {
-      samples.push(now - previous);
-      previous = now;
-      if (samples.length >= sampleCount) resolve(samples);
-      else requestAnimationFrame(next);
-    }
-    requestAnimationFrame(next);
-  }), count);
+async function collectRafFrames(page, count = 60) {
+  return page.evaluate(
+    ({ sampleCount, timeoutMs }) => new Promise((resolve, reject) => {
+      const samples = [];
+      let previous = performance.now();
+      let rafId = 0;
+      const timer = setTimeout(() => {
+        cancelAnimationFrame(rafId);
+        reject(new Error(`Phase 6 frame capture timed out after ${timeoutMs}ms with ${samples.length}/${sampleCount} samples.`));
+      }, timeoutMs);
+      function next(now) {
+        samples.push(now - previous);
+        previous = now;
+        if (samples.length >= sampleCount) {
+          clearTimeout(timer);
+          resolve(samples);
+          return;
+        }
+        rafId = requestAnimationFrame(next);
+      }
+      rafId = requestAnimationFrame(next);
+    }),
+    { sampleCount: count, timeoutMs: FRAME_CAPTURE_TIMEOUT_MS },
+  );
 }
 
 async function runtimeMetrics(page) {
@@ -72,12 +86,12 @@ async function runtimeMetrics(page) {
   });
 }
 
-async function captureScenario(page, label, setup, sampleCount = 90) {
+async function captureScenario(page, label, setup, sampleCount = 60) {
   if (setup) await setup();
   await page.waitForTimeout(150);
   const frameTimes = await collectRafFrames(page, sampleCount);
   const metrics = await runtimeMetrics(page);
-  await page.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true });
+  await page.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true, timeout: 15000 });
   return {
     ...summarizeFrameTimes(frameTimes),
     ...metrics,
@@ -86,6 +100,8 @@ async function captureScenario(page, label, setup, sampleCount = 90) {
 
 async function measureBuild(browser, url, label) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  page.setDefaultTimeout(NAVIGATION_TIMEOUT_MS);
+  page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
   const errors = [];
   const logs = [];
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
@@ -93,32 +109,41 @@ async function measureBuild(browser, url, label) {
     logs.push(`[${message.type()}] ${message.text()}`);
     if (message.type() === 'error') errors.push(`console: ${message.text()}`);
   });
-  await page.goto(`${url}?qa=1&phase6perf=1`, { waitUntil: 'networkidle' });
-  await page.waitForFunction(() => typeof globalThis.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.getSnapshot === 'function');
 
-  const scenarios = {};
-  scenarios.initial = await captureScenario(page, `${label}-initial`, null, 90);
-  scenarios.movement = await captureScenario(page, `${label}-movement`, async () => {
-    await page.keyboard.down('ArrowUp');
+  try {
+    await page.goto(`${url}?qa=1&phase6perf=1`, { waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT_MS });
+    await page.waitForFunction(
+      () => typeof globalThis.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.getSnapshot === 'function',
+      null,
+      { timeout: NAVIGATION_TIMEOUT_MS },
+    );
     await page.waitForTimeout(500);
-  }, 90);
-  await page.keyboard.up('ArrowUp');
-  scenarios.heavyDestruction = await captureScenario(page, `${label}-heavy-destruction`, async () => {
-    await page.evaluate(() => globalThis.triggerProductionSliceQa('hero'));
-  }, 120);
-  scenarios.afterReset = await captureScenario(page, `${label}-after-reset`, async () => {
-    await page.evaluate(() => globalThis.__SW_V510_REBUILD__());
-  }, 60);
 
-  await writeFile(path.join(outputDir, `${label}-browser.log`), `${logs.join('\n')}\n`, 'utf8');
-  await page.close();
-  return {
-    label,
-    url,
-    capturedAt: new Date().toISOString(),
-    scenarios,
-    errors,
-  };
+    const scenarios = {};
+    scenarios.initial = await captureScenario(page, `${label}-initial`, null, 60);
+    scenarios.movement = await captureScenario(page, `${label}-movement`, async () => {
+      await page.keyboard.down('ArrowUp');
+      await page.waitForTimeout(500);
+    }, 60);
+    await page.keyboard.up('ArrowUp');
+    scenarios.heavyDestruction = await captureScenario(page, `${label}-heavy-destruction`, async () => {
+      await page.evaluate(() => globalThis.triggerProductionSliceQa('hero'));
+    }, 90);
+    scenarios.afterReset = await captureScenario(page, `${label}-after-reset`, async () => {
+      await page.evaluate(() => globalThis.__SW_V510_REBUILD__());
+    }, 45);
+
+    return {
+      label,
+      url,
+      capturedAt: new Date().toISOString(),
+      scenarios,
+      errors,
+    };
+  } finally {
+    await writeFile(path.join(outputDir, `${label}-browser.log`), `${logs.join('\n')}\n`, 'utf8');
+    await page.close();
+  }
 }
 
 function compareScenario(baseline, candidate) {
@@ -154,6 +179,10 @@ const comparison = {
   version: 'MODERNIZATION_PHASE6_DUAL_BUILD_PERFORMANCE_V2',
   generatedAt: new Date().toISOString(),
   runnerNote: 'Frame timings are same-runner advisory evidence. Integration and bounded-resource contracts remain blocking.',
+  captureWatchdogs: {
+    navigationTimeoutMs: NAVIGATION_TIMEOUT_MS,
+    frameCaptureTimeoutMs: FRAME_CAPTURE_TIMEOUT_MS,
+  },
   scenarios: Object.fromEntries(
     Object.keys(baseline.scenarios).map((name) => [name, compareScenario(baseline.scenarios[name], candidate.scenarios[name])]),
   ),
@@ -177,6 +206,6 @@ await writeFile(path.join(outputDir, 'comparison-report.json'), JSON.stringify(c
 const scenarioRows = Object.entries(comparison.scenarios)
   .map(([name, metrics]) => `| ${name} | ${metrics.frameTimeMedianMsDelta} | ${metrics.frameTimeP95MsDelta} | ${metrics.drawCallsDelta} | ${metrics.trianglesDelta} |`)
   .join('\n');
-const markdown = `# Phase 6 Dual-Build Performance Evidence\n\nGenerated: ${comparison.generatedAt}\n\nThis report compares the accepted Phase 5 base and the Phase 6 candidate on the same GitHub Actions runner. Timing values are advisory; executor integration, bounded pools, reset behavior, and telemetry integrity are blocking.\n\n| Scenario | Median frame delta ms | P95 frame delta ms | Draw-call delta | Triangle delta |\n|---|---:|---:|---:|---:|\n${scenarioRows}\n\n## Candidate integration proof\n\n- Production update samples: ${integration.productionUpdateSamples}\n- Production dust burst calls: ${integration.productionDustBurstCalls}\n- Pooled dust spawned: ${integration.pooledDustSpawned}\n- Pool high-water mark: ${comparison.candidatePool?.highWaterMark ?? 'n/a'} / ${comparison.candidatePool?.poolCapacity ?? 'n/a'}\n`;
+const markdown = `# Phase 6 Dual-Build Performance Evidence\n\nGenerated: ${comparison.generatedAt}\n\nThis report compares the accepted Phase 5 base and the Phase 6 candidate on the same GitHub Actions runner. Timing values are advisory; executor integration, bounded pools, reset behavior, and telemetry integrity are blocking.\n\nCapture watchdogs: navigation ${NAVIGATION_TIMEOUT_MS}ms, frame sampling ${FRAME_CAPTURE_TIMEOUT_MS}ms per scenario.\n\n| Scenario | Median frame delta ms | P95 frame delta ms | Draw-call delta | Triangle delta |\n|---|---:|---:|---:|---:|\n${scenarioRows}\n\n## Candidate integration proof\n\n- Production update samples: ${integration.productionUpdateSamples}\n- Production dust burst calls: ${integration.productionDustBurstCalls}\n- Pooled dust spawned: ${integration.pooledDustSpawned}\n- Pool high-water mark: ${comparison.candidatePool?.highWaterMark ?? 'n/a'} / ${comparison.candidatePool?.poolCapacity ?? 'n/a'}\n`;
 await writeFile(path.join(outputDir, 'phase6-performance-report.md'), markdown, 'utf8');
 console.log(`[SW:PERF] Wrote dual-build evidence to ${outputDir}`);
