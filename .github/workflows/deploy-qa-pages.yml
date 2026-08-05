@@ -83,7 +83,7 @@ jobs:
         if: steps.audio-cache.outputs.cache-hit != 'true'
         run: npm run audio:generate
 
-      - name: Apply deterministic gameplay patches
+      - name: Apply deterministic gameplay patches and verify foundation
         shell: bash
         run: |
           pnpm run patch:v431
@@ -92,19 +92,16 @@ jobs:
           pnpm run patch:v442
           pnpm run patch:v450
           pnpm run patch:v500
-          pnpm run patch:v510
-          pnpm run patch:phase2
-          pnpm run patch:phase3
-          pnpm run patch:phase4
-          pnpm run patch:phase5
-
-      - name: Verify v5 campaign foundation
-        run: |
           pnpm run verify:v500
+          pnpm run patch:v510
           pnpm run verify:v510
+          pnpm run patch:phase2
           pnpm run verify:phase2
+          pnpm run patch:phase3
           pnpm run verify:phase3
+          pnpm run patch:phase4
           pnpm run verify:phase4
+          pnpm run patch:phase5
           pnpm run verify:phase5
 
       - name: Build web game without regenerating audio
