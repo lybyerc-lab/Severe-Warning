@@ -1,0 +1,281 @@
+name: Modernization Phase 5 Rendering World and Destruction
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - agent/phase4-knowledge-antigravity-handoff
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modernization-phase-5-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    name: Build verify and package presentation migration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out Phase 5 head
+        uses: actions/checkout@v6
+
+      - name: Check out accepted Phase 4 base
+        uses: actions/checkout@v6
+        with:
+          ref: cd89b5ececa6e95848961d625f84eaa7bc7f72c7
+          path: phase5-base
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          pnpm --dir phase5-base install --frozen-lockfile
+
+      - name: Verify clean historical source and script syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp -s \
+            MechanicsLab/SevereWeather_3D_Lab.html \
+            phase5-base/MechanicsLab/SevereWeather_3D_Lab.html
+          grep -F '<title>Severe Weather 3D Lab v4.3.0 - Rampage Layer</title>' MechanicsLab/SevereWeather_3D_Lab.html
+          if grep -F 'V510_THREEJS_PRODUCTION_SLICE_V1' MechanicsLab/SevereWeather_3D_Lab.html; then
+            echo 'Generated V5.1 output was committed over the historical source baseline.' >&2
+            exit 1
+          fi
+          for file in \
+            scripts/apply-modernization-phase2-clocks.mjs \
+            scripts/apply-phase2-player-forensics-guard.mjs \
+            scripts/apply-modernization-phase3-input-abilities.mjs \
+            scripts/apply-modernization-phase4-scoring-campaign.mjs \
+            scripts/apply-modernization-phase5-presentation-world.mjs \
+            scripts/verify-modernization-phase2-clocks.mjs \
+            scripts/verify-modernization-phase3-input-abilities.mjs \
+            scripts/verify-modernization-phase4-scoring-campaign.mjs \
+            scripts/verify-modernization-phase5-presentation-world.mjs \
+            scripts/qa-modernization-phase2-clocks.mjs \
+            scripts/qa-modernization-phase3-input-abilities.mjs \
+            scripts/qa-modernization-phase4-scoring-campaign.mjs \
+            scripts/qa-modernization-phase5-presentation-world.mjs \
+            scripts/compare-phase5-visual-baseline.mjs \
+            runtime/modernization-phase3-input-abilities.js \
+            runtime/modernization-phase4-scoring-campaign.js \
+            runtime/modernization-phase5-presentation-world.js; do
+            node --check "$file"
+          done
+          pnpm run modern:typecheck
+
+      - name: Generate verified audio in base and head
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir phase5-base run audio:generate
+          pnpm run audio:generate
+
+      - name: Build accepted Phase 4 base
+        shell: bash
+        working-directory: phase5-base
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+
+      - name: Build and verify Phase 5 head
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          grep -F 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' www/index.html
+          grep -F 'phase-5-rendering-world' www/modern/modern-shell.js
+
+      - name: Run blocking inherited and Phase 5 browser QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/modernization-phase-5
+          python3 -m http.server 4173 --directory www > qa-artifacts/modernization-phase-5/head-server.log 2>&1 &
+          HEAD_SERVER_PID=$!
+          cleanup() {
+            kill "$HEAD_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail "http://127.0.0.1:4173/" > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail "http://127.0.0.1:4173/" > /dev/null
+
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_BIN"
+          export CHROME_BIN
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/visual' pnpm run qa:v510
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/clocks' pnpm run qa:phase2
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/controls' pnpm run qa:phase3
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/scoring-campaign' pnpm run qa:phase4
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/modernization-phase-5/presentation-world' pnpm run qa:phase5
+
+      - name: Run advisory dual-build Phase 5 visual comparison evidence
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/modernization-phase-5
+          python3 -m http.server 4173 --directory www > qa-artifacts/modernization-phase-5/head-server.log 2>&1 &
+          HEAD_SERVER_PID=$!
+          python3 -m http.server 4174 --directory phase5-base/www > qa-artifacts/modernization-phase-5/base-server.log 2>&1 &
+          BASE_SERVER_PID=$!
+          cleanup() {
+            kill "$HEAD_SERVER_PID" 2>/dev/null || true
+            kill "$BASE_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for port in 4173 4174; do
+            for attempt in $(seq 1 60); do
+              if curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null; then break; fi
+              sleep 0.25
+            done
+            curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null
+          done
+
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_BIN"
+          export CHROME_BIN
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+
+          echo "========================================================"
+          echo "--- Advisory Visual Parity Evidence: qa:phase5:visual ---"
+          echo "========================================================"
+          env SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4174/' SEVERE_WEATHER_VISUAL_DIR='qa-artifacts/modernization-phase-5/visual-baseline' pnpm run qa:phase5:visual
+
+      - name: Upload Phase 5 diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: severe-weather-modernization-phase-5-diagnostics-${{ github.run_number }}
+          path: qa-artifacts/modernization-phase-5
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Synchronize Android assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          node node_modules/@capacitor/cli/bin/capacitor sync android
+          cmp -s www/index.html android/app/src/main/assets/public/index.html
+          cmp -s www/modern/modern-shell.js android/app/src/main/assets/public/modern/modern-shell.js
+
+      - name: Assemble debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Package Phase 5 evidence
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_commit='${{ github.event.pull_request.head.sha || github.sha }}'
+          output_dir='dist/modernization-phase-5'
+          mkdir -p "$output_dir"
+
+          source_apk='android/app/build/outputs/apk/debug/app-debug.apk'
+          output_apk="$output_dir/Severe-Weather-v5.1.0-Phase-5-Presentation-World-${GITHUB_RUN_NUMBER}.apk"
+          test -s "$source_apk"
+          cp "$source_apk" "$output_apk"
+          sha256sum "$output_apk" | tee "$output_apk.sha256"
+
+          cp -R www "$output_dir/web-preview"
+          cp -R qa-artifacts/modernization-phase-5 "$output_dir/qa-evidence"
+          cp Docs/PHASE5_PRESENTATION_SOURCE_MAP.md "$output_dir/"
+          cp Docs/PHASE5_VISUAL_BASELINE.md "$output_dir/"
+          cat > "$output_dir/package-manifest.json" <<MANIFEST
+          {
+            "sourceBranch": "agent/phase5-rendering-world-antigravity",
+            "sourceCommit": "$source_commit",
+            "acceptedBaseCommit": "cd89b5ececa6e95848961d625f84eaa7bc7f72c7",
+            "workflowRun": $GITHUB_RUN_NUMBER,
+            "versionName": "5.1.0",
+            "renderer": "Three.js r128",
+            "architecture": "modern-shell-v1",
+            "modernizationPhase": "phase-5-rendering-world",
+            "phase5Bridge": "MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2",
+            "apkFile": "$(basename "$output_apk")",
+            "apkSha256": "$(sha256sum "$output_apk" | awk '{print $1}')"
+          }
+          MANIFEST
+          echo "artifact_name=severe-weather-modernization-phase-5-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Phase 5 bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: dist/modernization-phase-5
+          if-no-files-found: error
+          retention-days: 14

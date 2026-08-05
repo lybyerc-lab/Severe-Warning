@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Check out QA branch
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
@@ -64,46 +66,44 @@ jobs:
           node --check scripts/verify-qa-package.mjs
           node --check scripts/run-qa4-headless.mjs
 
-      - name: Restore verified QA audio cache
-        id: audio-cache
-        uses: actions/cache@v5
-        with:
-          path: assets/audio
-          key: qa-audio-${{ hashFiles('scripts/generate-storm-audio.mjs', 'scripts/apply-recorded-storm-effects.mjs', 'scripts/append-rampage-music.mjs') }}
-
-      - name: Install FFmpeg for audio cache miss
-        if: steps.audio-cache.outputs.cache-hit != 'true'
+      - name: Install FFmpeg for audio generation
         shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg
           ffmpeg -hide_banner -version | head -n 1
 
-      - name: Generate verified audio on cache miss
-        if: steps.audio-cache.outputs.cache-hit != 'true'
-        run: npm run audio:generate
+      - name: Generate verified audio
+        run: pnpm run audio:generate
 
-      - name: Apply deterministic gameplay patches
+      - name: Build and verify Phase 5 web package
         shell: bash
         run: |
-          npm run patch:v431
-          npm run patch:v440
-          npm run patch:v441
-          npm run patch:v442
-          npm run patch:v450
-          npm run patch:v500
-
-      - name: Verify v5 campaign foundation
-        run: npm run verify:v500
-
-      - name: Build web game without regenerating audio
-        run: node scripts/build-web.mjs
-
-      - name: Stamp QA build identity
-        run: node scripts/stamp-qa-pages.mjs
-
-      - name: Verify QA package with named checks
-        run: node scripts/verify-qa-package.mjs
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run modern:typecheck
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          grep -F 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' www/index.html
+          grep -F 'phase-5-rendering-world' www/modern/modern-shell.js
 
       - name: Run deterministic QA4 in headless Chrome
         shell: bash

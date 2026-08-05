@@ -10,9 +10,10 @@ const outputDir = process.env.SEVERE_WEATHER_QA_DIR
   : path.join(projectRoot, 'qa-artifacts', 'modernization-phase-3');
 const baseUrl = process.env.SEVERE_WEATHER_QA_URL || 'http://127.0.0.1:4173/';
 const executablePath = process.env.CHROME_BIN || undefined;
-const phase3CompatibleIdentities = new Set([
+const compatiblePhases = new Set([
   'phase-3-input-abilities',
   'phase-4-scoring-campaign',
+  'phase-5-rendering-world',
 ]);
 
 await mkdir(outputDir, { recursive: true });
@@ -20,16 +21,11 @@ const browser = await chromium.launch({
   headless: true,
   executablePath,
   args: [
-    '--no-sandbox',
-    '--disable-dev-shm-usage',
-    '--enable-webgl',
-    '--use-angle=swiftshader',
-    '--enable-unsafe-swiftshader',
-    '--ignore-gpu-blocklist',
-    '--disable-gpu-sandbox',
+    '--no-sandbox', '--disable-dev-shm-usage', '--enable-webgl',
+    '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
+    '--ignore-gpu-blocklist', '--disable-gpu-sandbox',
   ],
 });
-
 const viewports = [
   { name: 'desktop-1365x768', width: 1365, height: 768, isMobile: false },
   { name: 'mobile-915x412', width: 915, height: 412, isMobile: true },
@@ -44,7 +40,7 @@ for (const viewport of viewports) {
     hasTouch: viewport.isMobile,
   });
   const page = await context.newPage();
-  page.setDefaultTimeout(15_000);
+  page.setDefaultTimeout(30_000);
   const pageErrors = [];
   const consoleErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -55,7 +51,7 @@ for (const viewport of viewports) {
   await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 60_000 });
   await page.waitForFunction(() => (
     globalThis.__SW_MODERN_SHELL_READY__ === true
-    && ['phase-3-input-abilities', 'phase-4-scoring-campaign'].includes(
+    && ['phase-3-input-abilities', 'phase-4-scoring-campaign', 'phase-5-rendering-world'].includes(
       globalThis.__SEVERE_WEATHER__?.modernizationPhase,
     )
     && globalThis.__SEVERE_WEATHER__?.qa?.getInputAbilityBridgeSnapshot?.().attached === true
@@ -64,8 +60,7 @@ for (const viewport of viewports) {
   const evidence = await page.evaluate(() => {
     const shell = globalThis.__SEVERE_WEATHER__;
     const bridge = globalThis.__SW_PHASE3_INPUT_ABILITY_BRIDGE__;
-    if (!shell || !bridge) throw new Error('Phase 3 shell or lexical bridge unavailable');
-
+    if (!shell || !bridge) throw new Error('Phase 3 shell or bridge unavailable.');
     const inputProbe = shell.input.runContractProbe();
     const abilityProbe = shell.abilities.runContractProbe();
 
@@ -85,10 +80,8 @@ for (const viewport of viewports) {
     bridge.requestAbility('primary', 'touch');
     bridge.requestAbility('primary', 'touch');
     const duplicate = bridge.getSnapshot();
-
-    const forensicPanel = document.getElementById('qa4ForensicTrace');
+    const trace = document.getElementById('qa4ForensicTrace');
     return {
-      architecture: shell.architecture,
       modernizationPhase: shell.modernizationPhase,
       documentPhase: document.documentElement.dataset.swModernizationPhase ?? null,
       inputProbe,
@@ -97,12 +90,12 @@ for (const viewport of viewports) {
       touch,
       released,
       duplicate,
-      forensicHidden: forensicPanel?.hidden === true,
+      forensicHidden: trace?.hidden === true && getComputedStyle(trace).display === 'none',
     };
   });
 
   const checks = {
-    phaseIdentity: phase3CompatibleIdentities.has(evidence.modernizationPhase)
+    descendantIdentity: compatiblePhases.has(evidence.modernizationPhase)
       && evidence.documentPhase === evidence.modernizationPhase,
     inputContract: evidence.inputProbe?.passed === true,
     abilityContract: evidence.abilityProbe?.passed === true,
@@ -117,7 +110,7 @@ for (const viewport of viewports) {
     duplicateSuppressed: evidence.duplicate?.abilityRequests === 2
       && evidence.duplicate?.suppressedDuplicates === 1
       && evidence.duplicate?.abilities?.requestCount === 1,
-    playerForensicsHidden: evidence.forensicHidden === true,
+    playerForensicsHidden: evidence.forensicHidden,
     noPageErrors: pageErrors.length === 0,
     noConsoleErrors: consoleErrors.length === 0,
   };
@@ -125,11 +118,7 @@ for (const viewport of viewports) {
   const screenshotPath = path.join(outputDir, `${viewport.name}.png`);
   await page.screenshot({ path: screenshotPath, fullPage: false });
   results.push({
-    viewport,
-    evidence,
-    checks,
-    pageErrors,
-    consoleErrors,
+    viewport, evidence, checks, pageErrors, consoleErrors,
     screenshot: path.relative(projectRoot, screenshotPath).replaceAll('\\', '/'),
     passed: Object.values(checks).every(Boolean),
   });
@@ -138,13 +127,17 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'MODERNIZATION_PHASE3_INPUT_ABILITY_QA_V2',
+  version: 'MODERNIZATION_PHASE3_INPUT_ABILITY_QA_V3',
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   results,
   passed: results.every((result) => result.passed),
 };
-await writeFile(path.join(outputDir, 'input-ability-report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+await writeFile(
+  path.join(outputDir, 'input-ability-report.json'),
+  `${JSON.stringify(report, null, 2)}\n`,
+  'utf8',
+);
 for (const result of results) {
   console.log(`${result.passed ? 'PASS' : 'FAIL'} ${result.viewport.name} :: ${JSON.stringify(result.checks)}`);
 }

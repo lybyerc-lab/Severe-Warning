@@ -17,6 +17,9 @@ export interface QaSnapshot {
 
 export interface SevereWeatherQaBridge {
   prepareScenario(id: QaScenarioId): Promise<void>;
+  latchPresentationFrame(timestamp?: number): unknown;
+  unlatchPresentation(): boolean;
+  renderFrame(): void;
   advance(milliseconds: number): void;
   getSnapshot(): QaSnapshot;
   reset(): void;

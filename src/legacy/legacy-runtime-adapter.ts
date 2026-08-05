@@ -10,6 +10,13 @@ import type { ScoringSystem } from '../gameplay/scoring/scoring-system';
 import type { DistrictSystem } from '../gameplay/districts/district-system';
 import type { CampaignSystem } from '../gameplay/campaign/campaign-system';
 import type { CampaignStore } from '../platform/persistence/campaign-store';
+import type { RendererSystem } from '../presentation/renderer/renderer-system';
+import type { SceneSystem } from '../presentation/scene/scene-system';
+import type { CameraSystem } from '../presentation/camera/camera-system';
+import type { AtmosphereSystem } from '../presentation/atmosphere/atmosphere-system';
+import type { TornadoPresentationSystem } from '../presentation/tornado/tornado-presentation-system';
+import type { WorldSystem } from '../world/world-system';
+import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system';
 import type {
   QaScenarioId,
   QaSnapshot,
@@ -88,6 +95,39 @@ interface LegacyScoringCampaignBridge {
   getSnapshot(): LegacyScoringCampaignBridgeSnapshot;
 }
 
+export interface LegacyPresentationWorldBridgeSnapshot {
+  readonly version: string;
+  readonly attached: boolean;
+  readonly renderer: unknown;
+  readonly scene: unknown;
+  readonly camera: unknown;
+  readonly atmosphere: unknown;
+  readonly tornado: unknown;
+  readonly world: unknown;
+  readonly setpieces: unknown;
+  readonly live: unknown;
+}
+
+interface LegacyPresentationWorldBridge {
+  readonly version: string;
+  attach(
+    renderer: RendererSystem,
+    scene: SceneSystem,
+    camera: CameraSystem,
+    atmosphere: AtmosphereSystem,
+    tornado: TornadoPresentationSystem,
+    world: WorldSystem,
+    hartFarm: DestructibleSetpieceSystem,
+    secondStructure: DestructibleSetpieceSystem,
+  ): boolean;
+  latchPresentationFrame(timestamp?: number): unknown;
+  unlatchPresentation(): boolean;
+  syncFromLegacy(): unknown;
+  reset(): void;
+  runContractProbe(): unknown;
+  getSnapshot(): LegacyPresentationWorldBridgeSnapshot;
+}
+
 interface LegacyRuntimeGlobals {
   __SW_PRODUCTION_SLICE_READY__?: boolean;
   __SW_V510_UPDATE__?: (deltaSeconds: number, nowMs: number, isMoving: boolean) => void;
@@ -95,6 +135,7 @@ interface LegacyRuntimeGlobals {
   __SW_PHASE2_CLOCK_BRIDGE__?: LegacyClockBridge;
   __SW_PHASE3_INPUT_ABILITY_BRIDGE__?: LegacyInputAbilityBridge;
   __SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?: LegacyScoringCampaignBridge;
+  __SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?: LegacyPresentationWorldBridge;
   triggerProductionSliceQa?: (mode?: string) => boolean;
   getProductionSliceQaState?: () => QaSnapshot;
 }
@@ -108,6 +149,7 @@ export interface LegacyRuntimeStatus {
   readonly hasClockBridge: boolean;
   readonly hasInputAbilityBridge: boolean;
   readonly hasScoringCampaignBridge: boolean;
+  readonly hasPresentationWorldBridge: boolean;
 }
 
 export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
@@ -127,6 +169,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       hasClockBridge: this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.version === 'MODERNIZATION_PHASE2_CLOCKS_V1',
       hasInputAbilityBridge: this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.version === 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1',
       hasScoringCampaignBridge: this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.version === 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2',
+      hasPresentationWorldBridge: this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.version === 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2',
     });
   }
 
@@ -169,6 +212,30 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     if (attached !== true) throw new Error('Legacy runtime rejected the Phase 4 scoring and campaign mirrors.');
   }
 
+  attachPresentationWorld(
+    renderer: RendererSystem,
+    scene: SceneSystem,
+    camera: CameraSystem,
+    atmosphere: AtmosphereSystem,
+    tornado: TornadoPresentationSystem,
+    world: WorldSystem,
+    hartFarm: DestructibleSetpieceSystem,
+    secondStructure: DestructibleSetpieceSystem,
+  ): void {
+    this.assertRequiredContracts();
+    const attached = this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.attach(
+      renderer,
+      scene,
+      camera,
+      atmosphere,
+      tornado,
+      world,
+      hartFarm,
+      secondStructure,
+    );
+    if (attached !== true) throw new Error('Legacy runtime rejected the Phase 5 presentation and world mirrors.');
+  }
+
   getRunState(): LegacyRunState {
     this.assertRequiredContracts();
     const state = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.getLegacyRunState();
@@ -197,17 +264,42 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     return snapshot;
   }
 
+  getPresentationWorldBridgeSnapshot(): LegacyPresentationWorldBridgeSnapshot {
+    this.assertRequiredContracts();
+    const snapshot = this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.getSnapshot();
+    if (!snapshot) throw new Error('Legacy runtime returned no presentation and world bridge snapshot.');
+    return snapshot;
+  }
+
+  runPresentationWorldContractProbe(): unknown {
+    this.assertRequiredContracts();
+    return this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.runContractProbe();
+  }
+
+  latchPresentationFrame(timestamp = 1000): unknown {
+    this.assertRequiredContracts();
+    return this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.latchPresentationFrame(timestamp);
+  }
+
+  unlatchPresentation(): boolean {
+    this.assertRequiredContracts();
+    return Boolean(this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.unlatchPresentation());
+  }
+
+  renderFrame(): void {
+    this.assertRequiredContracts();
+    this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.latchPresentationFrame(1000);
+  }
+
   async prepareScenario(id: QaScenarioId): Promise<void> {
     this.assertRequiredContracts();
     if (id !== 'production-hero') throw new Error(`Unsupported QA scenario: ${id}`);
     const prepared = this.#globals.triggerProductionSliceQa?.('hero');
     if (prepared !== true) throw new Error('Legacy production hero scenario did not initialize.');
 
-    // Scenario setup mutates legacy run, scoring, district, and campaign state
-    // outside the normal animation-loop sampling path. Synchronize every typed
-    // mirror immediately so QA truth never depends on viewport timing.
     this.synchronizeClockFromLegacy();
     this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.syncFromLegacy();
+    this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.syncFromLegacy();
   }
 
   advance(milliseconds: number): void {
@@ -217,6 +309,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     }
     const now = performance.now();
     this.#globals.__SW_V510_UPDATE__?.(milliseconds / 1000, now, false);
+    this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.syncFromLegacy();
   }
 
   getSnapshot(): QaSnapshot {
@@ -231,6 +324,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.reset();
     this.#globals.__SW_V510_REBUILD__?.();
     this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.reset();
+    this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.reset();
     this.synchronizeClockFromLegacy();
   }
 
