@@ -14,6 +14,45 @@ function replaceExact(before, after, label) {
 }
 
 replaceExact(
+  `function installQaFrameController(seed) {
+  let randomState = seed >>> 0;
+  Math.random = () => {
+    randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
+    return randomState / 0x100000000;
+  };`,
+  `function installQaFrameController(seed) {
+  const randomStreams = new Map();
+  const hashText = (text) => {
+    let hash = seed >>> 0;
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619) >>> 0;
+    }
+    return hash || 1;
+  };
+  const randomStreamKey = () => {
+    const stack = new Error().stack ?? '';
+    return stack
+      .split('\\n')
+      .slice(2, 7)
+      .map((line) => line
+        .replace(/https?:\\/\\/[^/]+/g, '')
+        .replace(/:\\d+:\\d+/g, ':#:#')
+        .replace(/\\s+/g, ' ')
+        .trim())
+      .join('|');
+  };
+  Math.random = () => {
+    const key = randomStreamKey();
+    let state = randomStreams.get(key) ?? hashText(key);
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    randomStreams.set(key, state);
+    return state / 0x100000000;
+  };`,
+  'callsite-scoped deterministic random streams',
+);
+
+replaceExact(
   "const fixedTimestamps = [1000.0, 1016.6667, 1033.3334, 1050.0001, 1066.6668];",
   "const fixedTimestamps = [];",
   'static visual capture timestamp sequence',
@@ -114,12 +153,12 @@ replaceExact(
 
 replaceExact(
   "version: 'PHASE5_DUAL_BUILD_VISUAL_BASELINE_V4'",
-  "version: 'PHASE5_DUAL_BUILD_VISUAL_BASELINE_V5'",
+  "version: 'PHASE5_DUAL_BUILD_VISUAL_BASELINE_V6'",
   'visual report version',
 );
 replaceExact(
   "comparisonSource: 'Playwright canvas PNG after deterministic reset, scenario preparation, and RAF stepping'",
-  "comparisonSource: 'Playwright canvas PNG after seeded production-slice rebuild, static scenario normalization, and explicit render'",
+  "comparisonSource: 'Playwright canvas PNG after callsite-seeded boot, production-slice rebuild, static scenario normalization, and explicit render'",
   'visual report comparison source',
 );
 
