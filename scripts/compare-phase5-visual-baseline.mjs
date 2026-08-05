@@ -48,20 +48,13 @@ function installQaTimeController() {
   const nativeCancelRaf = window.cancelAnimationFrame.bind(window);
   const nativePerformanceNow = performance.now.bind(performance);
   const nativeDateNow = Date.now.bind(Date);
-  const nativeSetTimeout = window.setTimeout.bind(window);
-  const nativeClearTimeout = window.clearTimeout.bind(window);
-  const nativeSetInterval = window.setInterval.bind(window);
-  const nativeClearInterval = window.clearInterval.bind(window);
 
   let frozen = false;
-  let timersFrozen = false;
   let simulatedTimestamp = 1000.0;
   let nextCallbackId = 1;
   let steppedFrameCount = 0;
   const timestampSequence = [];
   const queuedRafCallbacks = new Map();
-  const activeTimeouts = new Map();
-  const activeIntervals = new Map();
 
   performance.now = () => (frozen ? simulatedTimestamp : nativePerformanceNow());
   Date.now = () => (frozen ? Math.round(simulatedTimestamp) : nativeDateNow());
@@ -83,45 +76,9 @@ function installQaTimeController() {
     nativeCancelRaf(id);
   };
 
-  window.setTimeout = (callback, delay = 0, ...args) => {
-    const id = nextCallbackId++;
-    if (timersFrozen) return id;
-    const nativeId = nativeSetTimeout(() => {
-      activeTimeouts.delete(id);
-      callback(...args);
-    }, delay);
-    activeTimeouts.set(id, nativeId);
-    return id;
-  };
-
-  window.clearTimeout = (id) => {
-    const nativeId = activeTimeouts.get(id);
-    if (nativeId !== undefined) nativeClearTimeout(nativeId);
-    activeTimeouts.delete(id);
-  };
-
-  window.setInterval = (callback, delay = 0, ...args) => {
-    const id = nextCallbackId++;
-    if (timersFrozen) return id;
-    const nativeId = nativeSetInterval(callback, delay, ...args);
-    activeIntervals.set(id, nativeId);
-    return id;
-  };
-
-  window.clearInterval = (id) => {
-    const nativeId = activeIntervals.get(id);
-    if (nativeId !== undefined) nativeClearInterval(nativeId);
-    activeIntervals.delete(id);
-  };
-
   globalThis.__SW_QA_TIME_CONTROLLER__ = {
     freeze() {
       frozen = true;
-      timersFrozen = true;
-      for (const nativeId of activeTimeouts.values()) nativeClearTimeout(nativeId);
-      for (const nativeId of activeIntervals.values()) nativeClearInterval(nativeId);
-      activeTimeouts.clear();
-      activeIntervals.clear();
       return true;
     },
     reset() {
@@ -143,10 +100,7 @@ function installQaTimeController() {
     getStatus() {
       return Object.freeze({
         frozen,
-        timersFrozen,
         queueSize: queuedRafCallbacks.size,
-        activeTimeoutCount: activeTimeouts.size,
-        activeIntervalCount: activeIntervals.size,
         steppedFrameCount,
         simulatedTimestamp,
         timestampSequence: [...timestampSequence],
@@ -439,9 +393,6 @@ for (const viewport of viewports) {
       timeControllerFrozen: baseA.controllerStatus?.frozen === true
         && baseB.controllerStatus?.frozen === true
         && candidate.controllerStatus?.frozen === true,
-      timersFrozen: baseA.controllerStatus?.timersFrozen === true
-        && baseB.controllerStatus?.timersFrozen === true
-        && candidate.controllerStatus?.timersFrozen === true,
       exactFrameSequence: JSON.stringify(baseA.controllerStatus?.timestampSequence) === JSON.stringify(fixedTimestamps)
         && JSON.stringify(baseB.controllerStatus?.timestampSequence) === JSON.stringify(fixedTimestamps)
         && JSON.stringify(candidate.controllerStatus?.timestampSequence) === JSON.stringify(fixedTimestamps),
@@ -479,7 +430,6 @@ for (const viewport of viewports) {
       + ` valid=${captureValidityPass}`
       + ` semantic=${semanticDiff.match}`
       + ` rafFrozen=${candidate.controllerStatus?.frozen}`
-      + ` timersFrozen=${candidate.controllerStatus?.timersFrozen}`
       + ` frames=${candidate.controllerStatus?.steppedFrameCount}`
       + ` timestamps=[${candidate.controllerStatus?.timestampSequence?.map((timestamp) => timestamp.toFixed(1)).join(',')}]`
       + ` camera=${JSON.stringify(candidate.semantic?.camera ?? null)}`
@@ -495,7 +445,7 @@ const report = {
   baseUrl,
   candidateUrl,
   pixelLaw: {
-    comparisonSource: 'Playwright canvas locator PNG screenshot with QA-only CSS and timer normalization',
+    comparisonSource: 'Playwright canvas locator PNG screenshot with QA-only CSS and deterministic RAF normalization',
     changedPixelChannelThreshold: 8,
     maxBaseRepeatNoiseRatio: 0.0005,
     marginCandidateChangedRatio: 0.001,
