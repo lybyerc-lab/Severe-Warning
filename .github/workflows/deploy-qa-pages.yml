@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Check out QA branch
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
