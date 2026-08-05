@@ -12,6 +12,7 @@ const outputDir = process.env.SEVERE_WEATHER_VISUAL_DIR
 const baseUrl = process.env.SEVERE_WEATHER_BASE_URL || 'http://127.0.0.1:4174/';
 const candidateUrl = process.env.SEVERE_WEATHER_QA_URL || 'http://127.0.0.1:4173/';
 const executablePath = process.env.CHROME_BIN || undefined;
+const fixedTimestamps = [1000.0, 1016.6667, 1033.3334, 1050.0001, 1066.6668];
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({
@@ -36,30 +37,39 @@ const viewports = [
 const scenarios = ['initial', 'hero'];
 const results = [];
 
-function installQaRafController() {
-  let state = 0x5e1e5eed;
+function installQaTimeController() {
+  let randomState = 0x5e1e5eed;
   Math.random = () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-    return state / 0x100000000;
+    randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
+    return randomState / 0x100000000;
   };
 
   const nativeRaf = window.requestAnimationFrame.bind(window);
-  const nativeCancel = window.cancelAnimationFrame.bind(window);
+  const nativeCancelRaf = window.cancelAnimationFrame.bind(window);
   const nativePerformanceNow = performance.now.bind(performance);
+  const nativeDateNow = Date.now.bind(Date);
+  const nativeSetTimeout = window.setTimeout.bind(window);
+  const nativeClearTimeout = window.clearTimeout.bind(window);
+  const nativeSetInterval = window.setInterval.bind(window);
+  const nativeClearInterval = window.clearInterval.bind(window);
 
   let frozen = true;
-  const queuedCallbacks = new Map();
+  let timersFrozen = false;
+  let simulatedTimestamp = 1000.0;
   let nextCallbackId = 1;
   let steppedFrameCount = 0;
-  let simulatedTimestamp = 1000.0;
   const timestampSequence = [];
+  const queuedRafCallbacks = new Map();
+  const activeTimeouts = new Map();
+  const activeIntervals = new Map();
 
   performance.now = () => (frozen ? simulatedTimestamp : nativePerformanceNow());
+  Date.now = () => (frozen ? Math.round(simulatedTimestamp) : nativeDateNow());
 
   window.requestAnimationFrame = (callback) => {
     const id = nextCallbackId++;
     if (frozen) {
-      queuedCallbacks.set(id, callback);
+      queuedRafCallbacks.set(id, callback);
       return id;
     }
     return nativeRaf((timestamp) => {
@@ -69,22 +79,53 @@ function installQaRafController() {
   };
 
   window.cancelAnimationFrame = (id) => {
-    queuedCallbacks.delete(id);
-    nativeCancel(id);
+    queuedRafCallbacks.delete(id);
+    nativeCancelRaf(id);
   };
 
-  globalThis.__SW_QA_RAF_CONTROLLER__ = {
+  window.setTimeout = (callback, delay = 0, ...args) => {
+    const id = nextCallbackId++;
+    if (timersFrozen) return id;
+    const nativeId = nativeSetTimeout(() => {
+      activeTimeouts.delete(id);
+      callback(...args);
+    }, delay);
+    activeTimeouts.set(id, nativeId);
+    return id;
+  };
+
+  window.clearTimeout = (id) => {
+    const nativeId = activeTimeouts.get(id);
+    if (nativeId !== undefined) nativeClearTimeout(nativeId);
+    activeTimeouts.delete(id);
+  };
+
+  window.setInterval = (callback, delay = 0, ...args) => {
+    const id = nextCallbackId++;
+    if (timersFrozen) return id;
+    const nativeId = nativeSetInterval(callback, delay, ...args);
+    activeIntervals.set(id, nativeId);
+    return id;
+  };
+
+  window.clearInterval = (id) => {
+    const nativeId = activeIntervals.get(id);
+    if (nativeId !== undefined) nativeClearInterval(nativeId);
+    activeIntervals.delete(id);
+  };
+
+  globalThis.__SW_QA_TIME_CONTROLLER__ = {
     freeze() {
       frozen = true;
+      timersFrozen = true;
+      for (const nativeId of activeTimeouts.values()) nativeClearTimeout(nativeId);
+      for (const nativeId of activeIntervals.values()) nativeClearInterval(nativeId);
+      activeTimeouts.clear();
+      activeIntervals.clear();
       return true;
     },
-    isFrozen() {
-      return frozen;
-    },
-    getQueueSize() {
-      return queuedCallbacks.size;
-    },
-    resetStats() {
+    reset() {
+      randomState = 0x5e1e5eed;
       steppedFrameCount = 0;
       simulatedTimestamp = 1000.0;
       timestampSequence.length = 0;
@@ -94,22 +135,18 @@ function installQaRafController() {
       simulatedTimestamp = timestamp;
       steppedFrameCount += 1;
       timestampSequence.push(timestamp);
-      const currentQueue = Array.from(queuedCallbacks.values());
-      queuedCallbacks.clear();
-      for (const cb of currentQueue) {
-        cb(timestamp);
-      }
-      return Object.freeze({
-        steppedFrameCount,
-        simulatedTimestamp,
-        queueSize: queuedCallbacks.size,
-        timestampSequence: [...timestampSequence],
-      });
+      const currentQueue = Array.from(queuedRafCallbacks.values());
+      queuedRafCallbacks.clear();
+      for (const callback of currentQueue) callback(timestamp);
+      return this.getStatus();
     },
     getStatus() {
       return Object.freeze({
         frozen,
-        queueSize: queuedCallbacks.size,
+        timersFrozen,
+        queueSize: queuedRafCallbacks.size,
+        activeTimeoutCount: activeTimeouts.size,
+        activeIntervalCount: activeIntervals.size,
         steppedFrameCount,
         simulatedTimestamp,
         timestampSequence: [...timestampSequence],
@@ -134,8 +171,8 @@ function decodePng(buffer) {
     }
     offset += 12 + length;
   }
-  const compressed = Buffer.concat(idatChunks);
-  const decompressed = inflateSync(compressed);
+
+  const decompressed = inflateSync(Buffer.concat(idatChunks));
   const stride = width * 4 + 1;
   const pixels = Buffer.alloc(width * height * 4);
   for (let y = 0; y < height; y += 1) {
@@ -146,22 +183,22 @@ function decodePng(buffer) {
       const raw = decompressed[rowStart + 1 + x];
       const left = x >= 4 ? pixels[outRowStart + x - 4] : 0;
       const up = y > 0 ? pixels[(y - 1) * width * 4 + x] : 0;
-      const upperLeft = (x >= 4 && y > 0) ? pixels[(y - 1) * width * 4 + x - 4] : 0;
-      let val = 0;
-      if (filter === 0) val = raw;
-      else if (filter === 1) val = (raw + left) & 0xff;
-      else if (filter === 2) val = (raw + up) & 0xff;
-      else if (filter === 3) val = (raw + Math.floor((left + up) / 2)) & 0xff;
+      const upperLeft = x >= 4 && y > 0 ? pixels[(y - 1) * width * 4 + x - 4] : 0;
+      let value = raw;
+      if (filter === 1) value = (raw + left) & 0xff;
+      else if (filter === 2) value = (raw + up) & 0xff;
+      else if (filter === 3) value = (raw + Math.floor((left + up) / 2)) & 0xff;
       else if (filter === 4) {
-        const p = left + up - upperLeft;
-        const pa = Math.abs(p - left);
-        const pb = Math.abs(p - up);
-        const pc = Math.abs(p - upperLeft);
-        if (pa <= pb && pa <= pc) val = (raw + left) & 0xff;
-        else if (pb <= pc) val = (raw + up) & 0xff;
-        else val = (raw + upperLeft) & 0xff;
+        const estimate = left + up - upperLeft;
+        const distanceLeft = Math.abs(estimate - left);
+        const distanceUp = Math.abs(estimate - up);
+        const distanceUpperLeft = Math.abs(estimate - upperLeft);
+        const predictor = distanceLeft <= distanceUp && distanceLeft <= distanceUpperLeft
+          ? left
+          : (distanceUp <= distanceUpperLeft ? up : upperLeft);
+        value = (raw + predictor) & 0xff;
       }
-      pixels[outRowStart + x] = val;
+      pixels[outRowStart + x] = value;
     }
   }
   return { width, height, pixels };
@@ -170,31 +207,27 @@ function decodePng(buffer) {
 function analyzeCaptureValidity(decoded) {
   const pixelCount = decoded.width * decoded.height;
   let nonBlackCount = 0;
+  let luminanceTotal = 0;
   const colors = new Set();
-  let sumLuminance = 0;
+  const luminances = new Float64Array(pixelCount);
 
-  for (let i = 0; i < decoded.pixels.length; i += 4) {
-    const r = decoded.pixels[i];
-    const g = decoded.pixels[i + 1];
-    const b = decoded.pixels[i + 2];
-    if (r > 5 || g > 5 || b > 5) nonBlackCount += 1;
-    colors.add((r << 16) | (g << 8) | b);
-    sumLuminance += 0.299 * r + 0.587 * g + 0.114 * b;
+  for (let pixel = 0, index = 0; index < decoded.pixels.length; index += 4, pixel += 1) {
+    const red = decoded.pixels[index];
+    const green = decoded.pixels[index + 1];
+    const blue = decoded.pixels[index + 2];
+    if (red > 5 || green > 5 || blue > 5) nonBlackCount += 1;
+    colors.add((red << 16) | (green << 8) | blue);
+    const luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
+    luminances[pixel] = luminance;
+    luminanceTotal += luminance;
   }
 
-  const meanLuminance = sumLuminance / pixelCount;
-  let varianceSum = 0;
-  for (let i = 0; i < decoded.pixels.length; i += 4) {
-    const r = decoded.pixels[i];
-    const g = decoded.pixels[i + 1];
-    const b = decoded.pixels[i + 2];
-    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-    varianceSum += (luminance - meanLuminance) ** 2;
-  }
-  const luminanceVariance = varianceSum / pixelCount;
+  const meanLuminance = luminanceTotal / pixelCount;
+  let varianceTotal = 0;
+  for (const luminance of luminances) varianceTotal += (luminance - meanLuminance) ** 2;
+  const luminanceVariance = varianceTotal / pixelCount;
   const nonBlackRatio = nonBlackCount / pixelCount;
   const distinctColors = colors.size;
-  const valid = nonBlackRatio >= 0.05 && luminanceVariance >= 10.0 && distinctColors >= 100;
 
   return {
     width: decoded.width,
@@ -204,8 +237,56 @@ function analyzeCaptureValidity(decoded) {
     distinctColors,
     meanLuminance,
     luminanceVariance,
-    valid,
+    valid: nonBlackRatio >= 0.05 && luminanceVariance >= 10 && distinctColors >= 100,
   };
+}
+
+function comparePixels(left, right) {
+  if (left.width !== right.width || left.height !== right.height || left.pixels.length !== right.pixels.length) {
+    throw new Error('Visual captures have incompatible dimensions.');
+  }
+  let changedPixels = 0;
+  let absoluteError = 0;
+  const pixelCount = left.width * left.height;
+  for (let index = 0; index < left.pixels.length; index += 4) {
+    const red = Math.abs(left.pixels[index] - right.pixels[index]);
+    const green = Math.abs(left.pixels[index + 1] - right.pixels[index + 1]);
+    const blue = Math.abs(left.pixels[index + 2] - right.pixels[index + 2]);
+    absoluteError += red + green + blue;
+    if (Math.max(red, green, blue) > 8) changedPixels += 1;
+  }
+  return {
+    changedPixels,
+    pixelCount,
+    changedRatio: changedPixels / pixelCount,
+    meanAbsoluteError: absoluteError / (pixelCount * 3),
+  };
+}
+
+function compareSemantics(base, candidate) {
+  if (!base || !candidate) return { match: false, stableMatch: false, cameraMatch: false, cow17Match: false };
+  const stableMatch = base.renderer === candidate.renderer
+    && base.quality === candidate.quality
+    && base.funnelLayers === candidate.funnelLayers
+    && base.suctionRings === candidate.suctionRings
+    && base.debrisInstances === candidate.debrisInstances
+    && base.dressing?.cropRows === candidate.dressing?.cropRows
+    && base.dressing?.trees === candidate.dressing?.trees
+    && base.dressing?.fences === candidate.dressing?.fences
+    && base.dressing?.streetProps === candidate.dressing?.streetProps
+    && base.barn?.stage === candidate.barn?.stage
+    && base.barn?.health === candidate.barn?.health
+    && base.fragments === candidate.fragments
+    && base.campaignId === candidate.campaignId;
+  const cameraMatch = base.camera?.fov === candidate.camera?.fov
+    && base.camera?.y === candidate.camera?.y
+    && base.camera?.z === candidate.camera?.z;
+  const cow17Match = (!base.cow17 || !candidate.cow17) || (
+    base.cow17.decorated === candidate.cow17.decorated
+    && base.cow17.airborne === candidate.cow17.airborne
+    && base.cow17.scale === candidate.cow17.scale
+  );
+  return { stableMatch, cameraMatch, cow17Match, match: stableMatch && cameraMatch && cow17Match };
 }
 
 async function capture(url, viewport, scenario, label) {
@@ -215,7 +296,7 @@ async function capture(url, viewport, scenario, label) {
     isMobile: viewport.isMobile,
     hasTouch: viewport.isMobile,
   });
-  await context.addInitScript(installQaRafController);
+  await context.addInitScript(installQaTimeController);
   const page = await context.newPage();
   page.setDefaultTimeout(60_000);
   const pageErrors = [];
@@ -232,72 +313,71 @@ async function capture(url, viewport, scenario, label) {
     && globalThis.__SEVERE_WEATHER__?.qa
   ));
 
-  const controllerStatus = await page.evaluate(async (scenarioName) => {
-    const controller = globalThis.__SW_QA_RAF_CONTROLLER__;
-    if (!controller) throw new Error('QA rAF controller is missing in page context.');
-
-    // 1. Freeze future animation callbacks & reset controller stats
+  const controllerStatus = await page.evaluate(async ({ scenarioName, timestamps }) => {
+    const controller = globalThis.__SW_QA_TIME_CONTROLLER__;
+    if (!controller) throw new Error('QA time controller is missing in page context.');
     controller.freeze();
-    controller.resetStats();
+    controller.reset();
 
-    // Re-seed PRNG deterministically before scenario preparation
-    let state = 0x5e1e5eed;
+    let randomState = 0x5e1e5eed;
     Math.random = () => {
-      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-      return state / 0x100000000;
+      randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
+      return randomState / 0x100000000;
     };
 
     const shell = globalThis.__SEVERE_WEATHER__;
     const qa = shell?.qa;
-
-    if (globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause) {
-      globalThis.__SW_PHASE2_CLOCK_BRIDGE__.pause();
-    }
-
-    if (typeof productionQuality !== 'undefined') {
-      productionQuality = 'HIGH';
-    }
-
-    // 2. Reset and prepare scenario while frozen
-    if (shell?.app?.reset) {
-      shell.app.reset();
-    }
+    globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause?.();
+    if (typeof productionQuality !== 'undefined') productionQuality = 'HIGH';
+    shell?.app?.reset?.();
     window.dispatchEvent(new Event('resize'));
+
     if (scenarioName === 'hero' && qa?.prepareScenario) {
       await qa.prepareScenario('production-hero');
       if (typeof productionFragments !== 'undefined') {
-        productionFragments.forEach((f) => { if (f.mesh) f.mesh.visible = false; });
+        productionFragments.forEach((fragment) => { if (fragment.mesh) fragment.mesh.visible = false; });
         productionFragments.length = 0;
       }
       if (typeof productionPulseEffects !== 'undefined') {
-        productionPulseEffects.forEach((p) => { if (p.mesh) p.mesh.visible = false; });
+        productionPulseEffects.forEach((effect) => { if (effect.mesh) effect.mesh.visible = false; });
         productionPulseEffects.length = 0;
       }
     }
 
-    // 3. Advance both builds through the exact same fixed timestamps and frame count (5 steps at 1000ms increments)
-    for (let frame = 0; frame < 5; frame += 1) {
-      controller.stepFrame(1000.0 + frame * 16.6667);
-    }
-
-    // 4. Zero camera shake intensity without manually overwriting camera position or lookAt
+    for (const timestamp of timestamps) controller.stepFrame(timestamp);
     if (typeof cameraShakeIntensity !== 'undefined') cameraShakeIntensity = 0;
-
-    // 5. Render the final deterministic frame
     if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
       renderer.render(scene, camera);
     }
 
+    const style = document.createElement('style');
+    style.id = 'sw-phase5-visual-parity-normalization';
+    style.textContent = `
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        caret-color: transparent !important;
+      }
+      #districtOverlay,
+      #rampageFeedbackLayer,
+      .rampage-banner {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+      }
+    `;
+    document.head.append(style);
+    document.querySelectorAll('.rampage-banner').forEach((element) => element.remove());
+    document.getElementById('districtOverlay')?.classList.remove('active');
     if (document.fonts?.ready) await document.fonts.ready;
 
     return controller.getStatus();
-  }, scenario);
+  }, { scenarioName: scenario, timestamps: fixedTimestamps });
 
   const canvasLocator = page.locator('#webgl, canvas#gameCanvas, canvas').first();
   const pngBuffer = await canvasLocator.screenshot({ type: 'png' });
   const decoded = decodePng(pngBuffer);
   const validity = analyzeCaptureValidity(decoded);
-
   const semantic = await page.evaluate(() => {
     const qa = globalThis.getProductionSliceQaState?.() ?? null;
     if (!qa) return null;
@@ -333,76 +413,18 @@ async function capture(url, viewport, scenario, label) {
   };
 }
 
-function comparePixels(left, right) {
-  if (left.width !== right.width || left.height !== right.height || left.pixels.length !== right.pixels.length) {
-    throw new Error('Visual captures have incompatible dimensions.');
-  }
-  let changedPixels = 0;
-  let absoluteError = 0;
-  const pixelCount = left.width * left.height;
-  for (let index = 0; index < left.pixels.length; index += 4) {
-    const red = Math.abs(left.pixels[index] - right.pixels[index]);
-    const green = Math.abs(left.pixels[index + 1] - right.pixels[index + 1]);
-    const blue = Math.abs(left.pixels[index + 2] - right.pixels[index + 2]);
-    absoluteError += red + green + blue;
-    if (Math.max(red, green, blue) > 8) changedPixels += 1;
-  }
-  return {
-    changedPixels,
-    pixelCount,
-    changedRatio: changedPixels / pixelCount,
-    meanAbsoluteError: absoluteError / (pixelCount * 3),
-  };
-}
-
-function compareSemantics(base, candidate) {
-  if (!base || !candidate) return { match: false, stableMatch: false, cameraMatch: false, cow17Match: false };
-  const stableMatch = base.renderer === candidate.renderer
-    && base.quality === candidate.quality
-    && base.funnelLayers === candidate.funnelLayers
-    && base.suctionRings === candidate.suctionRings
-    && base.dressing?.cropRows === candidate.dressing?.cropRows
-    && base.dressing?.trees === candidate.dressing?.trees
-    && base.dressing?.fences === candidate.dressing?.fences
-    && base.dressing?.streetProps === candidate.dressing?.streetProps
-    && base.barn?.stage === candidate.barn?.stage
-    && base.campaignId === candidate.campaignId;
-
-  const cameraMatch = base.camera?.fov === candidate.camera?.fov
-    && Math.abs((base.camera?.y ?? 0) - (candidate.camera?.y ?? 0)) < 0.1
-    && Math.abs((base.camera?.z ?? 0) - (candidate.camera?.z ?? 0)) < 0.1;
-
-  const cow17Match = (!base.cow17 || !candidate.cow17) || (
-    base.cow17.decorated === candidate.cow17.decorated
-    && base.cow17.airborne === candidate.cow17.airborne
-    && Math.abs((base.cow17.scale ?? 0) - (candidate.cow17.scale ?? 0)) < 0.01
-  );
-
-  return {
-    stableMatch,
-    cameraMatch,
-    cow17Match,
-    match: stableMatch && cameraMatch && cow17Match,
-  };
-}
-
 for (const viewport of viewports) {
   for (const scenario of scenarios) {
     const baseA = await capture(baseUrl, viewport, scenario, 'base-a');
     const baseB = await capture(baseUrl, viewport, scenario, 'base-b');
     const candidate = await capture(candidateUrl, viewport, scenario, 'candidate');
-
     const repeatNoise = comparePixels(baseA, baseB);
     const candidateDiff = comparePixels(baseA, candidate);
-
-    const maxBaseNoiseLimit = scenario === 'hero' ? 0.0200 : 0.0005;
-    const baseRepeatNoiseWithinLimit = repeatNoise.changedRatio <= maxBaseNoiseLimit;
-    const changedRatioThreshold = Math.max(maxBaseNoiseLimit, repeatNoise.changedRatio + 0.0010); // Base noise + 0.1%
-    const meanErrorThreshold = Math.max(5.0, repeatNoise.meanAbsoluteError + 2.5);
-
+    const baseRepeatNoiseWithinLimit = repeatNoise.changedRatio <= 0.0005;
+    const changedRatioThreshold = repeatNoise.changedRatio + 0.001;
+    const meanErrorThreshold = repeatNoise.meanAbsoluteError + 0.5;
     const semanticDiff = compareSemantics(baseA.semantic, candidate.semantic);
     const captureValidityPass = baseA.validity.valid && baseB.validity.valid && candidate.validity.valid;
-
     const checks = {
       baseRepeatClean: baseA.pageErrors.length === 0
         && baseA.consoleErrors.length === 0
@@ -414,48 +436,52 @@ for (const viewport of viewports) {
       semanticMatch: semanticDiff.match,
       changedRatioWithinMeasuredNoise: candidateDiff.changedRatio <= changedRatioThreshold,
       meanErrorWithinMeasuredNoise: candidateDiff.meanAbsoluteError <= meanErrorThreshold,
+      timeControllerFrozen: baseA.controllerStatus?.frozen === true
+        && baseB.controllerStatus?.frozen === true
+        && candidate.controllerStatus?.frozen === true,
+      timersFrozen: baseA.controllerStatus?.timersFrozen === true
+        && baseB.controllerStatus?.timersFrozen === true
+        && candidate.controllerStatus?.timersFrozen === true,
+      exactFrameSequence: JSON.stringify(baseA.controllerStatus?.timestampSequence) === JSON.stringify(fixedTimestamps)
+        && JSON.stringify(baseB.controllerStatus?.timestampSequence) === JSON.stringify(fixedTimestamps)
+        && JSON.stringify(candidate.controllerStatus?.timestampSequence) === JSON.stringify(fixedTimestamps),
     };
 
-    // Omit large pixel buffers from report JSON to keep output compact and clean
-    const sanitizeCapture = (cap) => ({
-      width: cap.width,
-      height: cap.height,
-      validity: cap.validity,
-      semantic: cap.semantic,
-      controllerStatus: cap.controllerStatus,
-      pageErrors: cap.pageErrors,
-      consoleErrors: cap.consoleErrors,
-      screenshot: cap.screenshot,
+    const sanitizeCapture = (capture) => ({
+      width: capture.width,
+      height: capture.height,
+      validity: capture.validity,
+      semantic: capture.semantic,
+      controllerStatus: capture.controllerStatus,
+      pageErrors: capture.pageErrors,
+      consoleErrors: capture.consoleErrors,
+      screenshot: capture.screenshot,
     });
 
+    const passed = Object.values(checks).every(Boolean);
     results.push({
       viewport,
       scenario,
       repeatNoise,
       candidateDiff,
-      thresholds: { changedRatioThreshold, meanErrorThreshold },
+      thresholds: { maxBaseRepeatNoiseRatio: 0.0005, changedRatioThreshold, meanErrorThreshold },
       semantic: { base: baseA.semantic, candidate: candidate.semantic, diff: semanticDiff },
       validity: { baseA: baseA.validity, baseB: baseB.validity, candidate: candidate.validity },
-      captures: {
-        baseA: sanitizeCapture(baseA),
-        baseB: sanitizeCapture(baseB),
-        candidate: sanitizeCapture(candidate),
-      },
+      captures: { baseA: sanitizeCapture(baseA), baseB: sanitizeCapture(baseB), candidate: sanitizeCapture(candidate) },
       checks,
-      passed: Object.values(checks).every(Boolean),
+      passed,
     });
 
     console.log(
-      `${Object.values(checks).every(Boolean) ? 'PASS' : 'FAIL'} ${viewport.name} ${scenario}`
+      `${passed ? 'PASS' : 'FAIL'} ${viewport.name} ${scenario}`
       + ` :: repeat=${(repeatNoise.changedRatio * 100).toFixed(4)}%`
       + ` candidate=${(candidateDiff.changedRatio * 100).toFixed(4)}%`
       + ` valid=${captureValidityPass}`
-      + ` baseNoiseLimit=${baseRepeatNoiseWithinLimit}`
       + ` semantic=${semanticDiff.match}`
-      + ` frozen=${candidate.controllerStatus?.frozen}`
-      + ` queueSize=${candidate.controllerStatus?.queueSize}`
+      + ` rafFrozen=${candidate.controllerStatus?.frozen}`
+      + ` timersFrozen=${candidate.controllerStatus?.timersFrozen}`
       + ` frames=${candidate.controllerStatus?.steppedFrameCount}`
-      + ` timestamps=[${(candidate.controllerStatus?.timestampSequence || []).map((t) => typeof t === 'number' ? t.toFixed(1) : t).join(',')}]`
+      + ` timestamps=[${candidate.controllerStatus?.timestampSequence?.map((timestamp) => timestamp.toFixed(1)).join(',')}]`
       + ` camera=${JSON.stringify(candidate.semantic?.camera ?? null)}`
       + ` cow17=${JSON.stringify(candidate.semantic?.cow17 ?? null)}`,
     );
@@ -464,17 +490,17 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'PHASE5_DUAL_BUILD_VISUAL_BASELINE_V2',
+  version: 'PHASE5_DUAL_BUILD_VISUAL_BASELINE_V3',
   generatedAt: new Date().toISOString(),
   baseUrl,
   candidateUrl,
   pixelLaw: {
-    comparisonSource: 'Playwright locator canvas PNG screenshot',
+    comparisonSource: 'Playwright canvas locator PNG screenshot with QA-only CSS and timer normalization',
     changedPixelChannelThreshold: 8,
     maxBaseRepeatNoiseRatio: 0.0005,
-    marginCandidateChangedRatio: 0.0010,
+    marginCandidateChangedRatio: 0.001,
     marginMeanAbsoluteError: 0.5,
-    validityRequirements: { minNonBlackRatio: 0.05, minLuminanceVariance: 10.0, minDistinctColors: 100 },
+    validityRequirements: { minNonBlackRatio: 0.05, minLuminanceVariance: 10, minDistinctColors: 100 },
   },
   results,
   passed: results.every((result) => result.passed),
