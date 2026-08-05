@@ -13,6 +13,7 @@ const baseUrl = process.env.SEVERE_WEATHER_BASE_URL || 'http://127.0.0.1:4174/';
 const candidateUrl = process.env.SEVERE_WEATHER_QA_URL || 'http://127.0.0.1:4173/';
 const executablePath = process.env.CHROME_BIN || undefined;
 const fixedTimestamps = [1000.0, 1016.6667, 1033.3334, 1050.0001, 1066.6668];
+const randomSeed = 0x5e1e5eed;
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({
@@ -37,8 +38,8 @@ const viewports = [
 const scenarios = ['initial', 'hero'];
 const results = [];
 
-function installQaTimeController() {
-  let randomState = 0x5e1e5eed;
+function installQaFrameController(seed) {
+  let randomState = seed >>> 0;
   Math.random = () => {
     randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
     return randomState / 0x100000000;
@@ -54,8 +55,8 @@ function installQaTimeController() {
   let nextCallbackId = 1;
   let steppedFrameCount = 0;
   const timestampSequence = [];
-  const queuedRafCallbacks = new Map();
-  const activeNativeRafCallbacks = new Map();
+  const queuedCallbacks = new Map();
+  const activeCallbacks = new Map();
 
   performance.now = () => (frozen ? simulatedTimestamp : nativePerformanceNow());
   Date.now = () => (frozen ? Math.round(simulatedTimestamp) : nativeDateNow());
@@ -63,57 +64,57 @@ function installQaTimeController() {
   window.requestAnimationFrame = (callback) => {
     const id = nextCallbackId++;
     if (frozen) {
-      queuedRafCallbacks.set(id, callback);
+      queuedCallbacks.set(id, callback);
       return id;
     }
     const nativeId = nativeRaf((timestamp) => {
-      activeNativeRafCallbacks.delete(id);
+      activeCallbacks.delete(id);
       simulatedTimestamp = timestamp;
       callback(timestamp);
     });
-    activeNativeRafCallbacks.set(id, { nativeId, callback });
+    activeCallbacks.set(id, { nativeId, callback });
     return id;
   };
 
   window.cancelAnimationFrame = (id) => {
-    queuedRafCallbacks.delete(id);
-    const activeEntry = activeNativeRafCallbacks.get(id);
-    if (activeEntry) nativeCancelRaf(activeEntry.nativeId);
-    activeNativeRafCallbacks.delete(id);
+    queuedCallbacks.delete(id);
+    const entry = activeCallbacks.get(id);
+    if (entry) nativeCancelRaf(entry.nativeId);
+    activeCallbacks.delete(id);
   };
 
   globalThis.__SW_QA_TIME_CONTROLLER__ = {
     freeze() {
       if (frozen) return true;
       frozen = true;
-      for (const [id, entry] of activeNativeRafCallbacks) {
+      for (const [id, entry] of activeCallbacks) {
         nativeCancelRaf(entry.nativeId);
-        queuedRafCallbacks.set(id, entry.callback);
+        queuedCallbacks.set(id, entry.callback);
       }
-      activeNativeRafCallbacks.clear();
+      activeCallbacks.clear();
       return true;
     },
     reset() {
-      randomState = 0x5e1e5eed;
+      randomState = seed >>> 0;
       steppedFrameCount = 0;
       simulatedTimestamp = 1000.0;
       timestampSequence.length = 0;
     },
     stepFrame(timestamp) {
-      frozen = true;
+      if (!frozen) throw new Error('QA frame controller must be frozen before stepping.');
       simulatedTimestamp = timestamp;
       steppedFrameCount += 1;
       timestampSequence.push(timestamp);
-      const currentQueue = Array.from(queuedRafCallbacks.values());
-      queuedRafCallbacks.clear();
-      for (const callback of currentQueue) callback(timestamp);
+      const callbacks = Array.from(queuedCallbacks.values());
+      queuedCallbacks.clear();
+      for (const callback of callbacks) callback(timestamp);
       return this.getStatus();
     },
     getStatus() {
       return Object.freeze({
         frozen,
-        queueSize: queuedRafCallbacks.size,
-        activeNativeRafCount: activeNativeRafCallbacks.size,
+        queueSize: queuedCallbacks.size,
+        activeNativeRafCount: activeCallbacks.size,
         steppedFrameCount,
         simulatedTimestamp,
         timestampSequence: [...timestampSequence],
@@ -127,6 +128,7 @@ function decodePng(buffer) {
   let width = 0;
   let height = 0;
   const idatChunks = [];
+
   while (offset < buffer.length) {
     const length = buffer.readUInt32BE(offset);
     const type = buffer.toString('ascii', offset + 4, offset + 8);
@@ -139,9 +141,11 @@ function decodePng(buffer) {
     offset += 12 + length;
   }
 
+  if (!width || !height || idatChunks.length === 0) throw new Error('Invalid PNG capture.');
   const decompressed = inflateSync(Buffer.concat(idatChunks));
   const stride = width * 4 + 1;
   const pixels = Buffer.alloc(width * height * 4);
+
   for (let y = 0; y < height; y += 1) {
     const rowStart = y * stride;
     const filter = decompressed[rowStart];
@@ -168,6 +172,7 @@ function decodePng(buffer) {
       pixels[outRowStart + x] = value;
     }
   }
+
   return { width, height, pixels };
 }
 
@@ -263,7 +268,7 @@ async function capture(url, viewport, scenario, label) {
     isMobile: viewport.isMobile,
     hasTouch: viewport.isMobile,
   });
-  await context.addInitScript(installQaTimeController);
+  await context.addInitScript(installQaFrameController, randomSeed);
   const page = await context.newPage();
   page.setDefaultTimeout(60_000);
   const pageErrors = [];
@@ -278,40 +283,43 @@ async function capture(url, viewport, scenario, label) {
     globalThis.__SW_MODERN_SHELL_READY__ === true
     && globalThis.__SW_PRODUCTION_SLICE_READY__ === true
     && globalThis.__SEVERE_WEATHER__?.qa
+    && typeof globalThis.triggerProductionSliceQa === 'function'
   ));
 
-  const controllerStatus = await page.evaluate(async ({ scenarioName, timestamps }) => {
+  const controllerStatus = await page.evaluate(async ({ scenarioName, timestamps, seed }) => {
     const controller = globalThis.__SW_QA_TIME_CONTROLLER__;
-    if (!controller) throw new Error('QA time controller is missing in page context.');
-    controller.reset();
+    if (!controller) throw new Error('QA frame controller is missing in page context.');
 
-    let randomState = 0x5e1e5eed;
+    controller.freeze();
+    controller.reset();
+    let randomState = seed >>> 0;
     Math.random = () => {
       randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
       return randomState / 0x100000000;
     };
 
     const shell = globalThis.__SEVERE_WEATHER__;
-    const qa = shell?.qa;
     globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause?.();
     if (typeof productionQuality !== 'undefined') productionQuality = 'HIGH';
     shell?.app?.reset?.();
     window.dispatchEvent(new Event('resize'));
 
-    if (scenarioName === 'hero' && qa?.prepareScenario) {
-      await qa.prepareScenario('production-hero');
-      if (typeof productionFragments !== 'undefined') {
-        productionFragments.forEach((fragment) => { if (fragment.mesh) fragment.mesh.visible = false; });
-        productionFragments.length = 0;
-      }
-      if (typeof productionPulseEffects !== 'undefined') {
-        productionPulseEffects.forEach((effect) => { if (effect.mesh) effect.mesh.visible = false; });
-        productionPulseEffects.length = 0;
-      }
+    const prepared = globalThis.triggerProductionSliceQa(scenarioName === 'hero' ? 'hero' : 'initial');
+    if (prepared !== true) throw new Error(`Failed to prepare ${scenarioName} visual scenario.`);
+
+    // The Phase 5 camera guard is QA-only. Disable the prepared flag for the
+    // shared parity steps so Phase 4 and Phase 5 run the same legacy camera path.
+    if (typeof productionQaPrepared !== 'undefined') productionQaPrepared = false;
+
+    if (typeof productionFragments !== 'undefined') {
+      productionFragments.forEach((fragment) => { if (fragment.mesh) fragment.mesh.visible = false; });
+      productionFragments.length = 0;
+    }
+    if (typeof productionPulseEffects !== 'undefined') {
+      productionPulseEffects.forEach((effect) => { if (effect.mesh) effect.mesh.visible = false; });
+      productionPulseEffects.length = 0;
     }
 
-    controller.freeze();
-    controller.reset();
     for (const timestamp of timestamps) controller.stepFrame(timestamp);
     if (typeof cameraShakeIntensity !== 'undefined') cameraShakeIntensity = 0;
     if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
@@ -338,9 +346,8 @@ async function capture(url, viewport, scenario, label) {
     document.querySelectorAll('.rampage-banner').forEach((element) => element.remove());
     document.getElementById('districtOverlay')?.classList.remove('active');
     if (document.fonts?.ready) await document.fonts.ready;
-
     return controller.getStatus();
-  }, { scenarioName: scenario, timestamps: fixedTimestamps });
+  }, { scenarioName: scenario, timestamps: fixedTimestamps, seed: randomSeed });
 
   const canvasLocator = page.locator('#webgl, canvas#gameCanvas, canvas').first();
   const pngBuffer = await canvasLocator.screenshot({ type: 'png' });
@@ -367,7 +374,6 @@ async function capture(url, viewport, scenario, label) {
   const screenshotPath = path.join(outputDir, `${viewport.name}-${scenario}-${label}.png`);
   await writeFile(screenshotPath, pngBuffer);
   await context.close();
-
   return {
     width: decoded.width,
     height: decoded.height,
@@ -412,15 +418,15 @@ for (const viewport of viewports) {
         && JSON.stringify(candidate.controllerStatus?.timestampSequence) === JSON.stringify(fixedTimestamps),
     };
 
-    const sanitizeCapture = (capture) => ({
-      width: capture.width,
-      height: capture.height,
-      validity: capture.validity,
-      semantic: capture.semantic,
-      controllerStatus: capture.controllerStatus,
-      pageErrors: capture.pageErrors,
-      consoleErrors: capture.consoleErrors,
-      screenshot: capture.screenshot,
+    const sanitizeCapture = (captureResult) => ({
+      width: captureResult.width,
+      height: captureResult.height,
+      validity: captureResult.validity,
+      semantic: captureResult.semantic,
+      controllerStatus: captureResult.controllerStatus,
+      pageErrors: captureResult.pageErrors,
+      consoleErrors: captureResult.consoleErrors,
+      screenshot: captureResult.screenshot,
     });
 
     const passed = Object.values(checks).every(Boolean);
@@ -432,7 +438,11 @@ for (const viewport of viewports) {
       thresholds: { maxBaseRepeatNoiseRatio: 0.0005, changedRatioThreshold, meanErrorThreshold },
       semantic: { base: baseA.semantic, candidate: candidate.semantic, diff: semanticDiff },
       validity: { baseA: baseA.validity, baseB: baseB.validity, candidate: candidate.validity },
-      captures: { baseA: sanitizeCapture(baseA), baseB: sanitizeCapture(baseB), candidate: sanitizeCapture(candidate) },
+      captures: {
+        baseA: sanitizeCapture(baseA),
+        baseB: sanitizeCapture(baseB),
+        candidate: sanitizeCapture(candidate),
+      },
       checks,
       passed,
     });
@@ -454,12 +464,12 @@ for (const viewport of viewports) {
 
 await browser.close();
 const report = {
-  version: 'PHASE5_DUAL_BUILD_VISUAL_BASELINE_V3',
+  version: 'PHASE5_DUAL_BUILD_VISUAL_BASELINE_V4',
   generatedAt: new Date().toISOString(),
   baseUrl,
   candidateUrl,
   pixelLaw: {
-    comparisonSource: 'Playwright canvas locator PNG screenshot with QA-only CSS and deterministic RAF normalization',
+    comparisonSource: 'Playwright canvas PNG after deterministic reset, scenario preparation, and RAF stepping',
     changedPixelChannelThreshold: 8,
     maxBaseRepeatNoiseRatio: 0.0005,
     marginCandidateChangedRatio: 0.001,
