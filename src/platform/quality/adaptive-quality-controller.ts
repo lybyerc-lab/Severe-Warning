@@ -4,12 +4,12 @@
 // gameplay laws, damage calculations, scoring, physics, or Cow 17 safety.
 // ============================================================================
 
-import {
+import type {
   QualitySettings,
   QualityTelemetryEvent,
   QualityTier,
-  TIER_PRESETS,
 } from './adaptive-quality-contracts';
+import { TIER_PRESETS } from './adaptive-quality-contracts';
 
 export class AdaptiveQualityController {
   private currentTier: QualityTier = 'HIGH';
@@ -82,16 +82,20 @@ export class AdaptiveQualityController {
 
     if (avgFrameTime > this.DOWNSCALE_AVG_TIME_MS && currentIndex > 0) {
       const nextTier = tiers[currentIndex - 1];
-      this.transitionToTier(
-        nextTier,
-        `Performance pressure: avg frame time ${avgFrameTime.toFixed(1)}ms (${currentFps.toFixed(1)} FPS)`
-      );
+      if (nextTier) {
+        this.transitionToTier(
+          nextTier,
+          `Performance pressure: avg frame time ${avgFrameTime.toFixed(1)}ms (${currentFps.toFixed(1)} FPS)`
+        );
+      }
     } else if (avgFrameTime < this.UPSCALE_AVG_TIME_MS && currentIndex < tiers.length - 1) {
       const nextTier = tiers[currentIndex + 1];
-      this.transitionToTier(
-        nextTier,
-        `Performance headroom: avg frame time ${avgFrameTime.toFixed(1)}ms (${currentFps.toFixed(1)} FPS)`
-      );
+      if (nextTier) {
+        this.transitionToTier(
+          nextTier,
+          `Performance headroom: avg frame time ${avgFrameTime.toFixed(1)}ms (${currentFps.toFixed(1)} FPS)`
+        );
+      }
     }
   }
 

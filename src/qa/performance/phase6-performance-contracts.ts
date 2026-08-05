@@ -3,8 +3,8 @@
 // Machine-readable contracts and interfaces for Phase 6 Android performance telemetry.
 // ============================================================================
 
-import { QualityTier } from '../../platform/quality/adaptive-quality-contracts';
-import { DebrisPoolSnapshot } from '../../world/debris/debris-pool-contracts';
+import type { QualityTier } from '../../platform/quality/adaptive-quality-contracts';
+import type { DebrisPoolSnapshot } from '../../world/debris/debris-pool-contracts';
 
 export interface PerformanceScenarioMetrics {
   scenarioName: string;

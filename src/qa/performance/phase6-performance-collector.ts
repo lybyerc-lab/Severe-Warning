@@ -3,7 +3,7 @@
 // Telemetry collector for deterministic frame timing and draw-call performance metrics.
 // ============================================================================
 
-import {
+import type {
   PerformanceScenarioMetrics,
   Phase6PerformanceTelemetry,
 } from './phase6-performance-contracts';

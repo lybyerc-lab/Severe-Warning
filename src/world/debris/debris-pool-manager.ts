@@ -5,7 +5,7 @@
 // guarantees zero GPU/heap memory growth across resets and retries.
 // ============================================================================
 
-import { DebrisPoolSnapshot, PooledDebrisItem } from './debris-pool-contracts';
+import type { DebrisPoolSnapshot, PooledDebrisItem } from './debris-pool-contracts';
 
 export class DebrisPoolManager {
   private pool: PooledDebrisItem[] = [];
