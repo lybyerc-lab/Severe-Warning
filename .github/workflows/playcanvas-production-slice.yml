@@ -2,6 +2,7 @@ name: PlayCanvas Production Slice Bootstrap
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - 'playcanvas-slice/**'
       - 'scripts/fetch-playcanvas-engine.mjs'
@@ -11,6 +12,10 @@ on:
       - 'vite.playcanvas.config.ts'
       - '.github/workflows/playcanvas-production-slice.yml'
   workflow_dispatch:
+
+concurrency:
+  group: playcanvas-slice-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
