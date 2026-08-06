@@ -98,6 +98,8 @@ check('runtime preserves accepted roads and replaces only block fabric', runtime
 check('runtime publishes density and diversity telemetry', ['targetCount', 'averageTargetsPerActiveBlock', 'uniqueArchetypes', 'treeSpecies'].every((value) => runtime.includes(value)));
 check('package exposes city fabric commands', packageJson.scripts['patch:city-fabric'] && packageJson.scripts['verify:city-fabric'] && packageJson.scripts['qa:city-fabric']);
 check('QA traverses all four campaign stops', qa.includes('for (let index = 0; index < 4; index += 1)'));
+check('QA starts the playable world before taking screenshots', qa.includes("page.click('#btnStartMenu')") && qa.includes('mainMenuHidden'));
+check('QA rejects menu-obstructed screenshot evidence', qa.includes('screenshotsRequirePlayableWorld: true') && qa.includes('evidence screenshot is obstructed by the main menu'));
 check('workflow is single-trigger', !/^\s{2}push:/m.test(workflow));
 check('workflow targets Phase 6 branch only', workflow.includes('- agent/phase6-android-performance-antigravity'));
 check('workflow builds Phase 6 baseline and city candidate', workflow.includes('city-base') && workflow.includes('patch:city-fabric'));
