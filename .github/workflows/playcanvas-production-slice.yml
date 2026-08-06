@@ -1,6 +1,9 @@
 name: PlayCanvas Production Slice Bootstrap
 
 on:
+  push:
+    branches:
+      - 'agent/playcanvas-*'
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -41,6 +44,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Fetch pinned PlayCanvas engine
+        env:
+          PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55aeef4de6a8adb4
         run: node scripts/fetch-playcanvas-engine.mjs
 
       - name: Type-check isolated slice
