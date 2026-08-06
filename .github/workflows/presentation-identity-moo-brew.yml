@@ -1,0 +1,298 @@
+name: Presentation Identity and Moo Brew
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - agent/city-fabric-destruction-pass
+
+permissions:
+  contents: read
+
+concurrency:
+  group: presentation-identity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    name: Build verify and package presentation identity pass
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out presentation identity head
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check out accepted city fabric base
+        uses: actions/checkout@v6
+        with:
+          ref: 1f0df3b6df41fefa9a37163136106f9ca9909b9b
+          path: identity-base
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          pnpm --dir identity-base install --frozen-lockfile
+
+      - name: Verify process truth, identity scripts, and TypeScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run verify:process
+          for file in \
+            scripts/apply-presentation-identity-moo-brew.mjs \
+            scripts/verify-presentation-identity-moo-brew.mjs \
+            scripts/qa-presentation-identity-moo-brew.mjs \
+            runtime/presentation-identity-core.js \
+            runtime/presentation-identity-style-part-1.js \
+            runtime/presentation-identity-style-part-2.js \
+            runtime/presentation-identity-style-part-3.js \
+            runtime/presentation-identity-styles.js \
+            runtime/presentation-identity-ui.js; do
+            node --check "$file"
+          done
+          pnpm run modern:typecheck
+
+      - name: Verify clean historical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp -s \
+            MechanicsLab/SevereWeather_3D_Lab.html \
+            identity-base/MechanicsLab/SevereWeather_3D_Lab.html
+          grep -F '<title>Severe Weather 3D Lab v4.3.0 - Rampage Layer</title>' MechanicsLab/SevereWeather_3D_Lab.html
+          if grep -F 'PRESENTATION_IDENTITY_MOO_BREW' MechanicsLab/SevereWeather_3D_Lab.html; then
+            echo 'Generated presentation identity output was committed over the historical source baseline.' >&2
+            exit 1
+          fi
+
+      - name: Generate verified audio in base and candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir identity-base run audio:generate
+          pnpm run audio:generate
+
+      - name: Build accepted city fabric base
+        shell: bash
+        working-directory: identity-base
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run patch:city-fabric
+          pnpm run verify:city-fabric
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+
+      - name: Build and verify presentation identity candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run patch:city-fabric
+          pnpm run verify:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run verify:presentation-identity
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          grep -F 'PRESENTATION_IDENTITY_MOO_BREW_V1' www/index.html
+
+      - name: Install Playwright Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+
+      - name: Run inherited and presentation identity browser QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/presentation-identity
+          python3 -m http.server 4173 --directory www > qa-artifacts/presentation-identity/head-server.log 2>&1 &
+          HEAD_SERVER_PID=$!
+          cleanup() {
+            kill "$HEAD_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/presentation-identity/v510' pnpm run qa:v510
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/presentation-identity/clocks' pnpm run qa:phase2
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/presentation-identity/input-abilities' pnpm run qa:phase3
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/presentation-identity/scoring-campaign' pnpm run qa:phase4
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/presentation-identity/presentation-world' pnpm run qa:phase5
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/presentation-identity/phase6' pnpm run qa:phase6
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/presentation-identity/city' pnpm run qa:city-fabric
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/presentation-identity/identity' pnpm run qa:presentation-identity
+
+      - name: Run same-runner city fabric versus identity performance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4180 --directory identity-base/www > qa-artifacts/presentation-identity/perf-base-server.log 2>&1 &
+          BASE_SERVER_PID=$!
+          python3 -m http.server 4181 --directory www > qa-artifacts/presentation-identity/perf-candidate-server.log 2>&1 &
+          CANDIDATE_SERVER_PID=$!
+          cleanup() {
+            kill "$BASE_SERVER_PID" 2>/dev/null || true
+            kill "$CANDIDATE_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for port in 4180 4181; do
+            for attempt in $(seq 1 60); do
+              if curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null; then break; fi
+              sleep 0.25
+            done
+            curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null
+          done
+          env \
+            SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4180/' \
+            SEVERE_WEATHER_CANDIDATE_URL='http://127.0.0.1:4181/' \
+            SEVERE_WEATHER_PERF_DIR='qa-artifacts/presentation-identity/performance' \
+            pnpm run perf:phase6
+
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: severe-weather-presentation-identity-diagnostics-${{ github.run_number }}
+          path: qa-artifacts/presentation-identity
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Synchronize Android assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          node node_modules/@capacitor/cli/bin/capacitor sync android
+          cmp -s www/index.html android/app/src/main/assets/public/index.html
+          cmp -s www/modern/modern-shell.js android/app/src/main/assets/public/modern/modern-shell.js
+
+      - name: Assemble debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Package presentation identity evidence
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_commit='${{ github.event.pull_request.head.sha || github.sha }}'
+          output_dir='dist/presentation-identity'
+          mkdir -p "$output_dir"
+
+          source_apk='android/app/build/outputs/apk/debug/app-debug.apk'
+          output_apk="$output_dir/Severe-Weather-v5.1.0-Presentation-Identity-${GITHUB_RUN_NUMBER}.apk"
+          test -s "$source_apk"
+          cp "$source_apk" "$output_apk"
+          sha256sum "$output_apk" | tee "$output_apk.sha256"
+
+          test -s qa-artifacts/presentation-identity/identity/presentation-identity-report.json
+          test -s qa-artifacts/presentation-identity/performance/baseline-report.json
+          test -s qa-artifacts/presentation-identity/performance/candidate-report.json
+          test -s qa-artifacts/presentation-identity/performance/comparison-report.json
+          test "$(find qa-artifacts/presentation-identity/identity -name 'presentation-identity-*.png' -type f | wc -l)" -ge 7
+
+          cp -R www "$output_dir/web-preview"
+          cp -R qa-artifacts/presentation-identity "$output_dir/qa-evidence"
+          cp Docs/PRESENTATION_IDENTITY_SOURCE_MAP.md "$output_dir/"
+          git diff --name-status 1f0df3b6df41fefa9a37163136106f9ca9909b9b...HEAD > "$output_dir/changed-module-ledger.txt"
+          cat > "$output_dir/package-manifest.json" <<MANIFEST
+          {
+            "sourceBranch": "agent/presentation-identity-moo-brew-pass",
+            "sourceCommit": "$source_commit",
+            "acceptedBaseCommit": "1f0df3b6df41fefa9a37163136106f9ca9909b9b",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunNumber": ${GITHUB_RUN_NUMBER},
+            "versionName": "5.1.0",
+            "renderer": "Three.js r128",
+            "prototype": "presentation-identity-moo-brew",
+            "identityBridge": "PRESENTATION_IDENTITY_MOO_BREW_V1",
+            "apkType": "debug",
+            "apkFile": "$(basename "$output_apk")",
+            "apkSha256": "$(sha256sum "$output_apk" | awk '{print $1}')"
+          }
+          MANIFEST
+          echo "$source_commit" > "$output_dir/SOURCE_COMMIT.txt"
+          echo "$GITHUB_RUN_ID" > "$output_dir/WORKFLOW_RUN_ID.txt"
+          echo "artifact_name=severe-weather-presentation-identity-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload presentation identity APK and evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: dist/presentation-identity
+          if-no-files-found: error
+          retention-days: 14
