@@ -5,6 +5,7 @@
   },
   "include": [
     "playcanvas-slice/src/**/*.ts",
+    "playcanvas-slice/src/vite-env.d.ts",
     "vite.playcanvas.config.ts"
   ]
 }
