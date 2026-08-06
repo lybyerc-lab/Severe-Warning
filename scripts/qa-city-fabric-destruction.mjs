@@ -32,14 +32,23 @@ try {
       selectedCampaignIndex = campaignIndex;
       resetWarningRun();
     }, index);
-    await page.waitForSelector('#mainMenu', { state: 'visible', timeout: 10000 });
-    await page.click('#btnStartMenu');
-    await page.waitForFunction(() => {
+
+    const menuVisible = await page.locator('#mainMenu').isVisible();
+    if (menuVisible) await page.click('#btnStartMenu');
+
+    await page.waitForFunction((campaignIndex) => {
       const menu = document.getElementById('mainMenu');
-      if (!menu) return false;
-      const style = getComputedStyle(menu);
-      return style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0;
-    }, null, { timeout: 10000 });
+      const menuStyle = menu ? getComputedStyle(menu) : null;
+      const mainMenuHidden = Boolean(menuStyle && (
+        menuStyle.display === 'none' || menuStyle.visibility === 'hidden' || Number(menuStyle.opacity) === 0
+      ));
+      const canvas = typeof renderer !== 'undefined' ? renderer?.domElement : document.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect?.();
+      const canvasVisible = Boolean(canvas && rect && rect.width > 0 && rect.height > 0);
+      const city = globalThis.__SW_CITY_FABRIC_BRIDGE__?.getSnapshot?.();
+      return mainMenuHidden && canvasVisible && city?.campaignIndex === campaignIndex;
+    }, index, { timeout: 10000 });
+
     await page.waitForTimeout(1200);
     const snapshot = await page.evaluate(() => {
       const menu = document.getElementById('mainMenu');
@@ -47,6 +56,9 @@ try {
       const mainMenuHidden = Boolean(menuStyle && (
         menuStyle.display === 'none' || menuStyle.visibility === 'hidden' || Number(menuStyle.opacity) === 0
       ));
+      const canvas = typeof renderer !== 'undefined' ? renderer?.domElement : document.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect?.();
+      const canvasVisible = Boolean(canvas && rect && rect.width > 0 && rect.height > 0);
       return {
         levelId: getActiveCampaignLevel().id,
         city: globalThis.__SW_CITY_FABRIC_BRIDGE__.getSnapshot(),
@@ -54,6 +66,7 @@ try {
         targetCount: targets.length,
         blockCount: townBlocks.length,
         mainMenuHidden,
+        canvasVisible,
         runState: typeof runState === 'string' ? runState : null,
       };
     });
@@ -75,6 +88,7 @@ for (const entry of levels) {
   const city = entry.city;
   if (!city) { failures.push(`${entry.levelId}: missing city fabric snapshot.`); continue; }
   if (!entry.mainMenuHidden) failures.push(`${entry.levelId}: evidence screenshot is obstructed by the main menu.`);
+  if (!entry.canvasVisible) failures.push(`${entry.levelId}: evidence screenshot does not contain a visible gameplay canvas.`);
   if (city.targetCount < 125 || city.targetCount > 190) failures.push(`${entry.levelId}: target count ${city.targetCount} outside 125..190.`);
   if (city.activeBlockCount < 30) failures.push(`${entry.levelId}: only ${city.activeBlockCount} active blocks.`);
   if (city.uniqueArchetypes < 7) failures.push(`${entry.levelId}: only ${city.uniqueArchetypes} archetypes.`);
@@ -84,7 +98,7 @@ for (const entry of levels) {
 if (errors.length) failures.push(`Browser errors: ${errors.join(' | ')}`);
 
 const report = {
-  version: 'CITY_FABRIC_DESTRUCTION_QA_V2',
+  version: 'CITY_FABRIC_DESTRUCTION_QA_V3',
   generatedAt: new Date().toISOString(),
   passed: failures.length === 0,
   screenshotsRequirePlayableWorld: true,
