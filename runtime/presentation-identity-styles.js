@@ -4,9 +4,14 @@ function identitySyncIntroPresentation() {
   const active = overlay.classList.contains('active');
   const phase = overlay.dataset.phase || '';
   const touchdownVisible = phase === 'tornado-touchdown' || phase === 'tactical-handoff';
+  const deterministicIntro = new URLSearchParams(globalThis.location?.search || '').get('qa') === '1';
   document.body.classList.toggle('moo-brew-intro-active', active);
   const tornado = overlay.querySelector('.identity-intro-tornado');
   if (tornado) {
+    // [SW:PRESENTATION:DETERMINISTIC_INTRO_VISIBILITY]
+    // Production keeps the cinematic transition. Deterministic QA owns an
+    // exact phase snapshot, so it must not sample midway through that fade.
+    tornado.style.transition = deterministicIntro ? 'none' : '';
     tornado.style.opacity = touchdownVisible ? '1' : '0';
     tornado.style.transform = touchdownVisible
       ? 'translateY(0) scale(1) rotate(0)'
