@@ -38,16 +38,22 @@ try {
       canvasPresent: Boolean(document.querySelector('canvas')),
       globalPresent: Boolean(globalThis.__SW_PLAYCANVAS_SLICE__),
       readyValue: document.documentElement.dataset.swPlaycanvasSliceReady ?? null,
+      versionValue: document.documentElement.dataset.swPlaycanvasEngineVersion ?? null,
+      revisionValue: document.documentElement.dataset.swPlaycanvasEngineRevision ?? null,
     };
   });
   await page.waitForTimeout(100);
 
+  const engineRevision = evidence.telemetry?.engineRevision;
   const checks = [
     { name: 'canvas-present', passed: Boolean(evidence.canvas), detail: JSON.stringify(evidence.canvas) },
     { name: 'canvas-landscape-width', passed: (evidence.canvas?.width ?? 0) >= 1000, detail: JSON.stringify(evidence.canvas) },
     { name: 'canvas-landscape-height', passed: (evidence.canvas?.height ?? 0) >= 500, detail: JSON.stringify(evidence.canvas) },
     { name: 'renderer-identity', passed: evidence.telemetry?.renderer === 'PlayCanvas', detail: JSON.stringify(evidence.telemetry) },
-    { name: 'engine-version', passed: evidence.telemetry?.engineVersion === '2.21.3', detail: JSON.stringify(evidence.telemetry) },
+    { name: 'engine-version-exported', passed: evidence.telemetry?.engineVersion === '2.21.3', detail: JSON.stringify(evidence.telemetry) },
+    { name: 'engine-revision-exported', passed: typeof engineRevision === 'string' && engineRevision.length >= 7 && !engineRevision.includes('$_CURRENT_'), detail: JSON.stringify(evidence.telemetry) },
+    { name: 'engine-version-dataset-agrees', passed: evidence.data.swPlaycanvasEngineVersion === evidence.telemetry?.engineVersion, detail: JSON.stringify(evidence.data) },
+    { name: 'engine-revision-dataset-agrees', passed: evidence.data.swPlaycanvasEngineRevision === engineRevision, detail: JSON.stringify(evidence.data) },
     { name: 'road-above-terrain', passed: (evidence.telemetry?.roadClearance ?? 0) >= 0.1, detail: JSON.stringify(evidence.telemetry) },
     { name: 'tornado-above-road', passed: (evidence.telemetry?.tornadoGroundClearance ?? 0) >= 0.18, detail: JSON.stringify(evidence.telemetry) },
     { name: 'scene-populated', passed: (evidence.telemetry?.entityCount ?? 0) >= 40, detail: JSON.stringify(evidence.telemetry) },
@@ -55,6 +61,8 @@ try {
     { name: 'dispose-canvas-removed', passed: disposal.canvasPresent === false, detail: JSON.stringify(disposal) },
     { name: 'dispose-global-cleared', passed: disposal.globalPresent === false, detail: JSON.stringify(disposal) },
     { name: 'dispose-ready-cleared', passed: disposal.readyValue === null, detail: JSON.stringify(disposal) },
+    { name: 'dispose-version-cleared', passed: disposal.versionValue === null, detail: JSON.stringify(disposal) },
+    { name: 'dispose-revision-cleared', passed: disposal.revisionValue === null, detail: JSON.stringify(disposal) },
     { name: 'no-console-errors', passed: consoleErrors.length === 0, detail: JSON.stringify(consoleErrors) },
     { name: 'no-page-errors', passed: pageErrors.length === 0, detail: JSON.stringify(pageErrors) },
   ];
