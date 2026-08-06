@@ -110,3 +110,28 @@ Decision:
 - Cow-Cam is rare and brief; it may change presentation and cow animation but must not slow player controls or the warning clock.
 - Moo Brew sponsors the media circus without becoming a real-world brand or an intrusive advertisement.
 - Animal injuries remain zero by design.
+
+## D-011: Move production rendering toward PlayCanvas
+
+Date: 2026-08-06
+Status: explicitly approved by user
+
+Decision:
+- PlayCanvas is the selected production-renderer direction for Severe Weather.
+- The current Three.js build remains the frozen gameplay and behavior reference until a PlayCanvas production slice is physically accepted.
+- The first migration milestone is a bounded Moo-Brew production slice, not a whole-game rewrite.
+- Preserve the accepted gameplay simulation as authority during the slice and feed visual state into PlayCanvas through explicit adapters.
+- Keep GitHub, TypeScript, browser QA, Capacitor Android packaging, exact-commit evidence, artifact verification, and physical-device acceptance.
+- Historical Three.js source and evidence remain intact and must not be overwritten or declared obsolete prematurely.
+
+Reason:
+- Physical testing confirmed that gameplay remains excellent.
+- Prairie Junction has visible road and terrain topology defects, including the storm passing under roads and terrain and ground material covering roads.
+- Cow readability improved, but the current visual-production approach still falls short.
+- The opening cinematic looks rough and is not accepted.
+- PlayCanvas provides a stronger authored scene, lighting, material, animation, particle, and camera workflow while remaining compatible with the web and Android direction.
+
+Acceptance boundary:
+- Do not migrate all counties before the opening and one Prairie Junction block demonstrate an obvious visual improvement on the Galaxy S26 Ultra.
+- The slice must preserve controls, Pull, Gust, Zap, scoring, combo, campaign timing, destruction behavior, safe animals, pause/background handling, reset, and cleanup.
+- A green workflow or packaged APK is not acceptance. The exact PlayCanvas APK must be installed and approved physically.
