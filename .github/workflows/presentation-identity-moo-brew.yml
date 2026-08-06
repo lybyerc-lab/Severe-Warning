@@ -67,6 +67,9 @@ jobs:
             scripts/verify-presentation-identity-moo-brew.mjs \
             scripts/qa-presentation-identity-moo-brew.mjs \
             runtime/presentation-identity-core.js \
+            runtime/presentation-identity-style-part-1.js \
+            runtime/presentation-identity-style-part-2.js \
+            runtime/presentation-identity-style-part-3.js \
             runtime/presentation-identity-styles.js \
             runtime/presentation-identity-ui.js; do
             node --check "$file"

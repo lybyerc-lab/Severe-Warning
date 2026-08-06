@@ -19,6 +19,9 @@ async function read(relativePath) {
 const html = await read('MechanicsLab/SevereWeather_3D_Lab.html');
 const runtime = [
   await read('runtime/presentation-identity-core.js'),
+  await read('runtime/presentation-identity-style-part-1.js'),
+  await read('runtime/presentation-identity-style-part-2.js'),
+  await read('runtime/presentation-identity-style-part-3.js'),
   await read('runtime/presentation-identity-styles.js'),
   await read('runtime/presentation-identity-ui.js'),
 ].join('\n');

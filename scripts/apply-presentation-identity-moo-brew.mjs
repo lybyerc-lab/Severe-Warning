@@ -9,6 +9,9 @@ const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const runtimePaths = [
   path.join(projectRoot, 'runtime', 'presentation-identity-core.js'),
+  path.join(projectRoot, 'runtime', 'presentation-identity-style-part-1.js'),
+  path.join(projectRoot, 'runtime', 'presentation-identity-style-part-2.js'),
+  path.join(projectRoot, 'runtime', 'presentation-identity-style-part-3.js'),
   path.join(projectRoot, 'runtime', 'presentation-identity-styles.js'),
   path.join(projectRoot, 'runtime', 'presentation-identity-ui.js'),
 ];
