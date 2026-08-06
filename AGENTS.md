@@ -15,6 +15,7 @@ Read these files in order:
 7. `Docs/DECISIONS.md`
 8. `Docs/SYSTEM_MAP.md`
 9. `Docs/CODE_ANCHORS.md`
+10. `Docs/IMPLEMENTATION_TRUTH_GATE.md`
 
 Then inspect the active branch, draft pull request, and latest successful QA build before proposing changes.
 
@@ -29,6 +30,10 @@ Then inspect the active branch, draft pull request, and latest successful QA bui
 - Update `Docs/ACTIVE_HANDOFF.md` whenever the active branch, build, milestone, build-train stage, or next action changes.
 - Record durable product or architecture decisions in `Docs/DECISIONS.md`.
 - Use stable searchable code anchors defined in `Docs/CODE_ANCHORS.md`.
+- Enforce `Docs/IMPLEMENTATION_TRUTH_GATE.md`: helper-only tests and marker checks never prove accepted-executor integration.
+- Every milestone workflow must avoid duplicate push and pull-request runs for the same source change.
+- Artifact packaging must fail when required evidence is absent.
+- Call `assembleDebug` output a debug APK, never a signed release APK.
 - Do not merge an unaccepted gameplay milestone.
 
 ## Status vocabulary
