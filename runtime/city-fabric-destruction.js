@@ -42,8 +42,8 @@ const CITY_FABRIC_PROFILES = Object.freeze([
     label: 'STATE FAIR CITY',
     zoneRows: ['PPXXPP', 'PEMMEP', 'PEMMEP', 'PEMMEP', 'PEMMEP', 'PPSSPP'],
     zones: Object.freeze({
-      P: Object.freeze({ name: 'PARKING + SERVICE', pad: '#5d5368', lots: 'service', archetypes: ['service', 'booth', 'booth', 'tree'] }),
-      X: Object.freeze({ name: 'GRANDSTAND APPROACH', pad: '#704b67', lots: 'fair-dense', archetypes: ['pavilion', 'booth', 'booth', 'service', 'tree'] }),
+      P: Object.freeze({ name: 'PARKING + SERVICE', pad: '#5d5368', lots: 'service', archetypes: ['service', 'booth', 'tree', 'civic'] }),
+      X: Object.freeze({ name: 'GRANDSTAND APPROACH', pad: '#704b67', lots: 'fair-dense', archetypes: ['pavilion', 'booth', 'civic', 'service', 'tree'] }),
       E: Object.freeze({ name: 'EXHIBITION ROW', pad: '#6a5261', lots: 'fair-dense', archetypes: ['pavilion', 'booth', 'booth', 'shop', 'service'] }),
       M: Object.freeze({ name: 'MIDWAY BLOCK', pad: '#7d4e67', lots: 'midway', archetypes: ['booth', 'booth', 'booth', 'pavilion', 'service', 'tree'] }),
       S: Object.freeze({ name: 'SHOW RING SERVICE', pad: '#62566c', lots: 'industrial', archetypes: ['pavilion', 'service', 'warehouse', 'booth'] }),
