@@ -1,6 +1,9 @@
 name: PlayCanvas Production Slice Bootstrap
 
 on:
+  push:
+    branches:
+      - 'agent/playcanvas-moo-brew-slice-*'
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
