@@ -37,6 +37,16 @@ android/.gradle/
 android/local.properties
 android/**/build/
 
+# PlayCanvas production-slice generated output
+playcanvas-slice/public/vendor/
+playcanvas-slice-dist/
+playcanvas-slice-artifact/
+playcanvas-slice-evidence/
+playcanvas-slice-engine-report.json
+playcanvas-slice-static-report.json
+playcanvas-slice-server.log
+playcanvas-slice-server.pid
+
 # Android signing material must never enter source control
 *.jks
 *.keystore
