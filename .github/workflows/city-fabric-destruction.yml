@@ -1,0 +1,288 @@
+name: City Fabric Destruction Prototype
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - agent/phase6-android-performance-antigravity
+
+permissions:
+  contents: read
+
+concurrency:
+  group: city-fabric-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    name: Build verify and package city fabric prototype
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out city fabric head
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check out accepted Phase 6 base
+        uses: actions/checkout@v6
+        with:
+          ref: b0fff3ced1095b9bc4b27d53c030b21431bdf3b7
+          path: city-base
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          pnpm --dir city-base install --frozen-lockfile
+
+      - name: Verify process truth, city scripts, and TypeScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run verify:process
+          for file in \
+            scripts/apply-city-fabric-destruction.mjs \
+            scripts/verify-city-fabric-destruction.mjs \
+            scripts/qa-city-fabric-destruction.mjs \
+            runtime/city-fabric-destruction.js; do
+            node --check "$file"
+          done
+          pnpm run modern:typecheck
+
+      - name: Verify clean historical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp -s \
+            MechanicsLab/SevereWeather_3D_Lab.html \
+            city-base/MechanicsLab/SevereWeather_3D_Lab.html
+          grep -F '<title>Severe Weather 3D Lab v4.3.0 - Rampage Layer</title>' MechanicsLab/SevereWeather_3D_Lab.html
+          if grep -F 'CITY_FABRIC_DESTRUCTION' MechanicsLab/SevereWeather_3D_Lab.html; then
+            echo 'Generated city fabric output was committed over the historical source baseline.' >&2
+            exit 1
+          fi
+
+      - name: Generate verified audio in base and candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir city-base run audio:generate
+          pnpm run audio:generate
+
+      - name: Build accepted Phase 6 base
+        shell: bash
+        working-directory: city-base
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+
+      - name: Build and verify city fabric candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run patch:city-fabric
+          pnpm run verify:city-fabric
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          grep -F 'CITY_FABRIC_DESTRUCTION_V1' www/index.html
+
+      - name: Install Playwright Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+
+      - name: Run inherited and city fabric browser QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/city-fabric
+          python3 -m http.server 4173 --directory www > qa-artifacts/city-fabric/head-server.log 2>&1 &
+          HEAD_SERVER_PID=$!
+          cleanup() {
+            kill "$HEAD_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/city-fabric/v510' pnpm run qa:v510
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/city-fabric/clocks' pnpm run qa:phase2
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/city-fabric/input-abilities' pnpm run qa:phase3
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/city-fabric/scoring-campaign' pnpm run qa:phase4
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/city-fabric/presentation-world' pnpm run qa:phase5
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/city-fabric/phase6' pnpm run qa:phase6
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/city-fabric/city' pnpm run qa:city-fabric
+
+      - name: Run same-runner Phase 6 versus city fabric performance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4180 --directory city-base/www > qa-artifacts/city-fabric/perf-base-server.log 2>&1 &
+          BASE_SERVER_PID=$!
+          python3 -m http.server 4181 --directory www > qa-artifacts/city-fabric/perf-candidate-server.log 2>&1 &
+          CANDIDATE_SERVER_PID=$!
+          cleanup() {
+            kill "$BASE_SERVER_PID" 2>/dev/null || true
+            kill "$CANDIDATE_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for port in 4180 4181; do
+            for attempt in $(seq 1 60); do
+              if curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null; then break; fi
+              sleep 0.25
+            done
+            curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null
+          done
+          env \
+            SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4180/' \
+            SEVERE_WEATHER_CANDIDATE_URL='http://127.0.0.1:4181/' \
+            SEVERE_WEATHER_PERF_DIR='qa-artifacts/city-fabric/performance' \
+            pnpm run perf:phase6
+
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: severe-weather-city-fabric-diagnostics-${{ github.run_number }}
+          path: qa-artifacts/city-fabric
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Synchronize Android assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          node node_modules/@capacitor/cli/bin/capacitor sync android
+          cmp -s www/index.html android/app/src/main/assets/public/index.html
+          cmp -s www/modern/modern-shell.js android/app/src/main/assets/public/modern/modern-shell.js
+
+      - name: Assemble debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Package city fabric evidence
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_commit='${{ github.event.pull_request.head.sha || github.sha }}'
+          output_dir='dist/city-fabric'
+          mkdir -p "$output_dir"
+
+          source_apk='android/app/build/outputs/apk/debug/app-debug.apk'
+          output_apk="$output_dir/Severe-Weather-v5.1.0-City-Fabric-${GITHUB_RUN_NUMBER}.apk"
+          test -s "$source_apk"
+          cp "$source_apk" "$output_apk"
+          sha256sum "$output_apk" | tee "$output_apk.sha256"
+
+          test -s qa-artifacts/city-fabric/city/city-fabric-report.json
+          test -s qa-artifacts/city-fabric/performance/baseline-report.json
+          test -s qa-artifacts/city-fabric/performance/candidate-report.json
+          test -s qa-artifacts/city-fabric/performance/comparison-report.json
+          test "$(find qa-artifacts/city-fabric/city -name 'city-fabric-level-*.png' -type f | wc -l)" -eq 4
+
+          cp -R www "$output_dir/web-preview"
+          cp -R qa-artifacts/city-fabric "$output_dir/qa-evidence"
+          cp Docs/CITY_FABRIC_PLAYTHROUGH_2026-08-05.md "$output_dir/"
+          git diff --name-status b0fff3ced1095b9bc4b27d53c030b21431bdf3b7...HEAD > "$output_dir/changed-module-ledger.txt"
+          cat > "$output_dir/package-manifest.json" <<MANIFEST
+          {
+            "sourceBranch": "agent/city-fabric-destruction-pass",
+            "sourceCommit": "$source_commit",
+            "acceptedBaseCommit": "b0fff3ced1095b9bc4b27d53c030b21431bdf3b7",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunNumber": ${GITHUB_RUN_NUMBER},
+            "versionName": "5.1.0",
+            "renderer": "Three.js r128",
+            "prototype": "city-fabric-destruction",
+            "cityFabricBridge": "CITY_FABRIC_DESTRUCTION_V1",
+            "apkType": "debug",
+            "apkFile": "$(basename "$output_apk")",
+            "apkSha256": "$(sha256sum "$output_apk" | awk '{print $1}')"
+          }
+          MANIFEST
+          echo "$source_commit" > "$output_dir/SOURCE_COMMIT.txt"
+          echo "$GITHUB_RUN_ID" > "$output_dir/WORKFLOW_RUN_ID.txt"
+          echo "artifact_name=severe-weather-city-fabric-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload city fabric APK and evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: dist/city-fabric
+          if-no-files-found: error
+          retention-days: 14
