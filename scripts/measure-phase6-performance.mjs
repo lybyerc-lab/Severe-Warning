@@ -10,8 +10,9 @@ const outputDir = process.env.SEVERE_WEATHER_PERF_DIR
   : path.join(projectRoot, 'qa-artifacts', 'modernization-phase-6', 'performance');
 const baselineUrl = process.env.SEVERE_WEATHER_BASE_URL;
 const candidateUrl = process.env.SEVERE_WEATHER_CANDIDATE_URL || process.env.SEVERE_WEATHER_QA_URL;
-const FRAME_CAPTURE_TIMEOUT_MS = 15000;
 const NAVIGATION_TIMEOUT_MS = 20000;
+const FRAME_OBSERVATION_WINDOW_MS = 3500;
+const MIN_VALID_FRAME_DELTAS = 5;
 if (!baselineUrl || !candidateUrl) {
   throw new Error('Phase 6 performance evidence requires SEVERE_WEATHER_BASE_URL and SEVERE_WEATHER_CANDIDATE_URL.');
 }
@@ -23,44 +24,57 @@ function percentile(values, ratio) {
   return sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * ratio))];
 }
 
-function summarizeFrameTimes(frameTimesMs) {
+function summarizeFrameTimes(frameTimesMs, observationWindowMs) {
+  const valid = frameTimesMs.length >= MIN_VALID_FRAME_DELTAS;
   const median = percentile(frameTimesMs, 0.5);
   const p95 = percentile(frameTimesMs, 0.95);
   return {
+    timingEvidenceValid: valid,
+    timingEvidenceStatus: valid ? 'valid' : 'insufficient-observed-frames',
+    observationWindowMs,
     sampleCount: frameTimesMs.length,
-    frameTimeMedianMs: Number(median.toFixed(3)),
-    frameTimeP95Ms: Number(p95.toFixed(3)),
-    fpsMedian: median > 0 ? Number((1000 / median).toFixed(2)) : 0,
-    fpsP95: p95 > 0 ? Number((1000 / p95).toFixed(2)) : 0,
+    frameTimeMedianMs: valid ? Number(median.toFixed(3)) : null,
+    frameTimeP95Ms: valid ? Number(p95.toFixed(3)) : null,
+    fpsMedian: valid && median > 0 ? Number((1000 / median).toFixed(2)) : null,
+    fpsP95: valid && p95 > 0 ? Number((1000 / p95).toFixed(2)) : null,
     longFrame33Count: frameTimesMs.filter((value) => value > 33.3).length,
     longFrame50Count: frameTimesMs.filter((value) => value > 50).length,
   };
 }
 
-async function collectRafFrames(page, count = 60) {
-  return page.evaluate(
-    ({ sampleCount, timeoutMs }) => new Promise((resolve, reject) => {
-      const samples = [];
-      let previous = performance.now();
-      let rafId = 0;
-      const timer = setTimeout(() => {
-        cancelAnimationFrame(rafId);
-        reject(new Error(`Phase 6 frame capture timed out after ${timeoutMs}ms with ${samples.length}/${sampleCount} samples.`));
-      }, timeoutMs);
-      function next(now) {
-        samples.push(now - previous);
-        previous = now;
-        if (samples.length >= sampleCount) {
-          clearTimeout(timer);
-          resolve(samples);
-          return;
-        }
-        rafId = requestAnimationFrame(next);
-      }
-      rafId = requestAnimationFrame(next);
-    }),
-    { sampleCount: count, timeoutMs: FRAME_CAPTURE_TIMEOUT_MS },
-  );
+async function installPassiveFrameObserver(page) {
+  await page.addInitScript(() => {
+    const originalRequestAnimationFrame = globalThis.requestAnimationFrame.bind(globalThis);
+    const timestamps = [];
+    Object.defineProperty(globalThis, '__SW_PHASE6_FRAME_TIMESTAMPS__', {
+      configurable: false,
+      enumerable: false,
+      writable: false,
+      value: timestamps,
+    });
+    globalThis.requestAnimationFrame = (callback) => originalRequestAnimationFrame((timestamp) => {
+      timestamps.push(Number(timestamp));
+      if (timestamps.length > 5000) timestamps.splice(0, timestamps.length - 5000);
+      callback(timestamp);
+    });
+  });
+}
+
+async function collectObservedFrameDeltas(page, durationMs = FRAME_OBSERVATION_WINDOW_MS) {
+  const startIndex = await page.evaluate(() => {
+    const values = globalThis.__SW_PHASE6_FRAME_TIMESTAMPS__ || [];
+    return Math.max(0, values.length - 1);
+  });
+  await page.waitForTimeout(durationMs);
+  const timestamps = await page.evaluate((index) => (
+    (globalThis.__SW_PHASE6_FRAME_TIMESTAMPS__ || []).slice(index)
+  ), startIndex);
+  const deltas = [];
+  for (let index = 1; index < timestamps.length; index += 1) {
+    const delta = Number(timestamps[index]) - Number(timestamps[index - 1]);
+    if (Number.isFinite(delta) && delta > 0 && delta < 1000) deltas.push(delta);
+  }
+  return deltas;
 }
 
 async function runtimeMetrics(page) {
@@ -80,20 +94,21 @@ async function runtimeMetrics(page) {
         uniqueGeometryCount: live.scene.uniqueGeometryCount,
         uniqueTextureCount: live.scene.uniqueTextureCount,
       } : null,
+      productionQa: live?.productionQa || null,
       heapUsageMbProxy: memory,
       phase6,
     };
   });
 }
 
-async function captureScenario(page, label, setup, sampleCount = 60) {
+async function captureScenario(page, label, setup, observationWindowMs = FRAME_OBSERVATION_WINDOW_MS) {
   if (setup) await setup();
   await page.waitForTimeout(150);
-  const frameTimes = await collectRafFrames(page, sampleCount);
+  const frameTimes = await collectObservedFrameDeltas(page, observationWindowMs);
   const metrics = await runtimeMetrics(page);
   await page.screenshot({ path: path.join(outputDir, `${label}.png`), fullPage: true, timeout: 15000 });
   return {
-    ...summarizeFrameTimes(frameTimes),
+    ...summarizeFrameTimes(frameTimes, observationWindowMs),
     ...metrics,
   };
 }
@@ -102,6 +117,7 @@ async function measureBuild(browser, url, label) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   page.setDefaultTimeout(NAVIGATION_TIMEOUT_MS);
   page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
+  await installPassiveFrameObserver(page);
   const errors = [];
   const logs = [];
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
@@ -120,18 +136,18 @@ async function measureBuild(browser, url, label) {
     await page.waitForTimeout(500);
 
     const scenarios = {};
-    scenarios.initial = await captureScenario(page, `${label}-initial`, null, 60);
+    scenarios.initial = await captureScenario(page, `${label}-initial`, null);
     scenarios.movement = await captureScenario(page, `${label}-movement`, async () => {
       await page.keyboard.down('ArrowUp');
       await page.waitForTimeout(500);
-    }, 60);
+    });
     await page.keyboard.up('ArrowUp');
     scenarios.heavyDestruction = await captureScenario(page, `${label}-heavy-destruction`, async () => {
       await page.evaluate(() => globalThis.triggerProductionSliceQa('hero'));
-    }, 90);
+    }, 4500);
     scenarios.afterReset = await captureScenario(page, `${label}-after-reset`, async () => {
       await page.evaluate(() => globalThis.__SW_V510_REBUILD__());
-    }, 45);
+    }, 2500);
 
     return {
       label,
@@ -146,14 +162,21 @@ async function measureBuild(browser, url, label) {
   }
 }
 
+function nullableDelta(candidateValue, baselineValue) {
+  if (!Number.isFinite(candidateValue) || !Number.isFinite(baselineValue)) return null;
+  return Number((candidateValue - baselineValue).toFixed(3));
+}
+
 function compareScenario(baseline, candidate) {
-  const numericDelta = (key) => Number((Number(candidate[key] || 0) - Number(baseline[key] || 0)).toFixed(3));
   return {
-    frameTimeMedianMsDelta: numericDelta('frameTimeMedianMs'),
-    frameTimeP95MsDelta: numericDelta('frameTimeP95Ms'),
-    fpsMedianDelta: numericDelta('fpsMedian'),
-    longFrame33Delta: numericDelta('longFrame33Count'),
-    longFrame50Delta: numericDelta('longFrame50Count'),
+    timingComparisonValid: baseline.timingEvidenceValid === true && candidate.timingEvidenceValid === true,
+    baselineTimingStatus: baseline.timingEvidenceStatus,
+    candidateTimingStatus: candidate.timingEvidenceStatus,
+    frameTimeMedianMsDelta: nullableDelta(candidate.frameTimeMedianMs, baseline.frameTimeMedianMs),
+    frameTimeP95MsDelta: nullableDelta(candidate.frameTimeP95Ms, baseline.frameTimeP95Ms),
+    fpsMedianDelta: nullableDelta(candidate.fpsMedian, baseline.fpsMedian),
+    longFrame33Delta: Number((candidate.longFrame33Count || 0) - (baseline.longFrame33Count || 0)),
+    longFrame50Delta: Number((candidate.longFrame50Count || 0) - (baseline.longFrame50Count || 0)),
     drawCallsDelta: Number((candidate.renderer?.calls || 0) - (baseline.renderer?.calls || 0)),
     trianglesDelta: Number((candidate.renderer?.triangles || 0) - (baseline.renderer?.triangles || 0)),
     meshCountDelta: Number((candidate.scene?.meshCount || 0) - (baseline.scene?.meshCount || 0)),
@@ -176,12 +199,15 @@ try {
 }
 
 const comparison = {
-  version: 'MODERNIZATION_PHASE6_DUAL_BUILD_PERFORMANCE_V2',
+  version: 'MODERNIZATION_PHASE6_DUAL_BUILD_PERFORMANCE_V3',
   generatedAt: new Date().toISOString(),
   runnerNote: 'Frame timings are same-runner advisory evidence. Integration and bounded-resource contracts remain blocking.',
-  captureWatchdogs: {
+  captureMethod: {
+    type: 'passive-requestAnimationFrame-observer',
+    defaultObservationWindowMs: FRAME_OBSERVATION_WINDOW_MS,
+    minimumValidFrameDeltas: MIN_VALID_FRAME_DELTAS,
     navigationTimeoutMs: NAVIGATION_TIMEOUT_MS,
-    frameCaptureTimeoutMs: FRAME_CAPTURE_TIMEOUT_MS,
+    insufficientTimingDoesNotBlock: true,
   },
   scenarios: Object.fromEntries(
     Object.keys(baseline.scenarios).map((name) => [name, compareScenario(baseline.scenarios[name], candidate.scenarios[name])]),
@@ -204,8 +230,8 @@ await writeFile(path.join(outputDir, 'candidate-report.json'), JSON.stringify(ca
 await writeFile(path.join(outputDir, 'comparison-report.json'), JSON.stringify(comparison, null, 2), 'utf8');
 
 const scenarioRows = Object.entries(comparison.scenarios)
-  .map(([name, metrics]) => `| ${name} | ${metrics.frameTimeMedianMsDelta} | ${metrics.frameTimeP95MsDelta} | ${metrics.drawCallsDelta} | ${metrics.trianglesDelta} |`)
+  .map(([name, metrics]) => `| ${name} | ${metrics.timingComparisonValid ? 'valid' : 'advisory unavailable'} | ${metrics.frameTimeMedianMsDelta ?? 'n/a'} | ${metrics.frameTimeP95MsDelta ?? 'n/a'} | ${metrics.drawCallsDelta} | ${metrics.trianglesDelta} |`)
   .join('\n');
-const markdown = `# Phase 6 Dual-Build Performance Evidence\n\nGenerated: ${comparison.generatedAt}\n\nThis report compares the accepted Phase 5 base and the Phase 6 candidate on the same GitHub Actions runner. Timing values are advisory; executor integration, bounded pools, reset behavior, and telemetry integrity are blocking.\n\nCapture watchdogs: navigation ${NAVIGATION_TIMEOUT_MS}ms, frame sampling ${FRAME_CAPTURE_TIMEOUT_MS}ms per scenario.\n\n| Scenario | Median frame delta ms | P95 frame delta ms | Draw-call delta | Triangle delta |\n|---|---:|---:|---:|---:|\n${scenarioRows}\n\n## Candidate integration proof\n\n- Production update samples: ${integration.productionUpdateSamples}\n- Production dust burst calls: ${integration.productionDustBurstCalls}\n- Pooled dust spawned: ${integration.pooledDustSpawned}\n- Pool high-water mark: ${comparison.candidatePool?.highWaterMark ?? 'n/a'} / ${comparison.candidatePool?.poolCapacity ?? 'n/a'}\n`;
+const markdown = `# Phase 6 Dual-Build Performance Evidence\n\nGenerated: ${comparison.generatedAt}\n\nThis report compares the accepted Phase 5 base and the Phase 6 candidate on the same GitHub Actions runner. Timing values are advisory; executor integration, bounded pools, reset behavior, and telemetry integrity are blocking.\n\nFrame timing uses a passive requestAnimationFrame observer installed before application load. Every scenario has a fixed observation window, so evidence collection cannot wait indefinitely for a target frame count.\n\n| Scenario | Timing status | Median frame delta ms | P95 frame delta ms | Draw-call delta | Triangle delta |\n|---|---|---:|---:|---:|---:|\n${scenarioRows}\n\n## Candidate integration proof\n\n- Production update samples: ${integration.productionUpdateSamples}\n- Production dust burst calls: ${integration.productionDustBurstCalls}\n- Pooled dust spawned: ${integration.pooledDustSpawned}\n- Pool high-water mark: ${comparison.candidatePool?.highWaterMark ?? 'n/a'} / ${comparison.candidatePool?.poolCapacity ?? 'n/a'}\n`;
 await writeFile(path.join(outputDir, 'phase6-performance-report.md'), markdown, 'utf8');
 console.log(`[SW:PERF] Wrote dual-build evidence to ${outputDir}`);

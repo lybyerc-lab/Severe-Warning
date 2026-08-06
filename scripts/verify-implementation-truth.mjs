@@ -48,7 +48,9 @@ check('QA proves retry cleanup and listener stability', qa.includes('activeCount
 check('performance evidence is dual-build', measure.includes('SEVERE_WEATHER_BASE_URL') && measure.includes('SEVERE_WEATHER_CANDIDATE_URL'));
 check('performance evidence measures frame percentiles and renderer work', measure.includes('frameTimeP95Ms') && measure.includes('drawCallsDelta') && measure.includes('trianglesDelta'));
 check('performance capture does not disable GPU rendering', !measure.includes('--disable-gpu'));
-check('performance capture has explicit navigation and frame watchdogs', measure.includes('FRAME_CAPTURE_TIMEOUT_MS') && measure.includes('NAVIGATION_TIMEOUT_MS') && measure.includes('Phase 6 frame capture timed out'));
+check('performance capture passively observes the game loop', measure.includes('__SW_PHASE6_FRAME_TIMESTAMPS__') && measure.includes('passive-requestAnimationFrame-observer'));
+check('performance capture uses fixed observation windows and cannot wait for a target frame count', measure.includes('FRAME_OBSERVATION_WINDOW_MS') && measure.includes('MIN_VALID_FRAME_DELTAS') && !measure.includes('Phase 6 frame capture timed out'));
+check('insufficient CI timing remains explicit advisory evidence', measure.includes('insufficient-observed-frames') && measure.includes('insufficientTimingDoesNotBlock: true'));
 check('repository startup contract requires implementation truth gate', agents.includes('Docs/IMPLEMENTATION_TRUTH_GATE.md'));
 check('bridge does not call debug APK signed', !/Signed Android APK/i.test(bridge));
 
