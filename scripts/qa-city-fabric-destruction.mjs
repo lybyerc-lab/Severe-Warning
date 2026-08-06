@@ -32,14 +32,31 @@ try {
       selectedCampaignIndex = campaignIndex;
       resetWarningRun();
     }, index);
-    await page.waitForTimeout(900);
-    const snapshot = await page.evaluate(() => ({
-      levelId: getActiveCampaignLevel().id,
-      city: globalThis.__SW_CITY_FABRIC_BRIDGE__.getSnapshot(),
-      phase6: globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.getSnapshot?.() || null,
-      targetCount: targets.length,
-      blockCount: townBlocks.length,
-    }));
+    await page.waitForSelector('#mainMenu', { state: 'visible', timeout: 10000 });
+    await page.click('#btnStartMenu');
+    await page.waitForFunction(() => {
+      const menu = document.getElementById('mainMenu');
+      if (!menu) return false;
+      const style = getComputedStyle(menu);
+      return style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0;
+    }, null, { timeout: 10000 });
+    await page.waitForTimeout(1200);
+    const snapshot = await page.evaluate(() => {
+      const menu = document.getElementById('mainMenu');
+      const menuStyle = menu ? getComputedStyle(menu) : null;
+      const mainMenuHidden = Boolean(menuStyle && (
+        menuStyle.display === 'none' || menuStyle.visibility === 'hidden' || Number(menuStyle.opacity) === 0
+      ));
+      return {
+        levelId: getActiveCampaignLevel().id,
+        city: globalThis.__SW_CITY_FABRIC_BRIDGE__.getSnapshot(),
+        phase6: globalThis.__SW_PHASE6_PERFORMANCE_BRIDGE__?.getSnapshot?.() || null,
+        targetCount: targets.length,
+        blockCount: townBlocks.length,
+        mainMenuHidden,
+        runState: typeof runState === 'string' ? runState : null,
+      };
+    });
     await page.screenshot({ path: path.join(outputDir, `city-fabric-level-${index + 1}.png`), fullPage: true });
     levels.push(snapshot);
   }
@@ -57,6 +74,7 @@ if (distributions.size !== 4) failures.push(`Expected four distinct archetype di
 for (const entry of levels) {
   const city = entry.city;
   if (!city) { failures.push(`${entry.levelId}: missing city fabric snapshot.`); continue; }
+  if (!entry.mainMenuHidden) failures.push(`${entry.levelId}: evidence screenshot is obstructed by the main menu.`);
   if (city.targetCount < 125 || city.targetCount > 190) failures.push(`${entry.levelId}: target count ${city.targetCount} outside 125..190.`);
   if (city.activeBlockCount < 30) failures.push(`${entry.levelId}: only ${city.activeBlockCount} active blocks.`);
   if (city.uniqueArchetypes < 7) failures.push(`${entry.levelId}: only ${city.uniqueArchetypes} archetypes.`);
@@ -66,9 +84,10 @@ for (const entry of levels) {
 if (errors.length) failures.push(`Browser errors: ${errors.join(' | ')}`);
 
 const report = {
-  version: 'CITY_FABRIC_DESTRUCTION_QA_V1',
+  version: 'CITY_FABRIC_DESTRUCTION_QA_V2',
   generatedAt: new Date().toISOString(),
   passed: failures.length === 0,
+  screenshotsRequirePlayableWorld: true,
   levels,
   profileCount: profiles.size,
   distributionCount: distributions.size,
