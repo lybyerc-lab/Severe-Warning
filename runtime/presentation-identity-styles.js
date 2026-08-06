@@ -19,6 +19,21 @@ function identityInstallIntroPresentationSync() {
   const overlay = document.getElementById('mooBrewIntro');
   if (!overlay || overlay.dataset.presentationSyncInstalled === '1') return false;
   overlay.dataset.presentationSyncInstalled = '1';
+
+  // [SW:PRESENTATION:INTRO_PHASE_SYNC]
+  // MutationObserver callbacks run after the phase-changing task. Wrap the
+  // accepted phase setter so deterministic QA and assistive snapshots see the
+  // visual state in the same turn that owns the phase transition.
+  if (!identityState.introPhaseSyncInstalled) {
+    const originalSetIntroPhase = identitySetIntroPhase;
+    identitySetIntroPhase = function identitySynchronizedSetIntroPhase(phase) {
+      const changed = originalSetIntroPhase(phase);
+      if (changed) identitySyncIntroPresentation();
+      return changed;
+    };
+    identityState.introPhaseSyncInstalled = true;
+  }
+
   const observer = new MutationObserver(() => identitySyncIntroPresentation());
   observer.observe(overlay, { attributes: true, attributeFilter: ['class', 'data-phase'] });
   identitySyncIntroPresentation();
