@@ -1,20 +1,11 @@
 name: PlayCanvas Production Slice Bootstrap
 
 on:
-  push:
-    branches:
-      - 'agent/playcanvas-*'
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'playcanvas-slice/**'
-      - 'scripts/fetch-playcanvas-engine.mjs'
-      - 'scripts/verify-playcanvas-slice.mjs'
-      - 'scripts/qa-playcanvas-slice.mjs'
-      - 'tsconfig.playcanvas.json'
-      - 'vite.playcanvas.config.ts'
-      - '.github/workflows/playcanvas-production-slice.yml'
   workflow_dispatch:
+  pull_request:
+    branches:
+      - agent/playcanvas-production-slice-handoff
+      - agent/playcanvas-moo-brew-slice-bootstrap
 
 concurrency:
   group: playcanvas-slice-${{ github.event.pull_request.number || github.ref }}
