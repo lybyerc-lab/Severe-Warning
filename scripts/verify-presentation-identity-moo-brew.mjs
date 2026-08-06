@@ -66,7 +66,7 @@ check('QA tests intro, cows, world dressing, and compact results layouts', qa.in
 check('workflow is single-trigger', !/^\s{2}push:/m.test(workflow));
 check('workflow targets city-fabric base branch', workflow.includes('- agent/city-fabric-destruction-pass'));
 check('workflow compares exact green city-fabric base', workflow.includes('ref: 1f0df3b6df41fefa9a37163136106f9ca9909b9b'));
-check('workflow packages screenshots, report, APK, and checksum', workflow.includes('presentation-identity-report.json') && workflow.includes('presentation-identity-*.png') && workflow.includes('.apk.sha256'));
+check('workflow packages screenshots, report, APK, and checksum', workflow.includes('presentation-identity-report.json') && workflow.includes("find qa-artifacts/presentation-identity/identity -name 'presentation-identity-*.png'") && workflow.includes('test \"$(find qa-artifacts/presentation-identity/identity') && workflow.includes('sha256sum \"$output_apk\" | tee \"$output_apk.sha256\"'));
 check('workflow artifact is fail-fast', workflow.includes('if-no-files-found: error'));
 
 const failed = checks.filter((entry) => !entry.passed);
