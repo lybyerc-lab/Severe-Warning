@@ -48,16 +48,26 @@ check(
   contents.chaseCamera.includes('[SW:PLAYCANVAS:ONE_STICK_CHASE_CAMERA]')
     && contents.entry.includes('new OneStickChaseCamera')
     && contents.entry.includes('chaseCamera.update(renderTornado.x, renderTornado.z, deltaSeconds)')
+    && contents.chaseCamera.includes('setTravelIntent(worldX: number, worldZ: number, active: boolean)')
     && contents.chaseCamera.includes('turnRateRadiansPerSecond')
     && contents.chaseCamera.includes('headingDeadZoneRadians')
-    && contents.chaseCamera.includes('movementThreshold'),
-  'camera heading is an explicit damped state separate from gameplay movement',
+    && contents.chaseCamera.includes('movementThreshold')
+    && contents.chaseCamera.includes('intentMagnitudeThreshold'),
+  'camera heading is an explicit damped state with immediate one-stick travel intent and observed-travel fallback',
 );
 check(
   'chase-camera-turn-rate-bounded',
-  contents.entry.includes('CHASE_CAMERA_TURN_RATE_RADIANS = 1.35')
-    && contents.entry.includes('CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180'),
-  'first chase-camera pass has a fixed bounded turn rate and heading dead zone',
+  contents.entry.includes('CHASE_CAMERA_TURN_RATE_RADIANS = 1.05')
+    && contents.entry.includes('CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180')
+    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12'),
+  'intent-driven chase camera has a bounded turn rate, heading dead zone, and stick-magnitude threshold',
+);
+check(
+  'chase-camera-intent-wiring',
+  contents.entry.includes('chaseCamera.setTravelIntent(target.x, target.z, active)')
+    && contents.entry.includes('mapScreenInput(screen.x, screen.y)')
+    && contents.entry.includes('mapScreenInput(0, 0)'),
+  'visible controls publish travel intent directly to the chase camera and clear it on release/blur',
 );
 check('camera-relative-input-contract', contents.entry.includes('chaseCameraAuthorityInput') && contents.entry.includes('chaseCamera.screenToWorldDirection') && contents.entry.includes('transform.unmapDirection'), 'screen-space movement uses current chase-camera basis and is transformed back into accepted authority world axes');
 check('keyboard-camera-relative', contents.entry.includes("pressed.has('KeyW')") && contents.entry.includes('applyDirectionalInput()') && contents.entry.includes('authority.setJoystick(authorityVector.x, authorityVector.z, active)'), 'keyboard is interpreted as screen-space movement and sent through accepted movement authority');
