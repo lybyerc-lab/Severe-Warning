@@ -59,7 +59,8 @@ jobs:
           sudo apt-get install --yes --no-install-recommends ffmpeg
           pnpm run audio:generate
           test -s assets/audio/storm-feel-sprite.wav
-          test -s assets/audio/storm-feel-sprite.mp3
+          test -s assets/audio/storm-feel-manifest.json
+          test -s assets/audio/LICENSE.md
 
       - name: Fetch pinned PlayCanvas engine
         env:
