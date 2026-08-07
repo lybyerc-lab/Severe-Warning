@@ -42,9 +42,14 @@ export function populatePrairieJunctionScene(
   const sky = new pc.Color(0.12, 0.19, 0.25);
   app.scene.ambientLight = new pc.Color(0.36, 0.42, 0.45);
 
+  // [SW:PLAYCANVAS:CAMERA_ALIGNED_INPUT]
+  // The accepted movement authority uses +X right, -Z forward. Keep the visible
+  // camera centered on X so screen-right maps to +X and screen-up maps to -Z.
+  // This preserves the accepted executor while making touch/keyboard movement
+  // read naturally in the PlayCanvas presentation.
   const camera = new pc.Entity('slice-camera');
   camera.addComponent('camera', { clearColor: sky, nearClip: 0.1, farClip: 220, fov: 44 });
-  camera.setPosition(34, 31, 41);
+  camera.setPosition(0, 31, 44);
   camera.lookAt(0, 3.2, 0);
   app.root.addChild(camera);
   entities.push(camera);
@@ -194,15 +199,19 @@ export function populatePrairieJunctionScene(
   const vehicleParts = addVehicle(pc, app, entities, vehicleRed, black);
   const electricalParts = addElectricalTarget(pc, app, entities, electricalMetal, electricalHot);
 
+  // [SW:PLAYCANVAS:FUNNEL_ORIENTATION]
+  // A tornado is narrow at ground contact and broadens into the storm base.
+  // Each cone is rotated so its point faces downward; stacked scales then widen
+  // as Y increases. This prevents the upside-down Christmas-tree silhouette.
   const tornadoParts: PcEntity[] = [];
   const tornadoPartY: number[] = [];
   const funnelScales = [
-    [5.8, 2.4, 5.8],
-    [4.8, 2.8, 4.8],
-    [3.9, 3.2, 3.9],
-    [3.0, 3.6, 3.0],
-    [2.15, 4.1, 2.15],
     [1.3, 4.5, 1.3],
+    [2.15, 4.1, 2.15],
+    [3.0, 3.6, 3.0],
+    [3.9, 3.2, 3.9],
+    [4.8, 2.8, 4.8],
+    [5.8, 2.4, 5.8],
   ] as const;
   let funnelY = TORNADO_BASE_Y;
   funnelScales.forEach((scale, index) => {
@@ -212,6 +221,7 @@ export function populatePrairieJunctionScene(
       type: 'cone',
       position: [-8, centerY, 8],
       scale,
+      rotation: [180, 0, 0],
       material: funnelMaterial,
       castShadows: false,
       receiveShadows: false,
