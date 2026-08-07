@@ -7,6 +7,7 @@ on:
     branches:
       - agent/playcanvas-production-slice-handoff
       - agent/playcanvas-moo-brew-slice-bootstrap
+      - agent/playcanvas-prairie-expansion-handoff
 
 concurrency:
   group: playcanvas-slice-${{ github.event.pull_request.number || github.ref }}
