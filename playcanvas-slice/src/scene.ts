@@ -17,6 +17,7 @@ import {
   type OffsetEntity,
 } from './geometry';
 import { createMaterial } from './materials';
+import type { StormReactiveBodyDefinition } from './storm-force-field';
 
 export interface SceneResult {
   readonly entities: readonly PcEntity[];
@@ -27,6 +28,7 @@ export interface SceneResult {
   readonly cow17Parts: readonly OffsetEntity[];
   readonly vehicleParts: readonly OffsetEntity[];
   readonly electricalParts: readonly OffsetEntity[];
+  readonly stormPhysicsBodies: readonly StormReactiveBodyDefinition[];
   readonly anchors: Readonly<{
     tornado: Readonly<{ x: number; z: number }>;
     barnProxy: Readonly<{ x: number; z: number }>;
@@ -106,6 +108,10 @@ export function populatePrairieJunctionScene(
   const barnRed = createMaterial(pc, [0.55, 0.12, 0.1], { gloss: 0.18 });
   const waterTowerSteel = createMaterial(pc, [0.42, 0.48, 0.55], { metalness: 0.4, gloss: 0.45 });
   const industrialGrey = createMaterial(pc, [0.35, 0.38, 0.4], { gloss: 0.2 });
+  const treeTrunk = createMaterial(pc, [0.29, 0.18, 0.09], { gloss: 0.08 });
+  const treeLeaf = createMaterial(pc, [0.20, 0.38, 0.13], { gloss: 0.08 });
+  const looseMetal = createMaterial(pc, [0.47, 0.53, 0.56], { metalness: 0.36, gloss: 0.35 });
+  const propPaint = createMaterial(pc, [0.76, 0.56, 0.18], { gloss: 0.24 });
 
   const funnelMaterial = createMaterial(pc, [0.25, 0.29, 0.31], {
     opacity: 0.72,
@@ -118,7 +124,6 @@ export function populatePrairieJunctionScene(
     doubleSided: true,
   });
 
-  // Expanded terrain slab (190 x 190 units)
   addPrimitive(pc, app, entities, {
     name: 'terrain-slab',
     type: 'box',
@@ -127,7 +132,6 @@ export function populatePrairieJunctionScene(
     material: grass,
   });
 
-  // 3x3 Road Grid (9 Connected Junctions at X/Z = -45, 0, 45)
   const roadAxes = [-45, 0, 45];
   for (const x of roadAxes) {
     addPrimitive(pc, app, entities, {
@@ -179,7 +183,6 @@ export function populatePrairieJunctionScene(
 
   addRoadMarkings(pc, app, entities, roadPaint);
 
-  // Block 1: Main Street & Moo-Brew Storefront (NW / Central Block)
   const mooBrew = addBuilding(pc, app, entities, {
     name: 'moo-brew-corner-shop',
     x: -14,
@@ -221,7 +224,6 @@ export function populatePrairieJunctionScene(
     roof,
   });
 
-  // Block 2: Residential Neighborhood (NE Block)
   addBuilding(pc, app, entities, {
     name: 'oak-gable-house',
     x: 30,
@@ -253,7 +255,6 @@ export function populatePrairieJunctionScene(
     roof: terracotta,
   });
 
-  // Block 3: Agricultural & Market Area (SW Block)
   addBuilding(pc, app, entities, {
     name: 'grain-silo-mill',
     x: -35,
@@ -285,7 +286,6 @@ export function populatePrairieJunctionScene(
     roof,
   });
 
-  // Block 4: Industrial & Substation Area (SE Block)
   addBuilding(pc, app, entities, {
     name: 'county-water-tower',
     x: 58,
@@ -306,6 +306,161 @@ export function populatePrairieJunctionScene(
     wall: industrialGrey,
     roof,
   });
+
+  // [SW:PLAYCANVAS:STORM_REACTIVE_SCENE_BODIES]
+  // Representative objects only. Cow 17 is intentionally excluded from this
+  // registry so safe-animal law remains structurally obvious.
+  const stormPhysicsBodies: StormReactiveBodyDefinition[] = [];
+  const treeCenters = [
+    [-18, 8],
+    [-14, 18],
+    [-20, 18],
+    [-22, -11],
+  ] as const;
+  treeCenters.forEach(([x, z], index) => {
+    const trunk = addPrimitive(pc, app, entities, {
+      name: `storm-reactive-tree-${index}-trunk`,
+      type: 'cylinder',
+      position: [x, 1.6, z],
+      scale: [0.52, 3.2, 0.52],
+      material: treeTrunk,
+    });
+    const canopy = addPrimitive(pc, app, entities, {
+      name: `storm-reactive-tree-${index}-canopy`,
+      type: 'cone',
+      position: [x, 4.25, z],
+      scale: [3.2, 4.2, 3.2],
+      material: treeLeaf,
+    });
+    stormPhysicsBodies.push(Object.freeze({
+      id: `tree-${index}`,
+      kind: 'tree',
+      x,
+      y: 0,
+      z,
+      mass: 5.5,
+      groundY: 0,
+      parts: Object.freeze([
+        Object.freeze({ entity: trunk, offset: [0, 1.6, 0] as const }),
+        Object.freeze({ entity: canopy, offset: [0, 4.25, 0] as const }),
+      ]),
+    }));
+  });
+
+  const addLightBody = (
+    id: string,
+    x: number,
+    z: number,
+    parts: readonly OffsetEntity[],
+    mass: number,
+  ): void => {
+    stormPhysicsBodies.push(Object.freeze({
+      id,
+      kind: 'light-prop',
+      x,
+      y: 0,
+      z,
+      mass,
+      groundY: 0,
+      parts: Object.freeze(parts.map((part) => Object.freeze({ entity: part.entity, offset: part.offset }))),
+    }));
+  };
+
+  const mailboxParts: OffsetEntity[] = [];
+  const mailboxPost = addPrimitive(pc, app, entities, {
+    name: 'storm-reactive-mailbox-post',
+    type: 'cylinder',
+    position: [-15, 0.65, 11],
+    scale: [0.15, 1.3, 0.15],
+    material: looseMetal,
+  });
+  const mailboxBox = addPrimitive(pc, app, entities, {
+    name: 'storm-reactive-mailbox-box',
+    type: 'box',
+    position: [-15, 1.35, 11],
+    scale: [0.85, 0.55, 0.62],
+    material: propPaint,
+  });
+  mailboxParts.push(Object.freeze({ entity: mailboxPost, offset: [0, 0.65, 0] as const }));
+  mailboxParts.push(Object.freeze({ entity: mailboxBox, offset: [0, 1.35, 0] as const }));
+  addLightBody('mailbox', -15, 11, mailboxParts, 1.0);
+
+  const signParts: OffsetEntity[] = [];
+  const signPost = addPrimitive(pc, app, entities, {
+    name: 'storm-reactive-sign-post',
+    type: 'cylinder',
+    position: [-19, 1.0, 13],
+    scale: [0.12, 2.0, 0.12],
+    material: looseMetal,
+  });
+  const signBoard = addPrimitive(pc, app, entities, {
+    name: 'storm-reactive-sign-board',
+    type: 'box',
+    position: [-19, 2.05, 13],
+    scale: [1.5, 0.78, 0.16],
+    material: propPaint,
+  });
+  signParts.push(Object.freeze({ entity: signPost, offset: [0, 1.0, 0] as const }));
+  signParts.push(Object.freeze({ entity: signBoard, offset: [0, 2.05, 0] as const }));
+  addLightBody('road-sign', -19, 13, signParts, 1.15);
+
+  const loosePropSpecs = [
+    ['plank-a', -13, 16, [1.9, 0.18, 0.42] as const, 0.65],
+    ['plank-b', -21, 5, [1.55, 0.16, 0.36] as const, 0.55],
+    ['crate', -16, -8, [1.0, 0.9, 1.0] as const, 0.9],
+  ] as const;
+  for (const [id, x, z, scale, mass] of loosePropSpecs) {
+    const entity = addPrimitive(pc, app, entities, {
+      name: `storm-reactive-${id}`,
+      type: 'box',
+      position: [x, scale[1] / 2 + 0.08, z],
+      scale,
+      material: id === 'crate' ? wood : looseMetal,
+    });
+    addLightBody(id, x, z, [Object.freeze({ entity, offset: [0, scale[1] / 2 + 0.08, 0] as const })], mass);
+  }
+
+  const debrisSpecs = [
+    ['moo-brew-debris-a', -16.7, 6.75, -13.6, 1, [2.2, 0.24, 1.0] as const],
+    ['moo-brew-debris-b', -12.2, 6.78, -14.6, 2, [1.7, 0.22, 0.8] as const],
+    ['moo-brew-debris-c', -13.8, 6.82, -10.4, 2, [1.4, 0.20, 0.9] as const],
+  ] as const;
+  for (const [id, x, y, z, activationStage, scale] of debrisSpecs) {
+    const entity = addPrimitive(pc, app, entities, {
+      name: id,
+      type: 'box',
+      position: [x, y, z],
+      scale,
+      material: roof,
+    });
+    stormPhysicsBodies.push(Object.freeze({
+      id,
+      kind: 'barn-debris',
+      x,
+      y,
+      z,
+      mass: 0.8,
+      groundY: 0.45,
+      activationStage,
+      activationOffset: [0, 0.35, 0] as const,
+      activationRotation: [8, 18, 12] as const,
+      parts: Object.freeze([Object.freeze({ entity, offset: [0, 0, 0] as const })]),
+    }));
+  }
+
+  stormPhysicsBodies.push(Object.freeze({
+    id: 'moo-brew-roof',
+    kind: 'barn-roof',
+    x: mooBrew.center.x,
+    y: mooBrew.center.height + 0.45,
+    z: mooBrew.center.z,
+    mass: 5.0,
+    groundY: 0.45,
+    activationStage: 3,
+    activationOffset: [-2.7, 1.65, 2.5] as const,
+    activationRotation: [13, 20, 48] as const,
+    parts: Object.freeze([Object.freeze({ entity: mooBrew.roof, offset: [0, 0, 0] as const })]),
+  }));
 
   const cow17Parts = addCow17(pc, app, entities, white, black, pink);
   const vehicleParts = addVehicle(pc, app, entities, vehicleRed, black);
@@ -362,6 +517,7 @@ export function populatePrairieJunctionScene(
     cow17Parts,
     vehicleParts,
     electricalParts,
+    stormPhysicsBodies: Object.freeze([...stormPhysicsBodies]),
     anchors: Object.freeze({
       tornado: Object.freeze({ x: -8, z: 8 }),
       barnProxy: Object.freeze({ x: mooBrew.center.x, z: mooBrew.center.z }),

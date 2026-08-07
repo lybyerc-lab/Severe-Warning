@@ -39,6 +39,14 @@ const MAX_CAMERA_STEP_SECONDS = 0.12;
 // presentation response. Gameplay movement and camera-relative input are unchanged.
 const OWNER_TRAILING_TURN_SCALE = 0.9;
 
+// [SW:PLAYCANVAS:HELD_INTENT_STABILITY]
+// The visible control mapper reprojects the same held screen-space stick through
+// the current camera basis every frame. Without remembering the relative stick
+// angle, that reprojection looks like a brand-new world-space target every frame
+// and the camera can chase itself forever. A real player direction change alters
+// this relative angle; camera rotation alone does not.
+const RELATIVE_INTENT_CHANGE_EPSILON_RADIANS = Math.PI * 1.5 / 180;
+
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
@@ -66,6 +74,7 @@ export class OneStickChaseCamera {
   private lastStormX: number;
   private lastStormZ: number;
   private inputActive = false;
+  private relativeIntentRadians: number | null = null;
 
   constructor(config: ChaseCameraConfig, stormX: number, stormZ: number) {
     this.config = config;
@@ -83,16 +92,28 @@ export class OneStickChaseCamera {
     this.lastStormX = stormX;
     this.lastStormZ = stormZ;
     this.inputActive = false;
+    this.relativeIntentRadians = null;
   }
 
   setTravelIntent(worldX: number, worldZ: number, active: boolean): void {
     const magnitude = Math.hypot(worldX, worldZ);
     if (!active || magnitude < this.config.intentMagnitudeThreshold) {
       this.inputActive = false;
+      this.relativeIntentRadians = null;
       return;
     }
+
+    const incomingHeadingRadians = Math.atan2(worldZ, worldX);
+    const relativeIntentRadians = shortestAngle(this.headingRadians, incomingHeadingRadians);
+    const relativeIntentChanged = this.relativeIntentRadians === null
+      || Math.abs(shortestAngle(this.relativeIntentRadians, relativeIntentRadians))
+        > RELATIVE_INTENT_CHANGE_EPSILON_RADIANS;
+
+    if (!this.inputActive || relativeIntentChanged) {
+      this.desiredHeadingRadians = incomingHeadingRadians;
+      this.relativeIntentRadians = relativeIntentRadians;
+    }
     this.inputActive = true;
-    this.desiredHeadingRadians = Math.atan2(worldZ, worldX);
   }
 
   screenToWorldDirection(screenX: number, screenY: number): Readonly<{ x: number; z: number }> {
@@ -115,12 +136,11 @@ export class OneStickChaseCamera {
     const travelDistance = Math.hypot(travelX, travelZ);
     const travelSpeed = safeDelta > 0.0001 ? travelDistance / safeDelta : 0;
 
-    // Active one-stick intent is authoritative for camera recentering. When the
-    // stick is released, observed storm travel becomes the fallback so the
-    // camera can finish settling behind momentum without being welded to input.
-    if (!this.inputActive && travelSpeed >= this.config.movementThreshold && travelDistance > 0.0001) {
-      this.desiredHeadingRadians = Math.atan2(travelZ, travelX);
-    }
+    // [SW:PLAYCANVAS:RELEASE_SETTLE]
+    // Releasing the one stick freezes the last intentional chase target. Do not
+    // reinterpret residual authority/render travel as a fresh camera command.
+    // This prevents a late post-release orbit while preserving the established
+    // turn rate, dead zone, distance, and owner-approved trailing response.
 
     const rawError = shortestAngle(this.headingRadians, this.desiredHeadingRadians);
     const errorMagnitude = Math.abs(rawError);
