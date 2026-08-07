@@ -67,8 +67,8 @@ try {
   // ------------------------------------------------------------------------
   // [SW:PLAYCANVAS:HELD_INTENT_SPIN_REGRESSION]
   // A stationary held D input used to move the desired heading every frame as
-  // the camera itself rotated. The target must now stay fixed and the camera
-  // must settle instead of continuously orbiting the tornado.
+  // the camera itself rotated. The target must stay fixed, the camera must reach
+  // that bounded target, and releasing the stick must not invent a new heading.
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
   await page.waitForTimeout(350);
@@ -76,23 +76,38 @@ try {
   await page.keyboard.down('d');
   await page.waitForTimeout(1900);
   const cameraMid = await readCameraState();
-  await page.waitForTimeout(1200);
-  const cameraHeldSettled = await readCameraState();
+
+  const cameraSettleSamples = [];
+  const cameraSettleStarted = Date.now();
+  let cameraHeldSettled = cameraMid;
+  while (cameraHeldSettled.turning && Date.now() - cameraSettleStarted < 9000) {
+    await page.waitForTimeout(300);
+    cameraHeldSettled = await readCameraState();
+    cameraSettleSamples.push({
+      elapsedMs: Date.now() - cameraSettleStarted,
+      ...cameraHeldSettled,
+    });
+  }
+  const cameraSettleElapsedMs = Date.now() - cameraSettleStarted;
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-camera-stability.png`, fullPage: true });
+
   await page.keyboard.up('d');
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(900);
   const cameraReleased = await readCameraState();
 
   const heldHeadingDelta = wrappedAngleDelta(cameraStart.heading, cameraHeldSettled.heading);
-  const heldDesiredDrift = wrappedAngleDelta(cameraMid.desiredHeading, cameraHeldSettled.desiredHeading);
-  const lateHeldHeadingDrift = wrappedAngleDelta(cameraMid.heading, cameraHeldSettled.heading);
+  const heldDesiredDrifts = [cameraHeldSettled, ...cameraSettleSamples]
+    .map((sample) => wrappedAngleDelta(cameraMid.desiredHeading, sample.desiredHeading));
+  const heldDesiredDrift = Math.max(0, ...heldDesiredDrifts);
   const releaseHeadingDrift = wrappedAngleDelta(cameraHeldSettled.heading, cameraReleased.heading);
+  const releaseDesiredDrift = wrappedAngleDelta(cameraHeldSettled.desiredHeading, cameraReleased.desiredHeading);
 
   // ------------------------------------------------------------------------
   // [SW:PLAYCANVAS:COW_ORBIT_SPIN_REGRESSION]
   // Drive the real accepted authority toward Cow 17 until the safe-cow flight
-  // begins. The PlayCanvas-only authority preparation patch must force a bounded
-  // orbit, landing, and no immediate relaunch while the storm remains nearby.
+  // begins. The PlayCanvas authority preparation patch must bound the orbit and
+  // the whole flight by wall time, land Cow 17, and keep her grounded until the
+  // storm actually moves far enough away to re-arm another slapstick launch.
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
   await page.waitForTimeout(250);
@@ -122,7 +137,7 @@ try {
   const cowAirborneSamples = [];
   const flightObserveStarted = Date.now();
   let cowLandedState = cowLaunchState;
-  while (cowLaunched && Date.now() - flightObserveStarted < 6000) {
+  while (cowLaunched && Date.now() - flightObserveStarted < 6500) {
     await page.waitForTimeout(180);
     cowLandedState = await readCowState();
     cowAirborneSamples.push({
@@ -130,11 +145,15 @@ try {
       airborne: cowLandedState.snapshot?.cow17?.airborne ?? null,
       altitude: cowLandedState.bovine?.cow17?.altitude ?? null,
       flightTime: cowLandedState.bovine?.cow17?.flightTime ?? null,
+      orbitLocked: cowLandedState.bovine?.cow17?.playcanvasOrbitLocked ?? null,
+      orbitAgeMs: cowLandedState.bovine?.cow17?.playcanvasOrbitAgeMilliseconds ?? null,
     });
     if (cowLandedState.snapshot?.cow17?.airborne === false) break;
   }
 
+  const cowLandingElapsedMs = Date.now() - flightObserveStarted;
   const cowLanded = cowLaunched && cowLandedState.snapshot?.cow17?.airborne === false;
+  const cowOrbitLockObserved = cowAirborneSamples.some((sample) => sample.orbitLocked === true);
   await page.waitForTimeout(1100);
   const cowPostLanding = await readCowState();
   const cowStayedLanded = cowLanded && cowPostLanding.snapshot?.cow17?.airborne === false;
@@ -144,7 +163,7 @@ try {
     {
       name: 'held-camera-target-stable',
       passed: heldDesiredDrift < 0.05,
-      detail: JSON.stringify({ heldDesiredDrift, cameraMid, cameraHeldSettled }),
+      detail: JSON.stringify({ heldDesiredDrift, cameraMid, cameraHeldSettled, cameraSettleSamples }),
     },
     {
       name: 'held-camera-turn-bounded',
@@ -153,13 +172,13 @@ try {
     },
     {
       name: 'held-camera-settles-not-spins',
-      passed: lateHeldHeadingDrift < 0.12 && cameraHeldSettled.turning === false,
-      detail: JSON.stringify({ lateHeldHeadingDrift, cameraMid, cameraHeldSettled }),
+      passed: cameraHeldSettled.turning === false && cameraSettleElapsedMs < 9000,
+      detail: JSON.stringify({ cameraSettleElapsedMs, cameraMid, cameraHeldSettled, cameraSettleSamples }),
     },
     {
       name: 'released-camera-does-not-wander',
-      passed: releaseHeadingDrift < 0.16,
-      detail: JSON.stringify({ releaseHeadingDrift, cameraHeldSettled, cameraReleased }),
+      passed: releaseHeadingDrift < 0.16 && releaseDesiredDrift < 0.05,
+      detail: JSON.stringify({ releaseHeadingDrift, releaseDesiredDrift, cameraHeldSettled, cameraReleased }),
     },
     {
       name: 'cow17-safe-flight-starts',
@@ -167,13 +186,25 @@ try {
       detail: JSON.stringify(cowLaunchState),
     },
     {
+      name: 'cow17-orbit-lock-engages',
+      passed: cowOrbitLockObserved,
+      detail: JSON.stringify(cowAirborneSamples),
+    },
+    {
       name: 'cow17-orbit-is-bounded',
       passed: cowLanded,
-      detail: JSON.stringify({ cowLaunchState, cowLandedState, cowAirborneSamples }),
+      detail: JSON.stringify({ cowLandingElapsedMs, cowLaunchState, cowLandedState, cowAirborneSamples }),
+    },
+    {
+      name: 'cow17-flight-wall-clock-bounded',
+      passed: cowLanded && cowLandingElapsedMs < 6200,
+      detail: JSON.stringify({ cowLandingElapsedMs, cowAirborneSamples }),
     },
     {
       name: 'cow17-does-not-immediately-relaunch',
-      passed: cowStayedLanded && cowPostLanding.snapshot?.cow17?.safe === true,
+      passed: cowStayedLanded
+        && cowPostLanding.snapshot?.cow17?.safe === true
+        && cowPostLanding.bovine?.cow17?.playcanvasOrbitLocked === true,
       detail: JSON.stringify(cowPostLanding),
     },
     {
@@ -189,7 +220,7 @@ try {
   ];
 
   report = {
-    version: 'PLAYCANVAS_ROTATION_STABILITY_V1',
+    version: 'PLAYCANVAS_ROTATION_STABILITY_V2',
     passed: checks.every((check) => check.passed),
     checks,
     failedChecks: checks.filter((check) => !check.passed).map((check) => check.name),
@@ -199,15 +230,19 @@ try {
         mid: cameraMid,
         heldSettled: cameraHeldSettled,
         released: cameraReleased,
+        settleSamples: cameraSettleSamples,
+        settleElapsedMs: cameraSettleElapsedMs,
         heldHeadingDelta,
         heldDesiredDrift,
-        lateHeldHeadingDrift,
         releaseHeadingDrift,
+        releaseDesiredDrift,
       },
       cow17: {
         launch: cowLaunchState,
         landed: cowLandedState,
         postLanding: cowPostLanding,
+        landingElapsedMs: cowLandingElapsedMs,
+        orbitLockObserved: cowOrbitLockObserved,
         airborneSamples: cowAirborneSamples,
       },
       consoleErrors,
@@ -221,7 +256,7 @@ try {
 } catch (error) {
   if (!report) {
     report = {
-      version: 'PLAYCANVAS_ROTATION_STABILITY_V1',
+      version: 'PLAYCANVAS_ROTATION_STABILITY_V2',
       passed: false,
       checks: [],
       failedChecks: ['harness-exception'],
