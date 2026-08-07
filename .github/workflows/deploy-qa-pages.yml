@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -152,6 +153,71 @@ jobs:
           path: qa-artifacts
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Download verified PlayCanvas playable artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: severe-weather-playcanvas-slice-18
+          path: playcanvas-preview-artifact
+          repository: lybyerc-lab/Severe-Warning
+          run-id: 31136370444
+          github-token: ${{ github.token }}
+
+      - name: Verify and overlay PlayCanvas playable candidate
+        shell: bash
+        env:
+          PLAYCANVAS_SOURCE_SHA: 5936bb12e022741a0964b2c80be9304780ee68d0
+          PLAYCANVAS_RUN_ID: '31136370444'
+          PLAYCANVAS_RUN_NUMBER: '18'
+          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-18
+          PLAYCANVAS_ARTIFACT_DIGEST: sha256:169784d02b11170d3e0f24d6e61fdc8a01d5ccb07b3561680fdf2cce909b3bc2
+        run: |
+          set -euo pipefail
+          test "$(tr -d '\r\n' < playcanvas-preview-artifact/SOURCE_SHA.txt)" = "$PLAYCANVAS_SOURCE_SHA"
+          test -s playcanvas-preview-artifact/preview/index.html
+          test -s playcanvas-preview-artifact/preview/vendor/playcanvas-2.21.3.min.mjs
+          test -s playcanvas-preview-artifact/playcanvas-slice-static-report.json
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-report.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const staticReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-static-report.json', 'utf8'));
+          const browserReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-report.json', 'utf8'));
+          if (!staticReport.passed || staticReport.failedChecks?.length) throw new Error('PlayCanvas static report is not sealed green.');
+          if (!browserReport.passed || browserReport.failedChecks?.length) throw new Error('PlayCanvas browser report is not sealed green.');
+          const required = [
+            'gameplay-authority-connected',
+            'keyboard-moves-real-storm',
+            'movement-approaches-live-target',
+            'gust-executor-accepted',
+            'pull-executor-accepted',
+            'zap-executor-accepted',
+            'destruction-state-changed',
+            'cow17-safe',
+            'no-console-errors',
+            'no-page-errors',
+          ];
+          const checks = new Map(browserReport.checks.map((check) => [check.name, check.passed]));
+          for (const name of required) {
+            if (checks.get(name) !== true) throw new Error(`Required PlayCanvas gate missing or red: ${name}`);
+          }
+          console.log(`Verified PlayCanvas playable artifact: static ${staticReport.checks.length}/${staticReport.checks.length}, browser ${browserReport.checks.length}/${browserReport.checks.length}.`);
+          NODE
+          rm -rf www/playcanvas
+          mkdir -p www/playcanvas
+          cp -R playcanvas-preview-artifact/preview/. www/playcanvas/
+          cat > www/playcanvas/qa-playcanvas-build.json <<EOF
+          {
+            "sourceSha": "$PLAYCANVAS_SOURCE_SHA",
+            "workflowRunId": $PLAYCANVAS_RUN_ID,
+            "workflowRunNumber": $PLAYCANVAS_RUN_NUMBER,
+            "artifact": "$PLAYCANVAS_ARTIFACT",
+            "artifactDigest": "$PLAYCANVAS_ARTIFACT_DIGEST",
+            "status": "browser-qa-passed-not-physical-android-accepted"
+          }
+          EOF
+          test -s www/playcanvas/index.html
+          test -s www/playcanvas/authority/index.html
+          test -s www/playcanvas/qa-playcanvas-build.json
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
