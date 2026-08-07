@@ -59,11 +59,12 @@ check(
   'chase-camera-turn-rate-bounded',
   contents.entry.includes('CHASE_CAMERA_TURN_RATE_RADIANS = 1.05')
     && contents.entry.includes('CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180')
-    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12'),
-  'intent-driven chase camera has a bounded turn rate, heading dead zone, and stick-magnitude threshold',
+    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12')
+    && contents.chaseCamera.includes('OWNER_TRAILING_TURN_SCALE = 0.9'),
+  'intent-driven chase camera keeps the sealed base rate and applies the owner-approved 10% trailing response polish',
 );
 check(
-  'chase-camera-feel-constants-unmodified',
+  'chase-camera-map-baseline-plus-owner-trailing-polish',
   contents.entry.includes('INITIAL_CAMERA_OFFSET_X = 30')
     && contents.entry.includes('INITIAL_CAMERA_OFFSET_Z = 36')
     && contents.entry.includes('CHASE_CAMERA_HEIGHT = 28')
@@ -71,8 +72,11 @@ check(
     && contents.entry.includes('CHASE_CAMERA_TURN_RATE_RADIANS = 1.05')
     && contents.entry.includes('CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180')
     && contents.entry.includes('CHASE_CAMERA_MOVEMENT_THRESHOLD = 0.28')
-    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12'),
-  'chase camera feel baseline constants remain strictly unchanged from the sealed parent',
+    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12')
+    && contents.chaseCamera.includes('[SW:PLAYCANVAS:OWNER_TRAILING_POLISH]')
+    && contents.chaseCamera.includes('OWNER_TRAILING_TURN_SCALE = 0.9')
+    && contents.chaseCamera.includes('turnRateRadiansPerSecond * OWNER_TRAILING_TURN_SCALE * safeDelta'),
+  'larger-map baseline is preserved except for the explicit owner-approved 10% camera-only turn catch-up reduction',
 );
 check(
   'chase-camera-intent-wiring',
