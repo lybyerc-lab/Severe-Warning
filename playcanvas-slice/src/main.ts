@@ -15,7 +15,7 @@ import {
   type AuthorityAbilitySlot,
   type AuthoritySnapshot,
 } from './authority-client';
-import type { PcApplication, PcEntity, PlayCanvasModule } from './engine-types';
+import type { PcEntity, PlayCanvasModule } from './engine-types';
 import type { OffsetEntity } from './geometry';
 import { populatePrairieJunctionScene, type SceneResult } from './scene';
 
