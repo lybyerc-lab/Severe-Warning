@@ -1,72 +1,77 @@
 # Active Handoff
 
-Last updated: 2026-08-07 America/Chicago  
-Repository: `lybyerc-lab/Severe-Warning`  
-Current direction: guarded PlayCanvas production-slice migration  
+Last updated: 2026-08-07 America/Chicago
+Repository: `lybyerc-lab/Severe-Warning`
+Current direction: guarded PlayCanvas production-slice migration
 Current build-train: `Docs/PLAYCANVAS_MIGRATION_BUILD_TRAIN.md`
+Current bounded milestone: PlayCanvas storm physics parity
 
 ## Durable decision
 
-PlayCanvas is the selected production-renderer direction. The migration is intended to improve visual quality, authored world geometry, storm atmosphere, camera presentation, character readability, and the opening cinematic without redesigning the gameplay that was physically accepted as fun.
+PlayCanvas is the selected production-renderer direction. The accepted legacy runtime remains gameplay authority while PlayCanvas takes over visible presentation in bounded, reversible slices.
 
-The accepted legacy runtime remains gameplay authority during the migration slice.
-
-## Frozen behavior reference
+## Frozen gameplay reference
 
 - Draft PR: #26
-- Branch: `agent/presentation-identity-moo-brew-pass`
 - Exact reference head: `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
 - Workflow: `31094966986` / Run 6
 - Artifact: `severe-weather-presentation-identity-6`
 - Debug APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
 
-PRs #24, #25, and #26 remain an intentional unmerged draft stack. Do not casually retarget or merge them.
+PRs #24, #25, and #26 remain intentional unmerged behavior references. Do not casually merge, retarget, or rewrite them.
+
+## Accepted storm-response oracles
+
+Gust:
+
+- exact physically accepted head: `4c91694b406dfca119f457135276bc145837c169`
+- PR #6
+- preserve visible tree bend-away/recovery and bounded light-prop shove
+
+Pull:
+
+- exact physically accepted head: `82c455fff9ddb0e6a37f60b583a87b58f73173a4`
+- PR #8
+- preserve readable inward suction, tree anticipation/lean/recovery, light-prop inward/orbital response, and clean reset/arbitration
 
 ## Current PlayCanvas browser checkpoint
 
-The PlayCanvas testing world has been expanded to a 190x190 Prairie Junction test world with 9 connected road junctions and 4 distinct visual landmark blocks.
+Latest owner-tested live candidate:
 
-Verified candidate:
+- implementation line: draft PR #34
+- exact tested source: `c4e1c273b82b7d08024dd1d12586f06dc2522897`
+- PlayCanvas workflow: Run 49 / `31214064434`
+- static verification: **57/57 PASS**
+- browser QA: **47/47 PASS**
+- QA Pages deployment: Run 71 / `31214441569`
+- live path: `https://lybyerc-lab.github.io/Severe-Warning/playcanvas/`
+- terrain: `190 x 190`
+- connected junctions: 9
+- visible/authority scale: `0.771708` versus sealed `0.7717`
+- camera trailing scale: `0.9`
 
-- implementation PR: #34 targeting `agent/playcanvas-prairie-expansion-handoff`
-- starting base SHA: `a97a236688e100c6d7a4bd694119d677d2427670`
-- final source SHA: `042d7d903932822a106f34e320f7823f66348c41`
-- static verification: **54/54 PASS**
-- browser QA: **46/46 PASS**
-- terrain footprint: `190 x 190` PlayCanvas world units
-- road network: 3x3 grid providing 9 connected junctions
-- landmark blocks: 4 distinct visual blocks (Storefront Arcade / Moo-Brew, Residential Neighborhood, Grain Silo & Farm Market, Water Tower & Substation)
-- entity count: 233 entities
-- visible storm speed parity: 0% delta from Run 34 baseline (`26.81` units per 420ms input)
-- chase camera baseline constants: **100% frozen & unmodified**
+Owner hands-on verdict:
 
-## Latest owner hands-on findings
+- expanded build ran well
+- camera was initially pivoting too far forward during turns
+- 10% slower chase catch-up was much better
+- current camera is as good as can presently be judged
 
-Accepted direction:
+Treat this camera/map combination as the frozen browser-stage baseline while restoring storm physics.
 
-- PlayCanvas graphics are a major improvement over the older renderer.
-- The corrected tornado funnel reads upright.
-- The one-stick third-person chase model feels better and provides a solid testing baseline.
-- The larger 190x190 grid and 9 junctions allow judging travel room, sweeping turns, and orientation without a HUD compass.
+## Active physics lane
 
-Current camera values remain a **testing-arena baseline**. Do not retune without reproducible measured evidence.
-
-## Active coordination branch
-
-- handoff branch: `agent/playcanvas-prairie-expansion-handoff`
-- Antigravity work branch: `agent/playcanvas-prairie-expansion-antigravity`
-- AG PR target: `agent/playcanvas-prairie-expansion-handoff`
-- assignment: `Docs/ANTIGRAVITY_PLAYCANVAS_MAP_EXPANSION_HANDOFF.md`
-
-## Next implementation milestone
-
-Await ChatGPT review and QA workflow promotion for owner hands-on testing of the expanded Prairie Junction world before camera polish and physics expansion.
+- handoff branch: `agent/playcanvas-storm-physics-handoff`
+- assignment: `Docs/PLAYCANVAS_STORM_PHYSICS_PARITY_HANDOFF.md`
+- parent source: `c4e1c273b82b7d08024dd1d12586f06dc2522897`
+- goal: restore representative tree, light-prop, roof, and debris response using a game-owned force law while the accepted runtime remains gameplay authority
 
 ## Protected gameplay behavior
 
 Preserve:
 
-- direct storm controls
+- direct storm controls and one-stick camera-relative input
+- current chase-camera values
 - Pull, Gust, Zap semantics
 - no duplicate mobile ability activation
 - continuous scoring
@@ -81,17 +86,23 @@ Preserve:
 
 ## Acceptance vocabulary
 
-For the current PlayCanvas line:
+For the browser-approved camera/map checkpoint:
 
-- committed: yes (`042d7d903932822a106f34e320f7823f66348c41`)
-- built: yes for local preview and QA suite
-- browser-QA passed: yes (**54/54** static, **46/46** browser)
-- live QA deployed: pending handoff promotion
+- committed: yes
+- browser-QA passed: yes
+- live browser hands-on accepted for this stage: yes
 - Android PlayCanvas APK built: no
-- physically accepted on Galaxy S26 Ultra: no
+- physically accepted PlayCanvas migration on Galaxy S26 Ultra: no
 - PR #34 merged: no
 
-Never convert browser success into physical acceptance language.
+For the storm-physics lane:
+
+- implementation: starting
+- browser-QA: pending
+- live owner test: pending
+- Android physical acceptance: pending
+
+Never convert browser success into physical Android acceptance language.
 
 ## Process laws
 
@@ -100,7 +111,7 @@ Never convert browser success into physical acceptance language.
 - do not weaken QA to obtain green
 - exact-source identity is blocking evidence
 - helper-only markers never prove executor integration
+- accepted ability controls must trigger migrated presentation through the real executor path
 - do not call `assembleDebug` a signed release
-- do not claim an APK until assembly, artifact inspection, and checksum verification are complete
-- physical Galaxy S26 Ultra testing is final authority
-- historical Three.js source/evidence remains protected until PlayCanvas is physically accepted
+- physical Galaxy S26 Ultra testing remains final authority
+- historical renderer/source evidence remains protected until PlayCanvas is physically accepted
