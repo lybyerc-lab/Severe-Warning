@@ -123,12 +123,24 @@ check('browser-version-export-check', contents.browserQa.includes('engine-versio
 check('browser-revision-export-check', contents.browserQa.includes('engine-revision-exported'), 'browser QA asserts exported engine revision');
 check('browser-visible-control-check', contents.browserQa.includes('joystick-up-moves-screen-forward') && contents.browserQa.includes('keyboard-right-moves-screen-right'), 'browser QA exercises visible movement directions');
 check(
+  'render-consumed-authority-telemetry-contract',
+  contents.entry.includes('targetTornado = transform.map(snapshot.storm.x, snapshot.storm.z)')
+    && contents.entry.includes('dataset.swPlaycanvasStormX = snapshot.storm.x.toFixed(3)')
+    && contents.entry.includes('dataset.swPlaycanvasStormZ = snapshot.storm.z.toFixed(3)')
+    && contents.browserQa.includes('[SW:PLAYCANVAS:RENDER_CONSUMED_AUTHORITY_TELEMETRY]')
+    && contents.browserQa.includes('data.swPlaycanvasStormX')
+    && contents.browserQa.includes('data.swPlaycanvasStormZ')
+    && contents.browserQa.includes('renderConsumedAuthorityDistance(beforeJoystickUp, afterJoystickUp)'),
+  'speed-parity QA reads the authority snapshot consumed by syncSnapshot/targetTornado instead of a newer independent authority poll',
+);
+check(
   'browser-visible-authority-scale-parity',
   contents.browserQa.includes('[SW:PLAYCANVAS:VISIBLE_AUTHORITY_SCALE_PARITY]')
     && contents.browserQa.includes('SEALED_VISIBLE_AUTHORITY_SCALE = 0.7717')
     && contents.browserQa.includes('joystickVisibleAuthorityScale')
+    && contents.browserQa.includes('waitForRenderSettle(18)')
     && contents.browserQa.includes("name: 'visible-storm-speed-parity'"),
-  'browser speed-parity gate normalizes visible displacement against authoritative displacement over the same real input interval',
+  'browser speed-parity gate compares settled visible displacement against the render-consumed authority target over the same visible-input maneuver',
 );
 check(
   'browser-chase-camera-check',
