@@ -136,12 +136,11 @@ export class OneStickChaseCamera {
     const travelDistance = Math.hypot(travelX, travelZ);
     const travelSpeed = safeDelta > 0.0001 ? travelDistance / safeDelta : 0;
 
-    // Active one-stick intent establishes a stable chase target for the current
-    // held stick direction. When the stick is released, observed storm travel
-    // becomes the fallback so the camera can finish settling behind momentum.
-    if (!this.inputActive && travelSpeed >= this.config.movementThreshold && travelDistance > 0.0001) {
-      this.desiredHeadingRadians = Math.atan2(travelZ, travelX);
-    }
+    // [SW:PLAYCANVAS:RELEASE_SETTLE]
+    // Releasing the one stick freezes the last intentional chase target. Do not
+    // reinterpret residual authority/render travel as a fresh camera command.
+    // This prevents a late post-release orbit while preserving the established
+    // turn rate, dead zone, distance, and owner-approved trailing response.
 
     const rawError = shortestAngle(this.headingRadians, this.desiredHeadingRadians);
     const errorMagnitude = Math.abs(rawError);
