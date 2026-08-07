@@ -126,7 +126,7 @@ export function addVehicle(
       position: [centerX + offset[0], offset[1], centerZ + offset[2]],
       scale,
       material,
-      rotation,
+      ...(rotation ? { rotation } : {}),
     });
     parts.push(Object.freeze({ entity, offset }));
   };
@@ -184,9 +184,9 @@ export function addCow17(
       type,
       position: [baseX + offset[0], offset[1], baseZ + offset[2]],
       scale,
-      rotation,
       material,
       castShadows,
+      ...(rotation ? { rotation } : {}),
     });
     parts.push(Object.freeze({ entity, offset }));
   };
