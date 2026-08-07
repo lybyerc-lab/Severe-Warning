@@ -5,12 +5,33 @@
 
 import { ROAD_TOP_Y, TORNADO_BASE_Y } from './constants';
 import type { PcApplication, PcEntity, PlayCanvasModule } from './engine-types';
-import { addBuilding, addCow17, addPrimitive, addRoadMarkings } from './geometry';
+import {
+  addBuilding,
+  addCow17,
+  addElectricalTarget,
+  addPrimitive,
+  addRoadMarkings,
+  addVehicle,
+  type BuildingParts,
+  type OffsetEntity,
+} from './geometry';
 import { createMaterial } from './materials';
 
 export interface SceneResult {
   readonly entities: readonly PcEntity[];
   readonly tornadoParts: readonly PcEntity[];
+  readonly tornadoPartY: readonly number[];
+  readonly mooBrew: BuildingParts;
+  readonly cow17Parts: readonly OffsetEntity[];
+  readonly vehicleParts: readonly OffsetEntity[];
+  readonly electricalParts: readonly OffsetEntity[];
+  readonly anchors: Readonly<{
+    tornado: Readonly<{ x: number; z: number }>;
+    barnProxy: Readonly<{ x: number; z: number }>;
+    cow17: Readonly<{ x: number; z: number }>;
+    vehicle: Readonly<{ x: number; z: number }>;
+    electrical: Readonly<{ x: number; z: number }>;
+  }>;
 }
 
 export function populatePrairieJunctionScene(
@@ -67,6 +88,13 @@ export function populatePrairieJunctionScene(
   const white = createMaterial(pc, [0.87, 0.86, 0.8], { gloss: 0.25 });
   const black = createMaterial(pc, [0.035, 0.045, 0.05], { gloss: 0.3 });
   const pink = createMaterial(pc, [0.73, 0.39, 0.38], { gloss: 0.2 });
+  const vehicleRed = createMaterial(pc, [0.58, 0.08, 0.05], { metalness: 0.12, gloss: 0.55 });
+  const electricalMetal = createMaterial(pc, [0.24, 0.29, 0.32], { metalness: 0.48, gloss: 0.58 });
+  const electricalHot = createMaterial(pc, [0.68, 0.76, 0.84], {
+    emissive: [0.18, 0.42, 0.74],
+    emissiveIntensity: 0.9,
+    gloss: 0.5,
+  });
   const funnelMaterial = createMaterial(pc, [0.25, 0.29, 0.31], {
     opacity: 0.72,
     gloss: 0.05,
@@ -131,7 +159,7 @@ export function populatePrairieJunctionScene(
   });
   addRoadMarkings(pc, app, entities, roadPaint);
 
-  addBuilding(pc, app, entities, {
+  const mooBrew = addBuilding(pc, app, entities, {
     name: 'moo-brew-corner-shop',
     x: -14,
     z: -13,
@@ -161,9 +189,13 @@ export function populatePrairieJunctionScene(
     wall: cream,
     roof,
   });
-  addCow17(pc, app, entities, white, black, pink);
+
+  const cow17Parts = addCow17(pc, app, entities, white, black, pink);
+  const vehicleParts = addVehicle(pc, app, entities, vehicleRed, black);
+  const electricalParts = addElectricalTarget(pc, app, entities, electricalMetal, electricalHot);
 
   const tornadoParts: PcEntity[] = [];
+  const tornadoPartY: number[] = [];
   const funnelScales = [
     [5.8, 2.4, 5.8],
     [4.8, 2.8, 4.8],
@@ -174,16 +206,18 @@ export function populatePrairieJunctionScene(
   ] as const;
   let funnelY = TORNADO_BASE_Y;
   funnelScales.forEach((scale, index) => {
+    const centerY = funnelY + scale[1] / 2;
     const part = addPrimitive(pc, app, entities, {
       name: `tornado-funnel-${index}`,
       type: 'cone',
-      position: [-8, funnelY + scale[1] / 2, 8],
+      position: [-8, centerY, 8],
       scale,
       material: funnelMaterial,
       castShadows: false,
       receiveShadows: false,
     });
     tornadoParts.push(part);
+    tornadoPartY.push(centerY);
     funnelY += scale[1] * 0.72;
   });
 
@@ -197,9 +231,22 @@ export function populatePrairieJunctionScene(
     receiveShadows: false,
   });
   tornadoParts.push(dust);
+  tornadoPartY.push(TORNADO_BASE_Y);
 
   return Object.freeze({
     entities: Object.freeze([...entities]),
     tornadoParts: Object.freeze([...tornadoParts]),
+    tornadoPartY: Object.freeze([...tornadoPartY]),
+    mooBrew,
+    cow17Parts,
+    vehicleParts,
+    electricalParts,
+    anchors: Object.freeze({
+      tornado: Object.freeze({ x: -8, z: 8 }),
+      barnProxy: Object.freeze({ x: mooBrew.center.x, z: mooBrew.center.z }),
+      cow17: Object.freeze({ x: 12, z: 10 }),
+      vehicle: Object.freeze({ x: 10, z: -2.1 }),
+      electrical: Object.freeze({ x: 18, z: 15 }),
+    }),
   });
 }
