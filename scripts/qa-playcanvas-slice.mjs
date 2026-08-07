@@ -19,20 +19,67 @@ const distanceToBarn = (snapshot) => snapshot?.barn
   ? Math.hypot(snapshot.storm.x - snapshot.barn.x, snapshot.storm.z - snapshot.barn.z)
   : null;
 
-function movementKeysTowardTarget(snapshot) {
-  if (!snapshot?.barn || !snapshot?.storm) return [];
-  const dx = snapshot.barn.x - snapshot.storm.x;
-  const dz = snapshot.barn.z - snapshot.storm.z;
-  const keys = [];
-  if (Math.abs(dx) > 0.25) keys.push(dx > 0 ? 'd' : 'a');
-  if (Math.abs(dz) > 0.25) keys.push(dz > 0 ? 's' : 'w');
-  return keys;
+function motionStateVector(state) {
+  if (!state?.visual || !state?.camera) return null;
+  const fx = state.visual.x - state.camera.x;
+  const fz = state.visual.z - state.camera.z;
+  const length = Math.max(0.0001, Math.hypot(fx, fz));
+  return {
+    forward: { x: fx / length, z: fz / length },
+    right: { x: -fz / length, z: fx / length },
+  };
+}
+
+function projectedMotion(before, after, axis) {
+  const basis = motionStateVector(before);
+  if (!basis || !after?.visual || !before?.visual) return 0;
+  const dx = after.visual.x - before.visual.x;
+  const dz = after.visual.z - before.visual.z;
+  return dx * basis[axis].x + dz * basis[axis].z;
+}
+
+function followError(before, after) {
+  if (!before?.visual || !after?.visual || !before?.camera || !after?.camera) return Infinity;
+  const stormDx = after.visual.x - before.visual.x;
+  const stormDz = after.visual.z - before.visual.z;
+  const cameraDx = after.camera.x - before.camera.x;
+  const cameraDz = after.camera.z - before.camera.z;
+  return Math.hypot(cameraDx - stormDx, cameraDz - stormDz);
+}
+
+async function readMotionState() {
+  return page.evaluate(() => {
+    const data = document.documentElement.dataset;
+    const handle = globalThis.__SW_PLAYCANVAS_SLICE__;
+    const numberOrNull = (value) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+    return {
+      authority: handle?.getAuthoritySnapshot() ?? null,
+      visual: {
+        x: numberOrNull(data.swPlaycanvasVisualStormX),
+        z: numberOrNull(data.swPlaycanvasVisualStormZ),
+      },
+      camera: {
+        x: numberOrNull(data.swPlaycanvasCameraX),
+        z: numberOrNull(data.swPlaycanvasCameraZ),
+      },
+      input: {
+        screenX: numberOrNull(data.swPlaycanvasScreenInputX),
+        screenY: numberOrNull(data.swPlaycanvasScreenInputY),
+        authorityX: numberOrNull(data.swPlaycanvasAuthorityInputX),
+        authorityZ: numberOrNull(data.swPlaycanvasAuthorityInputZ),
+      },
+    };
+  });
 }
 
 let report;
 try {
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90_000 });
   await page.waitForFunction(() => document.documentElement.dataset.swPlaycanvasSliceReady === 'true', null, { timeout: 90_000 });
+  await page.waitForFunction(() => Boolean(document.documentElement.dataset.swPlaycanvasCameraX), null, { timeout: 10_000 });
 
   const initial = await page.evaluate(() => {
     const canvas = document.querySelector('#app > canvas');
@@ -46,41 +93,63 @@ try {
     };
   });
 
-  // Screen-direction regression check. With the fixed camera, right on the
-  // on-screen stick maps to +X and up maps to -Z in the accepted authority.
-  const screenDirection = await page.evaluate(async () => {
+  // ------------------------------------------------------------------------
+  // Visible-input proof. This deliberately drives the actual UI controls.
+  // ------------------------------------------------------------------------
+  await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
+  await page.waitForTimeout(120);
+  const beforeJoystickUp = await readMotionState();
+  const joystickBox = await page.locator('#joystick').boundingBox();
+  if (!joystickBox) throw new Error('Visible joystick bounding box is unavailable.');
+  const centerX = joystickBox.x + joystickBox.width / 2;
+  const centerY = joystickBox.y + joystickBox.height / 2;
+  await page.mouse.move(centerX, centerY);
+  await page.mouse.down();
+  await page.mouse.move(centerX, centerY - joystickBox.height * 0.27, { steps: 4 });
+  await page.waitForTimeout(420);
+  await page.mouse.up();
+  await page.waitForTimeout(120);
+  const afterJoystickUp = await readMotionState();
+
+  await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
+  await page.waitForTimeout(120);
+  const beforeKeyboardRight = await readMotionState();
+  await page.keyboard.down('d');
+  await page.waitForTimeout(420);
+  await page.keyboard.up('d');
+  await page.waitForTimeout(120);
+  const afterKeyboardRight = await readMotionState();
+
+  const joystickForwardProjection = projectedMotion(beforeJoystickUp, afterJoystickUp, 'forward');
+  const keyboardRightProjection = projectedMotion(beforeKeyboardRight, afterKeyboardRight, 'right');
+  const joystickFollowError = followError(beforeJoystickUp, afterJoystickUp);
+  const keyboardFollowError = followError(beforeKeyboardRight, afterKeyboardRight);
+
+  // ------------------------------------------------------------------------
+  // Executor proof. Reset, then use authority motion only as deterministic
+  // setup to get within destruction range. Visible controls are already proven
+  // above and are not bypassed for their own claims.
+  // ------------------------------------------------------------------------
+  await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
+  await page.waitForTimeout(120);
+  const playStart = await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.getAuthoritySnapshot() ?? null);
+  const initialStorm = playStart?.storm ?? null;
+  const initialBarnHealth = playStart?.barn?.health ?? null;
+  const initialDistance = distanceToBarn(playStart);
+
+  await page.evaluate(async () => {
     const handle = globalThis.__SW_PLAYCANVAS_SLICE__;
-    const joystick = document.querySelector('#joystick');
-    if (!handle || !joystick) return null;
-    const bridgeFrame = document.querySelector('#playcanvas-authority-frame');
-    const authority = bridgeFrame?.contentWindow?.__SW_PLAYCANVAS_AUTHORITY__;
-    if (!authority) return null;
-    const before = handle.reset();
-    authority.setJoystick(0.85, 0, true);
-    await new Promise((resolve) => setTimeout(resolve, 260));
-    authority.setJoystick(0, 0, false);
-    const afterRight = handle.getAuthoritySnapshot();
-    handle.reset();
-    authority.setJoystick(0, -0.85, true);
-    await new Promise((resolve) => setTimeout(resolve, 260));
-    authority.setJoystick(0, 0, false);
-    const afterUp = handle.getAuthoritySnapshot();
-    handle.reset();
-    return {
-      before: before.storm,
-      afterRight: afterRight?.storm ?? null,
-      afterUp: afterUp?.storm ?? null,
-    };
+    const frame = document.querySelector('#playcanvas-authority-frame');
+    const bridge = frame?.contentWindow?.__SW_PLAYCANVAS_AUTHORITY__;
+    const snapshot = handle?.getAuthoritySnapshot();
+    if (!handle || !bridge || !snapshot?.barn) throw new Error('Authority setup movement unavailable.');
+    const dx = snapshot.barn.x - snapshot.storm.x;
+    const dz = snapshot.barn.z - snapshot.storm.z;
+    const length = Math.max(0.001, Math.hypot(dx, dz));
+    bridge.setJoystick(dx / length, dz / length, true);
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    bridge.setJoystick(0, 0, false);
   });
-
-  const initialStorm = initial.authority?.storm ?? null;
-  const initialBarnHealth = initial.authority?.barn?.health ?? null;
-  const initialDistance = distanceToBarn(initial.authority);
-  const movementKeys = movementKeysTowardTarget(initial.authority);
-
-  for (const key of movementKeys) await page.keyboard.down(key);
-  await page.waitForTimeout(900);
-  for (const key of [...movementKeys].reverse()) await page.keyboard.up(key);
   await page.waitForTimeout(150);
 
   const afterMovement = await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.getAuthoritySnapshot() ?? null);
@@ -124,6 +193,8 @@ try {
       versionValue: document.documentElement.dataset.swPlaycanvasEngineVersion ?? null,
       revisionValue: document.documentElement.dataset.swPlaycanvasEngineRevision ?? null,
       authorityValue: document.documentElement.dataset.swPlaycanvasGameplayAuthority ?? null,
+      cameraValue: document.documentElement.dataset.swPlaycanvasCameraX ?? null,
+      inputValue: document.documentElement.dataset.swPlaycanvasAuthorityInputX ?? null,
     };
   });
   await page.waitForTimeout(100);
@@ -131,12 +202,6 @@ try {
   const engineRevision = initial.telemetry?.engineRevision;
   const movementDistance = initialStorm && afterMovement?.storm
     ? Math.hypot(afterMovement.storm.x - initialStorm.x, afterMovement.storm.z - initialStorm.z)
-    : 0;
-  const rightDeltaX = screenDirection?.afterRight && screenDirection?.before
-    ? screenDirection.afterRight.x - screenDirection.before.x
-    : 0;
-  const upDeltaZ = screenDirection?.afterUp && screenDirection?.before
-    ? screenDirection.afterUp.z - screenDirection.before.z
     : 0;
   const finalBarnHealth = afterAbilities.authority?.barn?.health ?? null;
   const authorityAbilities = afterAbilities.authority?.inputAbilities?.abilities ?? null;
@@ -151,18 +216,19 @@ try {
     { name: 'engine-revision-dataset-agrees', passed: initial.data.swPlaycanvasEngineRevision === engineRevision, detail: JSON.stringify(initial.data) },
     { name: 'gameplay-authority-connected', passed: initial.telemetry?.gameplayAuthority === 'PLAYCANVAS_AUTHORITY_V1' && initial.authority?.version === 'PLAYCANVAS_AUTHORITY_V1' && initial.authority?.ready === true, detail: JSON.stringify(initial.authority) },
     { name: 'authority-frame-present', passed: initial.authorityFramePresent === true, detail: JSON.stringify(initial.authorityFramePresent) },
-    { name: 'warning-run-active', passed: initial.authority?.run?.runActive === true && (initial.authority?.run?.remainingSeconds ?? 0) > 170, detail: JSON.stringify(initial.authority?.run) },
-    { name: 'screen-right-maps-positive-x', passed: rightDeltaX > 0.25, detail: JSON.stringify({ screenDirection, rightDeltaX }) },
-    { name: 'screen-up-maps-negative-z', passed: upDeltaZ < -0.25, detail: JSON.stringify({ screenDirection, upDeltaZ }) },
-    { name: 'movement-plan-resolved', passed: movementKeys.length > 0, detail: JSON.stringify({ movementKeys, initialStorm, barn: initial.authority?.barn }) },
-    { name: 'keyboard-moves-real-storm', passed: movementDistance > 1, detail: JSON.stringify({ movementKeys, initialStorm, after: afterMovement?.storm, movementDistance }) },
-    { name: 'movement-approaches-live-target', passed: initialDistance !== null && afterMovementDistance !== null && afterMovementDistance < initialDistance, detail: JSON.stringify({ movementKeys, initialDistance, afterMovementDistance }) },
+    { name: 'warning-run-active', passed: playStart?.run?.runActive === true && (playStart?.run?.remainingSeconds ?? 0) > 170, detail: JSON.stringify(playStart?.run) },
+    { name: 'joystick-up-moves-screen-forward', passed: joystickForwardProjection > 0.35, detail: JSON.stringify({ beforeJoystickUp, afterJoystickUp, joystickForwardProjection }) },
+    { name: 'keyboard-right-moves-screen-right', passed: keyboardRightProjection > 0.35, detail: JSON.stringify({ beforeKeyboardRight, afterKeyboardRight, keyboardRightProjection }) },
+    { name: 'camera-follows-joystick-motion', passed: joystickFollowError < 0.08, detail: JSON.stringify({ joystickFollowError, beforeJoystickUp, afterJoystickUp }) },
+    { name: 'camera-follows-keyboard-motion', passed: keyboardFollowError < 0.08, detail: JSON.stringify({ keyboardFollowError, beforeKeyboardRight, afterKeyboardRight }) },
+    { name: 'authority-setup-moves-real-storm', passed: movementDistance > 1, detail: JSON.stringify({ initialStorm, after: afterMovement?.storm, movementDistance }) },
+    { name: 'authority-setup-approaches-live-target', passed: initialDistance !== null && afterMovementDistance !== null && afterMovementDistance < initialDistance, detail: JSON.stringify({ initialDistance, afterMovementDistance }) },
     { name: 'gust-executor-accepted', passed: abilityResults?.secondary === true, detail: JSON.stringify(abilityResults) },
     { name: 'pull-executor-accepted', passed: abilityResults?.primary === true, detail: JSON.stringify(abilityResults) },
     { name: 'zap-executor-accepted', passed: abilityResults?.tertiary === true, detail: JSON.stringify(abilityResults) },
     { name: 'ability-telemetry-counts', passed: (authorityAbilities?.acceptedCount ?? 0) >= 3 && Number(afterAbilities.data.swPlaycanvasAbilityAcceptedCount ?? 0) >= 3, detail: JSON.stringify({ authorityAbilities, data: afterAbilities.data }) },
     { name: 'destruction-state-changed', passed: initialBarnHealth !== null && finalBarnHealth !== null && finalBarnHealth < initialBarnHealth, detail: JSON.stringify({ initialBarnHealth, finalBarnHealth, barn: afterAbilities.authority?.barn }) },
-    { name: 'score-never-regresses', passed: (afterAbilities.authority?.score?.destructionScore ?? -1) >= (initial.authority?.score?.destructionScore ?? 0), detail: JSON.stringify({ initial: initial.authority?.score, after: afterAbilities.authority?.score }) },
+    { name: 'score-never-regresses', passed: (afterAbilities.authority?.score?.destructionScore ?? -1) >= (playStart?.score?.destructionScore ?? 0), detail: JSON.stringify({ initial: playStart?.score, after: afterAbilities.authority?.score }) },
     { name: 'combo-law-bounded', passed: (afterAbilities.authority?.score?.comboMultiplier ?? 0) >= 1 && (afterAbilities.authority?.score?.comboMultiplier ?? 99) <= 3.5, detail: JSON.stringify(afterAbilities.authority?.score) },
     { name: 'cow17-safe', passed: afterAbilities.authority?.cow17?.safe === true, detail: JSON.stringify(afterAbilities.authority?.cow17) },
     { name: 'road-above-terrain', passed: (initial.telemetry?.roadClearance ?? 0) >= 0.1, detail: JSON.stringify(initial.telemetry) },
@@ -178,6 +244,8 @@ try {
     { name: 'dispose-version-cleared', passed: disposal.versionValue === null, detail: JSON.stringify(disposal) },
     { name: 'dispose-revision-cleared', passed: disposal.revisionValue === null, detail: JSON.stringify(disposal) },
     { name: 'dispose-authority-telemetry-cleared', passed: disposal.authorityValue === null, detail: JSON.stringify(disposal) },
+    { name: 'dispose-camera-telemetry-cleared', passed: disposal.cameraValue === null, detail: JSON.stringify(disposal) },
+    { name: 'dispose-input-telemetry-cleared', passed: disposal.inputValue === null, detail: JSON.stringify(disposal) },
     { name: 'no-console-errors', passed: consoleErrors.length === 0, detail: JSON.stringify(consoleErrors) },
     { name: 'no-page-errors', passed: pageErrors.length === 0, detail: JSON.stringify(pageErrors) },
   ];
@@ -190,7 +258,24 @@ try {
     failedChecks: failed.map((item) => item.name),
     consoleErrors,
     pageErrors,
-    evidence: { initial, screenDirection, movementKeys, afterMovement, abilityResults, afterAbilities, reset },
+    evidence: {
+      initial,
+      visibleInput: {
+        beforeJoystickUp,
+        afterJoystickUp,
+        joystickForwardProjection,
+        joystickFollowError,
+        beforeKeyboardRight,
+        afterKeyboardRight,
+        keyboardRightProjection,
+        keyboardFollowError,
+      },
+      playStart,
+      afterMovement,
+      abilityResults,
+      afterAbilities,
+      reset,
+    },
     disposal,
   };
 } catch (error) {
