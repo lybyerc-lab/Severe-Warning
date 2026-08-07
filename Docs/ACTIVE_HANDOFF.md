@@ -1,221 +1,164 @@
 # Active Handoff
 
-Last updated: 2026-08-03 America/Chicago
+Last updated: 2026-08-06 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
-Current milestone: `v5.0.0 Heartland Campaign Foundation`
-Current build-train gate: Cow Signature CI and signed Android acceptance
+Current direction: guarded PlayCanvas production-slice migration
+Current build-train: `Docs/PLAYCANVAS_MIGRATION_BUILD_TRAIN.md`
+Current milestone: first browser-playable PlayCanvas candidate is live on QA
 
-## V5 fast-track override
+## Durable decision
 
-On 2026-08-03, the user explicitly approved advancing directly to V5 instead of waiting for the remaining v4.5.0 signing ceremony. This satisfies the build-train requirement for explicit approval before widening or skipping a stage.
+The owner explicitly selected PlayCanvas as the production-renderer direction after physically testing the PR #26 Android build.
 
-- Active integration branch: `agent/v500-heartland-campaign`
-- Source base: browser-QA-passed `qa` gameplay plus current `main` build infrastructure
-- V5 contract: `Docs/V5_BUILD_TRAIN.md`
-- V5 implementation: deterministic campaign, real-time clock, authored world-tour, mobile results containment, and Cow Signature patches
-- V5 verifier: `scripts/verify-v500-campaign.mjs`
-- Cow Signature gameplay commit: `cffbeb2` (`Add Cow 17 signature system`)
-- Exact CI candidate head: `4917d16`; automated evidence commit: `80bd3bd`
-- Pages run #49: built, deterministic browser-QA passed, and deployed from exact commit `8b193b5`
-- Full-round run #4: workflow execution was green, but its report correctly recorded `roundCompleted=FAIL` and `reachedDistrictThree=FAIL`; the workflow did not yet enforce failed report checks
-- Root cause: the three-minute countdown used the simulation delta capped at `0.1 s`; at headless `3 FPS`, 205 wall-clock seconds advanced only about 47 game seconds
-- Correction: `scripts/apply-v500-realtime-clock-fix.mjs` separates the warning clock from capped simulation time, preserves pause/background behavior, and makes any failed required playtest check fail CI
-- Pages run #50: passed and deployed exact commit `c445324`
-- Strict full-round run #5: passed all `11/11` required checks in 185 seconds; reached district 3, finished at time 0, and recorded no page errors, console errors, or harness exception
-- Current authored-world candidate: four road-safe terrain profiles, regional scenery and challenges, eight destructible signature landmarks, distinct media rosters, and controlled animal density
-- Local mobile-landscape sweep: all four stops constructed successfully with unique contracts and no page or console errors; exact-commit CI evidence remains pending
-- Cow Signature candidate: persistent Cow 17, frame-rate-independent safe cattle flight, Cow-Cam, broadcast callouts, Moo Brew sponsorship, hay-bale landings, and Bovine Situation Report
-- Local Cow Signature verification: full patch train passed from untouched base, V5 verifier `66/66`, offline web bundle built, and 1365x630 plus 932x430 mobile-landscape layouts showed no results or control overlap
-- Exact-commit CI: Pages #53 passed, signed Android QA #6 passed, and strict full-round/world-tour QA #8 passed
-- Full-round evidence: district 3 reached, final time `0`, score `21606`, all `11/11` checks passed, and zero page or console errors
-- World-tour evidence: all `17/17` checks passed; Cow 17 remained tagged across animal densities `38/24/18/8`, four hay-bale zones loaded per stop, and the safe-animal invariant held
-- Current status: Cow Signature is committed, deployed, automated-browser-QA passed, and packaged as signed QA-6; Galaxy S26 Ultra acceptance remains pending
-- Android debug delivery: relevant pull-request updates now automatically package the exact PR head; manual workflow dispatch remains available for arbitrary refs
-- V5 Android debug run #47: passed from exact commit `b3dcc63`; artifact `severe-weather-v5.0.0-mobile-test-47` contains `Severe-Weather-v5.0.0-Mobile-Test-47.apk`
-- APK SHA-256: `d21a30878f090b20e4ceb0a8e9c3acaf770f4ede0c4f7d7409094fe717ea6a07`
-- Signed QA run #5: workflow `30842904406`, exact source `569e688`, artifact `severe-weather-v5.0.0-qa-5`, package `com.lybyerclab.severeweather.qa`, version code `500005`, version name `5.0.0-qa.5`
-- Physical update status: QA-5 installed over QA-3 without uninstalling; update-in-place is verified for the signed QA application ID
-- Physical gameplay status: QA-5 looked and played like the HTML on the Galaxy S26 Ultra; Cow Signature commit `cffbeb2` has not yet been physically tested
-- Signed QA run #6: workflow `30849403030`, exact source `4917d16`, artifact `severe-weather-v5.0.0-qa-6`, version code `500006`, version name `5.0.0-qa.6`
-- QA-6 APK SHA-256: `eb7299af09b1888307cc91507028b44d00b3ae5b01a90969a67c28a8eb23a0d8`
-- Important boundary: inherited v4.5.0 gameplay is protected behavior, but the v4.5.0 milestone was not retroactively declared physically accepted
+The migration is intended to improve visual quality, scene composition, terrain and road reliability, character presentation, storm atmosphere, and the opening cinematic. It is not permission to redesign the gameplay that already feels excellent.
 
-## Start here
+## Frozen behavior reference
 
-The repository is the authoritative project memory. Do not restart diagnosis from chat history.
+- Draft PR: #26
+- Head branch: `agent/presentation-identity-moo-brew-pass`
+- Exact reference head: `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+- Verified workflow: `31094966986` / Run 6
+- Artifact: `severe-weather-presentation-identity-6`
+- Debug APK: `Severe-Weather-v5.1.0-Presentation-Identity-6.apk`
+- APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
 
-Required startup sequence:
+PRs #24, #25, and #26 remain protected historical stack context. Do not casually retarget, squash, or rewrite them.
 
-1. Read `AGENTS.md`.
-2. Read every file listed by `AGENTS.md`.
-3. Inspect branch `qa`.
-4. Inspect draft PR `#13`.
-5. Inspect the latest QA Pages and Android workflows before changing code.
-6. Continue from the exact state below.
+## Physical findings that drove the renderer change
 
-## Active branches and pull request
+Accepted and protected:
 
-- V5 integration branch: `agent/v500-heartland-campaign`
-- Gameplay branch: `agent/v450-storm-feel-overhaul`
-- Draft V5 PR: `#13`
-- Browser QA branch: `qa`
-- Accepted baseline on `main`: v4.4.2
+- Multiple physical Android rounds remained fun.
+- The owner described the gameplay as still awesome.
+- Pull, Gust, Zap, destruction, scoring, campaign timing, and safe-animal behavior remain protected reference behavior.
 
-## Stage 4 exit evidence
+Rejected or requiring correction:
 
-Stage 4 passed on the Galaxy S26 Ultra through GitHub Pages in Chrome.
+- Prairie Junction / level two contains road and terrain topology defects.
+- The storm visibly passes underneath roads or terrain in many places.
+- Sand-like or ground-material patches cover portions of the road.
+- The opening cutscene looks rough and is not accepted.
+- The old rendering/art-production approach does not reach the desired visual quality.
 
-- Visible build badge: `QA Stage 4 Â· QA #46 Â· 803f6fa`
-- Exact commit: `803f6fa8e80686afb97a9bb0cbee5cf6e085130d`
-- Report version: `QA4_DETERMINISTIC_V1`
-- Passed: `true`
-- Duration: `30001 ms`
-- Score: `8011`
-- Final stage: `3`
-- Transitions: `1 > 2 > 3`
-- Failed checks: none
-- Console errors: none
-- Blocked pause attempts: `0`
-- Audio cleanup: passed with `voices=0`
+## Current implementation branch
 
-Durable evidence:
+- Draft PR: #32 `Build first playable PlayCanvas authority-backed slice`
+- Branch: `agent/playcanvas-playable-moo-brew-slice`
+- Verified playable source SHA: `5936bb12e022741a0964b2c80be9304780ee68d0`
+- Base/migration-memory branch: `agent/playcanvas-production-slice-handoff`
+- PR #32 remains draft and unmerged.
 
-- `Docs/Evidence/QA4_STAGE4_PASS_QA46_803f6fa.json`
-- Evidence commit: `5753e6ee68267858de09e6f1c43d5ae6521e245e`
+## Current architecture
 
-Stage 4 is closed unless a later regression is demonstrated.
+The playable migration candidate uses a deliberately transitional compatibility seam:
 
-## Stage 5 implementation now committed
+- accepted legacy runtime remains gameplay authority
+- PlayCanvas 2.21.3 is the visible renderer
+- hidden same-origin authority frame supplies live state and accepted executor access
+- Phase 3 input/ability bridge remains authoritative for keyboard, joystick, Pull, Gust, and Zap
+- accepted warning clock, scoring/combo, destruction, campaign/runtime state, reset, and safe-animal state remain authoritative
+- PlayCanvas renders the visible tornado, HUD, roads, buildings, Cow 17, vehicle, electrical target, and destruction proxy
 
-### Signing-aware Android configuration on `qa`
+This proves renderer replacement without gameplay replacement. The hidden legacy renderer is transitional and is not the final mobile-performance architecture.
 
-Commit: `ee09167fd82f3394d38e7334cf11e960e1daefcc`
+## Browser-playable proof
 
-`android/app/build.gradle` now accepts externally supplied:
+Authoritative evidence: `Docs/PLAYCANVAS_PLAYABLE_QA_PREVIEW_2026-08-06.md`
 
-- application ID
-- version code
-- version name
-- QA keystore path
-- keystore password
-- key alias
-- key password
+PlayCanvas workflow Run 18:
 
-Release builds fail closed when signing values are absent. No fallback release certificate is permitted.
+- Run ID: `31136370444`
+- exact source: `5936bb12e022741a0964b2c80be9304780ee68d0`
+- result: success
+- PlayCanvas: `2.21.3`, revision `b1767d5`
+- engine SHA-256: `d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55aeef4de6a8adb4`
+- static verifier: `42/42`
+- Chromium browser QA: `37/37`
+- artifact: `severe-weather-playcanvas-slice-18`
+- artifact digest: `sha256:169784d02b11170d3e0f24d6e61fdc8a01d5ccb07b3561680fdf2cce909b3bc2`
 
-### One-time signing setup helper on `qa`
+Real-executor proof from the browser harness:
 
-Commit: `daa677771fb01adb030249151e6ad9c140a5382b`
+- authoritative storm moved `24.489997958350216` world units
+- storm-to-live-target distance reduced `28.30194339616981 -> 3.841874542459748`
+- Gust accepted
+- Pull accepted
+- Zap accepted
+- production-barn health reduced `760 -> 437.19999999999976`
+- score advanced `0 -> 217`
+- combo advanced `1.00x -> 1.10x` and stayed within protected `3.5x` cap
+- Cow 17 remained safe
+- reset restored active 180-second warning run
+- cleanup removed PlayCanvas canvas and authority frame
 
-File:
+## Live QA preview
 
-- `scripts/setup-qa-signing.sh`
+Existing QA root remains intact:
 
-Purpose:
+`https://lybyerc-lab.github.io/Severe-Warning/`
 
-- generate one persistent QA-only JKS locally
-- retain the key outside the repository
-- upload base64 key material and passwords to GitHub repository secrets
-- refuse to overwrite an existing key
+Playable PlayCanvas preview:
 
-Required secrets:
+`https://lybyerc-lab.github.io/Severe-Warning/playcanvas/`
 
-- `SEVERE_WEATHER_QA_KEYSTORE_BASE64`
-- `SEVERE_WEATHER_QA_KEYSTORE_PASSWORD`
-- `SEVERE_WEATHER_QA_KEY_ALIAS`
-- `SEVERE_WEATHER_QA_KEY_PASSWORD`
+Live PlayCanvas metadata:
 
-### Signing-material exclusions on `qa`
+`https://lybyerc-lab.github.io/Severe-Warning/playcanvas/qa-playcanvas-build.json`
 
-Commit: `1d138fd731a76404e27f7e67a6b4fb491d64db71`
+QA Pages Run 67:
 
-`.gitignore` now rejects common keystore, private-key, certificate, and signing directories.
+- Run ID: `31136838498`
+- QA branch SHA: `14c1b3945957cb480aa7734e9a277580e42772dc`
+- old QA root rebuild: success
+- deterministic QA4: success
+- sealed Run 18 artifact verification: success
+- Pages deploy: success
+- post-deploy public URL verification: success
+- live metadata exact source SHA: `5936bb12e022741a0964b2c80be9304780ee68d0`
 
-### Manual signed-QA workflow on `main`
+## What the owner can test now
 
-Initial workflow commit: `aa5ee7e9e9631dd69233e20443f0ce6dcaf9857c`
+The PlayCanvas QA preview supports:
 
-Hardened workflow commit: `1368a290d8fa4a8257b8e0659398ff22dfc89541`
+- keyboard WASD / arrow movement
+- touch joystick
+- Pull, Gust, Zap buttons and 1/2/3 keys
+- live warning timer
+- live score/combo
+- authoritative storm movement rendered in PlayCanvas
+- visible destruction-state response
+- Cow 17, vehicle, and electrical target
+- reset
 
-File:
+This is a first playable migration slice, not final art or mobile acceptance.
 
-- `.github/workflows/android-qa-signed.yml`
+## Current classification
 
-Workflow behavior:
+- Committed: yes
+- Built: yes
+- Browser-QA passed: yes
+- Live QA preview verified: yes
+- Browser playable: yes
+- Android APK built for PlayCanvas: no
+- Physically accepted on Galaxy S26 Ultra: no
+- PR #32 merged: no
 
-- manually packages an exact source ref, defaulting to `qa`
-- checks out the proven gameplay branch without merging it
-- derives a monotonically increasing version code as `450000 + workflow run number`
-- uses stable QA application ID `com.lybyerclab.severeweather.qa`
-- uses version name `4.5.0-qa.<run number>`
-- applies the accepted deterministic patch chain
-- rebuilds, stamps, verifies, and synchronizes the offline web bundle
-- restores the persistent signing key only inside the runner
-- assembles a signed release APK
-- verifies the APK signature and certificate digest
-- verifies package ID, version code, and version name
-- records APK SHA-256 and package metadata
-- uploads the signed package for 30 days
-- deletes restored signing material even after failure
+## Next gate
 
-## Signed QA continuity status
+1. Collect owner hands-on feedback from the live `/playcanvas/` QA preview.
+2. Fix presentation and control defects without weakening gameplay authority.
+3. Keep the existing QA root as reference until the PlayCanvas slice is explicitly accepted.
+4. Once browser behavior/presentation are acceptable, package the bounded candidate through Capacitor Android.
+5. Inspect exact APK/artifact/checksum evidence.
+6. Perform Galaxy S26 Ultra testing for gameplay feel, roads/terrain, Cow 17 readability, frame pacing, heat, lifecycle, and controls.
+7. Do not widen into full multi-county migration before the bounded slice passes physical acceptance.
 
-- Packaging source changes committed: yes
-- Manual workflow available on `main`: yes
-- Persistent QA signing secrets configured: proven
-- Signed APK built: yes, through QA-5
-- Update-in-place verified: yes, QA-3 to QA-5 on Galaxy S26 Ultra
-- Packaging continuity gate: complete for the QA application ID
+## Process laws
 
-## Immediate next action
-
-1. Download and install signed QA-6 over QA-5; do not uninstall QA-5 first.
-2. Play one full Galaxy S26 Ultra run focused on Cow-Cam timing, report readability, cattle visibility, frame pacing, heat, and battery.
-3. Close and reopen the app to verify campaign and Cow 17 career persistence.
-4. Record physical acceptance or specific corrections before merging PR #13.
-
-The signing ceremony remains inherited packaging work, but it no longer blocks V5 source development.
-
-## Security rule
-
-- Never commit signing key material.
-- Never paste passwords or base64 key data into chat.
-- Never expose secrets in workflow logs.
-- Use this QA-only key, not a production distribution key.
-- Back up the JKS and credentials in an encrypted vault. Losing the key permanently breaks update continuity for this QA application ID.
-
-## Inherited v4.5 physical checklist
-
-After Stage 5 succeeds, perform one meaningful Galaxy S26 Ultra APK acceptance run covering:
-
-- audible and responsive music
-- accepted wind ambience
-- believable ability and destruction audio
-- glass not overrepresented
-- no unidentified synthetic sound
-- readable rampage feedback
-- forward-only districts
-- complete three-minute run
-- retry and cleanup
-- fullscreen, controls, frame pacing, heat, and battery
-
-These checks remain regression coverage for V5. They do not prevent the V5 branch from advancing through browser QA.
-
-## Protected behavior
-
-Do not regress:
-
-- v4.4.0 fullscreen and illustrated presentation
-- v4.4.1 Gust tree response
-- v4.4.2 Pull response
-- v4.5.0 wind ambience from APK #42
-- realistic recorded-effect direction from APK #46
-- continuous scoring across district boundaries
-- forward-only district progression
-- QA4 input isolation
-- QA4 popup batching and rendering
-- zero-error deterministic cleanup
-
-## New-chat prompt
-
-> Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md` and every file it lists, including `Docs/V5_BUILD_TRAIN.md`. Inspect `agent/v500-heartland-campaign`, branch `qa`, and the latest workflows. Continue V5 browser QA without weakening inherited storm gameplay. Do not describe V5 as physically accepted until the exact APK passes on the Galaxy S26 Ultra.
+- Repository truth outranks chat memory.
+- One writer per implementation branch.
+- Do not weaken QA to obtain a green badge.
+- Existing gameplay simulation remains authoritative until a separately proven migration step changes that boundary.
+- Automated browser success is not physical Android acceptance.
+- Do not claim an APK exists until assembly, upload, inspection, and SHA-256 verification are complete.
+- Historical Three.js source and evidence remain intact as the behavior reference until a PlayCanvas slice is physically accepted.

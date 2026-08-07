@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111923" />
+    <title>Severe Weather Warning | PlayCanvas Production Slice</title>
+  </head>
+  <body>
+    <main id="app" aria-label="Severe Weather PlayCanvas production slice">
+      <section class="slice-hud" aria-label="Production slice status">
+        <p class="slice-kicker">PLAYCANVAS PRODUCTION SLICE</p>
+        <h1>Prairie Junction</h1>
+        <p>Road and terrain truth test</p>
+        <dl>
+          <div><dt>Renderer</dt><dd>PlayCanvas 2.21.3</dd></div>
+          <div><dt>Road clearance</dt><dd>0.10 m</dd></div>
+          <div><dt>Tornado clearance</dt><dd>0.18 m</dd></div>
+        </dl>
+      </section>
+      <div id="slice-status" role="status" aria-live="polite">Loading PlayCanvas renderer…</div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

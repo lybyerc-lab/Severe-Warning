@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "playcanvas-slice/src/**/*.ts",
+    "playcanvas-slice/src/vite-env.d.ts",
+    "vite.playcanvas.config.ts"
+  ]
+}

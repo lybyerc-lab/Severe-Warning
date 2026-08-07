@@ -1,0 +1,107 @@
+name: PlayCanvas Production Slice Bootstrap
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches:
+      - agent/playcanvas-production-slice-handoff
+      - agent/playcanvas-moo-brew-slice-bootstrap
+
+concurrency:
+  group: playcanvas-slice-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-playcanvas-slice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify exact source identity
+        shell: bash
+        run: |
+          expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          actual="$(git rev-parse HEAD)"
+          printf 'expected=%s\nactual=%s\n' "$expected" "$actual"
+          test "$actual" = "$expected"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch pinned PlayCanvas engine
+        env:
+          PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55aeef4de6a8adb4
+        run: node scripts/fetch-playcanvas-engine.mjs
+
+      - name: Type-check isolated slice
+        run: pnpm exec tsc -p tsconfig.playcanvas.json --noEmit
+
+      - name: Static contract verification
+        run: node scripts/verify-playcanvas-slice.mjs
+
+      - name: Build isolated preview
+        run: pnpm exec vite build --config vite.playcanvas.config.ts
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start preview server
+        run: |
+          pnpm exec vite preview --config vite.playcanvas.config.ts --host 127.0.0.1 --port 4175 > playcanvas-slice-server.log 2>&1 &
+          echo $! > playcanvas-slice-server.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4175/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat playcanvas-slice-server.log
+          exit 1
+
+      - name: Run browser QA
+        run: node scripts/qa-playcanvas-slice.mjs
+
+      - name: Validate evidence contract
+        run: |
+          test -s playcanvas-slice-engine-report.json
+          test -s playcanvas-slice-static-report.json
+          test -s playcanvas-slice-evidence/playcanvas-slice-report.json
+          test -s playcanvas-slice-evidence/playcanvas-slice.png
+          test -s playcanvas-slice-server.log
+
+      - name: Package evidence
+        if: always()
+        run: |
+          mkdir -p playcanvas-slice-artifact
+          cp playcanvas-slice-engine-report.json playcanvas-slice-artifact/ 2>/dev/null || true
+          cp playcanvas-slice-static-report.json playcanvas-slice-artifact/ 2>/dev/null || true
+          cp playcanvas-slice-server.log playcanvas-slice-artifact/ 2>/dev/null || true
+          cp -R playcanvas-slice-evidence playcanvas-slice-artifact/ 2>/dev/null || true
+          cp -R playcanvas-slice-dist playcanvas-slice-artifact/preview 2>/dev/null || true
+          printf '%s\n' '${{ github.event.pull_request.head.sha || github.sha }}' > playcanvas-slice-artifact/SOURCE_SHA.txt
+
+      - name: Upload PlayCanvas bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: severe-weather-playcanvas-slice-${{ github.run_number }}
+          path: playcanvas-slice-artifact
+          if-no-files-found: error
+          retention-days: 14
