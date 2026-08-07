@@ -143,12 +143,24 @@ check(
   'browser speed-parity gate compares settled visible displacement against the render-consumed authority target over the same visible-input maneuver',
 );
 check(
+  'browser-camera-turn-frame-step-regression',
+  contents.browserQa.includes('[SW:PLAYCANVAS:CAMERA_TURN_STEP_REGRESSION]')
+    && contents.browserQa.includes('CAMERA_TURN_FRAME_SAMPLE_COUNT = 24')
+    && contents.browserQa.includes('CAMERA_MAX_HEADING_STEP_RADIANS = 0.13')
+    && contents.browserQa.includes('sampleCameraHeadings()')
+    && contents.browserQa.includes('headingStepMetrics(keyboardHeadingSamples)')
+    && contents.browserQa.includes('keyboardHeadingStepMetrics.maxStep <= CAMERA_MAX_HEADING_STEP_RADIANS')
+    && contents.browserQa.includes('keyboardHeadingStepMetrics.turningStepCount >= 3'),
+  'gradual-turn browser gate uses actual visible keyboard input and bounds each rendered camera heading step instead of relying on wall-clock hold duration',
+);
+check(
   'browser-chase-camera-check',
   contents.browserQa.includes('camera-stays-stable-on-forward-input')
     && contents.browserQa.includes('camera-turns-gradually-behind-keyboard-motion')
     && contents.browserQa.includes('camera-distance-stable-joystick')
-    && contents.browserQa.includes('camera-distance-stable-keyboard'),
-  'browser QA proves forward stability, gradual chase rotation, and stable follow distance',
+    && contents.browserQa.includes('camera-distance-stable-keyboard')
+    && contents.browserQa.includes('[SW:PLAYCANVAS:CAMERA_TURN_STEP_REGRESSION]'),
+  'browser QA proves forward stability, bounded per-frame chase rotation, and stable follow distance',
 );
 check('separate-output', contents.vite.includes("outDir: '../playcanvas-slice-dist'"), 'slice cannot overwrite accepted build output');
 check('qa-data-contract', contents.entry.includes('swPlaycanvasSliceReady'), 'browser QA readiness is observable');
