@@ -154,23 +154,23 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Download verified PlayCanvas Prairie expansion artifact
+      - name: Download verified PlayCanvas camera-polish artifact
         uses: actions/download-artifact@v4
         with:
-          name: severe-weather-playcanvas-slice-39
+          name: severe-weather-playcanvas-slice-49
           path: playcanvas-preview-artifact
           repository: lybyerc-lab/Severe-Warning
-          run-id: 31210691734
+          run-id: 31214064434
           github-token: ${{ github.token }}
 
-      - name: Verify and overlay Prairie expansion PlayCanvas candidate
+      - name: Verify and overlay Prairie expansion camera-polish candidate
         shell: bash
         env:
-          PLAYCANVAS_SOURCE_SHA: b3164a11cf56884ff9ca38c91e99976d6b9d86b4
-          PLAYCANVAS_RUN_ID: '31210691734'
-          PLAYCANVAS_RUN_NUMBER: '39'
-          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-39
-          PLAYCANVAS_ARTIFACT_DIGEST: sha256:3931243ca3e99469aa31adfaca2c2d6fbdc3a144bdfbf6ecef42db7076c70e3d
+          PLAYCANVAS_SOURCE_SHA: c4e1c273b82b7d08024dd1d12586f06dc2522897
+          PLAYCANVAS_RUN_ID: '31214064434'
+          PLAYCANVAS_RUN_NUMBER: '49'
+          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-49
+          PLAYCANVAS_ARTIFACT_DIGEST: sha256:bac1e38251624cc685a2578961343ebf38f1213ff392279255ec86e3870b60c8
         run: |
           set -euo pipefail
           test "$(tr -d '\r\n' < playcanvas-preview-artifact/SOURCE_SHA.txt)" = "$PLAYCANVAS_SOURCE_SHA"
@@ -196,16 +196,19 @@ jobs:
             'touch-camera-relative',
             'one-stick-chase-camera-contract',
             'chase-camera-turn-rate-bounded',
-            'chase-camera-feel-constants-unmodified',
+            'chase-camera-map-baseline-plus-owner-trailing-polish',
             'chase-camera-intent-wiring',
             'tornado-funnel-upright',
             'expanded-terrain-footprint',
             'connected-road-junctions-contract',
             'distinct-landmark-blocks-contract',
+            'render-consumed-authority-telemetry-contract',
+            'browser-visible-authority-scale-parity',
+            'browser-camera-turn-frame-step-regression',
             'browser-visible-control-check',
             'browser-chase-camera-check',
           ]) {
-            if (staticChecks.get(name) !== true) throw new Error(`Required Prairie expansion static gate missing or red: ${name}`);
+            if (staticChecks.get(name) !== true) throw new Error(`Required camera-polish static gate missing or red: ${name}`);
           }
 
           const browserChecks = new Map(browserReport.checks.map((check) => [check.name, check.passed]));
@@ -232,11 +235,20 @@ jobs:
             'no-console-errors',
             'no-page-errors',
           ]) {
-            if (browserChecks.get(name) !== true) throw new Error(`Required Prairie expansion browser gate missing or red: ${name}`);
+            if (browserChecks.get(name) !== true) throw new Error(`Required camera-polish browser gate missing or red: ${name}`);
           }
-          if (staticReport.checks.length !== 54) throw new Error(`Unexpected static check count: ${staticReport.checks.length}`);
+
+          const visibleInput = browserReport.evidence?.visibleInput ?? {};
+          const scale = Number(visibleInput.joystickVisibleAuthorityScale);
+          const maxStep = Number(visibleInput.keyboardHeadingStepMetrics?.maxStep);
+          const turningSteps = Number(visibleInput.keyboardHeadingStepMetrics?.turningStepCount);
+          const samples = visibleInput.keyboardHeadingSamples ?? [];
+          if (!Number.isFinite(scale) || Math.abs(scale - 0.7717) > 0.03) throw new Error(`Visible/authority scale parity out of bounds: ${scale}`);
+          if (!Number.isFinite(maxStep) || maxStep > 0.13) throw new Error(`Camera heading step exceeds no-snap gate: ${maxStep}`);
+          if (turningSteps < 3 || samples.length < 12) throw new Error(`Insufficient camera turn-frame evidence: steps=${turningSteps}, samples=${samples.length}`);
+          if (staticReport.checks.length !== 57) throw new Error(`Unexpected static check count: ${staticReport.checks.length}`);
           if (browserReport.checks.length !== 47) throw new Error(`Unexpected browser check count: ${browserReport.checks.length}`);
-          console.log(`Verified Prairie expansion PlayCanvas artifact: static ${staticReport.checks.length}/${staticReport.checks.length}, browser ${browserReport.checks.length}/${browserReport.checks.length}.`);
+          console.log(`Verified camera-polish PlayCanvas artifact: static ${staticReport.checks.length}/${staticReport.checks.length}, browser ${browserReport.checks.length}/${browserReport.checks.length}, scale=${scale}, maxStep=${maxStep}.`);
           NODE
           rm -rf www/playcanvas
           mkdir -p www/playcanvas
@@ -251,7 +263,8 @@ jobs:
             "terrainFootprint": "190x190",
             "roadJunctions": 9,
             "entityCount": 233,
-            "corrections": ["upright-funnel", "one-stick-chase-camera", "camera-relative-input", "frame-rate-resilient-camera", "prairie-expansion", "nine-connected-junctions", "frozen-camera-baseline"],
+            "cameraTrailingScale": 0.9,
+            "corrections": ["upright-funnel", "one-stick-chase-camera", "camera-relative-input", "frame-rate-resilient-camera", "prairie-expansion", "nine-connected-junctions", "owner-trailing-camera-polish", "frame-bounded-camera-turn-regression", "render-consumed-speed-parity"],
             "status": "browser-qa-passed-not-physical-android-accepted"
           }
           EOF
@@ -284,13 +297,13 @@ jobs:
         run: |
           echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
 
-      - name: Verify live QA root and Prairie expansion PlayCanvas candidate
+      - name: Verify live QA root and camera-polish PlayCanvas candidate
         shell: bash
         env:
           QA_ROOT_URL: https://lybyerc-lab.github.io/Severe-Warning/
           PLAYCANVAS_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/
           PLAYCANVAS_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/qa-playcanvas-build.json
-          PLAYCANVAS_SOURCE_SHA: b3164a11cf56884ff9ca38c91e99976d6b9d86b4
+          PLAYCANVAS_SOURCE_SHA: c4e1c273b82b7d08024dd1d12586f06dc2522897
         run: |
           set -euo pipefail
           for attempt in $(seq 1 30); do
@@ -304,10 +317,14 @@ jobs:
               && grep -Fq 'camera-relative-input' <<< "$playcanvas_metadata" \
               && grep -Fq 'prairie-expansion' <<< "$playcanvas_metadata" \
               && grep -Fq 'nine-connected-junctions' <<< "$playcanvas_metadata" \
+              && grep -Fq 'owner-trailing-camera-polish' <<< "$playcanvas_metadata" \
+              && grep -Fq 'frame-bounded-camera-turn-regression' <<< "$playcanvas_metadata" \
+              && grep -Fq 'render-consumed-speed-parity' <<< "$playcanvas_metadata" \
+              && grep -Fq '"cameraTrailingScale": 0.9' <<< "$playcanvas_metadata" \
               && grep -Fq '190x190' <<< "$playcanvas_metadata"; then
               echo "Live QA root verified: $QA_ROOT_URL"
-              echo "Live Prairie expansion PlayCanvas candidate verified: $PLAYCANVAS_URL"
-              echo "Live Prairie expansion PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
+              echo "Live camera-polish PlayCanvas candidate verified: $PLAYCANVAS_URL"
+              echo "Live camera-polish PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
               exit 0
             fi
             echo "Live Pages propagation attempt $attempt/30 not ready yet."
