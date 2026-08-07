@@ -9,6 +9,7 @@ export interface ChaseCameraConfig {
   readonly turnRateRadiansPerSecond: number;
   readonly headingDeadZoneRadians: number;
   readonly movementThreshold: number;
+  readonly intentMagnitudeThreshold: number;
   readonly initialForwardX: number;
   readonly initialForwardZ: number;
 }
@@ -23,6 +24,7 @@ export interface ChaseCameraPose {
   readonly headingErrorRadians: number;
   readonly travelSpeed: number;
   readonly turning: boolean;
+  readonly inputActive: boolean;
 }
 
 const TWO_PI = Math.PI * 2;
@@ -54,6 +56,7 @@ export class OneStickChaseCamera {
   private desiredHeadingRadians: number;
   private lastStormX: number;
   private lastStormZ: number;
+  private inputActive = false;
 
   constructor(config: ChaseCameraConfig, stormX: number, stormZ: number) {
     this.config = config;
@@ -70,6 +73,17 @@ export class OneStickChaseCamera {
     this.desiredHeadingRadians = this.initialHeadingRadians;
     this.lastStormX = stormX;
     this.lastStormZ = stormZ;
+    this.inputActive = false;
+  }
+
+  setTravelIntent(worldX: number, worldZ: number, active: boolean): void {
+    const magnitude = Math.hypot(worldX, worldZ);
+    if (!active || magnitude < this.config.intentMagnitudeThreshold) {
+      this.inputActive = false;
+      return;
+    }
+    this.inputActive = true;
+    this.desiredHeadingRadians = Math.atan2(worldZ, worldX);
   }
 
   screenToWorldDirection(screenX: number, screenY: number): Readonly<{ x: number; z: number }> {
@@ -92,7 +106,10 @@ export class OneStickChaseCamera {
     const travelDistance = Math.hypot(travelX, travelZ);
     const travelSpeed = safeDelta > 0.0001 ? travelDistance / safeDelta : 0;
 
-    if (travelSpeed >= this.config.movementThreshold && travelDistance > 0.0001) {
+    // Active one-stick intent is authoritative for camera recentering. When the
+    // stick is released, observed storm travel becomes the fallback so the
+    // camera can finish settling behind momentum without being welded to input.
+    if (!this.inputActive && travelSpeed >= this.config.movementThreshold && travelDistance > 0.0001) {
       this.desiredHeadingRadians = Math.atan2(travelZ, travelX);
     }
 
@@ -125,6 +142,7 @@ export class OneStickChaseCamera {
       headingErrorRadians: shortestAngle(this.headingRadians, this.desiredHeadingRadians),
       travelSpeed,
       turning: Math.abs(turnStep) > 0.0001,
+      inputActive: this.inputActive,
     });
   }
 }
