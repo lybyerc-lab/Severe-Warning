@@ -4,6 +4,8 @@ import { chromium } from 'playwright';
 
 const url = process.env.PLAYCANVAS_SLICE_URL ?? 'http://127.0.0.1:4175/?qa=1';
 const evidenceDir = 'playcanvas-slice-evidence';
+const SEALED_VISIBLE_AUTHORITY_SCALE = 0.7717;
+const VISIBLE_AUTHORITY_SCALE_TOLERANCE = 0.03;
 await mkdir(evidenceDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -36,6 +38,18 @@ function projectedMotion(before, after, axis) {
   const dx = after.visual.x - before.visual.x;
   const dz = after.visual.z - before.visual.z;
   return dx * basis[axis].x + dz * basis[axis].z;
+}
+
+function visualStormDistance(before, after) {
+  if (!before?.visual || !after?.visual) return 0;
+  return Math.hypot(after.visual.x - before.visual.x, after.visual.z - before.visual.z);
+}
+
+function authorityStormDistance(before, after) {
+  const beforeStorm = before?.authority?.storm;
+  const afterStorm = after?.authority?.storm;
+  if (!beforeStorm || !afterStorm) return 0;
+  return Math.hypot(afterStorm.x - beforeStorm.x, afterStorm.z - beforeStorm.z);
 }
 
 function cameraDistance(state) {
@@ -145,6 +159,18 @@ try {
   const keyboardHeadingDelta = wrappedAngleDelta(beforeKeyboardRight.camera?.heading, afterKeyboardRight.camera?.heading);
   const joystickDistanceDrift = cameraDistanceDrift(beforeJoystickUp, afterJoystickUp);
   const keyboardDistanceDrift = cameraDistanceDrift(beforeKeyboardRight, afterKeyboardRight);
+
+  // [SW:PLAYCANVAS:VISIBLE_AUTHORITY_SCALE_PARITY]
+  // Headless scheduling can stretch a nominal Playwright wait by many seconds on
+  // the expanded scene. Compare visible displacement with authoritative storm
+  // displacement over the same real joystick interval instead. Time cancels in
+  // the ratio, proving the presentation transform has not made the storm appear
+  // materially faster/slower without weakening the real visible-input gate.
+  const joystickVisualDistance = visualStormDistance(beforeJoystickUp, afterJoystickUp);
+  const joystickAuthorityDistance = authorityStormDistance(beforeJoystickUp, afterJoystickUp);
+  const joystickVisibleAuthorityScale = joystickAuthorityDistance > 0.001
+    ? joystickVisualDistance / joystickAuthorityDistance
+    : Infinity;
 
   // ------------------------------------------------------------------------
   // Long travel test across expanded grid & separated junction proof
@@ -266,7 +292,19 @@ try {
     { name: 'camera-turns-gradually-behind-keyboard-motion', passed: keyboardHeadingDelta > 0.25 && keyboardHeadingDelta < 1.85, detail: JSON.stringify({ keyboardHeadingDelta, beforeKeyboardRight, afterKeyboardRight }) },
     { name: 'camera-distance-stable-joystick', passed: joystickDistanceDrift < 0.08, detail: JSON.stringify({ joystickDistanceDrift, beforeJoystickUp, afterJoystickUp }) },
     { name: 'camera-distance-stable-keyboard', passed: keyboardDistanceDrift < 0.08, detail: JSON.stringify({ keyboardDistanceDrift, beforeKeyboardRight, afterKeyboardRight }) },
-    { name: 'visible-storm-speed-parity', passed: joystickForwardProjection >= 18.0 && joystickForwardProjection <= 35.0, detail: JSON.stringify({ joystickForwardProjection, sealedParentBaseline: 26.81, scale: 0.7717 }) },
+    {
+      name: 'visible-storm-speed-parity',
+      passed: joystickAuthorityDistance > 1
+        && Number.isFinite(joystickVisibleAuthorityScale)
+        && Math.abs(joystickVisibleAuthorityScale - SEALED_VISIBLE_AUTHORITY_SCALE) <= VISIBLE_AUTHORITY_SCALE_TOLERANCE,
+      detail: JSON.stringify({
+        joystickVisualDistance,
+        joystickAuthorityDistance,
+        joystickVisibleAuthorityScale,
+        sealedVisibleAuthorityScale: SEALED_VISIBLE_AUTHORITY_SCALE,
+        tolerance: VISIBLE_AUTHORITY_SCALE_TOLERANCE,
+      }),
+    },
     { name: 'expanded-terrain-footprint', passed: true, detail: '190x190 PlayCanvas units' },
     { name: 'road-junctions-count', passed: true, detail: '9 connected junctions (3x3 road grid)' },
     { name: 'authority-setup-moves-real-storm', passed: movementDistance > 1, detail: JSON.stringify({ initialStorm, after: afterMovement?.storm, movementDistance }) },
@@ -314,6 +352,9 @@ try {
         joystickForwardProjection,
         joystickHeadingDelta,
         joystickDistanceDrift,
+        joystickVisualDistance,
+        joystickAuthorityDistance,
+        joystickVisibleAuthorityScale,
         beforeKeyboardRight,
         afterKeyboardRight,
         keyboardRightProjection,
