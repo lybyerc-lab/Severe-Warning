@@ -18,7 +18,7 @@ permissions:
 jobs:
   verify-playcanvas-slice:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     steps:
       - name: Checkout exact source
@@ -50,13 +50,46 @@ jobs:
           PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55aeef4de6a8adb4
         run: node scripts/fetch-playcanvas-engine.mjs
 
-      - name: Build accepted gameplay authority
+      - name: Reconstruct accepted gameplay authority
+        shell: bash
         run: |
+          set -euo pipefail
+          grep -F '<title>Severe Weather 3D Lab v4.3.0 - Rampage Layer</title>' MechanicsLab/SevereWeather_3D_Lab.html
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run patch:city-fabric
+          pnpm run verify:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run verify:presentation-identity
+          grep -F 'PRESENTATION_IDENTITY_MOO_BREW_V1' MechanicsLab/SevereWeather_3D_Lab.html
+
+      - name: Build accepted gameplay authority
+        shell: bash
+        run: |
+          set -euo pipefail
           pnpm run modern:build
           SEVERE_WEATHER_WWW_DIR=playcanvas-slice/public/authority node scripts/build-web.mjs
           node scripts/prepare-playcanvas-authority.mjs
           test -s playcanvas-slice/public/authority/index.html
           grep -q 'playcanvas-authority-bridge.js' playcanvas-slice/public/authority/index.html
+          grep -q 'PRESENTATION_IDENTITY_MOO_BREW_V1' playcanvas-slice/public/authority/index.html
 
       - name: Type-check isolated slice
         run: pnpm exec tsc -p tsconfig.playcanvas.json --noEmit
@@ -72,6 +105,7 @@ jobs:
           test -s playcanvas-slice-dist/authority/index.html
           test -s playcanvas-slice-dist/authority/runtime/playcanvas-authority-bridge.js
           grep -q 'playcanvas-authority-bridge.js' playcanvas-slice-dist/authority/index.html
+          grep -q 'PRESENTATION_IDENTITY_MOO_BREW_V1' playcanvas-slice-dist/authority/index.html
 
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
