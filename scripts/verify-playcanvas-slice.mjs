@@ -123,6 +123,14 @@ check('browser-version-export-check', contents.browserQa.includes('engine-versio
 check('browser-revision-export-check', contents.browserQa.includes('engine-revision-exported'), 'browser QA asserts exported engine revision');
 check('browser-visible-control-check', contents.browserQa.includes('joystick-up-moves-screen-forward') && contents.browserQa.includes('keyboard-right-moves-screen-right'), 'browser QA exercises visible movement directions');
 check(
+  'browser-visible-authority-scale-parity',
+  contents.browserQa.includes('[SW:PLAYCANVAS:VISIBLE_AUTHORITY_SCALE_PARITY]')
+    && contents.browserQa.includes('SEALED_VISIBLE_AUTHORITY_SCALE = 0.7717')
+    && contents.browserQa.includes('joystickVisibleAuthorityScale')
+    && contents.browserQa.includes("name: 'visible-storm-speed-parity'"),
+  'browser speed-parity gate normalizes visible displacement against authoritative displacement over the same real input interval',
+);
+check(
   'browser-chase-camera-check',
   contents.browserQa.includes('camera-stays-stable-on-forward-input')
     && contents.browserQa.includes('camera-turns-gradually-behind-keyboard-motion')
