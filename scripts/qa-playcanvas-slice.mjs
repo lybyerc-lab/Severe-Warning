@@ -46,6 +46,33 @@ try {
     };
   });
 
+  // Screen-direction regression check. With the fixed camera, right on the
+  // on-screen stick maps to +X and up maps to -Z in the accepted authority.
+  const screenDirection = await page.evaluate(async () => {
+    const handle = globalThis.__SW_PLAYCANVAS_SLICE__;
+    const joystick = document.querySelector('#joystick');
+    if (!handle || !joystick) return null;
+    const bridgeFrame = document.querySelector('#playcanvas-authority-frame');
+    const authority = bridgeFrame?.contentWindow?.__SW_PLAYCANVAS_AUTHORITY__;
+    if (!authority) return null;
+    const before = handle.reset();
+    authority.setJoystick(0.85, 0, true);
+    await new Promise((resolve) => setTimeout(resolve, 260));
+    authority.setJoystick(0, 0, false);
+    const afterRight = handle.getAuthoritySnapshot();
+    handle.reset();
+    authority.setJoystick(0, -0.85, true);
+    await new Promise((resolve) => setTimeout(resolve, 260));
+    authority.setJoystick(0, 0, false);
+    const afterUp = handle.getAuthoritySnapshot();
+    handle.reset();
+    return {
+      before: before.storm,
+      afterRight: afterRight?.storm ?? null,
+      afterUp: afterUp?.storm ?? null,
+    };
+  });
+
   const initialStorm = initial.authority?.storm ?? null;
   const initialBarnHealth = initial.authority?.barn?.health ?? null;
   const initialDistance = distanceToBarn(initial.authority);
@@ -105,6 +132,12 @@ try {
   const movementDistance = initialStorm && afterMovement?.storm
     ? Math.hypot(afterMovement.storm.x - initialStorm.x, afterMovement.storm.z - initialStorm.z)
     : 0;
+  const rightDeltaX = screenDirection?.afterRight && screenDirection?.before
+    ? screenDirection.afterRight.x - screenDirection.before.x
+    : 0;
+  const upDeltaZ = screenDirection?.afterUp && screenDirection?.before
+    ? screenDirection.afterUp.z - screenDirection.before.z
+    : 0;
   const finalBarnHealth = afterAbilities.authority?.barn?.health ?? null;
   const authorityAbilities = afterAbilities.authority?.inputAbilities?.abilities ?? null;
   const checks = [
@@ -119,6 +152,8 @@ try {
     { name: 'gameplay-authority-connected', passed: initial.telemetry?.gameplayAuthority === 'PLAYCANVAS_AUTHORITY_V1' && initial.authority?.version === 'PLAYCANVAS_AUTHORITY_V1' && initial.authority?.ready === true, detail: JSON.stringify(initial.authority) },
     { name: 'authority-frame-present', passed: initial.authorityFramePresent === true, detail: JSON.stringify(initial.authorityFramePresent) },
     { name: 'warning-run-active', passed: initial.authority?.run?.runActive === true && (initial.authority?.run?.remainingSeconds ?? 0) > 170, detail: JSON.stringify(initial.authority?.run) },
+    { name: 'screen-right-maps-positive-x', passed: rightDeltaX > 0.25, detail: JSON.stringify({ screenDirection, rightDeltaX }) },
+    { name: 'screen-up-maps-negative-z', passed: upDeltaZ < -0.25, detail: JSON.stringify({ screenDirection, upDeltaZ }) },
     { name: 'movement-plan-resolved', passed: movementKeys.length > 0, detail: JSON.stringify({ movementKeys, initialStorm, barn: initial.authority?.barn }) },
     { name: 'keyboard-moves-real-storm', passed: movementDistance > 1, detail: JSON.stringify({ movementKeys, initialStorm, after: afterMovement?.storm, movementDistance }) },
     { name: 'movement-approaches-live-target', passed: initialDistance !== null && afterMovementDistance !== null && afterMovementDistance < initialDistance, detail: JSON.stringify({ movementKeys, initialDistance, afterMovementDistance }) },
@@ -155,7 +190,7 @@ try {
     failedChecks: failed.map((item) => item.name),
     consoleErrors,
     pageErrors,
-    evidence: { initial, movementKeys, afterMovement, abilityResults, afterAbilities, reset },
+    evidence: { initial, screenDirection, movementKeys, afterMovement, abilityResults, afterAbilities, reset },
     disposal,
   };
 } catch (error) {
