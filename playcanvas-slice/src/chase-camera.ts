@@ -32,6 +32,13 @@ const TWO_PI = Math.PI * 2;
 // but cap a single step so returning from a long stall cannot whip the camera.
 const MAX_CAMERA_STEP_SECONDS = 0.12;
 
+// [SW:PLAYCANVAS:OWNER_TRAILING_POLISH]
+// Larger-map hands-on testing found the camera caught up a little too far toward
+// travel direction during sustained turns. Preserve the sealed 1.05 rad/s base
+// config as the reference and retain 10% more trailing view in the camera-only
+// presentation response. Gameplay movement and camera-relative input are unchanged.
+const OWNER_TRAILING_TURN_SCALE = 0.9;
+
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
@@ -122,7 +129,7 @@ export class OneStickChaseCamera {
       appliedError = rawError - Math.sign(rawError) * this.config.headingDeadZoneRadians;
     }
 
-    const maximumTurn = this.config.turnRateRadiansPerSecond * safeDelta;
+    const maximumTurn = this.config.turnRateRadiansPerSecond * OWNER_TRAILING_TURN_SCALE * safeDelta;
     const turnStep = clamp(appliedError, -maximumTurn, maximumTurn);
     this.headingRadians = wrapAngle(this.headingRadians + turnStep);
 

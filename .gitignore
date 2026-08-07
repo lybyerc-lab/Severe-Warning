@@ -39,6 +39,7 @@ android/**/build/
 
 # PlayCanvas production-slice generated output
 playcanvas-slice/public/vendor/
+playcanvas-slice/public/authority/
 playcanvas-slice-dist/
 playcanvas-slice-artifact/
 playcanvas-slice-evidence/

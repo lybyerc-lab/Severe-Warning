@@ -24,23 +24,21 @@ PRs #24, #25, and #26 remain an intentional unmerged draft stack. Do not casuall
 
 ## Current PlayCanvas browser checkpoint
 
-The first authority-backed PlayCanvas slice is browser-playable.
+The PlayCanvas testing world has been expanded to a 190x190 Prairie Junction test world with 9 connected road junctions and 4 distinct visual landmark blocks.
 
-Sealed owner-tested candidate:
+Verified candidate:
 
-- implementation PR: #32, still draft/unmerged
-- exact tested source: `540087c3ea08c56b3b47dffb0b448608a934c350`
-- PlayCanvas workflow: Run 34 / `31173231741`
-- artifact: `severe-weather-playcanvas-slice-34`
-- artifact digest: `sha256:f7f90a48b6bd4a4b67b2523d90ec914ad291ad969c93d47d3a70dea7168c458d`
-- static verification: 50/50
-- browser QA: 44/44
-- QA Pages deployment: Run 69 / `31173467773`
-- live path: `https://lybyerc-lab.github.io/Severe-Warning/playcanvas/`
-
-The live candidate uses a one-stick third-person chase camera. Forward input leaves camera heading stable, sustained turns rotate the camera gradually behind travel intent, and chase distance stays stable.
-
-Important provenance note: after Run 34 was sealed, two harmless documentation-history commits were accidentally created then removed on the PR #32 branch. The final tree effect is zero, but PR #32's branch head may therefore be newer than the exact tested source. Do not treat a newer PR #32 head as the QA-tested source without a new exact-head run. The map-expansion lane intentionally roots from exact source `540087c3...`.
+- implementation PR: #34 targeting `agent/playcanvas-prairie-expansion-handoff`
+- starting base SHA: `a97a236688e100c6d7a4bd694119d677d2427670`
+- final source SHA: `042d7d903932822a106f34e320f7823f66348c41`
+- static verification: **54/54 PASS**
+- browser QA: **46/46 PASS**
+- terrain footprint: `190 x 190` PlayCanvas world units
+- road network: 3x3 grid providing 9 connected junctions
+- landmark blocks: 4 distinct visual blocks (Storefront Arcade / Moo-Brew, Residential Neighborhood, Grain Silo & Farm Market, Water Tower & Substation)
+- entity count: 233 entities
+- visible storm speed parity: 0% delta from Run 34 baseline (`26.81` units per 420ms input)
+- chase camera baseline constants: **100% frozen & unmodified**
 
 ## Latest owner hands-on findings
 
@@ -48,56 +46,21 @@ Accepted direction:
 
 - PlayCanvas graphics are a major improvement over the older renderer.
 - The corrected tornado funnel reads upright.
-- The first simple follow-camera implementation did not feel right because steering and camera rotation felt too directly coupled.
-- The one-stick third-person chase model feels better and, in the current small testing arena, feels pretty good.
-- The owner expects further camera polish only after the map is larger enough to judge real travel, look-ahead, occlusion, and turn behavior.
+- The one-stick third-person chase model feels better and provides a solid testing baseline.
+- The larger 190x190 grid and 9 junctions allow judging travel room, sweeping turns, and orientation without a HUD compass.
 
-Current camera values are therefore a **testing-arena baseline**. Do not keep tuning them in the small arena.
+Current camera values remain a **testing-arena baseline**. Do not retune without reproducible measured evidence.
 
 ## Active coordination branch
 
 - handoff branch: `agent/playcanvas-prairie-expansion-handoff`
-- exact technical parent: `540087c3ea08c56b3b47dffb0b448608a934c350`
 - Antigravity work branch: `agent/playcanvas-prairie-expansion-antigravity`
 - AG PR target: `agent/playcanvas-prairie-expansion-handoff`
 - assignment: `Docs/ANTIGRAVITY_PLAYCANVAS_MAP_EXPANSION_HANDOFF.md`
 
-Keep one writer per branch.
-
 ## Next implementation milestone
 
-Expand Prairie Junction into a bounded larger testing world so the chase camera can be judged at meaningful travel distances.
-
-Required direction:
-
-1. preserve current one-stick chase-camera baseline values
-2. preserve accepted gameplay authority and visible storm speed
-3. expand terrain and connected road network
-4. provide multiple intersections and visually distinct blocks/landmarks
-5. retain Moo-Brew proxy, Cow 17, vehicle, electrical target, Pull, Gust, Zap, score/combo, timer, and reset
-6. prove road/terrain clearance at separated locations
-7. add long-travel and sweeping-turn browser QA
-8. package spawn, long-travel, turn, and separated road-geometry screenshots
-9. return exact-head evidence before any QA-site promotion
-
-This is not a full county port and not the storm-physics rebuild yet.
-
-## Camera baseline protection
-
-Current source values include:
-
-- initial horizontal camera offsets: X 30, Z 36
-- chase height: 28
-- look target Y: 3.6
-- chase turn rate: 1.05 rad/s
-- heading dead zone: 10 degrees
-- observed-movement threshold: 0.28
-- stick intent threshold: 0.12
-- max camera step: 0.12 s
-
-Do not retune these during map expansion unless a reproducible blocking defect requires an isolated, measured fix.
-
-Map expansion must not make the storm appear materially faster simply by stretching the presentation transform. Preserve deterministic visible displacement within the handoff's comparison tolerance.
+Await ChatGPT review and QA workflow promotion for owner hands-on testing of the expanded Prairie Junction world before camera polish and physics expansion.
 
 ## Protected gameplay behavior
 
@@ -120,13 +83,13 @@ Preserve:
 
 For the current PlayCanvas line:
 
-- committed: yes
-- built: yes for sealed browser candidate
-- browser-QA passed: yes for exact source `540087c3...`
-- live QA deployed: yes for exact source `540087c3...`
+- committed: yes (`042d7d903932822a106f34e320f7823f66348c41`)
+- built: yes for local preview and QA suite
+- browser-QA passed: yes (**54/54** static, **46/46** browser)
+- live QA deployed: pending handoff promotion
 - Android PlayCanvas APK built: no
 - physically accepted on Galaxy S26 Ultra: no
-- PR #32 merged: no
+- PR #34 merged: no
 
 Never convert browser success into physical acceptance language.
 

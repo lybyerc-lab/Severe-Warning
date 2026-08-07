@@ -59,8 +59,24 @@ check(
   'chase-camera-turn-rate-bounded',
   contents.entry.includes('CHASE_CAMERA_TURN_RATE_RADIANS = 1.05')
     && contents.entry.includes('CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180')
-    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12'),
-  'intent-driven chase camera has a bounded turn rate, heading dead zone, and stick-magnitude threshold',
+    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12')
+    && contents.chaseCamera.includes('OWNER_TRAILING_TURN_SCALE = 0.9'),
+  'intent-driven chase camera keeps the sealed base rate and applies the owner-approved 10% trailing response polish',
+);
+check(
+  'chase-camera-map-baseline-plus-owner-trailing-polish',
+  contents.entry.includes('INITIAL_CAMERA_OFFSET_X = 30')
+    && contents.entry.includes('INITIAL_CAMERA_OFFSET_Z = 36')
+    && contents.entry.includes('CHASE_CAMERA_HEIGHT = 28')
+    && contents.entry.includes('CHASE_CAMERA_LOOK_Y = 3.6')
+    && contents.entry.includes('CHASE_CAMERA_TURN_RATE_RADIANS = 1.05')
+    && contents.entry.includes('CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180')
+    && contents.entry.includes('CHASE_CAMERA_MOVEMENT_THRESHOLD = 0.28')
+    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12')
+    && contents.chaseCamera.includes('[SW:PLAYCANVAS:OWNER_TRAILING_POLISH]')
+    && contents.chaseCamera.includes('OWNER_TRAILING_TURN_SCALE = 0.9')
+    && contents.chaseCamera.includes('turnRateRadiansPerSecond * OWNER_TRAILING_TURN_SCALE * safeDelta'),
+  'larger-map baseline is preserved except for the explicit owner-approved 10% camera-only turn catch-up reduction',
 );
 check(
   'chase-camera-intent-wiring',
@@ -88,16 +104,63 @@ check(
     && contents.scene.includes('rotation: [180, 0, 0]'),
   'funnel is narrow at ground contact, broad aloft, and cone points face downward',
 );
+check(
+  'expanded-terrain-footprint',
+  contents.scene.includes("name: 'terrain-slab'") && contents.scene.includes('scale: [190, 0.8, 190]'),
+  'terrain footprint is expanded to at least 180x180 PlayCanvas world units',
+);
+check(
+  'connected-road-junctions-contract',
+  contents.scene.includes('const roadAxes = [-45, 0, 45];') && contents.scene.includes('name: `road-ns-${x}`') && contents.scene.includes('name: `road-ew-${z}`'),
+  'authored road network contains a 3x3 grid providing 9 connected junctions',
+);
+check(
+  'distinct-landmark-blocks-contract',
+  contents.scene.includes('oak-gable-house') && contents.scene.includes('grain-silo-mill') && contents.scene.includes('county-water-tower') && contents.scene.includes('moo-brew-corner-shop'),
+  'world contains at least 4 distinct landmark blocks for visual orientation',
+);
 check('browser-version-export-check', contents.browserQa.includes('engine-version-exported'), 'browser QA asserts exported engine version');
 check('browser-revision-export-check', contents.browserQa.includes('engine-revision-exported'), 'browser QA asserts exported engine revision');
 check('browser-visible-control-check', contents.browserQa.includes('joystick-up-moves-screen-forward') && contents.browserQa.includes('keyboard-right-moves-screen-right'), 'browser QA exercises visible movement directions');
+check(
+  'render-consumed-authority-telemetry-contract',
+  contents.entry.includes('targetTornado = transform.map(snapshot.storm.x, snapshot.storm.z)')
+    && contents.entry.includes('dataset.swPlaycanvasStormX = snapshot.storm.x.toFixed(3)')
+    && contents.entry.includes('dataset.swPlaycanvasStormZ = snapshot.storm.z.toFixed(3)')
+    && contents.browserQa.includes('[SW:PLAYCANVAS:RENDER_CONSUMED_AUTHORITY_TELEMETRY]')
+    && contents.browserQa.includes('data.swPlaycanvasStormX')
+    && contents.browserQa.includes('data.swPlaycanvasStormZ')
+    && contents.browserQa.includes('renderConsumedAuthorityDistance(beforeJoystickUp, afterJoystickUp)'),
+  'speed-parity QA reads the authority snapshot consumed by syncSnapshot/targetTornado instead of a newer independent authority poll',
+);
+check(
+  'browser-visible-authority-scale-parity',
+  contents.browserQa.includes('[SW:PLAYCANVAS:VISIBLE_AUTHORITY_SCALE_PARITY]')
+    && contents.browserQa.includes('SEALED_VISIBLE_AUTHORITY_SCALE = 0.7717')
+    && contents.browserQa.includes('joystickVisibleAuthorityScale')
+    && contents.browserQa.includes('waitForRenderSettle(18)')
+    && contents.browserQa.includes("name: 'visible-storm-speed-parity'"),
+  'browser speed-parity gate compares settled visible displacement against the render-consumed authority target over the same visible-input maneuver',
+);
+check(
+  'browser-camera-turn-frame-step-regression',
+  contents.browserQa.includes('[SW:PLAYCANVAS:CAMERA_TURN_STEP_REGRESSION]')
+    && contents.browserQa.includes('CAMERA_TURN_FRAME_SAMPLE_COUNT = 24')
+    && contents.browserQa.includes('CAMERA_MAX_HEADING_STEP_RADIANS = 0.13')
+    && contents.browserQa.includes('sampleCameraHeadings()')
+    && contents.browserQa.includes('headingStepMetrics(keyboardHeadingSamples)')
+    && contents.browserQa.includes('keyboardHeadingStepMetrics.maxStep <= CAMERA_MAX_HEADING_STEP_RADIANS')
+    && contents.browserQa.includes('keyboardHeadingStepMetrics.turningStepCount >= 3'),
+  'gradual-turn browser gate uses actual visible keyboard input and bounds each rendered camera heading step instead of relying on wall-clock hold duration',
+);
 check(
   'browser-chase-camera-check',
   contents.browserQa.includes('camera-stays-stable-on-forward-input')
     && contents.browserQa.includes('camera-turns-gradually-behind-keyboard-motion')
     && contents.browserQa.includes('camera-distance-stable-joystick')
-    && contents.browserQa.includes('camera-distance-stable-keyboard'),
-  'browser QA proves forward stability, gradual chase rotation, and stable follow distance',
+    && contents.browserQa.includes('camera-distance-stable-keyboard')
+    && contents.browserQa.includes('[SW:PLAYCANVAS:CAMERA_TURN_STEP_REGRESSION]'),
+  'browser QA proves forward stability, bounded per-frame chase rotation, and stable follow distance',
 );
 check('separate-output', contents.vite.includes("outDir: '../playcanvas-slice-dist'"), 'slice cannot overwrite accepted build output');
 check('qa-data-contract', contents.entry.includes('swPlaycanvasSliceReady'), 'browser QA readiness is observable');

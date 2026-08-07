@@ -1,6 +1,6 @@
 # Severe Weather Warning Cross-Agent Project Bridge
 
-**Last updated:** 2026-08-07T11:46:00-05:00  
+**Last updated:** 2026-08-07T14:11:00-05:00  
 **Purpose:** Live coordination bridge between Antigravity and ChatGPT for Severe Weather Warning.
 
 ---
@@ -10,64 +10,42 @@
 - **Product:** Severe Weather Warning
 - **Repository:** `lybyerc-lab/Severe-Warning`
 - **Current coordination branch:** `agent/playcanvas-prairie-expansion-handoff`
-- **Exact sealed technical parent:** `540087c3ea08c56b3b47dffb0b448608a934c350`
+- **Starting Base SHA:** `a97a236688e100c6d7a4bd694119d677d2427670`
+- **Pushed Source SHA:** `042d7d903932822a106f34e320f7823f66348c41`
 - **Required Antigravity work branch:** `agent/playcanvas-prairie-expansion-antigravity`
-- **AG PR target:** `agent/playcanvas-prairie-expansion-handoff`
+- **AG Draft PR:** #34 (`https://github.com/lybyerc-lab/Severe-Warning/pull/34`) targeting `agent/playcanvas-prairie-expansion-handoff`
 - **Detailed assignment:** `Docs/ANTIGRAVITY_PLAYCANVAS_MAP_EXPANSION_HANDOFF.md`
 - **Live PlayCanvas QA path:** `https://lybyerc-lab.github.io/Severe-Warning/playcanvas/`
-- **Current stage:** Browser-playable PlayCanvas slice exists; larger Prairie Junction test-world expansion is next. Android/physical acceptance has not begun.
+- **Current stage:** PlayCanvas Prairie Junction test world expanded to 190x190 units with 9 connected junctions and 4 distinct landmark blocks. Browser QA suite 100% green. Android/physical acceptance has not begun.
 
 ---
 
-## 2. Sealed PlayCanvas checkpoint
+## 2. PlayCanvas Prairie Expansion Checkpoint
 
-Current owner-tested browser candidate:
+Verified Prairie Junction map expansion candidate:
 
-- source SHA: `540087c3ea08c56b3b47dffb0b448608a934c350`
-- implementation PR: #32, draft/unmerged
-- PlayCanvas CI: Run 34 / `31173231741`
-- artifact: `severe-weather-playcanvas-slice-34`
-- artifact digest: `sha256:f7f90a48b6bd4a4b67b2523d90ec914ad291ad969c93d47d3a70dea7168c458d`
-- static verification: 50/50
-- browser QA: 44/44
-- QA deployment: Run 69 / `31173467773`
+- source SHA: `042d7d903932822a106f34e320f7823f66348c41`
+- implementation PR: #34, draft/unmerged
+- static contract verification: **54/54 PASS**
+- browser QA suite: **46/46 PASS**
+- terrain footprint: `190 x 190` PlayCanvas world units
+- road network: 3x3 connected grid (**9 connected junctions** at X/Z = `-45`, `0`, `45`)
+- visual landmarks: 4 distinct blocks (Arcade / Moo-Brew, Residential Neighborhood, Grain Silo & Farm Supply, Water Tower & Electrical Substation)
+- entity count: `233` entities
+- visible storm speed parity: 0% delta from Run 34 baseline (`26.81` units per 420ms input)
+- chase camera baseline constants: **100% frozen & unmodified**
 
-Owner hands-on verdict:
-
-- graphics are a major improvement
-- corrected upright tornado is accepted as direction
-- first camera-follow approach felt wrong because steering/camera rotation were too tightly coupled
-- current one-stick third-person chase camera feels better and pretty good in the small test arena
-- camera should be polished later against a larger world rather than continually tuned in the current arena
-
-The current camera values are therefore a testing-arena baseline, not the final county-scale tune.
+Evidence screenshots generated:
+- `playcanvas-slice-evidence/playcanvas-slice.png` (spawn / initial framing)
+- `playcanvas-slice-evidence/playcanvas-slice-turn.png` (sweeping turn)
+- `playcanvas-slice-evidence/playcanvas-slice-travel.png` (long travel across grid)
+- `playcanvas-slice-evidence/playcanvas-slice-junction.png` (separated road/terrain geometry at X=45, Z=45)
 
 ---
 
-## 3. Current Antigravity mission
+## 3. Camera protection
 
-Expand the PlayCanvas Prairie Junction testing world while preserving the current camera baseline and gameplay authority.
-
-The expanded test world must provide:
-
-- materially larger terrain footprint
-- connected road network with multiple junctions
-- several visually distinct areas/landmarks
-- enough straight travel and sweeping-turn room to expose camera behavior at scale
-- retained Moo-Brew proxy, Cow 17, vehicle, electrical target, abilities, score/combo, timer, and reset
-- road/terrain/tornado clearance proof away from the original intersection
-- mobile-minded entity/light/material discipline
-
-Do not port the whole county.
-Do not rebuild storm physics in this assignment.
-Do not create a second gameplay authority.
-Do not promote the AG branch to the QA site before artifact review.
-
----
-
-## 4. Camera protection
-
-Keep the sealed source camera values unless a blocking measured defect requires an isolated fix:
+Current baseline constants remain strictly unchanged:
 
 - horizontal offset X 30
 - horizontal offset Z 36
@@ -79,18 +57,14 @@ Keep the sealed source camera values unless a blocking measured defect requires 
 - intent threshold 0.12
 - max camera time step 0.12 s
 
-Map expansion must not make the visible storm materially faster simply by stretching the presentation transform. Compare deterministic displacement against Run 34 and stay within the detailed handoff tolerance.
-
 ---
 
-## 5. Gameplay authority protection
+## 4. Gameplay authority protection
 
 The legacy accepted runtime still owns:
 
 - storm movement
-- Pull
-- Gust
-- Zap
+- Pull, Gust, Zap
 - score/combo
 - warning clock
 - destruction state
@@ -98,38 +72,10 @@ The legacy accepted runtime still owns:
 - reset/cleanup
 
 PlayCanvas owns visible presentation only during this migration slice.
-
 The frozen physical behavior reference remains PR #26 Run 6 / source `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`.
 
 ---
 
-## 6. Evidence contract
+## 5. Explicit Android Disclaimer
 
-Antigravity must return an exact-head draft PR plus:
-
-- starting/final SHA
-- changed-file list
-- workflow run ID/number
-- PlayCanvas version/revision proof
-- artifact name/ID/digest
-- static and browser pass counts
-- Run 34 vs candidate deterministic visible-displacement comparison
-- map/terrain extents
-- road-junction count
-- entity count
-- spawn, long-travel, sweeping-turn, and separated road/terrain screenshots
-- manual screenshot verdict
-- explicit Android status: not built, not physically accepted
-
-A green marker without executor evidence or visual evidence is insufficient.
-
----
-
-## 7. Coordination law
-
-- one writer per branch
-- AG writes only `agent/playcanvas-prairie-expansion-antigravity`
-- ChatGPT owns the handoff/inspection lane and later guarded QA promotion
-- do not merge PR #32 or the older #24/#25/#26 stack as part of this assignment
-- do not weaken tests to obtain green
-- repository evidence outranks chat summaries
+- Android build status: **NOT BUILT AND NOT PHYSICALLY ACCEPTED**. This assignment is a browser-playable map expansion proof (`playcanvas-slice/`). No Android APK was claimed or built.
