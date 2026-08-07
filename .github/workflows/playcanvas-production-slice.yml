@@ -34,6 +34,12 @@ jobs:
           printf 'expected=%s\nactual=%s\n' "$expected" "$actual"
           test "$actual" = "$expected"
 
+      - name: Checkout accepted Phase 4 verifier fixture
+        uses: actions/checkout@v4
+        with:
+          ref: cd89b5ececa6e95848961d625f84eaa7bc7f72c7
+          path: phase5-base
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
