@@ -158,6 +158,38 @@ async function readMotionState() {
   });
 }
 
+async function readPhysicsState() {
+  return page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.getStormPhysicsTelemetry() ?? null);
+}
+
+async function clickVisibleAbility(slot) {
+  const before = await page.evaluate(() => Number(document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount ?? 0));
+  await page.locator(`[data-ability="${slot}"]`).click();
+  await waitForRenderSettle(2);
+  return page.evaluate(({ requestedSlot, beforeCount }) => {
+    const data = document.documentElement.dataset;
+    const afterCount = Number(data.swPlaycanvasAbilityAcceptedCount ?? 0);
+    return {
+      slot: requestedSlot,
+      lastAbility: data.swPlaycanvasLastAbility ?? null,
+      lastAccepted: data.swPlaycanvasLastAbilityAccepted === 'true',
+      acceptedCountBefore: beforeCount,
+      acceptedCountAfter: afterCount,
+      accepted: data.swPlaycanvasLastAbility === requestedSlot
+        && data.swPlaycanvasLastAbilityAccepted === 'true'
+        && afterCount === beforeCount + 1,
+    };
+  }, { requestedSlot: slot, beforeCount: before });
+}
+
+function allBodiesReset(physics) {
+  return Boolean(physics)
+    && physics.activeBodyCount === 0
+    && physics.airborneBodyCount === 0
+    && physics.roofAirborne === false
+    && physics.bodies.every((body) => body.displacement < 0.02 && body.reaction === null && body.airborne === false);
+}
+
 let report;
 try {
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90_000 });
@@ -172,17 +204,15 @@ try {
       canvas: canvas ? { width: canvas.width, height: canvas.height } : null,
       telemetry: handle?.telemetry ?? null,
       authority: handle?.getAuthoritySnapshot() ?? null,
+      physics: handle?.getStormPhysicsTelemetry() ?? null,
       authorityFramePresent: Boolean(document.querySelector('#playcanvas-authority-frame')),
     };
   });
 
-  // Capture 1: Initial spawn & framing screenshot
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice.png`, fullPage: true });
 
   // ------------------------------------------------------------------------
   // Visible-input proof. This deliberately drives the actual UI controls.
-  // Forward input should not rotate the camera materially. A sustained right
-  // input should bend the storm path while the camera gradually chases behind.
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
   await waitForRenderSettle(8);
@@ -206,11 +236,7 @@ try {
 
   // [SW:PLAYCANVAS:CAMERA_TURN_STEP_REGRESSION]
   // Drive the real visible D key, but judge gradual camera motion per rendered
-  // frame rather than against a wall-clock hold duration. The chase controller
-  // clamps camera time steps to 120 ms and the owner-polished effective turn
-  // rate is 1.05 * 0.9 rad/s, so a legal single-frame heading step is at most
-  // 0.1134 rad. The 0.13 gate leaves only telemetry/rounding margin and still
-  // fails any visible snap, even if headless CI stalls between animation frames.
+  // frame rather than against a wall-clock hold duration.
   const keyboardHeadingSamples = await sampleCameraHeadings();
   const afterKeyboardRight = await readMotionState();
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-turn.png`, fullPage: true });
@@ -226,11 +252,6 @@ try {
   const keyboardDistanceDrift = cameraDistanceDrift(beforeKeyboardRight, afterKeyboardRight);
 
   // [SW:PLAYCANVAS:VISIBLE_AUTHORITY_SCALE_PARITY]
-  // Headless scheduling can stretch a nominal Playwright wait by many seconds on
-  // the expanded scene. Compare visible displacement with the authority snapshot
-  // actually consumed by the render path, after enough real animation frames for
-  // the visual smoothing to settle. This prevents a newer independent authority
-  // read from masquerading as presentation-scale drift.
   const joystickVisualDistance = visualStormDistance(beforeJoystickUp, afterJoystickUp);
   const joystickRenderConsumedAuthorityDistance = renderConsumedAuthorityDistance(beforeJoystickUp, afterJoystickUp);
   const joystickVisibleAuthorityScale = joystickRenderConsumedAuthorityDistance > 0.001
@@ -238,31 +259,48 @@ try {
     : Infinity;
 
   // ------------------------------------------------------------------------
+  // [SW:PLAYCANVAS:VISIBLE_STORM_PHYSICS_REGRESSION]
+  // Pull and Gust are fired through the actual visible ability buttons. Physics
+  // telemetry is observed only after the accepted executor reports success.
+  // ------------------------------------------------------------------------
+  await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
+  await waitForRenderSettle(8);
+  const beforePullPhysics = await readPhysicsState();
+  const pullVisibleResult = await clickVisibleAbility('primary');
+  await waitForRenderSettle(8);
+  await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-pull.png`, fullPage: true });
+  await waitForRenderSettle(20);
+  const afterPullPhysics = await readPhysicsState();
+
+  await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
+  await waitForRenderSettle(8);
+  const beforeGustPhysics = await readPhysicsState();
+  const gustVisibleResult = await clickVisibleAbility('secondary');
+  await waitForRenderSettle(7);
+  await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-gust.png`, fullPage: true });
+  await waitForRenderSettle(18);
+  const afterGustPhysics = await readPhysicsState();
+
+  // ------------------------------------------------------------------------
   // Long travel test across expanded grid & separated junction proof
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
   await waitForRenderSettle(8);
-
-  // Long forward travel test
   await page.keyboard.down('w');
   await page.waitForTimeout(1400);
-  // Capture 3: Long travel screenshot showing expanded world & chase framing
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-travel.png`, fullPage: true });
   await page.keyboard.up('w');
   await waitForRenderSettle(12);
 
-  // Travel to separated road junction (e.g. East / South road area)
   await page.keyboard.down('d');
   await page.waitForTimeout(1200);
   await page.keyboard.up('d');
   await waitForRenderSettle(12);
-  // Capture 4: Separated road/terrain geometry screenshot away from central intersection
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-junction.png`, fullPage: true });
 
   // ------------------------------------------------------------------------
-  // Executor proof. Reset, then use authority motion only as deterministic
-  // setup to get within destruction range. Visible controls are already proven
-  // above and are not bypassed for their own claims.
+  // Executor/destruction proof. Authority motion is deterministic setup only;
+  // Pull/Gust/Zap themselves are clicked through the real visible controls.
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
   await waitForRenderSettle(8);
@@ -289,31 +327,32 @@ try {
   const afterMovement = await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.getAuthoritySnapshot() ?? null);
   const afterMovementDistance = distanceToBarn(afterMovement);
 
-  const abilityResults = await page.evaluate(() => {
-    const handle = globalThis.__SW_PLAYCANVAS_SLICE__;
-    if (!handle) return null;
-    return {
-      secondary: handle.requestAbility('secondary', 'qa'),
-      primary: handle.requestAbility('primary', 'qa'),
-      tertiary: handle.requestAbility('tertiary', 'qa'),
-    };
-  });
-  await page.waitForTimeout(250);
+  const abilityResults = {
+    secondary: await clickVisibleAbility('secondary'),
+    primary: await clickVisibleAbility('primary'),
+    tertiary: await clickVisibleAbility('tertiary'),
+  };
+  await waitForRenderSettle(18);
+  await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-debris.png`, fullPage: true });
 
   const afterAbilities = await page.evaluate(() => ({
     authority: globalThis.__SW_PLAYCANVAS_SLICE__?.getAuthoritySnapshot() ?? null,
+    physics: globalThis.__SW_PLAYCANVAS_SLICE__?.getStormPhysicsTelemetry() ?? null,
     data: { ...document.documentElement.dataset },
   }));
 
+  const beforeResetPhysics = afterAbilities.physics;
   const reset = await page.evaluate(() => {
     const handle = globalThis.__SW_PLAYCANVAS_SLICE__;
     const snapshot = handle?.reset() ?? null;
     return {
       snapshot,
       acceptedCount: document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount ?? null,
+      physics: handle?.getStormPhysicsTelemetry() ?? null,
     };
   });
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(8);
+  const afterResetPhysics = await readPhysicsState();
 
   const disposal = await page.evaluate(() => {
     globalThis.__SW_PLAYCANVAS_SLICE__?.dispose();
@@ -328,6 +367,7 @@ try {
       cameraValue: document.documentElement.dataset.swPlaycanvasCameraX ?? null,
       cameraHeadingValue: document.documentElement.dataset.swPlaycanvasCameraHeading ?? null,
       inputValue: document.documentElement.dataset.swPlaycanvasAuthorityInputX ?? null,
+      physicsValue: document.documentElement.dataset.swPlaycanvasPhysicsUpdates ?? null,
     };
   });
   await page.waitForTimeout(100);
@@ -338,6 +378,13 @@ try {
     : 0;
   const finalBarnHealth = afterAbilities.authority?.barn?.health ?? null;
   const authorityAbilities = afterAbilities.authority?.inputAbilities?.abilities ?? null;
+  const physicsBodyIds = initial.physics?.bodies?.map((body) => body.id) ?? [];
+  const pullCounterAdvanced = (afterPullPhysics?.acceptedPullCount ?? 0) > (beforePullPhysics?.acceptedPullCount ?? 0);
+  const pullTreeAdvanced = (afterPullPhysics?.treePullReactionCount ?? 0) > (beforePullPhysics?.treePullReactionCount ?? 0);
+  const pullLightAdvanced = (afterPullPhysics?.lightPullReactionCount ?? 0) > (beforePullPhysics?.lightPullReactionCount ?? 0);
+  const gustCounterAdvanced = (afterGustPhysics?.acceptedGustCount ?? 0) > (beforeGustPhysics?.acceptedGustCount ?? 0);
+  const gustTreeAdvanced = (afterGustPhysics?.treeGustReactionCount ?? 0) > (beforeGustPhysics?.treeGustReactionCount ?? 0);
+  const gustLightAdvanced = (afterGustPhysics?.lightGustReactionCount ?? 0) > (beforeGustPhysics?.lightGustReactionCount ?? 0);
 
   const checks = [
     { name: 'canvas-present', passed: Boolean(initial.canvas), detail: JSON.stringify(initial.canvas) },
@@ -350,6 +397,8 @@ try {
     { name: 'engine-revision-dataset-agrees', passed: initial.data.swPlaycanvasEngineRevision === engineRevision, detail: JSON.stringify(initial.data) },
     { name: 'gameplay-authority-connected', passed: initial.telemetry?.gameplayAuthority === 'PLAYCANVAS_AUTHORITY_V1' && initial.authority?.version === 'PLAYCANVAS_AUTHORITY_V1' && initial.authority?.ready === true, detail: JSON.stringify(initial.authority) },
     { name: 'authority-frame-present', passed: initial.authorityFramePresent === true, detail: JSON.stringify(initial.authorityFramePresent) },
+    { name: 'physics-body-registry-bounded', passed: (initial.physics?.maxRegisteredBodyCount ?? 0) >= 10 && (initial.physics?.maxRegisteredBodyCount ?? 99) <= 20, detail: JSON.stringify(initial.physics) },
+    { name: 'physics-safe-animal-excluded', passed: physicsBodyIds.length > 0 && physicsBodyIds.every((id) => !String(id).toLowerCase().includes('cow')), detail: JSON.stringify(physicsBodyIds) },
     { name: 'warning-run-active', passed: playStart?.run?.runActive === true && (playStart?.run?.remainingSeconds ?? 0) > 170, detail: JSON.stringify(playStart?.run) },
     { name: 'joystick-up-moves-screen-forward', passed: joystickForwardProjection > 0.35, detail: JSON.stringify({ beforeJoystickUp, afterJoystickUp, joystickForwardProjection }) },
     { name: 'keyboard-right-moves-screen-right', passed: keyboardRightProjection > 0.35, detail: JSON.stringify({ beforeKeyboardRight, afterKeyboardRight, keyboardRightProjection }) },
@@ -359,14 +408,7 @@ try {
       passed: keyboardHeadingSamples.length >= 12
         && keyboardHeadingStepMetrics.turningStepCount >= 3
         && keyboardHeadingStepMetrics.maxStep <= CAMERA_MAX_HEADING_STEP_RADIANS,
-      detail: JSON.stringify({
-        keyboardHeadingDelta,
-        sampleCount: keyboardHeadingSamples.length,
-        turningStepCount: keyboardHeadingStepMetrics.turningStepCount,
-        maxStep: keyboardHeadingStepMetrics.maxStep,
-        maximumAllowedStep: CAMERA_MAX_HEADING_STEP_RADIANS,
-        samples: keyboardHeadingSamples,
-      }),
+      detail: JSON.stringify({ keyboardHeadingDelta, sampleCount: keyboardHeadingSamples.length, turningStepCount: keyboardHeadingStepMetrics.turningStepCount, maxStep: keyboardHeadingStepMetrics.maxStep, maximumAllowedStep: CAMERA_MAX_HEADING_STEP_RADIANS, samples: keyboardHeadingSamples }),
     },
     { name: 'camera-distance-stable-joystick', passed: joystickDistanceDrift < 0.08, detail: JSON.stringify({ joystickDistanceDrift, beforeJoystickUp, afterJoystickUp }) },
     { name: 'camera-distance-stable-keyboard', passed: keyboardDistanceDrift < 0.08, detail: JSON.stringify({ keyboardDistanceDrift, beforeKeyboardRight, afterKeyboardRight }) },
@@ -375,23 +417,26 @@ try {
       passed: joystickRenderConsumedAuthorityDistance > 1
         && Number.isFinite(joystickVisibleAuthorityScale)
         && Math.abs(joystickVisibleAuthorityScale - SEALED_VISIBLE_AUTHORITY_SCALE) <= VISIBLE_AUTHORITY_SCALE_TOLERANCE,
-      detail: JSON.stringify({
-        joystickVisualDistance,
-        joystickRenderConsumedAuthorityDistance,
-        joystickVisibleAuthorityScale,
-        sealedVisibleAuthorityScale: SEALED_VISIBLE_AUTHORITY_SCALE,
-        tolerance: VISIBLE_AUTHORITY_SCALE_TOLERANCE,
-      }),
+      detail: JSON.stringify({ joystickVisualDistance, joystickRenderConsumedAuthorityDistance, joystickVisibleAuthorityScale, sealedVisibleAuthorityScale: SEALED_VISIBLE_AUTHORITY_SCALE, tolerance: VISIBLE_AUTHORITY_SCALE_TOLERANCE }),
     },
+    { name: 'pull-visible-control-accepted', passed: pullVisibleResult?.accepted === true && pullCounterAdvanced, detail: JSON.stringify({ pullVisibleResult, beforePullPhysics, afterPullPhysics }) },
+    { name: 'pull-trees-react-inward', passed: pullTreeAdvanced && (afterPullPhysics?.peakTreeTiltRadians ?? 0) > 0.12, detail: JSON.stringify({ beforePullPhysics, afterPullPhysics }) },
+    { name: 'pull-light-props-move-inward', passed: pullLightAdvanced && (afterPullPhysics?.maxPullInwardDelta ?? 0) > 0.4, detail: JSON.stringify({ beforePullPhysics, afterPullPhysics }) },
+    { name: 'pull-light-props-orbit', passed: (afterPullPhysics?.maxPullTangentialDelta ?? 0) > 0.15, detail: JSON.stringify(afterPullPhysics) },
+    { name: 'gust-visible-control-accepted', passed: gustVisibleResult?.accepted === true && gustCounterAdvanced, detail: JSON.stringify({ gustVisibleResult, beforeGustPhysics, afterGustPhysics }) },
+    { name: 'gust-trees-react-outward', passed: gustTreeAdvanced && (afterGustPhysics?.peakTreeTiltRadians ?? 0) > 0.10, detail: JSON.stringify({ beforeGustPhysics, afterGustPhysics }) },
+    { name: 'gust-light-props-move-outward', passed: gustLightAdvanced && (afterGustPhysics?.maxGustOutwardDelta ?? 0) > 0.4, detail: JSON.stringify({ beforeGustPhysics, afterGustPhysics }) },
     { name: 'expanded-terrain-footprint', passed: true, detail: '190x190 PlayCanvas units' },
     { name: 'road-junctions-count', passed: true, detail: '9 connected junctions (3x3 road grid)' },
     { name: 'authority-setup-moves-real-storm', passed: movementDistance > 1, detail: JSON.stringify({ initialStorm, after: afterMovement?.storm, movementDistance }) },
     { name: 'authority-setup-approaches-live-target', passed: initialDistance !== null && afterMovementDistance !== null && afterMovementDistance < initialDistance, detail: JSON.stringify({ initialDistance, afterMovementDistance }) },
-    { name: 'gust-executor-accepted', passed: abilityResults?.secondary === true, detail: JSON.stringify(abilityResults) },
-    { name: 'pull-executor-accepted', passed: abilityResults?.primary === true, detail: JSON.stringify(abilityResults) },
-    { name: 'zap-executor-accepted', passed: abilityResults?.tertiary === true, detail: JSON.stringify(abilityResults) },
+    { name: 'gust-executor-accepted', passed: abilityResults.secondary?.accepted === true, detail: JSON.stringify(abilityResults) },
+    { name: 'pull-executor-accepted', passed: abilityResults.primary?.accepted === true, detail: JSON.stringify(abilityResults) },
+    { name: 'zap-executor-accepted', passed: abilityResults.tertiary?.accepted === true, detail: JSON.stringify(abilityResults) },
     { name: 'ability-telemetry-counts', passed: (authorityAbilities?.acceptedCount ?? 0) >= 3 && Number(afterAbilities.data.swPlaycanvasAbilityAcceptedCount ?? 0) >= 3, detail: JSON.stringify({ authorityAbilities, data: afterAbilities.data }) },
     { name: 'destruction-state-changed', passed: initialBarnHealth !== null && finalBarnHealth !== null && finalBarnHealth < initialBarnHealth, detail: JSON.stringify({ initialBarnHealth, finalBarnHealth, barn: afterAbilities.authority?.barn }) },
+    { name: 'authoritative-damage-activates-debris', passed: (afterAbilities.physics?.debrisActivationCount ?? 0) > (beforeResetPhysics?.debrisActivationCount ?? -1) - 1 && (afterAbilities.physics?.debrisActivationCount ?? 0) >= 1, detail: JSON.stringify(afterAbilities.physics) },
+    { name: 'storm-field-moves-detached-debris', passed: (afterAbilities.physics?.maxDebrisDisplacement ?? 0) > 0.1 && (afterAbilities.physics?.airborneBodyCount ?? 0) >= 1, detail: JSON.stringify(afterAbilities.physics) },
     { name: 'score-never-regresses', passed: (afterAbilities.authority?.score?.destructionScore ?? -1) >= (playStart?.score?.destructionScore ?? 0), detail: JSON.stringify({ initial: playStart?.score, after: afterAbilities.authority?.score }) },
     { name: 'combo-law-bounded', passed: (afterAbilities.authority?.score?.comboMultiplier ?? 0) >= 1 && (afterAbilities.authority?.score?.comboMultiplier ?? 99) <= 3.5, detail: JSON.stringify(afterAbilities.authority?.score) },
     { name: 'cow17-safe', passed: afterAbilities.authority?.cow17?.safe === true, detail: JSON.stringify(afterAbilities.authority?.cow17) },
@@ -401,6 +446,8 @@ try {
     { name: 'qa-mode', passed: initial.telemetry?.qaMode === true, detail: JSON.stringify(initial.telemetry) },
     { name: 'reset-clears-local-ability-count', passed: reset.acceptedCount === '0', detail: JSON.stringify(reset) },
     { name: 'reset-restores-active-run', passed: reset.snapshot?.run?.runActive === true && (reset.snapshot?.run?.remainingSeconds ?? 0) > 170, detail: JSON.stringify(reset.snapshot?.run) },
+    { name: 'physics-reset-clears-active-bodies', passed: allBodiesReset(afterResetPhysics), detail: JSON.stringify({ beforeResetPhysics, reset: reset.physics, afterResetPhysics }) },
+    { name: 'physics-reset-count-advances', passed: (afterResetPhysics?.resetCount ?? 0) > (beforeResetPhysics?.resetCount ?? 0), detail: JSON.stringify({ beforeResetPhysics, afterResetPhysics }) },
     { name: 'dispose-canvas-removed', passed: disposal.canvasPresent === false, detail: JSON.stringify(disposal) },
     { name: 'dispose-authority-frame-removed', passed: disposal.authorityFramePresent === false, detail: JSON.stringify(disposal) },
     { name: 'dispose-global-cleared', passed: disposal.globalPresent === false, detail: JSON.stringify(disposal) },
@@ -410,6 +457,7 @@ try {
     { name: 'dispose-authority-telemetry-cleared', passed: disposal.authorityValue === null, detail: JSON.stringify(disposal) },
     { name: 'dispose-camera-telemetry-cleared', passed: disposal.cameraValue === null && disposal.cameraHeadingValue === null, detail: JSON.stringify(disposal) },
     { name: 'dispose-input-telemetry-cleared', passed: disposal.inputValue === null, detail: JSON.stringify(disposal) },
+    { name: 'dispose-physics-telemetry-cleared', passed: disposal.physicsValue === null, detail: JSON.stringify(disposal) },
     { name: 'no-console-errors', passed: consoleErrors.length === 0, detail: JSON.stringify(consoleErrors) },
     { name: 'no-page-errors', passed: pageErrors.length === 0, detail: JSON.stringify(pageErrors) },
   ];
@@ -440,6 +488,16 @@ try {
         keyboardDistanceDrift,
         keyboardHeadingSamples,
         keyboardHeadingStepMetrics,
+      },
+      physics: {
+        beforePullPhysics,
+        pullVisibleResult,
+        afterPullPhysics,
+        beforeGustPhysics,
+        gustVisibleResult,
+        afterGustPhysics,
+        beforeResetPhysics,
+        afterResetPhysics,
       },
       playStart,
       afterMovement,
