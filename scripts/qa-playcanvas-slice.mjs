@@ -6,6 +6,8 @@ const url = process.env.PLAYCANVAS_SLICE_URL ?? 'http://127.0.0.1:4175/?qa=1';
 const evidenceDir = 'playcanvas-slice-evidence';
 const SEALED_VISIBLE_AUTHORITY_SCALE = 0.7717;
 const VISIBLE_AUTHORITY_SCALE_TOLERANCE = 0.03;
+const CAMERA_TURN_FRAME_SAMPLE_COUNT = 24;
+const CAMERA_MAX_HEADING_STEP_RADIANS = 0.13;
 await mkdir(evidenceDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -68,6 +70,19 @@ function wrappedAngleDelta(before, after) {
   return Math.abs(delta - Math.PI);
 }
 
+function headingStepMetrics(samples) {
+  const steps = [];
+  for (let index = 1; index < samples.length; index += 1) {
+    steps.push(wrappedAngleDelta(samples[index - 1], samples[index]));
+  }
+  const turningSteps = steps.filter((step) => Number.isFinite(step) && step > 0.0005);
+  return {
+    steps,
+    turningStepCount: turningSteps.length,
+    maxStep: turningSteps.length > 0 ? Math.max(...turningSteps) : 0,
+  };
+}
+
 async function waitForRenderSettle(frameCount = 18) {
   await page.evaluate((count) => new Promise((resolve) => {
     let remaining = count;
@@ -80,6 +95,24 @@ async function waitForRenderSettle(frameCount = 18) {
       requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
+  }), frameCount);
+}
+
+async function sampleCameraHeadings(frameCount = CAMERA_TURN_FRAME_SAMPLE_COUNT) {
+  return page.evaluate((count) => new Promise((resolve) => {
+    const samples = [];
+    let remaining = count;
+    const sample = () => {
+      const heading = Number(document.documentElement.dataset.swPlaycanvasCameraHeading);
+      if (Number.isFinite(heading)) samples.push(heading);
+      remaining -= 1;
+      if (remaining <= 0) {
+        resolve(samples);
+        return;
+      }
+      requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
   }), frameCount);
 }
 
@@ -170,13 +203,21 @@ try {
   await waitForRenderSettle(8);
   const beforeKeyboardRight = await readMotionState();
   await page.keyboard.down('d');
-  await page.waitForTimeout(420);
-  // Capture 2: Sweeping-turn screenshot showing chase camera orientation
+
+  // [SW:PLAYCANVAS:CAMERA_TURN_STEP_REGRESSION]
+  // Drive the real visible D key, but judge gradual camera motion per rendered
+  // frame rather than against a wall-clock hold duration. The chase controller
+  // clamps camera time steps to 120 ms and the owner-polished effective turn
+  // rate is 1.05 * 0.9 rad/s, so a legal single-frame heading step is at most
+  // 0.1134 rad. The 0.13 gate leaves only telemetry/rounding margin and still
+  // fails any visible snap, even if headless CI stalls between animation frames.
+  const keyboardHeadingSamples = await sampleCameraHeadings();
+  const afterKeyboardRight = await readMotionState();
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-turn.png`, fullPage: true });
   await page.keyboard.up('d');
-  await waitForRenderSettle(18);
-  const afterKeyboardRight = await readMotionState();
+  await waitForRenderSettle(4);
 
+  const keyboardHeadingStepMetrics = headingStepMetrics(keyboardHeadingSamples);
   const joystickForwardProjection = projectedMotion(beforeJoystickUp, afterJoystickUp, 'forward');
   const keyboardRightProjection = projectedMotion(beforeKeyboardRight, afterKeyboardRight, 'right');
   const joystickHeadingDelta = wrappedAngleDelta(beforeJoystickUp.camera?.heading, afterJoystickUp.camera?.heading);
@@ -313,7 +354,20 @@ try {
     { name: 'joystick-up-moves-screen-forward', passed: joystickForwardProjection > 0.35, detail: JSON.stringify({ beforeJoystickUp, afterJoystickUp, joystickForwardProjection }) },
     { name: 'keyboard-right-moves-screen-right', passed: keyboardRightProjection > 0.35, detail: JSON.stringify({ beforeKeyboardRight, afterKeyboardRight, keyboardRightProjection }) },
     { name: 'camera-stays-stable-on-forward-input', passed: joystickHeadingDelta < 0.18, detail: JSON.stringify({ joystickHeadingDelta, beforeJoystickUp, afterJoystickUp }) },
-    { name: 'camera-turns-gradually-behind-keyboard-motion', passed: keyboardHeadingDelta > 0.25 && keyboardHeadingDelta < 1.85, detail: JSON.stringify({ keyboardHeadingDelta, beforeKeyboardRight, afterKeyboardRight }) },
+    {
+      name: 'camera-turns-gradually-behind-keyboard-motion',
+      passed: keyboardHeadingSamples.length >= 12
+        && keyboardHeadingStepMetrics.turningStepCount >= 3
+        && keyboardHeadingStepMetrics.maxStep <= CAMERA_MAX_HEADING_STEP_RADIANS,
+      detail: JSON.stringify({
+        keyboardHeadingDelta,
+        sampleCount: keyboardHeadingSamples.length,
+        turningStepCount: keyboardHeadingStepMetrics.turningStepCount,
+        maxStep: keyboardHeadingStepMetrics.maxStep,
+        maximumAllowedStep: CAMERA_MAX_HEADING_STEP_RADIANS,
+        samples: keyboardHeadingSamples,
+      }),
+    },
     { name: 'camera-distance-stable-joystick', passed: joystickDistanceDrift < 0.08, detail: JSON.stringify({ joystickDistanceDrift, beforeJoystickUp, afterJoystickUp }) },
     { name: 'camera-distance-stable-keyboard', passed: keyboardDistanceDrift < 0.08, detail: JSON.stringify({ keyboardDistanceDrift, beforeKeyboardRight, afterKeyboardRight }) },
     {
@@ -384,6 +438,8 @@ try {
         keyboardRightProjection,
         keyboardHeadingDelta,
         keyboardDistanceDrift,
+        keyboardHeadingSamples,
+        keyboardHeadingStepMetrics,
       },
       playStart,
       afterMovement,
