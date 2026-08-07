@@ -18,7 +18,7 @@ permissions:
 jobs:
   verify-playcanvas-slice:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
 
     steps:
       - name: Checkout exact source
@@ -50,6 +50,16 @@ jobs:
 
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate verified audio assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          pnpm run audio:generate
+          test -s assets/audio/storm-feel-sprite.wav
+          test -s assets/audio/storm-feel-sprite.mp3
 
       - name: Fetch pinned PlayCanvas engine
         env:
