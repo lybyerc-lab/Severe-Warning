@@ -154,23 +154,23 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Download verified PlayCanvas one-stick chase artifact
+      - name: Download verified PlayCanvas Prairie expansion artifact
         uses: actions/download-artifact@v4
         with:
-          name: severe-weather-playcanvas-slice-34
+          name: severe-weather-playcanvas-slice-39
           path: playcanvas-preview-artifact
           repository: lybyerc-lab/Severe-Warning
-          run-id: 31173231741
+          run-id: 31210691734
           github-token: ${{ github.token }}
 
-      - name: Verify and overlay one-stick chase PlayCanvas candidate
+      - name: Verify and overlay Prairie expansion PlayCanvas candidate
         shell: bash
         env:
-          PLAYCANVAS_SOURCE_SHA: 540087c3ea08c56b3b47dffb0b448608a934c350
-          PLAYCANVAS_RUN_ID: '31173231741'
-          PLAYCANVAS_RUN_NUMBER: '34'
-          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-34
-          PLAYCANVAS_ARTIFACT_DIGEST: sha256:f7f90a48b6bd4a4b67b2523d90ec914ad291ad969c93d47d3a70dea7168c458d
+          PLAYCANVAS_SOURCE_SHA: b3164a11cf56884ff9ca38c91e99976d6b9d86b4
+          PLAYCANVAS_RUN_ID: '31210691734'
+          PLAYCANVAS_RUN_NUMBER: '39'
+          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-39
+          PLAYCANVAS_ARTIFACT_DIGEST: sha256:3931243ca3e99469aa31adfaca2c2d6fbdc3a144bdfbf6ecef42db7076c70e3d
         run: |
           set -euo pipefail
           test "$(tr -d '\r\n' < playcanvas-preview-artifact/SOURCE_SHA.txt)" = "$PLAYCANVAS_SOURCE_SHA"
@@ -178,6 +178,10 @@ jobs:
           test -s playcanvas-preview-artifact/preview/vendor/playcanvas-2.21.3.min.mjs
           test -s playcanvas-preview-artifact/playcanvas-slice-static-report.json
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-report.json
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-turn.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-travel.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-junction.png
           node - <<'NODE'
           const fs = require('fs');
           const staticReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-static-report.json', 'utf8'));
@@ -192,12 +196,16 @@ jobs:
             'touch-camera-relative',
             'one-stick-chase-camera-contract',
             'chase-camera-turn-rate-bounded',
+            'chase-camera-feel-constants-unmodified',
             'chase-camera-intent-wiring',
             'tornado-funnel-upright',
+            'expanded-terrain-footprint',
+            'connected-road-junctions-contract',
+            'distinct-landmark-blocks-contract',
             'browser-visible-control-check',
             'browser-chase-camera-check',
           ]) {
-            if (staticChecks.get(name) !== true) throw new Error(`Required one-stick PlayCanvas static gate missing or red: ${name}`);
+            if (staticChecks.get(name) !== true) throw new Error(`Required Prairie expansion static gate missing or red: ${name}`);
           }
 
           const browserChecks = new Map(browserReport.checks.map((check) => [check.name, check.passed]));
@@ -209,6 +217,9 @@ jobs:
             'camera-turns-gradually-behind-keyboard-motion',
             'camera-distance-stable-joystick',
             'camera-distance-stable-keyboard',
+            'visible-storm-speed-parity',
+            'expanded-terrain-footprint',
+            'road-junctions-count',
             'authority-setup-moves-real-storm',
             'authority-setup-approaches-live-target',
             'gust-executor-accepted',
@@ -221,9 +232,11 @@ jobs:
             'no-console-errors',
             'no-page-errors',
           ]) {
-            if (browserChecks.get(name) !== true) throw new Error(`Required one-stick PlayCanvas browser gate missing or red: ${name}`);
+            if (browserChecks.get(name) !== true) throw new Error(`Required Prairie expansion browser gate missing or red: ${name}`);
           }
-          console.log(`Verified one-stick PlayCanvas artifact: static ${staticReport.checks.length}/${staticReport.checks.length}, browser ${browserReport.checks.length}/${browserReport.checks.length}.`);
+          if (staticReport.checks.length !== 54) throw new Error(`Unexpected static check count: ${staticReport.checks.length}`);
+          if (browserReport.checks.length !== 47) throw new Error(`Unexpected browser check count: ${browserReport.checks.length}`);
+          console.log(`Verified Prairie expansion PlayCanvas artifact: static ${staticReport.checks.length}/${staticReport.checks.length}, browser ${browserReport.checks.length}/${browserReport.checks.length}.`);
           NODE
           rm -rf www/playcanvas
           mkdir -p www/playcanvas
@@ -235,7 +248,10 @@ jobs:
             "workflowRunNumber": $PLAYCANVAS_RUN_NUMBER,
             "artifact": "$PLAYCANVAS_ARTIFACT",
             "artifactDigest": "$PLAYCANVAS_ARTIFACT_DIGEST",
-            "corrections": ["upright-funnel", "one-stick-chase-camera", "camera-relative-input", "frame-rate-resilient-camera"],
+            "terrainFootprint": "190x190",
+            "roadJunctions": 9,
+            "entityCount": 233,
+            "corrections": ["upright-funnel", "one-stick-chase-camera", "camera-relative-input", "frame-rate-resilient-camera", "prairie-expansion", "nine-connected-junctions", "frozen-camera-baseline"],
             "status": "browser-qa-passed-not-physical-android-accepted"
           }
           EOF
@@ -268,13 +284,13 @@ jobs:
         run: |
           echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
 
-      - name: Verify live QA root and one-stick chase PlayCanvas candidate
+      - name: Verify live QA root and Prairie expansion PlayCanvas candidate
         shell: bash
         env:
           QA_ROOT_URL: https://lybyerc-lab.github.io/Severe-Warning/
           PLAYCANVAS_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/
           PLAYCANVAS_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/qa-playcanvas-build.json
-          PLAYCANVAS_SOURCE_SHA: 540087c3ea08c56b3b47dffb0b448608a934c350
+          PLAYCANVAS_SOURCE_SHA: b3164a11cf56884ff9ca38c91e99976d6b9d86b4
         run: |
           set -euo pipefail
           for attempt in $(seq 1 30); do
@@ -286,10 +302,12 @@ jobs:
               && grep -Fq "$PLAYCANVAS_SOURCE_SHA" <<< "$playcanvas_metadata" \
               && grep -Fq 'one-stick-chase-camera' <<< "$playcanvas_metadata" \
               && grep -Fq 'camera-relative-input' <<< "$playcanvas_metadata" \
-              && grep -Fq 'frame-rate-resilient-camera' <<< "$playcanvas_metadata"; then
+              && grep -Fq 'prairie-expansion' <<< "$playcanvas_metadata" \
+              && grep -Fq 'nine-connected-junctions' <<< "$playcanvas_metadata" \
+              && grep -Fq '190x190' <<< "$playcanvas_metadata"; then
               echo "Live QA root verified: $QA_ROOT_URL"
-              echo "Live one-stick chase PlayCanvas candidate verified: $PLAYCANVAS_URL"
-              echo "Live one-stick chase PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
+              echo "Live Prairie expansion PlayCanvas candidate verified: $PLAYCANVAS_URL"
+              echo "Live Prairie expansion PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
               exit 0
             fi
             echo "Live Pages propagation attempt $attempt/30 not ready yet."
