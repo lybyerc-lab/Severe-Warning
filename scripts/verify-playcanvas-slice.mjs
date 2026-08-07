@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 const files = {
   entry: 'playcanvas-slice/src/main.ts',
+  chaseCamera: 'playcanvas-slice/src/chase-camera.ts',
   authorityClient: 'playcanvas-slice/src/authority-client.ts',
   authorityBridge: 'runtime/playcanvas-authority-bridge.js',
   authorityPrep: 'scripts/prepare-playcanvas-authority.mjs',
@@ -42,10 +43,26 @@ check('authority-readonly-storm-telemetry', contents.authorityBridge.includes('x
 check('authority-bundle-injected', contents.authorityPrep.includes('playcanvas-authority-bridge.js') && contents.workflow.includes('prepare-playcanvas-authority.mjs'), 'same-origin authority bridge is packaged intentionally');
 check('authority-client-same-origin', contents.authorityClient.includes("authority/index.html?playcanvasAuthority=1"), 'PlayCanvas page loads bundled same-origin authority');
 check('visible-presentation-authority-separation', contents.entry.includes('PlayCanvasAuthorityClient') && contents.entry.includes('gameplayAuthority: \'PLAYCANVAS_AUTHORITY_V1\''), 'visible renderer declares legacy gameplay authority explicitly');
-check('camera-relative-input-contract', contents.entry.includes('cameraRelativeAuthorityInput') && contents.entry.includes('unmapDirection'), 'screen-space movement is transformed back into accepted authority world axes');
+check(
+  'one-stick-chase-camera-contract',
+  contents.chaseCamera.includes('[SW:PLAYCANVAS:ONE_STICK_CHASE_CAMERA]')
+    && contents.entry.includes('new OneStickChaseCamera')
+    && contents.entry.includes('chaseCamera.update(renderTornado.x, renderTornado.z, deltaSeconds)')
+    && contents.chaseCamera.includes('turnRateRadiansPerSecond')
+    && contents.chaseCamera.includes('headingDeadZoneRadians')
+    && contents.chaseCamera.includes('movementThreshold'),
+  'camera heading is an explicit damped state separate from gameplay movement',
+);
+check(
+  'chase-camera-turn-rate-bounded',
+  contents.entry.includes('CHASE_CAMERA_TURN_RATE_RADIANS = 1.35')
+    && contents.entry.includes('CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180'),
+  'first chase-camera pass has a fixed bounded turn rate and heading dead zone',
+);
+check('camera-relative-input-contract', contents.entry.includes('chaseCameraAuthorityInput') && contents.entry.includes('chaseCamera.screenToWorldDirection') && contents.entry.includes('transform.unmapDirection'), 'screen-space movement uses current chase-camera basis and is transformed back into accepted authority world axes');
 check('keyboard-camera-relative', contents.entry.includes("pressed.has('KeyW')") && contents.entry.includes('applyDirectionalInput()') && contents.entry.includes('authority.setJoystick(authorityVector.x, authorityVector.z, active)'), 'keyboard is interpreted as screen-space movement and sent through accepted movement authority');
-check('touch-camera-relative', contents.entry.includes('touchVector = Object.freeze') && contents.entry.includes('applyDirectionalInput()'), 'touch stick uses the same camera-relative movement path');
-check('storm-follow-camera', contents.scene.includes('[SW:PLAYCANVAS:STORM_FOLLOW_CAMERA]') && contents.entry.includes('FOLLOW_CAMERA_OFFSET_X') && contents.entry.includes('scene.camera.setPosition(cameraX, FOLLOW_CAMERA_HEIGHT, cameraZ)') && contents.entry.includes('scene.camera.lookAt(renderTornado.x, FOLLOW_CAMERA_LOOK_Y, renderTornado.z)'), 'camera translates with and continuously targets the rendered tornado');
+check('touch-camera-relative', contents.entry.includes('touchVector = Object.freeze') && contents.entry.includes('applyDirectionalInput()'), 'touch stick uses the same chase-camera-relative movement path');
+check('camera-reset-contract', contents.entry.includes('chaseCamera.reset(renderTornado.x, renderTornado.z)'), 'run reset restores a deterministic chase-camera heading');
 check('ability-buttons-present', ['primary', 'secondary', 'tertiary'].every((slot) => contents.html.includes(`data-ability="${slot}"`)), 'Pull/Gust/Zap controls are present');
 check('scoring-hud-present', contents.html.includes('hud-score') && contents.html.includes('hud-combo') && contents.html.includes('hud-time'), 'time, score, and combo HUD is present');
 check('destruction-visual-driven-by-authority', contents.entry.includes('applyBarnVisual(scene, snapshot)') && contents.scene.includes('mooBrew'), 'visible destruction stage follows authority snapshot');
@@ -64,6 +81,14 @@ check(
 check('browser-version-export-check', contents.browserQa.includes('engine-version-exported'), 'browser QA asserts exported engine version');
 check('browser-revision-export-check', contents.browserQa.includes('engine-revision-exported'), 'browser QA asserts exported engine revision');
 check('browser-visible-control-check', contents.browserQa.includes('joystick-up-moves-screen-forward') && contents.browserQa.includes('keyboard-right-moves-screen-right'), 'browser QA exercises visible movement directions');
+check(
+  'browser-chase-camera-check',
+  contents.browserQa.includes('camera-stays-stable-on-forward-input')
+    && contents.browserQa.includes('camera-turns-gradually-behind-keyboard-motion')
+    && contents.browserQa.includes('camera-distance-stable-joystick')
+    && contents.browserQa.includes('camera-distance-stable-keyboard'),
+  'browser QA proves forward stability, gradual chase rotation, and stable follow distance',
+);
 check('separate-output', contents.vite.includes("outDir: '../playcanvas-slice-dist'"), 'slice cannot overwrite accepted build output');
 check('qa-data-contract', contents.entry.includes('swPlaycanvasSliceReady'), 'browser QA readiness is observable');
 check('dispose-contract', contents.entry.includes('app.destroy()') && contents.entry.includes('__SW_PLAYCANVAS_SLICE__ = undefined') && contents.entry.includes('authority.dispose()'), 'renderer and authority-frame cleanup are explicit');

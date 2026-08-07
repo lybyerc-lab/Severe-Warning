@@ -15,6 +15,7 @@ import {
   type AuthorityAbilitySlot,
   type AuthoritySnapshot,
 } from './authority-client';
+import { OneStickChaseCamera } from './chase-camera';
 import type { PcEntity, PlayCanvasModule } from './engine-types';
 import type { OffsetEntity } from './geometry';
 import { populatePrairieJunctionScene, type SceneResult } from './scene';
@@ -67,14 +68,17 @@ const ABILITY_LABELS: Readonly<Record<AuthorityAbilitySlot, string>> = Object.fr
   tertiary: 'ZAP',
 });
 
-// [SW:PLAYCANVAS:STORM_FOLLOW_CAMERA]
-// Fixed diagonal chase offset for the first hands-on pass. The camera translates
-// with the tornado and keeps it as the focal subject. Rotation/orbit can be
-// added after the camera-relative input contract is physically comfortable.
-const FOLLOW_CAMERA_OFFSET_X = 30;
-const FOLLOW_CAMERA_OFFSET_Z = 36;
-const FOLLOW_CAMERA_HEIGHT = 28;
-const FOLLOW_CAMERA_LOOK_Y = 3.6;
+// [SW:PLAYCANVAS:ONE_STICK_CHASE_CAMERA]
+// The stick controls storm movement in screen space. Camera heading is a
+// separate, slower state that eases behind sustained travel direction.
+const INITIAL_CAMERA_OFFSET_X = 30;
+const INITIAL_CAMERA_OFFSET_Z = 36;
+const CHASE_CAMERA_DISTANCE = Math.hypot(INITIAL_CAMERA_OFFSET_X, INITIAL_CAMERA_OFFSET_Z);
+const CHASE_CAMERA_HEIGHT = 28;
+const CHASE_CAMERA_LOOK_Y = 3.6;
+const CHASE_CAMERA_TURN_RATE_RADIANS = 1.35;
+const CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180;
+const CHASE_CAMERA_MOVEMENT_THRESHOLD = 0.28;
 
 function byId<T extends HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
@@ -166,20 +170,14 @@ function createWorldTransform(snapshot: AuthoritySnapshot, scene: SceneResult): 
   });
 }
 
-function cameraRelativeAuthorityInput(
+function chaseCameraAuthorityInput(
   screenX: number,
   screenY: number,
   transform: WorldTransform,
+  chaseCamera: OneStickChaseCamera,
 ): Readonly<{ x: number; z: number }> {
-  const offsetLength = Math.max(0.001, Math.hypot(FOLLOW_CAMERA_OFFSET_X, FOLLOW_CAMERA_OFFSET_Z));
-  const forwardX = -FOLLOW_CAMERA_OFFSET_X / offsetLength;
-  const forwardZ = -FOLLOW_CAMERA_OFFSET_Z / offsetLength;
-  const rightX = -forwardZ;
-  const rightZ = forwardX;
-  const screenUp = -screenY;
-  const targetX = rightX * screenX + forwardX * screenUp;
-  const targetZ = rightZ * screenX + forwardZ * screenUp;
-  const source = transform.unmapDirection(targetX, targetZ);
+  const target = chaseCamera.screenToWorldDirection(screenX, screenY);
+  const source = transform.unmapDirection(target.x, target.z);
   const magnitude = Math.hypot(source.x, source.z);
   if (magnitude <= 1) return source;
   return Object.freeze({ x: source.x / magnitude, z: source.z / magnitude });
@@ -437,6 +435,14 @@ async function bootstrapSlice(): Promise<SliceHandle> {
   let renderTornado = { ...targetTornado };
   let lastAuthorityPoll = -Infinity;
   let acceptedAbilities = 0;
+  const chaseCamera = new OneStickChaseCamera(Object.freeze({
+    distance: CHASE_CAMERA_DISTANCE,
+    turnRateRadiansPerSecond: CHASE_CAMERA_TURN_RATE_RADIANS,
+    headingDeadZoneRadians: CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS,
+    movementThreshold: CHASE_CAMERA_MOVEMENT_THRESHOLD,
+    initialForwardX: -INITIAL_CAMERA_OFFSET_X / CHASE_CAMERA_DISTANCE,
+    initialForwardZ: -INITIAL_CAMERA_OFFSET_Z / CHASE_CAMERA_DISTANCE,
+  }), renderTornado.x, renderTornado.z);
 
   const syncSnapshot = (snapshot: AuthoritySnapshot): void => {
     latestSnapshot = snapshot;
@@ -479,11 +485,13 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     delete document.documentElement.dataset.swPlaycanvasLastAbility;
     delete document.documentElement.dataset.swPlaycanvasLastAbilityAccepted;
     syncSnapshot(snapshot);
+    renderTornado = { ...targetTornado };
+    chaseCamera.reset(renderTornado.x, renderTornado.z);
     return snapshot;
   };
 
   const mapScreenInput = (screenX: number, screenY: number): Readonly<{ x: number; z: number }> => (
-    cameraRelativeAuthorityInput(screenX, screenY, transform)
+    chaseCameraAuthorityInput(screenX, screenY, transform, chaseCamera)
   );
   const controls = installControls(authority, mapScreenInput, requestAbility, reset);
   syncSnapshot(latestSnapshot);
@@ -497,16 +505,22 @@ async function bootstrapSlice(): Promise<SliceHandle> {
       part.setPosition(renderTornado.x, scene.tornadoPartY[index] ?? scene.tornadoPartY[0] ?? 1, renderTornado.z);
     });
 
-    const cameraX = renderTornado.x + FOLLOW_CAMERA_OFFSET_X;
-    const cameraZ = renderTornado.z + FOLLOW_CAMERA_OFFSET_Z;
-    scene.camera.setPosition(cameraX, FOLLOW_CAMERA_HEIGHT, cameraZ);
-    scene.camera.lookAt(renderTornado.x, FOLLOW_CAMERA_LOOK_Y, renderTornado.z);
+    const cameraPose = chaseCamera.update(renderTornado.x, renderTornado.z, deltaSeconds);
+    scene.camera.setPosition(cameraPose.cameraX, CHASE_CAMERA_HEIGHT, cameraPose.cameraZ);
+    scene.camera.lookAt(renderTornado.x, CHASE_CAMERA_LOOK_Y, renderTornado.z);
     controls.refresh();
 
     document.documentElement.dataset.swPlaycanvasVisualStormX = renderTornado.x.toFixed(3);
     document.documentElement.dataset.swPlaycanvasVisualStormZ = renderTornado.z.toFixed(3);
-    document.documentElement.dataset.swPlaycanvasCameraX = cameraX.toFixed(3);
-    document.documentElement.dataset.swPlaycanvasCameraZ = cameraZ.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasCameraX = cameraPose.cameraX.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasCameraZ = cameraPose.cameraZ.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasCameraForwardX = cameraPose.forwardX.toFixed(4);
+    document.documentElement.dataset.swPlaycanvasCameraForwardZ = cameraPose.forwardZ.toFixed(4);
+    document.documentElement.dataset.swPlaycanvasCameraHeading = cameraPose.headingRadians.toFixed(4);
+    document.documentElement.dataset.swPlaycanvasCameraDesiredHeading = cameraPose.desiredHeadingRadians.toFixed(4);
+    document.documentElement.dataset.swPlaycanvasCameraHeadingError = cameraPose.headingErrorRadians.toFixed(4);
+    document.documentElement.dataset.swPlaycanvasCameraTravelSpeed = cameraPose.travelSpeed.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasCameraTurning = String(cameraPose.turning);
 
     const now = performance.now();
     if (now - lastAuthorityPoll >= 50) {
@@ -534,7 +548,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
   document.documentElement.dataset.swTornadoGroundClearance = TORNADO_GROUND_CLEARANCE.toFixed(2);
   document.documentElement.dataset.swRenderer = 'PlayCanvas';
   document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount = '0';
-  setStatus('PLAYABLE • storm-follow camera', 'ready');
+  setStatus('PLAYABLE • one-stick chase camera', 'ready');
 
   return Object.freeze({
     telemetry,
@@ -567,6 +581,13 @@ async function bootstrapSlice(): Promise<SliceHandle> {
       delete document.documentElement.dataset.swPlaycanvasVisualStormZ;
       delete document.documentElement.dataset.swPlaycanvasCameraX;
       delete document.documentElement.dataset.swPlaycanvasCameraZ;
+      delete document.documentElement.dataset.swPlaycanvasCameraForwardX;
+      delete document.documentElement.dataset.swPlaycanvasCameraForwardZ;
+      delete document.documentElement.dataset.swPlaycanvasCameraHeading;
+      delete document.documentElement.dataset.swPlaycanvasCameraDesiredHeading;
+      delete document.documentElement.dataset.swPlaycanvasCameraHeadingError;
+      delete document.documentElement.dataset.swPlaycanvasCameraTravelSpeed;
+      delete document.documentElement.dataset.swPlaycanvasCameraTurning;
       globalThis.__SW_PLAYCANVAS_SLICE__ = undefined;
     },
   });

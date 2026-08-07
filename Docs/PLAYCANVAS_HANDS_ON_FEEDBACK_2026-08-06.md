@@ -10,29 +10,46 @@ Status: browser-playable candidate, not Android physical acceptance
 - The candidate is visibly **prettier** and validates continuing the PlayCanvas migration.
 - It still needs work before acceptance.
 
-## Blocking defects found
+## First hands-on defects
 
-1. **Tornado silhouette is upside down.**
-   - The first candidate is widest at ground contact and narrowest aloft.
+1. **Tornado silhouette was upside down.**
+   - The first candidate was widest at ground contact and narrowest aloft.
    - Intended silhouette is narrow at the ground and broad into the storm base.
+   - The corrected candidate now renders the funnel upright.
 
-2. **Controls feel inverted in the visible PlayCanvas camera.**
+2. **Controls felt inverted in the first visible PlayCanvas camera.**
    - The accepted gameplay authority interprets movement in world axes.
    - The PlayCanvas view must translate visible screen-space input back into those accepted world axes.
+   - Camera-relative input corrected the inversion, but exposed the next camera-feel issue.
 
-## Owner camera direction
+## Follow-camera retest
 
-The elevated diagonal view is promising. A camera that follows the tornado in a third-person/isometric style should strengthen the feeling that the player **is the storm**.
+The stable-offset follow camera preserved the improved graphics and corrected funnel, but it still did not feel like the intended player experience.
 
-First follow-camera pass should stay conservative:
+Owner observation:
 
-- camera translates with the tornado at a stable elevated diagonal offset
-- tornado remains the focal subject
-- keyboard and touch input are camera-relative, so screen-up means move toward the top of the screen and screen-right means move right on screen
+- when steering left or right, the camera appeared to pan laterally with the tornado
+- the movement was technically following the storm but did not feel like a third-person game camera
+- the desired reference is the **third-person follow camera used in shooting games**, adapted to one joystick because the tornado does not need a separate look stick
+
+## Owner-approved camera direction
+
+Target a **one-stick third-person chase camera**:
+
+- one joystick controls storm movement
+- camera remains behind and above the tornado
+- camera heading is a separate state from instantaneous joystick direction
+- pushing forward should keep the camera nearly stable
+- a sustained turn should curve the storm path while the camera gradually eases around behind the new travel direction
+- small steering corrections should not whip or snap the world around
+- camera maintains a stable chase distance and elevated framing
+- joystick and keyboard remain camera-relative as the camera heading changes
+- no second look stick is introduced
 - accepted gameplay authority remains unchanged
-- more aggressive chase-camera turning/orbit can be added only after the stable follow-camera feel is physically comfortable
 
-## Correction candidate
+This is intentionally closer to a third-person shooter chase camera than a fixed isometric map camera or a steering-attached orbit camera.
+
+## Current correction candidate
 
 Implementation branch: `agent/playcanvas-playable-moo-brew-slice`
 
@@ -41,27 +58,32 @@ Implementation branch: `agent/playcanvas-playable-moo-brew-slice`
   - wider cone layers as height increases
   - cone points face downward
 
-- `[SW:PLAYCANVAS:STORM_FOLLOW_CAMERA]`
-  - stable elevated diagonal camera offset
-  - camera position follows rendered tornado position
-  - camera continuously looks at tornado
+- `[SW:PLAYCANVAS:ONE_STICK_CHASE_CAMERA]`
+  - explicit camera heading and desired-heading state
+  - bounded turn rate
+  - heading dead zone for small corrections
+  - travel-direction threshold before camera heading updates
+  - stable horizontal chase distance
+  - reset restores deterministic opening heading
 
 - camera-relative input contract
-  - visible screen vector is converted into PlayCanvas ground direction
+  - visible screen vector uses the current chase-camera basis
   - PlayCanvas direction is inverse-transformed into accepted gameplay-authority axes
   - keyboard and touch use the same accepted movement executor path
 
 Regression gates:
 
-- static verifier requires upright funnel, follow-camera, and camera-relative input contracts
+- static verifier requires upright funnel, one-stick chase-camera, and camera-relative input contracts
 - browser QA drives the visible joystick upward and requires tornado motion toward screen-forward
+- forward joystick input must leave camera heading materially stable
 - browser QA drives keyboard right and requires tornado motion toward screen-right
-- browser QA requires camera translation to match tornado translation during both tests
+- sustained right movement must rotate the camera gradually, neither remaining frozen nor snapping immediately
+- horizontal chase distance must remain stable through forward and turning motion
 
 ## Acceptance gate
 
 - exact corrected head passes the full PlayCanvas workflow
 - generated screenshot is inspected
 - sealed corrected artifact is promoted to `/playcanvas/`
-- owner re-tests touch controls, tornado orientation, and follow-camera feel in browser
+- owner re-tests the one-stick chase-camera feel in browser
 - no Android acceptance claim until a PlayCanvas APK is built, inspected, checksummed, and physically tested

@@ -38,13 +38,20 @@ function projectedMotion(before, after, axis) {
   return dx * basis[axis].x + dz * basis[axis].z;
 }
 
-function followError(before, after) {
-  if (!before?.visual || !after?.visual || !before?.camera || !after?.camera) return Infinity;
-  const stormDx = after.visual.x - before.visual.x;
-  const stormDz = after.visual.z - before.visual.z;
-  const cameraDx = after.camera.x - before.camera.x;
-  const cameraDz = after.camera.z - before.camera.z;
-  return Math.hypot(cameraDx - stormDx, cameraDz - stormDz);
+function cameraDistance(state) {
+  if (!state?.visual || !state?.camera) return Infinity;
+  return Math.hypot(state.visual.x - state.camera.x, state.visual.z - state.camera.z);
+}
+
+function cameraDistanceDrift(before, after) {
+  return Math.abs(cameraDistance(after) - cameraDistance(before));
+}
+
+function wrappedAngleDelta(before, after) {
+  if (!Number.isFinite(before) || !Number.isFinite(after)) return Infinity;
+  let delta = (after - before + Math.PI) % (Math.PI * 2);
+  if (delta < 0) delta += Math.PI * 2;
+  return Math.abs(delta - Math.PI);
 }
 
 async function readMotionState() {
@@ -64,6 +71,11 @@ async function readMotionState() {
       camera: {
         x: numberOrNull(data.swPlaycanvasCameraX),
         z: numberOrNull(data.swPlaycanvasCameraZ),
+        heading: numberOrNull(data.swPlaycanvasCameraHeading),
+        desiredHeading: numberOrNull(data.swPlaycanvasCameraDesiredHeading),
+        headingError: numberOrNull(data.swPlaycanvasCameraHeadingError),
+        travelSpeed: numberOrNull(data.swPlaycanvasCameraTravelSpeed),
+        turning: data.swPlaycanvasCameraTurning === 'true',
       },
       input: {
         screenX: numberOrNull(data.swPlaycanvasScreenInputX),
@@ -79,7 +91,7 @@ let report;
 try {
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90_000 });
   await page.waitForFunction(() => document.documentElement.dataset.swPlaycanvasSliceReady === 'true', null, { timeout: 90_000 });
-  await page.waitForFunction(() => Boolean(document.documentElement.dataset.swPlaycanvasCameraX), null, { timeout: 10_000 });
+  await page.waitForFunction(() => Boolean(document.documentElement.dataset.swPlaycanvasCameraHeading), null, { timeout: 10_000 });
 
   const initial = await page.evaluate(() => {
     const canvas = document.querySelector('#app > canvas');
@@ -95,6 +107,8 @@ try {
 
   // ------------------------------------------------------------------------
   // Visible-input proof. This deliberately drives the actual UI controls.
+  // Forward input should not rotate the camera materially. A sustained right
+  // input should bend the storm path while the camera gradually chases behind.
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
   await page.waitForTimeout(120);
@@ -122,8 +136,10 @@ try {
 
   const joystickForwardProjection = projectedMotion(beforeJoystickUp, afterJoystickUp, 'forward');
   const keyboardRightProjection = projectedMotion(beforeKeyboardRight, afterKeyboardRight, 'right');
-  const joystickFollowError = followError(beforeJoystickUp, afterJoystickUp);
-  const keyboardFollowError = followError(beforeKeyboardRight, afterKeyboardRight);
+  const joystickHeadingDelta = wrappedAngleDelta(beforeJoystickUp.camera?.heading, afterJoystickUp.camera?.heading);
+  const keyboardHeadingDelta = wrappedAngleDelta(beforeKeyboardRight.camera?.heading, afterKeyboardRight.camera?.heading);
+  const joystickDistanceDrift = cameraDistanceDrift(beforeJoystickUp, afterJoystickUp);
+  const keyboardDistanceDrift = cameraDistanceDrift(beforeKeyboardRight, afterKeyboardRight);
 
   // ------------------------------------------------------------------------
   // Executor proof. Reset, then use authority motion only as deterministic
@@ -194,6 +210,7 @@ try {
       revisionValue: document.documentElement.dataset.swPlaycanvasEngineRevision ?? null,
       authorityValue: document.documentElement.dataset.swPlaycanvasGameplayAuthority ?? null,
       cameraValue: document.documentElement.dataset.swPlaycanvasCameraX ?? null,
+      cameraHeadingValue: document.documentElement.dataset.swPlaycanvasCameraHeading ?? null,
       inputValue: document.documentElement.dataset.swPlaycanvasAuthorityInputX ?? null,
     };
   });
@@ -219,8 +236,10 @@ try {
     { name: 'warning-run-active', passed: playStart?.run?.runActive === true && (playStart?.run?.remainingSeconds ?? 0) > 170, detail: JSON.stringify(playStart?.run) },
     { name: 'joystick-up-moves-screen-forward', passed: joystickForwardProjection > 0.35, detail: JSON.stringify({ beforeJoystickUp, afterJoystickUp, joystickForwardProjection }) },
     { name: 'keyboard-right-moves-screen-right', passed: keyboardRightProjection > 0.35, detail: JSON.stringify({ beforeKeyboardRight, afterKeyboardRight, keyboardRightProjection }) },
-    { name: 'camera-follows-joystick-motion', passed: joystickFollowError < 0.08, detail: JSON.stringify({ joystickFollowError, beforeJoystickUp, afterJoystickUp }) },
-    { name: 'camera-follows-keyboard-motion', passed: keyboardFollowError < 0.08, detail: JSON.stringify({ keyboardFollowError, beforeKeyboardRight, afterKeyboardRight }) },
+    { name: 'camera-stays-stable-on-forward-input', passed: joystickHeadingDelta < 0.18, detail: JSON.stringify({ joystickHeadingDelta, beforeJoystickUp, afterJoystickUp }) },
+    { name: 'camera-turns-gradually-behind-keyboard-motion', passed: keyboardHeadingDelta > 0.25 && keyboardHeadingDelta < 0.85, detail: JSON.stringify({ keyboardHeadingDelta, beforeKeyboardRight, afterKeyboardRight }) },
+    { name: 'camera-distance-stable-joystick', passed: joystickDistanceDrift < 0.08, detail: JSON.stringify({ joystickDistanceDrift, beforeJoystickUp, afterJoystickUp }) },
+    { name: 'camera-distance-stable-keyboard', passed: keyboardDistanceDrift < 0.08, detail: JSON.stringify({ keyboardDistanceDrift, beforeKeyboardRight, afterKeyboardRight }) },
     { name: 'authority-setup-moves-real-storm', passed: movementDistance > 1, detail: JSON.stringify({ initialStorm, after: afterMovement?.storm, movementDistance }) },
     { name: 'authority-setup-approaches-live-target', passed: initialDistance !== null && afterMovementDistance !== null && afterMovementDistance < initialDistance, detail: JSON.stringify({ initialDistance, afterMovementDistance }) },
     { name: 'gust-executor-accepted', passed: abilityResults?.secondary === true, detail: JSON.stringify(abilityResults) },
@@ -244,7 +263,7 @@ try {
     { name: 'dispose-version-cleared', passed: disposal.versionValue === null, detail: JSON.stringify(disposal) },
     { name: 'dispose-revision-cleared', passed: disposal.revisionValue === null, detail: JSON.stringify(disposal) },
     { name: 'dispose-authority-telemetry-cleared', passed: disposal.authorityValue === null, detail: JSON.stringify(disposal) },
-    { name: 'dispose-camera-telemetry-cleared', passed: disposal.cameraValue === null, detail: JSON.stringify(disposal) },
+    { name: 'dispose-camera-telemetry-cleared', passed: disposal.cameraValue === null && disposal.cameraHeadingValue === null, detail: JSON.stringify(disposal) },
     { name: 'dispose-input-telemetry-cleared', passed: disposal.inputValue === null, detail: JSON.stringify(disposal) },
     { name: 'no-console-errors', passed: consoleErrors.length === 0, detail: JSON.stringify(consoleErrors) },
     { name: 'no-page-errors', passed: pageErrors.length === 0, detail: JSON.stringify(pageErrors) },
@@ -264,11 +283,13 @@ try {
         beforeJoystickUp,
         afterJoystickUp,
         joystickForwardProjection,
-        joystickFollowError,
+        joystickHeadingDelta,
+        joystickDistanceDrift,
         beforeKeyboardRight,
         afterKeyboardRight,
         keyboardRightProjection,
-        keyboardFollowError,
+        keyboardHeadingDelta,
+        keyboardDistanceDrift,
       },
       playStart,
       afterMovement,
