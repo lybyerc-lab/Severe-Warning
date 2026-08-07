@@ -28,7 +28,9 @@ export interface ChaseCameraPose {
 }
 
 const TWO_PI = Math.PI * 2;
-const MAX_FRAME_SECONDS = 0.05;
+// Keep chase rotation approximately time-correct through ordinary frame drops,
+// but cap a single step so returning from a long stall cannot whip the camera.
+const MAX_CAMERA_STEP_SECONDS = 0.12;
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -100,7 +102,7 @@ export class OneStickChaseCamera {
   }
 
   update(stormX: number, stormZ: number, deltaSeconds: number): ChaseCameraPose {
-    const safeDelta = clamp(deltaSeconds, 0, MAX_FRAME_SECONDS);
+    const safeDelta = clamp(deltaSeconds, 0, MAX_CAMERA_STEP_SECONDS);
     const travelX = stormX - this.lastStormX;
     const travelZ = stormZ - this.lastStormZ;
     const travelDistance = Math.hypot(travelX, travelZ);
