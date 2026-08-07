@@ -42,21 +42,16 @@ check('authority-readonly-storm-telemetry', contents.authorityBridge.includes('x
 check('authority-bundle-injected', contents.authorityPrep.includes('playcanvas-authority-bridge.js') && contents.workflow.includes('prepare-playcanvas-authority.mjs'), 'same-origin authority bridge is packaged intentionally');
 check('authority-client-same-origin', contents.authorityClient.includes("authority/index.html?playcanvasAuthority=1"), 'PlayCanvas page loads bundled same-origin authority');
 check('visible-presentation-authority-separation', contents.entry.includes('PlayCanvasAuthorityClient') && contents.entry.includes('gameplayAuthority: \'PLAYCANVAS_AUTHORITY_V1\''), 'visible renderer declares legacy gameplay authority explicitly');
-check('keyboard-routed', contents.entry.includes('authority.setKeyboard(event.code, event.key, true)'), 'keyboard movement routes to accepted input authority');
-check('touch-joystick-routed', contents.entry.includes('authority.setJoystick(visualX / maxRadius, visualY / maxRadius, true)'), 'touch joystick routes to accepted input authority');
+check('camera-relative-input-contract', contents.entry.includes('cameraRelativeAuthorityInput') && contents.entry.includes('unmapDirection'), 'screen-space movement is transformed back into accepted authority world axes');
+check('keyboard-camera-relative', contents.entry.includes("pressed.has('KeyW')") && contents.entry.includes('applyDirectionalInput()') && contents.entry.includes('authority.setJoystick(authorityVector.x, authorityVector.z, active)'), 'keyboard is interpreted as screen-space movement and sent through accepted movement authority');
+check('touch-camera-relative', contents.entry.includes('touchVector = Object.freeze') && contents.entry.includes('applyDirectionalInput()'), 'touch stick uses the same camera-relative movement path');
+check('storm-follow-camera', contents.scene.includes('[SW:PLAYCANVAS:STORM_FOLLOW_CAMERA]') && contents.entry.includes('FOLLOW_CAMERA_OFFSET_X') && contents.entry.includes('scene.camera.setPosition(cameraX, FOLLOW_CAMERA_HEIGHT, cameraZ)') && contents.entry.includes('scene.camera.lookAt(renderTornado.x, FOLLOW_CAMERA_LOOK_Y, renderTornado.z)'), 'camera translates with and continuously targets the rendered tornado');
 check('ability-buttons-present', ['primary', 'secondary', 'tertiary'].every((slot) => contents.html.includes(`data-ability="${slot}"`)), 'Pull/Gust/Zap controls are present');
 check('scoring-hud-present', contents.html.includes('hud-score') && contents.html.includes('hud-combo') && contents.html.includes('hud-time'), 'time, score, and combo HUD is present');
 check('destruction-visual-driven-by-authority', contents.entry.includes('applyBarnVisual(scene, snapshot)') && contents.scene.includes('mooBrew'), 'visible destruction stage follows authority snapshot');
 check('cow-safe-telemetry', contents.authorityBridge.includes('safe: true') && contents.entry.includes('Cow 17 SAFE'), 'Cow 17 remains explicitly safe in playable slice');
 check('vehicle-present', contents.scene.includes('addVehicle'), 'bounded scene includes a vehicle');
 check('electrical-target-present', contents.scene.includes('addElectricalTarget'), 'bounded scene includes an electrical target');
-check(
-  'screen-input-camera-aligned',
-  contents.scene.includes('[SW:PLAYCANVAS:CAMERA_ALIGNED_INPUT]')
-    && contents.scene.includes('camera.setPosition(0, 31, 44)')
-    && contents.scene.includes('camera.lookAt(0, 3.2, 0)'),
-  'fixed PlayCanvas camera projects +X to screen-right and -Z to screen-up',
-);
 check(
   'tornado-funnel-upright',
   contents.scene.includes('[SW:PLAYCANVAS:FUNNEL_ORIENTATION]')
@@ -68,6 +63,7 @@ check(
 );
 check('browser-version-export-check', contents.browserQa.includes('engine-version-exported'), 'browser QA asserts exported engine version');
 check('browser-revision-export-check', contents.browserQa.includes('engine-revision-exported'), 'browser QA asserts exported engine revision');
+check('browser-visible-control-check', contents.browserQa.includes('joystick-up-moves-screen-forward') && contents.browserQa.includes('keyboard-right-moves-screen-right'), 'browser QA exercises visible movement directions');
 check('separate-output', contents.vite.includes("outDir: '../playcanvas-slice-dist'"), 'slice cannot overwrite accepted build output');
 check('qa-data-contract', contents.entry.includes('swPlaycanvasSliceReady'), 'browser QA readiness is observable');
 check('dispose-contract', contents.entry.includes('app.destroy()') && contents.entry.includes('__SW_PLAYCANVAS_SLICE__ = undefined') && contents.entry.includes('authority.dispose()'), 'renderer and authority-frame cleanup are explicit');
