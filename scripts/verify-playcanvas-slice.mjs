@@ -50,6 +50,22 @@ check('destruction-visual-driven-by-authority', contents.entry.includes('applyBa
 check('cow-safe-telemetry', contents.authorityBridge.includes('safe: true') && contents.entry.includes('Cow 17 SAFE'), 'Cow 17 remains explicitly safe in playable slice');
 check('vehicle-present', contents.scene.includes('addVehicle'), 'bounded scene includes a vehicle');
 check('electrical-target-present', contents.scene.includes('addElectricalTarget'), 'bounded scene includes an electrical target');
+check(
+  'screen-input-camera-aligned',
+  contents.scene.includes('[SW:PLAYCANVAS:CAMERA_ALIGNED_INPUT]')
+    && contents.scene.includes('camera.setPosition(0, 31, 44)')
+    && contents.scene.includes('camera.lookAt(0, 3.2, 0)'),
+  'fixed PlayCanvas camera projects +X to screen-right and -Z to screen-up',
+);
+check(
+  'tornado-funnel-upright',
+  contents.scene.includes('[SW:PLAYCANVAS:FUNNEL_ORIENTATION]')
+    && contents.scene.includes('[1.3, 4.5, 1.3]')
+    && contents.scene.includes('[5.8, 2.4, 5.8]')
+    && contents.scene.indexOf('[1.3, 4.5, 1.3]') < contents.scene.indexOf('[5.8, 2.4, 5.8]')
+    && contents.scene.includes('rotation: [180, 0, 0]'),
+  'funnel is narrow at ground contact, broad aloft, and cone points face downward',
+);
 check('browser-version-export-check', contents.browserQa.includes('engine-version-exported'), 'browser QA asserts exported engine version');
 check('browser-revision-export-check', contents.browserQa.includes('engine-revision-exported'), 'browser QA asserts exported engine revision');
 check('separate-output', contents.vite.includes("outDir: '../playcanvas-slice-dist'"), 'slice cannot overwrite accepted build output');
