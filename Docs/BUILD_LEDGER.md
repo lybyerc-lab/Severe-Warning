@@ -2,6 +2,82 @@
 
 This ledger records meaningful build and QA outcomes. CI success and physical acceptance are separate states.
 
+## PlayCanvas storm physics parity
+
+### Run 53 first live storm-physics candidate
+
+- Exact source: `8d070e21cfe7720353ec842a02f1179bc33e9181`
+- Workflow run: `31219969904` / PlayCanvas Run 53
+- Artifact: `severe-weather-playcanvas-slice-53`
+- Artifact SHA-256: `fd7e084e49d4cd4760351dc355f8f28fcdd185f4fc6765c1f33b245ef2e8c85c`
+- Static contracts: `69/69` passed
+- Browser QA: `61/61` passed
+- Pages deployment: Run 72 / `31220379275` passed
+- Owner browser result: partial acceptance
+- Accepted behavior: tree bend described by owner as “great”; preserve this response during follow-up
+- Rejected behavior: camera could become stuck orbiting; Cow 17 could remain orbiting
+- Android PlayCanvas APK: not built
+- Classification: browser-QA passed and publicly deployed; owner found rotation defects; not physically Android accepted; not merged
+
+### Run 58 rotation diagnostic
+
+- Exact source: `4e15c760815e19cedf067cee56ccd1c22a941db5`
+- Workflow run: `31221725089` / PlayCanvas Run 58
+- Inherited storm-physics browser suite: passed
+- New rotation-stability suite: failed, correctly blocking promotion
+- Tree Pull peak tilt remained `0.4218329627222749 rad`
+- Tree Gust peak tilt remained `0.3673336055836977 rad`
+- Held desired camera target drift: `0`
+- Release camera heading drift: about `0.9237 rad`
+- Cow 17 remained airborne beyond `6.3 s`
+- Cow 17 reached altitude `20`
+- Root cause refinement: residual motion retargeted the camera after stick release; capped simulation time was insufficient to bound Cow 17’s flight in wall-clock terms
+- Classification: useful failed diagnostic gate; no promotion; accepted tree physics preserved
+
+### Run 62 rotation-stable storm-physics candidate
+
+- Exact promoted source: `f5f01678595bf857840759604f362c93f62598e8`
+- Workflow run: `31222412094` / PlayCanvas Run 62
+- Artifact: `severe-weather-playcanvas-slice-62`
+- Artifact ID: `9010957717`
+- GitHub artifact digest: `sha256:4e59ba01045869b4a752d2dc8071aac361b4513a214e5d6d664296ddac0b37e0`
+- Downloaded ZIP SHA-256 matched GitHub exactly
+- Strict TypeScript: passed
+- Static contracts: `69/69` passed
+- Inherited storm-physics browser QA: `61/61` passed
+- Rotation-stability QA: `11/11` passed
+- Evidence contract: passed
+- Console errors: 0
+- Page errors: 0
+- Camera held desired-target drift: `0`
+- Camera bounded turn: `1.3962 rad`
+- Camera headless low-frame-rate settle measurement: `4673 ms`
+- Camera release heading drift: `0`
+- Camera release desired-target drift: `0`
+- Cow 17 orbit lock: observed
+- Cow 17 landing time: `3050 ms`
+- Cow 17 landed altitude: `0.8`
+- Cow 17 remained safe and grounded during the post-landing hold
+- Pull peak tree tilt: `0.4218329627222749 rad`, numerically identical to Run 53
+- Gust peak tree tilt: `0.3673336055836977 rad`, numerically identical to Run 53
+- Pull max inward light-prop displacement: `5.374028004530404`
+- Pull max tangential/orbit displacement: `1.340381940964075`
+- Gust max outward light-prop displacement: `5.042881747270892`
+- Classification: committed and automated-browser-QA passed; owner retest pending; no Android physical acceptance; PR #35 remains draft/unmerged
+
+### QA Pages Run 73 rotation-stable promotion
+
+- QA commit: `723d50a034a5643db60f38afba8997212d5a45c6`
+- Workflow run: `31222935770` / Pages Run 73
+- Legacy QA root rebuild: passed
+- Deterministic QA4: passed
+- Exact Run 62 artifact download/re-verification: passed
+- Pages deployment: passed
+- Live root verification: passed
+- Live PlayCanvas source/metadata verification: passed
+- Live path: `https://lybyerc-lab.github.io/Severe-Warning/playcanvas/`
+- Classification: publicly deployed exact browser-QA artifact; owner browser retest pending; no Android physical acceptance
+
 ## v5.0.0 Heartland Campaign Foundation
 
 ### Signed QA-5 continuity acceptance
@@ -68,7 +144,7 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 ### V5 automated full-round run #3
 
 - Exact commit: `5fa7b1babf3603c1d6a28feae9e18467e6125041`
-- Workflow run: `30827107150`
+- Workflow run: `30827107150` / run #3
 - Result: failed before gameplay
 - Failed step: `Install Playwright browser harness`
 - Historical finding: runs #1 and #2 failed in the same workflow, so this is inherited QA infrastructure rather than a V5 gameplay regression
