@@ -442,8 +442,8 @@ export function populatePrairieJunctionScene(
       mass: 0.8,
       groundY: 0.45,
       activationStage,
-      activationOffset: [0, 0.35, 0],
-      activationRotation: [8, 18, 12],
+      activationOffset: [0, 0.35, 0] as const,
+      activationRotation: [8, 18, 12] as const,
       parts: Object.freeze([Object.freeze({ entity, offset: [0, 0, 0] as const })]),
     }));
   }
@@ -457,8 +457,8 @@ export function populatePrairieJunctionScene(
     mass: 5.0,
     groundY: 0.45,
     activationStage: 3,
-    activationOffset: [-2.7, 1.65, 2.5],
-    activationRotation: [13, 20, 48],
+    activationOffset: [-2.7, 1.65, 2.5] as const,
+    activationRotation: [13, 20, 48] as const,
     parts: Object.freeze([Object.freeze({ entity: mooBrew.roof, offset: [0, 0, 0] as const })]),
   }));
 
