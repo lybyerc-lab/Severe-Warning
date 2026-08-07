@@ -19,6 +19,16 @@ const distanceToBarn = (snapshot) => snapshot?.barn
   ? Math.hypot(snapshot.storm.x - snapshot.barn.x, snapshot.storm.z - snapshot.barn.z)
   : null;
 
+function movementKeysTowardTarget(snapshot) {
+  if (!snapshot?.barn || !snapshot?.storm) return [];
+  const dx = snapshot.barn.x - snapshot.storm.x;
+  const dz = snapshot.barn.z - snapshot.storm.z;
+  const keys = [];
+  if (Math.abs(dx) > 0.25) keys.push(dx > 0 ? 'd' : 'a');
+  if (Math.abs(dz) > 0.25) keys.push(dz > 0 ? 's' : 'w');
+  return keys;
+}
+
 let report;
 try {
   await page.goto(url, { waitUntil: 'networkidle', timeout: 90_000 });
@@ -39,12 +49,11 @@ try {
   const initialStorm = initial.authority?.storm ?? null;
   const initialBarnHealth = initial.authority?.barn?.health ?? null;
   const initialDistance = distanceToBarn(initial.authority);
+  const movementKeys = movementKeysTowardTarget(initial.authority);
 
-  await page.keyboard.down('a');
-  await page.keyboard.down('s');
+  for (const key of movementKeys) await page.keyboard.down(key);
   await page.waitForTimeout(900);
-  await page.keyboard.up('s');
-  await page.keyboard.up('a');
+  for (const key of [...movementKeys].reverse()) await page.keyboard.up(key);
   await page.waitForTimeout(150);
 
   const afterMovement = await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.getAuthoritySnapshot() ?? null);
@@ -110,8 +119,9 @@ try {
     { name: 'gameplay-authority-connected', passed: initial.telemetry?.gameplayAuthority === 'PLAYCANVAS_AUTHORITY_V1' && initial.authority?.version === 'PLAYCANVAS_AUTHORITY_V1' && initial.authority?.ready === true, detail: JSON.stringify(initial.authority) },
     { name: 'authority-frame-present', passed: initial.authorityFramePresent === true, detail: JSON.stringify(initial.authorityFramePresent) },
     { name: 'warning-run-active', passed: initial.authority?.run?.runActive === true && (initial.authority?.run?.remainingSeconds ?? 0) > 170, detail: JSON.stringify(initial.authority?.run) },
-    { name: 'keyboard-moves-real-storm', passed: movementDistance > 1, detail: JSON.stringify({ initialStorm, after: afterMovement?.storm, movementDistance }) },
-    { name: 'movement-approaches-live-target', passed: initialDistance !== null && afterMovementDistance !== null && afterMovementDistance < initialDistance, detail: JSON.stringify({ initialDistance, afterMovementDistance }) },
+    { name: 'movement-plan-resolved', passed: movementKeys.length > 0, detail: JSON.stringify({ movementKeys, initialStorm, barn: initial.authority?.barn }) },
+    { name: 'keyboard-moves-real-storm', passed: movementDistance > 1, detail: JSON.stringify({ movementKeys, initialStorm, after: afterMovement?.storm, movementDistance }) },
+    { name: 'movement-approaches-live-target', passed: initialDistance !== null && afterMovementDistance !== null && afterMovementDistance < initialDistance, detail: JSON.stringify({ movementKeys, initialDistance, afterMovementDistance }) },
     { name: 'gust-executor-accepted', passed: abilityResults?.secondary === true, detail: JSON.stringify(abilityResults) },
     { name: 'pull-executor-accepted', passed: abilityResults?.primary === true, detail: JSON.stringify(abilityResults) },
     { name: 'zap-executor-accepted', passed: abilityResults?.tertiary === true, detail: JSON.stringify(abilityResults) },
@@ -145,7 +155,7 @@ try {
     failedChecks: failed.map((item) => item.name),
     consoleErrors,
     pageErrors,
-    evidence: { initial, afterMovement, abilityResults, afterAbilities, reset },
+    evidence: { initial, movementKeys, afterMovement, abilityResults, afterAbilities, reset },
     disposal,
   };
 } catch (error) {
