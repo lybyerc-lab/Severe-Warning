@@ -16,6 +16,7 @@ import { populatePrairieJunctionScene } from './scene';
 interface SliceTelemetry {
   readonly renderer: 'PlayCanvas';
   readonly engineVersion: string;
+  readonly engineRevision: string;
   readonly roadClearance: number;
   readonly tornadoGroundClearance: number;
   readonly entityCount: number;
@@ -44,9 +45,19 @@ async function loadPlayCanvasEngine(): Promise<PlayCanvasModule> {
   return (await import(/* @vite-ignore */ engineUrl)) as unknown as PlayCanvasModule;
 }
 
+function assertLoadedEngineIdentity(pc: PlayCanvasModule): void {
+  if (pc.version !== PLAYCANVAS_VERSION) {
+    throw new Error(`PlayCanvas engine version mismatch. Expected ${PLAYCANVAS_VERSION}, loaded ${pc.version}.`);
+  }
+  if (typeof pc.revision !== 'string' || pc.revision.trim().length < 7 || pc.revision.includes('$_CURRENT_')) {
+    throw new Error(`PlayCanvas engine revision is missing or unresolved: ${String(pc.revision)}.`);
+  }
+}
+
 function clearTelemetry(): void {
   delete document.documentElement.dataset.swPlaycanvasSliceReady;
   delete document.documentElement.dataset.swPlaycanvasEngineVersion;
+  delete document.documentElement.dataset.swPlaycanvasEngineRevision;
   delete document.documentElement.dataset.swRoadClearance;
   delete document.documentElement.dataset.swTornadoGroundClearance;
   delete document.documentElement.dataset.swRenderer;
@@ -64,6 +75,7 @@ function animateTornado(app: PcApplication, tornadoParts: readonly import('./eng
 async function bootstrapSlice(): Promise<SliceHandle> {
   setStatus('Loading PlayCanvas renderer…', 'loading');
   const pc = await loadPlayCanvasEngine();
+  assertLoadedEngineIdentity(pc);
   const qaMode = new URLSearchParams(window.location.search).get('qa') === '1';
   const mount = document.querySelector<HTMLElement>('#app');
   if (!mount) throw new Error('PlayCanvas slice mount is missing.');
@@ -92,7 +104,8 @@ async function bootstrapSlice(): Promise<SliceHandle> {
 
   const telemetry: SliceTelemetry = Object.freeze({
     renderer: 'PlayCanvas',
-    engineVersion: PLAYCANVAS_VERSION,
+    engineVersion: pc.version,
+    engineRevision: pc.revision,
     roadClearance: ROAD_CLEARANCE,
     tornadoGroundClearance: TORNADO_GROUND_CLEARANCE,
     entityCount: scene.entities.length,
@@ -100,7 +113,8 @@ async function bootstrapSlice(): Promise<SliceHandle> {
   });
 
   document.documentElement.dataset.swPlaycanvasSliceReady = 'true';
-  document.documentElement.dataset.swPlaycanvasEngineVersion = PLAYCANVAS_VERSION;
+  document.documentElement.dataset.swPlaycanvasEngineVersion = pc.version;
+  document.documentElement.dataset.swPlaycanvasEngineRevision = pc.revision;
   document.documentElement.dataset.swRoadClearance = ROAD_CLEARANCE.toFixed(2);
   document.documentElement.dataset.swTornadoGroundClearance = TORNADO_GROUND_CLEARANCE.toFixed(2);
   document.documentElement.dataset.swRenderer = 'PlayCanvas';

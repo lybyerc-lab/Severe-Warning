@@ -51,6 +51,8 @@ export interface PcApplication {
 }
 
 export interface PlayCanvasModule {
+  readonly version: string;
+  readonly revision: string;
   readonly Application: new (
     canvas: HTMLCanvasElement,
     options?: { graphicsDeviceOptions?: Record<string, unknown> },
