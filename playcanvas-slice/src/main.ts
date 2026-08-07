@@ -19,6 +19,11 @@ import { OneStickChaseCamera } from './chase-camera';
 import type { PcEntity, PlayCanvasModule } from './engine-types';
 import type { OffsetEntity } from './geometry';
 import { populatePrairieJunctionScene, type SceneResult } from './scene';
+import {
+  StormForceField,
+  type StormForceInput,
+  type StormPhysicsTelemetry,
+} from './storm-force-field';
 
 interface SliceTelemetry {
   readonly renderer: 'PlayCanvas';
@@ -34,12 +39,14 @@ interface SliceTelemetry {
 interface SliceHandle {
   readonly telemetry: SliceTelemetry;
   getAuthoritySnapshot(): AuthoritySnapshot | null;
+  getStormPhysicsTelemetry(): StormPhysicsTelemetry;
   requestAbility(slot: AuthorityAbilitySlot, source?: 'keyboard' | 'touch' | 'qa'): boolean;
   reset(): AuthoritySnapshot;
   dispose(): void;
 }
 
 interface WorldTransform {
+  readonly scale: number;
   map(x: number, z: number): Readonly<{ x: number; z: number }>;
   unmapDirection(x: number, z: number): Readonly<{ x: number; z: number }>;
 }
@@ -81,6 +88,29 @@ const CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180;
 const CHASE_CAMERA_MOVEMENT_THRESHOLD = 0.28;
 const CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12;
 
+const PHYSICS_DATASET_KEYS = [
+  'swPlaycanvasPhysicsUpdates',
+  'swPlaycanvasPhysicsPullAccepted',
+  'swPlaycanvasPhysicsGustAccepted',
+  'swPlaycanvasPhysicsTreePull',
+  'swPlaycanvasPhysicsTreeGust',
+  'swPlaycanvasPhysicsLightPull',
+  'swPlaycanvasPhysicsLightGust',
+  'swPlaycanvasPhysicsDebrisActivations',
+  'swPlaycanvasPhysicsActive',
+  'swPlaycanvasPhysicsAirborne',
+  'swPlaycanvasPhysicsRoofAirborne',
+  'swPlaycanvasPhysicsBodies',
+  'swPlaycanvasPhysicsPeakTreeTilt',
+  'swPlaycanvasPhysicsPullInward',
+  'swPlaycanvasPhysicsPullTangential',
+  'swPlaycanvasPhysicsGustOutward',
+  'swPlaycanvasPhysicsDebrisDisplacement',
+  'swPlaycanvasPhysicsResetCount',
+  'swPlaycanvasPhysicsDisposeCount',
+  'swPlaycanvasPhysicsDisposed',
+] as const;
+
 function byId<T extends HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
 }
@@ -119,6 +149,7 @@ function clearTelemetry(): void {
   ] as const) {
     delete document.documentElement.dataset[key];
   }
+  for (const key of PHYSICS_DATASET_KEYS) delete document.documentElement.dataset[key];
 }
 
 function createWorldTransform(snapshot: AuthoritySnapshot, scene: SceneResult): WorldTransform {
@@ -127,11 +158,13 @@ function createWorldTransform(snapshot: AuthoritySnapshot, scene: SceneResult): 
   const targetStorm = scene.anchors.tornado;
   const targetBarn = scene.anchors.barnProxy;
   if (!sourceBarn) {
+    const scale = 0.5;
     return Object.freeze({
+      scale,
       map(x: number, z: number) {
         return Object.freeze({
-          x: targetStorm.x + (x - sourceStorm.x) * 0.5,
-          z: targetStorm.z + (z - sourceStorm.z) * 0.5,
+          x: targetStorm.x + (x - sourceStorm.x) * scale,
+          z: targetStorm.z + (z - sourceStorm.z) * scale,
         });
       },
       unmapDirection(x: number, z: number) {
@@ -152,6 +185,7 @@ function createWorldTransform(snapshot: AuthoritySnapshot, scene: SceneResult): 
   const sine = Math.sin(rotation);
 
   return Object.freeze({
+    scale,
     map(x: number, z: number) {
       const dx = x - sourceStorm.x;
       const dz = z - sourceStorm.z;
@@ -204,13 +238,14 @@ function setOffsetParts(parts: readonly OffsetEntity[], centerX: number, centerZ
   }
 }
 
-function applyBarnVisual(scene: SceneResult, snapshot: AuthoritySnapshot): void {
+function applyBarnVisual(scene: SceneResult, snapshot: AuthoritySnapshot, roofControlledByPhysics: boolean): void {
   const barn = snapshot.barn;
   if (!barn) return;
   const ratio = barn.maxHealth > 0 ? Math.max(0, Math.min(1, barn.health / barn.maxHealth)) : 0;
   const { walls, roof, center } = scene.mooBrew;
   walls.setPosition(center.x, Math.max(1.8, center.height * (0.33 + ratio * 0.17)), center.z);
   walls.setLocalScale(10, Math.max(3.6, 6 * (0.6 + ratio * 0.4)), 8);
+  if (roofControlledByPhysics) return;
 
   if (barn.destroyed) {
     roof.setPosition(center.x - 5.4, 1.1, center.z + 5.2);
@@ -405,6 +440,47 @@ function rotateTornado(parts: readonly PcEntity[], deltaSeconds: number): void {
   });
 }
 
+function stormForceInput(
+  snapshot: AuthoritySnapshot,
+  transform: WorldTransform,
+  visibleCenter?: Readonly<{ x: number; z: number }>,
+): StormForceInput {
+  const mapped = visibleCenter ?? transform.map(snapshot.storm.x, snapshot.storm.z);
+  return Object.freeze({
+    x: mapped.x,
+    z: mapped.z,
+    radius: Math.max(0.5, Math.abs(snapshot.storm.radius * transform.scale)),
+    efMultiplier: Math.max(1, snapshot.storm.efMultiplier),
+    barnStage: snapshot.barn?.stage ?? 0,
+    barnRoofDetached: snapshot.barn?.roofDetached ?? false,
+    barnDestroyed: snapshot.barn?.destroyed ?? false,
+  });
+}
+
+function publishStormPhysicsTelemetry(telemetry: StormPhysicsTelemetry): void {
+  const data = document.documentElement.dataset;
+  data.swPlaycanvasPhysicsUpdates = String(telemetry.updateCount);
+  data.swPlaycanvasPhysicsPullAccepted = String(telemetry.acceptedPullCount);
+  data.swPlaycanvasPhysicsGustAccepted = String(telemetry.acceptedGustCount);
+  data.swPlaycanvasPhysicsTreePull = String(telemetry.treePullReactionCount);
+  data.swPlaycanvasPhysicsTreeGust = String(telemetry.treeGustReactionCount);
+  data.swPlaycanvasPhysicsLightPull = String(telemetry.lightPullReactionCount);
+  data.swPlaycanvasPhysicsLightGust = String(telemetry.lightGustReactionCount);
+  data.swPlaycanvasPhysicsDebrisActivations = String(telemetry.debrisActivationCount);
+  data.swPlaycanvasPhysicsActive = String(telemetry.activeBodyCount);
+  data.swPlaycanvasPhysicsAirborne = String(telemetry.airborneBodyCount);
+  data.swPlaycanvasPhysicsRoofAirborne = String(telemetry.roofAirborne);
+  data.swPlaycanvasPhysicsBodies = String(telemetry.maxRegisteredBodyCount);
+  data.swPlaycanvasPhysicsPeakTreeTilt = telemetry.peakTreeTiltRadians.toFixed(4);
+  data.swPlaycanvasPhysicsPullInward = telemetry.maxPullInwardDelta.toFixed(3);
+  data.swPlaycanvasPhysicsPullTangential = telemetry.maxPullTangentialDelta.toFixed(3);
+  data.swPlaycanvasPhysicsGustOutward = telemetry.maxGustOutwardDelta.toFixed(3);
+  data.swPlaycanvasPhysicsDebrisDisplacement = telemetry.maxDebrisDisplacement.toFixed(3);
+  data.swPlaycanvasPhysicsResetCount = String(telemetry.resetCount);
+  data.swPlaycanvasPhysicsDisposeCount = String(telemetry.disposeCount);
+  data.swPlaycanvasPhysicsDisposed = String(telemetry.disposed);
+}
+
 async function bootstrapSlice(): Promise<SliceHandle> {
   setStatus('Loading PlayCanvas renderer…', 'loading');
   const pc = await loadPlayCanvasEngine();
@@ -450,12 +526,14 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     initialForwardX: -INITIAL_CAMERA_OFFSET_X / CHASE_CAMERA_DISTANCE,
     initialForwardZ: -INITIAL_CAMERA_OFFSET_Z / CHASE_CAMERA_DISTANCE,
   }), renderTornado.x, renderTornado.z);
+  const stormPhysics = new StormForceField(scene.stormPhysicsBodies);
 
   const syncSnapshot = (snapshot: AuthoritySnapshot): void => {
     latestSnapshot = snapshot;
     targetTornado = transform.map(snapshot.storm.x, snapshot.storm.z);
     updateHud(snapshot);
-    applyBarnVisual(scene, snapshot);
+    stormPhysics.syncBarnState(stormForceInput(snapshot, transform));
+    applyBarnVisual(scene, snapshot, stormPhysics.isRoofControlled());
     if (snapshot.cow17) {
       const cow = transform.map(snapshot.cow17.x, snapshot.cow17.z);
       setOffsetParts(scene.cow17Parts, cow.x, cow.z);
@@ -470,8 +548,12 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     document.documentElement.dataset.swPlaycanvasStormX = snapshot.storm.x.toFixed(3);
     document.documentElement.dataset.swPlaycanvasStormZ = snapshot.storm.z.toFixed(3);
     document.documentElement.dataset.swPlaycanvasBarnHealth = snapshot.barn ? snapshot.barn.health.toFixed(2) : 'none';
+    publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
   };
 
+  // [SW:PLAYCANVAS:STORM_FORCE_EXECUTOR_INTEGRATION]
+  // Presentation reaction is downstream of the accepted ability result. A
+  // rejected/cooldown request never enters the PlayCanvas storm force field.
   const requestAbility = (slot: AuthorityAbilitySlot, source: 'keyboard' | 'touch' | 'qa' = 'keyboard'): boolean => {
     const result = authority.requestAbility(slot, source);
     flashAbility(slot, result.accepted);
@@ -481,12 +563,18 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount = String(acceptedAbilities);
     const target = byId<HTMLElement>('hud-target');
     if (target) target.textContent = `${ABILITY_LABELS[slot]} ${result.accepted ? 'FIRED' : String(result.reason).toUpperCase()}`;
-    syncSnapshot(authority.snapshot());
+    const snapshot = authority.snapshot();
+    syncSnapshot(snapshot);
+    if (result.accepted) {
+      stormPhysics.triggerAbility(slot, stormForceInput(snapshot, transform, renderTornado));
+      publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
+    }
     return result.accepted;
   };
 
   const reset = (): AuthoritySnapshot => {
     acceptedAbilities = 0;
+    stormPhysics.reset();
     const snapshot = authority.reset();
     document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount = '0';
     delete document.documentElement.dataset.swPlaycanvasLastAbility;
@@ -494,6 +582,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     syncSnapshot(snapshot);
     renderTornado = { ...targetTornado };
     chaseCamera.reset(renderTornado.x, renderTornado.z);
+    publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
     return snapshot;
   };
 
@@ -512,6 +601,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
       part.setPosition(renderTornado.x, scene.tornadoPartY[index] ?? scene.tornadoPartY[0] ?? 1, renderTornado.z);
     });
 
+    stormPhysics.update(stormForceInput(latestSnapshot, transform, renderTornado), deltaSeconds);
     const cameraPose = chaseCamera.update(renderTornado.x, renderTornado.z, deltaSeconds);
     scene.camera.setPosition(cameraPose.cameraX, CHASE_CAMERA_HEIGHT, cameraPose.cameraZ);
     scene.camera.lookAt(renderTornado.x, CHASE_CAMERA_LOOK_Y, renderTornado.z);
@@ -529,6 +619,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     document.documentElement.dataset.swPlaycanvasCameraTravelSpeed = cameraPose.travelSpeed.toFixed(3);
     document.documentElement.dataset.swPlaycanvasCameraTurning = String(cameraPose.turning);
     document.documentElement.dataset.swPlaycanvasCameraInputActive = String(cameraPose.inputActive);
+    publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
 
     const now = performance.now();
     if (now - lastAuthorityPoll >= 50) {
@@ -556,18 +647,23 @@ async function bootstrapSlice(): Promise<SliceHandle> {
   document.documentElement.dataset.swTornadoGroundClearance = TORNADO_GROUND_CLEARANCE.toFixed(2);
   document.documentElement.dataset.swRenderer = 'PlayCanvas';
   document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount = '0';
-  setStatus('PLAYABLE • one-stick chase camera', 'ready');
+  publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
+  setStatus('PLAYABLE • chase camera • storm physics parity', 'ready');
 
   return Object.freeze({
     telemetry,
     getAuthoritySnapshot(): AuthoritySnapshot | null {
       return authority.connected ? authority.snapshot() : null;
     },
+    getStormPhysicsTelemetry(): StormPhysicsTelemetry {
+      return stormPhysics.getTelemetry();
+    },
     requestAbility,
     reset,
     dispose(): void {
       controls.dispose();
       window.removeEventListener('resize', resize);
+      stormPhysics.dispose();
       authority.dispose();
       app.destroy();
       canvas.remove();
