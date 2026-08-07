@@ -18,7 +18,7 @@ permissions:
 jobs:
   verify-playcanvas-slice:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout exact source
@@ -50,6 +50,14 @@ jobs:
           PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55aeef4de6a8adb4
         run: node scripts/fetch-playcanvas-engine.mjs
 
+      - name: Build accepted gameplay authority
+        run: |
+          pnpm run modern:build
+          SEVERE_WEATHER_WWW_DIR=playcanvas-slice/public/authority node scripts/build-web.mjs
+          node scripts/prepare-playcanvas-authority.mjs
+          test -s playcanvas-slice/public/authority/index.html
+          grep -q 'playcanvas-authority-bridge.js' playcanvas-slice/public/authority/index.html
+
       - name: Type-check isolated slice
         run: pnpm exec tsc -p tsconfig.playcanvas.json --noEmit
 
@@ -59,6 +67,12 @@ jobs:
       - name: Build isolated preview
         run: pnpm exec vite build --config vite.playcanvas.config.ts
 
+      - name: Verify packaged gameplay authority
+        run: |
+          test -s playcanvas-slice-dist/authority/index.html
+          test -s playcanvas-slice-dist/authority/runtime/playcanvas-authority-bridge.js
+          grep -q 'playcanvas-authority-bridge.js' playcanvas-slice-dist/authority/index.html
+
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
@@ -66,7 +80,7 @@ jobs:
         run: |
           pnpm exec vite preview --config vite.playcanvas.config.ts --host 127.0.0.1 --port 4175 > playcanvas-slice-server.log 2>&1 &
           echo $! > playcanvas-slice-server.pid
-          for attempt in $(seq 1 30); do
+          for attempt in $(seq 1 45); do
             if curl --fail --silent http://127.0.0.1:4175/ >/dev/null; then
               exit 0
             fi
