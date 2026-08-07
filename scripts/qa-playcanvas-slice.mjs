@@ -45,9 +45,9 @@ function visualStormDistance(before, after) {
   return Math.hypot(after.visual.x - before.visual.x, after.visual.z - before.visual.z);
 }
 
-function authorityStormDistance(before, after) {
-  const beforeStorm = before?.authority?.storm;
-  const afterStorm = after?.authority?.storm;
+function renderConsumedAuthorityDistance(before, after) {
+  const beforeStorm = before?.renderConsumedAuthority;
+  const afterStorm = after?.renderConsumedAuthority;
   if (!beforeStorm || !afterStorm) return 0;
   return Math.hypot(afterStorm.x - beforeStorm.x, afterStorm.z - beforeStorm.z);
 }
@@ -68,6 +68,21 @@ function wrappedAngleDelta(before, after) {
   return Math.abs(delta - Math.PI);
 }
 
+async function waitForRenderSettle(frameCount = 18) {
+  await page.evaluate((count) => new Promise((resolve) => {
+    let remaining = count;
+    const step = () => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }), frameCount);
+}
+
 async function readMotionState() {
   return page.evaluate(() => {
     const data = document.documentElement.dataset;
@@ -81,6 +96,15 @@ async function readMotionState() {
       visual: {
         x: numberOrNull(data.swPlaycanvasVisualStormX),
         z: numberOrNull(data.swPlaycanvasVisualStormZ),
+      },
+      // [SW:PLAYCANVAS:RENDER_CONSUMED_AUTHORITY_TELEMETRY]
+      // These values are written by syncSnapshot at the same moment it updates
+      // targetTornado from that authority snapshot. They therefore represent
+      // the authoritative state consumed by the visible render path, unlike a
+      // fresh getAuthoritySnapshot() call that may already be one poll ahead.
+      renderConsumedAuthority: {
+        x: numberOrNull(data.swPlaycanvasStormX),
+        z: numberOrNull(data.swPlaycanvasStormZ),
       },
       camera: {
         x: numberOrNull(data.swPlaycanvasCameraX),
@@ -128,7 +152,7 @@ try {
   // input should bend the storm path while the camera gradually chases behind.
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(8);
   const beforeJoystickUp = await readMotionState();
   const joystickBox = await page.locator('#joystick').boundingBox();
   if (!joystickBox) throw new Error('Visible joystick bounding box is unavailable.');
@@ -139,18 +163,18 @@ try {
   await page.mouse.move(centerX, centerY - joystickBox.height * 0.27, { steps: 4 });
   await page.waitForTimeout(420);
   await page.mouse.up();
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(18);
   const afterJoystickUp = await readMotionState();
 
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(8);
   const beforeKeyboardRight = await readMotionState();
   await page.keyboard.down('d');
   await page.waitForTimeout(420);
   // Capture 2: Sweeping-turn screenshot showing chase camera orientation
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-turn.png`, fullPage: true });
   await page.keyboard.up('d');
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(18);
   const afterKeyboardRight = await readMotionState();
 
   const joystickForwardProjection = projectedMotion(beforeJoystickUp, afterJoystickUp, 'forward');
@@ -162,21 +186,21 @@ try {
 
   // [SW:PLAYCANVAS:VISIBLE_AUTHORITY_SCALE_PARITY]
   // Headless scheduling can stretch a nominal Playwright wait by many seconds on
-  // the expanded scene. Compare visible displacement with authoritative storm
-  // displacement over the same real joystick interval instead. Time cancels in
-  // the ratio, proving the presentation transform has not made the storm appear
-  // materially faster/slower without weakening the real visible-input gate.
+  // the expanded scene. Compare visible displacement with the authority snapshot
+  // actually consumed by the render path, after enough real animation frames for
+  // the visual smoothing to settle. This prevents a newer independent authority
+  // read from masquerading as presentation-scale drift.
   const joystickVisualDistance = visualStormDistance(beforeJoystickUp, afterJoystickUp);
-  const joystickAuthorityDistance = authorityStormDistance(beforeJoystickUp, afterJoystickUp);
-  const joystickVisibleAuthorityScale = joystickAuthorityDistance > 0.001
-    ? joystickVisualDistance / joystickAuthorityDistance
+  const joystickRenderConsumedAuthorityDistance = renderConsumedAuthorityDistance(beforeJoystickUp, afterJoystickUp);
+  const joystickVisibleAuthorityScale = joystickRenderConsumedAuthorityDistance > 0.001
+    ? joystickVisualDistance / joystickRenderConsumedAuthorityDistance
     : Infinity;
 
   // ------------------------------------------------------------------------
   // Long travel test across expanded grid & separated junction proof
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(8);
 
   // Long forward travel test
   await page.keyboard.down('w');
@@ -184,13 +208,13 @@ try {
   // Capture 3: Long travel screenshot showing expanded world & chase framing
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-travel.png`, fullPage: true });
   await page.keyboard.up('w');
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(12);
 
   // Travel to separated road junction (e.g. East / South road area)
   await page.keyboard.down('d');
   await page.waitForTimeout(1200);
   await page.keyboard.up('d');
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(12);
   // Capture 4: Separated road/terrain geometry screenshot away from central intersection
   await page.screenshot({ path: `${evidenceDir}/playcanvas-slice-junction.png`, fullPage: true });
 
@@ -200,7 +224,7 @@ try {
   // above and are not bypassed for their own claims.
   // ------------------------------------------------------------------------
   await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset());
-  await page.waitForTimeout(120);
+  await waitForRenderSettle(8);
   const playStart = await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.getAuthoritySnapshot() ?? null);
   const initialStorm = playStart?.storm ?? null;
   const initialBarnHealth = playStart?.barn?.health ?? null;
@@ -294,12 +318,12 @@ try {
     { name: 'camera-distance-stable-keyboard', passed: keyboardDistanceDrift < 0.08, detail: JSON.stringify({ keyboardDistanceDrift, beforeKeyboardRight, afterKeyboardRight }) },
     {
       name: 'visible-storm-speed-parity',
-      passed: joystickAuthorityDistance > 1
+      passed: joystickRenderConsumedAuthorityDistance > 1
         && Number.isFinite(joystickVisibleAuthorityScale)
         && Math.abs(joystickVisibleAuthorityScale - SEALED_VISIBLE_AUTHORITY_SCALE) <= VISIBLE_AUTHORITY_SCALE_TOLERANCE,
       detail: JSON.stringify({
         joystickVisualDistance,
-        joystickAuthorityDistance,
+        joystickRenderConsumedAuthorityDistance,
         joystickVisibleAuthorityScale,
         sealedVisibleAuthorityScale: SEALED_VISIBLE_AUTHORITY_SCALE,
         tolerance: VISIBLE_AUTHORITY_SCALE_TOLERANCE,
@@ -353,7 +377,7 @@ try {
         joystickHeadingDelta,
         joystickDistanceDrift,
         joystickVisualDistance,
-        joystickAuthorityDistance,
+        joystickRenderConsumedAuthorityDistance,
         joystickVisibleAuthorityScale,
         beforeKeyboardRight,
         afterKeyboardRight,
