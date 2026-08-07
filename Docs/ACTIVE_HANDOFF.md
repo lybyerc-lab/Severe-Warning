@@ -4,7 +4,7 @@ Last updated: 2026-08-07 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Current direction: guarded PlayCanvas production-slice migration
 Current build-train: `Docs/PLAYCANVAS_MIGRATION_BUILD_TRAIN.md`
-Current bounded milestone: PlayCanvas storm physics parity owner hands-on
+Current bounded milestone: rotation-stable PlayCanvas storm physics owner retest
 
 ## Durable decision
 
@@ -48,94 +48,173 @@ Owner-approved browser-stage baseline:
 - visible/authority scale: `0.771708` versus sealed `0.7717`
 - camera trailing scale: `0.9`
 
-Owner hands-on verdict:
+Earlier owner hands-on verdict:
 
 - expanded build ran well
 - 10% slower chase catch-up was much better
-- current camera is as good as can presently be judged
+- camera was as good as could then be judged
 
-Keep this camera/map combination frozen while judging storm physics.
+## Storm-physics hands-on result and protected behavior
 
-## Current PlayCanvas storm-physics checkpoint
+The first live storm-physics candidate was exact source:
+
+- `8d070e21cfe7720353ec842a02f1179bc33e9181`
+- Run 53 / `31219969904`
+- QA Pages Run 72 / `31220379275`
+
+Owner feedback on that exact live candidate:
+
+> Tree bend is great! the camera gets stuck spinning around somtimes, as does the cow.
+
+Durable interpretation:
+
+- **Tree bend is accepted for this browser-stage slice and is frozen.** Do not retune the Run 53 tree force response during camera/Cow fixes.
+- camera continuous-orbit behavior was a rejected defect
+- Cow 17 continuous airborne orbit was a rejected defect
+
+Protected Run 53 tree numbers:
+
+- Pull peak tree tilt: `0.4218329627222749 rad`
+- Pull trees reacting: 4
+- Gust peak tree tilt: `0.3673336055836977 rad`
+- Gust trees reacting: 4
+- Pull max inward light-prop displacement: `5.374028004530404`
+- Pull max tangential/orbit displacement: `1.340381940964075`
+- Gust max outward light-prop displacement: `5.042881747270892`
+
+## Rotation defect diagnosis
+
+### Camera
+
+Held screen-space input was reprojected through the changing chase-camera basis every frame and treated as a fresh world-space target. This could create a self-chasing orbit.
+
+A first correction stabilized the held target, but diagnostic Run 58 proved a second defect remained: releasing the stick allowed residual storm/render travel to retarget the camera, causing about `0.9237 rad` of post-release wandering.
+
+### Cow 17
+
+The accepted bovine slapstick code remains in orbit while the cow is within `storm.radius * 1.8`. Its authored orbit can stay inside that same threshold forever.
+
+A first finite-orbit fix used capped simulation time. Diagnostic Run 58 proved that under the heavy authority frame Cow 17 could still remain airborne beyond `6.3 s` wall time and reach the `20`-unit altitude cap. Cow-Cam slow motion could stretch it further.
+
+## Diagnostic Run 58
+
+- exact source: `4e15c760815e19cedf067cee56ccd1c22a941db5`
+- workflow: Run 58 / `31221725089`
+- inherited storm-physics browser suite: **PASS**
+- new rotation-stability suite: **FAIL**, correctly blocking promotion
+- held desired camera target drift: `0`
+- release heading drift: about `0.9237 rad`
+- Cow 17 remained airborne past `6.3 s`
+- Cow 17 altitude reached `20`
+
+Important: the inherited suite staying green proves the accepted tree physics survived the first camera/Cow correction attempt.
+
+## Current sealed corrected candidate
 
 Implementation line:
 
 - draft PR: #35
 - base: `agent/playcanvas-storm-physics-handoff`
 - head: `agent/playcanvas-storm-physics-parity`
-- exact sealed source: `8d070e21cfe7720353ec842a02f1179bc33e9181`
+- exact promoted source: `f5f01678595bf857840759604f362c93f62598e8`
+
+Final correction shape:
+
+- `[SW:PLAYCANVAS:HELD_INTENT_STABILITY]`
+  - stationary held stick gets one stable desired camera heading
+  - camera rotation alone cannot retarget that held direction
+- `[SW:PLAYCANVAS:RELEASE_SETTLE]`
+  - stick release freezes the last intentional chase target
+  - residual authority/render motion cannot invent a late camera command
+- `[SW:PLAYCANVAS:COW_ORBIT_STABILITY]`
+  - Cow 17 orbit uses monotonic wall time
+  - orbit window is bounded
+  - total flight is wall-clock bounded with a smooth forced descent envelope
+  - immediate relaunch remains locked while the storm stays nearby
+  - re-arm requires separation beyond `2.2 * storm.radius`
+
+No tree-force constants, storm speed, camera distance/base turn rate/dead zone/0.9 trailing scale, abilities, scoring, combo, timer, or map geometry were intentionally changed.
+
+## Run 62 sealed proof
 
 Repository-owned PlayCanvas workflow:
 
-- Run 53 / `31219969904`: **PASS**
-- artifact: `severe-weather-playcanvas-slice-53`
-- artifact ID: `9010066122`
-- artifact SHA-256: `fd7e084e49d4cd4760351dc355f8f28fcdd185f4fc6765c1f33b245ef2e8c85c`
+- Run 62 / `31222412094`: **PASS**
+- exact source: `f5f01678595bf857840759604f362c93f62598e8`
+- artifact: `severe-weather-playcanvas-slice-62`
+- artifact ID: `9010957717`
+- artifact digest: `sha256:4e59ba01045869b4a752d2dc8071aac361b4513a214e5d6d664296ddac0b37e0`
+- downloaded ZIP SHA-256 matched GitHub exactly
+- strict TypeScript: passed
 - static verification: **69/69 PASS**
-- browser QA: **61/61 PASS**
-- all required baseline, Pull, Gust, travel, junction, and debris screenshots sealed
+- inherited storm-physics browser QA: **61/61 PASS**
+- dedicated rotation-stability QA: **11/11 PASS**
+- evidence contract: passed
+- console errors: none
+- page errors: none
 
-Measured browser proof:
+Camera evidence:
 
-- visible/authority storm scale: `0.7717084052`
-- Pull: 4 trees reacted
-- Pull: 3 light props reacted
-- Pull maximum inward displacement: `5.3740`
-- Pull maximum tangential/orbit displacement: `1.3404`
-- Gust: 4 trees reacted
-- Gust: 5 light props reacted
-- Gust maximum outward displacement: `5.0429`
-- authoritative barn state reached stage 3 and roof-detached state
-- 4 representative debris bodies airborne at the sampled destruction point
-- authoritative roof was airborne
-- reset restored active body count to 0 and airborne body count to 0
+- held desired-heading drift: `0`
+- bounded turn: `1.3962 rad`
+- camera eventually settled and stopped turning
+- headless low-frame-rate settle measurement: `4673 ms`
+- release heading drift: `0`
+- release desired-heading drift: `0`
+
+Cow 17 evidence:
+
+- real authority safe flight started
+- orbit lock engaged
+- Cow 17 landed in `3050 ms`
+- landed altitude: `0.8`
 - Cow 17 remained `safe: true`
+- Cow 17 remained grounded while the storm stayed nearby
+- re-arm remained locked until material storm separation
 
-QA Pages promotion:
+Protected tree evidence remained numerically identical to Run 53:
 
-- QA commit: `bf75c0fd6ca07b9e54f58c1d1bceeafa6c0d092d`
-- Run 72 / `31220379275`: **PASS**
-- existing QA root rebuilt and deterministic QA4 remained green
-- exact Run 53 artifact downloaded and re-verified
-- public PlayCanvas metadata/source verification passed
+- Pull peak tree tilt: `0.4218329627222749 rad`
+- Gust peak tree tilt: `0.3673336055836977 rad`
+- Pull max inward displacement: `5.374028004530404`
+- Pull max tangential/orbit displacement: `1.340381940964075`
+- Gust max outward displacement: `5.042881747270892`
+
+## Current live QA deployment
+
+QA promotion:
+
+- QA commit: `723d50a034a5643db60f38afba8997212d5a45c6`
+- Deploy QA Pages Run 73 / `31222935770`: **PASS**
+- existing QA root rebuild: passed
+- deterministic QA4: passed
+- exact Run 62 artifact download/re-verification: passed
+- Pages deployment: passed
+- public root verification: passed
+- public PlayCanvas source/metadata verification: passed
 - live path: `https://lybyerc-lab.github.io/Severe-Warning/playcanvas/`
-
-Durable implementation shape:
-
-- game-owned custom force law, not generic engine tornado feel
-- radial inward suction
-- tangential swirl/orbit
-- vertical lift
-- mass/resistance response
-- Gust outward impulse
-- Pull amplification
-- representative trees/light props
-- authoritative Moo-Brew roof/debris handoff
-- real accepted ability executor remains upstream authority
-- reset/dispose cleanup is blocking QA
-- Cow 17 is excluded from the destructive body registry
 
 ## Next gate
 
-Owner browser hands-on should judge the live Run 53 physics candidate, especially:
+Owner browser retest of the exact Run 62 candidate should focus narrowly on:
 
-- Pull reads as clear inward suction
-- light props visibly acquire orbit rather than simply sliding
-- Gust reads as an outward blast
-- tree reactions are readable at normal play speed
-- detached Moo-Brew roof/debris looks energetic rather than random or weightless
-- camera still feels like the frozen approved baseline
+- tree bend still feels great
+- camera no longer enters a runaway orbit during steering
+- releasing the stick leaves the camera settled rather than continuing to swing
+- Cow 17 completes the airborne comedy beat and lands instead of orbiting indefinitely
+- Cow 17 does not immediately relaunch while the storm remains nearby
 
-Do not tune the camera during this physics review.
+Do not retune tree response during this retest. If rotation stability is owner-approved, continue the bounded storm-physics expansion from this source behavior.
 
-After owner browser feedback, iterate the bounded physics slice if needed. Do not call storm physics matched, better, or physically accepted until an exact PlayCanvas Android APK is installed and approved on the Galaxy S26 Ultra.
+Do not call storm physics matched, better, or physically accepted until an exact PlayCanvas Android APK is installed and approved on the Galaxy S26 Ultra.
 
 ## Protected gameplay behavior
 
 Preserve:
 
 - direct storm controls and one-stick camera-relative input
-- current chase-camera values
+- current chase-camera distance/base turn rate/dead zone/0.9 trailing scale
+- accepted Run 53 tree bend response
 - Pull, Gust, Zap semantics
 - no duplicate mobile ability activation
 - continuous scoring
@@ -154,16 +233,16 @@ For the camera/map checkpoint:
 
 - committed: yes
 - browser-QA passed: yes
-- live browser hands-on accepted for this stage: yes
+- earlier live browser hands-on accepted for that stage: yes
 - Android PlayCanvas APK built: no
 - physically accepted PlayCanvas migration on Galaxy S26 Ultra: no
 
-For the storm-physics checkpoint:
+For the corrected storm-physics checkpoint:
 
 - implementation: committed
 - browser-QA: passed
 - live public QA deployment: passed
-- owner hands-on physics verdict: pending
+- owner retest of camera/Cow correction: pending
 - Android PlayCanvas APK: not built
 - physical Android acceptance: pending
 - PR #35 merged: no

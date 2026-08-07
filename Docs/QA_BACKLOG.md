@@ -1,6 +1,71 @@
 # QA Backlog
 
-Last updated: 2026-08-03
+Last updated: 2026-08-07
+
+## PlayCanvas migration
+
+### PC-ROT-001: Camera and Cow 17 can remain in continuous orbit
+
+Status: corrected and automated-browser-QA passed; owner browser retest pending
+
+Observed by owner on exact Run 53 live candidate `8d070e21cfe7720353ec842a02f1179bc33e9181`:
+
+> Tree bend is great! the camera gets stuck spinning around somtimes, as does the cow.
+
+Protected result:
+- Run 53 tree bend is accepted for this browser-stage slice.
+- Do not retune Pull/Gust tree force constants while resolving this defect.
+
+Camera root causes:
+- held screen-space input was reprojected through the changing camera basis every frame and treated as a fresh desired world heading
+- this allowed the chase camera to chase its own rotation
+- after the first held-intent correction, residual authority/render motion on stick release still retargeted the camera and produced about `0.9237 rad` of post-release wander in diagnostic Run 58
+
+Cow 17 root causes:
+- legacy safe-cow orbit stays in the `dist < storm.radius * 1.8` branch
+- the authored orbit radius can remain inside that threshold indefinitely
+- first finite-orbit correction used capped simulation time, which still stretched beyond `6.3 s` wall time under the heavy authority frame
+- Cow-Cam slow motion could stretch the flight further
+
+Diagnostic evidence:
+- Run 58 / `31221725089`
+- exact source `4e15c760815e19cedf067cee56ccd1c22a941db5`
+- inherited storm-physics suite passed
+- new rotation-stability suite failed and correctly blocked promotion
+- held camera desired-target drift `0`
+- release camera heading drift about `0.9237 rad`
+- Cow 17 remained airborne beyond `6.3 s` and reached altitude `20`
+
+Final correction:
+- `[SW:PLAYCANVAS:HELD_INTENT_STABILITY]`: camera rotation alone cannot retarget a stationary held stick
+- `[SW:PLAYCANVAS:RELEASE_SETTLE]`: stick release freezes the last intentional chase target
+- `[SW:PLAYCANVAS:COW_ORBIT_STABILITY]`: Cow 17 orbit uses monotonic wall time, total flight has a wall-clock descent envelope, immediate relaunch is locked, and re-arm requires separation beyond `2.2 * storm.radius`
+
+Sealed corrected evidence:
+- exact source `f5f01678595bf857840759604f362c93f62598e8`
+- Run 62 / `31222412094`: success
+- static `69/69`
+- inherited browser QA `61/61`
+- rotation-stability QA `11/11`
+- camera held-target drift `0`
+- camera release heading drift `0`
+- camera release desired-target drift `0`
+- Cow 17 landed in `3050 ms`
+- Cow 17 remained safe and grounded during the post-landing hold
+- Pull/Gust tree measurements remained numerically identical to Run 53
+
+Public deployment:
+- QA commit `723d50a034a5643db60f38afba8997212d5a45c6`
+- Pages Run 73 / `31222935770`: success
+- exact Run 62 artifact re-verified and deployed to `/playcanvas/`
+
+Acceptance still required:
+- owner confirms on Galaxy browser that the camera no longer enters runaway orbit during ordinary steering
+- releasing the stick leaves the camera settled
+- Cow 17 completes the airborne gag and lands rather than orbiting indefinitely
+- Cow 17 does not immediately relaunch while the storm remains nearby
+- accepted tree bend still feels great
+- no Android physical acceptance is claimed until an exact PlayCanvas APK is installed and approved
 
 ## V5 campaign foundation
 
