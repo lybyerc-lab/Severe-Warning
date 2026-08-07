@@ -154,23 +154,23 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Download verified PlayCanvas playable artifact
+      - name: Download verified PlayCanvas corrected artifact
         uses: actions/download-artifact@v4
         with:
-          name: severe-weather-playcanvas-slice-18
+          name: severe-weather-playcanvas-slice-28
           path: playcanvas-preview-artifact
           repository: lybyerc-lab/Severe-Warning
-          run-id: 31136370444
+          run-id: 31138014403
           github-token: ${{ github.token }}
 
-      - name: Verify and overlay PlayCanvas playable candidate
+      - name: Verify and overlay corrected PlayCanvas candidate
         shell: bash
         env:
-          PLAYCANVAS_SOURCE_SHA: 5936bb12e022741a0964b2c80be9304780ee68d0
-          PLAYCANVAS_RUN_ID: '31136370444'
-          PLAYCANVAS_RUN_NUMBER: '18'
-          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-18
-          PLAYCANVAS_ARTIFACT_DIGEST: sha256:169784d02b11170d3e0f24d6e61fdc8a01d5ccb07b3561680fdf2cce909b3bc2
+          PLAYCANVAS_SOURCE_SHA: 6e1a18b0327c7eac72cbbfb2891e1648d7de22fe
+          PLAYCANVAS_RUN_ID: '31138014403'
+          PLAYCANVAS_RUN_NUMBER: '28'
+          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-28
+          PLAYCANVAS_ARTIFACT_DIGEST: sha256:cbf5b11ae358d9c3b3c405fd34d28541dbd0f72d4baf3d422522bc45275842d1
         run: |
           set -euo pipefail
           test "$(tr -d '\r\n' < playcanvas-preview-artifact/SOURCE_SHA.txt)" = "$PLAYCANVAS_SOURCE_SHA"
@@ -184,23 +184,41 @@ jobs:
           const browserReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-report.json', 'utf8'));
           if (!staticReport.passed || staticReport.failedChecks?.length) throw new Error('PlayCanvas static report is not sealed green.');
           if (!browserReport.passed || browserReport.failedChecks?.length) throw new Error('PlayCanvas browser report is not sealed green.');
-          const required = [
+
+          const staticChecks = new Map(staticReport.checks.map((check) => [check.name, check.passed]));
+          for (const name of [
+            'camera-relative-input-contract',
+            'keyboard-camera-relative',
+            'touch-camera-relative',
+            'storm-follow-camera',
+            'tornado-funnel-upright',
+            'browser-visible-control-check',
+          ]) {
+            if (staticChecks.get(name) !== true) throw new Error(`Required corrected PlayCanvas static gate missing or red: ${name}`);
+          }
+
+          const browserChecks = new Map(browserReport.checks.map((check) => [check.name, check.passed]));
+          for (const name of [
             'gameplay-authority-connected',
-            'keyboard-moves-real-storm',
-            'movement-approaches-live-target',
+            'joystick-up-moves-screen-forward',
+            'keyboard-right-moves-screen-right',
+            'camera-follows-joystick-motion',
+            'camera-follows-keyboard-motion',
+            'authority-setup-moves-real-storm',
+            'authority-setup-approaches-live-target',
             'gust-executor-accepted',
             'pull-executor-accepted',
             'zap-executor-accepted',
             'destruction-state-changed',
             'cow17-safe',
+            'road-above-terrain',
+            'tornado-above-road',
             'no-console-errors',
             'no-page-errors',
-          ];
-          const checks = new Map(browserReport.checks.map((check) => [check.name, check.passed]));
-          for (const name of required) {
-            if (checks.get(name) !== true) throw new Error(`Required PlayCanvas gate missing or red: ${name}`);
+          ]) {
+            if (browserChecks.get(name) !== true) throw new Error(`Required corrected PlayCanvas browser gate missing or red: ${name}`);
           }
-          console.log(`Verified PlayCanvas playable artifact: static ${staticReport.checks.length}/${staticReport.checks.length}, browser ${browserReport.checks.length}/${browserReport.checks.length}.`);
+          console.log(`Verified corrected PlayCanvas artifact: static ${staticReport.checks.length}/${staticReport.checks.length}, browser ${browserReport.checks.length}/${browserReport.checks.length}.`);
           NODE
           rm -rf www/playcanvas
           mkdir -p www/playcanvas
@@ -212,6 +230,7 @@ jobs:
             "workflowRunNumber": $PLAYCANVAS_RUN_NUMBER,
             "artifact": "$PLAYCANVAS_ARTIFACT",
             "artifactDigest": "$PLAYCANVAS_ARTIFACT_DIGEST",
+            "corrections": ["upright-funnel", "storm-follow-camera", "camera-relative-input"],
             "status": "browser-qa-passed-not-physical-android-accepted"
           }
           EOF
@@ -244,13 +263,13 @@ jobs:
         run: |
           echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
 
-      - name: Verify live QA root and PlayCanvas candidate
+      - name: Verify live QA root and corrected PlayCanvas candidate
         shell: bash
         env:
           QA_ROOT_URL: https://lybyerc-lab.github.io/Severe-Warning/
           PLAYCANVAS_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/
           PLAYCANVAS_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/qa-playcanvas-build.json
-          PLAYCANVAS_SOURCE_SHA: 5936bb12e022741a0964b2c80be9304780ee68d0
+          PLAYCANVAS_SOURCE_SHA: 6e1a18b0327c7eac72cbbfb2891e1648d7de22fe
         run: |
           set -euo pipefail
           for attempt in $(seq 1 30); do
@@ -259,10 +278,12 @@ jobs:
               && playcanvas_metadata="$(curl --fail --silent --show-error --location "$PLAYCANVAS_METADATA_URL")" \
               && grep -Fq 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' <<< "$root_html" \
               && grep -Fq 'PLAYCANVAS PLAYABLE SLICE' <<< "$playcanvas_html" \
-              && grep -Fq "$PLAYCANVAS_SOURCE_SHA" <<< "$playcanvas_metadata"; then
+              && grep -Fq "$PLAYCANVAS_SOURCE_SHA" <<< "$playcanvas_metadata" \
+              && grep -Fq 'storm-follow-camera' <<< "$playcanvas_metadata" \
+              && grep -Fq 'camera-relative-input' <<< "$playcanvas_metadata"; then
               echo "Live QA root verified: $QA_ROOT_URL"
-              echo "Live PlayCanvas candidate verified: $PLAYCANVAS_URL"
-              echo "Live PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
+              echo "Live corrected PlayCanvas candidate verified: $PLAYCANVAS_URL"
+              echo "Live corrected PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
               exit 0
             fi
             echo "Live Pages propagation attempt $attempt/30 not ready yet."
