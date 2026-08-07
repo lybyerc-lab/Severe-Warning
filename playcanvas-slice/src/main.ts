@@ -76,9 +76,10 @@ const INITIAL_CAMERA_OFFSET_Z = 36;
 const CHASE_CAMERA_DISTANCE = Math.hypot(INITIAL_CAMERA_OFFSET_X, INITIAL_CAMERA_OFFSET_Z);
 const CHASE_CAMERA_HEIGHT = 28;
 const CHASE_CAMERA_LOOK_Y = 3.6;
-const CHASE_CAMERA_TURN_RATE_RADIANS = 1.35;
+const CHASE_CAMERA_TURN_RATE_RADIANS = 1.05;
 const CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180;
 const CHASE_CAMERA_MOVEMENT_THRESHOLD = 0.28;
+const CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12;
 
 function byId<T extends HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
@@ -176,7 +177,11 @@ function chaseCameraAuthorityInput(
   transform: WorldTransform,
   chaseCamera: OneStickChaseCamera,
 ): Readonly<{ x: number; z: number }> {
+  const screenMagnitude = Math.hypot(screenX, screenY);
+  const active = screenMagnitude > 0.01;
   const target = chaseCamera.screenToWorldDirection(screenX, screenY);
+  chaseCamera.setTravelIntent(target.x, target.z, active);
+  if (!active) return Object.freeze({ x: 0, z: 0 });
   const source = transform.unmapDirection(target.x, target.z);
   const magnitude = Math.hypot(source.x, source.z);
   if (magnitude <= 1) return source;
@@ -271,7 +276,7 @@ function installControls(
   const applyDirectionalInput = (): void => {
     const screen = touchVector ?? keyboardVector();
     const active = Math.hypot(screen.x, screen.y) > 0.01;
-    const authorityVector = active ? mapScreenInput(screen.x, screen.y) : Object.freeze({ x: 0, z: 0 });
+    const authorityVector = mapScreenInput(screen.x, screen.y);
     authority.setJoystick(authorityVector.x, authorityVector.z, active);
     document.documentElement.dataset.swPlaycanvasScreenInputX = screen.x.toFixed(3);
     document.documentElement.dataset.swPlaycanvasScreenInputY = screen.y.toFixed(3);
@@ -301,6 +306,7 @@ function installControls(
   const blur = (): void => {
     pressed.clear();
     touchVector = null;
+    mapScreenInput(0, 0);
     authority.setJoystick(0, 0, false);
   };
   window.addEventListener('keydown', keyDown, { passive: false });
@@ -440,6 +446,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     turnRateRadiansPerSecond: CHASE_CAMERA_TURN_RATE_RADIANS,
     headingDeadZoneRadians: CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS,
     movementThreshold: CHASE_CAMERA_MOVEMENT_THRESHOLD,
+    intentMagnitudeThreshold: CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD,
     initialForwardX: -INITIAL_CAMERA_OFFSET_X / CHASE_CAMERA_DISTANCE,
     initialForwardZ: -INITIAL_CAMERA_OFFSET_Z / CHASE_CAMERA_DISTANCE,
   }), renderTornado.x, renderTornado.z);
@@ -521,6 +528,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     document.documentElement.dataset.swPlaycanvasCameraHeadingError = cameraPose.headingErrorRadians.toFixed(4);
     document.documentElement.dataset.swPlaycanvasCameraTravelSpeed = cameraPose.travelSpeed.toFixed(3);
     document.documentElement.dataset.swPlaycanvasCameraTurning = String(cameraPose.turning);
+    document.documentElement.dataset.swPlaycanvasCameraInputActive = String(cameraPose.inputActive);
 
     const now = performance.now();
     if (now - lastAuthorityPoll >= 50) {
@@ -588,6 +596,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
       delete document.documentElement.dataset.swPlaycanvasCameraHeadingError;
       delete document.documentElement.dataset.swPlaycanvasCameraTravelSpeed;
       delete document.documentElement.dataset.swPlaycanvasCameraTurning;
+      delete document.documentElement.dataset.swPlaycanvasCameraInputActive;
       globalThis.__SW_PLAYCANVAS_SLICE__ = undefined;
     },
   });
