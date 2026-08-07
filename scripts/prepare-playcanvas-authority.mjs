@@ -22,7 +22,7 @@ let changed = false;
 // ============================================================================
 if (!html.includes(cowOrbitMarker)) {
   const before = `  const cowMotionScale = bovineCowCam.active ? 0.32 : 1;\n  animals.forEach(cow => {\n    const dist = Math.hypot(cow.x - storm.pos.x, cow.z - storm.pos.z);\n    if (dist < storm.radius * 1.8) {`;
-  const after = `  const cowMotionScale = bovineCowCam.active ? 0.32 : 1;\n  const PLAYCANVAS_COW_ORBIT_STABILITY_V1 = true;\n  const playcanvasCowMaxOrbitSeconds = 2.35;\n  animals.forEach(cow => {\n    const dist = Math.hypot(cow.x - storm.pos.x, cow.z - storm.pos.z);\n    if (!cow.airborne && cow.flightTime >= playcanvasCowMaxOrbitSeconds && dist >= storm.radius * 2.2) {\n      cow.flightTime = 0;\n    }\n    const playcanvasCowOrbitWindowOpen = !cow.airborne || cow.flightTime < playcanvasCowMaxOrbitSeconds;\n    if (dist < storm.radius * 1.8 && playcanvasCowOrbitWindowOpen) {`;
+  const after = `  const cowMotionScale = bovineCowCam.active ? 0.32 : 1;\n  const PLAYCANVAS_COW_ORBIT_STABILITY_V1 = true;\n  const playcanvasCowMaxOrbitSeconds = 2.35;\n  animals.forEach(cow => {\n    const dist = Math.hypot(cow.x - storm.pos.x, cow.z - storm.pos.z);\n    if (!cow.airborne && cow.flightTime >= playcanvasCowMaxOrbitSeconds && dist >= storm.radius * 2.2) {\n      cow.flightTime = 0;\n    }\n    const playcanvasCowOrbitWindowOpen = cow.flightTime < playcanvasCowMaxOrbitSeconds;\n    if (dist < storm.radius * 1.8 && playcanvasCowOrbitWindowOpen) {`;
   const matches = html.split(before).length - 1;
   if (matches !== 1) {
     throw new Error(`PlayCanvas cow orbit stability patch expected one authority match, found ${matches}.`);
