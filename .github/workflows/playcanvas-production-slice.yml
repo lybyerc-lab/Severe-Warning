@@ -18,7 +18,7 @@ permissions:
 jobs:
   verify-playcanvas-slice:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     steps:
       - name: Checkout exact source
@@ -34,6 +34,12 @@ jobs:
           printf 'expected=%s\nactual=%s\n' "$expected" "$actual"
           test "$actual" = "$expected"
 
+      - name: Checkout accepted Phase 4 verifier fixture
+        uses: actions/checkout@v4
+        with:
+          ref: cd89b5ececa6e95848961d625f84eaa7bc7f72c7
+          path: phase5-base
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -45,10 +51,62 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate verified audio assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          pnpm run audio:generate
+          test -s assets/audio/storm-feel-sprite.wav
+          test -s assets/audio/storm-feel-manifest.json
+          test -s assets/audio/LICENSE.md
+
       - name: Fetch pinned PlayCanvas engine
         env:
           PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55aeef4de6a8adb4
         run: node scripts/fetch-playcanvas-engine.mjs
+
+      - name: Reconstruct accepted gameplay authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F '<title>Severe Weather 3D Lab v4.3.0 - Rampage Layer</title>' MechanicsLab/SevereWeather_3D_Lab.html
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run patch:city-fabric
+          pnpm run verify:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run verify:presentation-identity
+          grep -F 'PRESENTATION_IDENTITY_MOO_BREW_V1' MechanicsLab/SevereWeather_3D_Lab.html
+
+      - name: Build accepted gameplay authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run modern:build
+          SEVERE_WEATHER_WWW_DIR=playcanvas-slice/public/authority node scripts/build-web.mjs
+          node scripts/prepare-playcanvas-authority.mjs
+          test -s playcanvas-slice/public/authority/index.html
+          grep -q 'playcanvas-authority-bridge.js' playcanvas-slice/public/authority/index.html
+          grep -q 'PRESENTATION_IDENTITY_MOO_BREW_V1' playcanvas-slice/public/authority/index.html
 
       - name: Type-check isolated slice
         run: pnpm exec tsc -p tsconfig.playcanvas.json --noEmit
@@ -59,6 +117,13 @@ jobs:
       - name: Build isolated preview
         run: pnpm exec vite build --config vite.playcanvas.config.ts
 
+      - name: Verify packaged gameplay authority
+        run: |
+          test -s playcanvas-slice-dist/authority/index.html
+          test -s playcanvas-slice-dist/authority/runtime/playcanvas-authority-bridge.js
+          grep -q 'playcanvas-authority-bridge.js' playcanvas-slice-dist/authority/index.html
+          grep -q 'PRESENTATION_IDENTITY_MOO_BREW_V1' playcanvas-slice-dist/authority/index.html
+
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
@@ -66,7 +131,7 @@ jobs:
         run: |
           pnpm exec vite preview --config vite.playcanvas.config.ts --host 127.0.0.1 --port 4175 > playcanvas-slice-server.log 2>&1 &
           echo $! > playcanvas-slice-server.pid
-          for attempt in $(seq 1 30); do
+          for attempt in $(seq 1 45); do
             if curl --fail --silent http://127.0.0.1:4175/ >/dev/null; then
               exit 0
             fi
