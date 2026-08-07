@@ -40,6 +40,12 @@ interface SliceHandle {
 
 interface WorldTransform {
   map(x: number, z: number): Readonly<{ x: number; z: number }>;
+  unmapDirection(x: number, z: number): Readonly<{ x: number; z: number }>;
+}
+
+interface ControlHandle {
+  refresh(): void;
+  dispose(): void;
 }
 
 declare global {
@@ -60,6 +66,15 @@ const ABILITY_LABELS: Readonly<Record<AuthorityAbilitySlot, string>> = Object.fr
   secondary: 'GUST',
   tertiary: 'ZAP',
 });
+
+// [SW:PLAYCANVAS:STORM_FOLLOW_CAMERA]
+// Fixed diagonal chase offset for the first hands-on pass. The camera translates
+// with the tornado and keeps it as the focal subject. Rotation/orbit can be
+// added after the camera-relative input contract is physically comfortable.
+const FOLLOW_CAMERA_OFFSET_X = 30;
+const FOLLOW_CAMERA_OFFSET_Z = 36;
+const FOLLOW_CAMERA_HEIGHT = 28;
+const FOLLOW_CAMERA_LOOK_Y = 3.6;
 
 function byId<T extends HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
@@ -114,6 +129,9 @@ function createWorldTransform(snapshot: AuthoritySnapshot, scene: SceneResult): 
           z: targetStorm.z + (z - sourceStorm.z) * 0.5,
         });
       },
+      unmapDirection(x: number, z: number) {
+        return Object.freeze({ x, z });
+      },
     });
   }
 
@@ -139,7 +157,32 @@ function createWorldTransform(snapshot: AuthoritySnapshot, scene: SceneResult): 
         z: targetStorm.z + rz * scale,
       });
     },
+    unmapDirection(x: number, z: number) {
+      return Object.freeze({
+        x: x * cosine + z * sine,
+        z: -x * sine + z * cosine,
+      });
+    },
   });
+}
+
+function cameraRelativeAuthorityInput(
+  screenX: number,
+  screenY: number,
+  transform: WorldTransform,
+): Readonly<{ x: number; z: number }> {
+  const offsetLength = Math.max(0.001, Math.hypot(FOLLOW_CAMERA_OFFSET_X, FOLLOW_CAMERA_OFFSET_Z));
+  const forwardX = -FOLLOW_CAMERA_OFFSET_X / offsetLength;
+  const forwardZ = -FOLLOW_CAMERA_OFFSET_Z / offsetLength;
+  const rightX = -forwardZ;
+  const rightZ = forwardX;
+  const screenUp = -screenY;
+  const targetX = rightX * screenX + forwardX * screenUp;
+  const targetZ = rightZ * screenX + forwardZ * screenUp;
+  const source = transform.unmapDirection(targetX, targetZ);
+  const magnitude = Math.hypot(source.x, source.z);
+  if (magnitude <= 1) return source;
+  return Object.freeze({ x: source.x / magnitude, z: source.z / magnitude });
 }
 
 function formatTime(seconds: number): string {
@@ -208,15 +251,41 @@ function updateHud(snapshot: AuthoritySnapshot): void {
 
 function installControls(
   authority: PlayCanvasAuthorityClient,
+  mapScreenInput: (screenX: number, screenY: number) => Readonly<{ x: number; z: number }>,
   onAbility: (slot: AuthorityAbilitySlot, source: 'keyboard' | 'touch' | 'qa') => boolean,
   onReset: () => void,
-): () => void {
+): ControlHandle {
   const pressed = new Set<string>();
+  let touchVector: Readonly<{ x: number; y: number }> | null = null;
+
+  const keyboardVector = (): Readonly<{ x: number; y: number }> => {
+    let x = 0;
+    let y = 0;
+    if (pressed.has('KeyD') || pressed.has('ArrowRight')) x += 1;
+    if (pressed.has('KeyA') || pressed.has('ArrowLeft')) x -= 1;
+    if (pressed.has('KeyS') || pressed.has('ArrowDown')) y += 1;
+    if (pressed.has('KeyW') || pressed.has('ArrowUp')) y -= 1;
+    const magnitude = Math.hypot(x, y);
+    if (magnitude > 1) return Object.freeze({ x: x / magnitude, y: y / magnitude });
+    return Object.freeze({ x, y });
+  };
+
+  const applyDirectionalInput = (): void => {
+    const screen = touchVector ?? keyboardVector();
+    const active = Math.hypot(screen.x, screen.y) > 0.01;
+    const authorityVector = active ? mapScreenInput(screen.x, screen.y) : Object.freeze({ x: 0, z: 0 });
+    authority.setJoystick(authorityVector.x, authorityVector.z, active);
+    document.documentElement.dataset.swPlaycanvasScreenInputX = screen.x.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasScreenInputY = screen.y.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasAuthorityInputX = authorityVector.x.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasAuthorityInputZ = authorityVector.z.toFixed(3);
+  };
+
   const keyDown = (event: KeyboardEvent): void => {
     if (MOVEMENT_CODES.has(event.code)) {
       event.preventDefault();
       pressed.add(event.code);
-      authority.setKeyboard(event.code, event.key, true);
+      if (!touchVector) applyDirectionalInput();
       return;
     }
     const slot = ABILITY_CODES[event.code];
@@ -229,11 +298,11 @@ function installControls(
     if (!MOVEMENT_CODES.has(event.code)) return;
     event.preventDefault();
     pressed.delete(event.code);
-    authority.setKeyboard(event.code, event.key, false);
+    if (!touchVector) applyDirectionalInput();
   };
   const blur = (): void => {
-    for (const code of pressed) authority.setKeyboard(code, code, false);
     pressed.clear();
+    touchVector = null;
     authority.setJoystick(0, 0, false);
   };
   window.addEventListener('keydown', keyDown, { passive: false });
@@ -271,7 +340,8 @@ function installControls(
     const visualX = dx * factor;
     const visualY = dy * factor;
     knob.style.transform = `translate(${visualX}px, ${visualY}px)`;
-    authority.setJoystick(visualX / maxRadius, visualY / maxRadius, true);
+    touchVector = Object.freeze({ x: visualX / maxRadius, y: visualY / maxRadius });
+    applyDirectionalInput();
   };
   const joystickDown = (event: PointerEvent): void => {
     if (!joystick) return;
@@ -289,26 +359,32 @@ function installControls(
     if (joystickPointer !== event.pointerId) return;
     event.preventDefault();
     joystickPointer = null;
+    touchVector = null;
     if (knob) knob.style.transform = 'translate(0, 0)';
-    authority.setJoystick(0, 0, false);
+    applyDirectionalInput();
   };
   joystick?.addEventListener('pointerdown', joystickDown);
   joystick?.addEventListener('pointermove', joystickMove);
   joystick?.addEventListener('pointerup', joystickEnd);
   joystick?.addEventListener('pointercancel', joystickEnd);
 
-  return () => {
-    window.removeEventListener('keydown', keyDown);
-    window.removeEventListener('keyup', keyUp);
-    window.removeEventListener('blur', blur);
-    for (const { element, listener } of abilityListeners) element.removeEventListener('pointerdown', listener);
-    reset?.removeEventListener('click', onReset);
-    joystick?.removeEventListener('pointerdown', joystickDown);
-    joystick?.removeEventListener('pointermove', joystickMove);
-    joystick?.removeEventListener('pointerup', joystickEnd);
-    joystick?.removeEventListener('pointercancel', joystickEnd);
-    blur();
-  };
+  return Object.freeze({
+    refresh(): void {
+      if (touchVector || pressed.size > 0) applyDirectionalInput();
+    },
+    dispose(): void {
+      window.removeEventListener('keydown', keyDown);
+      window.removeEventListener('keyup', keyUp);
+      window.removeEventListener('blur', blur);
+      for (const { element, listener } of abilityListeners) element.removeEventListener('pointerdown', listener);
+      reset?.removeEventListener('click', onReset);
+      joystick?.removeEventListener('pointerdown', joystickDown);
+      joystick?.removeEventListener('pointermove', joystickMove);
+      joystick?.removeEventListener('pointerup', joystickEnd);
+      joystick?.removeEventListener('pointercancel', joystickEnd);
+      blur();
+    },
+  });
 }
 
 function flashAbility(slot: AuthorityAbilitySlot, accepted: boolean): void {
@@ -406,7 +482,10 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     return snapshot;
   };
 
-  const removeControls = installControls(authority, requestAbility, reset);
+  const mapScreenInput = (screenX: number, screenY: number): Readonly<{ x: number; z: number }> => (
+    cameraRelativeAuthorityInput(screenX, screenY, transform)
+  );
+  const controls = installControls(authority, mapScreenInput, requestAbility, reset);
   syncSnapshot(latestSnapshot);
 
   app.on('update', (deltaSeconds) => {
@@ -417,6 +496,18 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     scene.tornadoParts.forEach((part, index) => {
       part.setPosition(renderTornado.x, scene.tornadoPartY[index] ?? scene.tornadoPartY[0] ?? 1, renderTornado.z);
     });
+
+    const cameraX = renderTornado.x + FOLLOW_CAMERA_OFFSET_X;
+    const cameraZ = renderTornado.z + FOLLOW_CAMERA_OFFSET_Z;
+    scene.camera.setPosition(cameraX, FOLLOW_CAMERA_HEIGHT, cameraZ);
+    scene.camera.lookAt(renderTornado.x, FOLLOW_CAMERA_LOOK_Y, renderTornado.z);
+    controls.refresh();
+
+    document.documentElement.dataset.swPlaycanvasVisualStormX = renderTornado.x.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasVisualStormZ = renderTornado.z.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasCameraX = cameraX.toFixed(3);
+    document.documentElement.dataset.swPlaycanvasCameraZ = cameraZ.toFixed(3);
+
     const now = performance.now();
     if (now - lastAuthorityPoll >= 50) {
       lastAuthorityPoll = now;
@@ -443,7 +534,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
   document.documentElement.dataset.swTornadoGroundClearance = TORNADO_GROUND_CLEARANCE.toFixed(2);
   document.documentElement.dataset.swRenderer = 'PlayCanvas';
   document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount = '0';
-  setStatus('PLAYABLE • legacy authority', 'ready');
+  setStatus('PLAYABLE • storm-follow camera', 'ready');
 
   return Object.freeze({
     telemetry,
@@ -453,7 +544,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     requestAbility,
     reset,
     dispose(): void {
-      removeControls();
+      controls.dispose();
       window.removeEventListener('resize', resize);
       authority.dispose();
       app.destroy();
@@ -468,6 +559,14 @@ async function bootstrapSlice(): Promise<SliceHandle> {
       delete document.documentElement.dataset.swPlaycanvasLastAbility;
       delete document.documentElement.dataset.swPlaycanvasLastAbilityAccepted;
       delete document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount;
+      delete document.documentElement.dataset.swPlaycanvasScreenInputX;
+      delete document.documentElement.dataset.swPlaycanvasScreenInputY;
+      delete document.documentElement.dataset.swPlaycanvasAuthorityInputX;
+      delete document.documentElement.dataset.swPlaycanvasAuthorityInputZ;
+      delete document.documentElement.dataset.swPlaycanvasVisualStormX;
+      delete document.documentElement.dataset.swPlaycanvasVisualStormZ;
+      delete document.documentElement.dataset.swPlaycanvasCameraX;
+      delete document.documentElement.dataset.swPlaycanvasCameraZ;
       globalThis.__SW_PLAYCANVAS_SLICE__ = undefined;
     },
   });
