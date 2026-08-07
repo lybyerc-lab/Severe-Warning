@@ -178,7 +178,7 @@ check(
   'storm-reactive-safe-animal-exclusion',
   contents.scene.includes('Cow 17 is intentionally excluded')
     && !contents.scene.includes("id: 'cow-17'")
-    && !contents.stormForceField.toLowerCase().includes('cow 17'),
+    && !contents.stormForceField.includes("kind: 'cow'"),
   'Cow 17 is not registered as a destructive storm-force body',
 );
 
