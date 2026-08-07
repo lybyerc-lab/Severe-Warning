@@ -19,6 +19,7 @@ import { createMaterial } from './materials';
 
 export interface SceneResult {
   readonly entities: readonly PcEntity[];
+  readonly camera: PcEntity;
   readonly tornadoParts: readonly PcEntity[];
   readonly tornadoPartY: readonly number[];
   readonly mooBrew: BuildingParts;
@@ -42,14 +43,13 @@ export function populatePrairieJunctionScene(
   const sky = new pc.Color(0.12, 0.19, 0.25);
   app.scene.ambientLight = new pc.Color(0.36, 0.42, 0.45);
 
-  // [SW:PLAYCANVAS:CAMERA_ALIGNED_INPUT]
-  // The accepted movement authority uses +X right, -Z forward. Keep the visible
-  // camera centered on X so screen-right maps to +X and screen-up maps to -Z.
-  // This preserves the accepted executor while making touch/keyboard movement
-  // read naturally in the PlayCanvas presentation.
+  // [SW:PLAYCANVAS:STORM_FOLLOW_CAMERA]
+  // The bootstrap owns the final follow position. This authored diagonal pose
+  // is only the pre-authority starting frame and preserves the miniature
+  // isometric character while the accepted gameplay bridge connects.
   const camera = new pc.Entity('slice-camera');
   camera.addComponent('camera', { clearColor: sky, nearClip: 0.1, farClip: 220, fov: 44 });
-  camera.setPosition(0, 31, 44);
+  camera.setPosition(30, 28, 36);
   camera.lookAt(0, 3.2, 0);
   app.root.addChild(camera);
   entities.push(camera);
@@ -200,9 +200,7 @@ export function populatePrairieJunctionScene(
   const electricalParts = addElectricalTarget(pc, app, entities, electricalMetal, electricalHot);
 
   // [SW:PLAYCANVAS:FUNNEL_ORIENTATION]
-  // A tornado is narrow at ground contact and broadens into the storm base.
-  // Each cone is rotated so its point faces downward; stacked scales then widen
-  // as Y increases. This prevents the upside-down Christmas-tree silhouette.
+  // Narrow ground contact, broad storm base, downward-facing cone points.
   const tornadoParts: PcEntity[] = [];
   const tornadoPartY: number[] = [];
   const funnelScales = [
@@ -245,6 +243,7 @@ export function populatePrairieJunctionScene(
 
   return Object.freeze({
     entities: Object.freeze([...entities]),
+    camera,
     tornadoParts: Object.freeze([...tornadoParts]),
     tornadoPartY: Object.freeze([...tornadoPartY]),
     mooBrew,
