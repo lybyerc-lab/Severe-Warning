@@ -151,6 +151,12 @@ jobs:
           test -s playcanvas-slice-static-report.json
           test -s playcanvas-slice-evidence/playcanvas-slice-report.json
           test -s playcanvas-slice-evidence/playcanvas-slice.png
+          test -s playcanvas-slice-evidence/playcanvas-slice-turn.png
+          test -s playcanvas-slice-evidence/playcanvas-slice-travel.png
+          test -s playcanvas-slice-evidence/playcanvas-slice-junction.png
+          test -s playcanvas-slice-evidence/playcanvas-slice-pull.png
+          test -s playcanvas-slice-evidence/playcanvas-slice-gust.png
+          test -s playcanvas-slice-evidence/playcanvas-slice-debris.png
           test -s playcanvas-slice-server.log
 
       - name: Package evidence
