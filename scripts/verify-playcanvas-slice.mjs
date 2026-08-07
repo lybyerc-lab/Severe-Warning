@@ -63,6 +63,18 @@ check(
   'intent-driven chase camera has a bounded turn rate, heading dead zone, and stick-magnitude threshold',
 );
 check(
+  'chase-camera-feel-constants-unmodified',
+  contents.entry.includes('INITIAL_CAMERA_OFFSET_X = 30')
+    && contents.entry.includes('INITIAL_CAMERA_OFFSET_Z = 36')
+    && contents.entry.includes('CHASE_CAMERA_HEIGHT = 28')
+    && contents.entry.includes('CHASE_CAMERA_LOOK_Y = 3.6')
+    && contents.entry.includes('CHASE_CAMERA_TURN_RATE_RADIANS = 1.05')
+    && contents.entry.includes('CHASE_CAMERA_HEADING_DEAD_ZONE_RADIANS = Math.PI * 10 / 180')
+    && contents.entry.includes('CHASE_CAMERA_MOVEMENT_THRESHOLD = 0.28')
+    && contents.entry.includes('CHASE_CAMERA_INTENT_MAGNITUDE_THRESHOLD = 0.12'),
+  'chase camera feel baseline constants remain strictly unchanged from the sealed parent',
+);
+check(
   'chase-camera-intent-wiring',
   contents.entry.includes('chaseCamera.setTravelIntent(target.x, target.z, active)')
     && contents.entry.includes('mapScreenInput(screen.x, screen.y)')
@@ -87,6 +99,21 @@ check(
     && contents.scene.indexOf('[1.3, 4.5, 1.3]') < contents.scene.indexOf('[5.8, 2.4, 5.8]')
     && contents.scene.includes('rotation: [180, 0, 0]'),
   'funnel is narrow at ground contact, broad aloft, and cone points face downward',
+);
+check(
+  'expanded-terrain-footprint',
+  contents.scene.includes("name: 'terrain-slab'") && contents.scene.includes('scale: [190, 0.8, 190]'),
+  'terrain footprint is expanded to at least 180x180 PlayCanvas world units',
+);
+check(
+  'connected-road-junctions-contract',
+  contents.scene.includes('const roadAxes = [-45, 0, 45];') && contents.scene.includes('name: `road-ns-${x}`') && contents.scene.includes('name: `road-ew-${z}`'),
+  'authored road network contains a 3x3 grid providing 9 connected junctions',
+);
+check(
+  'distinct-landmark-blocks-contract',
+  contents.scene.includes('oak-gable-house') && contents.scene.includes('grain-silo-mill') && contents.scene.includes('county-water-tower') && contents.scene.includes('moo-brew-corner-shop'),
+  'world contains at least 4 distinct landmark blocks for visual orientation',
 );
 check('browser-version-export-check', contents.browserQa.includes('engine-version-exported'), 'browser QA asserts exported engine version');
 check('browser-revision-export-check', contents.browserQa.includes('engine-revision-exported'), 'browser QA asserts exported engine revision');

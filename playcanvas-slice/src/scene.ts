@@ -1,6 +1,7 @@
 // ============================================================================
 // [SW:PLAYCANVAS:PRAIRIE_JUNCTION_SCENE]
 // Authored road, terrain, Cow 17, buildings, lights, and tornado proof.
+// Expanded Prairie Junction map proof with connected grid network & distinct areas.
 // ============================================================================
 
 import { ROAD_TOP_Y, TORNADO_BASE_Y } from './constants';
@@ -44,11 +45,9 @@ export function populatePrairieJunctionScene(
   app.scene.ambientLight = new pc.Color(0.36, 0.42, 0.45);
 
   // [SW:PLAYCANVAS:STORM_FOLLOW_CAMERA]
-  // The bootstrap owns the final follow position. This authored diagonal pose
-  // is only the pre-authority starting frame and preserves the miniature
-  // isometric character while the accepted gameplay bridge connects.
+  // Far clip expanded to 450 for the expanded 190x190 Prairie Junction world.
   const camera = new pc.Entity('slice-camera');
-  camera.addComponent('camera', { clearColor: sky, nearClip: 0.1, farClip: 220, fov: 44 });
+  camera.addComponent('camera', { clearColor: sky, nearClip: 0.1, farClip: 450, fov: 44 });
   camera.setPosition(30, 28, 36);
   camera.lookAt(0, 3.2, 0);
   app.root.addChild(camera);
@@ -60,7 +59,7 @@ export function populatePrairieJunctionScene(
     color: new pc.Color(1, 0.88, 0.68),
     intensity: 1.8,
     castShadows: true,
-    shadowDistance: 110,
+    shadowDistance: 250,
     shadowResolution: 2048,
     normalOffsetBias: 0.06,
     shadowBias: 0.2,
@@ -100,6 +99,14 @@ export function populatePrairieJunctionScene(
     emissiveIntensity: 0.9,
     gloss: 0.5,
   });
+  const wood = createMaterial(pc, [0.62, 0.42, 0.25], { gloss: 0.15 });
+  const cottageBlue = createMaterial(pc, [0.45, 0.52, 0.58], { gloss: 0.22 });
+  const terracotta = createMaterial(pc, [0.58, 0.25, 0.18], { gloss: 0.25 });
+  const siloSilver = createMaterial(pc, [0.78, 0.8, 0.82], { metalness: 0.35, gloss: 0.5 });
+  const barnRed = createMaterial(pc, [0.55, 0.12, 0.1], { gloss: 0.18 });
+  const waterTowerSteel = createMaterial(pc, [0.42, 0.48, 0.55], { metalness: 0.4, gloss: 0.45 });
+  const industrialGrey = createMaterial(pc, [0.35, 0.38, 0.4], { gloss: 0.2 });
+
   const funnelMaterial = createMaterial(pc, [0.25, 0.29, 0.31], {
     opacity: 0.72,
     gloss: 0.05,
@@ -111,59 +118,68 @@ export function populatePrairieJunctionScene(
     doubleSided: true,
   });
 
+  // Expanded terrain slab (190 x 190 units)
   addPrimitive(pc, app, entities, {
     name: 'terrain-slab',
     type: 'box',
     position: [0, -0.4, 0],
-    scale: [82, 0.8, 82],
+    scale: [190, 0.8, 190],
     material: grass,
   });
 
-  addPrimitive(pc, app, entities, {
-    name: 'road-north-south',
-    type: 'box',
-    position: [0, ROAD_TOP_Y - 0.06, 0],
-    scale: [9, 0.12, 76],
-    material: asphalt,
-  });
-  addPrimitive(pc, app, entities, {
-    name: 'road-east-west',
-    type: 'box',
-    position: [0, ROAD_TOP_Y - 0.06, 0],
-    scale: [76, 0.12, 9],
-    material: asphalt,
-  });
+  // 3x3 Road Grid (9 Connected Junctions at X/Z = -45, 0, 45)
+  const roadAxes = [-45, 0, 45];
+  for (const x of roadAxes) {
+    addPrimitive(pc, app, entities, {
+      name: `road-ns-${x}`,
+      type: 'box',
+      position: [x, ROAD_TOP_Y - 0.06, 0],
+      scale: [9, 0.12, 180],
+      material: asphalt,
+    });
+    addPrimitive(pc, app, entities, {
+      name: `sidewalk-ns-${x}-west`,
+      type: 'box',
+      position: [x - 5.25, ROAD_TOP_Y + 0.035, 0],
+      scale: [1.25, 0.13, 180],
+      material: concrete,
+    });
+    addPrimitive(pc, app, entities, {
+      name: `sidewalk-ns-${x}-east`,
+      type: 'box',
+      position: [x + 5.25, ROAD_TOP_Y + 0.035, 0],
+      scale: [1.25, 0.13, 180],
+      material: concrete,
+    });
+  }
 
-  addPrimitive(pc, app, entities, {
-    name: 'sidewalk-west',
-    type: 'box',
-    position: [-5.25, ROAD_TOP_Y + 0.035, 0],
-    scale: [1.25, 0.13, 76],
-    material: concrete,
-  });
-  addPrimitive(pc, app, entities, {
-    name: 'sidewalk-east',
-    type: 'box',
-    position: [5.25, ROAD_TOP_Y + 0.035, 0],
-    scale: [1.25, 0.13, 76],
-    material: concrete,
-  });
-  addPrimitive(pc, app, entities, {
-    name: 'sidewalk-north',
-    type: 'box',
-    position: [0, ROAD_TOP_Y + 0.04, -5.25],
-    scale: [76, 0.14, 1.25],
-    material: concrete,
-  });
-  addPrimitive(pc, app, entities, {
-    name: 'sidewalk-south',
-    type: 'box',
-    position: [0, ROAD_TOP_Y + 0.04, 5.25],
-    scale: [76, 0.14, 1.25],
-    material: concrete,
-  });
+  for (const z of roadAxes) {
+    addPrimitive(pc, app, entities, {
+      name: `road-ew-${z}`,
+      type: 'box',
+      position: [0, ROAD_TOP_Y - 0.06, z],
+      scale: [180, 0.12, 9],
+      material: asphalt,
+    });
+    addPrimitive(pc, app, entities, {
+      name: `sidewalk-ew-${z}-north`,
+      type: 'box',
+      position: [0, ROAD_TOP_Y + 0.04, z - 5.25],
+      scale: [180, 0.14, 1.25],
+      material: concrete,
+    });
+    addPrimitive(pc, app, entities, {
+      name: `sidewalk-ew-${z}-south`,
+      type: 'box',
+      position: [0, ROAD_TOP_Y + 0.04, z + 5.25],
+      scale: [180, 0.14, 1.25],
+      material: concrete,
+    });
+  }
+
   addRoadMarkings(pc, app, entities, roadPaint);
 
+  // Block 1: Main Street & Moo-Brew Storefront (NW / Central Block)
   const mooBrew = addBuilding(pc, app, entities, {
     name: 'moo-brew-corner-shop',
     x: -14,
@@ -192,6 +208,102 @@ export function populatePrairieJunctionScene(
     depth: 9,
     height: 5,
     wall: cream,
+    roof,
+  });
+  addBuilding(pc, app, entities, {
+    name: 'commercial-arcade',
+    x: -25,
+    z: -15,
+    width: 10,
+    depth: 7,
+    height: 6,
+    wall: white,
+    roof,
+  });
+
+  // Block 2: Residential Neighborhood (NE Block)
+  addBuilding(pc, app, entities, {
+    name: 'oak-gable-house',
+    x: 30,
+    z: -30,
+    width: 9,
+    depth: 8,
+    height: 5,
+    wall: wood,
+    roof,
+  });
+  addBuilding(pc, app, entities, {
+    name: 'prairie-cottage',
+    x: 58,
+    z: -25,
+    width: 10,
+    depth: 7,
+    height: 4.5,
+    wall: cottageBlue,
+    roof,
+  });
+  addBuilding(pc, app, entities, {
+    name: 'ranch-residence',
+    x: 32,
+    z: -58,
+    width: 12,
+    depth: 8,
+    height: 5,
+    wall: cream,
+    roof: terracotta,
+  });
+
+  // Block 3: Agricultural & Market Area (SW Block)
+  addBuilding(pc, app, entities, {
+    name: 'grain-silo-mill',
+    x: -35,
+    z: 35,
+    width: 8,
+    depth: 8,
+    height: 14,
+    wall: siloSilver,
+    roof,
+  });
+  addBuilding(pc, app, entities, {
+    name: 'farm-supply-barn',
+    x: -58,
+    z: 30,
+    width: 12,
+    depth: 9,
+    height: 6,
+    wall: barnRed,
+    roof,
+  });
+  addBuilding(pc, app, entities, {
+    name: 'gas-station-canopy',
+    x: -30,
+    z: 58,
+    width: 11,
+    depth: 8,
+    height: 4.5,
+    wall: white,
+    roof,
+  });
+
+  // Block 4: Industrial & Substation Area (SE Block)
+  addBuilding(pc, app, entities, {
+    name: 'county-water-tower',
+    x: 58,
+    z: 35,
+    width: 7,
+    depth: 7,
+    height: 16,
+    wall: waterTowerSteel,
+    roof,
+  });
+  addBuilding(pc, app, entities, {
+    name: 'service-workshop',
+    x: 32,
+    z: 58,
+    width: 10,
+    depth: 8,
+    height: 5,
+    wall: industrialGrey,
     roof,
   });
 

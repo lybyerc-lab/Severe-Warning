@@ -52,24 +52,38 @@ export function addRoadMarkings(
   entities: PcEntity[],
   paint: PcMaterial,
 ): void {
-  for (let offset = -32; offset <= 32; offset += 4) {
-    if (Math.abs(offset) < 6) continue;
-    addPrimitive(pc, app, entities, {
-      name: `north-south-centerline-${offset}`,
-      type: 'box',
-      position: [0, ROAD_TOP_Y + 0.018, offset],
-      scale: [0.16, 0.025, 1.7],
-      material: paint,
-      castShadows: false,
-    });
-    addPrimitive(pc, app, entities, {
-      name: `east-west-centerline-${offset}`,
-      type: 'box',
-      position: [offset, ROAD_TOP_Y + 0.018, 0],
-      scale: [1.7, 0.025, 0.16],
-      material: paint,
-      castShadows: false,
-    });
+  const roadAxes = [-45, 0, 45];
+  for (let offset = -85; offset <= 85; offset += 5) {
+    let nearJunction = false;
+    for (const axis of roadAxes) {
+      if (Math.abs(offset - axis) < 6.5) {
+        nearJunction = true;
+        break;
+      }
+    }
+    if (nearJunction) continue;
+
+    for (const x of roadAxes) {
+      addPrimitive(pc, app, entities, {
+        name: `ns-centerline-${x}-${offset}`,
+        type: 'box',
+        position: [x, ROAD_TOP_Y + 0.018, offset],
+        scale: [0.16, 0.025, 1.8],
+        material: paint,
+        castShadows: false,
+      });
+    }
+
+    for (const z of roadAxes) {
+      addPrimitive(pc, app, entities, {
+        name: `ew-centerline-${z}-${offset}`,
+        type: 'box',
+        position: [offset, ROAD_TOP_Y + 0.018, z],
+        scale: [1.8, 0.025, 0.16],
+        material: paint,
+        castShadows: false,
+      });
+    }
   }
 }
 
