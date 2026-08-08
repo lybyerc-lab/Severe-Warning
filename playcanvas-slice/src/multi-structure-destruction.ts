@@ -113,6 +113,10 @@ interface DebrisProfile {
   readonly groundRetention: number;
   readonly maxHorizontalSpeed: number;
   readonly maxVerticalSpeed: number;
+  readonly softHeight: number;
+  readonly softTravel: number;
+  readonly heightBrake: number;
+  readonly travelBrake: number;
 }
 
 interface DebrisState {
@@ -155,12 +159,15 @@ const GROUND_Y = 0.45;
 // The hierarchy is deliberately readable rather than physically literal:
 // trim/signage can fly, roof pieces resist then peel, wall/frame pieces stay
 // lower, and industrial cores need much more storm authority to travel.
+// [SW:PLAYCANVAS:STRUCTURE_FLIGHT_ENVELOPE]
+// Soft height/travel brakes preserve spectacle without letting light facade
+// pieces become satellites. These are damping envelopes, not teleport clamps.
 const DEBRIS_PROFILES: Readonly<Record<DebrisWeightClass, DebrisProfile>> = Object.freeze({
-  light: Object.freeze({ suctionScale: 1.35, swirlScale: 1.35, liftScale: 1.35, gustScale: 1.30, groundRetention: 0.70, maxHorizontalSpeed: 17, maxVerticalSpeed: 14 }),
-  roof: Object.freeze({ suctionScale: 0.92, swirlScale: 0.90, liftScale: 0.82, gustScale: 0.92, groundRetention: 0.62, maxHorizontalSpeed: 11, maxVerticalSpeed: 8.5 }),
-  wall: Object.freeze({ suctionScale: 0.72, swirlScale: 0.66, liftScale: 0.56, gustScale: 0.72, groundRetention: 0.54, maxHorizontalSpeed: 8, maxVerticalSpeed: 6 }),
-  frame: Object.freeze({ suctionScale: 0.56, swirlScale: 0.48, liftScale: 0.40, gustScale: 0.56, groundRetention: 0.48, maxHorizontalSpeed: 6.2, maxVerticalSpeed: 4.5 }),
-  industrial: Object.freeze({ suctionScale: 0.42, swirlScale: 0.36, liftScale: 0.28, gustScale: 0.44, groundRetention: 0.42, maxHorizontalSpeed: 5, maxVerticalSpeed: 3.5 }),
+  light: Object.freeze({ suctionScale: 1.20, swirlScale: 1.18, liftScale: 0.96, gustScale: 1.18, groundRetention: 0.70, maxHorizontalSpeed: 10.5, maxVerticalSpeed: 7.5, softHeight: 18, softTravel: 30, heightBrake: 2.2, travelBrake: 0.18 }),
+  roof: Object.freeze({ suctionScale: 0.88, swirlScale: 0.84, liftScale: 0.68, gustScale: 0.88, groundRetention: 0.62, maxHorizontalSpeed: 8.5, maxVerticalSpeed: 6.0, softHeight: 14, softTravel: 24, heightBrake: 2.4, travelBrake: 0.20 }),
+  wall: Object.freeze({ suctionScale: 0.68, swirlScale: 0.60, liftScale: 0.45, gustScale: 0.68, groundRetention: 0.54, maxHorizontalSpeed: 6.5, maxVerticalSpeed: 4.2, softHeight: 10, softTravel: 18, heightBrake: 2.6, travelBrake: 0.24 }),
+  frame: Object.freeze({ suctionScale: 0.52, swirlScale: 0.44, liftScale: 0.32, gustScale: 0.54, groundRetention: 0.48, maxHorizontalSpeed: 5.3, maxVerticalSpeed: 3.1, softHeight: 7, softTravel: 14, heightBrake: 2.8, travelBrake: 0.28 }),
+  industrial: Object.freeze({ suctionScale: 0.40, swirlScale: 0.34, liftScale: 0.24, gustScale: 0.42, groundRetention: 0.42, maxHorizontalSpeed: 4.5, maxVerticalSpeed: 2.5, softHeight: 6, softTravel: 12, heightBrake: 3.0, travelBrake: 0.32 }),
 });
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -555,10 +562,10 @@ export class StructureDebrisField {
       const profile = DEBRIS_PROFILES[body.weightClass];
       const falloff = 1 - clamp(outward.distance / Math.max(range, 0.001), 0, 1);
       const inertia = 1 / Math.sqrt(Math.max(1, body.mass));
-      const impulse = (3.0 + falloff * 5.0) * profile.gustScale * inertia;
+      const impulse = (2.6 + falloff * 4.4) * profile.gustScale * inertia;
       body.velocityX += outward.x * impulse;
       body.velocityZ += outward.z * impulse;
-      body.velocityY += (0.55 + falloff * 1.15) * profile.liftScale * inertia;
+      body.velocityY += (0.38 + falloff * 0.85) * profile.liftScale * inertia;
     }
   }
 
@@ -654,7 +661,7 @@ export class StructureDebrisField {
   private activate(body: DebrisState, input: StormForceInput): void {
     body.active = true;
     body.entity.enabled = true;
-    body.y += 0.12;
+    body.y += 0.10;
     body.rotationX = body.activationRotation[0] / RAD_TO_DEG;
     body.rotationY = body.activationRotation[1] / RAD_TO_DEG;
     body.rotationZ = body.activationRotation[2] / RAD_TO_DEG;
@@ -662,10 +669,10 @@ export class StructureDebrisField {
     const side = deterministicSign(body.id);
     const profile = DEBRIS_PROFILES[body.weightClass];
     const inertia = 1 / Math.sqrt(Math.max(1, body.mass));
-    const release = body.weightClass === 'light' ? 2.4 : (body.weightClass === 'roof' ? 1.35 : 0.72);
-    body.velocityX = (outward.x * release + outward.z * side * release * 0.85) * inertia;
-    body.velocityY = (1.1 + profile.liftScale * 2.3) * inertia;
-    body.velocityZ = (outward.z * release - outward.x * side * release * 0.85) * inertia;
+    const release = body.weightClass === 'light' ? 1.7 : (body.weightClass === 'roof' ? 1.05 : 0.58);
+    body.velocityX = (outward.x * release + outward.z * side * release * 0.78) * inertia;
+    body.velocityY = (0.72 + profile.liftScale * 1.55) * inertia;
+    body.velocityZ = (outward.z * release - outward.x * side * release * 0.78) * inertia;
     body.angularX = side * (0.45 + inertia * 0.9);
     body.angularY = 0.55 + inertia * 1.2;
     body.angularZ = -side * (0.50 + inertia * 0.85);
@@ -690,16 +697,20 @@ export class StructureDebrisField {
       const suction = (3.8 + input.efMultiplier * 1.5) * falloff * pullBoost * profile.suctionScale * inertia;
       const swirl = (5.2 + input.efMultiplier * 1.7) * falloff * (0.75 + (pullBoost - 1) * 0.45) * profile.swirlScale * inertia;
       const nearCore = 1 - clamp(inward.distance / Math.max(input.radius * 1.15, 1), 0, 1);
-      const liftPotential = 2.0 + falloff * 6.0 + nearCore * 3.6 + (this.pullSecondsRemaining > 0 ? 3.8 : 0);
+      const liftPotential = 1.75 + falloff * 5.2 + nearCore * 3.0 + (this.pullSecondsRemaining > 0 ? 3.2 : 0);
       const lift = liftPotential * profile.liftScale * inertia;
       const weight = 6.9 + Math.log2(body.mass + 1) * 0.75;
       const tangentX = -inward.z * side;
       const tangentZ = inward.x * side;
-      const drag = 0.52 + Math.sqrt(body.mass) * 0.055;
+      const horizontalTravel = Math.hypot(body.x - body.homeX, body.z - body.homeZ);
+      const travelExcess = Math.max(0, horizontalTravel - profile.softTravel);
+      const heightExcess = Math.max(0, body.y - profile.softHeight);
+      const drag = 0.58 + Math.sqrt(body.mass) * 0.060 + travelExcess * profile.travelBrake;
+      const verticalBrake = heightExcess * profile.heightBrake;
 
       body.velocityX += (inward.x * suction + tangentX * swirl - body.velocityX * drag) * step;
       body.velocityZ += (inward.z * suction + tangentZ * swirl - body.velocityZ * drag) * step;
-      body.velocityY += (lift - weight - body.velocityY * 0.24) * step;
+      body.velocityY += (lift - weight - verticalBrake - body.velocityY * 0.30) * step;
 
       const limitedHorizontal = limit2d(body.velocityX, body.velocityZ, profile.maxHorizontalSpeed);
       body.velocityX = limitedHorizontal.x;
