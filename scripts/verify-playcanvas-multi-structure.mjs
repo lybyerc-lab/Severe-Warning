@@ -70,6 +70,35 @@ check(
 );
 
 check(
+  'staged-anatomy-and-damage-wounds',
+  contents.structures.includes('[SW:PLAYCANVAS:STRUCTURE_ANATOMY]')
+    && contents.structures.includes("type StructurePartRole = 'body' | 'roof' | 'accent' | 'wound'")
+    && contents.structures.includes('showFromStage')
+    && contents.structures.includes('hideAtStage')
+    && contents.structures.includes('visibleWoundParts')
+    && contents.structures.includes("addCore('wound-dark'")
+    && contents.structures.includes("addCore('roof-left'")
+    && contents.structures.includes("addCore('window-left'")
+    && contents.structures.includes("addCore('loading-door'"),
+  'representative structures expose readable anatomy and stage-driven wounds instead of box-only collapse',
+);
+
+check(
+  'structure-mass-hierarchy-contract',
+  contents.structures.includes('[SW:PLAYCANVAS:STRUCTURE_MASS_HIERARCHY]')
+    && contents.structures.includes("type DebrisWeightClass = 'light' | 'roof' | 'wall' | 'frame' | 'industrial'")
+    && contents.structures.includes('const DEBRIS_PROFILES')
+    && contents.structures.includes("0.9, 'light'")
+    && contents.structures.includes("4.8, 'roof'")
+    && contents.structures.includes("8.5, 'wall'")
+    && contents.structures.includes("14.0, 'frame'")
+    && contents.structures.includes("24.0, 'industrial'")
+    && contents.structures.includes('maxHorizontalSpeed')
+    && contents.structures.includes('maxVerticalSpeed'),
+  'light/roof/wall/frame/industrial pieces have explicit increasing inertia and bounded speed profiles',
+);
+
+check(
   'structure-debris-isolated-from-tree-force',
   contents.structures.includes('[SW:PLAYCANVAS:STRUCTURE_DEBRIS_FIELD]')
     && contents.structures.includes('class StructureDebrisField')
@@ -126,7 +155,19 @@ check(
     && contents.qa.includes("name: 'presentation-matches-authority'")
     && contents.qa.includes("name: 'authoritative-stage-activates-structure-debris'")
     && contents.qa.includes("name: 'reset-restores-authoritative-structures'"),
-  'new browser proof blocks on actual destruction, scoring, mirror truth, debris, and reset',
+  'browser proof blocks on actual destruction, scoring, mirror truth, debris, and reset',
+);
+
+check(
+  'qa-demands-anatomy-breakup-and-weight-response',
+  contents.qa.includes("version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2'")
+    && contents.qa.includes("name: 'intact-building-anatomy-readable'")
+    && contents.qa.includes("name: 'five-debris-weight-classes-declared'")
+    && contents.qa.includes("name: 'damage-stage-reveals-wound-and-detaches-anatomy'")
+    && contents.qa.includes("name: 'light-debris-outtravels-heavy-frame'")
+    && contents.qa.includes('signBody.peakDisplacement')
+    && contents.qa.includes('frameBody.peakDisplacement'),
+  'browser proof requires visible staged breakup plus a measured mass hierarchy under real accepted play',
 );
 
 check(
