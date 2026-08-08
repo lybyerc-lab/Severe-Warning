@@ -2,7 +2,9 @@
 
 **Severe Weather Warning** is a mobile-first, single-player arcade destruction game in which the player directly controls the storm.
 
-The active production game is the Three.js/WebGL build rooted at `MechanicsLab/SevereWeather_3D_Lab.html`. Capacitor packages the same offline web build for Android landscape play. Unity, Godot, and Babylon.js work remain preserved as experiments or historical evidence and are not the active production path.
+The active production game is again the Three.js/WebGL build rooted at `MechanicsLab/SevereWeather_3D_Lab.html` and the accepted modernization/runtime layers. Capacitor packages the same offline web build for Android landscape play.
+
+PlayCanvas, Unity, Godot, and Babylon.js work remain preserved as experiments, research, or historical evidence. They are not the active production renderer path.
 
 ## Canonical identity
 
@@ -10,104 +12,131 @@ The active production game is the Three.js/WebGL build rooted at `MechanicsLab/S
 - Current campaign/content family: **Heartland**
 - Production renderer: **Three.js**
 - Primary platform: **Android landscape**
-- Browser build: QA and rapid gameplay review
-- Android build: physical touch, performance, audio, lifecycle, heat, and battery acceptance
+- Browser build: QA and rapid gameplay/art review
+- Android build: physical touch, performance, audio, lifecycle, heat, battery, and final acceptance
 
 “Heartland” is campaign terminology, not a replacement title for the game.
 
-## Current candidate
+## Production revival baseline
 
-Draft PR #15, `agent/threejs-production-slice`, builds the V5.1 Three.js production visual slice on top of the V5 Heartland campaign foundation.
+The production revival is intentionally rooted directly at draft PR #26 head:
 
-Its current accepted automated gate is tied to commit:
+`1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
 
-`c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72`
+Reference evidence:
 
-GitHub Actions run `30868496726` completed successfully, including:
+- Workflow Run 6: `31094966986`
+- Artifact: `severe-weather-presentation-identity-6`
+- Debug APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
 
-- accepted gameplay patch-chain verification
-- V5 foundation verification
-- V5.1 structural verification
-- offline web packaging
-- deterministic desktop browser QA
-- deterministic mobile-landscape browser QA
-- Android asset synchronization
-- debug APK assembly
-- test-package creation and artifact upload
+Active production revival branch:
 
-PR #15 remains draft and unmerged until the packaged browser build and APK receive hands-on gameplay acceptance.
+`agent/threejs-production-revival`
+
+The branch begins at the exact Three.js gameplay build the owner preferred over the promoted PlayCanvas candidate. The pivot itself does not change gameplay code.
+
+## Why the renderer direction changed back
+
+A promoted PlayCanvas research candidate passed extensive automated QA but lost the owner hands-on comparison.
+
+Observed problems included:
+
+- forward movement that felt like backing and steering a truck/trailer rather than directly driving the storm;
+- destruction that remained too roof-heavy and large-chunk oriented;
+- too much dependence on Pull/Gust/Zap for satisfying breakup;
+- an opening that looked like cheap separate animation;
+- an overall prototype visual feel;
+- less enjoyable gameplay and weaker natural destruction than the preserved Three.js build.
+
+The lesson is simple: stable numbers are useful, but they do not automatically preserve fun.
 
 ## Protected gameplay baseline
 
-Modernization and visual work must preserve the accepted behavior already proven in the current production game:
+Graphics and art-pipeline work must preserve:
 
-- direct storm control
-- Pull, Gust, and Grid Zap behavior
-- continuous scoring across district boundaries
-- forward-only district progression
-- three-minute real-time warning clock
-- Heartland campaign progression and persistence contracts
-- QA4 input isolation and deterministic runtime checks
-- popup batching and rendering behavior
-- deterministic cleanup and reset behavior
-- recorded-effect and continuous wind-audio direction
-- people protected and never targetable
-- animals invincible, non-targetable, and used only for safe slapstick
-- news crews and storm chasers as invincible witnesses, never enemies
+- direct storm steering and forward play feel;
+- Pull, Gust, and Grid Zap behavior;
+- satisfying natural storm-contact destruction;
+- continuous scoring and accepted combo behavior;
+- forward-only district/stage progression;
+- three-minute real-time warning clock;
+- Heartland campaign progression and persistence contracts;
+- QA input isolation and deterministic reset/cleanup;
+- people protected and never targetable;
+- animals invincible, non-targetable, and used only for safe slapstick;
+- news crews and storm chasers as invincible witnesses, never enemies.
 
-## Engine decisions
+## Engine and pipeline decisions
 
-- Three.js remains the production renderer.
-- Babylon.js is archived laboratory evidence and should not receive continued migration investment.
-- Defold is the strongest current Plan B engine, but only for a tightly bounded proof that tests a specific measured Three.js limitation.
+- Three.js is production.
+- Keep the production Three.js version frozen during the first graphics-pipeline milestone.
+- Do not combine an engine upgrade with asset-pipeline construction, destruction redesign, or cinematic work.
+- PlayCanvas is preserved research evidence, not production ancestry.
 - No engine rewrite is justified by visual dissatisfaction alone.
-- The immediate strategy is to improve the Three.js asset, art, destruction, rendering, and authoring pipeline.
+- The immediate strategy is to improve the Three.js asset, art, destruction, rendering, and authoring pipeline while protecting the game that is already fun.
 
-## Next milestone: production modernization
+## Active milestone: graphics pipeline foundation
 
-The current patch-chain and single-file construction method are slowing development. The next engineering milestone is a controlled modernization that preserves the working game while replacing prototype scaffolding.
+See `Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`.
 
-Planned direction:
+The first implementation milestone is intentionally small:
 
-- Vite-based build and development server
-- strict TypeScript
-- real ES modules instead of generated inline script concatenation
-- explicit `GameApp`, lifecycle, and shared game-context contracts
-- clear ownership for gameplay, rendering, world, audio, input, persistence, UI, and QA systems
-- data-driven campaign, district, landmark, building, and destruction definitions
-- a formal QA bridge instead of incidental `globalThis` access
-- continued Capacitor Android packaging
-- retirement of historical patch scripts only after verified parity
+- establish one explicit production asset registry;
+- prefer authored GLB/glTF assets for production 3D presentation;
+- centralize loading/caching;
+- keep presentation meshes/materials separate from gameplay collision and damage truth;
+- define mobile geometry/texture budgets;
+- require offline/local Capacitor-compatible assets;
+- provide missing-asset fallbacks;
+- prove the pipeline on one existing destructible structure before converting the wider world.
 
-The modernization must be performed as a controlled migration, not a ground-up gameplay rewrite.
+The first pipeline milestone must not retune steering, abilities, scoring, timing, camera feel, safe animals, or gameplay destruction authority.
 
-## QA and hosting boundary
+## Destruction visual direction
 
-The current workflow packages a complete `web-preview` and QA evidence bundle. It does **not** currently publish a permanent hosted QA site.
+The next destruction pass should make ordinary tornado contact satisfying on its own.
 
-- Use GitHub Actions and an approved GitHub Pages preview workflow for hosted QA.
-- Do not use Netlify for this project unless the owner explicitly changes that decision.
-- Do not describe a packaged preview as a deployed site.
+Target presentation:
+
+- smaller and more varied breakup pieces where mobile performance allows;
+- wall/interior/frame/trim anatomy instead of roof-dominant breakup;
+- staged visible damage before final destruction;
+- Pull/Gust/Zap amplify or redirect spectacle rather than being required for it;
+- reusable destruction anatomy across at least two distinct structures;
+- deterministic reset and bounded debris.
+
+Useful presentation lessons from the PlayCanvas research, including staged anatomy and mass hierarchy, may be brought back without importing its gameplay executor.
+
+## Opening cinematic direction
+
+Keep the canonical story, replace the cheap separate-animation implementation.
+
+The production opening should use the same world, models, materials, lighting, characters, atmosphere, and renderer as gameplay:
+
+warning newspaper -> farm reveal -> Cow 17 drinks Moo Brew -> weather/radio shift -> Cow 17 double take -> chickens scatter -> barn roof/tornado touchdown -> direct gameplay handoff.
+
+It stays skippable, cannot consume the warning clock behind the scene, and should look like the same game the player is about to control.
 
 ## Repository map
 
 - `MechanicsLab/`: active Three.js game source and preserved browser laboratories
-- `runtime/`: maintained V5.1 Three.js runtime source fragments
+- `runtime/`: maintained Three.js runtime source fragments
 - `android/`: Capacitor Android project
 - `scripts/`: build, patch, verification, QA, and packaging tools
-- `Docs/`: product direction, current decisions, device evidence, and historical records
+- `Docs/`: product direction, current decisions, device evidence, build trains, and historical records
+- `playcanvas-slice/`: preserved renderer-migration research, not active production
 - `Experiments/`: isolated renderer and visual-engine research
 - `Godot/`: preserved migration experiment
 - `Assets/`, `Packages/`, `ProjectSettings/`: preserved Unity history
 
-## Required reading before implementation
+## Required reading before production implementation
 
 1. `CURRENT_STATUS.md`
-2. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-3. `Docs/MODERNIZATION_PLAN.md`
-4. `Docs/DECISION_2026-08-03_PRODUCTION_DIRECTION.md`
-5. `Docs/NO_DRIFT_POLICY.md`
-6. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
-7. `Docs/DEVICE_TEST_LOG.md`
+2. `Docs/ACTIVE_HANDOFF.md`
+3. `Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`
+4. `Docs/DECISIONS.md`
+5. `Docs/ACCEPTED_BEHAVIOR.md`
+6. `Docs/QA_BACKLOG.md`
+7. `Docs/IMPLEMENTATION_TRUTH_GATE.md`
 
-The repository is the durable project record. Chat is working context until the resulting decisions and evidence are committed here.
+The repository is the durable project record. Chat is working context until resulting decisions and evidence are committed here.
