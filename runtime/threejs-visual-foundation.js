@@ -285,6 +285,18 @@ function swVisualAddLamp(root, x, z, yaw = 0) {
   root.add(group);
 }
 
+function swVisualGetHartFarmPresentationAnchor() {
+  const node = scene?.getObjectByName?.('HartFarmSignatureBarn') || null;
+  if (!node) return null;
+  const position = new THREE.Vector3();
+  node.getWorldPosition(position);
+  return Object.freeze({
+    node,
+    x: Number(position.x),
+    z: Number(position.z),
+  });
+}
+
 function swVisualRefreshHeroSlice() {
   if (!swVisualEnsureRoot()) return false;
 
@@ -293,7 +305,8 @@ function swVisualRefreshHeroSlice() {
     : '';
   const applied = globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getAppliedTargets?.() || [];
   const storefront = applied.find((entry) => entry.assetId === 'structure.storefront.v1') || null;
-  const barnKey = productionBarn ? `${Math.round(productionBarn.x)}:${Math.round(productionBarn.z)}` : 'none';
+  const hartFarm = swVisualGetHartFarmPresentationAnchor();
+  const barnKey = hartFarm ? `${Math.round(hartFarm.x)}:${Math.round(hartFarm.z)}` : 'none';
   const shopKey = storefront ? `${Math.round(storefront.x)}:${Math.round(storefront.z)}` : 'none';
   const heroKey = `${campaignId}|${barnKey}|${shopKey}`;
   if (swVisualHeroRoot && swVisualLastHeroKey === heroKey) return true;
@@ -305,9 +318,9 @@ function swVisualRefreshHeroSlice() {
   swVisualRoot.add(swVisualHeroRoot);
   swVisualLastHeroKey = heroKey;
 
-  if (productionBarn) {
-    const barnX = Number(productionBarn.x);
-    const barnZ = Number(productionBarn.z);
+  if (hartFarm) {
+    const barnX = hartFarm.x;
+    const barnZ = hartFarm.z;
     const apron = swVisualConformedPlane(44, 34, barnX, barnZ, 0.09, '#715941', 0.98, 0.92);
     apron.name = 'SWVisualHartFarmDirtApron';
     swVisualHeroRoot.add(apron);
@@ -445,7 +458,8 @@ function swVisualUpdate(dt, now) {
 
     const campaignId = typeof getActiveCampaignLevel === 'function' ? String(getActiveCampaignLevel()?.id || '') : '';
     const appliedCount = globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getSnapshot?.().appliedCount || 0;
-    const currentHeroKey = `${campaignId}|${productionBarn ? 'barn' : 'none'}|${appliedCount}`;
+    const hartFarmPresent = Boolean(scene?.getObjectByName?.('HartFarmSignatureBarn'));
+    const currentHeroKey = `${campaignId}|${hartFarmPresent ? 'barn' : 'none'}|${appliedCount}`;
     if (!swVisualHeroRoot || !swVisualLastHeroKey.startsWith(`${campaignId}|`) || !swVisualLastHeroKey.endsWith(appliedCount ? swVisualLastHeroKey.split('|').at(-1) : 'none')) {
       Promise.resolve().then(() => swVisualRefreshHeroSlice());
     } else if (currentHeroKey && swVisualHeroRoot.parent !== swVisualRoot) {
@@ -468,9 +482,10 @@ function swVisualPrepareQaView(mode = 'storefront') {
   document.getElementById('mainMenu')?.classList.add('hidden');
 
   swVisualRefreshHeroSlice();
-  if (mode === 'farm' && productionBarn) {
-    const x = Number(productionBarn.x);
-    const z = Number(productionBarn.z);
+  const hartFarm = swVisualGetHartFarmPresentationAnchor();
+  if (mode === 'farm' && hartFarm) {
+    const x = hartFarm.x;
+    const z = hartFarm.z;
     camera.position.set(x + 50, terrainHeightAt(x, z) + 31, z + 48);
     camera.lookAt(x, terrainHeightAt(x, z) + 7.8, z);
   } else if (mode === 'storm' && storm?.pos) {

@@ -51,6 +51,7 @@ for (const prerequisite of [
 
 if (runtime.includes('</script>')) throw new Error('Three.js visual foundation runtime contains a closing script tag.');
 for (const prohibited of [
+  'productionBarn',
   'target.health =',
   'target.maxHealth =',
   'target.damageStage =',
@@ -61,7 +62,7 @@ for (const prohibited of [
   'remainingSeconds =',
   'triggerAbility =',
 ]) {
-  if (runtime.includes(prohibited)) throw new Error(`Visual foundation contains prohibited gameplay mutation: ${prohibited}`);
+  if (runtime.includes(prohibited)) throw new Error(`Visual foundation contains prohibited gameplay/private authority access: ${prohibited}`);
 }
 
 const newline = html.includes('\r\n') ? '\r\n' : '\n';

@@ -32,6 +32,7 @@ check('cloud-cards', files.runtime.includes('THREE.SpriteMaterial') && files.run
 check('dust-cards', files.runtime.includes('SWVisualStormDust') && files.runtime.includes("swVisualMakeSoftTexture('dust')"));
 check('storefront-ground-language', files.runtime.includes('SWVisualStorefrontAsphalt') && files.runtime.includes('SWVisualStorefrontSidewalk'));
 check('hart-farm-ground-language', files.runtime.includes('SWVisualHartFarmDirtApron'));
+check('hart-farm-public-presentation-anchor', files.runtime.includes("getObjectByName?.('HartFarmSignatureBarn')") && files.runtime.includes('swVisualGetHartFarmPresentationAnchor'));
 check('hero-practical-lights', files.runtime.includes('THREE.PointLight') && files.runtime.includes('swVisualAddLamp'));
 check('aces-tonemapping', files.runtime.includes('THREE.ACESFilmicToneMapping'));
 check('srgb-output', files.runtime.includes('THREE.sRGBEncoding'));
@@ -51,11 +52,13 @@ const protectedTargetAssignments = [...files.runtime.matchAll(/target\.(health|m
 const protectedGlobalAssignments = [...files.runtime.matchAll(/\b(score|combo|remainingSeconds|currentStage|selectedCampaignIndex)\s*(?:\+\+|--|[+\-*/]?=(?!=))/g)].map((match) => match[0]);
 const protectedAbilityWrites = [...files.runtime.matchAll(/\b(triggerAbility|usePull|useGust|useZap|triggerPull|triggerGust|triggerZap)\s*=/g)].map((match) => match[0]);
 const stormAuthorityWrites = [...files.runtime.matchAll(/\bstorm\.pos\.(?:set|copy|add|sub)\s*\(/g)].map((match) => match[0]);
+const privateProductionBarnRefs = [...files.runtime.matchAll(/\bproductionBarn\b/g)].map((match) => match[0]);
 
 check('no-gameplay-target-mutations', protectedTargetAssignments.length === 0, protectedTargetAssignments.join(', '));
 check('no-score-clock-campaign-mutations', protectedGlobalAssignments.length === 0, protectedGlobalAssignments.join(', '));
 check('no-ability-rewrites', protectedAbilityWrites.length === 0, protectedAbilityWrites.join(', '));
 check('no-storm-position-writes', stormAuthorityWrites.length === 0, stormAuthorityWrites.join(', '));
+check('no-private-production-barn-access', privateProductionBarnRefs.length === 0, privateProductionBarnRefs.join(', '));
 check('no-runtime-http-assets', !/https?:\/\//.test(files.runtime));
 check('no-new-renderer', !files.runtime.includes('new THREE.WebGLRenderer'));
 check('no-new-scene-authority', !files.runtime.includes('new THREE.Scene'));
@@ -71,6 +74,7 @@ const report = {
     protectedGlobalAssignments,
     protectedAbilityWrites,
     stormAuthorityWrites,
+    privateProductionBarnRefs,
     candidateCount: provenance.candidates?.length || 0,
     productionImportCount: provenance.productionImports?.length || 0,
   },
