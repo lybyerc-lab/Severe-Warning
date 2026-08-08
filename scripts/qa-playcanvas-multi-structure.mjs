@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 const url = process.env.PLAYCANVAS_SLICE_URL ?? 'http://127.0.0.1:4175/?qa=1';
 const evidenceDir = 'playcanvas-slice-evidence';
 const EXPECTED_IDS = ['storefront', 'house', 'industrial', 'barn'];
+const DEBRIS_CLASSES = ['trim', 'roof', 'wall', 'frame'];
 await mkdir(evidenceDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -47,6 +48,29 @@ async function readState() {
 
 function byId(state, id) {
   return state?.authority?.structures?.find((structure) => structure.id === id) ?? null;
+}
+
+function summarizeDebris(initialState, state) {
+  const initialBodies = new Map((initialState?.debris?.bodies ?? []).map((body) => [body.id, body]));
+  const activeBodies = (state?.debris?.bodies ?? []).filter((body) => body.active);
+  const classes = Object.fromEntries(DEBRIS_CLASSES.map((debrisClass) => {
+    const bodies = activeBodies.filter((body) => body.debrisClass === debrisClass);
+    const masses = bodies.map((body) => Number(body.mass));
+    const horizontal = bodies.map((body) => Number(body.horizontalDisplacement));
+    const rises = bodies.map((body) => {
+      const initial = initialBodies.get(body.id);
+      return Number(body.peakHeight) - Number(initial?.peakHeight ?? body.peakHeight);
+    });
+    return [debrisClass, {
+      count: bodies.length,
+      minMass: bodies.length ? Math.min(...masses) : null,
+      maxMass: bodies.length ? Math.max(...masses) : null,
+      maxHorizontal: bodies.length ? Math.max(...horizontal) : 0,
+      maxRise: bodies.length ? Math.max(...rises) : 0,
+      bodies,
+    }];
+  }));
+  return { activeCount: activeBodies.length, activeBodies, classes };
 }
 
 async function driveAcceptedStormTo(id, timeoutMs = 18_000) {
@@ -123,8 +147,6 @@ async function ensureAuthoritativeDamage(id) {
   const drive = await driveAcceptedStormTo(id);
   if (!drive.reached) throw new Error(`Accepted storm could not reach ${id}; final distance=${drive.distance}.`);
 
-  // Normal contact damage is active while the accepted storm sits on target.
-  // The visible Gust button accelerates the same accepted damageTarget path.
   const gust = await clickVisibleAbilityWhenReady('secondary');
   if (!gust.accepted) throw new Error(`Visible Gust was not accepted near ${id}.`);
 
@@ -163,14 +185,10 @@ try {
   await waitFrames(6);
   await page.screenshot({ path: `${evidenceDir}/playcanvas-multi-structure-damage.png`, fullPage: true });
 
-  // Once authority has detached a stage chunk, exercise the existing accepted
-  // Pull path so the new structure debris field proves visible storm response.
   const pull = await clickVisibleAbilityWhenReady('primary');
   if (!pull.accepted) throw new Error('Visible Pull was not accepted after structure damage.');
   await waitFrames(20);
 
-  // Keep the accepted storm on the storefront and use visible Gusts when ready
-  // until the legacy target actually reaches destroyTarget and awards score.
   let storefrontDestroyed = await waitForStructure('storefront', (structure) => structure.destroyed, 4_000);
   for (let attempt = 0; !storefrontDestroyed.matched && attempt < 4; attempt += 1) {
     const gust = await clickVisibleAbilityWhenReady('secondary', 12_000);
@@ -180,7 +198,9 @@ try {
   if (!storefrontDestroyed.matched) {
     throw new Error(`Storefront never reached authoritative destruction. health=${storefrontDestroyed.structure?.health}`);
   }
-  await waitFrames(12);
+  await waitFrames(20);
+  const destroyedState = await readState();
+  const massHierarchy = summarizeDebris(initial, destroyedState);
   await page.screenshot({ path: `${evidenceDir}/playcanvas-multi-structure-destroyed.png`, fullPage: true });
 
   const houseDamage = await ensureAuthoritativeDamage('house');
@@ -206,6 +226,16 @@ try {
   const debrisActivated = Number(afterDamage.debris?.activationCount ?? 0) > 0
     && Number(afterDamage.debris?.activeCount ?? 0) > 0;
   const debrisMoved = Number(afterDamage.debris?.maxDisplacement ?? 0) > 0.15;
+
+  const trim = massHierarchy.classes.trim;
+  const roof = massHierarchy.classes.roof;
+  const wall = massHierarchy.classes.wall;
+  const frame = massHierarchy.classes.frame;
+  const massOrder = Number(trim.minMass) < Number(roof.minMass)
+    && Number(roof.minMass) < Number(wall.minMass)
+    && Number(wall.minMass) < Number(frame.minMass);
+  const heavyTrailsLight = trim.maxHorizontal > frame.maxHorizontal + 0.25;
+  const roofLiftsMoreThanFrame = roof.maxRise > frame.maxRise + 0.15;
 
   const resetSnapshot = await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset() ?? null);
   await waitFrames(12);
@@ -235,6 +265,11 @@ try {
     { name: 'presentation-matches-authority', passed: presentationMatchesAuthority, detail: { authority: afterDamage.authority?.structures, presentation: afterDamage.presentation?.bindings } },
     { name: 'authoritative-stage-activates-structure-debris', passed: debrisActivated, detail: afterDamage.debris },
     { name: 'accepted-pull-moves-detached-structure-debris', passed: pull.accepted && debrisMoved && Number(afterDamage.debris?.pullAcceptedCount ?? 0) >= 1, detail: afterDamage.debris },
+    { name: 'all-four-structure-debris-classes-activate', passed: DEBRIS_CLASSES.every((debrisClass) => massHierarchy.classes[debrisClass].count >= 1), detail: massHierarchy.classes },
+    { name: 'structure-debris-mass-order-is-readable', passed: massOrder, detail: massHierarchy.classes },
+    { name: 'heavy-frame-trails-light-trim', passed: heavyTrailsLight, detail: { trim, frame } },
+    { name: 'roof-lifts-more-than-frame', passed: roofLiftsMoreThanFrame, detail: { roof, frame } },
+    { name: 'structure-debris-count-remains-bounded', passed: massHierarchy.activeCount >= 5 && massHierarchy.activeCount <= 20, detail: { activeCount: massHierarchy.activeCount } },
     { name: 'reset-restores-authoritative-structures', passed: resetStructuresIntact && Boolean(resetSnapshot), detail: afterReset.authority?.structures },
     { name: 'reset-restores-structure-presentation', passed: resetPresentationIntact, detail: afterReset.presentation },
     { name: 'reset-clears-structure-debris', passed: resetDebrisClean, detail: afterReset.debris },
@@ -245,7 +280,7 @@ try {
 
   const failedChecks = checks.filter((check) => !check.passed).map((check) => check.name);
   report = {
-    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V1',
+    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2',
     passed: failedChecks.length === 0,
     checks,
     failedChecks,
@@ -253,6 +288,8 @@ try {
       initial,
       storefrontDamage,
       storefrontDestroyed: storefrontDestroyed.structure,
+      destroyedState,
+      massHierarchy,
       houseDamage,
       afterDamage,
       afterReset,
@@ -264,7 +301,7 @@ try {
   };
 } catch (error) {
   report = {
-    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V1',
+    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2',
     passed: false,
     checks: [],
     failedChecks: ['harness-exception'],
