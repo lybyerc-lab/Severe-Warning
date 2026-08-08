@@ -1,20 +1,24 @@
 # Active Handoff
 
-**Last updated:** 2026-08-08 10:23 America/Chicago  
+**Last updated:** 2026-08-08 10:34 America/Chicago  
 **Repository:** `lybyerc-lab/Severe-Warning`  
 **Current direction:** guarded PlayCanvas production-renderer migration  
 **Current build train:** `Docs/PLAYCANVAS_MIGRATION_BUILD_TRAIN.md`  
 **Current bounded milestone:** Moo Brew opening / tactical gameplay handoff
 
-## Why this handoff exists
+## Current implementation lane
 
-The previous active handoff stopped at the Run 62 camera/Cow correction even though the repository has since advanced through owner-approved multi-structure destruction and a browser-green staged destruction/mass-hierarchy pass.
+- Handoff branch: `agent/playcanvas-moo-brew-intro-handoff`
+- Handoff memory commit: `91ff8e26bf15edbd33d3a3a87f03549b49994588`
+- Implementation branch: `agent/playcanvas-moo-brew-intro`
+- Draft PR: #39
+- Exact intro code commit before this memory refresh: `b9076422b752c83fcb9413200ebc5fecd4d93d25`
+- PR base: `agent/playcanvas-moo-brew-intro-handoff`
+- Workflow status at this update: no run reported yet; do not call it building or green
 
-This file is now the operational recovery point for new chats and contributors.
+## Exact protected parent checkpoint
 
-## Exact parent checkpoint
-
-The next work starts from the sealed PR #37 gameplay source:
+This lane descends directly from the sealed PR #37 gameplay source:
 
 - source: `8d390f04223faaa268040afbeaa9eff885a81786`
 - PlayCanvas Run 76 / `31259029449`: PASS
@@ -28,61 +32,37 @@ Run 76 is assistant-reviewed and public-browser-QA passed. The owner Galaxy brow
 
 ## Protected browser-stage behavior
 
-Do not retune or replace these while building the intro:
+Do not retune or replace:
 
-### Storm/environment response
+- Pull peak tree tilt `0.4218329627222749 rad`
+- Gust peak tree tilt `0.3673336055836977 rad`
+- Pull inward light-prop displacement `5.374028004530404`
+- Pull tangential/orbit displacement `1.340381940964075`
+- Gust outward light-prop displacement `5.042881747270892`
+- Run 62 camera/Cow 17 rotation-stability behavior
+- one-stick camera semantics and owner trailing scale `0.9`
+- current storm speed / visible-authority scale
+- Run 76 staged structure breakup and debris mass hierarchy
+- Pull/Gust/Zap acceptance and cooldown semantics
+- health, destruction, scoring, combo, three-minute timer, campaign authority
+- safe/invincible/non-targetable animal law
+- deterministic reset and cleanup
 
-- Pull peak tree tilt: `0.4218329627222749 rad`
-- Gust peak tree tilt: `0.3673336055836977 rad`
-- Pull max inward light-prop displacement: `5.374028004530404`
-- Pull max tangential/orbit displacement: `1.340381940964075`
-- Gust max outward light-prop displacement: `5.042881747270892`
+## Current implementation contract
 
-### Camera and Cow 17
+PR #39 adds a bounded presentation-only Moo Brew opening without changing `main.ts` gameplay ownership.
 
-- Run 62 rotation-stability behavior
-- one-stick camera semantics
-- camera distance, height, base turn rate, dead zone, and owner trailing scale `0.9`
-- release-settle protection
-- Cow 17 wall-clock bounded flight
-- no immediate Cow 17 relaunch while the storm remains nearby
-- Cow 17 safe/invincible/non-targetable law
+`playcanvas-slice/src/entry.ts` is now the browser entrypoint. It:
 
-### Gameplay authority
+1. creates the intro controller
+2. awaits intro completion or bypass
+3. only then dynamically imports `main.ts`
 
-The accepted authority remains the only owner of:
+Because `main.ts` creates and connects `PlayCanvasAuthorityClient`, this ordering is the hard timing gate: the accepted authority and three-minute warning run cannot start behind the cinematic.
 
-- movement
-- Pull/Gust/Zap acceptance and cooldowns
-- health and destruction state
-- scoring and combo
-- three-minute warning clock
-- campaign state
-- reset/cleanup
+## Canonical intro phases
 
-The intro may delay authority startup. It may not replace authority.
-
-## Current destruction checkpoint
-
-PR #36 proved four real Living County targets can drive PlayCanvas structure presentation through accepted gameplay. The owner browser-approved that destruction direction.
-
-PR #37 added:
-
-- readable house/storefront/barn/industrial anatomy
-- pitched roof silhouettes
-- windows, doors, awnings, vents, loft/loading details
-- interior wounds and frame exposure by authoritative stage
-- isolated structure debris classes: trim, roof, wall, frame
-- measurable mass/horizontal/rise telemetry
-- bounded structure body count
-
-Run 75 was deliberately rejected after assistant review despite green automation because trim rose roughly 120 units while roof pieces barely lifted. Run 76 corrected the spectacle band and was the promoted candidate.
-
-## Next milestone: PlayCanvas Moo Brew opening
-
-The canonical opening already exists as approved product direction and as a legacy presentation reference. Do not invent a different story.
-
-Required phase order:
+The implementation preserves this exact phase order:
 
 1. `newspaper`
 2. `farm-reveal`
@@ -93,77 +73,66 @@ Required phase order:
 7. `tornado-touchdown`
 8. `tactical-handoff`
 
-### Core implementation contract
+The intro is skippable and presentation-only.
 
-- The opening is presentation-only.
-- Run it **before** `PlayCanvasAuthorityClient.connect()` starts/prepares the accepted warning run.
-- The three-minute gameplay clock must therefore remain untouched during the cinematic.
-- Normal `?qa=1` and bot-style runs skip the timed cinematic unless an explicit intro test parameter requests it.
-- Support explicit `?intro=1` and `?intro=0` behavior.
-- Remember a completed/skipped intro for the browser session so ordinary repeat testing is not trapped in the cinematic.
-- The final tactical handoff should transition into the existing playable slice rather than reimplement gameplay start logic.
-- Do not create a second camera controller, second storm simulation, or second run clock.
-- The opening must be skippable.
-- Accessibility: the overlay needs a useful label and the skip action must be keyboard/touch usable.
+## QA policy implemented in PR #39
 
-### Visual scope
+- ordinary `?qa=1` skips the timed cinematic
+- `?qa=1&intro=1` forces deterministic intro QA
+- `?intro=0` explicitly bypasses it
+- completed/skipped intro is remembered for the browser session
+- dedicated QA can select phases without waiting real seconds
+- intro QA exposes presentation state only, not gameplay mutation helpers
+- static verification checks that the intro gate precedes dynamic import of gameplay
+- browser QA must prove no PlayCanvas gameplay slice exists before intro finish
+- after handoff, the accepted run must begin fresh at stage 1 with zero destruction score and near the full warning time
+- inherited storm, camera/Cow, and multi-structure suites remain mandatory
+- screenshots are required for newspaper, Moo Brew/Cow 17, touchdown, and playable handoff
 
-This is a bounded production-slice presentation proof, not final cinematic art.
+## Files added or changed in the intro code commit
 
-Use the existing canonical beats:
+- `playcanvas-slice/index.html`
+- `playcanvas-slice/src/entry.ts`
+- `playcanvas-slice/src/moo-brew-intro.ts`
+- `playcanvas-slice/src/moo-brew-intro.css`
+- `scripts/verify-playcanvas-intro.mjs`
+- `scripts/qa-playcanvas-intro.mjs`
+- `.github/workflows/playcanvas-production-slice.yml`
 
-- warning newspaper
-- farm reveal
-- Cow 17 with Moo Brew
-- radio/weather shift
-- Cow 17 double take
-- chickens scatter
-- barn-roof/tornado touchdown beat
-- tactical handoff
+## Immediate gate
 
-Prefer a clean stylized overlay/scene treatment that can later be replaced by authored assets. Do not block this milestone on a Blender asset pipeline.
+The next action is verification, not more feature work:
 
-## QA contract for the intro
+1. wait for/inspect the exact-head PR #39 PlayCanvas workflow
+2. if red, fix the cause without weakening QA or protected behavior
+3. if green, inspect the intro artifact screenshots and intro report
+4. assistant-play/review the candidate before any QA Pages promotion
+5. only then consider promoting the exact artifact to `/playcanvas/` for owner browser review
 
-Add deterministic evidence that proves:
+Do not expand the intro scope while this gate is unresolved.
 
-- canonical phase list and order are exact
-- QA mode skips the timed intro by default
-- `intro=1` forces the intro for dedicated QA
-- `intro=0` bypasses it
-- each deterministic phase can be selected without waiting real seconds
-- newspaper/cow/cup/tornado visibility changes match the intended phases
-- skip finishes cleanly
-- authority is not connected/started before the intro finishes in normal intro mode
-- the first authority snapshot after handoff starts at the normal warning-run baseline
-- existing storm, camera/Cow, and multi-structure suites remain green
-- no console/page errors
-- reset/cleanup remains clean
+## Acceptance vocabulary
 
-Required screenshot evidence should include at least:
+For PR #39 at this update:
 
-- newspaper
-- Cow 17/Moo Brew beat
-- touchdown/tactical handoff
-- first playable frame after the intro
-
-## Branch strategy
-
-- Handoff branch: `agent/playcanvas-moo-brew-intro-handoff`
-- Implementation branch: `agent/playcanvas-moo-brew-intro`
-- Implementation PR should target the handoff branch and remain draft until exact-head CI and assistant artifact review pass.
-
-Do not modify PR #37 merely to start the next milestone.
-
-## Acceptance boundary
-
-For the new intro milestone:
-
-- implementation committed: not yet
-- browser QA: not yet
+- implementation committed: yes
+- draft PR open: yes (#39)
+- exact-head CI: not yet reported
+- browser QA: not yet proven
 - assistant visual review: not yet
 - owner browser verdict: not yet
 - PlayCanvas Android APK: not built
 - physical Android acceptance: no
+- merged: no
 
-The broader PlayCanvas migration still cannot be called physically accepted until an exact Android build is installed and approved on the Galaxy S26 Ultra.
+For PR #37 destruction polish:
+
+- implementation committed: yes
+- browser QA: passed
+- assistant review: passed
+- public QA deployment: passed
+- owner Galaxy browser verdict: pending
+- PlayCanvas Android physical acceptance: no
+- merged: no
+
+Never convert browser success into physical Android acceptance language.
