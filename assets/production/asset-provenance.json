@@ -1,6 +1,6 @@
 {
   "version": "SW_ASSET_PROVENANCE_V1",
-  "updated": "2026-08-08T14:23:00-05:00",
+  "updated": "2026-08-08T15:20:00-05:00",
   "policy": {
     "runtimeNetworkAssetsAllowed": false,
     "preferredAssetLicense": "CC0-1.0",
@@ -21,7 +21,7 @@
   "candidates": [
     {
       "id": "kenney.particle-pack",
-      "status": "sandbox-approved-not-imported",
+      "status": "curated-not-imported",
       "upstreamRepository": "Calinou/kenney-particle-pack",
       "upstreamCommit": "ab7086639ee73be31abd87feb21bf1402d4e8144",
       "authorPack": "Kenney Particle Pack 1.1",
@@ -36,7 +36,34 @@
         "debris-wisps",
         "light-cookies"
       ],
-      "productionRule": "Import only selected source textures after exact file paths and local checksums are recorded; do not import Godot-specific runtime code."
+      "productionRule": "Import only selected source textures after exact file paths and local checksums are recorded; do not import Godot-specific runtime code.",
+      "curatedFiles": [
+        {
+          "path": "addons/kenney_particle_pack/dirt_01.png",
+          "blobSha": "3bf82433236c8a0e5452563dccafd0ca4ec82a31",
+          "intendedUse": "ground-grit and dust-card candidate",
+          "productionImported": false
+        },
+        {
+          "path": "addons/kenney_particle_pack/smoke_03.png",
+          "blobSha": "34cad39231026b6617f25e03e99c0b860258d010",
+          "intendedUse": "destruction-dust puff candidate",
+          "productionImported": false
+        },
+        {
+          "path": "addons/kenney_particle_pack/trace_03.png",
+          "blobSha": "dcd8c6c39b522e207ee972bff30d064c60f20c07",
+          "intendedUse": "rain and gust streak candidate",
+          "productionImported": false
+        },
+        {
+          "path": "addons/kenney_particle_pack/light_02.png",
+          "blobSha": "30fbdb4c7ad1a9399e1a6ed88e3e6be426b71dc0",
+          "intendedUse": "practical-light cookie candidate",
+          "productionImported": false
+        }
+      ],
+      "curationNote": "Exact upstream paths and blob SHAs are pinned. These remain review-only until local binary import, checksum, style fit, and mobile-cost gates pass."
     },
     {
       "id": "kaykit.city-builder-bits-1.0",

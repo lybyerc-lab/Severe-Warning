@@ -69,6 +69,7 @@ try {
 
   const visual = report.storefront.visual;
   requireCondition(visual?.version === 'THREEJS_VISUAL_FOUNDATION_V1', `Visual foundation version mismatch: ${visual?.version}.`);
+  requireCondition(visual?.heroSlice2Version === 'THREEJS_VISUAL_HERO_SLICE2_V1', `Hero Slice 2 version mismatch: ${visual?.heroSlice2Version}.`);
   requireCondition(visual?.renderer?.threeRevision === '128', `Three.js revision changed: ${visual?.renderer?.threeRevision}.`);
   requireCondition(visual?.renderer?.toneMapping === 'ACESFilmicToneMapping', `Tone mapping is ${visual?.renderer?.toneMapping}.`);
   requireCondition(visual?.renderer?.outputEncoding === 'sRGBEncoding', `Output encoding is ${visual?.renderer?.outputEncoding}.`);
@@ -81,6 +82,8 @@ try {
   requireCondition(visual?.hero?.storefrontSidewalkPresent === true, 'Storefront sidewalk language is missing.');
   requireCondition(Number(visual?.hero?.heroLightCount) >= 2, `Only ${visual?.hero?.heroLightCount} hero practical lights are active.`);
   requireCondition(visual?.hero?.authoredStorefrontCount === 1, `Expected one authored storefront, got ${visual?.hero?.authoredStorefrontCount}.`);
+  requireCondition(visual?.hero?.storefrontSurfaceStyled === true, 'Storefront material pass is missing.');
+  requireCondition(Number(visual?.hero?.curatedMaterialTextureCount) >= 5, `Only ${visual?.hero?.curatedMaterialTextureCount} curated material textures are active.`);
   requireCondition(!visual?.lastError, `Visual runtime recorded error: ${visual?.lastError}.`);
 
   const storefrontApplied = report.storefront.applied.find((entry) => entry.assetId === 'structure.storefront.v1') || {};
@@ -88,13 +91,60 @@ try {
   requireCondition(storefrontApplied.points === 110, `Storefront points changed: ${storefrontApplied.points}.`);
   requireCondition(storefrontApplied.damageStage === 0 && storefrontApplied.destroyed === false, 'Storefront gameplay state changed during visual preparation.');
 
+  const storefrontCameraIsFront = await page.evaluate(() => {
+    const node = scene?.getObjectByName?.('structure.storefront.v1') || null;
+    if (!node) return false;
+    const origin = new THREE.Vector3();
+    const quaternion = new THREE.Quaternion();
+    node.getWorldPosition(origin);
+    node.getWorldQuaternion(quaternion);
+    const front = new THREE.Vector3(0, 0, -1).applyQuaternion(quaternion).setY(0).normalize();
+    const toCamera = camera.position.clone().sub(origin).setY(0).normalize();
+    return front.dot(toCamera) > 0.7;
+  });
+  requireCondition(storefrontCameraIsFront === true, 'Storefront evidence camera is not on the authored facade side.');
+
   const farmPrepared = await page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('farm'));
   requireCondition(farmPrepared === true, 'Farm QA view did not prepare.');
   await page.waitForTimeout(100);
   report.farm = await getSnapshot();
   await page.screenshot({ path: path.join(outputDir, 'threejs-visual-hero-farm.png'), fullPage: true });
   requireCondition(report.farm.visual?.hero?.hartFarmApronPresent === true, 'Hart Farm ground treatment is missing.');
+  requireCondition(report.farm.visual?.hero?.hartFarmSurfaceStyled === true, 'Hart Farm material pass is missing.');
   requireCondition(report.farm.production?.barn?.health === report.farm.production?.barn?.maxHealth, `Farm QA changed barn health: ${report.farm.production?.barn?.health}/${report.farm.production?.barn?.maxHealth}.`);
+
+  const farmSurfaceDetails = await page.evaluate(() => {
+    const barn = scene?.getObjectByName?.('HartFarmSignatureBarn') || null;
+    if (!barn) return null;
+    let roofStyledCount = 0;
+    let foundationStyled = false;
+    barn.children.forEach((child) => {
+      const p = child?.geometry?.parameters;
+      if (!p || child.type !== 'Mesh') return;
+      const width = Number(p.width || 0);
+      const height = Number(p.height || 0);
+      const depth = Number(p.depth || 0);
+      const localY = Number(child.position?.y || 0);
+      if (localY >= 12 && height <= 1.0 && depth >= 18 && child.userData?.swVisualHeroSlice2SurfaceStyled === true) roofStyledCount += 1;
+      if (width >= 23 && height <= 0.8 && depth >= 17 && localY < 1 && child.userData?.swVisualHeroSlice2SurfaceStyled === true) foundationStyled = true;
+    });
+    return { roofStyledCount, foundationStyled };
+  });
+  requireCondition(Number(farmSurfaceDetails?.roofStyledCount) >= 2, `Only ${farmSurfaceDetails?.roofStyledCount} Hart Farm roof panels received the galvanized material.`);
+  requireCondition(farmSurfaceDetails?.foundationStyled === false, 'Hart Farm foundation was incorrectly classified as metal roofing.');
+
+  const farmCameraIsFront = await page.evaluate(() => {
+    const barn = scene?.getObjectByName?.('HartFarmSignatureBarn') || null;
+    if (!barn) return false;
+    const origin = new THREE.Vector3();
+    const quaternion = new THREE.Quaternion();
+    barn.getWorldPosition(origin);
+    barn.getWorldQuaternion(quaternion);
+    const front = new THREE.Vector3(0, 0, -1).applyQuaternion(quaternion).setY(0).normalize();
+    const toCamera = camera.position.clone().sub(origin).setY(0).normalize();
+    return front.dot(toCamera) > 0.7;
+  });
+  requireCondition(farmCameraIsFront === true, 'Farm evidence camera is not on the barn facade side.');
 
   const stormPrepared = await page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('storm'));
   requireCondition(stormPrepared === true, 'Storm QA view did not prepare.');
