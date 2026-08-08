@@ -11,6 +11,7 @@ on:
       - agent/playcanvas-storm-physics-handoff
       - agent/playcanvas-multi-structure-handoff
       - agent/playcanvas-destruction-polish-handoff
+      - agent/playcanvas-moo-brew-intro-handoff
 
 concurrency:
   group: playcanvas-slice-${{ github.event.pull_request.number || github.ref }}

@@ -2,112 +2,75 @@
 
 **Severe Weather Warning** is a mobile-first, single-player arcade destruction game in which the player directly controls the storm.
 
-The active production game is the Three.js/WebGL build rooted at `MechanicsLab/SevereWeather_3D_Lab.html`. Capacitor packages the same offline web build for Android landscape play. Unity, Godot, and Babylon.js work remain preserved as experiments or historical evidence and are not the active production path.
+The project is currently in a **guarded PlayCanvas production-renderer migration**. The migration deliberately preserves the accepted legacy gameplay runtime as authority while PlayCanvas takes over visible presentation in bounded, reversible slices.
 
-## Canonical identity
+## Product laws
 
-- Full product name: **Severe Weather Warning**
-- Current campaign/content family: **Heartland**
-- Production renderer: **Three.js**
-- Primary platform: **Android landscape**
-- Browser build: QA and rapid gameplay review
-- Android build: physical touch, performance, audio, lifecycle, heat, and battery acceptance
+- The player is the storm.
+- Direct arcade action comes before management systems.
+- People are protected and are never targets.
+- Animals are invincible, non-targetable, and used only for safe slapstick.
+- Media crews are invincible witnesses, never enemies.
+- Destruction must be physical, readable, persistent, and materially distinct.
+- Android landscape is the primary target.
+- Browser QA is a fast verification lane; Galaxy Android testing is final acceptance.
 
-“Heartland” is campaign terminology, not a replacement title for the game.
+## Current runtime shape
 
-## Current candidate
+### Accepted gameplay authority
 
-Draft PR #15, `agent/threejs-production-slice`, builds the V5.1 Three.js production visual slice on top of the V5 Heartland campaign foundation.
+The reconstructed legacy Severe Weather runtime still owns movement, Pull/Gust/Zap, damage/destruction truth, score/combo, the warning clock, campaign state, Cow 17 safety, and reset behavior.
 
-Its current accepted automated gate is tied to commit:
+### PlayCanvas presentation slice
 
-`c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72`
+`playcanvas-slice/` is the active renderer-migration lane. It uses a same-origin authority bridge rather than duplicating gameplay rules.
 
-GitHub Actions run `30868496726` completed successfully, including:
+Current PlayCanvas work includes:
 
-- accepted gameplay patch-chain verification
-- V5 foundation verification
-- V5.1 structural verification
-- offline web packaging
-- deterministic desktop browser QA
-- deterministic mobile-landscape browser QA
-- Android asset synchronization
-- debug APK assembly
-- test-package creation and artifact upload
+- a 190x190 Prairie Junction test world
+- one-stick chase camera with rotation-stability protections
+- accepted Pull/Gust tree and light-prop response parity
+- Cow 17 finite safe-flight correction
+- four authoritative representative structures
+- staged structure breakup and readable building anatomy
+- isolated trim/roof/wall/frame debris mass hierarchy
+- exact-source browser QA and GitHub Pages promotion
 
-PR #15 remains draft and unmerged until the packaged browser build and APK receive hands-on gameplay acceptance.
+## Latest sealed browser candidate
 
-## Protected gameplay baseline
+PR #37 exact tested source:
 
-Modernization and visual work must preserve the accepted behavior already proven in the current production game:
+`8d390f04223faaa268040afbeaa9eff885a81786`
 
-- direct storm control
-- Pull, Gust, and Grid Zap behavior
-- continuous scoring across district boundaries
-- forward-only district progression
-- three-minute real-time warning clock
-- Heartland campaign progression and persistence contracts
-- QA4 input isolation and deterministic runtime checks
-- popup batching and rendering behavior
-- deterministic cleanup and reset behavior
-- recorded-effect and continuous wind-audio direction
-- people protected and never targetable
-- animals invincible, non-targetable, and used only for safe slapstick
-- news crews and storm chasers as invincible witnesses, never enemies
+PlayCanvas Run 76 passed the repository-owned verification chain and was promoted to the QA Pages lane through QA commit:
 
-## Engine decisions
+`4822336f207239ae1444de57e85c6b0be8867bea`
 
-- Three.js remains the production renderer.
-- Babylon.js is archived laboratory evidence and should not receive continued migration investment.
-- Defold is the strongest current Plan B engine, but only for a tightly bounded proof that tests a specific measured Three.js limitation.
-- No engine rewrite is justified by visual dissatisfaction alone.
-- The immediate strategy is to improve the Three.js asset, art, destruction, rendering, and authoring pipeline.
+That candidate is browser-QA passed and assistant-reviewed. Its owner Galaxy browser verdict is still pending, and no PlayCanvas Android physical acceptance is claimed.
 
-## Next milestone: production modernization
+## Next bounded milestone
 
-The current patch-chain and single-file construction method are slowing development. The next engineering milestone is a controlled modernization that preserves the working game while replacing prototype scaffolding.
+The next Stage 1 gap is the **Moo Brew opening / tactical handoff**. It must play before gameplay authority starts the three-minute warning run, remain deterministic for QA, and hand off into the existing slice without changing accepted controls or gameplay state.
 
-Planned direction:
+See:
 
-- Vite-based build and development server
-- strict TypeScript
-- real ES modules instead of generated inline script concatenation
-- explicit `GameApp`, lifecycle, and shared game-context contracts
-- clear ownership for gameplay, rendering, world, audio, input, persistence, UI, and QA systems
-- data-driven campaign, district, landmark, building, and destruction definitions
-- a formal QA bridge instead of incidental `globalThis` access
-- continued Capacitor Android packaging
-- retirement of historical patch scripts only after verified parity
-
-The modernization must be performed as a controlled migration, not a ground-up gameplay rewrite.
-
-## QA and hosting boundary
-
-The current workflow packages a complete `web-preview` and QA evidence bundle. It does **not** currently publish a permanent hosted QA site.
-
-- Use GitHub Actions and an approved GitHub Pages preview workflow for hosted QA.
-- Do not use Netlify for this project unless the owner explicitly changes that decision.
-- Do not describe a packaged preview as a deployed site.
+- `CURRENT_STATUS.md`
+- `Docs/ACTIVE_HANDOFF.md`
+- `Docs/PLAYCANVAS_MIGRATION_BUILD_TRAIN.md`
+- `Docs/PLAYCANVAS_MOO_BREW_INTRO_HANDOFF.md`
 
 ## Repository map
 
-- `MechanicsLab/`: active Three.js game source and preserved browser laboratories
-- `runtime/`: maintained V5.1 Three.js runtime source fragments
+- `playcanvas-slice/`: active PlayCanvas renderer/presentation migration
+- `runtime/`: accepted modernized legacy runtime and compatibility bridges
+- `MechanicsLab/`: historical source reconstructed by the accepted patch chain
+- `scripts/`: deterministic patching, verification, browser QA, packaging, and evidence tooling
 - `android/`: Capacitor Android project
-- `scripts/`: build, patch, verification, QA, and packaging tools
-- `Docs/`: product direction, current decisions, device evidence, and historical records
-- `Experiments/`: isolated renderer and visual-engine research
-- `Godot/`: preserved migration experiment
-- `Assets/`, `Packages/`, `ProjectSettings/`: preserved Unity history
+- `Docs/`: durable project memory, decisions, evidence, build trains, and handoffs
+- `Experiments/`, `Godot/`, Unity folders: preserved historical/experimental evidence, not the active production direction
 
-## Required reading before implementation
+## Repository memory rule
 
-1. `CURRENT_STATUS.md`
-2. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-3. `Docs/MODERNIZATION_PLAN.md`
-4. `Docs/DECISION_2026-08-03_PRODUCTION_DIRECTION.md`
-5. `Docs/NO_DRIFT_POLICY.md`
-6. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
-7. `Docs/DEVICE_TEST_LOG.md`
+The repository is the durable project record. When documents disagree, current code and exact-commit evidence win. Start with `AGENTS.md` before changing implementation.
 
-The repository is the durable project record. Chat is working context until the resulting decisions and evidence are committed here.
+Do not describe a green workflow, public browser deployment, or packaged APK as physical acceptance unless the exact Android artifact has been tested and approved on the target device.

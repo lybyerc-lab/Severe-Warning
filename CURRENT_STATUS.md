@@ -1,221 +1,150 @@
 # Severe Weather Warning Current Status
 
-**Last updated:** 2026-08-04 10:55 Central Time  
+**Last updated:** 2026-08-08 10:23 America/Chicago  
 **Repository:** `lybyerc-lab/Severe-Warning`  
-**Production renderer:** Three.js r128  
-**Primary target:** single-player Android landscape  
-**Active gameplay source:** `MechanicsLab/SevereWeather_3D_Lab.html` plus the verified modernization bridge layers  
-**Android packaging:** Capacitor 8.5.0 with offline local assets
+**Primary target:** Android landscape  
+**Current production direction:** guarded PlayCanvas presentation migration  
+**Gameplay authority during migration:** accepted legacy Severe Weather runtime  
+**Fast QA lane:** GitHub Pages `/Severe-Warning/playcanvas/`
 
 ## Canonical identity
 
 The full product name is **Severe Weather Warning**.
 
-- `Heartland` is campaign and regional-content terminology.
-- `Production Slice`, `Mechanics Lab`, and numbered modernization phases are engineering labels only.
 - The player directly controls the storm.
-- The response is a media circus, not a battle.
+- `Heartland` is campaign terminology, not the product title.
+- The response is a media circus, not combat.
 - People remain protected and are never targets.
-- Animals and media crews remain invincible, non-targetable witnesses or safe slapstick participants.
+- Animals and media crews remain invincible/non-targetable.
+- Android landscape remains the primary design target.
 
-## Canonical memory order
+## Current architecture truth
 
-Use this order when sources conflict:
+PlayCanvas is the selected production-renderer direction, but the migration is intentionally hybrid.
 
-1. Current repository code and exact-commit build evidence
-2. This file
-3. `Docs/RECOVERED_KNOWLEDGE_BASE.md`
-4. `Docs/ANTIGRAVITY_PHASE5_HANDOFF.md`
-5. `Docs/MODERNIZATION_PLAN.md`
-6. `Docs/MODERNIZATION_DEVICE_ACCEPTANCE_2026-08-04.md`
-7. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-8. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
-9. `Docs/DECISION_LOG.md` and dated decision records
-10. Historical Unity, Godot, Babylon.js, and renderer-laboratory records
+The accepted legacy runtime still owns:
 
-Chat is working context. Important decisions, deferred concepts, physical findings, and build evidence must be written back to the repository.
+- storm movement
+- Pull, Gust, and Grid Zap execution
+- health and authoritative destruction stages
+- score and combo
+- the three-minute warning clock
+- campaign/progression state
+- Cow 17 safety and accepted animal behavior
+- reset/cleanup authority
 
-## Production decision
+The PlayCanvas slice currently owns visible presentation through an explicit same-origin authority bridge. It must not become a second gameplay authority by accident.
 
-The enjoyable Three.js/WebGL game remains production. Capacitor packages the same local web build for Android.
+## Frozen behavior references
 
-- Three.js remains production.
-- Unity and Godot remain historical experiments.
-- Babylon.js remains archived research and must not be merged into production.
-- Defold remains Plan B only for a narrowly measured blocker.
-- Netlify is not part of this project.
-- GitHub Actions remains the build and verification path.
-- GitHub Pages is the approved future hosted QA-preview path.
+### Gameplay/presentation reference
 
-## Protected accepted behavior
+- Draft PR #26
+- Exact reference head: `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+- Workflow: `31094966986` / Run 6
+- Artifact: `severe-weather-presentation-identity-6`
+- Debug APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
 
-Future work must preserve:
+### Accepted storm-response oracle
 
-- direct storm controls
-- mobile joystick and keyboard support
-- Pull, Gust, and Grid Zap behavior
-- no duplicate mobile ability activation
-- continuous scoring across district boundaries
-- exact 3.5x combo cap, +0.05 step, and 4.5-second decay
-- time-driven, forward-only district progression
-- three-minute real-time warning clock behavior
-- pause and background time holding correctly
-- exact Heartland campaign IDs, targets, stars, unlocks, and persistence shape
-- retry and next-stop behavior
-- QA4 input isolation
-- deterministic reset and cleanup
-- popup batching and rendering
-- continuous wind ambience and recorded-effect direction
-- protected people, safe animals, and invincible media crews
+- Run 53 source: `8d070e21cfe7720353ec842a02f1179bc33e9181`
+- Pull peak tree tilt: `0.4218329627222749 rad`
+- Gust peak tree tilt: `0.3673336055836977 rad`
+- Pull max inward light-prop displacement: `5.374028004530404`
+- Pull max tangential/orbit displacement: `1.340381940964075`
+- Gust max outward light-prop displacement: `5.042881747270892`
 
-## Modernization status
+Do not retune those values during unrelated PlayCanvas presentation work.
 
-The modernization is physically accepted through Phase 4. Phase 5 is next.
+### Rotation-stability oracle
 
-| Phase | Scope | Status | PR | Accepted head |
-|---|---|---|---|---|
-| 0 | Preserve V5.1 Three.js reference | Automated and hands-on reference accepted | #15 | `c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72` |
-| 1 | Vite, strict TypeScript, lifecycle, context, adapter, QA bridge | Automated and physical browser behavior accepted | #17 | `710ee8537e3d4ca6424b8bf32b282abae0dbfc28` |
-| 2 | Render, simulation, and real run clocks; pause and run state | Automated and physical timing behavior accepted | #18 | `381014d3d7f4a128e5c6e285200fdb2790af94b5` |
-| 3 | Typed keyboard/touch input and ability-command authority | Automated and physical control behavior accepted | #19 | `b9d55188f91ade720a50837f15591c91209098ad` |
-| 4 | Scoring, districts, campaign, and persistence | Automated and physical acceptance complete; ready for review | #21 | `38125918bffdd712ae10731d4472adbf2051d838` |
-| 5 | Rendering, camera, world, buildings, destruction | Next implementation phase | not opened | not started |
-| 6 | Audio, UI, storage, platform lifecycle, formal QA completion | Planned | not opened | not started |
-| 7 | Retire historical patch-chain production builds | Planned after parity | not opened | not started |
+- Exact corrected source: `f5f01678595bf857840759604f362c93f62598e8`
+- PlayCanvas Run 62 / `31222412094`
+- Camera release drift: `0`
+- Cow 17 landed in about `3050 ms`
+- Cow 17 remained safe and grounded while the storm stayed nearby
 
-### Phase 1 sealed evidence
+## Latest sealed PlayCanvas destruction candidate
 
-- Workflow run: `30870506335`
-- Artifact ID: `8877735187`
-- Artifact digest: `sha256:12274df6fed420048575ca8aeb380c7cdd0a8f67e6d04d03500108234273aa20`
-- Owner verdict: `Good build`
+Draft PR #37: **Add staged structure breakup and debris mass hierarchy**
 
-### Phase 2 sealed evidence
+- Exact tested/promoted source: `8d390f04223faaa268040afbeaa9eff885a81786`
+- PlayCanvas Run 76 / `31259029449`: PASS
+- Artifact: `severe-weather-playcanvas-slice-76`
+- Artifact ID: `9022302146`
+- Artifact digest: `sha256:a93cbd962eacb59db434a774184bdd3b7a15dbc6b4cb6fe2230d10823f864289`
+- Main static: `79/79`
+- Multi-structure static: `19/19`
+- Inherited storm browser QA: `61/61`
+- Camera/Cow rotation QA: `11/11`
+- Multi-structure V2 browser QA: `22/22`
+- Console/page errors: none
+- Dedicated destruction sequence score: `0 -> 3784`
+- Two authoritative structures damaged; storefront destroyed
+- Reset clean; Cow 17 safe
 
-- Final corrected head: `381014d3d7f4a128e5c6e285200fdb2790af94b5`
-- Workflow run: `30884351261`
-- Artifact ID: `8882537816`
-- Artifact digest: `sha256:b35dcac9b266c21a9affc8aabcee0c999ce30904e02d43aba05179d38b28c9a6`
-- Physical findings: manual pause held the clock; backgrounding held the clock; return did not jump the countdown
-- A QA4 forensic overlay leaked into normal pause, was corrected, and the correction was inherited by later builds
+Observed Run 76 structure hierarchy:
 
-### Phase 3 sealed evidence
+| Class | Mass | Max horizontal | Max rise |
+|---|---:|---:|---:|
+| trim | 1.1-1.5 | 28.87 | 19.06 |
+| roof | 4.8 | 1.95 | 7.98 |
+| wall | 7.3 | 1.28 | 0.20 |
+| frame | 11.5 | 0.43 | 0.12 |
 
-- Head: `b9d55188f91ade720a50837f15591c91209098ad`
-- Workflow run: `30910503447`
-- Artifact ID: `8892944447`
-- Artifact digest: `sha256:039e4e7697e5cee64ce2b7a9f514fa5979a5fd376a117a4a25b4c98740c202fa`
-- APK SHA-256: `35be5607e44a0401b1843b3428450390b48b8620292a0b112e4a5a56944c0de5`
-- Physical findings: joystick direction and release were good; Pull, Gust, and Grid Zap responded correctly; no duplicate activation, cooldown anomaly, stuck movement, pause problem, or background/resume defect was reported
-- Owner verdict: `Everything was good!`
+Assistant review found the staged anatomy and mass hierarchy materially improved over the earlier box-like candidate. Run 75 was intentionally rejected despite automated green because trim rose roughly 120 units and roofs barely lifted; Run 76 corrected that defect before promotion.
 
-### Phase 4 sealed evidence
+## Current public QA deployment
 
-- Head: `38125918bffdd712ae10731d4472adbf2051d838`
-- Workflow run: `30921480977`
-- Artifact ID: `8897403311`
-- Artifact name: `severe-weather-modernization-phase-4-46`
-- Artifact digest: `sha256:91b94190e089a64028eb1497eecfdb4cd25a976282a0c0d529a42624ac8dbb05`
-- APK SHA-256: `9e1f94e269cf4eeb5d6f58300752af61efb7e778a97c1d692fdd899e2ecda295`
-- Exact-parity verification: `72/72`
-- Physical findings: score remained continuous through all districts; max combo remained 3.5x; final score, objectives, stars, and Prairie Junction unlock were correct; results and campaign actions rendered correctly; no inherited control, pause, background, or QA-panel defect was reported
-- Owner verdict: `Everything was good.`
-- PR #21 was promoted from draft to ready for review and remains unmerged
+- QA commit: `4822336f207239ae1444de57e85c6b0be8867bea`
+- Deploy QA Pages Run 75 / `31259512722`: PASS
+- Exact Run 76 artifact re-verification: PASS
+- Public root and PlayCanvas metadata verification: PASS
 
-## Phase 4 Antigravity audit lessons
+Current acceptance language for PR #37:
 
-The initial Antigravity Phase 4 submission was not accepted without review. The repository audit found and corrected:
+- implementation committed: yes
+- exact browser QA: passed
+- assistant visual/physics review: passed
+- public QA deployment: passed
+- owner Galaxy browser verdict on this destruction-polish candidate: pending
+- PlayCanvas Android APK for this candidate: not built
+- physical Android acceptance: no
+- merged: no
 
-- generated V5.1 output committed over the historical V4.3 source baseline
-- no dedicated authoritative GitHub Actions or Android packaging workflow
-- invented scoring values and timing
-- a score-driven district model replacing accepted time-driven stages
-- invented campaign and save fields
-- an incorrect shortened State Fair stop ID
-- tests that proved class presence rather than behavior parity
-- inherited QA assumptions that did not recognize descendants
-- a deterministic-scenario clock synchronization race
+The owner instruction on 2026-08-08 to proceed with the next step authorizes forward engineering and repository cleanup. It does **not** retroactively convert the pending PR #37 browser verdict into acceptance.
 
-These lessons are now mandatory Phase 5 rules:
+## Next bounded milestone
 
-- never commit generated build output over the historical source
-- add a clean-source provenance guard before TypeScript or browser QA
-- map exact legacy behavior before creating typed contracts
-- use typed mirrors and adapters before replacing accepted executors
-- verify behavior, not marker strings
-- do not invent visual, camera, destruction, quality, or lifecycle rules
-- require a dedicated Phase 5 workflow and Android artifact
+**PlayCanvas Moo Brew opening / tactical handoff.**
 
-## Pull-request stack
+The next implementation should close a remaining Stage 1 production-slice gap without changing gameplay authority:
 
-The current production and modernization history is an intentional descendant chain:
+- preserve the canonical eight-phase Moo Brew opening beats
+- run the opening before the accepted authority starts the warning run so cinematic time cannot consume the three-minute gameplay clock
+- keep normal QA/bot runs fast by skipping the intro unless explicitly requested
+- provide deterministic phase control and evidence for browser QA
+- hand off cleanly into the existing PlayCanvas gameplay slice without changing storm position, controls, camera tuning, score, combo, destruction, or Cow 17 safety
 
-`PR #13 -> PR #15 -> PR #16 -> PR #17 -> PR #18 -> PR #19 -> PR #20 -> PR #21`
+Handoff branch: `agent/playcanvas-moo-brew-intro-handoff`.
 
-- PR #13: Heartland campaign foundation
-- PR #15: Three.js production visual slice
-- PR #16: restored production context and modernization plan
-- PR #17: Phase 1 modern shell
-- PR #18: Phase 2 clocks and run state
-- PR #19: Phase 3 input and abilities
-- PR #20: recovered knowledge and Phase 4 handoff
-- PR #21: Phase 4 scoring, districts, campaign, and persistence
+## Protected open PR chain
 
-PR #14 is the archived Babylon.js laboratory and is not part of the production chain.
+The current PlayCanvas lineage is intentionally stacked and unmerged. Do not casually merge, retarget, squash, or rewrite it.
 
-PR #21 is ready for review. The earlier stack remains protected history. No PR may be merged, retargeted, closed, squashed, or rewritten without explicit owner approval and a reviewed integration plan.
+Key current browser-stage references:
 
-## Recovered knowledge and deferred product work
+- PR #35: rotation-stable storm physics
+- PR #36: owner-approved browser-stage multi-structure destruction proof
+- PR #37: browser-green staged destruction/mass hierarchy; owner browser verdict pending
 
-The detailed recovered backlog remains preserved in:
+Historical Three.js/modernization PRs remain behavior evidence until the PlayCanvas migration is physically accepted.
 
-`Docs/RECOVERED_KNOWLEDGE_BASE.md`
+## Process laws
 
-It includes:
-
-- Moo Brew opening cinematic and generated newspaper recap
-- deeper Cow 17 and farmyard behavior
-- media and regional broadcast expansion
-- complete Pull, Gust, and Grid Zap presentation contracts
-- Heartland stop expansion and later regional campaigns
-- advanced tornado forms and special variants
-- storm progression and mastery questions
-- terrain and objects that diminish storm power
-- art pipeline, data-driven world assembly, and reusable destruction definitions
-- GitHub Pages QA preview
-- release-vs-QA package separation
-- broader Android device, heat, battery, safe-area, and process-restart testing
-
-## Known remaining gaps
-
-- Normal production builds still depend on the historical patch chain.
-- Large generated inline runtime sections and shared lexical scope remain.
-- Renderer, scene, camera, atmosphere, world, buildings, and destruction ownership remain inside the legacy runtime.
-- Hart Farm is authored but is not yet a reusable data-driven destruction definition.
-- A second structure has not yet proven reusable five-stage destruction.
-- The art pipeline is approved conceptually but not operationalized with validation and mobile budgets.
-- GitHub Pages QA preview is not deployed.
-- Most physical evidence comes from a high-end Galaxy S26 Ultra rather than a device matrix.
-- Heat, battery, prolonged session behavior, process death, and older-device performance remain incompletely measured.
-- One Phase 2 screenshot showed top-title crowding in one landscape geometry; later results fit correctly. Preserve this as a responsive regression case.
-- QA build identity remains visible by design in QA artifacts and must be removed from a player release candidate.
-- Three.js r128 remains intentionally frozen until architecture parity is established.
-
-## Immediate next action
-
-1. Preserve this documentation branch as the Phase 5 handoff baseline.
-2. Give Antigravity the bounded assignment in `Docs/ANTIGRAVITY_PHASE5_HANDOFF.md`.
-3. Require Antigravity to create its own descendant branch. One writer per branch.
-4. Extract scene, renderer, camera, atmosphere, world, and destruction observations behind typed contracts without redesigning presentation.
-5. Make Hart Farm the first reusable five-stage setpiece definition and prove the same contract on one second existing structure.
-6. Run the complete inherited parity suite plus fixed visual comparisons, scene lifecycle checks, destruction-state tests, performance evidence, Android synchronization, and APK assembly.
-7. Produce one consolidated browser review and one Android APK for physical acceptance.
-
-## Working protocol
-
-- Repository truth outranks chat memory.
-- One writer per branch.
-- Work in coherent milestones, not tiny build fragments.
-- Preserve accepted behavior before cleanup.
-- Do not mix architecture migration, Three.js upgrade, major visual redesign, content expansion, and gameplay redesign.
-- Automated success is necessary but never substitutes for physical Android acceptance.
+- repository truth outranks chat memory
+- exact source/evidence outranks stale status prose
+- one writer per branch
+- assistant browser playtests are diagnostic, not physical acceptance
+- owner Galaxy testing remains final authority
+- no whole-county migration before the bounded production slice earns physical acceptance
