@@ -1,0 +1,17 @@
+{
+  "version": "SW_QA_PAGES_CANDIDATE_V1",
+  "channel": "qa",
+  "label": "Hero Slice 4",
+  "pagesRoot": "https://lybyerc-lab.github.io/Severe-Warning/",
+  "renderer": "Three.js r128",
+  "sourceBranch": "agent/threejs-hero-slice4-world-cohesion-storm-volume",
+  "sourceCommit": "0c90db63b74523811f67379a6cc14896227073d5",
+  "workflowName": "Three.js Hero Slice 4 World Cohesion and Storm Volume",
+  "workflowRunId": 31281349958,
+  "workflowRunNumber": 1,
+  "artifactName": "severe-weather-threejs-hero-slice4-1",
+  "artifactId": 9028673008,
+  "artifactDigest": "sha256:5c2ff30828def5968d4cfb244f5dbc880bb54500b3e268024ffd9cc890119afe",
+  "requiredBridge": "THREEJS_VISUAL_HERO_SLICE4_V1",
+  "acceptance": "browser-qa-candidate-not-owner-visual-accepted-not-physical-android-accepted"
+}
