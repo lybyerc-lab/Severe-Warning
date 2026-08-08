@@ -1,0 +1,78 @@
+{
+  "version": "SW_ASSET_PROVENANCE_V1",
+  "updated": "2026-08-08T14:23:00-05:00",
+  "policy": {
+    "runtimeNetworkAssetsAllowed": false,
+    "preferredAssetLicense": "CC0-1.0",
+    "conditionalAssetLicenses": [
+      "CC-BY"
+    ],
+    "rejectByDefault": [
+      "UNKNOWN",
+      "NOASSERTION",
+      "GPL",
+      "AGPL",
+      "CC-BY-SA"
+    ],
+    "requireExactUpstreamRevision": true,
+    "requireExactSourcePathBeforeImport": true,
+    "requireLocalChecksumForProduction": true
+  },
+  "candidates": [
+    {
+      "id": "kenney.particle-pack",
+      "status": "sandbox-approved-not-imported",
+      "upstreamRepository": "Calinou/kenney-particle-pack",
+      "upstreamCommit": "ab7086639ee73be31abd87feb21bf1402d4e8144",
+      "authorPack": "Kenney Particle Pack 1.1",
+      "assetLicense": "CC0-1.0",
+      "licenseEvidencePath": "LICENSE.txt",
+      "licenseEvidenceBlobSha": "e198510d3c6ac7e3dc4370f1f0861d8c617362e8",
+      "readmeBlobSha": "6cee0b7eead5520edc717106325d061ad8ca4763",
+      "candidateUses": [
+        "dust-cards",
+        "impact-puffs",
+        "rain-accents",
+        "debris-wisps",
+        "light-cookies"
+      ],
+      "productionRule": "Import only selected source textures after exact file paths and local checksums are recorded; do not import Godot-specific runtime code."
+    },
+    {
+      "id": "kaykit.city-builder-bits-1.0",
+      "status": "sandbox-approved-not-imported",
+      "upstreamRepository": "KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0",
+      "upstreamCommit": "63976910ca04d16f0fc531b9c614244be8128713",
+      "authorPack": "KayKit City Builder Bits 1.0",
+      "assetLicense": "CC0-1.0",
+      "licenseEvidencePath": "LICENSE.txt",
+      "licenseEvidenceBlobSha": "a311fe646973aa7da11458c3cbfefbb4c671f857",
+      "readmeBlobSha": "7bde6b0f7d2c3e18a2afa2af934fe63a18d456a4",
+      "candidateUses": [
+        "secondary-town-props",
+        "street-furniture",
+        "signage-reference",
+        "utility-dressing",
+        "silhouette-reference"
+      ],
+      "productionRule": "Use as an ingredient/reference pool only; hero structures require project style and destruction-anatomy review."
+    },
+    {
+      "id": "kenney.starter-kit-city-builder-assets",
+      "status": "research-approved-not-imported",
+      "upstreamRepository": "KenneyNL/Starter-Kit-City-Builder",
+      "upstreamCommit": "4535092b740b378b700efd9df9e27a631815b84a",
+      "codeLicense": "MIT",
+      "assetLicense": "CC0-1.0",
+      "assetLicenseEvidencePath": "README.md",
+      "assetLicenseEvidenceBlobSha": "2e705527b19fc6484dcf17eb9661cbcbc4772e72",
+      "candidateUses": [
+        "city-prop-research",
+        "3d-model-research",
+        "sprite-research"
+      ],
+      "productionRule": "Before any asset import, record its exact upstream path and verify it belongs to the README-declared CC0 asset set; do not confuse the MIT code license with the asset license."
+    }
+  ],
+  "productionImports": []
+}
