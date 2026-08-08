@@ -2,6 +2,52 @@
 
 This ledger records meaningful build and QA outcomes. CI success and physical acceptance are separate states.
 
+## PlayCanvas multi-structure destruction
+
+### Run 72 sealed multi-structure browser candidate
+
+- Exact source: `d2ca9fca3f36507d49e2157786e81928c4795897`
+- Workflow run: `31238071067` / PlayCanvas Run 72
+- Artifact: `severe-weather-playcanvas-slice-72`
+- Artifact ID: `9016182208`
+- Artifact SHA-256: `df7dcdc739d5c6ed692eafb8b137619914ca493018bce619712a7bd53be71e6c`
+- Downloaded ZIP SHA-256 matched GitHub exactly
+- Strict TypeScript: passed
+- Main static contracts: `79/79` passed
+- Multi-structure implementation-truth contracts: `13/13` passed
+- Inherited storm-physics browser QA: `61/61` passed
+- Camera/Cow 17 rotation-stability QA: `11/11` passed
+- Multi-structure destruction browser QA: `17/17` passed
+- Real accepted-runtime structures bound: storefront, house, industrial/workshop, barn
+- Storefront and house both took authoritative damage
+- Storefront reached authoritative destruction
+- Accepted destruction score grew `0 -> 3491`
+- Five structure presentation chunks activated and moved after authoritative stage transitions
+- Reset restored all four targets to full health/stage 0/not destroyed and cleared detached structure chunks
+- Cow 17 remained safe
+- Protected Pull tree peak tilt: `0.4218329627222749 rad`
+- Protected Pull inward displacement: `5.374028004530404`
+- Protected Pull tangential/orbit displacement: `1.340381940964075`
+- Protected Gust tree peak tilt: `0.3673336055836977 rad`
+- Protected Gust outward displacement: `5.042881747270892`
+- Visible/authority scale: `0.7717126730148013` versus sealed `0.7717`
+- Console errors: 0
+- Page errors: 0
+- Classification: committed, built, and automated-browser-QA passed; owner browser multi-structure verdict pending; no Android physical acceptance; PR #36 remains draft/unmerged
+
+### QA Pages Run 74 multi-structure promotion
+
+- QA commit: `c56c6650697548daae70755e61c7b6ac8d13808c`
+- Workflow run: `31238516301` / Pages Run 74
+- Legacy QA root rebuild: passed
+- Deterministic QA4: passed
+- Exact Run 72 artifact download/re-verification: passed
+- Pages deployment: passed
+- Public root verification: passed
+- Public PlayCanvas exact-source/metadata verification: passed
+- Live path: `https://lybyerc-lab.github.io/Severe-Warning/playcanvas/`
+- Classification: exact multi-structure browser-QA artifact publicly deployed for owner hands-on testing; not Android physically accepted
+
 ## PlayCanvas storm physics parity
 
 ### Run 53 first live storm-physics candidate
@@ -124,7 +170,7 @@ This ledger records meaningful build and QA outcomes. CI success and physical ac
 - Main/QA infrastructure merge: `2cc16f6`
 - Campaign implementation commit: `d6365d5`
 - Scope: four-stop Heartland weather map, ordered unlocks, stars, persistent campaign progress, per-stop presentation and scoring rules, next-stop results flow, V5 workflow identity
-- Deterministic patch chain: passed locally from base source through v5.0.0
+- Deterministic patch chain: passed from untouched base source through v5.0.0
 - V5 structural verifier: `25/25` passed
 - Browser QA: pending
 - Android physical result: pending
