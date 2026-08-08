@@ -16,6 +16,7 @@ const sourceMarker = '[SW:SOURCE:threejs-visual-foundation.js]';
 const insertionMarker = '// --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---';
 const v510FrameHook = '  if (globalThis.__SW_V510_UPDATE__) globalThis.__SW_V510_UPDATE__(dt, now, isMoving);';
 const visualFrameHook = "  if (globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.update) globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.update(dt, now);";
+const delayedHeroRefresh = "setTimeout(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.refreshHeroSlice?.(), 1800);";
 
 function requireMarker(value) {
   if (!html.includes(value)) throw new Error(`Three.js visual-foundation verification failed: missing ${value}`);
@@ -28,6 +29,7 @@ if (html.includes(marker)) {
     '__SW_THREEJS_VISUAL_FOUNDATION__',
     'buildLivingCountyWithVisualProductionFoundation',
     visualFrameHook,
+    delayedHeroRefresh,
   ].forEach(requireMarker);
   console.log(`Three.js visual foundation already applied to ${sourcePath}`);
   process.exit(0);
@@ -63,7 +65,7 @@ for (const prohibited of [
 }
 
 const newline = html.includes('\r\n') ? '\r\n' : '\n';
-const bundled = `${newline}// ${sourceMarker}${newline}${runtime}${newline}${newline}`;
+const bundled = `${newline}// ${sourceMarker}${newline}${runtime}${newline}${delayedHeroRefresh}${newline}${newline}`;
 html = html.replace(insertionMarker, `${bundled}${insertionMarker}`);
 
 const frameHookCount = html.split(v510FrameHook).length - 1;
@@ -84,6 +86,7 @@ for (const required of [
   'SWVisualHartFarmDirtApron',
   'SWVisualStorefrontAsphalt',
   visualFrameHook,
+  delayedHeroRefresh,
 ]) requireMarker(required);
 
 const assetIndex = html.indexOf('[SW:SOURCE:threejs-asset-pipeline.js]');
