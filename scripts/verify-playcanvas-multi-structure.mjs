@@ -108,8 +108,9 @@ check(
     && contents.structures.includes('const DEBRIS_PROFILES')
     && contents.structures.includes('liftScale: 1.38')
     && contents.structures.includes('liftScale: 0.24')
-    && contents.structures.includes("debrisClass: 'frame'" ) === false,
-  'mass hierarchy is profile-driven rather than routed into the accepted tree force class',
+    && contents.structures.includes("addDebris('frame-beam'")
+    && contents.structures.includes("'frame', 3"),
+  'mass hierarchy is explicit and heavy frame pieces are destruction-only debris',
 );
 
 check(
@@ -180,7 +181,18 @@ check(
     && contents.qa.includes("name: 'presentation-matches-authority'")
     && contents.qa.includes("name: 'authoritative-stage-activates-structure-debris'")
     && contents.qa.includes("name: 'reset-restores-authoritative-structures'"),
-  'new browser proof blocks on actual destruction, scoring, mirror truth, debris, and reset',
+  'browser proof blocks on actual destruction, scoring, mirror truth, debris, and reset',
+);
+
+check(
+  'qa-demands-readable-mass-hierarchy',
+  contents.qa.includes("name: 'all-four-structure-debris-classes-activate'")
+    && contents.qa.includes("name: 'structure-debris-mass-order-is-readable'")
+    && contents.qa.includes("name: 'heavy-frame-trails-light-trim'")
+    && contents.qa.includes("name: 'roof-lifts-more-than-frame'")
+    && contents.qa.includes("name: 'structure-debris-count-remains-bounded'")
+    && contents.qa.includes("version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2'"),
+  'browser playtest now blocks on class-specific structure motion and bounded body count',
 );
 
 check(
