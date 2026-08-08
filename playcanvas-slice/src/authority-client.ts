@@ -7,6 +7,25 @@
 
 export type AuthorityAbilitySlot = 'primary' | 'secondary' | 'tertiary';
 export type AuthorityAbilitySource = 'keyboard' | 'touch' | 'qa';
+export type AuthorityStructureArchetype = 'storefront' | 'house' | 'industrial' | 'barn';
+
+export interface AuthorityStructureSnapshot {
+  readonly id: AuthorityStructureArchetype;
+  readonly label: string;
+  readonly targetKey: string;
+  readonly x: number;
+  readonly z: number;
+  readonly health: number;
+  readonly maxHealth: number;
+  readonly damageStage: number;
+  readonly destroyed: boolean;
+  readonly points: number;
+  readonly blockId: string;
+  readonly blockName: string;
+  readonly district: number;
+  readonly isCommercial: boolean;
+  readonly footprint: number;
+}
 
 export interface AuthoritySnapshot {
   readonly version: 'PLAYCANVAS_AUTHORITY_V1';
@@ -42,6 +61,7 @@ export interface AuthoritySnapshot {
     destroyed: boolean;
     roofDetached: boolean;
   }> | null;
+  readonly structures: readonly AuthorityStructureSnapshot[];
   readonly cow17: Readonly<{
     x: number;
     z: number;

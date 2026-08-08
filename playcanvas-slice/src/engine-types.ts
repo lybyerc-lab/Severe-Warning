@@ -26,6 +26,7 @@ export interface PcRenderComponent {
 
 export interface PcEntity {
   readonly name: string;
+  enabled: boolean;
   render?: PcRenderComponent;
   addComponent(type: 'camera' | 'light' | 'render', data?: Record<string, unknown>): void;
   setPosition(x: number, y: number, z: number): void;

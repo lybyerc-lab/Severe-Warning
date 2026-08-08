@@ -4,6 +4,7 @@ const files = {
   entry: 'playcanvas-slice/src/main.ts',
   chaseCamera: 'playcanvas-slice/src/chase-camera.ts',
   stormForceField: 'playcanvas-slice/src/storm-force-field.ts',
+  multiStructure: 'playcanvas-slice/src/multi-structure-destruction.ts',
   authorityClient: 'playcanvas-slice/src/authority-client.ts',
   authorityBridge: 'runtime/playcanvas-authority-bridge.js',
   authorityPrep: 'scripts/prepare-playcanvas-authority.mjs',
@@ -26,13 +27,14 @@ const checks = [];
 const check = (name, passed, detail) => checks.push({ name, passed, detail });
 
 check('isolated-entry-anchor', contents.entry.includes('[SW:PLAYCANVAS:PRODUCTION_SLICE_ENTRY]'), 'stable slice entry anchor exists');
-check('no-threejs-import', !/from\s+['"]three['"]|THREE\./.test(contents.entry + contents.stormForceField), 'visible PlayCanvas slice and force field do not import or drive Three.js');
+check('no-threejs-import', !/from\s+['"]three['"]|THREE\./.test(contents.entry + contents.stormForceField + contents.multiStructure), 'visible PlayCanvas slice and force fields do not import or drive Three.js');
 check('engine-version-pinned', contents.constants.includes("PLAYCANVAS_VERSION = '2.21.3'"), 'runtime version is exact');
 check('vendor-version-pinned', contents.fetcher.includes("const version = '2.21.3'"), 'vendor URL version is exact');
 check('vendor-size-gate', contents.fetcher.includes('engine.byteLength < 1_000_000'), 'truncated engine payload fails');
 check('optional-checksum-gate', contents.fetcher.includes('PLAYCANVAS_EXPECTED_SHA256'), 'workflow can hard-pin discovered SHA-256');
 check('module-version-contract', contents.engineTypes.includes('readonly version: string;'), 'loaded module exposes engine version');
 check('module-revision-contract', contents.engineTypes.includes('readonly revision: string;'), 'loaded module exposes engine revision');
+check('entity-enabled-contract', contents.engineTypes.includes('enabled: boolean;'), 'structure presentation can explicitly hide intact/detached entities');
 check('loaded-version-authority', contents.entry.includes('engineVersion: pc.version') && !contents.entry.includes('engineVersion: PLAYCANVAS_VERSION'), 'telemetry reads loaded PlayCanvas version');
 check('loaded-revision-authority', contents.entry.includes('engineRevision: pc.revision'), 'telemetry reads loaded PlayCanvas revision');
 check('loaded-version-guard', contents.entry.includes('pc.version !== PLAYCANVAS_VERSION'), 'runtime rejects mismatched engine version');
@@ -44,6 +46,88 @@ check('authority-readonly-storm-telemetry', contents.authorityBridge.includes('x
 check('authority-bundle-injected', contents.authorityPrep.includes('playcanvas-authority-bridge.js') && contents.workflow.includes('prepare-playcanvas-authority.mjs'), 'same-origin authority bridge is packaged intentionally');
 check('authority-client-same-origin', contents.authorityClient.includes("authority/index.html?playcanvasAuthority=1"), 'PlayCanvas page loads bundled same-origin authority');
 check('visible-presentation-authority-separation', contents.entry.includes('PlayCanvasAuthorityClient') && contents.entry.includes("gameplayAuthority: 'PLAYCANVAS_AUTHORITY_V1'"), 'visible renderer declares legacy gameplay authority explicitly');
+
+check(
+  'multi-structure-authority-contract',
+  contents.authorityBridge.includes('[SW:PLAYCANVAS:MULTI_STRUCTURE_AUTHORITY]')
+    && contents.authorityBridge.includes("id: 'storefront', district: 0, isCommercial: true")
+    && contents.authorityBridge.includes("id: 'house', district: 1, isCommercial: false")
+    && contents.authorityBridge.includes("id: 'industrial', district: 2, isCommercial: true")
+    && contents.authorityBridge.includes("id: 'barn', district: 3, isCommercial: false")
+    && contents.authorityBridge.includes('typeof targets ===')
+    && contents.authorityBridge.includes('if (!target || target.isTree) continue;')
+    && contents.authorityBridge.includes('structures,'),
+  'four deterministic non-tree Living County targets are mirrored through the accepted authority bridge',
+);
+check(
+  'multi-structure-authority-readonly',
+  !contents.multiStructure.includes('damageTarget(')
+    && !contents.entry.includes('damageTarget(')
+    && !contents.multiStructure.includes('.health =')
+    && !contents.entry.includes('.health =')
+    && !contents.multiStructure.includes('addScore(')
+    && !contents.entry.includes('addScore('),
+  'renderer owns no legacy structure HP, destruction executor, score, or combo mutation',
+);
+check(
+  'multi-structure-snapshot-typing',
+  contents.authorityClient.includes("AuthorityStructureArchetype = 'storefront' | 'house' | 'industrial' | 'barn'")
+    && contents.authorityClient.includes('readonly structures: readonly AuthorityStructureSnapshot[];')
+    && contents.authorityClient.includes('readonly damageStage: number;')
+    && contents.authorityClient.includes('readonly destroyed: boolean;'),
+  'typed client carries the authoritative four-structure destruction state',
+);
+check(
+  'multi-structure-visual-contract',
+  contents.multiStructure.includes('[SW:PLAYCANVAS:MULTI_STRUCTURE_DESTRUCTION]')
+    && contents.multiStructure.includes("['storefront', 'house', 'industrial', 'barn'] as const")
+    && contents.multiStructure.includes('class MultiStructurePresentation')
+    && contents.multiStructure.includes('snapshot.damageStage')
+    && contents.multiStructure.includes('snapshot.destroyed')
+    && contents.multiStructure.includes('part.entity.enabled = !destroyed'),
+  'four visible archetypes mirror accepted health stages and destruction state',
+);
+check(
+  'multi-structure-tree-force-isolation',
+  contents.multiStructure.includes('[SW:PLAYCANVAS:STRUCTURE_DEBRIS_FIELD]')
+    && contents.multiStructure.includes('class StructureDebrisField')
+    && !contents.stormForceField.includes('StructureDebrisField')
+    && !contents.scene.includes("kind: 'structure-debris'"),
+  'new structure debris stays outside the frozen tree/light-prop StormForceField registry',
+);
+check(
+  'multi-structure-authority-activation',
+  contents.multiStructure.includes('snapshot.destroyed || snapshot.damageStage >= body.activationStage')
+    && contents.multiStructure.includes('body.entity.enabled = true')
+    && contents.multiStructure.includes('body.entity.enabled = false'),
+  'structure chunks are hidden until authoritative stage/destruction activates them and reset hides them again',
+);
+check(
+  'multi-structure-executor-integration',
+  contents.entry.includes('[SW:PLAYCANVAS:MULTI_STRUCTURE_EXECUTOR_INTEGRATION]')
+    && contents.entry.includes('const result = authority.requestAbility(slot, source)')
+    && contents.entry.includes('if (result.accepted) {')
+    && contents.entry.includes('structureDebris.triggerAbility(slot, forceInput)')
+    && contents.entry.indexOf('structureDebris.triggerAbility(slot, forceInput)') > contents.entry.indexOf('const result = authority.requestAbility(slot, source)')
+    && contents.entry.includes('structurePresentation.sync(snapshot.structures, transform)')
+    && contents.entry.includes('structureDebris.sync(snapshot.structures, forceInput)'),
+  'structure presentation is polled from authority and ability impulses occur only downstream of accepted executor results',
+);
+check(
+  'multi-structure-normal-render-integration',
+  contents.entry.includes('structureDebris.update(forceInput, deltaSeconds)')
+    && contents.entry.includes('structureDebris.reset(snapshot.structures, transform)')
+    && contents.entry.includes('getStructurePresentationTelemetry(): MultiStructurePresentationTelemetry')
+    && contents.entry.includes('getStructureDebrisTelemetry(): StructureDebrisTelemetry'),
+  'normal render updates, reset, and runtime telemetry all include multi-structure presentation',
+);
+check(
+  'multi-structure-safe-animal-boundary',
+  !contents.multiStructure.includes('Cow 17')
+    && !contents.multiStructure.includes("'cow'")
+    && !contents.authorityBridge.includes("id: 'cow-17'"),
+  'multi-structure registry cannot target Cow 17',
+);
 
 check(
   'one-stick-chase-camera-contract',
@@ -78,7 +162,7 @@ check(
     && contents.chaseCamera.includes('[SW:PLAYCANVAS:OWNER_TRAILING_POLISH]')
     && contents.chaseCamera.includes('OWNER_TRAILING_TURN_SCALE = 0.9')
     && contents.chaseCamera.includes('turnRateRadiansPerSecond * OWNER_TRAILING_TURN_SCALE * safeDelta'),
-  'camera/map baseline is preserved during physics work',
+  'camera/map baseline is preserved during destruction expansion',
 );
 check(
   'chase-camera-intent-wiring',
@@ -94,7 +178,7 @@ check('camera-reset-contract', contents.entry.includes('chaseCamera.reset(render
 
 check('ability-buttons-present', ['primary', 'secondary', 'tertiary'].every((slot) => contents.html.includes(`data-ability="${slot}"`)), 'Pull/Gust/Zap controls are present');
 check('scoring-hud-present', contents.html.includes('hud-score') && contents.html.includes('hud-combo') && contents.html.includes('hud-time'), 'time, score, and combo HUD is present');
-check('destruction-visual-driven-by-authority', contents.entry.includes('applyBarnVisual(scene, snapshot, stormPhysics.isRoofControlled())') && contents.scene.includes('mooBrew'), 'visible barn state remains authority driven while detached roof ownership can transfer to physics');
+check('destruction-visual-driven-by-authority', contents.entry.includes('applyBarnVisual(scene, snapshot, stormPhysics.isRoofControlled())') && contents.scene.includes('mooBrew'), 'visible Moo-Brew barn state remains authority driven while detached roof ownership can transfer to physics');
 check('cow-safe-telemetry', contents.authorityBridge.includes('safe: true') && contents.entry.includes('Cow 17 SAFE'), 'Cow 17 remains explicitly safe in playable slice');
 check('vehicle-present', contents.scene.includes('addVehicle'), 'bounded scene includes a vehicle');
 check('electrical-target-present', contents.scene.includes('addElectricalTarget'), 'bounded scene includes an electrical target');
@@ -140,14 +224,15 @@ check(
   'storm-force-real-executor-integration',
   contents.entry.includes('[SW:PLAYCANVAS:STORM_FORCE_EXECUTOR_INTEGRATION]')
     && contents.entry.includes('const result = authority.requestAbility(slot, source)')
-    && contents.entry.includes('if (result.accepted) {\n      stormPhysics.triggerAbility(slot, stormForceInput(snapshot, transform, renderTornado));')
-    && contents.entry.indexOf('stormPhysics.triggerAbility(slot') > contents.entry.indexOf('const result = authority.requestAbility(slot, source)'),
+    && contents.entry.includes('if (result.accepted) {')
+    && contents.entry.includes('stormPhysics.triggerAbility(slot, forceInput)')
+    && contents.entry.indexOf('stormPhysics.triggerAbility(slot, forceInput)') > contents.entry.indexOf('const result = authority.requestAbility(slot, source)'),
   'PlayCanvas ability physics runs only downstream of the accepted executor result',
 );
 check(
   'storm-force-normal-render-integration',
-  contents.entry.includes('stormPhysics.syncBarnState(stormForceInput(snapshot, transform))')
-    && contents.entry.includes('stormPhysics.update(stormForceInput(latestSnapshot, transform, renderTornado), deltaSeconds)')
+  contents.entry.includes('stormPhysics.syncBarnState(forceInput)')
+    && contents.entry.includes('stormPhysics.update(forceInput, deltaSeconds)')
     && contents.entry.includes('stormPhysics.reset()')
     && contents.entry.includes('stormPhysics.dispose()'),
   'authoritative barn state, normal render updates, reset, and dispose all call the force subsystem',
@@ -258,8 +343,9 @@ check(
 check(
   'browser-no-force-helper-bypass',
   !contents.browserQa.includes('stormPhysics.triggerAbility')
-    && !contents.browserQa.includes('new StormForceField'),
-  'browser QA cannot invoke the force field directly',
+    && !contents.browserQa.includes('new StormForceField')
+    && !contents.browserQa.includes('structureDebris.triggerAbility'),
+  'browser QA cannot invoke either force subsystem directly',
 );
 
 check('separate-output', contents.vite.includes("outDir: '../playcanvas-slice-dist'"), 'slice cannot overwrite accepted build output');
