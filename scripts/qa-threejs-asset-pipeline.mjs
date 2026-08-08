@@ -69,23 +69,59 @@ async function prepareFocusedAssetView(page) {
     if (!target || !group) return null;
 
     // [SW:QA:THREEJS_ASSET_VISUAL_PROBE]
-    // Freeze only the QA camera path. Gameplay target truth is not changed.
+    // This freezes only the QA presentation camera. Gameplay target truth is not changed.
     productionQaPrepared = true;
+    globalThis.productionQaPrepared = true;
     runActive = false;
     cameraShakeIntensity = 0;
 
+    if (typeof tornadoGroup !== 'undefined' && tornadoGroup) tornadoGroup.visible = false;
+
+    const canvas = renderer?.domElement || document.querySelector('canvas');
+    for (const child of [...document.body.children]) {
+      if (child === canvas || child.contains?.(canvas) || child.tagName === 'SCRIPT' || child.tagName === 'STYLE') continue;
+      child.style.visibility = 'hidden';
+    }
+
+    const box = new THREE.Box3().setFromObject(group);
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+
     const outward = new THREE.Vector3(0, 0, -1).applyQuaternion(group.quaternion).normalize();
     const side = new THREE.Vector3(1, 0, 0).applyQuaternion(group.quaternion).normalize();
-    const center = group.position.clone();
-    const lookY = terrainHeightAt(target.x, target.z) + 4.4;
+    const targetHeight = Math.max(8, size.y);
+    const targetWidth = Math.max(14, size.x, size.z);
+    const lookY = center.y + targetHeight * 0.04;
+    const distance = Math.max(20, targetWidth * 1.45);
+
     camera.position.set(
-      center.x + outward.x * 29 + side.x * 9,
-      lookY + 11.5,
-      center.z + outward.z * 29 + side.z * 9,
+      center.x + outward.x * distance + side.x * 3.2,
+      lookY + targetHeight * 0.72,
+      center.z + outward.z * distance + side.z * 3.2,
     );
     camera.lookAt(center.x, lookY, center.z);
+    camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
     renderer.render(scene, camera);
+
+    const corners = [];
+    for (const x of [box.min.x, box.max.x]) {
+      for (const y of [box.min.y, box.max.y]) {
+        for (const z of [box.min.z, box.max.z]) {
+          const projected = new THREE.Vector3(x, y, z).project(camera);
+          corners.push(projected);
+        }
+      }
+    }
+    const minX = Math.min(...corners.map((point) => point.x));
+    const maxX = Math.max(...corners.map((point) => point.x));
+    const minY = Math.min(...corners.map((point) => point.y));
+    const maxY = Math.max(...corners.map((point) => point.y));
+    const widthRatio = Math.max(0, Math.min(1, (maxX - minX) / 2));
+    const heightRatio = Math.max(0, Math.min(1, (maxY - minY) / 2));
+    const centerNdc = new THREE.Vector3(center.x, center.y, center.z).project(camera);
 
     return {
       assetId: target.__swAuthoredAssetId,
@@ -95,6 +131,14 @@ async function prepareFocusedAssetView(page) {
       damageStage: target.damageStage,
       destroyed: target.destroyed,
       damagePartCount: target.meshData?.damageParts?.length || 0,
+      globalCameraFreeze: globalThis.productionQaPrepared === true,
+      tornadoHidden: typeof tornadoGroup === 'undefined' || !tornadoGroup || tornadoGroup.visible === false,
+      framing: {
+        widthRatio,
+        heightRatio,
+        centerX: centerNdc.x,
+        centerY: centerNdc.y,
+      },
       groupPosition: { x: group.position.x, y: group.position.y, z: group.position.z },
       cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
     };
@@ -133,6 +177,12 @@ try {
   requireCondition(report.visualProbe?.health === report.visualProbe?.maxHealth, 'Focused visual probe changed storefront health.');
   requireCondition(report.visualProbe?.damageStage === 0 && report.visualProbe?.destroyed === false, 'Focused visual probe changed authoritative damage state.');
   requireCondition(report.visualProbe?.damagePartCount >= 10, `Focused visual probe exposes only ${report.visualProbe?.damagePartCount || 0} authored parts.`);
+  requireCondition(report.visualProbe?.globalCameraFreeze === true, 'Focused visual probe did not engage the runtime camera-freeze flag.');
+  requireCondition(report.visualProbe?.tornadoHidden === true, 'Focused visual probe did not remove the tornado from the evidence frame.');
+  requireCondition(Number(report.visualProbe?.framing?.widthRatio) >= 0.28, `Focused storefront width coverage is too small: ${report.visualProbe?.framing?.widthRatio}.`);
+  requireCondition(Number(report.visualProbe?.framing?.heightRatio) >= 0.24, `Focused storefront height coverage is too small: ${report.visualProbe?.framing?.heightRatio}.`);
+  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerX)) <= 0.35, `Focused storefront is too far off-center horizontally: ${report.visualProbe?.framing?.centerX}.`);
+  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerY)) <= 0.35, `Focused storefront is too far off-center vertically: ${report.visualProbe?.framing?.centerY}.`);
   if (successPage.errors.length) report.failures.push(`Success-path browser errors: ${successPage.errors.join(' | ')}`);
 } finally {
   await writeFile(path.join(outputDir, 'threejs-asset-pipeline-success-browser.log'), `${successPage.logs.join('\n')}\n`, 'utf8');
