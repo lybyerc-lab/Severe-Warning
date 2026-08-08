@@ -68,7 +68,7 @@ jobs:
 
       - name: Fetch pinned PlayCanvas engine
         env:
-          PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55af8d087a47ca378366558b55af8d087a47ca378366558b55af8adb4
+          PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55aeef4de6a8adb4
         run: node scripts/fetch-playcanvas-engine.mjs
 
       - name: Reconstruct accepted gameplay authority
