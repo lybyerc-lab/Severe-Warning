@@ -70,6 +70,7 @@ try {
   const visual = report.storefront.visual;
   requireCondition(visual?.version === 'THREEJS_VISUAL_FOUNDATION_V1', `Visual foundation version mismatch: ${visual?.version}.`);
   requireCondition(visual?.heroSlice2Version === 'THREEJS_VISUAL_HERO_SLICE2_V1', `Hero Slice 2 version mismatch: ${visual?.heroSlice2Version}.`);
+  requireCondition(visual?.heroSlice3Version === 'THREEJS_VISUAL_HERO_SLICE3_V1', `Hero Slice 3 version mismatch: ${visual?.heroSlice3Version}.`);
   requireCondition(visual?.renderer?.threeRevision === '128', `Three.js revision changed: ${visual?.renderer?.threeRevision}.`);
   requireCondition(visual?.renderer?.toneMapping === 'ACESFilmicToneMapping', `Tone mapping is ${visual?.renderer?.toneMapping}.`);
   requireCondition(visual?.renderer?.outputEncoding === 'sRGBEncoding', `Output encoding is ${visual?.renderer?.outputEncoding}.`);
@@ -84,12 +85,50 @@ try {
   requireCondition(visual?.hero?.authoredStorefrontCount === 1, `Expected one authored storefront, got ${visual?.hero?.authoredStorefrontCount}.`);
   requireCondition(visual?.hero?.storefrontSurfaceStyled === true, 'Storefront material pass is missing.');
   requireCondition(Number(visual?.hero?.curatedMaterialTextureCount) >= 5, `Only ${visual?.hero?.curatedMaterialTextureCount} curated material textures are active.`);
+  requireCondition(visual?.worldStyle?.worldSurfaceStyled === true, 'Whole-scene surface styling is missing.');
+  requireCondition(Number(visual?.worldStyle?.secondaryTargetsStyled) >= 40, `Only ${visual?.worldStyle?.secondaryTargetsStyled} secondary targets were styled.`);
+  requireCondition(Number(visual?.worldStyle?.secondaryMaterialsStyled) >= 80, `Only ${visual?.worldStyle?.secondaryMaterialsStyled} secondary materials were styled.`);
+  requireCondition(Number(visual?.worldStyle?.treeMaterialsStyled) >= 10, `Only ${visual?.worldStyle?.treeMaterialsStyled} tree materials were styled.`);
+  requireCondition(Number(visual?.worldStyle?.townGroundMeshesStyled) >= 40, `Only ${visual?.worldStyle?.townGroundMeshesStyled} town-ground meshes were styled.`);
+  requireCondition(visual?.worldStyle?.campaignIndex === 0, `Visual QA campaign index changed: ${visual?.worldStyle?.campaignIndex}.`);
+  requireCondition(visual?.worldStyle?.terrainColor === '#929172', `Lincoln terrain palette mismatch: ${visual?.worldStyle?.terrainColor}.`);
+  requireCondition(visual?.worldStyle?.roadColor === '#343a3f', `Lincoln road palette mismatch: ${visual?.worldStyle?.roadColor}.`);
+  requireCondition(visual?.worldStyle?.shoulderColor === '#77756f', `Lincoln shoulder palette mismatch: ${visual?.worldStyle?.shoulderColor}.`);
+  requireCondition(visual?.worldStyle?.laneColor === '#d3bd78', `Lincoln lane palette mismatch: ${visual?.worldStyle?.laneColor}.`);
   requireCondition(!visual?.lastError, `Visual runtime recorded error: ${visual?.lastError}.`);
 
   const storefrontApplied = report.storefront.applied.find((entry) => entry.assetId === 'structure.storefront.v1') || {};
   requireCondition(storefrontApplied.health === 165 && storefrontApplied.maxHealth === 165, `Storefront health changed: ${storefrontApplied.health}/${storefrontApplied.maxHealth}.`);
   requireCondition(storefrontApplied.points === 110, `Storefront points changed: ${storefrontApplied.points}.`);
   requireCondition(storefrontApplied.damageStage === 0 && storefrontApplied.destroyed === false, 'Storefront gameplay state changed during visual preparation.');
+
+  const secondaryPaletteEvidence = await page.evaluate(() => {
+    const targetList = typeof targets !== 'undefined' && Array.isArray(targets) ? targets : [];
+    const saturation = [];
+    let styledGroups = 0;
+    targetList.forEach((target) => {
+      const group = target?.meshData?.group;
+      if (!group || group.name === 'structure.storefront.v1' || group.name === 'HartFarmSignatureBarn') return;
+      if (group.userData?.swVisualHeroSlice3Styled === true) styledGroups += 1;
+      group.traverse?.((object) => {
+        if (!object?.isMesh || !object.material) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => {
+          if (!material?.color?.getHSL) return;
+          const hsl = { h: 0, s: 0, l: 0 };
+          material.color.getHSL(hsl);
+          saturation.push(hsl.s);
+        });
+      });
+    });
+    saturation.sort((a, b) => a - b);
+    const median = saturation.length ? saturation[Math.floor(saturation.length / 2)] : null;
+    return { styledGroups, sampleCount: saturation.length, medianSaturation: median };
+  });
+  report.storefront.secondaryPaletteEvidence = secondaryPaletteEvidence;
+  requireCondition(Number(secondaryPaletteEvidence?.styledGroups) >= 30, `Only ${secondaryPaletteEvidence?.styledGroups} secondary building groups expose Hero Slice 3 styling.`);
+  requireCondition(Number(secondaryPaletteEvidence?.sampleCount) >= 100, `Only ${secondaryPaletteEvidence?.sampleCount} secondary material samples were available.`);
+  requireCondition(Number(secondaryPaletteEvidence?.medianSaturation) <= 0.52, `Secondary scene median saturation is still too high: ${secondaryPaletteEvidence?.medianSaturation}.`);
 
   const storefrontCameraIsFront = await page.evaluate(() => {
     const node = scene?.getObjectByName?.('structure.storefront.v1') || null;

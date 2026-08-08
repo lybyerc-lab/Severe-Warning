@@ -8,6 +8,7 @@ const projectRoot = path.resolve(scriptDir, '..');
 const files = {
   runtime: await readFile(path.join(projectRoot, 'runtime', 'threejs-visual-foundation.js'), 'utf8'),
   heroSlice2Runtime: await readFile(path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice2.js'), 'utf8'),
+  heroSlice3Runtime: await readFile(path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice3.js'), 'utf8'),
   patch: await readFile(path.join(projectRoot, 'scripts', 'apply-threejs-visual-foundation.mjs'), 'utf8'),
   styleBible: await readFile(path.join(projectRoot, 'Docs', 'THREEJS_VISUAL_STYLE_BIBLE.md'), 'utf8'),
   intake: await readFile(path.join(projectRoot, 'Docs', 'ASSET_INTAKE_AND_PROVENANCE.md'), 'utf8'),
@@ -17,7 +18,7 @@ const files = {
 
 const provenance = JSON.parse(files.provenance);
 const pkg = JSON.parse(files.packageJson);
-const combinedRuntime = `${files.runtime}\n${files.heroSlice2Runtime}`;
+const combinedRuntime = `${files.runtime}\n${files.heroSlice2Runtime}\n${files.heroSlice3Runtime}`;
 const checks = [];
 function check(name, passed, detail = '') {
   checks.push({ name, passed: Boolean(passed), detail });
@@ -26,16 +27,22 @@ function check(name, passed, detail = '') {
 const kenneyParticle = provenance.candidates?.find((entry) => entry.id === 'kenney.particle-pack') || null;
 const curatedKenneyFiles = Array.isArray(kenneyParticle?.curatedFiles) ? kenneyParticle.curatedFiles : [];
 let heroSlice2SyntaxError = null;
+let heroSlice3SyntaxError = null;
 try { new vm.Script(files.heroSlice2Runtime, { filename: 'threejs-visual-hero-slice2.js' }); } catch (error) { heroSlice2SyntaxError = String(error?.message || error); }
+try { new vm.Script(files.heroSlice3Runtime, { filename: 'threejs-visual-hero-slice3.js' }); } catch (error) { heroSlice3SyntaxError = String(error?.message || error); }
 
 check('runtime-version', files.runtime.includes('THREEJS_VISUAL_FOUNDATION_V1'));
 check('runtime-anchor', files.runtime.includes('[SW:VISUAL:THREEJS_FOUNDATION]'));
 check('hero-slice2-version', files.heroSlice2Runtime.includes('THREEJS_VISUAL_HERO_SLICE2_V1'));
 check('hero-slice2-anchor', files.heroSlice2Runtime.includes('[SW:VISUAL:HERO_SLICE2]'));
 check('hero-slice2-syntax', heroSlice2SyntaxError === null, heroSlice2SyntaxError || 'ok');
-check('bridge-exported', files.runtime.includes('__SW_THREEJS_VISUAL_FOUNDATION__') && files.heroSlice2Runtime.includes('__SW_THREEJS_VISUAL_FOUNDATION__'));
+check('hero-slice3-version', files.heroSlice3Runtime.includes('THREEJS_VISUAL_HERO_SLICE3_V1'));
+check('hero-slice3-anchor', files.heroSlice3Runtime.includes('[SW:VISUAL:HERO_SLICE3]'));
+check('hero-slice3-syntax', heroSlice3SyntaxError === null, heroSlice3SyntaxError || 'ok');
+check('bridge-exported', files.runtime.includes('__SW_THREEJS_VISUAL_FOUNDATION__') && files.heroSlice2Runtime.includes('__SW_THREEJS_VISUAL_FOUNDATION__') && files.heroSlice3Runtime.includes('__SW_THREEJS_VISUAL_FOUNDATION__'));
 check('stage1-required', files.patch.includes('THREEJS_ASSET_PIPELINE_V1') && files.patch.includes('[SW:SOURCE:threejs-asset-pipeline.js]'));
 check('hero-slice2-bundled-after-foundation', files.patch.includes('[SW:SOURCE:threejs-visual-hero-slice2.js]') && files.patch.includes('visualIndex > heroSlice2Index'));
+check('hero-slice3-bundled-after-slice2', files.patch.includes('[SW:SOURCE:threejs-visual-hero-slice3.js]') && files.patch.includes('heroSlice2Index > heroSlice3Index'));
 check('frame-hook-after-v510', files.patch.includes('__SW_V510_UPDATE__') && files.patch.includes('__SW_THREEJS_VISUAL_FOUNDATION__?.update'));
 check('sky-dome', files.runtime.includes('SWVisualSkyDome') && files.runtime.includes('THREE.ShaderMaterial'));
 check('storm-rim-light', files.runtime.includes('SWVisualStormRimLight') && files.runtime.includes('THREE.DirectionalLight'));
@@ -57,6 +64,14 @@ check('hart-farm-curated-materials', files.heroSlice2Runtime.includes('swVisualH
 check('hart-farm-roof-material-excludes-foundation', files.heroSlice2Runtime.includes('localY >= 12 && height <= 1.0 && depth >= 18'));
 check('surface-style-lifecycle-reset', files.heroSlice2Runtime.includes('swVisualHeroSlice2Styled.storefront = false') && files.heroSlice2Runtime.includes('swVisualHeroSlice2Styled.hartFarm = false') && files.heroSlice2Runtime.includes('swVisualHeroSlice2SurfaceTextures.clear()'));
 check('storm-light-contrast-pass', files.heroSlice2Runtime.includes('ambientTarget') && files.heroSlice2Runtime.includes('directionalTarget') && files.heroSlice2Runtime.includes('targetExposure'));
+check('hero-slice3-secondary-target-style', files.heroSlice3Runtime.includes('swVisualHeroSlice3StyleSecondaryTargets') && files.heroSlice3Runtime.includes('target.meshData'));
+check('hero-slice3-read-only-target-access', files.heroSlice3Runtime.includes("typeof targets !== 'undefined'") && files.heroSlice3Runtime.includes('Boolean(target.destroyed)'));
+check('hero-slice3-world-surface-style', files.heroSlice3Runtime.includes('swVisualHeroSlice3StyleWorldSurface') && files.heroSlice3Runtime.includes('terrainMat') && files.heroSlice3Runtime.includes('roadMat') && files.heroSlice3Runtime.includes('shoulderMat') && files.heroSlice3Runtime.includes('laneMat'));
+check('hero-slice3-town-ground-style', files.heroSlice3Runtime.includes('swVisualHeroSlice3StyleTownGround') && files.heroSlice3Runtime.includes('townDressGroup'));
+check('hero-slice3-material-families', files.heroSlice3Runtime.includes("family === 'wood'") && files.heroSlice3Runtime.includes("family === 'masonry'") && files.heroSlice3Runtime.includes("family === 'metal'") && files.heroSlice3Runtime.includes("family === 'silo'"));
+check('hero-slice3-glass-restraint', files.heroSlice3Runtime.includes("emissiveIntensity: 0.08") && files.heroSlice3Runtime.includes('palette.glass'));
+check('hero-slice3-tree-restraint', files.heroSlice3Runtime.includes('swVisualHeroSlice3StyleTreeTarget') && files.heroSlice3Runtime.includes('palette.foliage'));
+check('hero-slice3-four-campaign-palettes', files.heroSlice3Runtime.includes('SW_VISUAL_HERO_SLICE3_PALETTES') && (files.heroSlice3Runtime.match(/Object\.freeze\(\{\n    terrain:/g) || []).length === 4);
 check('style-law-present', files.styleBible.includes('Storm-charged stylized Americana') && files.styleBible.includes('beautiful at a glance, readable at speed, cinematic up close'));
 check('asset-intake-law-present', files.intake.includes('Every shipped external asset must have a known source'));
 check('provenance-version', provenance.version === 'SW_ASSET_PROVENANCE_V1', provenance.version);
