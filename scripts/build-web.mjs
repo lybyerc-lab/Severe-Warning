@@ -10,6 +10,7 @@ const sourceHtml = process.env.SEVERE_WEATHER_SOURCE_PATH
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const sourceAudioDir = path.join(projectRoot, 'assets', 'audio');
+const sourceProductionAssetsDir = path.join(projectRoot, 'assets', 'production');
 const sourceRuntimeDir = path.join(projectRoot, 'runtime');
 const modernDistDir = path.join(projectRoot, 'modern-dist');
 const modernEntryPath = path.join(modernDistDir, 'modern-shell.js');
@@ -18,6 +19,7 @@ const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
   : path.join(projectRoot, 'www');
 const outputFonts = path.join(outputDir, 'fonts');
 const outputAudio = path.join(outputDir, 'audio');
+const outputProductionAssets = path.join(outputDir, 'assets', 'production');
 const outputRuntime = path.join(outputDir, 'runtime');
 const outputModern = path.join(outputDir, 'modern');
 
@@ -76,6 +78,8 @@ for (const requiredAudioFile of ['storm-feel-sprite.wav', 'storm-feel-manifest.j
 for (const runtimeFile of runtimeFiles) {
   await access(path.join(sourceRuntimeDir, runtimeFile));
 }
+await access(sourceProductionAssetsDir);
+await access(path.join(sourceProductionAssetsDir, 'structures', 'storefront-v1.json'));
 await access(modernEntryPath);
 
 const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';
@@ -91,6 +95,7 @@ html = `${html.slice(0, bodyCloseIndex)}${modernScriptTag}\n${html.slice(bodyClo
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputFonts, { recursive: true });
 await mkdir(outputAudio, { recursive: true });
+await mkdir(outputProductionAssets, { recursive: true });
 await mkdir(outputRuntime, { recursive: true });
 await writeFile(path.join(outputDir, 'index.html'), html, 'utf8');
 
@@ -100,12 +105,14 @@ for (const [packagePath, outputName] of fontFiles) {
 for (const audioFile of await readdir(sourceAudioDir)) {
   await copyFile(path.join(sourceAudioDir, audioFile), path.join(outputAudio, audioFile));
 }
+await cp(sourceProductionAssetsDir, outputProductionAssets, { recursive: true });
 await cp(sourceRuntimeDir, outputRuntime, { recursive: true });
 await cp(modernDistDir, outputModern, { recursive: true });
 
 const sourceSha256 = createHash('sha256').update(html).digest('hex');
 const audioSha256 = createHash('sha256').update(await readFile(path.join(sourceAudioDir, 'storm-feel-sprite.wav'))).digest('hex');
 const modernShellSha256 = createHash('sha256').update(await readFile(modernEntryPath)).digest('hex');
+const storefrontSha256 = createHash('sha256').update(await readFile(path.join(sourceProductionAssetsDir, 'structures', 'storefront-v1.json'))).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
   `${JSON.stringify({
@@ -118,9 +125,14 @@ await writeFile(
     sourceSha256,
     audioSha256,
     modernShellSha256,
-    runtimeFiles
+    runtimeFiles,
+    productionAssets: {
+      root: 'assets/production',
+      storefront: 'assets/production/structures/storefront-v1.json',
+      storefrontSha256,
+    }
   }, null, 2)}\n`,
   'utf8'
 );
 
-console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files)`);
+console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files), authored storefront (${storefrontSha256})`);
