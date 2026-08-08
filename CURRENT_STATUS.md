@@ -1,163 +1,135 @@
 # Severe Weather Warning Current Status
 
-**Last updated:** 2026-08-08 11:51 America/Chicago  
+**Last updated:** 2026-08-08 14:23 America/Chicago  
 **Repository:** `lybyerc-lab/Severe-Warning`  
 **Primary target:** Android landscape  
-**Production renderer:** Three.js  
-**Production revival branch:** `agent/threejs-production-revival`  
-**Frozen gameplay/fun baseline:** PR #26 head `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+**Production renderer:** Three.js r128  
+**Active visual-production branch:** `agent/threejs-visual-production-foundation`  
+**Frozen gameplay/fun baseline:** PR #26 head `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`  
+**Sealed Stage 1 source:** `f2060dff08ddb9df9f90ecd245940d8db86c7266`
 
 ## Canonical identity
 
-The full product name is **Severe Weather Warning**.
-
-- The player directly controls the storm.
-- `Heartland` is campaign terminology, not the product title.
-- The response is a media circus, not combat.
-- People remain protected and are never targets.
-- Animals and media crews remain invincible/non-targetable.
-- Android landscape remains the primary design target.
+The product is **Severe Weather Warning**. The player directly controls the storm. `Heartland` is campaign terminology only. People remain protected/absent from destruction targets. Animals and media crews remain invincible/non-targetable. The response remains a media circus, not combat.
 
 ## Production direction
 
-Three.js is production again.
+Three.js is production. PlayCanvas is preserved research only.
 
-The PlayCanvas migration remains preserved as research evidence, but it is no longer the production-renderer direction. Do not continue stacking production features on the PlayCanvas lineage unless the owner explicitly reopens that decision.
+The owner compared the PlayCanvas migration against the preserved Three.js game and preferred the Three.js movement, natural destruction, and overall fun. Production therefore resumed directly from PR #26 rather than attempting another renderer migration.
 
-The production revival begins directly from the Three.js build the owner prefers to play:
+Graphics work may improve presentation but may not retune steering, forward movement, Pull/Gust/Grid Zap, authoritative destruction, scoring, timer/stages, campaign persistence, safe-animal behavior, pause/reset cleanup, or the accepted gameplay camera/input feel merely to make art integration easier.
 
-- Draft PR #26
-- Exact baseline: `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
-- Workflow Run 6: `31094966986`
-- Artifact: `severe-weather-presentation-identity-6`
-- Debug APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
+## Stage 1 asset pipeline: accepted browser foundation
 
-This branch is intentionally rooted at that exact head so the PlayCanvas steering/camera/destruction implementation is not production ancestry.
+Stage 1 proved an authored-presentation seam around the accepted Three.js game.
 
-## Owner comparison that caused the pivot
+Exact sealed source:
 
-On 2026-08-08 the owner tested the promoted PlayCanvas candidate and reported:
+`f2060dff08ddb9df9f90ecd245940d8db86c7266`
 
-- PlayCanvas gameplay was improving, but forward play felt wrong; steering required backing up and maneuvering like a truck and trailer.
-- Destruction was better than earlier PlayCanvas versions, but remained roof-heavy, used large chunks, and depended too much on Pull/Gust/Zap for satisfying breakup.
-- The opening cutscene looked and felt like cheap animation.
-- The game overall still looked prototype-quality.
-- The original Three.js gameplay was more fun.
-- The original Three.js destruction was better.
-- Preferred direction: keep the fun Three.js game and improve its visuals/graphics pipeline instead of continuing the renderer migration.
+Evidence:
 
-That hands-on comparison is a production-direction result, not a request to make PlayCanvas numerically closer.
+- workflow: Three.js Asset Pipeline Foundation
+- Run 5: `31270418326`
+- artifact: `severe-weather-threejs-asset-pipeline-5`
+- artifact digest: `sha256:90360c1811f0976d6f8d798c75997fb07b5eb6f6e51a8b1d885fa6ab3de0f3e5`
+- debug APK SHA-256: `496439b2adc434c29cb0fd7db5ce6f03047efa20d964ba19cf397ef42be95b10`
+- public production QA: `https://lybyerc-lab.github.io/Severe-Warning/threejs/`
+- QA promotion commit: `7acebcea56ffa6960197f05e851ec6ef618fc4d1`
+- Deploy Three.js QA Overlay Run 1: `31271092725`, success
 
-## Protected Three.js behavior
+The owner tested the public Three.js browser candidate on 2026-08-08 and reported: **“Great build. Plays really well. I missed it.”**
 
-Graphics work must preserve:
+That is the owner browser PASS for the fun baseline and the Stage 1 presentation seam. It is **not** approval of final graphics quality and it is **not** physical acceptance of the exact debug APK on Galaxy S26 Ultra.
 
-- direct forward storm steering and accepted mobile input feel;
-- Pull, Gust, and Grid Zap behavior;
-- satisfying natural storm-contact destruction;
-- continuous scoring and accepted combo behavior;
-- three-minute warning clock and forward-only stage progression;
-- Heartland campaign/progression/persistence contracts;
-- pause/background/reset/cleanup behavior;
-- Cow 17 and safe-animal law;
-- accepted Android landscape controls.
+## Current graphics verdict
 
-A graphics milestone may not retune gameplay because an authored mesh, camera shot, or material is inconvenient.
+Gameplay is worth protecting. Graphics are now the blocker.
 
-## PlayCanvas status
+Owner direction:
 
-PlayCanvas work remains valuable research and should not be deleted.
+- stay on this Three.js path until it is beautiful;
+- make the opening cinematic beautiful;
+- make the whole game share the same higher visual standard;
+- evaluate useful external sprites/assets where they genuinely help.
 
-Retain its lessons on:
+The current DOM/CSS Moo Brew opening remains a story prototype, not the final cinematic implementation.
 
-- explicit presentation/gameplay authority boundaries;
-- staged building anatomy;
-- debris mass hierarchy;
-- camera/Cow 17 regression tests;
-- exact-source artifact promotion;
-- intro timing gates;
-- assistant visual review before owner review.
+## Active visual-production foundation
 
-But the promoted browser candidate lost the owner comparison on steering feel, natural destruction, overall visual quality, and opening presentation. Passing CI did not make it the more fun game.
+Active branch:
 
-PR #39 remains unmerged and is superseded by the Three.js production pivot. Its branch, workflow evidence, screenshots, and artifacts remain research references.
+`agent/threejs-visual-production-foundation`
 
-## Active build train
+It starts directly from sealed Stage 1 source `f2060dff...`.
 
-`Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`
+Read these before widening art work:
 
-The first production milestone is an **asset-pipeline foundation**, not another engine migration and not a gameplay rewrite.
+- `Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`
+- `Docs/THREEJS_VISUAL_STYLE_BIBLE.md`
+- `Docs/ASSET_INTAKE_AND_PROVENANCE.md`
+- `assets/production/asset-provenance.json`
 
-### Stage 0: current
+Art thesis: **storm-charged stylized Americana**.
 
-- production revival branch created directly from PR #26 head: yes
-- Three.js restored as production direction: in progress in repo memory
-- PlayCanvas preserved as research: yes
-- gameplay code changed during pivot: no
-- owner fun comparison recorded: yes
+Visual promise: **beautiful at a glance, readable at speed, cinematic up close**.
 
-### Stage 1: next
+External packs are ingredients, not the art director. CC0 is preferred. Unknown/unlicensed content is rejected. Production remains offline/local inside the web and Capacitor package.
 
-Build a real authored-asset seam around the accepted Three.js game:
+## Initial external asset candidates
 
-- GLB/glTF-first production asset registry;
-- centralized loading/caching;
-- presentation metadata separate from collision/damage truth;
-- offline Capacitor-compatible assets;
-- documented mobile texture/geometry budgets;
-- missing-asset fallback;
-- one existing destructible structure proving the pipeline without changing its gameplay executor.
+Reviewed but not yet imported:
 
-Do not upgrade the Three.js version in this same milestone.
+- Kenney Particle Pack via `Calinou/kenney-particle-pack`, CC0, candidate for selected dust/rain/debris/light VFX sprites;
+- KayKit City Builder Bits 1.0, CC0, candidate ingredient/reference pool for secondary town props and silhouettes;
+- Kenney Starter Kit City Builder assets, README-declared CC0 asset set, research pool only until exact individual paths are recorded.
 
-## Destruction direction
+No external asset is production-approved merely because the pack license is acceptable.
 
-The next destruction visual pass must improve **ordinary tornado contact**, not only action abilities.
+## Immediate hero-slice milestone
 
-Target qualities:
+Do not spread unfinished art across the whole game yet.
 
-- smaller and more varied breakup pieces where mobile budget allows;
-- visible wall/interior/frame/trim anatomy rather than roof-dominant chunks;
-- staged damage readable before full destruction;
-- Pull/Gust/Zap amplify spectacle instead of being required for it;
-- at least two structure types eventually prove reusable destruction anatomy;
-- reset remains deterministic.
+Build one representative visual acceptance slice containing:
 
-Useful PlayCanvas mass-hierarchy lessons may be ported as presentation ideas, but the Three.js gameplay/destruction executor remains the authority.
+- one Hart Farm block with Cow 17/Moo Brew identity;
+- one Prairie Junction street/storefront view;
+- strong road/terrain separation;
+- production sky/storm-light treatment;
+- representative vegetation and utility dressing;
+- one authored destructible structure with readable staged anatomy;
+- selected dust/rain/debris VFX cards;
+- deterministic pristine and damage evidence views.
+
+The slice must remain as fun and controllable as the frozen Three.js baseline.
+
+## Destruction visual direction
+
+Ordinary tornado contact must deliver spectacle without requiring an ability.
+
+Improve:
+
+- smaller/more varied secondary breakup within mobile budget;
+- wall/interior/frame/trim/window/door/roof anatomy;
+- readable staged damage before final destruction;
+- material-specific debris and dust accents;
+- bounded mass hierarchy.
+
+Pull/Gust/Zap amplify or redirect destruction; they do not unlock the only satisfying visuals.
 
 ## Opening cinematic direction
 
-Keep the canonical story beats, replace the implementation approach.
+Canonical story remains:
 
-The final opening should be rendered from the same production world, assets, materials, lighting, characters, and atmosphere as gameplay:
+newspaper -> farm reveal -> Cow 17 drinks Moo Brew -> weather/radio shift -> Cow 17 double take -> chickens scatter -> barn roof/tornado touchdown -> direct gameplay handoff.
 
-newspaper -> farm reveal -> Cow 17 drinks Moo Brew -> weather/radio -> double take -> chickens scatter -> barn roof/tornado touchdown -> direct gameplay handoff.
+Final implementation must use the same Three.js world, assets, materials, lighting, Cow 17, atmosphere, and VFX language as gameplay. No separate cheap-animation universe. No loading break. The warning clock begins only at the gameplay handoff.
 
-No separate cheap-animation visual universe. No warning-clock consumption behind the cinematic. Keep it skippable.
+## QA law
 
-## QA law learned from the migration
+Objective regression evidence and owner visual/fun review are both required.
 
-Numbers protect invariants; they do not automatically protect fun.
+A green candidate does not advance if it looks worse, drives worse, hides the road, weakens ordinary destruction, or makes the opening feel disconnected from gameplay.
 
-Every gameplay-facing visual milestone must include both objective regression evidence and an owner comparison against the frozen Three.js reference. Explicitly ask whether:
-
-- forward steering still feels direct;
-- ordinary contact destruction is satisfying;
-- debris is varied rather than giant roof-heavy slabs;
-- world/cinematic/gameplay share one visual language;
-- the candidate is at least as fun as the frozen reference.
-
-## Current QA boundary
-
-The public QA deployment may still contain the last promoted PlayCanvas research candidate under `/playcanvas/`. That does not make PlayCanvas production.
-
-Do not call the Three.js revival physically accepted until an exact revival Android artifact is installed and approved on the Galaxy S26 Ultra.
-
-## Immediate next action
-
-1. Finish Stage 0 repository-memory cleanup and mark PR #39 superseded/unmerged.
-2. Inspect the PR #26 runtime seams for the smallest safe authored-asset integration point.
-3. Create a descendant Stage 1 branch from `agent/threejs-production-revival`.
-4. Add the asset registry/loader/material metadata/fallback path without changing gameplay executors.
-5. Prove one existing destructible structure through that pipeline.
-6. Run inherited browser checks plus a direct fun comparison before widening the art conversion.
+Galaxy S26 Ultra physical testing remains the final Android authority.
