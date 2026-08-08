@@ -24,6 +24,13 @@ import {
   type StormForceInput,
   type StormPhysicsTelemetry,
 } from './storm-force-field';
+import {
+  createMultiStructureVisuals,
+  MultiStructurePresentation,
+  StructureDebrisField,
+  type MultiStructurePresentationTelemetry,
+  type StructureDebrisTelemetry,
+} from './multi-structure-destruction';
 
 interface SliceTelemetry {
   readonly renderer: 'PlayCanvas';
@@ -40,6 +47,8 @@ interface SliceHandle {
   readonly telemetry: SliceTelemetry;
   getAuthoritySnapshot(): AuthoritySnapshot | null;
   getStormPhysicsTelemetry(): StormPhysicsTelemetry;
+  getStructurePresentationTelemetry(): MultiStructurePresentationTelemetry;
+  getStructureDebrisTelemetry(): StructureDebrisTelemetry;
   requestAbility(slot: AuthorityAbilitySlot, source?: 'keyboard' | 'touch' | 'qa'): boolean;
   reset(): AuthoritySnapshot;
   dispose(): void;
@@ -111,6 +120,19 @@ const PHYSICS_DATASET_KEYS = [
   'swPlaycanvasPhysicsDisposed',
 ] as const;
 
+const STRUCTURE_DATASET_KEYS = [
+  'swPlaycanvasStructureBound',
+  'swPlaycanvasStructureDamaged',
+  'swPlaycanvasStructureDestroyed',
+  'swPlaycanvasStructureMaxStage',
+  'swPlaycanvasStructureDebrisUpdates',
+  'swPlaycanvasStructureDebrisActivations',
+  'swPlaycanvasStructureDebrisActive',
+  'swPlaycanvasStructureDebrisDisplacement',
+  'swPlaycanvasStructurePullAccepted',
+  'swPlaycanvasStructureGustAccepted',
+] as const;
+
 function byId<T extends HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
 }
@@ -150,6 +172,7 @@ function clearTelemetry(): void {
     delete document.documentElement.dataset[key];
   }
   for (const key of PHYSICS_DATASET_KEYS) delete document.documentElement.dataset[key];
+  for (const key of STRUCTURE_DATASET_KEYS) delete document.documentElement.dataset[key];
 }
 
 function createWorldTransform(snapshot: AuthoritySnapshot, scene: SceneResult): WorldTransform {
@@ -481,6 +504,23 @@ function publishStormPhysicsTelemetry(telemetry: StormPhysicsTelemetry): void {
   data.swPlaycanvasPhysicsDisposed = String(telemetry.disposed);
 }
 
+function publishMultiStructureTelemetry(
+  presentation: MultiStructurePresentationTelemetry,
+  debris: StructureDebrisTelemetry,
+): void {
+  const data = document.documentElement.dataset;
+  data.swPlaycanvasStructureBound = String(presentation.boundCount);
+  data.swPlaycanvasStructureDamaged = String(presentation.damagedCount);
+  data.swPlaycanvasStructureDestroyed = String(presentation.destroyedCount);
+  data.swPlaycanvasStructureMaxStage = String(presentation.maxDamageStage);
+  data.swPlaycanvasStructureDebrisUpdates = String(debris.updateCount);
+  data.swPlaycanvasStructureDebrisActivations = String(debris.activationCount);
+  data.swPlaycanvasStructureDebrisActive = String(debris.activeCount);
+  data.swPlaycanvasStructureDebrisDisplacement = debris.maxDisplacement.toFixed(3);
+  data.swPlaycanvasStructurePullAccepted = String(debris.pullAcceptedCount);
+  data.swPlaycanvasStructureGustAccepted = String(debris.gustAcceptedCount);
+}
+
 async function bootstrapSlice(): Promise<SliceHandle> {
   setStatus('Loading PlayCanvas renderer…', 'loading');
   const pc = await loadPlayCanvasEngine();
@@ -528,11 +568,23 @@ async function bootstrapSlice(): Promise<SliceHandle> {
   }), renderTornado.x, renderTornado.z);
   const stormPhysics = new StormForceField(scene.stormPhysicsBodies);
 
+  // [SW:PLAYCANVAS:MULTI_STRUCTURE_EXECUTOR_INTEGRATION]
+  // Four structure visuals mirror real Living County targets. Their HP and
+  // score stay in the accepted authority; PlayCanvas only mirrors stages and
+  // owns detached presentation chunks after authority says they detached.
+  const structureEntities: PcEntity[] = [];
+  const structureVisuals = createMultiStructureVisuals(pc, app, structureEntities);
+  const structurePresentation = new MultiStructurePresentation(structureVisuals);
+  const structureDebris = new StructureDebrisField(structureVisuals, latestSnapshot.structures, transform);
+
   const syncSnapshot = (snapshot: AuthoritySnapshot): void => {
     latestSnapshot = snapshot;
     targetTornado = transform.map(snapshot.storm.x, snapshot.storm.z);
     updateHud(snapshot);
-    stormPhysics.syncBarnState(stormForceInput(snapshot, transform));
+    const forceInput = stormForceInput(snapshot, transform, renderTornado);
+    stormPhysics.syncBarnState(forceInput);
+    structurePresentation.sync(snapshot.structures, transform);
+    structureDebris.sync(snapshot.structures, forceInput);
     applyBarnVisual(scene, snapshot, stormPhysics.isRoofControlled());
     if (snapshot.cow17) {
       const cow = transform.map(snapshot.cow17.x, snapshot.cow17.z);
@@ -549,11 +601,12 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     document.documentElement.dataset.swPlaycanvasStormZ = snapshot.storm.z.toFixed(3);
     document.documentElement.dataset.swPlaycanvasBarnHealth = snapshot.barn ? snapshot.barn.health.toFixed(2) : 'none';
     publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
+    publishMultiStructureTelemetry(structurePresentation.getTelemetry(), structureDebris.getTelemetry());
   };
 
   // [SW:PLAYCANVAS:STORM_FORCE_EXECUTOR_INTEGRATION]
   // Presentation reaction is downstream of the accepted ability result. A
-  // rejected/cooldown request never enters the PlayCanvas storm force field.
+  // rejected/cooldown request never enters either PlayCanvas force subsystem.
   const requestAbility = (slot: AuthorityAbilitySlot, source: 'keyboard' | 'touch' | 'qa' = 'keyboard'): boolean => {
     const result = authority.requestAbility(slot, source);
     flashAbility(slot, result.accepted);
@@ -566,8 +619,11 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     const snapshot = authority.snapshot();
     syncSnapshot(snapshot);
     if (result.accepted) {
-      stormPhysics.triggerAbility(slot, stormForceInput(snapshot, transform, renderTornado));
+      const forceInput = stormForceInput(snapshot, transform, renderTornado);
+      stormPhysics.triggerAbility(slot, forceInput);
+      structureDebris.triggerAbility(slot, forceInput);
       publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
+      publishMultiStructureTelemetry(structurePresentation.getTelemetry(), structureDebris.getTelemetry());
     }
     return result.accepted;
   };
@@ -576,6 +632,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     acceptedAbilities = 0;
     stormPhysics.reset();
     const snapshot = authority.reset();
+    structureDebris.reset(snapshot.structures, transform);
     document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount = '0';
     delete document.documentElement.dataset.swPlaycanvasLastAbility;
     delete document.documentElement.dataset.swPlaycanvasLastAbilityAccepted;
@@ -583,6 +640,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     renderTornado = { ...targetTornado };
     chaseCamera.reset(renderTornado.x, renderTornado.z);
     publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
+    publishMultiStructureTelemetry(structurePresentation.getTelemetry(), structureDebris.getTelemetry());
     return snapshot;
   };
 
@@ -601,7 +659,9 @@ async function bootstrapSlice(): Promise<SliceHandle> {
       part.setPosition(renderTornado.x, scene.tornadoPartY[index] ?? scene.tornadoPartY[0] ?? 1, renderTornado.z);
     });
 
-    stormPhysics.update(stormForceInput(latestSnapshot, transform, renderTornado), deltaSeconds);
+    const forceInput = stormForceInput(latestSnapshot, transform, renderTornado);
+    stormPhysics.update(forceInput, deltaSeconds);
+    structureDebris.update(forceInput, deltaSeconds);
     const cameraPose = chaseCamera.update(renderTornado.x, renderTornado.z, deltaSeconds);
     scene.camera.setPosition(cameraPose.cameraX, CHASE_CAMERA_HEIGHT, cameraPose.cameraZ);
     scene.camera.lookAt(renderTornado.x, CHASE_CAMERA_LOOK_Y, renderTornado.z);
@@ -620,6 +680,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     document.documentElement.dataset.swPlaycanvasCameraTurning = String(cameraPose.turning);
     document.documentElement.dataset.swPlaycanvasCameraInputActive = String(cameraPose.inputActive);
     publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
+    publishMultiStructureTelemetry(structurePresentation.getTelemetry(), structureDebris.getTelemetry());
 
     const now = performance.now();
     if (now - lastAuthorityPoll >= 50) {
@@ -635,7 +696,7 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     gameplayAuthority: 'PLAYCANVAS_AUTHORITY_V1',
     roadClearance: ROAD_CLEARANCE,
     tornadoGroundClearance: TORNADO_GROUND_CLEARANCE,
-    entityCount: scene.entities.length,
+    entityCount: scene.entities.length + structureEntities.length,
     qaMode,
   });
 
@@ -648,7 +709,8 @@ async function bootstrapSlice(): Promise<SliceHandle> {
   document.documentElement.dataset.swRenderer = 'PlayCanvas';
   document.documentElement.dataset.swPlaycanvasAbilityAcceptedCount = '0';
   publishStormPhysicsTelemetry(stormPhysics.getTelemetry());
-  setStatus('PLAYABLE • chase camera • storm physics parity', 'ready');
+  publishMultiStructureTelemetry(structurePresentation.getTelemetry(), structureDebris.getTelemetry());
+  setStatus('PLAYABLE • multi-structure destruction • storm physics parity', 'ready');
 
   return Object.freeze({
     telemetry,
@@ -658,12 +720,19 @@ async function bootstrapSlice(): Promise<SliceHandle> {
     getStormPhysicsTelemetry(): StormPhysicsTelemetry {
       return stormPhysics.getTelemetry();
     },
+    getStructurePresentationTelemetry(): MultiStructurePresentationTelemetry {
+      return structurePresentation.getTelemetry();
+    },
+    getStructureDebrisTelemetry(): StructureDebrisTelemetry {
+      return structureDebris.getTelemetry();
+    },
     requestAbility,
     reset,
     dispose(): void {
       controls.dispose();
       window.removeEventListener('resize', resize);
       stormPhysics.dispose();
+      structureDebris.reset(latestSnapshot.structures, transform);
       authority.dispose();
       app.destroy();
       canvas.remove();
