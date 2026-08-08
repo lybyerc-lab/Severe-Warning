@@ -227,7 +227,6 @@ function direction(fromX: number, fromZ: number, toX: number, toZ: number): Read
 function createArchetypeMaterials(pc: PlayCanvasModule): Readonly<Record<AuthorityStructureArchetype, ArchetypeMaterials>> {
   const darkRoof = createMaterial(pc, [0.14, 0.17, 0.19], { metalness: 0.12, gloss: 0.34 });
   const pale = createMaterial(pc, [0.79, 0.77, 0.69], { gloss: 0.18 });
-  const weathered = createMaterial(pc, [0.38, 0.32, 0.25], { gloss: 0.12 });
   const metal = createMaterial(pc, [0.42, 0.47, 0.50], { metalness: 0.38, gloss: 0.42 });
   const glass = createMaterial(pc, [0.28, 0.49, 0.61], { metalness: 0.12, gloss: 0.76 });
   const interior = createMaterial(pc, [0.075, 0.065, 0.055], { gloss: 0.06 });
