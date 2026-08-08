@@ -17,6 +17,7 @@ const report = {
   generatedAt: new Date().toISOString(),
   passed: false,
   success: null,
+  visualProbe: null,
   fallback: null,
   failures: [],
 };
@@ -61,6 +62,45 @@ async function snapshot(page) {
   }));
 }
 
+async function prepareFocusedAssetView(page) {
+  return page.evaluate(() => {
+    const target = targets.find((candidate) => candidate.__swAuthoredAssetId === 'structure.storefront.v1');
+    const group = target?.meshData?.group;
+    if (!target || !group) return null;
+
+    // [SW:QA:THREEJS_ASSET_VISUAL_PROBE]
+    // Freeze only the QA camera path. Gameplay target truth is not changed.
+    productionQaPrepared = true;
+    runActive = false;
+    cameraShakeIntensity = 0;
+
+    const outward = new THREE.Vector3(0, 0, -1).applyQuaternion(group.quaternion).normalize();
+    const side = new THREE.Vector3(1, 0, 0).applyQuaternion(group.quaternion).normalize();
+    const center = group.position.clone();
+    const lookY = terrainHeightAt(target.x, target.z) + 4.4;
+    camera.position.set(
+      center.x + outward.x * 29 + side.x * 9,
+      lookY + 11.5,
+      center.z + outward.z * 29 + side.z * 9,
+    );
+    camera.lookAt(center.x, lookY, center.z);
+    camera.updateMatrixWorld(true);
+    renderer.render(scene, camera);
+
+    return {
+      assetId: target.__swAuthoredAssetId,
+      kind: target.kind,
+      health: target.health,
+      maxHealth: target.maxHealth,
+      damageStage: target.damageStage,
+      destroyed: target.destroyed,
+      damagePartCount: target.meshData?.damageParts?.length || 0,
+      groupPosition: { x: group.position.x, y: group.position.y, z: group.position.z },
+      cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+    };
+  });
+}
+
 const successPage = await makePage();
 try {
   await successPage.page.goto(`${qaUrl}?qa=1&intro=0&identity=1&assetPipeline=1`, { waitUntil: 'domcontentloaded' });
@@ -69,6 +109,11 @@ try {
   await dismissIntroAndStart(successPage.page);
   report.success = await snapshot(successPage.page);
   await successPage.page.screenshot({ path: path.join(outputDir, 'threejs-asset-pipeline-authored-storefront.png'), fullPage: true });
+
+  report.visualProbe = await prepareFocusedAssetView(successPage.page);
+  await successPage.page.waitForTimeout(120);
+  await successPage.page.evaluate(() => renderer.render(scene, camera));
+  await successPage.page.screenshot({ path: path.join(outputDir, 'threejs-asset-pipeline-authored-storefront-focused.png'), fullPage: true });
 
   requireCondition(report.success.revision === '128', `Three.js revision changed: ${report.success.revision}.`);
   requireCondition(report.success.pipeline?.version === 'THREEJS_ASSET_PIPELINE_V1', 'Asset pipeline bridge version mismatch.');
@@ -84,6 +129,10 @@ try {
   requireCondition(applied.damageStage === 0 && applied.destroyed === false, 'Authored target was not intact after presentation swap.');
   requireCondition(applied.damagePartCount >= 10, `Authored storefront has only ${applied.damagePartCount} damage parts.`);
   requireCondition(report.success.city?.uniqueArchetypes >= 8, 'City fabric bridge did not remain active after authored presentation swap.');
+  requireCondition(report.visualProbe?.assetId === 'structure.storefront.v1', 'Focused visual probe did not lock to the authored storefront.');
+  requireCondition(report.visualProbe?.health === report.visualProbe?.maxHealth, 'Focused visual probe changed storefront health.');
+  requireCondition(report.visualProbe?.damageStage === 0 && report.visualProbe?.destroyed === false, 'Focused visual probe changed authoritative damage state.');
+  requireCondition(report.visualProbe?.damagePartCount >= 10, `Focused visual probe exposes only ${report.visualProbe?.damagePartCount || 0} authored parts.`);
   if (successPage.errors.length) report.failures.push(`Success-path browser errors: ${successPage.errors.join(' | ')}`);
 } finally {
   await writeFile(path.join(outputDir, 'threejs-asset-pipeline-success-browser.log'), `${successPage.logs.join('\n')}\n`, 'utf8');
