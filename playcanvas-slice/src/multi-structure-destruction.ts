@@ -115,6 +115,7 @@ interface DebrisProfile {
   readonly dragBase: number;
   readonly groundDamping: number;
   readonly angularScale: number;
+  readonly maxRise: number;
 }
 
 interface DebrisState {
@@ -158,7 +159,7 @@ const PULL_ACTIVE_SECONDS = 2.5;
 const DEBRIS_PROFILES: Readonly<Record<StructureDebrisClass, DebrisProfile>> = Object.freeze({
   trim: Object.freeze({
     launchHorizontal: 3.2,
-    launchVertical: 4.1,
+    launchVertical: 3.2,
     suctionScale: 1.18,
     swirlScale: 1.28,
     liftScale: 1.38,
@@ -166,17 +167,19 @@ const DEBRIS_PROFILES: Readonly<Record<StructureDebrisClass, DebrisProfile>> = O
     dragBase: 0.36,
     groundDamping: 0.74,
     angularScale: 1.25,
+    maxRise: 22,
   }),
   roof: Object.freeze({
     launchHorizontal: 2.1,
-    launchVertical: 2.5,
+    launchVertical: 3.4,
     suctionScale: 0.86,
     swirlScale: 0.92,
-    liftScale: 0.80,
+    liftScale: 2.50,
     gustScale: 0.98,
     dragBase: 0.56,
     groundDamping: 0.67,
     angularScale: 0.90,
+    maxRise: 14,
   }),
   wall: Object.freeze({
     launchHorizontal: 1.25,
@@ -188,6 +191,7 @@ const DEBRIS_PROFILES: Readonly<Record<StructureDebrisClass, DebrisProfile>> = O
     dragBase: 0.72,
     groundDamping: 0.56,
     angularScale: 0.62,
+    maxRise: 4.5,
   }),
   frame: Object.freeze({
     launchHorizontal: 0.72,
@@ -199,6 +203,7 @@ const DEBRIS_PROFILES: Readonly<Record<StructureDebrisClass, DebrisProfile>> = O
     dragBase: 0.90,
     groundDamping: 0.48,
     angularScale: 0.42,
+    maxRise: 2.5,
   }),
 });
 
@@ -762,9 +767,12 @@ export class StructureDebrisField {
       const suction = (3.8 + input.efMultiplier * 1.5) * falloff * pullBoost * inverseMass * profile.suctionScale;
       const swirl = (5.2 + input.efMultiplier * 1.7) * falloff * (0.75 + (pullBoost - 1) * 0.45) * inverseMass * profile.swirlScale;
       const nearCore = 1 - clamp(inward.distance / Math.max(input.radius * 1.15, 1), 0, 1);
+      const rise = Math.max(0, body.y - body.homeY);
+      const altitudeLiftScale = 1 - clamp(rise / Math.max(profile.maxRise, 0.001), 0, 1) * 0.92;
       const lift = (2.6 + falloff * 7.0 + nearCore * 4.5 + (this.pullSecondsRemaining > 0 ? 4.5 : 0))
         * inverseMass
-        * profile.liftScale;
+        * profile.liftScale
+        * altitudeLiftScale;
       const tangentX = -inward.z * side;
       const tangentZ = inward.x * side;
       const drag = profile.dragBase + body.mass * 0.026;
@@ -778,6 +786,12 @@ export class StructureDebrisField {
       body.rotationX += body.angularX * step;
       body.rotationY += body.angularY * step;
       body.rotationZ += body.angularZ * step;
+
+      const altitudeCeiling = body.homeY + profile.maxRise;
+      if (body.y > altitudeCeiling) {
+        body.y = altitudeCeiling;
+        body.velocityY = Math.min(body.velocityY, 0);
+      }
 
       if (body.y < 0.45) {
         body.y = 0.45;
