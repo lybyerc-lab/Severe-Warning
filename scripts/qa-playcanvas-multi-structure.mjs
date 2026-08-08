@@ -49,6 +49,10 @@ function byId(state, id) {
   return state?.authority?.structures?.find((structure) => structure.id === id) ?? null;
 }
 
+function bindingById(state, id) {
+  return state?.presentation?.bindings?.find((binding) => binding.id === id) ?? null;
+}
+
 async function driveAcceptedStormTo(id, timeoutMs = 18_000) {
   return page.evaluate(async ({ targetId, timeout }) => {
     const handle = globalThis.__SW_PLAYCANVAS_SLICE__;
@@ -123,8 +127,6 @@ async function ensureAuthoritativeDamage(id) {
   const drive = await driveAcceptedStormTo(id);
   if (!drive.reached) throw new Error(`Accepted storm could not reach ${id}; final distance=${drive.distance}.`);
 
-  // Normal contact damage is active while the accepted storm sits on target.
-  // The visible Gust button accelerates the same accepted damageTarget path.
   const gust = await clickVisibleAbilityWhenReady('secondary');
   if (!gust.accepted) throw new Error(`Visible Gust was not accepted near ${id}.`);
 
@@ -155,22 +157,30 @@ try {
     (initial.authority?.structures ?? []).map((structure) => [structure.id, structure.health]),
   );
   const initialScore = Number(initial.authority?.score?.destructionScore ?? 0);
+  const intactAnatomyReadable = EXPECTED_IDS.every((id) => {
+    const binding = bindingById(initial, id);
+    return binding && Number(binding.visibleCoreParts) >= 6 && Number(binding.visibleWoundParts) === 0;
+  });
+  const weightClasses = new Set((initial.debris?.bodies ?? []).map((body) => body.weightClass));
+  const massHierarchyDeclared = ['light', 'roof', 'wall', 'frame', 'industrial'].every((name) => weightClasses.has(name));
 
   const storefrontDamage = await ensureAuthoritativeDamage('storefront');
   if (!storefrontDamage.damaged.matched) {
     throw new Error(`Storefront did not take authoritative damage. health=${storefrontDamage.damaged.structure?.health}`);
   }
   await waitFrames(6);
+  const afterFirstDamage = await readState();
   await page.screenshot({ path: `${evidenceDir}/playcanvas-multi-structure-damage.png`, fullPage: true });
+  const damagedStorefrontBinding = bindingById(afterFirstDamage, 'storefront');
+  const initialStorefrontBinding = bindingById(initial, 'storefront');
+  const stagedBreakupVisible = Boolean(damagedStorefrontBinding && initialStorefrontBinding)
+    && Number(damagedStorefrontBinding.visibleWoundParts) >= 1
+    && Number(damagedStorefrontBinding.visibleCoreParts) < Number(initialStorefrontBinding.visibleCoreParts);
 
-  // Once authority has detached a stage chunk, exercise the existing accepted
-  // Pull path so the new structure debris field proves visible storm response.
   const pull = await clickVisibleAbilityWhenReady('primary');
   if (!pull.accepted) throw new Error('Visible Pull was not accepted after structure damage.');
   await waitFrames(20);
 
-  // Keep the accepted storm on the storefront and use visible Gusts when ready
-  // until the legacy target actually reaches destroyTarget and awards score.
   let storefrontDestroyed = await waitForStructure('storefront', (structure) => structure.destroyed, 4_000);
   for (let attempt = 0; !storefrontDestroyed.matched && attempt < 4; attempt += 1) {
     const gust = await clickVisibleAbilityWhenReady('secondary', 12_000);
@@ -180,7 +190,8 @@ try {
   if (!storefrontDestroyed.matched) {
     throw new Error(`Storefront never reached authoritative destruction. health=${storefrontDestroyed.structure?.health}`);
   }
-  await waitFrames(12);
+  await waitFrames(24);
+  const afterStorefrontDestruction = await readState();
   await page.screenshot({ path: `${evidenceDir}/playcanvas-multi-structure-destroyed.png`, fullPage: true });
 
   const houseDamage = await ensureAuthoritativeDamage('house');
@@ -207,6 +218,15 @@ try {
     && Number(afterDamage.debris?.activeCount ?? 0) > 0;
   const debrisMoved = Number(afterDamage.debris?.maxDisplacement ?? 0) > 0.15;
 
+  const storefrontDebris = (afterStorefrontDestruction.debris?.bodies ?? [])
+    .filter((body) => body.structureId === 'storefront' && body.active);
+  const signBody = storefrontDebris.find((body) => body.weightClass === 'light');
+  const frameBody = storefrontDebris.find((body) => body.weightClass === 'frame');
+  const massHierarchyMovesDifferently = Boolean(signBody && frameBody)
+    && Number(signBody.mass) < Number(frameBody.mass)
+    && Number(signBody.peakDisplacement) > Number(frameBody.peakDisplacement)
+    && Number(signBody.peakHeight) >= Number(frameBody.peakHeight);
+
   const resetSnapshot = await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset() ?? null);
   await waitFrames(12);
   const afterReset = await readState();
@@ -218,7 +238,8 @@ try {
       && Math.abs(structure.health - structure.maxHealth) < 0.05;
   });
   const resetPresentationIntact = afterReset.presentation?.damagedCount === 0
-    && afterReset.presentation?.destroyedCount === 0;
+    && afterReset.presentation?.destroyedCount === 0
+    && EXPECTED_IDS.every((id) => Number(bindingById(afterReset, id)?.visibleWoundParts ?? -1) === 0);
   const resetDebrisClean = afterReset.debris?.activeCount === 0
     && afterReset.debris?.bodies?.every((body) => !body.active && !body.airborne && body.displacement < 0.02);
 
@@ -227,7 +248,10 @@ try {
     { name: 'four-authoritative-structures-bound', passed: EXPECTED_IDS.every((id) => ids.includes(id)) && ids.length === 4, detail: { ids } },
     { name: 'four-presentation-bindings-bound', passed: EXPECTED_IDS.every((id) => bindingIds.includes(id)) && bindingIds.length === 4, detail: { bindingIds } },
     { name: 'structures-inside-test-world', passed: allInsideWorld, detail: initial.presentation?.bindings ?? [] },
+    { name: 'intact-building-anatomy-readable', passed: intactAnatomyReadable, detail: initial.presentation?.bindings ?? [] },
+    { name: 'five-debris-weight-classes-declared', passed: massHierarchyDeclared, detail: [...weightClasses] },
     { name: 'storefront-damaged-through-accepted-gameplay', passed: storefrontDamage.damaged.matched, detail: storefrontDamage.damaged.structure },
+    { name: 'damage-stage-reveals-wound-and-detaches-anatomy', passed: stagedBreakupVisible, detail: { initial: initialStorefrontBinding, damaged: damagedStorefrontBinding } },
     { name: 'storefront-destroyed-through-accepted-gameplay', passed: storefrontDestroyed.matched, detail: storefrontDestroyed.structure },
     { name: 'second-distinct-structure-damaged', passed: houseDamage.damaged.matched && changedIds.includes('house'), detail: { changedIds, house: houseDamage.damaged.structure } },
     { name: 'at-least-two-structures-authoritatively-damaged', passed: changedIds.length >= 2, detail: { changedIds } },
@@ -235,6 +259,7 @@ try {
     { name: 'presentation-matches-authority', passed: presentationMatchesAuthority, detail: { authority: afterDamage.authority?.structures, presentation: afterDamage.presentation?.bindings } },
     { name: 'authoritative-stage-activates-structure-debris', passed: debrisActivated, detail: afterDamage.debris },
     { name: 'accepted-pull-moves-detached-structure-debris', passed: pull.accepted && debrisMoved && Number(afterDamage.debris?.pullAcceptedCount ?? 0) >= 1, detail: afterDamage.debris },
+    { name: 'light-debris-outtravels-heavy-frame', passed: massHierarchyMovesDifferently, detail: { signBody, frameBody } },
     { name: 'reset-restores-authoritative-structures', passed: resetStructuresIntact && Boolean(resetSnapshot), detail: afterReset.authority?.structures },
     { name: 'reset-restores-structure-presentation', passed: resetPresentationIntact, detail: afterReset.presentation },
     { name: 'reset-clears-structure-debris', passed: resetDebrisClean, detail: afterReset.debris },
@@ -245,18 +270,21 @@ try {
 
   const failedChecks = checks.filter((check) => !check.passed).map((check) => check.name);
   report = {
-    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V1',
+    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2',
     passed: failedChecks.length === 0,
     checks,
     failedChecks,
     evidence: {
       initial,
       storefrontDamage,
+      afterFirstDamage,
       storefrontDestroyed: storefrontDestroyed.structure,
+      afterStorefrontDestruction,
       houseDamage,
       afterDamage,
       afterReset,
       changedIds,
+      massHierarchy: { signBody, frameBody },
       score: { initial: initialScore, afterDestruction: scoreAfterDestruction },
     },
     consoleErrors,
@@ -264,7 +292,7 @@ try {
   };
 } catch (error) {
   report = {
-    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V1',
+    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2',
     passed: false,
     checks: [],
     failedChecks: ['harness-exception'],
