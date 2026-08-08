@@ -226,6 +226,13 @@ try {
     && Number(signBody.mass) < Number(frameBody.mass)
     && Number(signBody.peakDisplacement) > Number(frameBody.peakDisplacement)
     && Number(signBody.peakHeight) >= Number(frameBody.peakHeight);
+  const lightDebrisBounded = Boolean(signBody)
+    && Number(signBody.peakDisplacement) > 2.0
+    && Number(signBody.peakDisplacement) < 45
+    && Number(signBody.peakHeight) > 2.0
+    && Number(signBody.peakHeight) < 32;
+  const structureFlightEnvelopeBounded = Number(afterStorefrontDestruction.debris?.maxDisplacement ?? Infinity) < 50
+    && Number(afterStorefrontDestruction.debris?.maxHeight ?? Infinity) < 35;
 
   const resetSnapshot = await page.evaluate(() => globalThis.__SW_PLAYCANVAS_SLICE__?.reset() ?? null);
   await waitFrames(12);
@@ -260,6 +267,8 @@ try {
     { name: 'authoritative-stage-activates-structure-debris', passed: debrisActivated, detail: afterDamage.debris },
     { name: 'accepted-pull-moves-detached-structure-debris', passed: pull.accepted && debrisMoved && Number(afterDamage.debris?.pullAcceptedCount ?? 0) >= 1, detail: afterDamage.debris },
     { name: 'light-debris-outtravels-heavy-frame', passed: massHierarchyMovesDifferently, detail: { signBody, frameBody } },
+    { name: 'light-debris-flight-stays-readable', passed: lightDebrisBounded, detail: signBody },
+    { name: 'structure-flight-envelope-bounded', passed: structureFlightEnvelopeBounded, detail: afterStorefrontDestruction.debris },
     { name: 'reset-restores-authoritative-structures', passed: resetStructuresIntact && Boolean(resetSnapshot), detail: afterReset.authority?.structures },
     { name: 'reset-restores-structure-presentation', passed: resetPresentationIntact, detail: afterReset.presentation },
     { name: 'reset-clears-structure-debris', passed: resetDebrisClean, detail: afterReset.debris },
@@ -270,7 +279,7 @@ try {
 
   const failedChecks = checks.filter((check) => !check.passed).map((check) => check.name);
   report = {
-    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2',
+    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V3',
     passed: failedChecks.length === 0,
     checks,
     failedChecks,
@@ -284,7 +293,7 @@ try {
       afterDamage,
       afterReset,
       changedIds,
-      massHierarchy: { signBody, frameBody },
+      massHierarchy: { signBody, frameBody, lightDebrisBounded, structureFlightEnvelopeBounded },
       score: { initial: initialScore, afterDestruction: scoreAfterDestruction },
     },
     consoleErrors,
@@ -292,7 +301,7 @@ try {
   };
 } catch (error) {
   report = {
-    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2',
+    version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V3',
     passed: false,
     checks: [],
     failedChecks: ['harness-exception'],
