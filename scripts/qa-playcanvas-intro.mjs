@@ -37,6 +37,24 @@ page.on('console', (message) => {
 });
 page.on('pageerror', (error) => pageErrors.push(error.message));
 
+// [SW:PLAYCANVAS:INTRO_QA_SETTLE]
+// Deterministic phase selection is immediate, while the real presentation uses
+// CSS transitions. Wait for the actual transition set to settle before reading
+// visibility or capturing screenshots so QA measures the intended steady state
+// without changing player-facing animation behavior.
+async function settleIntroPhase(expectedPhase) {
+  await page.waitForFunction((phase) => {
+    const handle = globalThis.__SW_PLAYCANVAS_INTRO__;
+    const overlay = document.getElementById('playcanvas-moo-brew-intro');
+    if (!handle || !overlay || handle.getSnapshot().phase !== phase) return false;
+    return overlay.getAnimations({ subtree: true }).every((animation) => (
+      animation.playState !== 'running' && animation.playState !== 'pending'
+    ));
+  }, expectedPhase, { timeout: 5_000 });
+
+  return page.evaluate(() => globalThis.__SW_PLAYCANVAS_INTRO__?.getSnapshot() ?? null);
+}
+
 let report;
 try {
   // Normal repository QA must not pay the cinematic time cost.
@@ -57,11 +75,11 @@ try {
 
   const phaseSnapshots = [];
   for (const phase of phases) {
-    const snapshot = await page.evaluate((value) => {
+    await page.evaluate((value) => {
       const handle = globalThis.__SW_PLAYCANVAS_INTRO__;
       if (!handle?.setPhase(value)) throw new Error(`Could not set intro phase ${value}`);
-      return handle.getSnapshot();
     }, phase);
+    const snapshot = await settleIntroPhase(phase);
     phaseSnapshots.push(snapshot);
     if (phase === 'newspaper') {
       await page.screenshot({ path: `${evidenceDir}/playcanvas-intro-newspaper.png`, fullPage: true });
