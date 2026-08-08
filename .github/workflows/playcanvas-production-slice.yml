@@ -123,6 +123,9 @@ jobs:
       - name: Multi-structure implementation truth verification
         run: node scripts/verify-playcanvas-multi-structure.mjs
 
+      - name: Moo Brew intro static verification
+        run: node scripts/verify-playcanvas-intro.mjs
+
       - name: Build isolated preview
         run: pnpm exec vite build --config vite.playcanvas.config.ts
 
@@ -159,14 +162,19 @@ jobs:
       - name: Run multi-structure destruction QA
         run: node scripts/qa-playcanvas-multi-structure.mjs
 
+      - name: Run Moo Brew intro QA
+        run: node scripts/qa-playcanvas-intro.mjs
+
       - name: Validate evidence contract
         run: |
           test -s playcanvas-slice-engine-report.json
           test -s playcanvas-slice-static-report.json
           test -s playcanvas-multi-structure-static-report.json
+          test -s playcanvas-intro-static-report.json
           test -s playcanvas-slice-evidence/playcanvas-slice-report.json
           test -s playcanvas-slice-evidence/playcanvas-rotation-stability-report.json
           test -s playcanvas-slice-evidence/playcanvas-multi-structure-report.json
+          test -s playcanvas-slice-evidence/playcanvas-intro-report.json
           test -s playcanvas-slice-evidence/playcanvas-slice.png
           test -s playcanvas-slice-evidence/playcanvas-slice-turn.png
           test -s playcanvas-slice-evidence/playcanvas-slice-travel.png
@@ -179,6 +187,10 @@ jobs:
           test -s playcanvas-slice-evidence/playcanvas-multi-structure-intact.png
           test -s playcanvas-slice-evidence/playcanvas-multi-structure-damage.png
           test -s playcanvas-slice-evidence/playcanvas-multi-structure-destroyed.png
+          test -s playcanvas-slice-evidence/playcanvas-intro-newspaper.png
+          test -s playcanvas-slice-evidence/playcanvas-intro-moo-brew.png
+          test -s playcanvas-slice-evidence/playcanvas-intro-touchdown.png
+          test -s playcanvas-slice-evidence/playcanvas-intro-playable-handoff.png
           test -s playcanvas-slice-server.log
 
       - name: Package evidence
@@ -188,6 +200,7 @@ jobs:
           cp playcanvas-slice-engine-report.json playcanvas-slice-artifact/ 2>/dev/null || true
           cp playcanvas-slice-static-report.json playcanvas-slice-artifact/ 2>/dev/null || true
           cp playcanvas-multi-structure-static-report.json playcanvas-slice-artifact/ 2>/dev/null || true
+          cp playcanvas-intro-static-report.json playcanvas-slice-artifact/ 2>/dev/null || true
           cp playcanvas-slice-server.log playcanvas-slice-artifact/ 2>/dev/null || true
           cp -R playcanvas-slice-evidence playcanvas-slice-artifact/ 2>/dev/null || true
           cp -R playcanvas-slice-dist playcanvas-slice-artifact/preview 2>/dev/null || true
