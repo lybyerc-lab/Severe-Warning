@@ -267,6 +267,21 @@ function swVisualHeroSlice3StyleSecondaryTargets() {
   return targetCount;
 }
 
+function swVisualHeroSlice3TownGroundRole(object, material, padColors) {
+  const existingRole = object?.userData?.swVisualHeroSlice3TownGroundRole || material?.userData?.swVisualHeroSlice3TownGroundRole || '';
+  if (existingRole === 'pad' || existingRole === 'sidewalk' || existingRole === 'alley') return existingRole;
+
+  const hex = material?.color?.getHexString?.() || '';
+  const role = padColors.has(hex)
+    ? 'pad'
+    : (hex === 'a9b0b7' ? 'sidewalk' : (hex === '3b4652' ? 'alley' : ''));
+  if (!role) return '';
+
+  if (object?.userData) object.userData.swVisualHeroSlice3TownGroundRole = role;
+  if (material?.userData) material.userData.swVisualHeroSlice3TownGroundRole = role;
+  return role;
+}
+
 function swVisualHeroSlice3StyleTownGround(palette) {
   if (typeof townDressGroup === 'undefined' || !townDressGroup?.traverse) return 0;
   const padColors = new Set([
@@ -278,14 +293,14 @@ function swVisualHeroSlice3StyleTownGround(palette) {
     if (!object?.isMesh || !object.material) return;
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     materials.forEach((material) => {
-      const hex = material.color?.getHexString?.() || '';
-      if (padColors.has(hex)) {
+      const role = swVisualHeroSlice3TownGroundRole(object, material, padColors);
+      if (role === 'pad') {
         swVisualHeroSlice3SetMaterial(material, { color: palette.pad, roughness: 0.98, metalness: 0, opacity: 0.46 });
         count += 1;
-      } else if (hex === 'a9b0b7') {
+      } else if (role === 'sidewalk') {
         swVisualHeroSlice3SetMaterial(material, { color: palette.sidewalk, roughness: 0.94, metalness: 0, opacity: 0.72 });
         count += 1;
-      } else if (hex === '3b4652') {
+      } else if (role === 'alley') {
         swVisualHeroSlice3SetMaterial(material, { color: palette.alley, roughness: 0.92, metalness: 0.01, opacity: 1 });
         count += 1;
       }
