@@ -32,9 +32,28 @@ check('fallback-retained', files.runtime.includes('target.__swPresentationFallba
 check('stale-generation-guard', files.runtime.includes('skipped-stale-generation'));
 check('local-asset-only', files.runtime.includes("url: './assets/production/structures/storefront-v1.json'") && !/https?:\/\//.test(files.runtime));
 
-const protectedAssignments = [...files.runtime.matchAll(/target\.(health|maxHealth|points|damageStage|destroyed|x|z|kind|materialFamily|hasGlass)\s*=/g)].map((match) => match[0]);
+// [SW:QA:ASSET_PIPELINE_MUTATION_GUARD]
+// Equality checks such as `target.kind === entry.archetype` are legal reads.
+// Only assignment/update operators against protected gameplay truth are forbidden.
+const mutationOperator = String.raw`(?:\+\+|--|\+=|-=|\*=|\/=|%=|=(?!=))`;
+const protectedTargetMutationPattern = new RegExp(
+  String.raw`target\.(health|maxHealth|points|damageStage|destroyed|x|z|kind|materialFamily|hasGlass)\s*${mutationOperator}`,
+  'g',
+);
+const protectedAssignments = [...files.runtime.matchAll(protectedTargetMutationPattern)].map((match) => match[0]);
 check('no-gameplay-target-mutations', protectedAssignments.length === 0, protectedAssignments.join(', '));
-check('no-score-clock-ability-mutations', !/(score\s*=|combo\s*=|remainingSeconds\s*=|usePull\(|useGust\(|useZap\(|triggerPull\(|triggerGust\(|triggerZap\()/i.test(files.runtime));
+
+const protectedGlobalMutationPattern = new RegExp(
+  String.raw`\b(score|combo|remainingSeconds)\s*${mutationOperator}`,
+  'gi',
+);
+const protectedGlobalMutations = [...files.runtime.matchAll(protectedGlobalMutationPattern)].map((match) => match[0]);
+const abilityMutationCalls = [...files.runtime.matchAll(/\b(?:usePull|useGust|useZap|triggerPull|triggerGust|triggerZap)\s*\(/gi)].map((match) => match[0]);
+check(
+  'no-score-clock-ability-mutations',
+  protectedGlobalMutations.length === 0 && abilityMutationCalls.length === 0,
+  [...protectedGlobalMutations, ...abilityMutationCalls].join(', '),
+);
 
 check('asset-version', asset.version === 'SW_STRUCTURE_ASSET_V1', asset.version);
 check('asset-id', asset.id === 'structure.storefront.v1', asset.id);
@@ -66,6 +85,8 @@ const report = {
     assetPartCount: parts.length,
     taggedDamageParts: parts.filter((part) => part.tags?.includes('damage')).length,
     protectedAssignments,
+    protectedGlobalMutations,
+    abilityMutationCalls,
   },
 };
 
