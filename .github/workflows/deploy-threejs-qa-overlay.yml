@@ -52,34 +52,34 @@ jobs:
           grep -F 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' www/index.html
           grep -F 'fdb5679c5c28d4fef378314c187780de071dd37e' www/playcanvas/qa-playcanvas-build.json
 
-      - name: Download sealed Three.js asset-pipeline artifact
+      - name: Download sealed Three.js visual-production artifact
         uses: actions/download-artifact@v4
         with:
-          name: severe-weather-threejs-asset-pipeline-5
+          name: severe-weather-threejs-visual-production-5
           path: threejs-artifact
           repository: lybyerc-lab/Severe-Warning
-          run-id: 31270418326
+          run-id: 31279291767
           github-token: ${{ github.token }}
 
-      - name: Verify and overlay Three.js production candidate
+      - name: Verify and overlay Three.js visual-production candidate
         shell: bash
         env:
-          THREEJS_SOURCE_SHA: f2060dff08ddb9df9f90ecd245940d8db86c7266
+          THREEJS_SOURCE_SHA: 9515a3a5cc0ff04e1e4f95ff55b4a319aaa3602c
+          THREEJS_STAGE1_SHA: f2060dff08ddb9df9f90ecd245940d8db86c7266
           THREEJS_REFERENCE_SHA: 1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f
-          THREEJS_RUN_ID: '31270418326'
+          THREEJS_RUN_ID: '31279291767'
           THREEJS_RUN_NUMBER: '5'
-          THREEJS_ARTIFACT: severe-weather-threejs-asset-pipeline-5
-          THREEJS_ARTIFACT_DIGEST: sha256:90360c1811f0976d6f8d798c75997fb07b5eb6f6e51a8b1d885fa6ab3de0f3e5
-          THREEJS_APK_SHA256: 496439b2adc434c29cb0fd7db5ce6f03047efa20d964ba19cf397ef42be95b10
+          THREEJS_ARTIFACT: severe-weather-threejs-visual-production-5
+          THREEJS_ARTIFACT_DIGEST: sha256:3d431b87631f7a5ae94baad17b48ee3f221cfd4ba4083f69f338148e7f19c72b
+          THREEJS_APK_SHA256: 75dc39bb332ed88da7959595952dc0c80abf2e197d43fffbe06a909ecb7dda38
         run: |
           set -euo pipefail
           test "$(tr -d '\r\n' < threejs-artifact/SOURCE_COMMIT.txt)" = "$THREEJS_SOURCE_SHA"
           test "$(tr -d '\r\n' < threejs-artifact/WORKFLOW_RUN_ID.txt)" = "$THREEJS_RUN_ID"
           test -s threejs-artifact/package-manifest.json
-          test -s threejs-artifact/threejs-asset-pipeline-static-report.json
+          test -s threejs-artifact/threejs-visual-foundation-static-report.json
+          test -s threejs-artifact/qa-evidence/visual/threejs-visual-foundation-report.json
           test -s threejs-artifact/qa-evidence/asset/threejs-asset-pipeline-report.json
-          test -s threejs-artifact/qa-evidence/asset/threejs-asset-pipeline-authored-storefront-focused.png
-          test -s threejs-artifact/qa-evidence/asset/threejs-asset-pipeline-fallback.png
           test -s threejs-artifact/qa-evidence/performance/comparison-report.json
           test -s threejs-artifact/web-preview/index.html
           test -s threejs-artifact/web-preview/build-info.json
@@ -88,54 +88,63 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const manifest = JSON.parse(fs.readFileSync('threejs-artifact/package-manifest.json', 'utf8'));
-          const staticReport = JSON.parse(fs.readFileSync('threejs-artifact/threejs-asset-pipeline-static-report.json', 'utf8'));
-          const browserReport = JSON.parse(fs.readFileSync('threejs-artifact/qa-evidence/asset/threejs-asset-pipeline-report.json', 'utf8'));
+          const staticReport = JSON.parse(fs.readFileSync('threejs-artifact/threejs-visual-foundation-static-report.json', 'utf8'));
+          const visualReport = JSON.parse(fs.readFileSync('threejs-artifact/qa-evidence/visual/threejs-visual-foundation-report.json', 'utf8'));
+          const assetReport = JSON.parse(fs.readFileSync('threejs-artifact/qa-evidence/asset/threejs-asset-pipeline-report.json', 'utf8'));
           const perfReport = JSON.parse(fs.readFileSync('threejs-artifact/qa-evidence/performance/comparison-report.json', 'utf8'));
           const buildInfo = JSON.parse(fs.readFileSync('threejs-artifact/web-preview/build-info.json', 'utf8'));
 
           const expectedSource = process.env.THREEJS_SOURCE_SHA;
+          const expectedStage1 = process.env.THREEJS_STAGE1_SHA;
           const expectedReference = process.env.THREEJS_REFERENCE_SHA;
           const expectedRunId = process.env.THREEJS_RUN_ID;
           const expectedRunNumber = Number(process.env.THREEJS_RUN_NUMBER);
           const expectedApkSha = process.env.THREEJS_APK_SHA256;
 
           if (manifest.sourceCommit !== expectedSource) throw new Error(`Manifest source mismatch: ${manifest.sourceCommit}`);
-          if (manifest.frozenGameplayReference !== expectedReference) throw new Error(`Reference mismatch: ${manifest.frozenGameplayReference}`);
+          if (manifest.sealedStage1Reference !== expectedStage1) throw new Error(`Stage 1 reference mismatch: ${manifest.sealedStage1Reference}`);
+          if (manifest.frozenGameplayReference !== expectedReference) throw new Error(`Gameplay reference mismatch: ${manifest.frozenGameplayReference}`);
           if (String(manifest.workflowRunId) !== expectedRunId || Number(manifest.workflowRunNumber) !== expectedRunNumber) throw new Error('Run identity mismatch.');
           if (manifest.renderer !== 'Three.js r128') throw new Error(`Renderer changed: ${manifest.renderer}`);
           if (manifest.pipelineBridge !== 'THREEJS_ASSET_PIPELINE_V1') throw new Error(`Pipeline mismatch: ${manifest.pipelineBridge}`);
-          if (manifest.authoredAsset !== 'structure.storefront.v1') throw new Error(`Authored asset mismatch: ${manifest.authoredAsset}`);
+          if (manifest.visualBridge !== 'THREEJS_VISUAL_FOUNDATION_V1') throw new Error(`Visual bridge mismatch: ${manifest.visualBridge}`);
+          if (manifest.assetProvenance !== 'SW_ASSET_PROVENANCE_V1') throw new Error(`Asset provenance mismatch: ${manifest.assetProvenance}`);
           if (manifest.apkSha256 !== expectedApkSha) throw new Error(`APK digest mismatch: ${manifest.apkSha256}`);
 
-          if (!staticReport.passed || staticReport.failedChecks?.length) throw new Error('Static asset-pipeline report is not sealed green.');
-          if (staticReport.version !== 'THREEJS_ASSET_PIPELINE_STATIC_V1') throw new Error(`Static report version mismatch: ${staticReport.version}`);
-          if (staticReport.evidence?.protectedAssignments?.length) throw new Error('Protected gameplay target assignments were detected.');
-          if (staticReport.evidence?.protectedGlobalMutations?.length) throw new Error('Protected score/clock mutations were detected.');
-          if (staticReport.evidence?.abilityMutationCalls?.length) throw new Error('Ability mutations were detected.');
+          if (!staticReport.passed || staticReport.failedChecks?.length) throw new Error('Static visual-foundation report is not sealed green.');
+          if (staticReport.version !== 'THREEJS_VISUAL_FOUNDATION_STATIC_V1') throw new Error(`Static report version mismatch: ${staticReport.version}`);
+          if (staticReport.evidence?.protectedTargetAssignments?.length) throw new Error('Protected gameplay target assignments were detected.');
+          if (staticReport.evidence?.protectedGlobalAssignments?.length) throw new Error('Protected global assignments were detected.');
+          if (staticReport.evidence?.protectedAbilityWrites?.length) throw new Error('Ability mutations were detected.');
+          if (staticReport.evidence?.stormAuthorityWrites?.length) throw new Error('Storm authority writes were detected.');
+          if (staticReport.evidence?.privateProductionBarnRefs?.length) throw new Error('Private productionBarn access was detected.');
+          if (Number(staticReport.evidence?.productionImportCount) !== 0) throw new Error('Unapproved external production imports were detected.');
 
-          if (!browserReport.passed || browserReport.failures?.length) throw new Error('Browser asset-pipeline report is not sealed green.');
-          if (browserReport.version !== 'THREEJS_ASSET_PIPELINE_QA_V1') throw new Error(`Browser report version mismatch: ${browserReport.version}`);
-          const success = browserReport.success ?? {};
-          const probe = browserReport.visualProbe ?? {};
-          const fallback = browserReport.fallback ?? {};
-          const applied = success.applied?.[0] ?? {};
-          if (success.revision !== '128') throw new Error(`Three.js revision changed: ${success.revision}`);
-          if (success.pipeline?.version !== 'THREEJS_ASSET_PIPELINE_V1') throw new Error('Pipeline bridge missing from successful QA path.');
-          if (success.pipeline?.appliedCount !== 1 || success.pipeline?.loadFailures !== 0) throw new Error('Successful authored-asset path is not clean.');
-          if (applied.assetId !== 'structure.storefront.v1' || applied.kind !== 'shop') throw new Error('Authored storefront did not bind to the expected shop target.');
-          if (applied.health !== 165 || applied.maxHealth !== 165 || applied.points !== 110 || applied.damageStage !== 0 || applied.destroyed !== false) throw new Error('Authored storefront changed accepted gameplay truth.');
-          if (applied.damagePartCount < 10) throw new Error(`Authored anatomy is too sparse: ${applied.damagePartCount}`);
-          if (probe.globalCameraFreeze !== true || probe.tornadoHidden !== true) throw new Error('Focused evidence camera was not actually isolated.');
-          if (Number(probe.framing?.widthRatio) < 0.28 || Number(probe.framing?.heightRatio) < 0.24) throw new Error('Focused storefront evidence is not large enough to inspect.');
-          if (Math.abs(Number(probe.framing?.centerX)) > 0.35 || Math.abs(Number(probe.framing?.centerY)) > 0.35) throw new Error('Focused storefront evidence is not centered enough to inspect.');
-          if (fallback.pipeline?.appliedCount !== 0 || Number(fallback.pipeline?.loadFailures) < 1 || fallback.applied?.length !== 0) throw new Error('Invalid-asset fallback contract regressed.');
+          if (!visualReport.passed || visualReport.failures?.length || visualReport.errors?.length) throw new Error('Visual browser report is not sealed green.');
+          if (visualReport.version !== 'THREEJS_VISUAL_FOUNDATION_QA_V1') throw new Error(`Visual report version mismatch: ${visualReport.version}`);
+          const visual = visualReport.storefront?.visual ?? {};
+          const worldStyle = visual.worldStyle ?? {};
+          if (visual.version !== 'THREEJS_VISUAL_FOUNDATION_V1') throw new Error('Visual foundation bridge missing.');
+          if (visual.heroSlice2Version !== 'THREEJS_VISUAL_HERO_SLICE2_V1') throw new Error('Hero Slice 2 marker missing.');
+          if (visual.heroSlice3Version !== 'THREEJS_VISUAL_HERO_SLICE3_V1') throw new Error('Hero Slice 3 marker missing.');
+          if (worldStyle.worldSurfaceStyled !== true || Number(worldStyle.secondaryTargetsStyled) < 1 || Number(worldStyle.townGroundMeshesStyled) < 1) throw new Error('Hero Slice 3 world styling evidence is incomplete.');
+          if (visual.renderer?.threeRevision !== '128') throw new Error(`Three.js revision changed: ${visual.renderer?.threeRevision}`);
 
+          const before = visualReport.gameplayTruth?.before ?? {};
+          const after = visualReport.gameplayTruth?.after ?? {};
+          for (const key of ['kind', 'health', 'maxHealth', 'damageStage', 'destroyed', 'points', 'x', 'z']) {
+            if (before[key] !== after[key]) throw new Error(`Gameplay truth changed for ${key}: ${before[key]} -> ${after[key]}`);
+          }
+
+          if (!assetReport.passed || assetReport.failures?.length) throw new Error('Inherited asset-pipeline browser report is not sealed green.');
           if (perfReport.passed === false) throw new Error('Same-runner performance comparison is red.');
           if (buildInfo.renderer !== 'Three.js r128') throw new Error(`Packaged renderer changed: ${buildInfo.renderer}`);
           if (buildInfo.productionAssets?.storefront !== 'assets/production/structures/storefront-v1.json') throw new Error('Packaged authored storefront path is missing.');
           NODE
 
           grep -F 'THREEJS_ASSET_PIPELINE_V1' threejs-artifact/web-preview/index.html
+          grep -F 'THREEJS_VISUAL_FOUNDATION_V1' threejs-artifact/web-preview/index.html
+          grep -F 'THREEJS_VISUAL_HERO_SLICE3_V1' threejs-artifact/web-preview/index.html
           grep -F 'PRESENTATION_IDENTITY_MOO_BREW_V1' threejs-artifact/web-preview/index.html
 
           rm -rf www/threejs
@@ -144,6 +153,7 @@ jobs:
           cat > www/threejs/qa-threejs-build.json <<EOF
           {
             "sourceSha": "$THREEJS_SOURCE_SHA",
+            "sealedStage1Reference": "$THREEJS_STAGE1_SHA",
             "frozenGameplayReference": "$THREEJS_REFERENCE_SHA",
             "workflowRunId": $THREEJS_RUN_ID,
             "workflowRunNumber": $THREEJS_RUN_NUMBER,
@@ -151,9 +161,11 @@ jobs:
             "artifactDigest": "$THREEJS_ARTIFACT_DIGEST",
             "renderer": "Three.js r128",
             "pipelineBridge": "THREEJS_ASSET_PIPELINE_V1",
-            "authoredAsset": "structure.storefront.v1",
+            "visualBridge": "THREEJS_VISUAL_FOUNDATION_V1",
+            "heroSlice2": "THREEJS_VISUAL_HERO_SLICE2_V1",
+            "heroSlice3": "THREEJS_VISUAL_HERO_SLICE3_V1",
             "debugApkSha256": "$THREEJS_APK_SHA256",
-            "status": "browser-qa-passed-assistant-pipeline-reviewed-owner-browser-test-pending-not-physical-android-accepted"
+            "status": "browser-qa-passed-owner-browser-test-pending-not-physical-android-accepted"
           }
           EOF
           test -s www/threejs/index.html
@@ -180,14 +192,14 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Verify live root, PlayCanvas research, and Three.js production candidate
+      - name: Verify live root, PlayCanvas research, and Three.js visual candidate
         shell: bash
         env:
           ROOT_URL: https://lybyerc-lab.github.io/Severe-Warning/
           PLAYCANVAS_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/qa-playcanvas-build.json
           THREEJS_URL: https://lybyerc-lab.github.io/Severe-Warning/threejs/
           THREEJS_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/threejs/qa-threejs-build.json
-          THREEJS_SOURCE_SHA: f2060dff08ddb9df9f90ecd245940d8db86c7266
+          THREEJS_SOURCE_SHA: 9515a3a5cc0ff04e1e4f95ff55b4a319aaa3602c
         run: |
           set -euo pipefail
           for attempt in $(seq 1 30); do
@@ -198,18 +210,20 @@ jobs:
               && grep -Fq 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' <<< "$root_html" \
               && grep -Fq 'fdb5679c5c28d4fef378314c187780de071dd37e' <<< "$playcanvas_metadata" \
               && grep -Fq 'THREEJS_ASSET_PIPELINE_V1' <<< "$threejs_html" \
+              && grep -Fq 'THREEJS_VISUAL_FOUNDATION_V1' <<< "$threejs_html" \
+              && grep -Fq 'THREEJS_VISUAL_HERO_SLICE3_V1' <<< "$threejs_html" \
               && grep -Fq 'PRESENTATION_IDENTITY_MOO_BREW_V1' <<< "$threejs_html" \
               && grep -Fq "$THREEJS_SOURCE_SHA" <<< "$threejs_metadata" \
               && grep -Fq 'Three.js r128' <<< "$threejs_metadata" \
-              && grep -Fq 'structure.storefront.v1' <<< "$threejs_metadata"; then
+              && grep -Fq 'THREEJS_VISUAL_HERO_SLICE3_V1' <<< "$threejs_metadata"; then
               echo "Live QA root preserved: $ROOT_URL"
               echo "Live PlayCanvas research metadata preserved: $PLAYCANVAS_METADATA_URL"
-              echo "Live Three.js production candidate verified: $THREEJS_URL"
+              echo "Live Three.js visual-production candidate verified: $THREEJS_URL"
               echo "Live Three.js exact source verified: $THREEJS_SOURCE_SHA"
               exit 0
             fi
             echo "Live Pages propagation attempt $attempt/30 not ready yet."
             sleep 3
           done
-          echo 'Live Three.js QA overlay verification did not converge after deployment.' >&2
+          echo 'Live Three.js visual QA overlay verification did not converge after deployment.' >&2
           exit 1
