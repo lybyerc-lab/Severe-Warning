@@ -99,6 +99,19 @@ check(
 );
 
 check(
+  'structure-flight-envelope-contract',
+  contents.structures.includes('[SW:PLAYCANVAS:STRUCTURE_FLIGHT_ENVELOPE]')
+    && contents.structures.includes('softHeight')
+    && contents.structures.includes('softTravel')
+    && contents.structures.includes('heightBrake')
+    && contents.structures.includes('travelBrake')
+    && contents.structures.includes('const heightExcess = Math.max(0, body.y - profile.softHeight)')
+    && contents.structures.includes('const travelExcess = Math.max(0, horizontalTravel - profile.softTravel)')
+    && contents.structures.includes('const verticalBrake = heightExcess * profile.heightBrake'),
+  'structure debris uses soft drag envelopes instead of hard position clamps or unbounded ballistic flight',
+);
+
+check(
   'structure-debris-isolated-from-tree-force',
   contents.structures.includes('[SW:PLAYCANVAS:STRUCTURE_DEBRIS_FIELD]')
     && contents.structures.includes('class StructureDebrisField')
@@ -160,7 +173,7 @@ check(
 
 check(
   'qa-demands-anatomy-breakup-and-weight-response',
-  contents.qa.includes("version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2'")
+  contents.qa.includes("version: 'PLAYCANVAS_MULTI_STRUCTURE_QA_V3'")
     && contents.qa.includes("name: 'intact-building-anatomy-readable'")
     && contents.qa.includes("name: 'five-debris-weight-classes-declared'")
     && contents.qa.includes("name: 'damage-stage-reveals-wound-and-detaches-anatomy'")
@@ -168,6 +181,17 @@ check(
     && contents.qa.includes('signBody.peakDisplacement')
     && contents.qa.includes('frameBody.peakDisplacement'),
   'browser proof requires visible staged breakup plus a measured mass hierarchy under real accepted play',
+);
+
+check(
+  'qa-bounds-light-debris-flight',
+  contents.qa.includes("name: 'light-debris-flight-stays-readable'")
+    && contents.qa.includes("name: 'structure-flight-envelope-bounded'")
+    && contents.qa.includes('Number(signBody.peakDisplacement) < 45')
+    && contents.qa.includes('Number(signBody.peakHeight) < 32')
+    && contents.qa.includes('maxDisplacement ?? Infinity) < 50')
+    && contents.qa.includes('maxHeight ?? Infinity) < 35'),
+  'browser proof rejects the Run 77 satellite-debris failure even when light debris still out-travels heavy pieces',
 );
 
 check(
