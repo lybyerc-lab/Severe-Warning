@@ -16,7 +16,7 @@ import type {
   PcMaterial,
   PlayCanvasModule,
 } from './engine-types';
-import type { StormReactiveBodyDefinition } from './storm-force-field';
+import type { StormForceInput } from './storm-force-field';
 
 export interface StructureWorldMapper {
   map(x: number, z: number): Readonly<{ x: number; z: number }>;
@@ -61,12 +61,64 @@ export interface MultiStructurePresentationTelemetry {
   }>[];
 }
 
+export interface StructureDebrisTelemetry {
+  readonly updateCount: number;
+  readonly activationCount: number;
+  readonly activeCount: number;
+  readonly maxDisplacement: number;
+  readonly pullAcceptedCount: number;
+  readonly gustAcceptedCount: number;
+  readonly bodies: readonly Readonly<{
+    id: string;
+    structureId: AuthorityStructureArchetype;
+    activationStage: number;
+    active: boolean;
+    airborne: boolean;
+    displacement: number;
+    x: number;
+    y: number;
+    z: number;
+  }>[];
+}
+
 interface ArchetypeMaterials {
   readonly wall: PcMaterial;
   readonly roof: PcMaterial;
   readonly accent: PcMaterial;
   readonly debris: PcMaterial;
 }
+
+interface DebrisState {
+  readonly id: string;
+  readonly structureId: AuthorityStructureArchetype;
+  readonly entity: PcEntity;
+  readonly mass: number;
+  readonly activationStage: number;
+  readonly activationRotation: readonly [number, number, number];
+  readonly localOffset: readonly [number, number, number];
+  homeX: number;
+  homeY: number;
+  homeZ: number;
+  x: number;
+  y: number;
+  z: number;
+  velocityX: number;
+  velocityY: number;
+  velocityZ: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  angularX: number;
+  angularY: number;
+  angularZ: number;
+  active: boolean;
+  airborne: boolean;
+}
+
+const RAD_TO_DEG = 180 / Math.PI;
+const PHYSICS_SUBSTEP = 1 / 60;
+const MAX_FRAME_DELTA = 0.12;
+const PULL_ACTIVE_SECONDS = 2.5;
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -76,6 +128,18 @@ function deterministicSign(id: string): number {
   let hash = 0;
   for (let index = 0; index < id.length; index += 1) hash = (hash * 31 + id.charCodeAt(index)) | 0;
   return (hash & 1) === 0 ? 1 : -1;
+}
+
+function direction(fromX: number, fromZ: number, toX: number, toZ: number): Readonly<{ x: number; z: number; distance: number }> {
+  let dx = toX - fromX;
+  let dz = toZ - fromZ;
+  let distance = Math.hypot(dx, dz);
+  if (distance < 0.001) {
+    dx = 1;
+    dz = 0;
+    distance = 1;
+  }
+  return Object.freeze({ x: dx / distance, z: dz / distance, distance });
 }
 
 function createArchetypeMaterials(pc: PlayCanvasModule): Readonly<Record<AuthorityStructureArchetype, ArchetypeMaterials>> {
@@ -130,7 +194,7 @@ function createVisual(
     material: PcMaterial,
     role: StructurePart['role'],
     rotation: readonly [number, number, number] = [0, 0, 0],
-  ): PcEntity => {
+  ): void => {
     const entity = addPrimitive(pc, app, entities, {
       name: `authority-${id}-${name}`,
       type,
@@ -141,7 +205,6 @@ function createVisual(
     });
     entity.enabled = false;
     core.push(Object.freeze({ entity, offset, scale, rotation, role }));
-    return entity;
   };
 
   const addDebris = (
@@ -209,42 +272,6 @@ export function createMultiStructureVisuals(
   )));
 }
 
-export function createMultiStructureDebrisDefinitions(
-  visuals: readonly StructureVisual[],
-  structures: readonly AuthorityStructureSnapshot[],
-  mapper: StructureWorldMapper,
-): readonly StormReactiveBodyDefinition[] {
-  const snapshots = new Map(structures.map((structure) => [structure.id, structure]));
-  const definitions: StormReactiveBodyDefinition[] = [];
-
-  for (const visual of visuals) {
-    const snapshot = snapshots.get(visual.id);
-    if (!snapshot) continue;
-    const center = mapper.map(snapshot.x, snapshot.z);
-    visual.debris.forEach((part, index) => {
-      definitions.push(Object.freeze({
-        id: `structure-${visual.id}-debris-${index}`,
-        kind: 'structure-debris',
-        x: center.x + part.offset[0],
-        y: part.offset[1],
-        z: center.z + part.offset[2],
-        mass: part.mass,
-        groundY: 0.45,
-        activationKey: visual.id,
-        activationStage: part.activationStage,
-        startsHidden: true,
-        activationOffset: [0, 0.35, 0],
-        activationRotation: part.activationRotation,
-        parts: Object.freeze([
-          Object.freeze({ entity: part.entity, offset: [0, 0, 0] as const }),
-        ]),
-      }));
-    });
-  }
-
-  return Object.freeze(definitions);
-}
-
 export class MultiStructurePresentation {
   private readonly visuals: ReadonlyMap<AuthorityStructureArchetype, StructureVisual>;
   private telemetry: MultiStructurePresentationTelemetry = Object.freeze({
@@ -263,7 +290,7 @@ export class MultiStructurePresentation {
     let damagedCount = 0;
     let destroyedCount = 0;
     let maxDamageStage = 0;
-    const bindings = [];
+    const bindings: MultiStructurePresentationTelemetry['bindings'][number][] = [];
     const activeIds = new Set<AuthorityStructureArchetype>();
 
     for (const snapshot of structures) {
@@ -329,17 +356,238 @@ export class MultiStructurePresentation {
         part.offset[1] * (part.role === 'body' ? compression : 1) + roleLift,
         centerZ + part.offset[2],
       );
-      part.entity.setLocalScale(
-        part.scale[0],
-        part.scale[1] * verticalCompression,
-        part.scale[2],
-      );
-      part.entity.setEulerAngles(
-        part.rotation[0],
-        part.rotation[1],
-        part.rotation[2] + lean + roleTilt,
-      );
+      part.entity.setLocalScale(part.scale[0], part.scale[1] * verticalCompression, part.scale[2]);
+      part.entity.setEulerAngles(part.rotation[0], part.rotation[1], part.rotation[2] + lean + roleTilt);
     }
+  }
+}
+
+// [SW:PLAYCANVAS:STRUCTURE_DEBRIS_FIELD]
+// Structure chunks are separate from the frozen tree/light-prop force class so
+// accepted tree response stays byte-for-byte unchanged. They still use a
+// deterministic game-owned suction/swirl/lift model and activate only from
+// authoritative Living County damage stages.
+export class StructureDebrisField {
+  private readonly bodies: DebrisState[];
+  private pullSecondsRemaining = 0;
+  private updateCount = 0;
+  private activationCount = 0;
+  private pullAcceptedCount = 0;
+  private gustAcceptedCount = 0;
+  private maxDisplacement = 0;
+
+  constructor(
+    visuals: readonly StructureVisual[],
+    structures: readonly AuthorityStructureSnapshot[],
+    mapper: StructureWorldMapper,
+  ) {
+    const snapshots = new Map(structures.map((structure) => [structure.id, structure]));
+    const bodies: DebrisState[] = [];
+    for (const visual of visuals) {
+      const snapshot = snapshots.get(visual.id);
+      if (!snapshot) continue;
+      const center = mapper.map(snapshot.x, snapshot.z);
+      visual.debris.forEach((part, index) => {
+        const homeX = center.x + part.offset[0];
+        const homeY = part.offset[1];
+        const homeZ = center.z + part.offset[2];
+        bodies.push({
+          id: `structure-${visual.id}-debris-${index}`,
+          structureId: visual.id,
+          entity: part.entity,
+          mass: part.mass,
+          activationStage: part.activationStage,
+          activationRotation: part.activationRotation,
+          localOffset: part.offset,
+          homeX,
+          homeY,
+          homeZ,
+          x: homeX,
+          y: homeY,
+          z: homeZ,
+          velocityX: 0,
+          velocityY: 0,
+          velocityZ: 0,
+          rotationX: 0,
+          rotationY: 0,
+          rotationZ: 0,
+          angularX: 0,
+          angularY: 0,
+          angularZ: 0,
+          active: false,
+          airborne: false,
+        });
+      });
+    }
+    this.bodies = bodies;
+    this.reset(structures, mapper);
+  }
+
+  triggerAbility(slot: 'primary' | 'secondary' | 'tertiary', input: StormForceInput): void {
+    if (slot === 'primary') {
+      this.pullAcceptedCount += 1;
+      this.pullSecondsRemaining = PULL_ACTIVE_SECONDS;
+      return;
+    }
+    if (slot !== 'secondary') return;
+    this.gustAcceptedCount += 1;
+    this.pullSecondsRemaining = 0;
+    for (const body of this.bodies) {
+      if (!body.airborne) continue;
+      const outward = direction(input.x, input.z, body.x, body.z);
+      const range = input.radius * 3.2;
+      if (outward.distance > range) continue;
+      const falloff = 1 - clamp(outward.distance / Math.max(range, 0.001), 0, 1);
+      const impulse = 4.0 + falloff * 5.0;
+      body.velocityX += outward.x * impulse;
+      body.velocityZ += outward.z * impulse;
+      body.velocityY += 1.4 + falloff * 1.2;
+    }
+  }
+
+  sync(structures: readonly AuthorityStructureSnapshot[], input: StormForceInput): void {
+    const snapshots = new Map(structures.map((structure) => [structure.id, structure]));
+    for (const body of this.bodies) {
+      if (body.active) continue;
+      const snapshot = snapshots.get(body.structureId);
+      if (!snapshot) continue;
+      if (snapshot.destroyed || snapshot.damageStage >= body.activationStage) this.activate(body, input);
+    }
+  }
+
+  update(input: StormForceInput, deltaSeconds: number): void {
+    this.updateCount += 1;
+    const safeDelta = clamp(deltaSeconds, 0, MAX_FRAME_DELTA);
+    this.pullSecondsRemaining = Math.max(0, this.pullSecondsRemaining - safeDelta);
+    for (const body of this.bodies) {
+      if (!body.airborne) continue;
+      this.updateBody(body, input, safeDelta);
+      const displacement = Math.hypot(body.x - body.homeX, body.y - body.homeY, body.z - body.homeZ);
+      this.maxDisplacement = Math.max(this.maxDisplacement, displacement);
+      this.applyPose(body);
+    }
+  }
+
+  reset(structures: readonly AuthorityStructureSnapshot[], mapper: StructureWorldMapper): void {
+    const snapshots = new Map(structures.map((structure) => [structure.id, structure]));
+    this.pullSecondsRemaining = 0;
+    this.maxDisplacement = 0;
+    for (const body of this.bodies) {
+      const snapshot = snapshots.get(body.structureId);
+      if (snapshot) {
+        const center = mapper.map(snapshot.x, snapshot.z);
+        body.homeX = center.x + body.localOffset[0];
+        body.homeY = body.localOffset[1];
+        body.homeZ = center.z + body.localOffset[2];
+      }
+      body.x = body.homeX;
+      body.y = body.homeY;
+      body.z = body.homeZ;
+      body.velocityX = 0;
+      body.velocityY = 0;
+      body.velocityZ = 0;
+      body.rotationX = 0;
+      body.rotationY = 0;
+      body.rotationZ = 0;
+      body.angularX = 0;
+      body.angularY = 0;
+      body.angularZ = 0;
+      body.active = false;
+      body.airborne = false;
+      body.entity.enabled = false;
+      this.applyPose(body);
+    }
+  }
+
+  getTelemetry(): StructureDebrisTelemetry {
+    const bodies = this.bodies.map((body) => Object.freeze({
+      id: body.id,
+      structureId: body.structureId,
+      activationStage: body.activationStage,
+      active: body.active,
+      airborne: body.airborne,
+      displacement: Math.hypot(body.x - body.homeX, body.y - body.homeY, body.z - body.homeZ),
+      x: body.x,
+      y: body.y,
+      z: body.z,
+    }));
+    return Object.freeze({
+      updateCount: this.updateCount,
+      activationCount: this.activationCount,
+      activeCount: bodies.filter((body) => body.active).length,
+      maxDisplacement: this.maxDisplacement,
+      pullAcceptedCount: this.pullAcceptedCount,
+      gustAcceptedCount: this.gustAcceptedCount,
+      bodies: Object.freeze(bodies),
+    });
+  }
+
+  private activate(body: DebrisState, input: StormForceInput): void {
+    body.active = true;
+    body.airborne = true;
+    body.entity.enabled = true;
+    body.y += 0.35;
+    body.rotationX = body.activationRotation[0] / RAD_TO_DEG;
+    body.rotationY = body.activationRotation[1] / RAD_TO_DEG;
+    body.rotationZ = body.activationRotation[2] / RAD_TO_DEG;
+    const outward = direction(input.x, input.z, body.x, body.z);
+    const side = deterministicSign(body.id);
+    const inverseMass = 1 / Math.max(0.5, body.mass);
+    body.velocityX = outward.x * 1.8 + outward.z * side * 2.5;
+    body.velocityY = 3.6 + inverseMass * 2.2;
+    body.velocityZ = outward.z * 1.8 - outward.x * side * 2.5;
+    body.angularX = side * (0.8 + inverseMass * 0.9);
+    body.angularY = 1.1 + inverseMass * 1.2;
+    body.angularZ = -side * (0.9 + inverseMass * 0.8);
+    this.activationCount += 1;
+    this.applyPose(body);
+  }
+
+  private updateBody(body: DebrisState, input: StormForceInput, deltaSeconds: number): void {
+    let remaining = deltaSeconds;
+    while (remaining > 0.00001) {
+      const step = Math.min(PHYSICS_SUBSTEP, remaining);
+      remaining -= step;
+      const inward = direction(body.x, body.z, input.x, input.z);
+      const range = Math.max(input.radius * 4.2, 22);
+      const falloff = 1 - clamp(inward.distance / range, 0, 1);
+      const side = deterministicSign(body.id);
+      const pullBoost = this.pullSecondsRemaining > 0 ? 1.85 : 1;
+      const inverseMass = 1 / Math.max(0.5, body.mass);
+      const suction = (3.8 + input.efMultiplier * 1.5) * falloff * pullBoost * inverseMass;
+      const swirl = (5.2 + input.efMultiplier * 1.7) * falloff * (0.75 + (pullBoost - 1) * 0.45) * inverseMass;
+      const nearCore = 1 - clamp(inward.distance / Math.max(input.radius * 1.15, 1), 0, 1);
+      const lift = (2.6 + falloff * 7.0 + nearCore * 4.5 + (this.pullSecondsRemaining > 0 ? 4.5 : 0)) * inverseMass;
+      const tangentX = -inward.z * side;
+      const tangentZ = inward.x * side;
+      const drag = 0.46 + body.mass * 0.025;
+
+      body.velocityX += (inward.x * suction + tangentX * swirl - body.velocityX * drag) * step;
+      body.velocityZ += (inward.z * suction + tangentZ * swirl - body.velocityZ * drag) * step;
+      body.velocityY += (lift - 6.8 - body.velocityY * 0.18) * step;
+      body.x += body.velocityX * step;
+      body.y += body.velocityY * step;
+      body.z += body.velocityZ * step;
+      body.rotationX += body.angularX * step;
+      body.rotationY += body.angularY * step;
+      body.rotationZ += body.angularZ * step;
+
+      if (body.y < 0.45) {
+        body.y = 0.45;
+        body.velocityY = Math.abs(body.velocityY) * 0.28;
+        body.velocityX *= 0.78;
+        body.velocityZ *= 0.78;
+      }
+    }
+  }
+
+  private applyPose(body: DebrisState): void {
+    body.entity.setPosition(body.x, body.y, body.z);
+    body.entity.setEulerAngles(
+      body.rotationX * RAD_TO_DEG,
+      body.rotationY * RAD_TO_DEG,
+      body.rotationZ * RAD_TO_DEG,
+    );
   }
 }
 
