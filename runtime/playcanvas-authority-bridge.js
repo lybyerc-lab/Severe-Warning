@@ -6,6 +6,13 @@
 // ============================================================================
 const PLAYCANVAS_AUTHORITY_VERSION = 'PLAYCANVAS_AUTHORITY_V1';
 
+const PLAYCANVAS_STRUCTURE_SPECS = Object.freeze([
+  Object.freeze({ id: 'storefront', district: 0, isCommercial: true, label: 'Main Street Storefront' }),
+  Object.freeze({ id: 'house', district: 1, isCommercial: false, label: 'Prairie House' }),
+  Object.freeze({ id: 'industrial', district: 2, isCommercial: true, label: 'Foundry Workshop' }),
+  Object.freeze({ id: 'barn', district: 3, isCommercial: false, label: 'Fair Barn' }),
+]);
+
 function playcanvasAuthorityRunState() {
   const bridge = globalThis.__SW_PHASE2_CLOCK_BRIDGE__;
   if (bridge && typeof bridge.getLegacyRunState === 'function') {
@@ -45,6 +52,56 @@ function playcanvasAuthorityNearestElectrical() {
   });
 }
 
+// [SW:PLAYCANVAS:MULTI_STRUCTURE_AUTHORITY]
+// The renderer mirrors four deterministic Living County targets. Selection is
+// fixed by district/archetype and distance to world origin, never by current
+// storm position, so steering cannot silently swap the bound damage target.
+function playcanvasAuthorityStructures() {
+  if (typeof targets === 'undefined' || !Array.isArray(targets)) return Object.freeze([]);
+  const result = [];
+
+  for (const spec of PLAYCANVAS_STRUCTURE_SPECS) {
+    let selected = null;
+    let selectedDistance = Infinity;
+    for (const target of targets) {
+      if (!target || target.isTree) continue;
+      if (Number(target.district) !== spec.district) continue;
+      if (Boolean(target.isCommercial) !== spec.isCommercial) continue;
+      const x = Number(target.x);
+      const z = Number(target.z);
+      if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
+      const distance = Math.hypot(x, z);
+      if (distance < selectedDistance) {
+        selectedDistance = distance;
+        selected = target;
+      }
+    }
+
+    if (!selected) continue;
+    const x = Number(selected.x) || 0;
+    const z = Number(selected.z) || 0;
+    result.push(Object.freeze({
+      id: spec.id,
+      label: spec.label,
+      targetKey: `${String(selected.blockId || spec.id)}:${x.toFixed(2)}:${z.toFixed(2)}`,
+      x,
+      z,
+      health: Number(selected.health) || 0,
+      maxHealth: Number(selected.maxHealth ?? selected.health) || 0,
+      damageStage: Number(selected.damageStage) || 0,
+      destroyed: Boolean(selected.destroyed),
+      points: Number(selected.points ?? selected.meshData?.points) || 0,
+      blockId: String(selected.blockId || ''),
+      blockName: String(selected.blockName || ''),
+      district: Number(selected.district) || 0,
+      isCommercial: Boolean(selected.isCommercial),
+      footprint: Number(selected.meshData?.footprint) || 5,
+    }));
+  }
+
+  return Object.freeze(result);
+}
+
 function playcanvasAuthoritySnapshot() {
   const run = playcanvasAuthorityRunState();
   const scoringBridge = globalThis.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__;
@@ -58,6 +115,7 @@ function playcanvasAuthoritySnapshot() {
   const cow17 = Array.isArray(animals) ? animals.find((animal) => animal.id === 17) : null;
   const barn = typeof productionBarn !== 'undefined' ? productionBarn : null;
   const electrical = playcanvasAuthorityNearestElectrical();
+  const structures = playcanvasAuthorityStructures();
 
   return Object.freeze({
     version: PLAYCANVAS_AUTHORITY_VERSION,
@@ -97,6 +155,7 @@ function playcanvasAuthoritySnapshot() {
       destroyed: Boolean(barn.destroyed),
       roofDetached: Boolean(barn.roofLeft && barn.group && barn.roofLeft.parent !== barn.group),
     }) : null,
+    structures,
     cow17: cow17 ? Object.freeze({
       x: Number(cow17.x),
       z: Number(cow17.z),
