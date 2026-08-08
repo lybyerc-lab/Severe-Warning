@@ -9,6 +9,7 @@ on:
       - agent/playcanvas-moo-brew-slice-bootstrap
       - agent/playcanvas-prairie-expansion-handoff
       - agent/playcanvas-storm-physics-handoff
+      - agent/playcanvas-multi-structure-handoff
 
 concurrency:
   group: playcanvas-slice-${{ github.event.pull_request.number || github.ref }}
