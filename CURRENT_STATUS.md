@@ -1,221 +1,163 @@
 # Severe Weather Warning Current Status
 
-**Last updated:** 2026-08-04 10:55 Central Time  
+**Last updated:** 2026-08-08 11:51 America/Chicago  
 **Repository:** `lybyerc-lab/Severe-Warning`  
-**Production renderer:** Three.js r128  
-**Primary target:** single-player Android landscape  
-**Active gameplay source:** `MechanicsLab/SevereWeather_3D_Lab.html` plus the verified modernization bridge layers  
-**Android packaging:** Capacitor 8.5.0 with offline local assets
+**Primary target:** Android landscape  
+**Production renderer:** Three.js  
+**Production revival branch:** `agent/threejs-production-revival`  
+**Frozen gameplay/fun baseline:** PR #26 head `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
 
 ## Canonical identity
 
 The full product name is **Severe Weather Warning**.
 
-- `Heartland` is campaign and regional-content terminology.
-- `Production Slice`, `Mechanics Lab`, and numbered modernization phases are engineering labels only.
 - The player directly controls the storm.
-- The response is a media circus, not a battle.
+- `Heartland` is campaign terminology, not the product title.
+- The response is a media circus, not combat.
 - People remain protected and are never targets.
-- Animals and media crews remain invincible, non-targetable witnesses or safe slapstick participants.
+- Animals and media crews remain invincible/non-targetable.
+- Android landscape remains the primary design target.
 
-## Canonical memory order
+## Production direction
 
-Use this order when sources conflict:
+Three.js is production again.
 
-1. Current repository code and exact-commit build evidence
-2. This file
-3. `Docs/RECOVERED_KNOWLEDGE_BASE.md`
-4. `Docs/ANTIGRAVITY_PHASE5_HANDOFF.md`
-5. `Docs/MODERNIZATION_PLAN.md`
-6. `Docs/MODERNIZATION_DEVICE_ACCEPTANCE_2026-08-04.md`
-7. `Docs/SEVERE_WEATHER_MASTER_CONTEXT_HANDOFF.md`
-8. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
-9. `Docs/DECISION_LOG.md` and dated decision records
-10. Historical Unity, Godot, Babylon.js, and renderer-laboratory records
+The PlayCanvas migration remains preserved as research evidence, but it is no longer the production-renderer direction. Do not continue stacking production features on the PlayCanvas lineage unless the owner explicitly reopens that decision.
 
-Chat is working context. Important decisions, deferred concepts, physical findings, and build evidence must be written back to the repository.
+The production revival begins directly from the Three.js build the owner prefers to play:
 
-## Production decision
+- Draft PR #26
+- Exact baseline: `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+- Workflow Run 6: `31094966986`
+- Artifact: `severe-weather-presentation-identity-6`
+- Debug APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
 
-The enjoyable Three.js/WebGL game remains production. Capacitor packages the same local web build for Android.
+This branch is intentionally rooted at that exact head so the PlayCanvas steering/camera/destruction implementation is not production ancestry.
 
-- Three.js remains production.
-- Unity and Godot remain historical experiments.
-- Babylon.js remains archived research and must not be merged into production.
-- Defold remains Plan B only for a narrowly measured blocker.
-- Netlify is not part of this project.
-- GitHub Actions remains the build and verification path.
-- GitHub Pages is the approved future hosted QA-preview path.
+## Owner comparison that caused the pivot
 
-## Protected accepted behavior
+On 2026-08-08 the owner tested the promoted PlayCanvas candidate and reported:
 
-Future work must preserve:
+- PlayCanvas gameplay was improving, but forward play felt wrong; steering required backing up and maneuvering like a truck and trailer.
+- Destruction was better than earlier PlayCanvas versions, but remained roof-heavy, used large chunks, and depended too much on Pull/Gust/Zap for satisfying breakup.
+- The opening cutscene looked and felt like cheap animation.
+- The game overall still looked prototype-quality.
+- The original Three.js gameplay was more fun.
+- The original Three.js destruction was better.
+- Preferred direction: keep the fun Three.js game and improve its visuals/graphics pipeline instead of continuing the renderer migration.
 
-- direct storm controls
-- mobile joystick and keyboard support
-- Pull, Gust, and Grid Zap behavior
-- no duplicate mobile ability activation
-- continuous scoring across district boundaries
-- exact 3.5x combo cap, +0.05 step, and 4.5-second decay
-- time-driven, forward-only district progression
-- three-minute real-time warning clock behavior
-- pause and background time holding correctly
-- exact Heartland campaign IDs, targets, stars, unlocks, and persistence shape
-- retry and next-stop behavior
-- QA4 input isolation
-- deterministic reset and cleanup
-- popup batching and rendering
-- continuous wind ambience and recorded-effect direction
-- protected people, safe animals, and invincible media crews
+That hands-on comparison is a production-direction result, not a request to make PlayCanvas numerically closer.
 
-## Modernization status
+## Protected Three.js behavior
 
-The modernization is physically accepted through Phase 4. Phase 5 is next.
+Graphics work must preserve:
 
-| Phase | Scope | Status | PR | Accepted head |
-|---|---|---|---|---|
-| 0 | Preserve V5.1 Three.js reference | Automated and hands-on reference accepted | #15 | `c49ba1c52ac58d3bd1c6e1d60d7e84cd28a16c72` |
-| 1 | Vite, strict TypeScript, lifecycle, context, adapter, QA bridge | Automated and physical browser behavior accepted | #17 | `710ee8537e3d4ca6424b8bf32b282abae0dbfc28` |
-| 2 | Render, simulation, and real run clocks; pause and run state | Automated and physical timing behavior accepted | #18 | `381014d3d7f4a128e5c6e285200fdb2790af94b5` |
-| 3 | Typed keyboard/touch input and ability-command authority | Automated and physical control behavior accepted | #19 | `b9d55188f91ade720a50837f15591c91209098ad` |
-| 4 | Scoring, districts, campaign, and persistence | Automated and physical acceptance complete; ready for review | #21 | `38125918bffdd712ae10731d4472adbf2051d838` |
-| 5 | Rendering, camera, world, buildings, destruction | Next implementation phase | not opened | not started |
-| 6 | Audio, UI, storage, platform lifecycle, formal QA completion | Planned | not opened | not started |
-| 7 | Retire historical patch-chain production builds | Planned after parity | not opened | not started |
+- direct forward storm steering and accepted mobile input feel;
+- Pull, Gust, and Grid Zap behavior;
+- satisfying natural storm-contact destruction;
+- continuous scoring and accepted combo behavior;
+- three-minute warning clock and forward-only stage progression;
+- Heartland campaign/progression/persistence contracts;
+- pause/background/reset/cleanup behavior;
+- Cow 17 and safe-animal law;
+- accepted Android landscape controls.
 
-### Phase 1 sealed evidence
+A graphics milestone may not retune gameplay because an authored mesh, camera shot, or material is inconvenient.
 
-- Workflow run: `30870506335`
-- Artifact ID: `8877735187`
-- Artifact digest: `sha256:12274df6fed420048575ca8aeb380c7cdd0a8f67e6d04d03500108234273aa20`
-- Owner verdict: `Good build`
+## PlayCanvas status
 
-### Phase 2 sealed evidence
+PlayCanvas work remains valuable research and should not be deleted.
 
-- Final corrected head: `381014d3d7f4a128e5c6e285200fdb2790af94b5`
-- Workflow run: `30884351261`
-- Artifact ID: `8882537816`
-- Artifact digest: `sha256:b35dcac9b266c21a9affc8aabcee0c999ce30904e02d43aba05179d38b28c9a6`
-- Physical findings: manual pause held the clock; backgrounding held the clock; return did not jump the countdown
-- A QA4 forensic overlay leaked into normal pause, was corrected, and the correction was inherited by later builds
+Retain its lessons on:
 
-### Phase 3 sealed evidence
+- explicit presentation/gameplay authority boundaries;
+- staged building anatomy;
+- debris mass hierarchy;
+- camera/Cow 17 regression tests;
+- exact-source artifact promotion;
+- intro timing gates;
+- assistant visual review before owner review.
 
-- Head: `b9d55188f91ade720a50837f15591c91209098ad`
-- Workflow run: `30910503447`
-- Artifact ID: `8892944447`
-- Artifact digest: `sha256:039e4e7697e5cee64ce2b7a9f514fa5979a5fd376a117a4a25b4c98740c202fa`
-- APK SHA-256: `35be5607e44a0401b1843b3428450390b48b8620292a0b112e4a5a56944c0de5`
-- Physical findings: joystick direction and release were good; Pull, Gust, and Grid Zap responded correctly; no duplicate activation, cooldown anomaly, stuck movement, pause problem, or background/resume defect was reported
-- Owner verdict: `Everything was good!`
+But the promoted browser candidate lost the owner comparison on steering feel, natural destruction, overall visual quality, and opening presentation. Passing CI did not make it the more fun game.
 
-### Phase 4 sealed evidence
+PR #39 remains unmerged and is superseded by the Three.js production pivot. Its branch, workflow evidence, screenshots, and artifacts remain research references.
 
-- Head: `38125918bffdd712ae10731d4472adbf2051d838`
-- Workflow run: `30921480977`
-- Artifact ID: `8897403311`
-- Artifact name: `severe-weather-modernization-phase-4-46`
-- Artifact digest: `sha256:91b94190e089a64028eb1497eecfdb4cd25a976282a0c0d529a42624ac8dbb05`
-- APK SHA-256: `9e1f94e269cf4eeb5d6f58300752af61efb7e778a97c1d692fdd899e2ecda295`
-- Exact-parity verification: `72/72`
-- Physical findings: score remained continuous through all districts; max combo remained 3.5x; final score, objectives, stars, and Prairie Junction unlock were correct; results and campaign actions rendered correctly; no inherited control, pause, background, or QA-panel defect was reported
-- Owner verdict: `Everything was good.`
-- PR #21 was promoted from draft to ready for review and remains unmerged
+## Active build train
 
-## Phase 4 Antigravity audit lessons
+`Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`
 
-The initial Antigravity Phase 4 submission was not accepted without review. The repository audit found and corrected:
+The first production milestone is an **asset-pipeline foundation**, not another engine migration and not a gameplay rewrite.
 
-- generated V5.1 output committed over the historical V4.3 source baseline
-- no dedicated authoritative GitHub Actions or Android packaging workflow
-- invented scoring values and timing
-- a score-driven district model replacing accepted time-driven stages
-- invented campaign and save fields
-- an incorrect shortened State Fair stop ID
-- tests that proved class presence rather than behavior parity
-- inherited QA assumptions that did not recognize descendants
-- a deterministic-scenario clock synchronization race
+### Stage 0: current
 
-These lessons are now mandatory Phase 5 rules:
+- production revival branch created directly from PR #26 head: yes
+- Three.js restored as production direction: in progress in repo memory
+- PlayCanvas preserved as research: yes
+- gameplay code changed during pivot: no
+- owner fun comparison recorded: yes
 
-- never commit generated build output over the historical source
-- add a clean-source provenance guard before TypeScript or browser QA
-- map exact legacy behavior before creating typed contracts
-- use typed mirrors and adapters before replacing accepted executors
-- verify behavior, not marker strings
-- do not invent visual, camera, destruction, quality, or lifecycle rules
-- require a dedicated Phase 5 workflow and Android artifact
+### Stage 1: next
 
-## Pull-request stack
+Build a real authored-asset seam around the accepted Three.js game:
 
-The current production and modernization history is an intentional descendant chain:
+- GLB/glTF-first production asset registry;
+- centralized loading/caching;
+- presentation metadata separate from collision/damage truth;
+- offline Capacitor-compatible assets;
+- documented mobile texture/geometry budgets;
+- missing-asset fallback;
+- one existing destructible structure proving the pipeline without changing its gameplay executor.
 
-`PR #13 -> PR #15 -> PR #16 -> PR #17 -> PR #18 -> PR #19 -> PR #20 -> PR #21`
+Do not upgrade the Three.js version in this same milestone.
 
-- PR #13: Heartland campaign foundation
-- PR #15: Three.js production visual slice
-- PR #16: restored production context and modernization plan
-- PR #17: Phase 1 modern shell
-- PR #18: Phase 2 clocks and run state
-- PR #19: Phase 3 input and abilities
-- PR #20: recovered knowledge and Phase 4 handoff
-- PR #21: Phase 4 scoring, districts, campaign, and persistence
+## Destruction direction
 
-PR #14 is the archived Babylon.js laboratory and is not part of the production chain.
+The next destruction visual pass must improve **ordinary tornado contact**, not only action abilities.
 
-PR #21 is ready for review. The earlier stack remains protected history. No PR may be merged, retargeted, closed, squashed, or rewritten without explicit owner approval and a reviewed integration plan.
+Target qualities:
 
-## Recovered knowledge and deferred product work
+- smaller and more varied breakup pieces where mobile budget allows;
+- visible wall/interior/frame/trim anatomy rather than roof-dominant chunks;
+- staged damage readable before full destruction;
+- Pull/Gust/Zap amplify spectacle instead of being required for it;
+- at least two structure types eventually prove reusable destruction anatomy;
+- reset remains deterministic.
 
-The detailed recovered backlog remains preserved in:
+Useful PlayCanvas mass-hierarchy lessons may be ported as presentation ideas, but the Three.js gameplay/destruction executor remains the authority.
 
-`Docs/RECOVERED_KNOWLEDGE_BASE.md`
+## Opening cinematic direction
 
-It includes:
+Keep the canonical story beats, replace the implementation approach.
 
-- Moo Brew opening cinematic and generated newspaper recap
-- deeper Cow 17 and farmyard behavior
-- media and regional broadcast expansion
-- complete Pull, Gust, and Grid Zap presentation contracts
-- Heartland stop expansion and later regional campaigns
-- advanced tornado forms and special variants
-- storm progression and mastery questions
-- terrain and objects that diminish storm power
-- art pipeline, data-driven world assembly, and reusable destruction definitions
-- GitHub Pages QA preview
-- release-vs-QA package separation
-- broader Android device, heat, battery, safe-area, and process-restart testing
+The final opening should be rendered from the same production world, assets, materials, lighting, characters, and atmosphere as gameplay:
 
-## Known remaining gaps
+newspaper -> farm reveal -> Cow 17 drinks Moo Brew -> weather/radio -> double take -> chickens scatter -> barn roof/tornado touchdown -> direct gameplay handoff.
 
-- Normal production builds still depend on the historical patch chain.
-- Large generated inline runtime sections and shared lexical scope remain.
-- Renderer, scene, camera, atmosphere, world, buildings, and destruction ownership remain inside the legacy runtime.
-- Hart Farm is authored but is not yet a reusable data-driven destruction definition.
-- A second structure has not yet proven reusable five-stage destruction.
-- The art pipeline is approved conceptually but not operationalized with validation and mobile budgets.
-- GitHub Pages QA preview is not deployed.
-- Most physical evidence comes from a high-end Galaxy S26 Ultra rather than a device matrix.
-- Heat, battery, prolonged session behavior, process death, and older-device performance remain incompletely measured.
-- One Phase 2 screenshot showed top-title crowding in one landscape geometry; later results fit correctly. Preserve this as a responsive regression case.
-- QA build identity remains visible by design in QA artifacts and must be removed from a player release candidate.
-- Three.js r128 remains intentionally frozen until architecture parity is established.
+No separate cheap-animation visual universe. No warning-clock consumption behind the cinematic. Keep it skippable.
+
+## QA law learned from the migration
+
+Numbers protect invariants; they do not automatically protect fun.
+
+Every gameplay-facing visual milestone must include both objective regression evidence and an owner comparison against the frozen Three.js reference. Explicitly ask whether:
+
+- forward steering still feels direct;
+- ordinary contact destruction is satisfying;
+- debris is varied rather than giant roof-heavy slabs;
+- world/cinematic/gameplay share one visual language;
+- the candidate is at least as fun as the frozen reference.
+
+## Current QA boundary
+
+The public QA deployment may still contain the last promoted PlayCanvas research candidate under `/playcanvas/`. That does not make PlayCanvas production.
+
+Do not call the Three.js revival physically accepted until an exact revival Android artifact is installed and approved on the Galaxy S26 Ultra.
 
 ## Immediate next action
 
-1. Preserve this documentation branch as the Phase 5 handoff baseline.
-2. Give Antigravity the bounded assignment in `Docs/ANTIGRAVITY_PHASE5_HANDOFF.md`.
-3. Require Antigravity to create its own descendant branch. One writer per branch.
-4. Extract scene, renderer, camera, atmosphere, world, and destruction observations behind typed contracts without redesigning presentation.
-5. Make Hart Farm the first reusable five-stage setpiece definition and prove the same contract on one second existing structure.
-6. Run the complete inherited parity suite plus fixed visual comparisons, scene lifecycle checks, destruction-state tests, performance evidence, Android synchronization, and APK assembly.
-7. Produce one consolidated browser review and one Android APK for physical acceptance.
-
-## Working protocol
-
-- Repository truth outranks chat memory.
-- One writer per branch.
-- Work in coherent milestones, not tiny build fragments.
-- Preserve accepted behavior before cleanup.
-- Do not mix architecture migration, Three.js upgrade, major visual redesign, content expansion, and gameplay redesign.
-- Automated success is necessary but never substitutes for physical Android acceptance.
+1. Finish Stage 0 repository-memory cleanup and mark PR #39 superseded/unmerged.
+2. Inspect the PR #26 runtime seams for the smallest safe authored-asset integration point.
+3. Create a descendant Stage 1 branch from `agent/threejs-production-revival`.
+4. Add the asset registry/loader/material metadata/fallback path without changing gameplay executors.
+5. Prove one existing destructible structure through that pipeline.
+6. Run inherited browser checks plus a direct fun comparison before widening the art conversion.
