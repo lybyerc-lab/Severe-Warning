@@ -154,179 +154,123 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Download verified PlayCanvas rotation-stable storm-physics artifact
+      - name: Download verified PlayCanvas multi-structure artifact
         uses: actions/download-artifact@v4
         with:
-          name: severe-weather-playcanvas-slice-62
+          name: severe-weather-playcanvas-slice-72
           path: playcanvas-preview-artifact
           repository: lybyerc-lab/Severe-Warning
-          run-id: 31222412094
+          run-id: 31238071067
           github-token: ${{ github.token }}
 
-      - name: Verify and overlay rotation-stable PlayCanvas storm-physics candidate
+      - name: Verify and overlay PlayCanvas multi-structure candidate
         shell: bash
         env:
-          PLAYCANVAS_SOURCE_SHA: f5f01678595bf857840759604f362c93f62598e8
-          PLAYCANVAS_RUN_ID: '31222412094'
-          PLAYCANVAS_RUN_NUMBER: '62'
-          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-62
-          PLAYCANVAS_ARTIFACT_DIGEST: sha256:4e59ba01045869b4a752d2dc8071aac361b4513a214e5d6d664296ddac0b37e0
+          PLAYCANVAS_SOURCE_SHA: d2ca9fca3f36507d49e2157786e81928c4795897
+          PLAYCANVAS_RUN_ID: '31238071067'
+          PLAYCANVAS_RUN_NUMBER: '72'
+          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-72
+          PLAYCANVAS_ARTIFACT_DIGEST: sha256:df7dcdc739d5c6ed692eafb8b137619914ca493018bce619712a7bd53be71e6c
         run: |
           set -euo pipefail
           test "$(tr -d '\r\n' < playcanvas-preview-artifact/SOURCE_SHA.txt)" = "$PLAYCANVAS_SOURCE_SHA"
           test -s playcanvas-preview-artifact/preview/index.html
           test -s playcanvas-preview-artifact/preview/vendor/playcanvas-2.21.3.min.mjs
           test -s playcanvas-preview-artifact/playcanvas-slice-static-report.json
+          test -s playcanvas-preview-artifact/playcanvas-multi-structure-static-report.json
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-report.json
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-rotation-stability-report.json
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-report.json
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice.png
-          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-turn.png
-          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-travel.png
-          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-junction.png
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-pull.png
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-gust.png
-          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-debris.png
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-camera-stability.png
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-cow-stability.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-intact.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-damage.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-destroyed.png
           node - <<'NODE'
           const fs = require('fs');
           const staticReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-static-report.json', 'utf8'));
+          const structureStatic = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-multi-structure-static-report.json', 'utf8'));
           const browserReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-report.json', 'utf8'));
           const rotationReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-rotation-stability-report.json', 'utf8'));
-          if (!staticReport.passed || staticReport.failedChecks?.length) throw new Error('PlayCanvas static report is not sealed green.');
-          if (!browserReport.passed || browserReport.failedChecks?.length) throw new Error('PlayCanvas browser report is not sealed green.');
-          if (!rotationReport.passed || rotationReport.failedChecks?.length) throw new Error('PlayCanvas rotation-stability report is not sealed green.');
+          const structureReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-report.json', 'utf8'));
+
+          for (const [label, report] of [
+            ['main static', staticReport],
+            ['multi-structure static', structureStatic],
+            ['browser', browserReport],
+            ['rotation', rotationReport],
+            ['multi-structure browser', structureReport],
+          ]) {
+            if (!report.passed || report.failedChecks?.length) throw new Error(`${label} report is not sealed green.`);
+          }
           if (rotationReport.version !== 'PLAYCANVAS_ROTATION_STABILITY_V2') throw new Error(`Unexpected rotation report version: ${rotationReport.version}`);
+          if (structureReport.version !== 'PLAYCANVAS_MULTI_STRUCTURE_QA_V1') throw new Error(`Unexpected multi-structure report version: ${structureReport.version}`);
+          if (staticReport.checks.length !== 79) throw new Error(`Unexpected main static count: ${staticReport.checks.length}`);
+          if (structureStatic.checks.length !== 13) throw new Error(`Unexpected multi-structure static count: ${structureStatic.checks.length}`);
+          if (browserReport.checks.length !== 61) throw new Error(`Unexpected browser count: ${browserReport.checks.length}`);
+          if (rotationReport.checks.length !== 11) throw new Error(`Unexpected rotation count: ${rotationReport.checks.length}`);
+          if (structureReport.checks.length !== 17) throw new Error(`Unexpected multi-structure browser count: ${structureReport.checks.length}`);
 
-          const staticChecks = new Map(staticReport.checks.map((check) => [check.name, check.passed]));
-          for (const name of [
-            'camera-relative-input-contract',
-            'keyboard-camera-relative',
-            'touch-camera-relative',
-            'one-stick-chase-camera-contract',
-            'chase-camera-turn-rate-bounded',
-            'chase-camera-map-baseline-plus-owner-trailing-polish',
-            'chase-camera-intent-wiring',
-            'tornado-funnel-upright',
-            'expanded-terrain-footprint',
-            'connected-road-junctions-contract',
-            'distinct-landmark-blocks-contract',
-            'render-consumed-authority-telemetry-contract',
-            'browser-visible-authority-scale-parity',
-            'browser-camera-turn-frame-step-regression',
-            'browser-visible-control-check',
-            'browser-chase-camera-check',
-            'storm-force-field-anchor',
-            'storm-force-field-game-owned-components',
-            'storm-force-accepted-pull-timing',
-            'storm-force-accepted-gust-timing',
-            'storm-force-real-executor-integration',
-            'storm-force-normal-render-integration',
-            'storm-force-telemetry-contract',
-            'storm-reactive-scene-bodies',
-            'storm-reactive-safe-animal-exclusion',
-            'browser-visible-storm-physics-check',
-            'browser-debris-and-reset-check',
-            'browser-no-force-helper-bypass',
-          ]) {
-            if (staticChecks.get(name) !== true) throw new Error(`Required storm-physics static gate missing or red: ${name}`);
+          const requiredStructureChecks = [
+            'four-authoritative-structures-bound',
+            'four-presentation-bindings-bound',
+            'structures-inside-test-world',
+            'storefront-damaged-through-accepted-gameplay',
+            'storefront-destroyed-through-accepted-gameplay',
+            'second-distinct-structure-damaged',
+            'at-least-two-structures-authoritatively-damaged',
+            'destruction-score-grows-through-authority',
+            'presentation-matches-authority',
+            'authoritative-stage-activates-structure-debris',
+            'accepted-pull-moves-detached-structure-debris',
+            'reset-restores-authoritative-structures',
+            'reset-restores-structure-presentation',
+            'reset-clears-structure-debris',
+            'cow17-remains-safe',
+            'no-console-errors-multi-structure',
+            'no-page-errors-multi-structure',
+          ];
+          const structureChecks = new Map(structureReport.checks.map((check) => [check.name, check.passed]));
+          for (const name of requiredStructureChecks) {
+            if (structureChecks.get(name) !== true) throw new Error(`Required multi-structure gate missing or red: ${name}`);
           }
 
-          const browserChecks = new Map(browserReport.checks.map((check) => [check.name, check.passed]));
-          for (const name of [
-            'gameplay-authority-connected',
-            'physics-body-registry-bounded',
-            'physics-safe-animal-excluded',
-            'joystick-up-moves-screen-forward',
-            'keyboard-right-moves-screen-right',
-            'camera-stays-stable-on-forward-input',
-            'camera-turns-gradually-behind-keyboard-motion',
-            'camera-distance-stable-joystick',
-            'camera-distance-stable-keyboard',
-            'visible-storm-speed-parity',
-            'pull-visible-control-accepted',
-            'pull-trees-react-inward',
-            'pull-light-props-move-inward',
-            'pull-light-props-orbit',
-            'gust-visible-control-accepted',
-            'gust-trees-react-outward',
-            'gust-light-props-move-outward',
-            'expanded-terrain-footprint',
-            'road-junctions-count',
-            'authority-setup-moves-real-storm',
-            'authority-setup-approaches-live-target',
-            'gust-executor-accepted',
-            'pull-executor-accepted',
-            'zap-executor-accepted',
-            'destruction-state-changed',
-            'authoritative-damage-activates-debris',
-            'storm-field-moves-detached-debris',
-            'cow17-safe',
-            'physics-reset-clears-active-bodies',
-            'physics-reset-count-advances',
-            'dispose-physics-telemetry-cleared',
-            'road-above-terrain',
-            'tornado-above-road',
-            'no-console-errors',
-            'no-page-errors',
-          ]) {
-            if (browserChecks.get(name) !== true) throw new Error(`Required storm-physics browser gate missing or red: ${name}`);
-          }
-
-          const rotationChecks = new Map(rotationReport.checks.map((check) => [check.name, check.passed]));
-          for (const name of [
-            'held-camera-target-stable',
-            'held-camera-turn-bounded',
-            'held-camera-settles-not-spins',
-            'released-camera-does-not-wander',
-            'cow17-safe-flight-starts',
-            'cow17-orbit-lock-engages',
-            'cow17-orbit-is-bounded',
-            'cow17-flight-wall-clock-bounded',
-            'cow17-does-not-immediately-relaunch',
-            'rotation-stability-no-console-errors',
-            'rotation-stability-no-page-errors',
-          ]) {
-            if (rotationChecks.get(name) !== true) throw new Error(`Required rotation-stability gate missing or red: ${name}`);
-          }
-
-          const visibleInput = browserReport.evidence?.visibleInput ?? {};
           const physics = browserReport.evidence?.physics ?? {};
-          const afterAbilities = browserReport.evidence?.afterAbilities ?? {};
-          const camera = rotationReport.evidence?.camera ?? {};
-          const cow17 = rotationReport.evidence?.cow17 ?? {};
-          const scale = Number(visibleInput.joystickVisibleAuthorityScale);
-          const maxStep = Number(visibleInput.keyboardHeadingStepMetrics?.maxStep);
-          const turningSteps = Number(visibleInput.keyboardHeadingStepMetrics?.turningStepCount);
-          const samples = visibleInput.keyboardHeadingSamples ?? [];
           const pull = physics.afterPullPhysics ?? {};
           const gust = physics.afterGustPhysics ?? {};
-          const resetPhysics = physics.afterResetPhysics ?? {};
-          const debris = afterAbilities.physics ?? {};
-          const settleMs = Number(camera.settleElapsedMs);
-          const releaseHeadingDrift = Number(camera.releaseHeadingDrift);
-          const releaseDesiredDrift = Number(camera.releaseDesiredDrift);
-          const heldDesiredDrift = Number(camera.heldDesiredDrift);
-          const cowLandingMs = Number(cow17.landingElapsedMs);
+          const visibleInput = browserReport.evidence?.visibleInput ?? {};
+          const scale = Number(visibleInput.joystickVisibleAuthorityScale);
+          const maxStep = Number(visibleInput.keyboardHeadingStepMetrics?.maxStep);
+          const camera = rotationReport.evidence?.camera ?? {};
+          const cow17 = rotationReport.evidence?.cow17 ?? {};
+          const multi = structureReport.evidence ?? {};
+          const scoreAfter = Number(multi.score?.afterDestruction);
+          const changedIds = multi.changedIds ?? [];
+          const structureDebris = multi.afterDamage?.debris ?? {};
+          const resetDebris = multi.afterReset?.debris ?? {};
+          const resetPresentation = multi.afterReset?.presentation ?? {};
 
           if (!Number.isFinite(scale) || Math.abs(scale - 0.7717) > 0.03) throw new Error(`Visible/authority scale parity out of bounds: ${scale}`);
           if (!Number.isFinite(maxStep) || maxStep > 0.13) throw new Error(`Camera heading step exceeds no-snap gate: ${maxStep}`);
-          if (turningSteps < 3 || samples.length < 12) throw new Error(`Insufficient camera turn-frame evidence: steps=${turningSteps}, samples=${samples.length}`);
-          if (Number(pull.treePullReactionCount) < 1 || Number(pull.lightPullReactionCount) < 1) throw new Error('Pull reaction telemetry is missing.');
-          if (Number(pull.maxPullInwardDelta) <= 0.4 || Number(pull.maxPullTangentialDelta) <= 0.15) throw new Error('Pull inward/orbit telemetry is below the sealed browser gate.');
-          if (Number(gust.treeGustReactionCount) < 1 || Number(gust.lightGustReactionCount) < 1 || Number(gust.maxGustOutwardDelta) <= 0.4) throw new Error('Gust reaction telemetry is below the sealed browser gate.');
-          if (Number(debris.airborneBodyCount) < 1 || debris.roofAirborne !== true || Number(debris.maxDebrisDisplacement) <= 0.1) throw new Error('Authoritative debris physics evidence is missing.');
-          if (Number(resetPhysics.activeBodyCount) !== 0 || Number(resetPhysics.airborneBodyCount) !== 0 || resetPhysics.roofAirborne !== false) throw new Error('Physics reset did not restore a clean authored state.');
-          if (!Number.isFinite(settleMs) || settleMs >= 9000 || camera.heldSettled?.turning !== false) throw new Error(`Camera did not settle cleanly: ${settleMs} ms.`);
-          if (!Number.isFinite(heldDesiredDrift) || heldDesiredDrift >= 0.05) throw new Error(`Held camera target drifted: ${heldDesiredDrift}.`);
-          if (!Number.isFinite(releaseHeadingDrift) || releaseHeadingDrift >= 0.16 || !Number.isFinite(releaseDesiredDrift) || releaseDesiredDrift >= 0.05) throw new Error(`Camera wandered after release: heading=${releaseHeadingDrift}, desired=${releaseDesiredDrift}.`);
-          if (cow17.orbitLockObserved !== true || !Number.isFinite(cowLandingMs) || cowLandingMs >= 6200) throw new Error(`Cow 17 flight was not wall-clock bounded: ${cowLandingMs} ms.`);
-          if (cow17.landed?.snapshot?.cow17?.airborne !== false || cow17.postLanding?.snapshot?.cow17?.airborne !== false || cow17.postLanding?.snapshot?.cow17?.safe !== true || cow17.postLanding?.bovine?.cow17?.playcanvasOrbitLocked !== true) throw new Error('Cow 17 landing/relaunch safety evidence is incomplete.');
-          if (staticReport.checks.length !== 69) throw new Error(`Unexpected static check count: ${staticReport.checks.length}`);
-          if (browserReport.checks.length !== 61) throw new Error(`Unexpected browser check count: ${browserReport.checks.length}`);
-          if (rotationReport.checks.length !== 11) throw new Error(`Unexpected rotation-stability check count: ${rotationReport.checks.length}`);
-          console.log(`Verified rotation-stable storm physics: static ${staticReport.checks.length}/${staticReport.checks.length}, browser ${browserReport.checks.length}/${browserReport.checks.length}, rotation ${rotationReport.checks.length}/${rotationReport.checks.length}, scale=${scale}, settleMs=${settleMs}, cowLandingMs=${cowLandingMs}.`);
+          if (Math.abs(Number(pull.peakTreeTiltRadians) - 0.4218329627222749) > 0.000001) throw new Error('Protected Pull tree tilt changed.');
+          if (Math.abs(Number(pull.maxPullInwardDelta) - 5.374028004530404) > 0.000001) throw new Error('Protected Pull inward response changed.');
+          if (Math.abs(Number(pull.maxPullTangentialDelta) - 1.340381940964075) > 0.000001) throw new Error('Protected Pull orbit response changed.');
+          if (Math.abs(Number(gust.peakTreeTiltRadians) - 0.3673336055836977) > 0.000001) throw new Error('Protected Gust tree tilt changed.');
+          if (Math.abs(Number(gust.maxGustOutwardDelta) - 5.042881747270892) > 0.000001) throw new Error('Protected Gust outward response changed.');
+          if (Number(camera.releaseHeadingDrift) >= 0.16 || Number(camera.releaseDesiredDrift) >= 0.05) throw new Error('Camera release stability regressed.');
+          if (cow17.postLanding?.snapshot?.cow17?.safe !== true || cow17.postLanding?.snapshot?.cow17?.airborne !== false) throw new Error('Cow 17 safety/landing evidence regressed.');
+          if (!changedIds.includes('storefront') || !changedIds.includes('house') || changedIds.length < 2) throw new Error(`Expected two damaged structures; got ${JSON.stringify(changedIds)}.`);
+          if (!Number.isFinite(scoreAfter) || scoreAfter <= 0) throw new Error(`Accepted destruction score did not grow: ${scoreAfter}.`);
+          if (Number(structureDebris.activationCount) < 1 || Number(structureDebris.activeCount) < 1 || Number(structureDebris.maxDisplacement) <= 0.15) throw new Error('Structure debris evidence is missing.');
+          if (Number(resetDebris.activeCount) !== 0 || Number(resetDebris.maxDisplacement) !== 0) throw new Error('Structure debris did not reset cleanly.');
+          if (Number(resetPresentation.damagedCount) !== 0 || Number(resetPresentation.destroyedCount) !== 0) throw new Error('Structure presentation did not reset intact.');
+
+          console.log(`Verified multi-structure PlayCanvas artifact: static ${staticReport.checks.length}, multi-static ${structureStatic.checks.length}, browser ${browserReport.checks.length}, rotation ${rotationReport.checks.length}, multi-browser ${structureReport.checks.length}, score=${scoreAfter}, changed=${changedIds.join(',')}.`);
           NODE
+
           rm -rf www/playcanvas
           mkdir -p www/playcanvas
           cp -R playcanvas-preview-artifact/preview/. www/playcanvas/
@@ -339,13 +283,15 @@ jobs:
             "artifactDigest": "$PLAYCANVAS_ARTIFACT_DIGEST",
             "terrainFootprint": "190x190",
             "roadJunctions": 9,
-            "entityCount": 251,
+            "entityCount": 277,
             "stormPhysicsBodyCount": 13,
+            "authorityStructureCount": 4,
+            "structureDebrisBodyCount": 12,
             "cameraTrailingScale": 0.9,
             "rotationStabilityChecks": 11,
-            "cow17FlightBoundMilliseconds": 5200,
-            "corrections": ["upright-funnel", "one-stick-chase-camera", "camera-relative-input", "prairie-expansion", "owner-trailing-camera-polish", "render-consumed-speed-parity", "storm-physics-parity", "game-owned-suction-swirl-lift", "visible-pull-gust-regression", "authoritative-debris-physics", "physics-reset-cleanup", "held-intent-stability", "release-settle", "cow17-wall-clock-bounded-flight", "cow17-rearm-distance"],
-            "status": "browser-qa-passed-not-physical-android-accepted"
+            "multiStructureChecks": 17,
+            "corrections": ["upright-funnel", "one-stick-chase-camera", "camera-relative-input", "prairie-expansion", "owner-trailing-camera-polish", "storm-physics-parity", "held-intent-stability", "release-settle", "cow17-wall-clock-bounded-flight", "multi-structure-authority", "local-authority-alignment", "authority-stage-destruction", "structure-debris-field", "multi-structure-reset-cleanup"],
+            "status": "browser-qa-passed-owner-multi-structure-test-pending-not-physical-android-accepted"
           }
           EOF
           test -s www/playcanvas/index.html
@@ -377,13 +323,13 @@ jobs:
         run: |
           echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
 
-      - name: Verify live QA root and rotation-stable storm-physics PlayCanvas candidate
+      - name: Verify live QA root and multi-structure PlayCanvas candidate
         shell: bash
         env:
           QA_ROOT_URL: https://lybyerc-lab.github.io/Severe-Warning/
           PLAYCANVAS_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/
           PLAYCANVAS_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/qa-playcanvas-build.json
-          PLAYCANVAS_SOURCE_SHA: f5f01678595bf857840759604f362c93f62598e8
+          PLAYCANVAS_SOURCE_SHA: d2ca9fca3f36507d49e2157786e81928c4795897
         run: |
           set -euo pipefail
           for attempt in $(seq 1 30); do
@@ -393,25 +339,22 @@ jobs:
               && grep -Fq 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' <<< "$root_html" \
               && grep -Fq 'PLAYCANVAS PLAYABLE SLICE' <<< "$playcanvas_html" \
               && grep -Fq "$PLAYCANVAS_SOURCE_SHA" <<< "$playcanvas_metadata" \
-              && grep -Fq 'one-stick-chase-camera' <<< "$playcanvas_metadata" \
-              && grep -Fq 'owner-trailing-camera-polish' <<< "$playcanvas_metadata" \
               && grep -Fq 'storm-physics-parity' <<< "$playcanvas_metadata" \
-              && grep -Fq 'game-owned-suction-swirl-lift' <<< "$playcanvas_metadata" \
-              && grep -Fq 'visible-pull-gust-regression' <<< "$playcanvas_metadata" \
-              && grep -Fq 'authoritative-debris-physics' <<< "$playcanvas_metadata" \
-              && grep -Fq 'physics-reset-cleanup' <<< "$playcanvas_metadata" \
               && grep -Fq 'held-intent-stability' <<< "$playcanvas_metadata" \
-              && grep -Fq 'release-settle' <<< "$playcanvas_metadata" \
               && grep -Fq 'cow17-wall-clock-bounded-flight' <<< "$playcanvas_metadata" \
-              && grep -Fq 'cow17-rearm-distance' <<< "$playcanvas_metadata" \
-              && grep -Fq '"stormPhysicsBodyCount": 13' <<< "$playcanvas_metadata" \
-              && grep -Fq '"rotationStabilityChecks": 11' <<< "$playcanvas_metadata" \
-              && grep -Fq '"cow17FlightBoundMilliseconds": 5200' <<< "$playcanvas_metadata" \
+              && grep -Fq 'multi-structure-authority' <<< "$playcanvas_metadata" \
+              && grep -Fq 'local-authority-alignment' <<< "$playcanvas_metadata" \
+              && grep -Fq 'authority-stage-destruction' <<< "$playcanvas_metadata" \
+              && grep -Fq 'structure-debris-field' <<< "$playcanvas_metadata" \
+              && grep -Fq 'multi-structure-reset-cleanup' <<< "$playcanvas_metadata" \
+              && grep -Fq '"authorityStructureCount": 4' <<< "$playcanvas_metadata" \
+              && grep -Fq '"structureDebrisBodyCount": 12' <<< "$playcanvas_metadata" \
+              && grep -Fq '"multiStructureChecks": 17' <<< "$playcanvas_metadata" \
               && grep -Fq '"cameraTrailingScale": 0.9' <<< "$playcanvas_metadata" \
               && grep -Fq '190x190' <<< "$playcanvas_metadata"; then
               echo "Live QA root verified: $QA_ROOT_URL"
-              echo "Live rotation-stable storm-physics PlayCanvas candidate verified: $PLAYCANVAS_URL"
-              echo "Live rotation-stable PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
+              echo "Live multi-structure PlayCanvas candidate verified: $PLAYCANVAS_URL"
+              echo "Live multi-structure PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
               exit 0
             fi
             echo "Live Pages propagation attempt $attempt/30 not ready yet."
