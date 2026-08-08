@@ -2,160 +2,187 @@
 
 Date: 2026-08-08
 Status: active production direction
-Branch: `agent/threejs-production-revival`
-Production baseline: `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+Production renderer: Three.js r128
+Frozen gameplay/fun baseline: `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+Sealed Stage 1 source: `f2060dff08ddb9df9f90ecd245940d8db86c7266`
+Active visual branch: `agent/threejs-visual-production-foundation`
 
 ## Mission
 
 Improve the visual production quality of **Severe Weather Warning** without sacrificing the gameplay feel that already works.
 
-The accepted Three.js game remains the gameplay and destruction authority. This train is not an engine rewrite and is not permission to redesign steering, abilities, scoring, campaign timing, safe-animal behavior, or destruction rules while doing art work.
+The accepted Three.js game remains gameplay/destruction authority. This train is not an engine rewrite and is not permission to redesign steering, abilities, scoring, campaign timing, safe-animal behavior, or authoritative destruction while doing art work.
 
-## Owner comparison that triggered this train
+## Owner verdicts that govern this train
 
-On 2026-08-08 the owner compared the promoted PlayCanvas browser candidate against the preserved Three.js game and reported:
+### Renderer/gameplay pivot
 
-- gameplay is improving in PlayCanvas, but forward movement feels wrong and requires backing/steering like a truck and trailer;
-- destruction is somewhat improved but still relies on large chunks, roof-heavy breakup, and action abilities for the more satisfying effects;
-- the PlayCanvas opening and the game overall still read as cheap/prototype animation;
-- the original Three.js gameplay was more fun;
-- the original Three.js destruction was better;
-- the preferred direction is to retain the Three.js gameplay and improve the visual pipeline instead of continuing the renderer migration.
+On 2026-08-08 the owner compared the promoted PlayCanvas browser candidate against the preserved Three.js game and reported that PlayCanvas steering felt wrong, destruction remained too roof-heavy/large-chunk and ability-dependent, the opening looked cheap, the wider game remained prototype-quality, and the original Three.js gameplay/destruction were more fun.
 
-That owner comparison outranks the earlier renderer-direction hypothesis.
+Production returned to Three.js under D-012.
 
-## Frozen gameplay baseline
+### Stage 1 browser acceptance
 
-The production revival starts from draft PR #26 head:
+The owner later tested the sealed Three.js Stage 1 browser candidate at `/threejs/` and reported: **“Great build. Plays really well. I missed it.”**
 
-`1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+That is the browser owner PASS for the fun baseline and authored-presentation seam.
 
-Reference evidence:
+It is not final graphics approval and it is not physical acceptance of the exact debug APK on Galaxy S26 Ultra.
 
-- Workflow Run 6: `31094966986`
-- Artifact: `severe-weather-presentation-identity-6`
-- Debug APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
+### Active visual mandate
 
-Protected behavior includes:
+The owner then directed: stay on this path until it is beautiful, make the opening cinematic beautiful, raise the whole game to the same visual standard, and evaluate useful external sprites/assets where they genuinely help.
+
+## Frozen behavior law
+
+Graphics milestones may not retune merely for implementation convenience:
 
 - direct storm steering and forward play feel;
 - Pull, Gust, and Grid Zap input/execution;
-- natural storm-contact destruction;
-- scoring, combo, warning clock, districts, campaign, and persistence;
+- natural storm-contact destruction authority;
+- scoring, combo, warning clock, stages, campaign, and persistence;
 - Cow 17 and safe-animal behavior;
 - pause/background/reset/cleanup behavior;
+- gameplay camera feel;
 - Android landscape control layout.
 
-A graphics milestone may not retune those systems merely to make a visual implementation easier.
-
-## Renderer rule
+## Renderer law
 
 - Three.js remains production.
-- Keep the production Three.js version frozen during the first art-pipeline milestone.
-- Do not combine an engine-version upgrade with asset-pipeline construction, destruction changes, or cinematic redesign.
-- PlayCanvas remains preserved research evidence. Do not delete its branches, artifacts, reports, or lessons.
+- Keep the renderer version frozen during the visual foundation unless a separately approved technical milestone proves an upgrade is necessary.
+- Do not combine a renderer upgrade with asset-pipeline, destruction, world-art, or cinematic changes.
+- PlayCanvas remains preserved research evidence. Port lessons, not its gameplay executor.
 
-## Stage 0: Production pivot and evidence seal
+## Visual laws
 
-Goal: make repository truth match the owner decision before visual implementation resumes.
+Read `Docs/THREEJS_VISUAL_STYLE_BIBLE.md`.
+
+Art thesis: **storm-charged stylized Americana**.
+
+Visual promise: **beautiful at a glance, readable at speed, cinematic up close**.
+
+Gameplay and cinematic must share one visual universe. External asset packs are ingredients, not the art director.
+
+## Asset/provenance law
+
+Read:
+
+- `Docs/ASSET_INTAKE_AND_PROVENANCE.md`
+- `assets/production/asset-provenance.json`
+
+CC0 is preferred for external visual assets. Unknown/unlicensed content is rejected. Every production import requires exact source revision/path, license evidence, local destination/checksum, and transformation notes. Runtime network asset dependencies are forbidden.
+
+## Stage 0: Production pivot and evidence seal — COMPLETE
+
+Completed:
+
+- production revival rooted directly at PR #26 exact head;
+- Three.js restored as production;
+- PlayCanvas preserved as research;
+- D-012 recorded;
+- PlayCanvas PR #39 closed unmerged as superseded research;
+- no gameplay code changed for the pivot itself.
+
+## Stage 1: Asset pipeline foundation — BROWSER OWNER PASS
+
+Sealed source:
+
+`f2060dff08ddb9df9f90ecd245940d8db86c7266`
+
+Evidence:
+
+- Three.js Asset Pipeline Foundation Run 5: `31270418326`, success
+- artifact: `severe-weather-threejs-asset-pipeline-5`
+- artifact digest: `sha256:90360c1811f0976d6f8d798c75997fb07b5eb6f6e51a8b1d885fa6ab3de0f3e5`
+- debug APK SHA-256: `496439b2adc434c29cb0fd7db5ce6f03047efa20d964ba19cf397ef42be95b10`
+- public QA: `https://lybyerc-lab.github.io/Severe-Warning/threejs/`
+
+Stage 1 proved:
+
+- an explicit authored presentation seam around accepted gameplay truth;
+- optional asset loading with fallback;
+- packaged local/offline asset path;
+- static mutation guards around protected gameplay fields;
+- browser success/fallback evidence;
+- same-runner performance comparison;
+- Android debug packaging;
+- owner browser confirmation that the game still plays really well.
+
+The current JSON storefront is a pipeline proof, not the final production art format. GLB/glTF remains the preferred wider authored 3D direction.
+
+## Stage 2A: Visual production foundation and hero slice — ACTIVE
+
+Goal: establish a coherent visual system on one representative slice before spreading unfinished art across the map.
 
 Required:
 
-- branch directly from the PR #26 accepted gameplay head;
-- record the renderer pivot in `Docs/DECISIONS.md`;
-- replace PlayCanvas-as-production language in front-door repository memory;
-- preserve PlayCanvas as research, not production ancestry;
-- keep PR #39 unmerged and mark it superseded by the production pivot;
-- record the owner comparison above as the reason.
+- visual style bible enforced;
+- asset provenance/license manifest enforced;
+- one Hart Farm block with Cow 17/Moo Brew identity;
+- one Prairie Junction street/storefront view;
+- stronger road/terrain separation;
+- production sky/storm-light/haze direction;
+- representative vegetation and utility dressing;
+- selected mobile-friendly dust/rain/debris VFX cards;
+- one authored destructible structure with readable material/anatomy language;
+- deterministic pristine and damage evidence views;
+- no gameplay-authority change.
 
 Exit gate:
 
-- front-door docs consistently name Three.js as production;
-- no gameplay code change in Stage 0;
-- exact baseline SHA remains visible in repo memory.
+- owner says the slice no longer reads as prototype-generated;
+- road/target readability survives gameplay speed;
+- storm/VFX add scale without hiding steering;
+- same slice is credible as a cinematic environment;
+- inherited gameplay regression suite remains green;
+- mobile performance remains credible.
 
-## Stage 1: Asset pipeline foundation
+## Stage 2B: Destruction presentation upgrade — NEXT AFTER 2A VISUAL LANGUAGE HOLDS
 
-Goal: make real authored art a first-class input instead of expanding procedural prototype geometry.
-
-Required architecture:
-
-- one explicit asset registry for production visual assets;
-- GLB/glTF as the preferred authored 3D interchange format;
-- centralized loading and caching rather than ad-hoc loaders inside gameplay code;
-- explicit material/presentation metadata separate from gameplay collision and damage truth;
-- mobile texture and geometry budgets documented and mechanically checkable;
-- fallback presentation when an optional authored asset fails to load;
-- production assets must work offline inside the Capacitor package;
-- no network dependency at runtime;
-- no change to authoritative gameplay collision just because the presentation mesh changes.
-
-Initial asset categories:
-
-- buildings and destructible anatomy;
-- terrain/road dressing;
-- farm props and Moo Brew identity;
-- vegetation/light props;
-- cows/chickens/media props;
-- tornado presentation layers;
-- cinematic-only camera markers and set dressing where useful.
-
-Exit gate:
-
-- at least one existing structure uses the registry and an authored presentation asset while retaining the accepted gameplay executor and collision truth;
-- missing-asset fallback works;
-- desktop and 932x430 mobile-landscape browser QA pass;
-- Android package contains every required asset locally;
-- no accepted-control or destruction regression.
-
-## Stage 2: Destruction presentation upgrade
-
-Goal: make ordinary tornado contact satisfying before abilities are required.
+Goal: make ordinary tornado contact satisfying before abilities are required while preserving the accepted destruction executor.
 
 Direction:
 
-- smaller and more numerous readable breakup pieces where performance allows;
+- smaller and more numerous readable secondary breakup pieces where budget allows;
 - wall, roof, trim, window/door, frame, and interior anatomy instead of roof-dominant chunks;
 - visible staged damage before final destruction;
-- contact destruction must produce meaningful visible damage on its own;
-- Pull/Gust/Zap amplify or redirect destruction rather than being the only path to spectacle;
-- retain mass hierarchy lessons from PlayCanvas without importing its gameplay executor;
-- keep debris bounded and mobile-safe.
+- material-specific dust/debris accents;
+- Pull/Gust/Zap amplify or redirect spectacle rather than gate it;
+- retain useful PlayCanvas mass-hierarchy lessons without importing its gameplay executor;
+- keep debris bounded/mobile-safe.
 
 Exit gate:
 
-- ordinary storm contact can visibly damage and destroy a test structure without using an ability;
+- ordinary storm contact visibly damages and destroys a test structure without an ability;
 - breakup is not dominated by one giant roof slab;
-- at least two distinct structure types prove reusable destruction anatomy;
-- reset fully restores structure and debris state;
-- gameplay feel remains the PR #26 baseline.
+- at least two structure types prove reusable anatomy;
+- reset fully restores structure/debris state;
+- gameplay feel remains the frozen baseline.
 
 ## Stage 3: World rendering and atmosphere
 
-Goal: remove the broad prototype look using one coherent production visual language.
+Goal: widen the accepted hero-slice language into authored places instead of debug geometry.
 
 Scope:
 
-- physically coherent materials;
-- lighting and shadow discipline;
+- coherent material library;
+- lighting/shadow discipline;
 - sky, clouds, storm light, haze, rain/dust/debris atmosphere;
 - road/terrain material separation and topology readability;
 - vegetation and prop density budgets;
 - authored landmark silhouettes;
 - camera-facing readability at gameplay speed.
 
-Do not redesign gameplay while tuning visual composition.
-
 Exit gate:
 
-- Prairie Junction and one farm block read as authored places rather than debug geometry;
-- roads remain visually and topologically legible;
-- stable mobile frame pacing on the Galaxy target;
-- no camera/control regressions.
+- Prairie Junction and farm districts read as authored places;
+- roads remain visually/topologically legible;
+- representative mobile frame pacing remains stable;
+- no camera/control regression.
 
 ## Stage 4: In-engine opening cinematic
 
-Goal: replace the cheap separate-animation feel with a short scene rendered by the same world, assets, materials, lighting, and characters used in gameplay.
+Goal: replace the cheap separate-animation feel with a short scene rendered by the same production world, assets, materials, lighting, characters, and atmosphere as gameplay.
 
 Canonical beats remain:
 
@@ -170,48 +197,51 @@ Canonical beats remain:
 
 Rules:
 
-- no loading break between cinematic and gameplay;
+- no loading break;
 - no separate visual universe;
 - skippable;
-- warning clock begins at the gameplay handoff, not behind the cinematic;
-- cinematic camera work must not alter accepted gameplay camera/steering after handoff.
+- warning clock begins at gameplay handoff;
+- cinematic camera cannot alter accepted gameplay steering/camera after handoff.
 
 Exit gate:
 
-- owner says the opening looks like the same game they are about to play;
-- no cheap-card/overlay-animation dependency for the core scene;
+- owner says the opening is beautiful and looks like the same game they are about to play;
+- the current DOM/CSS intro is no longer the core visual implementation;
 - gameplay begins fresh and immediately controllable.
 
 ## Stage 5: Mobile production hardening
 
-Goal: make the improved art pipeline sustainable on Android.
+Goal: make the improved visual pipeline sustainable on Android.
 
 Required:
 
 - asset-size budget report;
-- geometry/texture counts;
-- draw-call and material-count evidence;
+- geometry/texture/material counts;
+- draw-call evidence;
 - LOD/instancing strategy where measured need exists;
 - compressed/local packaged assets where supported by the frozen renderer/toolchain;
 - prolonged-session frame pacing, heat, and battery checks;
-- exact APK evidence and Galaxy S26 Ultra acceptance.
+- exact APK evidence and Galaxy S26 Ultra physical acceptance.
 
-## QA law: protect fun, not only numbers
+## QA law: protect fun and beauty
 
-Automated tests remain necessary, but the previous migration proved that numerically stable systems can still feel worse.
+Automated tests protect invariants but do not prove fun or visual quality.
 
-Every meaningful gameplay-facing visual candidate therefore needs both:
+Every meaningful visual candidate needs:
 
-1. objective regression evidence, and
-2. a short owner fun/readability check.
+1. objective regression evidence;
+2. assistant visual review of representative deterministic evidence;
+3. owner hands-on fun/readability/beauty check before widening.
 
-New subjective acceptance prompts should explicitly cover:
+Explicit questions:
 
-- Can I drive the tornado forward where I intend without backing up to steer?
+- Can I drive the tornado forward naturally without backing up to steer?
 - Does ordinary storm contact feel destructive without an ability?
-- Are breakup pieces varied and readable rather than giant roof-heavy slabs?
+- Are breakup pieces varied/readable rather than giant roof-heavy slabs?
 - Does the world look authored rather than prototype-generated?
+- Are roads/targets readable under weather effects?
 - Does the cinematic look like the same game as gameplay?
-- Is the game at least as fun as the frozen Three.js reference?
+- Is the candidate at least as fun as the frozen Three.js reference?
+- Is the representative slice genuinely beautiful enough to become the rest of the game's yardstick?
 
-A candidate that passes CI but loses the fun comparison does not advance.
+A candidate that passes CI but loses those comparisons does not advance.
