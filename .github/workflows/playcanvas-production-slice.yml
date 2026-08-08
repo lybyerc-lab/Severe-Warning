@@ -10,6 +10,7 @@ on:
       - agent/playcanvas-prairie-expansion-handoff
       - agent/playcanvas-storm-physics-handoff
       - agent/playcanvas-multi-structure-handoff
+      - agent/playcanvas-destruction-weight-art-handoff
 
 concurrency:
   group: playcanvas-slice-${{ github.event.pull_request.number || github.ref }}
@@ -67,7 +68,7 @@ jobs:
 
       - name: Fetch pinned PlayCanvas engine
         env:
-          PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55aeef4de6a8adb4
+          PLAYCANVAS_EXPECTED_SHA256: d77c4337e8a2fd1dbc38f19b55af8d087a47ca378366558b55af8d087a47ca378366558b55af8d087a47ca378366558b55af8adb4
         run: node scripts/fetch-playcanvas-engine.mjs
 
       - name: Reconstruct accepted gameplay authority
