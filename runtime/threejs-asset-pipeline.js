@@ -109,18 +109,19 @@ function swAssetBuildStructureMeshData(spec, fallbackMeshData) {
   group.name = spec.id;
   group.userData.swAuthoredAssetId = spec.id;
   group.userData.swAuthoredAssetVersion = spec.version;
-  const materials = new Map();
+  const materialTemplates = new Map();
   const damageParts = [];
   let base = null;
   let roof = null;
 
   for (const [name, materialSpec] of Object.entries(spec.materials)) {
-    materials.set(name, swAssetMaterial(materialSpec));
+    materialTemplates.set(name, swAssetMaterial(materialSpec));
   }
 
   for (const partSpec of spec.parts) {
     const geometry = new THREE.BoxGeometry(Number(partSpec.size[0]), Number(partSpec.size[1]), Number(partSpec.size[2]));
-    const part = new THREE.Mesh(geometry, materials.get(partSpec.material));
+    const materialTemplate = materialTemplates.get(partSpec.material);
+    const part = new THREE.Mesh(geometry, materialTemplate.clone());
     part.name = partSpec.id;
     part.position.set(Number(partSpec.position[0]), Number(partSpec.position[1]), Number(partSpec.position[2]));
     if (Array.isArray(partSpec.rotation) && partSpec.rotation.length === 3) {
@@ -137,6 +138,7 @@ function swAssetBuildStructureMeshData(spec, fallbackMeshData) {
     if (!roof && part.userData.swAssetTags.includes('roof')) roof = part;
   }
 
+  for (const material of materialTemplates.values()) material.dispose();
   if (!base) base = damageParts[0] || group.children[0] || null;
   return {
     group,
@@ -223,6 +225,9 @@ function swAssetApplyToCurrentCounty(generation) {
 const swAssetOriginalBuildLivingCounty = buildLivingCounty;
 buildLivingCounty = function buildLivingCountyWithAuthoredPresentation(...args) {
   swAssetState.generation += 1;
+  swAssetState.appliedCount = 0;
+  swAssetState.skippedCount = 0;
+  swAssetState.applications = [];
   const generation = swAssetState.generation;
   const result = swAssetOriginalBuildLivingCounty.apply(this, args);
   Promise.resolve().then(() => swAssetApplyToCurrentCounty(generation));
