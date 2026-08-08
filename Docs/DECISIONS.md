@@ -110,3 +110,57 @@ Decision:
 - Cow-Cam is rare and brief; it may change presentation and cow animation but must not slow player controls or the warning clock.
 - Moo Brew sponsors the media circus without becoming a real-world brand or an intrusive advertisement.
 - Animal injuries remain zero by design.
+
+## D-011: Move production rendering toward PlayCanvas
+
+Date: 2026-08-06
+Status: superseded by D-012 after owner comparison testing
+
+Original decision:
+- PlayCanvas was selected as the production-renderer direction.
+- The Three.js build was retained as frozen gameplay/behavior reference during a bounded migration.
+- The migration preserved gameplay authority behind explicit adapters and required exact-source browser/Android evidence.
+
+Why it was reasonable at the time:
+- The Three.js game had visible topology, authored-scene, material, and cinematic-production limitations.
+- A stronger authored scene/lighting/material/animation workflow was expected to improve production quality without losing gameplay.
+
+What the experiment taught us:
+- The authority/adaptor boundary was valuable.
+- Staged building anatomy, debris mass hierarchy, camera/Cow regression tests, exact-source artifact promotion, and intro timing gates were valuable.
+- However, passing those gates did not preserve the preferred gameplay feel or deliver the expected visual-quality advantage.
+
+This decision remains in the log because its evidence and lessons are still useful, but it is no longer the active renderer direction.
+
+## D-012: Resume Three.js production and build the graphics pipeline around the fun game
+
+Date: 2026-08-08
+Status: explicitly approved by user
+Supersedes: D-011 as the active production-renderer direction
+
+Decision:
+- Three.js is production again.
+- Restart production work directly from draft PR #26 head `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`, the preserved build the owner prefers to play.
+- Preserve PlayCanvas branches, artifacts, tests, screenshots, and lessons as research evidence; do not use PlayCanvas as production ancestry.
+- Freeze the production Three.js version during the first graphics-pipeline milestone.
+- Build an authored-asset/art pipeline around the accepted game rather than replacing the renderer because the visuals are prototype-quality.
+- Protect direct storm steering, natural contact destruction, abilities, scoring, timing, campaign state, safe animals, reset/cleanup, and Android landscape control behavior while improving presentation.
+- The first graphics milestone is an explicit GLB/glTF-oriented asset registry/loading/material/fallback seam that does not change gameplay collision or destruction authority.
+- Later visual milestones may improve destruction anatomy, world rendering, atmosphere, and the opening cinematic, but each must compare against the frozen Three.js fun baseline.
+
+Owner evidence:
+- The promoted PlayCanvas candidate required backing/steering like a truck and trailer to move comfortably forward.
+- Its destruction improved but remained large-chunk and roof-heavy, with satisfying breakup too dependent on actions.
+- The opening and the wider game still looked like cheap/prototype animation.
+- The owner explicitly reported that the original Three.js gameplay was more fun and its destruction was better, then approved the pivot back.
+
+Reason:
+- Engine migration was consuming effort recreating behavior that already worked before the actual graphics pipeline was solved.
+- A renderer change did not create production art by itself.
+- The product should compound improvements on the version that is already fun instead of repeatedly paying a gameplay-reconstruction tax.
+
+Acceptance boundary:
+- Automated parity is necessary but no longer sufficient for gameplay-facing presentation milestones.
+- Every meaningful visual candidate must also pass an owner fun/readability comparison against the frozen Three.js reference.
+- A green build that feels worse does not advance.
+- Final Android acceptance still belongs to the exact artifact tested on the Galaxy S26 Ultra.
