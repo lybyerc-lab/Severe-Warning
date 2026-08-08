@@ -154,23 +154,23 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Download verified PlayCanvas staged-destruction artifact
+      - name: Download verified PlayCanvas Moo Brew intro artifact
         uses: actions/download-artifact@v4
         with:
-          name: severe-weather-playcanvas-slice-76
+          name: severe-weather-playcanvas-slice-83
           path: playcanvas-preview-artifact
           repository: lybyerc-lab/Severe-Warning
-          run-id: 31259029449
+          run-id: 31265520417
           github-token: ${{ github.token }}
 
-      - name: Verify and overlay PlayCanvas staged-destruction candidate
+      - name: Verify and overlay PlayCanvas Moo Brew intro candidate
         shell: bash
         env:
-          PLAYCANVAS_SOURCE_SHA: 8d390f04223faaa268040afbeaa9eff885a81786
-          PLAYCANVAS_RUN_ID: '31259029449'
-          PLAYCANVAS_RUN_NUMBER: '76'
-          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-76
-          PLAYCANVAS_ARTIFACT_DIGEST: sha256:a93cbd962eacb59db434a774184bdd3b7a15dbc6b4cb6fe2230d10823f864289
+          PLAYCANVAS_SOURCE_SHA: fdb5679c5c28d4fef378314c187780de071dd37e
+          PLAYCANVAS_RUN_ID: '31265520417'
+          PLAYCANVAS_RUN_NUMBER: '83'
+          PLAYCANVAS_ARTIFACT: severe-weather-playcanvas-slice-83
+          PLAYCANVAS_ARTIFACT_DIGEST: sha256:bebd2cc77c2d8ba45d264a34d34bedbe5afb2f379c92c39625d79bfd0c238163
         run: |
           set -euo pipefail
           test "$(tr -d '\r\n' < playcanvas-preview-artifact/SOURCE_SHA.txt)" = "$PLAYCANVAS_SOURCE_SHA"
@@ -189,6 +189,12 @@ jobs:
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-intact.png
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-damage.png
           test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-destroyed.png
+          test -s playcanvas-preview-artifact/playcanvas-intro-static-report.json
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-intro-report.json
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-intro-newspaper.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-intro-moo-brew.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-intro-touchdown.png
+          test -s playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-intro-playable-handoff.png
           node - <<'NODE'
           const fs = require('fs');
           const staticReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-static-report.json', 'utf8'));
@@ -196,6 +202,8 @@ jobs:
           const browserReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-slice-report.json', 'utf8'));
           const rotationReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-rotation-stability-report.json', 'utf8'));
           const structureReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-multi-structure-report.json', 'utf8'));
+          const introStatic = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-intro-static-report.json', 'utf8'));
+          const introReport = JSON.parse(fs.readFileSync('playcanvas-preview-artifact/playcanvas-slice-evidence/playcanvas-intro-report.json', 'utf8'));
 
           for (const [label, report] of [
             ['main static', staticReport],
@@ -203,16 +211,22 @@ jobs:
             ['browser', browserReport],
             ['rotation', rotationReport],
             ['multi-structure browser', structureReport],
+            ['Moo Brew intro static', introStatic],
+            ['Moo Brew intro browser', introReport],
           ]) {
             if (!report.passed || report.failedChecks?.length) throw new Error(`${label} report is not sealed green.`);
           }
           if (rotationReport.version !== 'PLAYCANVAS_ROTATION_STABILITY_V2') throw new Error(`Unexpected rotation report version: ${rotationReport.version}`);
           if (structureReport.version !== 'PLAYCANVAS_MULTI_STRUCTURE_QA_V2') throw new Error(`Unexpected multi-structure report version: ${structureReport.version}`);
+          if (introStatic.version !== 'PLAYCANVAS_MOO_BREW_INTRO_STATIC_V1') throw new Error(`Unexpected intro static report version: ${introStatic.version}`);
+          if (introReport.version !== 'PLAYCANVAS_MOO_BREW_INTRO_QA_V1') throw new Error(`Unexpected intro browser report version: ${introReport.version}`);
           if (staticReport.checks.length !== 79) throw new Error(`Unexpected main static count: ${staticReport.checks.length}`);
           if (structureStatic.checks.length !== 19) throw new Error(`Unexpected multi-structure static count: ${structureStatic.checks.length}`);
           if (browserReport.checks.length !== 61) throw new Error(`Unexpected browser count: ${browserReport.checks.length}`);
           if (rotationReport.checks.length !== 11) throw new Error(`Unexpected rotation count: ${rotationReport.checks.length}`);
           if (structureReport.checks.length !== 22) throw new Error(`Unexpected multi-structure browser count: ${structureReport.checks.length}`);
+          if (introStatic.checks.length !== 8) throw new Error(`Unexpected intro static count: ${introStatic.checks.length}`);
+          if (introReport.checks.length !== 12) throw new Error(`Unexpected intro browser count: ${introReport.checks.length}`);
 
           const requiredStructureChecks = [
             'four-authoritative-structures-bound',
@@ -243,6 +257,25 @@ jobs:
             if (structureChecks.get(name) !== true) throw new Error(`Required multi-structure gate missing or red: ${name}`);
           }
 
+          const requiredIntroChecks = [
+            'qa-default-skips-timed-intro',
+            'forced-qa-intro-is-deterministic',
+            'authority-not-loaded-before-intro-finish',
+            'canonical-intro-phase-order',
+            'newspaper-phase-readable',
+            'moo-brew-cow-cup-phase-readable',
+            'chicken-scatter-phase-readable',
+            'touchdown-phase-readable',
+            'intro-finish-hands-off-to-gameplay',
+            'warning-run-starts-fresh-after-intro',
+            'no-console-errors-intro',
+            'no-page-errors-intro',
+          ];
+          const introChecks = new Map(introReport.checks.map((check) => [check.name, check.passed]));
+          for (const name of requiredIntroChecks) {
+            if (introChecks.get(name) !== true) throw new Error(`Required Moo Brew intro gate missing or red: ${name}`);
+          }
+
           const physics = browserReport.evidence?.physics ?? {};
           const pull = physics.afterPullPhysics ?? {};
           const gust = physics.afterGustPhysics ?? {};
@@ -263,6 +296,9 @@ jobs:
           const structureDebris = multi.afterDamage?.debris ?? {};
           const resetDebris = multi.afterReset?.debris ?? {};
           const resetPresentation = multi.afterReset?.presentation ?? {};
+          const introBefore = introReport.evidence?.beforeHandoff ?? {};
+          const introAfter = introReport.evidence?.afterHandoff ?? {};
+          const introWarningStart = Number(introAfter.authority?.run?.remainingSeconds);
 
           if (!Number.isFinite(scale) || Math.abs(scale - 0.7717) > 0.03) throw new Error(`Visible/authority scale parity out of bounds: ${scale}`);
           if (!Number.isFinite(maxStep) || maxStep > 0.13) throw new Error(`Camera heading step exceeds no-snap gate: ${maxStep}`);
@@ -286,8 +322,11 @@ jobs:
           if (!(Number(frame.maxRise) <= 2.55)) throw new Error(`Frame rise is too light: ${frame.maxRise}.`);
           if (Number(resetDebris.activeCount) !== 0 || Number(resetDebris.maxDisplacement) !== 0) throw new Error('Structure debris did not reset cleanly.');
           if (Number(resetPresentation.damagedCount) !== 0 || Number(resetPresentation.destroyedCount) !== 0) throw new Error('Structure presentation did not reset intact.');
+          if (introBefore.sliceExists !== false || introBefore.intro?.gameplayLoaded !== false) throw new Error('Gameplay authority loaded before the intro finished.');
+          if (introAfter.intro?.completed !== true || introAfter.intro?.gameplayLoaded !== true || introAfter.authority?.ready !== true) throw new Error('Intro did not hand off cleanly to accepted gameplay authority.');
+          if (introAfter.authority?.run?.runActive !== true || Number(introAfter.authority?.run?.stage) !== 1 || !Number.isFinite(introWarningStart) || introWarningStart < 176 || Number(introAfter.authority?.score?.destructionScore) !== 0) throw new Error(`Accepted warning run did not start fresh after intro: ${introWarningStart}.`);
 
-          console.log(`Verified staged-destruction artifact: main ${staticReport.checks.length}, multi-static ${structureStatic.checks.length}, browser ${browserReport.checks.length}, rotation ${rotationReport.checks.length}, multi-browser ${structureReport.checks.length}, score=${scoreAfter}, trimRise=${trim.maxRise}, roofRise=${roof.maxRise}, wallRise=${wall.maxRise}, frameRise=${frame.maxRise}.`);
+          console.log(`Verified Moo Brew intro artifact: main ${staticReport.checks.length}, multi-static ${structureStatic.checks.length}, browser ${browserReport.checks.length}, rotation ${rotationReport.checks.length}, multi-browser ${structureReport.checks.length}, intro-static ${introStatic.checks.length}, intro-browser ${introReport.checks.length}, warningStart=${introWarningStart}, score=${scoreAfter}, trimRise=${trim.maxRise}, roofRise=${roof.maxRise}, wallRise=${wall.maxRise}, frameRise=${frame.maxRise}.`);
           NODE
 
           rm -rf www/playcanvas
@@ -309,8 +348,10 @@ jobs:
             "cameraTrailingScale": 0.9,
             "rotationStabilityChecks": 11,
             "multiStructureChecks": 22,
-            "corrections": ["upright-funnel", "one-stick-chase-camera", "camera-relative-input", "prairie-expansion", "owner-trailing-camera-polish", "storm-physics-parity", "held-intent-stability", "release-settle", "cow17-wall-clock-bounded-flight", "multi-structure-authority", "local-authority-alignment", "authority-stage-destruction", "structure-debris-field", "multi-structure-reset-cleanup", "building-anatomy", "staged-breakup", "structure-mass-hierarchy", "spectacle-band-altitude", "assistant-playtest-gate"],
-            "status": "browser-qa-passed-assistant-reviewed-owner-destruction-polish-test-pending-not-physical-android-accepted"
+            "introStaticChecks": 8,
+            "introChecks": 12,
+            "corrections": ["upright-funnel", "one-stick-chase-camera", "camera-relative-input", "prairie-expansion", "owner-trailing-camera-polish", "storm-physics-parity", "held-intent-stability", "release-settle", "cow17-wall-clock-bounded-flight", "multi-structure-authority", "local-authority-alignment", "authority-stage-destruction", "structure-debris-field", "multi-structure-reset-cleanup", "building-anatomy", "staged-breakup", "structure-mass-hierarchy", "spectacle-band-altitude", "assistant-playtest-gate", "moo-brew-intro", "intro-gated-authority", "intro-transition-settle-qa"],
+            "status": "browser-qa-passed-assistant-reviewed-moo-brew-intro-owner-test-pending-not-physical-android-accepted"
           }
           EOF
           test -s www/playcanvas/index.html
@@ -342,13 +383,13 @@ jobs:
         run: |
           echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
 
-      - name: Verify live QA root and staged-destruction PlayCanvas candidate
+      - name: Verify live QA root and Moo Brew intro PlayCanvas candidate
         shell: bash
         env:
           QA_ROOT_URL: https://lybyerc-lab.github.io/Severe-Warning/
           PLAYCANVAS_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/
           PLAYCANVAS_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/playcanvas/qa-playcanvas-build.json
-          PLAYCANVAS_SOURCE_SHA: 8d390f04223faaa268040afbeaa9eff885a81786
+          PLAYCANVAS_SOURCE_SHA: fdb5679c5c28d4fef378314c187780de071dd37e
         run: |
           set -euo pipefail
           for attempt in $(seq 1 30); do
@@ -368,15 +409,20 @@ jobs:
               && grep -Fq 'structure-mass-hierarchy' <<< "$playcanvas_metadata" \
               && grep -Fq 'spectacle-band-altitude' <<< "$playcanvas_metadata" \
               && grep -Fq 'assistant-playtest-gate' <<< "$playcanvas_metadata" \
+              && grep -Fq 'moo-brew-intro' <<< "$playcanvas_metadata" \
+              && grep -Fq 'intro-gated-authority' <<< "$playcanvas_metadata" \
+              && grep -Fq 'intro-transition-settle-qa' <<< "$playcanvas_metadata" \
               && grep -Fq '"authorityStructureCount": 4' <<< "$playcanvas_metadata" \
               && grep -Fq '"structureDebrisBodyCount": 19' <<< "$playcanvas_metadata" \
               && grep -Fq '"multiStructureChecks": 22' <<< "$playcanvas_metadata" \
+              && grep -Fq '"introStaticChecks": 8' <<< "$playcanvas_metadata" \
+              && grep -Fq '"introChecks": 12' <<< "$playcanvas_metadata" \
               && grep -Fq '"entityCount": 307' <<< "$playcanvas_metadata" \
               && grep -Fq '"cameraTrailingScale": 0.9' <<< "$playcanvas_metadata" \
               && grep -Fq '190x190' <<< "$playcanvas_metadata"; then
               echo "Live QA root verified: $QA_ROOT_URL"
-              echo "Live staged-destruction PlayCanvas candidate verified: $PLAYCANVAS_URL"
-              echo "Live staged-destruction PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
+              echo "Live Moo Brew intro PlayCanvas candidate verified: $PLAYCANVAS_URL"
+              echo "Live Moo Brew intro PlayCanvas source verified: $PLAYCANVAS_SOURCE_SHA"
               exit 0
             fi
             echo "Live Pages propagation attempt $attempt/30 not ready yet."
