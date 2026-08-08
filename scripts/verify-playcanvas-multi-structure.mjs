@@ -65,8 +65,31 @@ check(
   contents.structures.includes('class MultiStructurePresentation')
     && contents.structures.includes('snapshot.damageStage')
     && contents.structures.includes('snapshot.destroyed')
-    && contents.structures.includes('part.entity.enabled = !destroyed'),
+    && contents.structures.includes('stageVisible')
+    && contents.structures.includes('!destroyed && stageVisible'),
   'visible stages are downstream of authority snapshots',
+);
+
+check(
+  'staged-breakup-is-authority-driven',
+  contents.structures.includes('[SW:PLAYCANVAS:STAGED_BREAKUP]')
+    && contents.structures.includes('visibleFromStage')
+    && contents.structures.includes('visibleThroughStage')
+    && contents.structures.includes("addCore('interior-wound'")
+    && contents.structures.includes("addCore('frame-"),
+  'damage stages reveal wounds and frame anatomy without renderer-owned HP',
+);
+
+check(
+  'building-anatomy-is-readable',
+  contents.structures.includes('[SW:PLAYCANVAS:BUILDING_ANATOMY]')
+    && contents.structures.includes("addCore('roof-left'")
+    && contents.structures.includes("addCore('roof-right'")
+    && contents.structures.includes("addCore('window-left'")
+    && contents.structures.includes("addCore('glass-left'")
+    && contents.structures.includes("addCore('loading-door'")
+    && contents.structures.includes("addCore('loft-trim'"),
+  'representative structures have silhouette/anatomy cues beyond colored boxes',
 );
 
 check(
@@ -76,6 +99,37 @@ check(
     && !contents.stormForce.includes('StructureDebrisField')
     && !contents.scene.includes("kind: 'structure-debris'"),
   'Run 53 tree/light-prop force registry stays isolated from new structure chunks',
+);
+
+check(
+  'structure-mass-hierarchy-explicit',
+  contents.structures.includes('[SW:PLAYCANVAS:STRUCTURE_MASS_HIERARCHY]')
+    && contents.structures.includes("StructureDebrisClass = 'trim' | 'roof' | 'wall' | 'frame'")
+    && contents.structures.includes('const DEBRIS_PROFILES')
+    && contents.structures.includes('liftScale: 1.38')
+    && contents.structures.includes('liftScale: 0.24')
+    && contents.structures.includes("debrisClass: 'frame'" ) === false,
+  'mass hierarchy is profile-driven rather than routed into the accepted tree force class',
+);
+
+check(
+  'heavy-structure-motion-is-bounded',
+  contents.structures.includes("frame: Object.freeze({")
+    && contents.structures.includes('launchVertical: 0.65')
+    && contents.structures.includes('gustScale: 0.44')
+    && contents.structures.includes('groundDamping: 0.48')
+    && contents.structures.includes("body.debrisClass === 'trim' || body.debrisClass === 'roof'"),
+  'frame chunks begin heavy/low while trim and roof pieces are allowed to loft',
+);
+
+check(
+  'mass-telemetry-is-playtest-visible',
+  contents.structures.includes('debrisClass: body.debrisClass')
+    && contents.structures.includes('mass: body.mass')
+    && contents.structures.includes('horizontalDisplacement')
+    && contents.structures.includes('peakHeight: body.peakHeight')
+    && contents.structures.includes('airborneCount:'),
+  'browser playtests can compare class-specific structure motion instead of relying on feel alone',
 );
 
 check(
