@@ -93,7 +93,7 @@ No runtime network assets are introduced.
 
 ## Evidence required
 
-The exact-source workflow must retain inherited gameplay and Hero Slice 5 gates and produce:
+The exact-source workflow must retain inherited gameplay and Hero Slice 5 gates and produce for every browser iteration:
 
 - `threejs-hero-slice6-default-storm.png` with Neon OFF;
 - `threejs-hero-slice6-main-street.png`;
@@ -103,7 +103,9 @@ The exact-source workflow must retain inherited gameplay and Hero Slice 5 gates 
 - inherited Hero Slice 5 browser evidence;
 - same-runner Hero Slice 5 versus Hero Slice 6 performance evidence;
 - a Pages-ready `web-preview`;
-- Android debug packaging evidence.
+- an exact-source evidence artifact suitable for QA-root promotion and screenshot review.
+
+Android debug packaging is no longer required for every visual iteration. The same workflow exposes an opt-in manual `package_android` device-checkpoint mode. Use it when a milestone is ready for physical Android validation or when device-only behavior needs testing.
 
 Browser QA must prove:
 
@@ -118,10 +120,18 @@ Browser QA must prove:
 - farm ditch/shoulder segments stop before the road;
 - the Slice 6 presentation remains inside its reduced object budget.
 
+## QA cadence
+
+The public QA root is the default human playtest target for rapid graphics iteration:
+
+`https://lybyerc-lab.github.io/Severe-Warning/`
+
+Promote only exact reviewed browser artifacts. Browser play is the fast visual/fun loop; APK installation is reserved for deliberate device checkpoints because replacing the installed development app currently adds uninstall/reinstall friction.
+
 ## Acceptance status
 
 **NOT ACCEPTED.**
 
 Green CI is necessary but not sufficient. The exact artifact still requires assistant screenshot review and owner visual review before any QA Pages promotion. The acceptance question for this slice is whether ordinary non-Neon gameplay finally reads as a cohesive severe-weather game instead of a polished prototype.
 
-No physical Galaxy S26 Ultra acceptance is claimed by this work.
+No physical Galaxy S26 Ultra acceptance is claimed by browser-only work. Physical Android acceptance requires a deliberate APK checkpoint and an actual device run.
