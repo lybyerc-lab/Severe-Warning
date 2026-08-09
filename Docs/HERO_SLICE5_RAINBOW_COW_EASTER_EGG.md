@@ -35,10 +35,24 @@ The name `neonFunnelUnlocked` is inherited from the existing game code. Despite 
 The selected Neon treatment is presentation-only and follows the authoritative storm position read-only.
 
 - Two tapered vertex-colored rainbow shells rotate in opposite directions.
-- Seven or more partial torus ribbons spin around the funnel with additive neon color cycling.
+- Seven or more partial torus ribbons spin around the funnel with neon color cycling.
 - One lightweight point glow cycles through the rainbow to sell the neon read.
 - The legacy gray funnel is dimmed only while Neon is selected so it does not fight the rainbow treatment.
 - Hero Slice 4 smoke, dirt skirt, rain traces, collision truth, storm movement, and EF behavior remain untouched.
+
+### Run #3 visual review correction
+
+Run #3 proved the menu gate and regressions, but its captured Neon frame was visually overexposed. The two additive shells, bright ribbons, cycling legacy funnel, and point glow stacked into a mostly white cone. That candidate is not promotable.
+
+The correction layer `THREEJS_VISUAL_HERO_SLICE5_POLISH_V1` keeps the requested arcade effect while reducing the whiteout risk:
+
+- rainbow shells use normal alpha blending rather than additive blending;
+- shell opacity is capped at a low presentation range;
+- ribbons remain additive, but at a much lower opacity so their individual rainbow bands remain readable;
+- the point glow is reduced to an accent instead of a flood light;
+- the underlying funnel remains dark enough to hold a tornado silhouette while still cycling subtle color.
+
+The selected-Neon screenshot must still be visually inspected. Numeric opacity gates are guardrails, not proof of beauty.
 
 ## Hart Farm cow-level Easter egg
 
@@ -53,6 +67,20 @@ The presentation-only scene contains:
 - lightweight idle animation so discovery feels intentional instead of static clutter.
 
 All Easter-egg meshes live under `SWVisualHeroSlice5CowLevel` and are deliberately separate from gameplay cows. The secret must remain present whether Neon is selected or not.
+
+### Cow-secret presentation budget
+
+Run #3 also showed that the inherited farm QA camera did not actually frame the secret, and the first cow anatomy used roughly twice as many individual meshes as needed.
+
+The correction therefore:
+
+- adds a dedicated `cow-level` QA camera aimed at the ring, champion cow, surrounding cows, and sign;
+- consolidates repeated legs, spots, and horns with `THREE.InstancedMesh` while preserving the nine-cow composition;
+- enforces a **55-mesh maximum** for the entire cow-secret root in browser QA;
+- keeps the cow-secret root hidden from rendering when the storm is far away, except during the dedicated QA view;
+- retains the existing proof that no Easter-egg mesh enters the authoritative gameplay `animals` array.
+
+The optimization is presentation-only. It does not reduce or change gameplay cows, Cow17, animal safety, objectives, or collision authority.
 
 ## Protected gameplay law
 
@@ -75,9 +103,9 @@ The candidate workflow must retain inherited regression gates and produce:
 
 - `threejs-hero-slice5-default-storm.png`, proving the rainbow is absent with Neon OFF;
 - `threejs-hero-slice5-rainbow-funnel.png`, captured only after QA uses the real `toggleNeonCosmetic()` menu executor to select Neon;
-- `threejs-hero-slice5-cow-level.png`;
-- `threejs-hero-slice5-report.json` with deterministic OFF -> ON -> OFF assertions;
-- `threejs-hero-slice5-static-report.json` proving the new visual gate never writes `neonFunnelUnlocked`;
+- `threejs-hero-slice5-cow-level.png`, captured through the dedicated cow-secret camera;
+- `threejs-hero-slice5-report.json` with deterministic OFF -> ON -> OFF assertions, Neon exposure bounds, cow framing, and the 55-mesh budget;
+- `threejs-hero-slice5-static-report.json` proving the visual gate never writes `neonFunnelUnlocked` and the polish layer remains presentation-only;
 - inherited Hero Slice 4 browser evidence;
 - same-runner Hero Slice 4 versus Hero Slice 5 performance evidence;
 - a Pages-ready `web-preview`;
@@ -97,6 +125,6 @@ The Pages publisher should point at the exact successful artifact rather than re
 
 **NOT ACCEPTED.**
 
-Green CI is necessary, but this pass still requires owner visual review in the browser. Review both sides of the player choice: the default storm must still look like Hero Slice 4 with Neon OFF, while the selected Neon mode should read as an intentional arcade cosmetic rather than permanent visual noise. The cow-level secret should remain discoverable without taking over the Hart Farm hero composition.
+Green CI is necessary, but this pass still requires owner visual review in the browser. Review both sides of the player choice: the default storm must still look like Hero Slice 4 with Neon OFF, while the selected Neon mode should read as an intentional arcade cosmetic rather than a white cone. The dedicated cow-level frame must clearly show the ring, surrounding cows, gold champion, and sign without taking over normal Hart Farm play.
 
 No physical Galaxy S26 Ultra acceptance is claimed by this work.
