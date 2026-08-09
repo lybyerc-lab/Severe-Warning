@@ -32,22 +32,45 @@ The storm presentation root is `SWVisualHeroSlice6StormSilhouette` and the profi
 
 ## World identity
 
-The world pass is concentrated around the existing authored hero locations rather than spread thinly across the whole county.
+### Run #1 visual rejection
+
+Run #1 passed automation but failed visual review. The town still lacked a convincing spatial law: road edges were weak, a Hart Farm fence crossed an active road, some generated building presentation encroached on road space, and the new Slice 6 building kits added more square-on-square massing instead of fixing the underlying parcel logic.
+
+That version is superseded by the road-first correction below.
+
+### Road-first parcel law
+
+`THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1` makes the existing 80-unit road grid the first presentation constraint.
+
+- roads and shoulders own a protected corridor before any decorative placement is allowed;
+- each town block receives continuous curb, sidewalk, and verge boundaries derived from the actual road grid;
+- the old 60x60 city-fabric parcel pads, one-sided sidewalks, and rectangular alley overlays are hidden instead of stacking another square surface on top of them;
+- inherited Slice 4 storefront/farm transition rectangles are suppressed where they fight the new street boundary language;
+- non-tree target presentation is horizontally fitted inside its parcel setback without changing `target.x`, `target.z`, health, collision truth, damage state, points, or gameplay authority;
+- Slice 6 no longer adds its extra box/parapet building-identity kits. `buildingIdentityCount` must remain zero in the corrected world pass;
+- browser QA independently measures visible target bounds against the protected road corridor and fails on any building-road intrusion.
+
+The world presentation profile marker becomes `road-first-parcels-v2`.
 
 ### Main Street
 
-- give a bounded set of nearby intact structures varied rooflines, false fronts, parapets, signs, awnings, and service-window details;
-- add darker service-alley and parking-pocket ground treatment;
-- add a restrained roadside vegetation pocket;
-- keep the authored storefront itself and all target gameplay truth unchanged.
+Main Street now gets identity from the street itself rather than from more stacked building boxes:
+
+- curb continuity;
+- sidewalks on all four sides of every active block;
+- restrained verge bands between sidewalk and parcel interior;
+- a small instanced vegetation pocket that is allowed only inside the parcel setback;
+- existing authored storefront and generated target presentation remain tied to the same gameplay target coordinates.
 
 ### Hart Farm edge
 
-- add an instanced fence line along the existing farm approach;
-- add darker ditch and shoulder transitions;
-- keep the existing barn, cow Easter egg, terrain authority, and gameplay animals unchanged.
+The farm edge follows the same road law.
 
-The world presentation root is `SWVisualHeroSlice6WorldIdentity` and the profile marker is `authored-main-street-v1`.
+- fence posts and rails are generated as road-aware segments rather than one uninterrupted 60-unit line;
+- every road crossing creates a real fence gap;
+- ditch and shoulder treatments are also segmented and stop before the road corridor;
+- QA independently inspects fence instances and fails if a post or rail enters the protected road;
+- the barn, cow Easter egg, terrain authority, and gameplay animals remain unchanged.
 
 ## Unified grade
 
@@ -82,7 +105,18 @@ The exact-source workflow must retain inherited gameplay and Hero Slice 5 gates 
 - a Pages-ready `web-preview`;
 - Android debug packaging evidence.
 
-Browser QA must prove that the new storm shells are actually warped, the centerline is measurably non-straight, Neon remains OFF by default, the authored streetscape pieces exist, farm-edge transitions exist, and the Slice 6 presentation remains inside its bounded object budget.
+Browser QA must prove:
+
+- the new storm shells are actually warped and the centerline is measurably non-straight;
+- Neon remains OFF by default;
+- the road-law version is active;
+- curb/sidewalk/verge boundaries exist across the town grid;
+- legacy square parcel overlays are no longer visible;
+- no active Slice 6 stacked building kits remain;
+- independent target bounding-box checks find zero building intrusions into protected road/shoulder space;
+- the farm fence contains at least one road crossing gap and independent instance checks find zero fence-road intrusions;
+- farm ditch/shoulder segments stop before the road;
+- the Slice 6 presentation remains inside its reduced object budget.
 
 ## Acceptance status
 
