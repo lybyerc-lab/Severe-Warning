@@ -43,13 +43,16 @@ function verifyRuntimeSafety(value) {
     'animals.pop(',
     'animals.shift(',
     'animals.unshift(',
-    'neonFunnelUnlocked =',
     'storm.pos.set(',
     'storm.pos.copy(',
     'storm.pos.add(',
     'storm.pos.sub(',
   ]) {
     if (value.includes(prohibited)) throw new Error(`Hero Slice 5 contains prohibited gameplay authority access: ${prohibited}`);
+  }
+  const neonSelectionWrite = /\bneonFunnelUnlocked\s*(?:\+\+|--|[+\-*/]?=(?!=))/;
+  if (neonSelectionWrite.test(value)) {
+    throw new Error('Hero Slice 5 may read the existing Neon menu state but may not assign neonFunnelUnlocked.');
   }
 }
 

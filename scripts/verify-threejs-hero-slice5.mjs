@@ -59,7 +59,7 @@ check('qa-default-storm-evidence', files.qa.includes('threejs-hero-slice5-defaul
 check('qa-rainbow-evidence', files.qa.includes('threejs-hero-slice5-rainbow-funnel.png'));
 check('qa-cow-level-evidence', files.qa.includes('threejs-hero-slice5-cow-level.png'));
 check('qa-uses-canonical-neon-menu-executor', files.qa.includes('toggleNeonCosmetic()') && files.qa.includes('OFF -> ON') && files.qa.includes('ON -> OFF'));
-check('qa-does-not-write-neon-state', !/neonFunnelUnlocked\s*=/.test(files.qa));
+check('qa-does-not-write-neon-state', !/\bneonFunnelUnlocked\s*(?:\+\+|--|[+\-*/]?=(?!=))/.test(files.qa));
 check('qa-proves-default-rainbow-off', files.qa.includes("rainbowFunnel?.enabled === false") && files.qa.includes("rainbowFunnel?.rootPresent === false"));
 check('qa-proves-selected-rainbow-on', files.qa.includes("rainbowFunnel?.enabled === true") && files.qa.includes("rainbowFunnel?.rootPresent === true"));
 check('qa-proves-slice4-restored', files.qa.includes('Hero Slice 4 funnel was not restored after Neon was deselected'));
