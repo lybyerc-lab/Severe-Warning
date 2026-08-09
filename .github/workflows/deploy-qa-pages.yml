@@ -60,9 +60,12 @@ jobs:
           if (candidate.version !== 'SW_QA_PAGES_CANDIDATE_V1') throw new Error(`Unexpected candidate pointer version ${candidate.version}`);
           if (!/^[0-9a-f]{40}$/.test(candidate.sourceCommit)) throw new Error(`Invalid source commit ${candidate.sourceCommit}`);
           if (!String(candidate.artifactDigest).startsWith('sha256:')) throw new Error(`Invalid artifact digest ${candidate.artifactDigest}`);
-          if (!['THREEJS_VISUAL_HERO_SLICE4_V1', 'THREEJS_VISUAL_HERO_SLICE5_V1'].includes(candidate.requiredBridge)) {
-            throw new Error(`Unsupported QA bridge ${candidate.requiredBridge}`);
-          }
+          const supported = [
+            'THREEJS_VISUAL_HERO_SLICE4_V1',
+            'THREEJS_VISUAL_HERO_SLICE5_V1',
+            'THREEJS_VISUAL_HERO_SLICE6_V1'
+          ];
+          if (!supported.includes(candidate.requiredBridge)) throw new Error(`Unsupported QA bridge ${candidate.requiredBridge}`);
           const markers = Array.isArray(candidate.requiredMarkers) && candidate.requiredMarkers.length
             ? candidate.requiredMarkers
             : [candidate.requiredBridge];
@@ -126,61 +129,88 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -s candidate-artifact/SOURCE_COMMIT.txt
-          test -s candidate-artifact/WORKFLOW_RUN_ID.txt
-          test -s candidate-artifact/package-manifest.json
-          test -s candidate-artifact/qa-evidence/visual-run5/threejs-visual-foundation-report.json
-          test -s candidate-artifact/qa-evidence/asset/threejs-asset-pipeline-report.json
-          test -s candidate-artifact/qa-evidence/performance/comparison-report.json
-          test -s candidate-artifact/web-preview/index.html
-          test -s candidate-artifact/web-preview/assets/production/vfx/kenney/dirt_01.png
-          test -s candidate-artifact/web-preview/assets/production/vfx/kenney/smoke_03.png
-          test -s candidate-artifact/web-preview/assets/production/vfx/kenney/trace_03.png
-          test "$(tr -d '\r\n' < candidate-artifact/SOURCE_COMMIT.txt)" = "$QA_SOURCE_COMMIT"
-          test "$(tr -d '\r\n' < candidate-artifact/WORKFLOW_RUN_ID.txt)" = "$QA_RUN_ID"
           node - <<'NODE'
           const fs = require('fs');
           const candidate = JSON.parse(fs.readFileSync('qa-candidate.json', 'utf8'));
-          const manifest = JSON.parse(fs.readFileSync('candidate-artifact/package-manifest.json', 'utf8'));
-          const run5VisualReport = JSON.parse(fs.readFileSync('candidate-artifact/qa-evidence/visual-run5/threejs-visual-foundation-report.json', 'utf8'));
-          const assetReport = JSON.parse(fs.readFileSync('candidate-artifact/qa-evidence/asset/threejs-asset-pipeline-report.json', 'utf8'));
+          const root = 'candidate-artifact';
+          const file = (path) => `${root}/${path}`;
+          const requireFile = (path) => {
+            const full = file(path);
+            if (!fs.existsSync(full) || fs.statSync(full).size === 0) throw new Error(`Missing candidate evidence ${path}`);
+          };
+          const requirePassed = (path) => {
+            requireFile(path);
+            const report = JSON.parse(fs.readFileSync(file(path), 'utf8'));
+            if (report.passed !== true) throw new Error(`Required report is not green: ${path}`);
+            return report;
+          };
+
+          for (const path of [
+            'SOURCE_COMMIT.txt',
+            'WORKFLOW_RUN_ID.txt',
+            'package-manifest.json',
+            'qa-evidence/visual-run5/threejs-visual-foundation-report.json',
+            'qa-evidence/asset/threejs-asset-pipeline-report.json',
+            'qa-evidence/performance/comparison-report.json',
+            'web-preview/index.html',
+            'web-preview/assets/production/vfx/kenney/dirt_01.png',
+            'web-preview/assets/production/vfx/kenney/smoke_03.png',
+            'web-preview/assets/production/vfx/kenney/trace_03.png',
+          ]) requireFile(path);
+
+          if (fs.readFileSync(file('SOURCE_COMMIT.txt'), 'utf8').trim() !== candidate.sourceCommit) throw new Error('SOURCE_COMMIT.txt mismatch');
+          if (fs.readFileSync(file('WORKFLOW_RUN_ID.txt'), 'utf8').trim() !== String(candidate.workflowRunId)) throw new Error('WORKFLOW_RUN_ID.txt mismatch');
+
+          const manifest = JSON.parse(fs.readFileSync(file('package-manifest.json'), 'utf8'));
           if (manifest.sourceCommit !== candidate.sourceCommit) throw new Error(`Manifest source mismatch ${manifest.sourceCommit}`);
           if (manifest.sourceBranch !== candidate.sourceBranch) throw new Error(`Manifest branch mismatch ${manifest.sourceBranch}`);
           if (String(manifest.workflowRunId) !== String(candidate.workflowRunId)) throw new Error(`Manifest run mismatch ${manifest.workflowRunId}`);
           if (Number(manifest.workflowRunNumber) !== Number(candidate.workflowRunNumber)) throw new Error(`Manifest run number mismatch ${manifest.workflowRunNumber}`);
           if (manifest.renderer !== candidate.renderer) throw new Error(`Renderer mismatch ${manifest.renderer}`);
-          if (manifest.heroSlice4Bridge !== 'THREEJS_VISUAL_HERO_SLICE4_V1') throw new Error(`Inherited Hero Slice 4 bridge mismatch ${manifest.heroSlice4Bridge}`);
-          if (run5VisualReport.passed !== true) throw new Error('Run 5 inherited visual report is not green.');
-          if (assetReport.passed !== true) throw new Error('Asset pipeline report is not green.');
+          if (String(manifest.acceptance || '').includes('physical-android-accepted') && !String(manifest.acceptance).includes('not-physical-android-accepted')) {
+            throw new Error('Browser artifact must not claim physical Android acceptance.');
+          }
+
+          requirePassed('qa-evidence/visual-run5/threejs-visual-foundation-report.json');
+          requirePassed('qa-evidence/asset/threejs-asset-pipeline-report.json');
 
           if (candidate.requiredBridge === 'THREEJS_VISUAL_HERO_SLICE4_V1') {
-            const staticPath = 'candidate-artifact/threejs-hero-slice4-static-report.json';
-            const visualPath = 'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-report.json';
-            for (const file of [
-              staticPath,
-              visualPath,
-              'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-pristine-street.png',
-              'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-storm-volume.png',
-              'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-damaged-storefront.png',
-            ]) if (!fs.existsSync(file) || fs.statSync(file).size === 0) throw new Error(`Missing Slice 4 evidence ${file}`);
-            if (JSON.parse(fs.readFileSync(staticPath, 'utf8')).passed !== true) throw new Error('Hero Slice 4 static report is not green.');
-            if (JSON.parse(fs.readFileSync(visualPath, 'utf8')).passed !== true) throw new Error('Hero Slice 4 browser report is not green.');
+            if (manifest.heroSlice4Bridge !== 'THREEJS_VISUAL_HERO_SLICE4_V1') throw new Error(`Hero Slice 4 bridge mismatch ${manifest.heroSlice4Bridge}`);
+            requirePassed('threejs-hero-slice4-static-report.json');
+            requirePassed('qa-evidence/visual-slice4/threejs-hero-slice4-report.json');
+            for (const path of [
+              'qa-evidence/visual-slice4/threejs-hero-slice4-pristine-street.png',
+              'qa-evidence/visual-slice4/threejs-hero-slice4-storm-volume.png',
+              'qa-evidence/visual-slice4/threejs-hero-slice4-damaged-storefront.png',
+            ]) requireFile(path);
           } else if (candidate.requiredBridge === 'THREEJS_VISUAL_HERO_SLICE5_V1') {
-            const staticPath = 'candidate-artifact/threejs-hero-slice5-static-report.json';
-            const visualPath = 'candidate-artifact/qa-evidence/visual-slice5/threejs-hero-slice5-report.json';
-            const inheritedSlice4Path = 'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-report.json';
-            for (const file of [
-              staticPath,
-              visualPath,
-              inheritedSlice4Path,
-              'candidate-artifact/qa-evidence/visual-slice5/threejs-hero-slice5-default-storm.png',
-              'candidate-artifact/qa-evidence/visual-slice5/threejs-hero-slice5-rainbow-funnel.png',
-              'candidate-artifact/qa-evidence/visual-slice5/threejs-hero-slice5-cow-level.png',
-            ]) if (!fs.existsSync(file) || fs.statSync(file).size === 0) throw new Error(`Missing Slice 5 evidence ${file}`);
             if (manifest.heroSlice5Bridge !== 'THREEJS_VISUAL_HERO_SLICE5_V1') throw new Error(`Hero Slice 5 bridge mismatch ${manifest.heroSlice5Bridge}`);
-            if (JSON.parse(fs.readFileSync(staticPath, 'utf8')).passed !== true) throw new Error('Hero Slice 5 static report is not green.');
-            if (JSON.parse(fs.readFileSync(visualPath, 'utf8')).passed !== true) throw new Error('Hero Slice 5 browser report is not green.');
-            if (JSON.parse(fs.readFileSync(inheritedSlice4Path, 'utf8')).passed !== true) throw new Error('Inherited Hero Slice 4 browser report is not green.');
+            requirePassed('threejs-hero-slice5-static-report.json');
+            requirePassed('qa-evidence/visual-slice5/threejs-hero-slice5-report.json');
+            requirePassed('qa-evidence/visual-slice4/threejs-hero-slice4-report.json');
+            for (const path of [
+              'qa-evidence/visual-slice5/threejs-hero-slice5-default-storm.png',
+              'qa-evidence/visual-slice5/threejs-hero-slice5-rainbow-funnel.png',
+              'qa-evidence/visual-slice5/threejs-hero-slice5-cow-level.png',
+            ]) requireFile(path);
+          } else if (candidate.requiredBridge === 'THREEJS_VISUAL_HERO_SLICE6_V1') {
+            if (manifest.heroSlice6Bridge !== 'THREEJS_VISUAL_HERO_SLICE6_V1') throw new Error(`Hero Slice 6 bridge mismatch ${manifest.heroSlice6Bridge}`);
+            if (manifest.inheritedHeroSlice5Bridge !== 'THREEJS_VISUAL_HERO_SLICE5_V1') throw new Error(`Inherited Hero Slice 5 bridge mismatch ${manifest.inheritedHeroSlice5Bridge}`);
+            requirePassed('threejs-hero-slice6-static-report.json');
+            const slice6 = requirePassed('qa-evidence/visual-slice6/threejs-hero-slice6-report.json');
+            requirePassed('qa-evidence/visual-slice5/threejs-hero-slice5-report.json');
+            requirePassed('qa-evidence/visual-slice4/threejs-hero-slice4-report.json');
+            for (const path of [
+              'qa-evidence/visual-slice6/threejs-hero-slice6-default-storm.png',
+              'qa-evidence/visual-slice6/threejs-hero-slice6-main-street.png',
+              'qa-evidence/visual-slice6/threejs-hero-slice6-farm-edge.png',
+            ]) requireFile(path);
+            const roadLaw = slice6.mainStreet?.visual?.worldIdentity?.roadLaw;
+            const farmRoadLaw = slice6.farmEdge?.visual?.worldIdentity?.roadLaw;
+            const townPolish = slice6.mainStreet?.visual?.worldIdentity?.townPolish;
+            if (!roadLaw || roadLaw.targetRoadIntrusionCount !== 0) throw new Error('Slice 6 building-road intrusion gate failed.');
+            if (!farmRoadLaw || farmRoadLaw.farmFenceRoadIntrusionCount !== 0 || farmRoadLaw.farmFenceGapCount < 1) throw new Error('Slice 6 farm road-gap gate failed.');
+            if (!townPolish || townPolish.waterTowerStyled !== true || townPolish.mainStreetRooflineCount < 1) throw new Error('Slice 6 town polish evidence is incomplete.');
           }
           console.log(`Verified sealed QA candidate ${candidate.sourceCommit} from workflow ${candidate.workflowRunId}.`);
           NODE
