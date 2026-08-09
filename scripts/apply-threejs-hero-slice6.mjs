@@ -9,13 +9,17 @@ const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const runtimePath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6.js');
 const guardPath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6-stability-guard.js');
+const roadLawPath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6-road-law.js');
 
 let html = await readFile(sourcePath, 'utf8');
 const runtime = (await readFile(runtimePath, 'utf8')).trim();
 const guard = (await readFile(guardPath, 'utf8')).trim();
+const roadLaw = (await readFile(roadLawPath, 'utf8')).trim();
 const marker = 'THREEJS_VISUAL_HERO_SLICE6_V1';
+const roadLawMarker = 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1';
 const sourceMarker = '[SW:SOURCE:threejs-visual-hero-slice6.js]';
 const guardSourceMarker = '[SW:SOURCE:threejs-visual-hero-slice6-stability-guard.js]';
+const roadLawSourceMarker = '[SW:SOURCE:threejs-visual-hero-slice6-road-law.js]';
 const insertionMarker = '// --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---';
 
 function requireMarker(value) {
@@ -59,12 +63,17 @@ if (html.includes(marker)) {
   [
     sourceMarker,
     guardSourceMarker,
+    roadLawSourceMarker,
     '[SW:VISUAL:HERO_SLICE6]',
     '[SW:VISUAL:HERO_SLICE6:STABILITY_GUARD]',
+    '[SW:VISUAL:HERO_SLICE6:ROAD_LAW]',
+    roadLawMarker,
     'buildLivingCountyWithHeroSlice6IdentityReset',
     'swVisualHeroSlice6UpdateStorm',
-    'swVisualHeroSlice6BuildWorldIdentity',
+    'swVisualHeroSlice6BuildRoadFirstWorldIdentity',
     'swVisualHeroSlice6TuneInheritedStormStable',
+    'swVisualHeroSlice6RoadLawBuildStreetBoundaries',
+    'swVisualHeroSlice6RoadLawApplyParcelCompliance',
     'SWVisualHeroSlice6StormSilhouette',
     'SWVisualHeroSlice6WorldIdentity',
   ].forEach(requireMarker);
@@ -85,7 +94,7 @@ for (const prerequisite of [
   if (!html.includes(prerequisite)) throw new Error(`Hero Slice 6 requires the sealed Hero Slice 5 output: missing ${prerequisite}`);
 }
 
-verifyRuntimeSafety(`${runtime}\n${guard}`);
+verifyRuntimeSafety(`${runtime}\n${guard}\n${roadLaw}`);
 const newline = html.includes('\r\n') ? '\r\n' : '\n';
 const bundle = [
   '',
@@ -95,25 +104,35 @@ const bundle = [
   `// ${guardSourceMarker}`,
   guard,
   '',
+  `// ${roadLawSourceMarker}`,
+  roadLaw,
+  '',
 ].join(newline);
 html = html.replace(insertionMarker, `${bundle}${newline}${insertionMarker}`);
 html = html.replace(
   '</head>',
-  `<!-- ${marker} -->${newline}<!-- [SW:VISUAL:HERO_SLICE6] -->${newline}<!-- [SW:VISUAL:HERO_SLICE6:STABILITY_GUARD] -->${newline}</head>`,
+  `<!-- ${marker} -->${newline}<!-- [SW:VISUAL:HERO_SLICE6] -->${newline}<!-- [SW:VISUAL:HERO_SLICE6:STABILITY_GUARD] -->${newline}<!-- ${roadLawMarker} -->${newline}<!-- [SW:VISUAL:HERO_SLICE6:ROAD_LAW] -->${newline}</head>`,
 );
 await writeFile(sourcePath, html, 'utf8');
 
 for (const required of [
   marker,
+  roadLawMarker,
   '[SW:VISUAL:HERO_SLICE6]',
   '[SW:VISUAL:HERO_SLICE6:STABILITY_GUARD]',
+  '[SW:VISUAL:HERO_SLICE6:ROAD_LAW]',
   sourceMarker,
   guardSourceMarker,
+  roadLawSourceMarker,
   'buildLivingCountyWithHeroSlice6IdentityReset',
   'swVisualHeroSlice6UpdateStorm',
-  'swVisualHeroSlice6BuildWorldIdentity',
-  'swVisualHeroSlice6PrepareQaView',
+  'swVisualHeroSlice6PrepareQaViewRoadLaw',
   'swVisualHeroSlice6TuneInheritedStormStable',
+  'swVisualHeroSlice6RoadLawBuildStreetBoundaries',
+  'swVisualHeroSlice6RoadLawApplyParcelCompliance',
+  'swVisualHeroSlice6BuildRoadSafeFarmEdge',
+  'SWVisualHeroSlice6RoadLawSidewalkBatch',
+  'SWVisualHeroSlice6RoadLawCurbBatch',
   'SWVisualHeroSlice6StormSilhouette',
   'SWVisualHeroSlice6WorldIdentity',
 ]) requireMarker(required);
@@ -121,12 +140,16 @@ for (const required of [
 const slice5PolishIndex = html.indexOf('[SW:SOURCE:threejs-visual-hero-slice5-polish.js]');
 const slice6Index = html.indexOf(sourceMarker);
 const guardIndex = html.indexOf(guardSourceMarker);
+const roadLawIndex = html.indexOf(roadLawSourceMarker);
 const loopIndex = html.indexOf(insertionMarker);
 if (
-  slice5PolishIndex < 0 || slice6Index < 0 || guardIndex < 0 || loopIndex < 0
-  || slice5PolishIndex > slice6Index || slice6Index > guardIndex || guardIndex > loopIndex
+  slice5PolishIndex < 0 || slice6Index < 0 || guardIndex < 0 || roadLawIndex < 0 || loopIndex < 0
+  || slice5PolishIndex > slice6Index
+  || slice6Index > guardIndex
+  || guardIndex > roadLawIndex
+  || roadLawIndex > loopIndex
 ) {
-  throw new Error('Hero Slice 6 must remain ordered after Hero Slice 5 polish, then its stability guard, then the main animation loop.');
+  throw new Error('Hero Slice 6 must remain ordered after Hero Slice 5 polish, then stability guard, road law, and the main animation loop.');
 }
 
-console.log(`Applied Three.js Hero Slice 6 world identity + storm silhouette to ${sourcePath}`);
+console.log(`Applied Three.js Hero Slice 6 road-first world identity + storm silhouette to ${sourcePath}`);
