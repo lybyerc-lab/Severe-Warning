@@ -1,0 +1,357 @@
+name: Three.js Hero Slice 6 World Identity and Storm Silhouette
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - agent/threejs-hero-slice5-rainbow-cow-level
+
+permissions:
+  contents: read
+
+concurrency:
+  group: threejs-hero-slice6-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    name: Build verify and package Hero Slice 6 candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out exact Hero Slice 6 candidate
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          test "$actual" = "$expected"
+          echo "Verified Hero Slice 6 source: $actual"
+
+      - name: Check out exact Hero Slice 5 reference
+        uses: actions/checkout@v6
+        with:
+          ref: f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf
+          path: slice5-base
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          pnpm --dir slice5-base install --frozen-lockfile
+
+      - name: Verify Hero Slice 6 source and process truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run verify:process
+          for file in \
+            runtime/threejs-visual-hero-slice6.js \
+            scripts/apply-threejs-hero-slice6.mjs \
+            scripts/verify-threejs-hero-slice6.mjs \
+            scripts/qa-threejs-hero-slice6.mjs; do
+            node --check "$file"
+          done
+          node scripts/verify-threejs-hero-slice6.mjs
+          pnpm run verify:visual-foundation
+          pnpm run modern:typecheck
+
+      - name: Verify historical gameplay source remains untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp -s MechanicsLab/SevereWeather_3D_Lab.html slice5-base/MechanicsLab/SevereWeather_3D_Lab.html
+          if grep -F 'THREEJS_VISUAL_HERO_SLICE6_V1' MechanicsLab/SevereWeather_3D_Lab.html; then
+            echo 'Generated Hero Slice 6 output was committed over the historical gameplay source.' >&2
+            exit 1
+          fi
+
+      - name: Vendor inherited exact Hero Slice 4 VFX candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+          node slice5-base/scripts/vendor-threejs-hero-slice4-assets.mjs
+          for root in . slice5-base; do
+            test -s "$root/assets/production/vfx/kenney/dirt_01.png"
+            test -s "$root/assets/production/vfx/kenney/smoke_03.png"
+            test -s "$root/assets/production/vfx/kenney/trace_03.png"
+            test -s "$root/assets/production/vfx/kenney/checksums.json"
+          done
+
+      - name: Generate verified audio in Hero Slice 5 and candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir slice5-base run audio:generate
+          pnpm run audio:generate
+
+      - name: Build exact Hero Slice 5 reference
+        shell: bash
+        working-directory: slice5-base
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run patch:city-fabric
+          pnpm run verify:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run verify:presentation-identity
+          pnpm run patch:asset-pipeline
+          pnpm run verify:asset-pipeline
+          pnpm run patch:visual-foundation
+          pnpm run verify:visual-foundation
+          node scripts/apply-threejs-hero-slice4.mjs
+          node scripts/verify-threejs-hero-slice4.mjs
+          node scripts/apply-threejs-hero-slice5.mjs
+          node scripts/verify-threejs-hero-slice5.mjs
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          grep -F 'THREEJS_VISUAL_HERO_SLICE5_V1' www/index.html
+          grep -F 'THREEJS_VISUAL_HERO_SLICE5_POLISH_V1' www/index.html
+          if grep -F 'THREEJS_VISUAL_HERO_SLICE6_V1' www/index.html; then
+            echo 'Hero Slice 5 reference unexpectedly contains Hero Slice 6.' >&2
+            exit 1
+          fi
+
+      - name: Build and verify Hero Slice 6 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run verify:v500
+          pnpm run patch:v510
+          pnpm run verify:v510
+          pnpm run patch:phase2
+          pnpm run verify:phase2
+          pnpm run patch:phase3
+          pnpm run verify:phase3
+          pnpm run patch:phase4
+          pnpm run verify:phase4
+          pnpm run patch:phase5
+          pnpm run verify:phase5
+          pnpm run patch:phase6
+          pnpm run verify:phase6
+          pnpm run patch:city-fabric
+          pnpm run verify:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run verify:presentation-identity
+          pnpm run patch:asset-pipeline
+          pnpm run verify:asset-pipeline
+          pnpm run patch:visual-foundation
+          pnpm run verify:visual-foundation
+          node scripts/apply-threejs-hero-slice4.mjs
+          node scripts/verify-threejs-hero-slice4.mjs
+          node scripts/apply-threejs-hero-slice5.mjs
+          node scripts/verify-threejs-hero-slice5.mjs
+          node scripts/apply-threejs-hero-slice6.mjs
+          node scripts/verify-threejs-hero-slice6.mjs
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          grep -F 'THREEJS_VISUAL_HERO_SLICE4_V1' www/index.html
+          grep -F 'THREEJS_VISUAL_HERO_SLICE5_V1' www/index.html
+          grep -F 'THREEJS_VISUAL_HERO_SLICE5_POLISH_V1' www/index.html
+          grep -F 'THREEJS_VISUAL_HERO_SLICE6_V1' www/index.html
+          test -s www/assets/production/vfx/kenney/dirt_01.png
+          test -s www/assets/production/vfx/kenney/smoke_03.png
+          test -s www/assets/production/vfx/kenney/trace_03.png
+
+      - name: Install Playwright Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+
+      - name: Run inherited gameplay and Hero Slice browser QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/threejs-hero-slice6
+          python3 -m http.server 4173 --directory www > qa-artifacts/threejs-hero-slice6/head-server.log 2>&1 &
+          HEAD_SERVER_PID=$!
+          cleanup() { kill "$HEAD_SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/v510' pnpm run qa:v510
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/clocks' pnpm run qa:phase2
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/input-abilities' pnpm run qa:phase3
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/scoring-campaign' pnpm run qa:phase4
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/presentation-world' pnpm run qa:phase5
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/phase6' pnpm run qa:phase6
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/city' pnpm run qa:city-fabric
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/identity' pnpm run qa:presentation-identity
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/asset' pnpm run qa:asset-pipeline
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/visual-run5' pnpm run qa:visual-foundation
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/visual-slice4' node scripts/qa-threejs-hero-slice4.mjs
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/visual-slice5' node scripts/qa-threejs-hero-slice5.mjs
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/threejs-hero-slice6/visual-slice6' node scripts/qa-threejs-hero-slice6.mjs
+
+      - name: Run same-runner Hero Slice 5 versus Hero Slice 6 performance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4180 --directory slice5-base/www > qa-artifacts/threejs-hero-slice6/perf-base-server.log 2>&1 &
+          BASE_SERVER_PID=$!
+          python3 -m http.server 4181 --directory www > qa-artifacts/threejs-hero-slice6/perf-candidate-server.log 2>&1 &
+          CANDIDATE_SERVER_PID=$!
+          cleanup() { kill "$BASE_SERVER_PID" "$CANDIDATE_SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for port in 4180 4181; do
+            for attempt in $(seq 1 60); do
+              if curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null; then break; fi
+              sleep 0.25
+            done
+            curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null
+          done
+          env \
+            SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4180/' \
+            SEVERE_WEATHER_CANDIDATE_URL='http://127.0.0.1:4181/' \
+            SEVERE_WEATHER_PERF_DIR='qa-artifacts/threejs-hero-slice6/performance' \
+            pnpm run perf:phase6
+
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: severe-weather-threejs-hero-slice6-diagnostics-${{ github.run_number }}
+          path: qa-artifacts/threejs-hero-slice6
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Synchronize Android assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          node node_modules/@capacitor/cli/bin/capacitor sync android
+          cmp -s www/index.html android/app/src/main/assets/public/index.html
+          cmp -s www/assets/production/vfx/kenney/dirt_01.png android/app/src/main/assets/public/assets/production/vfx/kenney/dirt_01.png
+          cmp -s www/assets/production/vfx/kenney/smoke_03.png android/app/src/main/assets/public/assets/production/vfx/kenney/smoke_03.png
+          cmp -s www/assets/production/vfx/kenney/trace_03.png android/app/src/main/assets/public/assets/production/vfx/kenney/trace_03.png
+
+      - name: Assemble debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Package exact-source Hero Slice 6 evidence
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_commit='${{ github.event.pull_request.head.sha || github.sha }}'
+          source_branch='${{ github.head_ref || github.ref_name }}'
+          output_dir='dist/threejs-hero-slice6'
+          mkdir -p "$output_dir"
+          source_apk='android/app/build/outputs/apk/debug/app-debug.apk'
+          output_apk="$output_dir/Severe-Weather-v5.1.0-ThreeJS-Hero-Slice6-${GITHUB_RUN_NUMBER}.apk"
+          test -s "$source_apk"
+          cp "$source_apk" "$output_apk"
+          sha256sum "$output_apk" | tee "$output_apk.sha256"
+          test -s threejs-hero-slice6-static-report.json
+          test -s qa-artifacts/threejs-hero-slice6/visual-slice6/threejs-hero-slice6-report.json
+          test -s qa-artifacts/threejs-hero-slice6/visual-slice6/threejs-hero-slice6-default-storm.png
+          test -s qa-artifacts/threejs-hero-slice6/visual-slice6/threejs-hero-slice6-main-street.png
+          test -s qa-artifacts/threejs-hero-slice6/visual-slice6/threejs-hero-slice6-farm-edge.png
+          test -s qa-artifacts/threejs-hero-slice6/visual-slice5/threejs-hero-slice5-report.json
+          test -s qa-artifacts/threejs-hero-slice6/performance/comparison-report.json
+          cp -R www "$output_dir/web-preview"
+          cp -R qa-artifacts/threejs-hero-slice6 "$output_dir/qa-evidence"
+          cp threejs-hero-slice6-static-report.json "$output_dir/"
+          cp Docs/HERO_SLICE6_WORLD_IDENTITY_STORM_SILHOUETTE.md "$output_dir/"
+          cp assets/production/asset-provenance.json "$output_dir/"
+          cp assets/production/vfx/kenney/checksums.json "$output_dir/hero-slice4-vfx-checksums.json"
+          printf '%s\n' "$source_commit" > "$output_dir/SOURCE_COMMIT.txt"
+          printf '%s\n' "$GITHUB_RUN_ID" > "$output_dir/WORKFLOW_RUN_ID.txt"
+          git diff --name-status f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf "$source_commit" > "$output_dir/CHANGED_FILES.txt"
+          node - <<'NODE'
+          const fs = require('fs');
+          const outputDir = 'dist/threejs-hero-slice6';
+          const sourceCommit = process.env.GITHUB_EVENT_NAME === 'pull_request'
+            ? JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')).pull_request.head.sha
+            : process.env.GITHUB_SHA;
+          const sourceBranch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME;
+          const manifest = {
+            version: 'THREEJS_HERO_SLICE6_PACKAGE_V1',
+            sourceBranch,
+            sourceCommit,
+            workflowRunId: process.env.GITHUB_RUN_ID,
+            workflowRunNumber: Number(process.env.GITHUB_RUN_NUMBER),
+            exactHeroSlice5Reference: 'f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf',
+            renderer: 'Three.js r128',
+            heroSlice6Bridge: 'THREEJS_VISUAL_HERO_SLICE6_V1',
+            inheritedHeroSlice5Bridge: 'THREEJS_VISUAL_HERO_SLICE5_V1',
+            acceptance: 'browser-candidate-not-owner-visual-accepted-not-physical-android-accepted',
+          };
+          fs.writeFileSync(`${outputDir}/package-manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
+          echo "apk_path=$output_apk" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=severe-weather-threejs-hero-slice6-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Hero Slice 6 APK and evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: dist/threejs-hero-slice6
+          if-no-files-found: error
+          retention-days: 30
