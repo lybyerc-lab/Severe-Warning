@@ -123,7 +123,7 @@ function swVisualHeroSlice6TownPolishStyleMainStreet(storefront) {
         roof = new THREE.Mesh(geometry, material);
         roof.name = 'SWVisualSlice6MainStreetGable';
         roof.position.y = height + 0.18;
-        roof.rotation.y = ordinal % 2 ? Math.PI * 0.5 : 0;
+        roof.rotation.y = 0;
         roof.castShadow = true;
         roof.receiveShadow = true;
         roof.userData.swPresentationOnly = true;
