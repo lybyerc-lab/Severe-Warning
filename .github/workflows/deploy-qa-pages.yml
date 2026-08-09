@@ -27,6 +27,10 @@ jobs:
     timeout-minutes: 15
     env:
       GH_TOKEN: ${{ github.token }}
+    outputs:
+      source_commit: ${{ steps.pointer.outputs.source_commit }}
+      artifact_name: ${{ steps.pointer.outputs.artifact_name }}
+      required_bridge: ${{ steps.pointer.outputs.required_bridge }}
 
     steps:
       - name: Check out QA publisher
@@ -35,17 +39,18 @@ jobs:
           fetch-depth: 0
 
       - name: Read QA candidate pointer
+        id: pointer
         shell: bash
         run: |
           set -euo pipefail
           node --check scripts/stamp-qa-artifact.mjs
-          node - <<'NODE' >> "$GITHUB_ENV"
+          node - <<'NODE'
           const fs = require('fs');
           const candidate = JSON.parse(fs.readFileSync('qa-candidate.json', 'utf8'));
           const required = [
             'version', 'label', 'pagesRoot', 'sourceBranch', 'sourceCommit',
             'workflowRunId', 'workflowRunNumber', 'artifactName', 'artifactId',
-            'artifactDigest', 'renderer'
+            'artifactDigest', 'renderer', 'requiredBridge'
           ];
           for (const key of required) {
             if (candidate[key] === undefined || candidate[key] === null || candidate[key] === '') {
@@ -55,6 +60,12 @@ jobs:
           if (candidate.version !== 'SW_QA_PAGES_CANDIDATE_V1') throw new Error(`Unexpected candidate pointer version ${candidate.version}`);
           if (!/^[0-9a-f]{40}$/.test(candidate.sourceCommit)) throw new Error(`Invalid source commit ${candidate.sourceCommit}`);
           if (!String(candidate.artifactDigest).startsWith('sha256:')) throw new Error(`Invalid artifact digest ${candidate.artifactDigest}`);
+          if (!['THREEJS_VISUAL_HERO_SLICE4_V1', 'THREEJS_VISUAL_HERO_SLICE5_V1'].includes(candidate.requiredBridge)) {
+            throw new Error(`Unsupported QA bridge ${candidate.requiredBridge}`);
+          }
+          const markers = Array.isArray(candidate.requiredMarkers) && candidate.requiredMarkers.length
+            ? candidate.requiredMarkers
+            : [candidate.requiredBridge];
           const values = {
             QA_LABEL: candidate.label,
             QA_PAGES_ROOT: candidate.pagesRoot,
@@ -66,8 +77,17 @@ jobs:
             QA_ARTIFACT_ID: candidate.artifactId,
             QA_ARTIFACT_DIGEST: candidate.artifactDigest,
             QA_RENDERER: candidate.renderer,
+            QA_REQUIRED_BRIDGE: candidate.requiredBridge,
+            QA_REQUIRED_MARKERS_JSON: JSON.stringify(markers),
           };
-          for (const [key, value] of Object.entries(values)) console.log(`${key}=${value}`);
+          const env = fs.createWriteStream(process.env.GITHUB_ENV, { flags: 'a' });
+          for (const [key, value] of Object.entries(values)) env.write(`${key}=${value}\n`);
+          env.end();
+          const output = fs.createWriteStream(process.env.GITHUB_OUTPUT, { flags: 'a' });
+          output.write(`source_commit=${candidate.sourceCommit}\n`);
+          output.write(`artifact_name=${candidate.artifactName}\n`);
+          output.write(`required_bridge=${candidate.requiredBridge}\n`);
+          output.end();
           NODE
 
       - name: Verify exact GitHub Actions artifact metadata
@@ -109,11 +129,8 @@ jobs:
           test -s candidate-artifact/SOURCE_COMMIT.txt
           test -s candidate-artifact/WORKFLOW_RUN_ID.txt
           test -s candidate-artifact/package-manifest.json
-          test -s candidate-artifact/threejs-hero-slice4-static-report.json
-          test -s candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-report.json
-          test -s candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-pristine-street.png
-          test -s candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-storm-volume.png
-          test -s candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-damaged-storefront.png
+          test -s candidate-artifact/qa-evidence/visual-run5/threejs-visual-foundation-report.json
+          test -s candidate-artifact/qa-evidence/asset/threejs-asset-pipeline-report.json
           test -s candidate-artifact/qa-evidence/performance/comparison-report.json
           test -s candidate-artifact/web-preview/index.html
           test -s candidate-artifact/web-preview/assets/production/vfx/kenney/dirt_01.png
@@ -125,8 +142,6 @@ jobs:
           const fs = require('fs');
           const candidate = JSON.parse(fs.readFileSync('qa-candidate.json', 'utf8'));
           const manifest = JSON.parse(fs.readFileSync('candidate-artifact/package-manifest.json', 'utf8'));
-          const staticReport = JSON.parse(fs.readFileSync('candidate-artifact/threejs-hero-slice4-static-report.json', 'utf8'));
-          const visualReport = JSON.parse(fs.readFileSync('candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-report.json', 'utf8'));
           const run5VisualReport = JSON.parse(fs.readFileSync('candidate-artifact/qa-evidence/visual-run5/threejs-visual-foundation-report.json', 'utf8'));
           const assetReport = JSON.parse(fs.readFileSync('candidate-artifact/qa-evidence/asset/threejs-asset-pipeline-report.json', 'utf8'));
           if (manifest.sourceCommit !== candidate.sourceCommit) throw new Error(`Manifest source mismatch ${manifest.sourceCommit}`);
@@ -134,14 +149,38 @@ jobs:
           if (String(manifest.workflowRunId) !== String(candidate.workflowRunId)) throw new Error(`Manifest run mismatch ${manifest.workflowRunId}`);
           if (Number(manifest.workflowRunNumber) !== Number(candidate.workflowRunNumber)) throw new Error(`Manifest run number mismatch ${manifest.workflowRunNumber}`);
           if (manifest.renderer !== candidate.renderer) throw new Error(`Renderer mismatch ${manifest.renderer}`);
-          if (manifest.heroSlice4Bridge !== 'THREEJS_VISUAL_HERO_SLICE4_V1') throw new Error(`Hero Slice 4 bridge mismatch ${manifest.heroSlice4Bridge}`);
-          for (const [label, report] of [
-            ['Hero Slice 4 static', staticReport],
-            ['Hero Slice 4 browser', visualReport],
-            ['Run 5 inherited visual', run5VisualReport],
-            ['asset pipeline', assetReport],
-          ]) {
-            if (report.passed !== true) throw new Error(`${label} report is not green.`);
+          if (manifest.heroSlice4Bridge !== 'THREEJS_VISUAL_HERO_SLICE4_V1') throw new Error(`Inherited Hero Slice 4 bridge mismatch ${manifest.heroSlice4Bridge}`);
+          if (run5VisualReport.passed !== true) throw new Error('Run 5 inherited visual report is not green.');
+          if (assetReport.passed !== true) throw new Error('Asset pipeline report is not green.');
+
+          if (candidate.requiredBridge === 'THREEJS_VISUAL_HERO_SLICE4_V1') {
+            const staticPath = 'candidate-artifact/threejs-hero-slice4-static-report.json';
+            const visualPath = 'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-report.json';
+            for (const file of [
+              staticPath,
+              visualPath,
+              'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-pristine-street.png',
+              'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-storm-volume.png',
+              'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-damaged-storefront.png',
+            ]) if (!fs.existsSync(file) || fs.statSync(file).size === 0) throw new Error(`Missing Slice 4 evidence ${file}`);
+            if (JSON.parse(fs.readFileSync(staticPath, 'utf8')).passed !== true) throw new Error('Hero Slice 4 static report is not green.');
+            if (JSON.parse(fs.readFileSync(visualPath, 'utf8')).passed !== true) throw new Error('Hero Slice 4 browser report is not green.');
+          } else if (candidate.requiredBridge === 'THREEJS_VISUAL_HERO_SLICE5_V1') {
+            const staticPath = 'candidate-artifact/threejs-hero-slice5-static-report.json';
+            const visualPath = 'candidate-artifact/qa-evidence/visual-slice5/threejs-hero-slice5-report.json';
+            const inheritedSlice4Path = 'candidate-artifact/qa-evidence/visual-slice4/threejs-hero-slice4-report.json';
+            for (const file of [
+              staticPath,
+              visualPath,
+              inheritedSlice4Path,
+              'candidate-artifact/qa-evidence/visual-slice5/threejs-hero-slice5-default-storm.png',
+              'candidate-artifact/qa-evidence/visual-slice5/threejs-hero-slice5-rainbow-funnel.png',
+              'candidate-artifact/qa-evidence/visual-slice5/threejs-hero-slice5-cow-level.png',
+            ]) if (!fs.existsSync(file) || fs.statSync(file).size === 0) throw new Error(`Missing Slice 5 evidence ${file}`);
+            if (manifest.heroSlice5Bridge !== 'THREEJS_VISUAL_HERO_SLICE5_V1') throw new Error(`Hero Slice 5 bridge mismatch ${manifest.heroSlice5Bridge}`);
+            if (JSON.parse(fs.readFileSync(staticPath, 'utf8')).passed !== true) throw new Error('Hero Slice 5 static report is not green.');
+            if (JSON.parse(fs.readFileSync(visualPath, 'utf8')).passed !== true) throw new Error('Hero Slice 5 browser report is not green.');
+            if (JSON.parse(fs.readFileSync(inheritedSlice4Path, 'utf8')).passed !== true) throw new Error('Inherited Hero Slice 4 browser report is not green.');
           }
           console.log(`Verified sealed QA candidate ${candidate.sourceCommit} from workflow ${candidate.workflowRunId}.`);
           NODE
@@ -153,7 +192,17 @@ jobs:
           rm -rf www
           cp -R candidate-artifact/web-preview www
           node scripts/stamp-qa-artifact.mjs
-          grep -F 'THREEJS_VISUAL_HERO_SLICE4_V1' www/index.html
+          node - <<'NODE'
+          const fs = require('fs');
+          const candidate = JSON.parse(fs.readFileSync('qa-candidate.json', 'utf8'));
+          const html = fs.readFileSync('www/index.html', 'utf8');
+          const markers = Array.isArray(candidate.requiredMarkers) && candidate.requiredMarkers.length
+            ? candidate.requiredMarkers
+            : [candidate.requiredBridge];
+          for (const marker of markers) {
+            if (!html.includes(marker)) throw new Error(`Published preview missing required marker ${marker}`);
+          }
+          NODE
           grep -F "$QA_SOURCE_COMMIT" www/qa-build.json
           grep -F "$QA_ARTIFACT_NAME" www/qa-build.json
           test -s www/404.html
@@ -186,19 +235,21 @@ jobs:
         env:
           QA_ROOT_URL: https://lybyerc-lab.github.io/Severe-Warning/
           QA_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/qa-build.json
-          EXPECTED_SOURCE_SHA: 0c90db63b74523811f67379a6cc14896227073d5
-          EXPECTED_ARTIFACT: severe-weather-threejs-hero-slice4-1
+          EXPECTED_SOURCE_SHA: ${{ needs.build.outputs.source_commit }}
+          EXPECTED_ARTIFACT: ${{ needs.build.outputs.artifact_name }}
+          EXPECTED_BRIDGE: ${{ needs.build.outputs.required_bridge }}
         run: |
           set -euo pipefail
           for attempt in $(seq 1 40); do
             if root_html="$(curl --fail --silent --show-error --location "$QA_ROOT_URL")" \
               && metadata="$(curl --fail --silent --show-error --location "$QA_METADATA_URL")" \
-              && grep -Fq 'THREEJS_VISUAL_HERO_SLICE4_V1' <<< "$root_html" \
+              && grep -Fq "$EXPECTED_BRIDGE" <<< "$root_html" \
               && grep -Fq "$EXPECTED_SOURCE_SHA" <<< "$metadata" \
               && grep -Fq "$EXPECTED_ARTIFACT" <<< "$metadata"; then
               echo "Live QA root verified: $QA_ROOT_URL"
               echo "Source: $EXPECTED_SOURCE_SHA"
               echo "Artifact: $EXPECTED_ARTIFACT"
+              echo "Bridge: $EXPECTED_BRIDGE"
               exit 0
             fi
             echo "Pages propagation attempt $attempt/40 not ready yet."
