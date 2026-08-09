@@ -1,22 +1,26 @@
 {
   "version": "SW_QA_PAGES_CANDIDATE_V1",
   "channel": "qa",
-  "label": "Hero Slice 5",
+  "label": "Hero Slice 6 Browser QA",
   "pagesRoot": "https://lybyerc-lab.github.io/Severe-Warning/",
   "renderer": "Three.js r128",
-  "sourceBranch": "agent/threejs-hero-slice5-rainbow-cow-level",
-  "sourceCommit": "f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf",
-  "workflowName": "Three.js Hero Slice 5 Rainbow Funnel and Cow Level",
-  "workflowRunId": 31291663689,
-  "workflowRunNumber": 10,
-  "artifactName": "severe-weather-threejs-hero-slice5-10",
-  "artifactId": 9031783596,
-  "artifactDigest": "sha256:798711c9c4a9bc999a0ba4b57112f351303c613cc9c90b3d9569826853f32d96",
-  "requiredBridge": "THREEJS_VISUAL_HERO_SLICE5_V1",
+  "sourceBranch": "agent/threejs-hero-slice6-world-identity-storm-silhouette",
+  "sourceCommit": "242cb92451073acf7b193a5baa8c60c551335b7a",
+  "workflowName": "Three.js Hero Slice 6 World Identity and Storm Silhouette",
+  "workflowRunId": 31340613427,
+  "workflowRunNumber": 18,
+  "artifactName": "severe-weather-threejs-hero-slice6-web-18",
+  "artifactId": 9045889623,
+  "artifactDigest": "sha256:df5083827be509a594bd0811bdda2a9fcb82539aeca0f488e53555f082bdace6",
+  "requiredBridge": "THREEJS_VISUAL_HERO_SLICE6_V1",
   "requiredMarkers": [
     "THREEJS_VISUAL_HERO_SLICE5_V1",
     "THREEJS_VISUAL_HERO_SLICE5_NEON_GATE_V1",
-    "THREEJS_VISUAL_HERO_SLICE5_POLISH_V1"
+    "THREEJS_VISUAL_HERO_SLICE5_POLISH_V1",
+    "THREEJS_VISUAL_HERO_SLICE6_V1",
+    "THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1",
+    "THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_V1",
+    "[SW:VISUAL:HERO_SLICE6:STABILITY_GUARD]"
   ],
   "acceptance": "browser-qa-candidate-not-owner-visual-accepted-not-physical-android-accepted"
 }
