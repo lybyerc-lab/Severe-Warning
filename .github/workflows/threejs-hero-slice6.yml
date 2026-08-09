@@ -2,6 +2,12 @@ name: Three.js Hero Slice 6 World Identity and Storm Silhouette
 
 on:
   workflow_dispatch:
+    inputs:
+      package_android:
+        description: Build an Android APK for a deliberate device checkpoint
+        required: false
+        type: boolean
+        default: false
   pull_request:
     branches:
       - agent/threejs-hero-slice5-rainbow-cow-level
@@ -15,7 +21,7 @@ concurrency:
 
 jobs:
   build-test-package:
-    name: Build verify and package Hero Slice 6 candidate
+    name: Build and verify Hero Slice 6 candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 90
 
@@ -47,7 +53,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Set up JDK 21
+      - name: Set up JDK 21 for Android device checkpoint
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.package_android }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -276,7 +283,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Synchronize Android assets
+      - name: Synchronize Android assets for device checkpoint
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.package_android }}
         shell: bash
         run: |
           set -euo pipefail
@@ -286,7 +294,8 @@ jobs:
           cmp -s www/assets/production/vfx/kenney/smoke_03.png android/app/src/main/assets/public/assets/production/vfx/kenney/smoke_03.png
           cmp -s www/assets/production/vfx/kenney/trace_03.png android/app/src/main/assets/public/assets/production/vfx/kenney/trace_03.png
 
-      - name: Assemble debug APK
+      - name: Assemble debug APK for device checkpoint
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.package_android }}
         shell: bash
         run: |
           set -euo pipefail
@@ -297,17 +306,26 @@ jobs:
       - name: Package exact-source Hero Slice 6 evidence
         id: package
         shell: bash
+        env:
+          PACKAGE_ANDROID: ${{ github.event_name == 'workflow_dispatch' && inputs.package_android }}
         run: |
           set -euo pipefail
           source_commit='${{ github.event.pull_request.head.sha || github.sha }}'
           source_branch='${{ github.head_ref || github.ref_name }}'
           output_dir='dist/threejs-hero-slice6'
           mkdir -p "$output_dir"
-          source_apk='android/app/build/outputs/apk/debug/app-debug.apk'
-          output_apk="$output_dir/Severe-Weather-v5.1.0-ThreeJS-Hero-Slice6-${GITHUB_RUN_NUMBER}.apk"
-          test -s "$source_apk"
-          cp "$source_apk" "$output_apk"
-          sha256sum "$output_apk" | tee "$output_apk.sha256"
+          artifact_name="severe-weather-threejs-hero-slice6-web-${GITHUB_RUN_NUMBER}"
+
+          if [ "$PACKAGE_ANDROID" = "true" ]; then
+            source_apk='android/app/build/outputs/apk/debug/app-debug.apk'
+            output_apk="$output_dir/Severe-Weather-v5.1.0-ThreeJS-Hero-Slice6-${GITHUB_RUN_NUMBER}.apk"
+            test -s "$source_apk"
+            cp "$source_apk" "$output_apk"
+            sha256sum "$output_apk" | tee "$output_apk.sha256"
+            echo "apk_path=$output_apk" >> "$GITHUB_OUTPUT"
+            artifact_name="severe-weather-threejs-hero-slice6-device-${GITHUB_RUN_NUMBER}"
+          fi
+
           test -s threejs-hero-slice6-static-report.json
           test -s qa-artifacts/threejs-hero-slice6/visual-slice6/threejs-hero-slice6-report.json
           test -s qa-artifacts/threejs-hero-slice6/visual-slice6/threejs-hero-slice6-default-storm.png
@@ -324,6 +342,7 @@ jobs:
           printf '%s\n' "$source_commit" > "$output_dir/SOURCE_COMMIT.txt"
           printf '%s\n' "$GITHUB_RUN_ID" > "$output_dir/WORKFLOW_RUN_ID.txt"
           git diff --name-status f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf "$source_commit" > "$output_dir/CHANGED_FILES.txt"
+          export PACKAGE_ANDROID
           node - <<'NODE'
           const fs = require('fs');
           const outputDir = 'dist/threejs-hero-slice6';
@@ -331,8 +350,9 @@ jobs:
             ? JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')).pull_request.head.sha
             : process.env.GITHUB_SHA;
           const sourceBranch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME;
+          const androidPackaged = process.env.PACKAGE_ANDROID === 'true';
           const manifest = {
-            version: 'THREEJS_HERO_SLICE6_PACKAGE_V1',
+            version: 'THREEJS_HERO_SLICE6_EVIDENCE_V2',
             sourceBranch,
             sourceCommit,
             workflowRunId: process.env.GITHUB_RUN_ID,
@@ -341,14 +361,15 @@ jobs:
             renderer: 'Three.js r128',
             heroSlice6Bridge: 'THREEJS_VISUAL_HERO_SLICE6_V1',
             inheritedHeroSlice5Bridge: 'THREEJS_VISUAL_HERO_SLICE5_V1',
+            workflowMode: androidPackaged ? 'android-device-checkpoint' : 'browser-iteration',
+            androidPackaged,
             acceptance: 'browser-candidate-not-owner-visual-accepted-not-physical-android-accepted',
           };
           fs.writeFileSync(`${outputDir}/package-manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
           NODE
-          echo "apk_path=$output_apk" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=severe-weather-threejs-hero-slice6-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Hero Slice 6 APK and evidence
+      - name: Upload Hero Slice 6 evidence
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.package.outputs.artifact_name }}
