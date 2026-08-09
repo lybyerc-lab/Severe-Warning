@@ -9,6 +9,7 @@ const files = {
   runtime: await readFile(path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6.js'), 'utf8'),
   guard: await readFile(path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6-stability-guard.js'), 'utf8'),
   roadLaw: await readFile(path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6-road-law.js'), 'utf8'),
+  townPolish: await readFile(path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6-town-polish.js'), 'utf8'),
   patch: await readFile(path.join(projectRoot, 'scripts', 'apply-threejs-hero-slice6.mjs'), 'utf8'),
   qa: await readFile(path.join(projectRoot, 'scripts', 'qa-threejs-hero-slice6.mjs'), 'utf8'),
   milestone: await readFile(path.join(projectRoot, 'Docs', 'HERO_SLICE6_WORLD_IDENTITY_STORM_SILHOUETTE.md'), 'utf8'),
@@ -32,7 +33,8 @@ function syntaxCheck(source, filename) {
 const runtimeSyntaxError = syntaxCheck(files.runtime, 'threejs-visual-hero-slice6.js');
 const guardSyntaxError = syntaxCheck(files.guard, 'threejs-visual-hero-slice6-stability-guard.js');
 const roadLawSyntaxError = syntaxCheck(files.roadLaw, 'threejs-visual-hero-slice6-road-law.js');
-const runtimeBundle = `${files.runtime}\n${files.guard}\n${files.roadLaw}`;
+const townPolishSyntaxError = syntaxCheck(files.townPolish, 'threejs-visual-hero-slice6-town-polish.js');
+const runtimeBundle = `${files.runtime}\n${files.guard}\n${files.roadLaw}\n${files.townPolish}`;
 
 check('slice6-version', files.runtime.includes('THREEJS_VISUAL_HERO_SLICE6_V1'));
 check('slice6-anchor', files.runtime.includes('[SW:VISUAL:HERO_SLICE6]'));
@@ -41,11 +43,16 @@ check('slice6-stability-guard-syntax', guardSyntaxError === null, guardSyntaxErr
 check('slice6-road-law-version', files.roadLaw.includes('THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1'));
 check('slice6-road-law-anchor', files.roadLaw.includes('[SW:VISUAL:HERO_SLICE6:ROAD_LAW]'));
 check('slice6-road-law-syntax', roadLawSyntaxError === null, roadLawSyntaxError || 'ok');
+check('slice6-town-polish-version', files.townPolish.includes('THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_V1'));
+check('slice6-town-polish-anchor', files.townPolish.includes('[SW:VISUAL:HERO_SLICE6:TOWN_POLISH]'));
+check('slice6-town-polish-syntax', townPolishSyntaxError === null, townPolishSyntaxError || 'ok');
 check('slice6-bridge', files.runtime.includes('__SW_THREEJS_VISUAL_FOUNDATION__') && files.runtime.includes('heroSlice6Version'));
 check('slice6-road-law-bridge', files.roadLaw.includes('heroSlice6RoadLawVersion') && files.roadLaw.includes('prepareQaView: swVisualHeroSlice6PrepareQaViewRoadLaw'));
+check('slice6-town-polish-bridge', files.townPolish.includes('heroSlice6TownPolishVersion') && files.townPolish.includes('refreshHeroSlice6: swVisualHeroSlice6RefreshWorld'));
 check('slice5-prerequisite', files.patch.includes('THREEJS_VISUAL_HERO_SLICE5_V1') && files.patch.includes('THREEJS_VISUAL_HERO_SLICE5_POLISH_V1'));
-check('ordered-after-slice5-polish', files.patch.includes('slice5PolishIndex > slice6Index') && files.patch.includes('slice6Index > guardIndex') && files.patch.includes('guardIndex > roadLawIndex') && files.patch.includes('roadLawIndex > loopIndex'));
+check('ordered-after-slice5-polish', files.patch.includes('slice5PolishIndex > slice6Index') && files.patch.includes('slice6Index > guardIndex') && files.patch.includes('guardIndex > roadLawIndex') && files.patch.includes('roadLawIndex > loopIndex') && files.patch.includes('roadLawIndex > townPolishIndex') && files.patch.includes('townPolishIndex > loopIndex'));
 check('road-law-injected', files.patch.includes('[SW:SOURCE:threejs-visual-hero-slice6-road-law.js]') && files.patch.includes('roadLawPath'));
+check('town-polish-injected', files.patch.includes('[SW:SOURCE:threejs-visual-hero-slice6-town-polish.js]') && files.patch.includes('townPolishPath'));
 check('storm-root', files.runtime.includes('SWVisualHeroSlice6StormSilhouette'));
 check('storm-warped-geometry', files.runtime.includes('swVisualHeroSlice6WarpedFunnelGeometry') && files.runtime.includes('swSlice6Warped'));
 check('storm-asymmetric-corrugation', files.runtime.includes('corrugation') && files.runtime.includes('bendStrength') && files.runtime.includes('bendX') && files.runtime.includes('bendZ'));
@@ -65,6 +72,10 @@ check('stacked-box-kits-disabled', files.roadLaw.includes('swVisualHeroSlice6Sta
 check('farm-fence-road-gaps', files.roadLaw.includes('fenceGapHalf: 12.6') && files.roadLaw.includes('swVisualHeroSlice6RoadLawFenceCrossings'));
 check('farm-fence-segmented-rails', files.roadLaw.includes('SWVisualSlice6FarmFenceRails') && files.roadLaw.includes('farmFenceRailCount'));
 check('farm-ditch-segmented', files.roadLaw.includes('SWVisualSlice6FarmDitchSegments') && files.roadLaw.includes('SWVisualSlice6FarmShoulderSegments'));
+check('town-polish-water-tower-standpipe', files.townPolish.includes('SWVisualSlice6WaterTowerStandpipe') && files.townPolish.includes("color: '#7c8583'"));
+check('town-polish-pitched-rooflines', files.townPolish.includes('swVisualHeroSlice6TownPolishGableGeometry') && files.townPolish.includes('SWVisualSlice6MainStreetGable'));
+check('town-polish-lowers-tall-massing', files.townPolish.includes('swSlice6TownHeightScale') && files.townPolish.includes('height >= 24 ? 0.62'));
+check('town-polish-keeps-roofs-inside-footprint', files.townPolish.includes('width * 0.94') && files.townPolish.includes('depth * 0.94') && files.townPolish.includes('roof.rotation.y = 0'));
 check('world-grade', files.runtime.includes('toneMappingExposure') && files.runtime.includes('fogColor'));
 check('no-runtime-http-assets', !/https?:\/\//.test(runtimeBundle));
 check('qa-default-storm-evidence', files.qa.includes('threejs-hero-slice6-default-storm.png'));
@@ -116,7 +127,7 @@ check('no-new-scene-authority', !runtimeBundle.includes('new THREE.Scene'));
 
 const failedChecks = checks.filter((entry) => !entry.passed);
 const report = {
-  version: 'THREEJS_HERO_SLICE6_STATIC_V2',
+  version: 'THREEJS_HERO_SLICE6_STATIC_V3',
   passed: failedChecks.length === 0,
   checks,
   failedChecks,
@@ -137,4 +148,4 @@ if (!report.passed) {
   console.error(JSON.stringify(report, null, 2));
   process.exit(1);
 }
-console.log(`Three.js Hero Slice 6 static verification passed ${checks.length}/${checks.length}; road-first parcel law active; gameplay authority writes=0; Neon selection writes=0.`);
+console.log(`Three.js Hero Slice 6 static verification passed ${checks.length}/${checks.length}; road-first parcel law + town polish active; gameplay authority writes=0; Neon selection writes=0.`);
