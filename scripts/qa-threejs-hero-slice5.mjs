@@ -13,10 +13,12 @@ await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
 const report = {
-  version: 'THREEJS_HERO_SLICE5_QA_V1',
+  version: 'THREEJS_HERO_SLICE5_QA_V2',
   generatedAt: new Date().toISOString(),
   passed: false,
+  defaultStorm: null,
   rainbow: null,
+  postToggleOff: null,
   cowLevel: null,
   failures: [],
 };
@@ -33,9 +35,13 @@ async function createPage() {
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(`console: ${message.text()}`);
   });
+  await page.addInitScript(() => {
+    try { localStorage.removeItem('severe_weather_cosmetics_v1'); } catch (_) {}
+  });
   await page.goto(`${qaUrl}?qa=1&intro=0&assetPipeline=1&visualFoundation=1`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => typeof globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot === 'function');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1');
+  await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.heroSlice5NeonGateVersion === 'THREEJS_VISUAL_HERO_SLICE5_NEON_GATE_V1');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getSnapshot?.().appliedCount >= 1);
   return { page, errors };
 }
@@ -45,14 +51,51 @@ async function snapshot(page) {
     visual: globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.() || null,
     applied: globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getAppliedTargets?.() || [],
     gameplayAnimalCount: typeof animals !== 'undefined' && Array.isArray(animals) ? animals.length : -1,
+    neonSelected: typeof neonFunnelUnlocked !== 'undefined' ? neonFunnelUnlocked === true : null,
+    neonToggleAvailable: typeof toggleNeonCosmetic === 'function',
   }));
 }
 
 const rainbowPage = await createPage();
 try {
   const prepared = await rainbowPage.page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('storm'));
-  requireCondition(prepared === true, 'Rainbow-funnel QA view did not prepare.');
+  requireCondition(prepared === true, 'Default storm QA view did not prepare.');
   await rainbowPage.page.waitForTimeout(220);
+
+  report.defaultStorm = await snapshot(rainbowPage.page);
+  await rainbowPage.page.screenshot({ path: path.join(outputDir, 'threejs-hero-slice5-default-storm.png'), fullPage: true });
+
+  const defaultVisual = report.defaultStorm.visual;
+  requireCondition(report.defaultStorm.neonToggleAvailable === true, 'Canonical toggleNeonCosmetic menu executor is unavailable.');
+  requireCondition(report.defaultStorm.neonSelected === false, 'Fresh QA context did not start with Neon Funnel OFF.');
+  requireCondition(defaultVisual?.heroSlice4Version === 'THREEJS_VISUAL_HERO_SLICE4_V1', `Inherited Hero Slice 4 version mismatch: ${defaultVisual?.heroSlice4Version}.`);
+  requireCondition(defaultVisual?.heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1', `Hero Slice 5 version mismatch: ${defaultVisual?.heroSlice5Version}.`);
+  requireCondition(defaultVisual?.neonGate?.version === 'THREEJS_VISUAL_HERO_SLICE5_NEON_GATE_V1', `Neon gate version mismatch: ${defaultVisual?.neonGate?.version}.`);
+  requireCondition(defaultVisual?.rainbowFunnel?.neonSelected === false, 'Snapshot says Neon is selected before the player selects it.');
+  requireCondition(defaultVisual?.rainbowFunnel?.enabled === false, 'Rainbow funnel is enabled while Neon is OFF.');
+  requireCondition(defaultVisual?.rainbowFunnel?.rootPresent === false, 'Rainbow funnel root exists while Neon is OFF.');
+  requireCondition(Number(defaultVisual?.rainbowFunnel?.shellCount) === 0, 'Rainbow shells exist while Neon is OFF.');
+  requireCondition(Number(defaultVisual?.rainbowFunnel?.ribbonCount) === 0, 'Rainbow ribbons exist while Neon is OFF.');
+  requireCondition(Number(defaultVisual?.rainbowFunnel?.lightCount) === 0, 'Rainbow glow exists while Neon is OFF.');
+  requireCondition(defaultVisual?.rainbowFunnel?.legacyFunnelDimmed === false, 'Hero Slice 4 funnel remained dimmed while Neon is OFF.');
+  requireCondition(defaultVisual?.stormVolume?.rootPresent === true, 'Hero Slice 4 storm volume disappeared in default non-Neon mode.');
+
+  const toggleOn = await rainbowPage.page.evaluate(() => {
+    if (typeof toggleNeonCosmetic !== 'function') return null;
+    const before = typeof neonFunnelUnlocked !== 'undefined' ? neonFunnelUnlocked === true : null;
+    toggleNeonCosmetic();
+    const after = typeof neonFunnelUnlocked !== 'undefined' ? neonFunnelUnlocked === true : null;
+    return { before, after };
+  });
+  requireCondition(toggleOn?.before === false && toggleOn?.after === true, `Canonical Neon menu toggle did not change OFF -> ON: ${JSON.stringify(toggleOn)}.`);
+  await rainbowPage.page.waitForFunction(() => {
+    const visual = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.();
+    return visual?.rainbowFunnel?.neonSelected === true
+      && visual?.rainbowFunnel?.enabled === true
+      && visual?.rainbowFunnel?.rootPresent === true;
+  });
+  await rainbowPage.page.waitForTimeout(180);
+
   report.rainbow = await snapshot(rainbowPage.page);
   const rainbowProbe = await rainbowPage.page.evaluate(() => {
     const root = scene?.getObjectByName?.('SWVisualHeroSlice5RainbowFunnel') || null;
@@ -69,17 +112,40 @@ try {
   await rainbowPage.page.screenshot({ path: path.join(outputDir, 'threejs-hero-slice5-rainbow-funnel.png'), fullPage: true });
 
   const visual = report.rainbow.visual;
-  requireCondition(visual?.heroSlice4Version === 'THREEJS_VISUAL_HERO_SLICE4_V1', `Inherited Hero Slice 4 version mismatch: ${visual?.heroSlice4Version}.`);
-  requireCondition(visual?.heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1', `Hero Slice 5 version mismatch: ${visual?.heroSlice5Version}.`);
-  requireCondition(visual?.rainbowFunnel?.rootPresent === true, 'Rainbow funnel root is missing.');
+  requireCondition(report.rainbow.neonSelected === true, 'Canonical menu state is not ON in the Neon evidence frame.');
+  requireCondition(visual?.rainbowFunnel?.gateSource === 'neonFunnelUnlocked', `Unexpected Neon gate source ${visual?.rainbowFunnel?.gateSource}.`);
+  requireCondition(visual?.rainbowFunnel?.neonSelected === true && visual?.rainbowFunnel?.enabled === true, 'Rainbow funnel did not follow the selected Neon menu state.');
+  requireCondition(visual?.rainbowFunnel?.rootPresent === true, 'Rainbow funnel root is missing after selecting Neon.');
   requireCondition(Number(visual?.rainbowFunnel?.shellCount) >= 2, `Only ${visual?.rainbowFunnel?.shellCount} rainbow shells are active.`);
   requireCondition(Number(visual?.rainbowFunnel?.ribbonCount) >= 7, `Only ${visual?.rainbowFunnel?.ribbonCount} neon rainbow ribbons are active.`);
   requireCondition(Number(visual?.rainbowFunnel?.lightCount) >= 1, 'Rainbow funnel glow light is missing.');
-  requireCondition(visual?.rainbowFunnel?.legacyFunnelDimmed === true, 'Legacy gray funnel was not dimmed beneath the rainbow presentation.');
+  requireCondition(visual?.rainbowFunnel?.legacyFunnelDimmed === true, 'Legacy gray funnel was not dimmed beneath the selected Neon presentation.');
   requireCondition(visual?.rainbowFunnel?.presentationOnly === true, 'Rainbow funnel is not labeled presentation-only.');
   requireCondition(rainbowProbe?.shellHasVertexColors === true, 'Rainbow shell does not contain vertex-color bands.');
   requireCondition(rainbowProbe?.ribbonCount >= 7 && rainbowProbe?.ribbonUsesAdditiveBlending === true, 'Neon ribbon rendering probe failed.');
   requireCondition(!visual?.heroSlice5LastError, `Hero Slice 5 runtime error: ${visual?.heroSlice5LastError}.`);
+
+  const toggleOff = await rainbowPage.page.evaluate(() => {
+    if (typeof toggleNeonCosmetic !== 'function') return null;
+    const before = typeof neonFunnelUnlocked !== 'undefined' ? neonFunnelUnlocked === true : null;
+    toggleNeonCosmetic();
+    const after = typeof neonFunnelUnlocked !== 'undefined' ? neonFunnelUnlocked === true : null;
+    return { before, after };
+  });
+  requireCondition(toggleOff?.before === true && toggleOff?.after === false, `Canonical Neon menu toggle did not change ON -> OFF: ${JSON.stringify(toggleOff)}.`);
+  await rainbowPage.page.waitForFunction(() => {
+    const visual = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.();
+    return visual?.rainbowFunnel?.neonSelected === false
+      && visual?.rainbowFunnel?.enabled === false
+      && visual?.rainbowFunnel?.rootPresent === false;
+  });
+  await rainbowPage.page.waitForTimeout(120);
+  report.postToggleOff = await snapshot(rainbowPage.page);
+  requireCondition(report.postToggleOff.neonSelected === false, 'Canonical menu state did not remain OFF after the second toggle.');
+  requireCondition(report.postToggleOff.visual?.rainbowFunnel?.legacyFunnelDimmed === false, 'Hero Slice 4 funnel was not restored after Neon was deselected.');
+  requireCondition(report.postToggleOff.visual?.stormVolume?.rootPresent === true, 'Hero Slice 4 storm volume was not preserved after Neon was deselected.');
+  requireCondition(Number(report.postToggleOff.visual?.rainbowFunnel?.shellCount) === 0 && Number(report.postToggleOff.visual?.rainbowFunnel?.ribbonCount) === 0, 'Rainbow geometry remained after Neon was deselected.');
+
   if (rainbowPage.errors.length) report.failures.push(`Rainbow browser errors: ${rainbowPage.errors.join(' | ')}`);
 } finally {
   await rainbowPage.page.close();
@@ -108,12 +174,15 @@ try {
       championPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice5CowChampion')),
       signPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice5CowLevelSign')),
       ringPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice5CowLevelRing')),
+      rainbowRootPresent: Boolean(scene?.getObjectByName?.('SWVisualHeroSlice5RainbowFunnel')?.parent),
     };
   });
   report.cowLevel.probe = cowProbe;
   await cowPage.page.screenshot({ path: path.join(outputDir, 'threejs-hero-slice5-cow-level.png'), fullPage: true });
 
   const visual = report.cowLevel.visual;
+  requireCondition(report.cowLevel.neonSelected === false, 'Fresh cow-level QA page unexpectedly started with Neon selected.');
+  requireCondition(visual?.rainbowFunnel?.enabled === false && cowProbe?.rainbowRootPresent === false, 'Cow-level Easter egg incorrectly forces the Neon rainbow funnel.');
   requireCondition(visual?.cowLevel?.rootPresent === true, 'Hart Farm cow-level root is missing.');
   requireCondition(Number(visual?.cowLevel?.cowCount) >= 9, `Cow level has only ${visual?.cowLevel?.cowCount} presentation cows.`);
   requireCondition(visual?.cowLevel?.signPresent === true, 'MOO LEVEL sign is missing.');

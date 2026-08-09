@@ -8,13 +8,16 @@ const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
   ? path.resolve(process.env.SEVERE_WEATHER_SOURCE_PATH)
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const runtimePath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice5.js');
+const neonGatePath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice5-neon-gate.js');
 const guardPath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice5-animation-guard.js');
 
 let html = await readFile(sourcePath, 'utf8');
 const runtime = (await readFile(runtimePath, 'utf8')).trim();
+const neonGate = (await readFile(neonGatePath, 'utf8')).trim();
 const guard = (await readFile(guardPath, 'utf8')).trim();
 const marker = 'THREEJS_VISUAL_HERO_SLICE5_V1';
 const sourceMarker = '[SW:SOURCE:threejs-visual-hero-slice5.js]';
+const neonGateSourceMarker = '[SW:SOURCE:threejs-visual-hero-slice5-neon-gate.js]';
 const guardSourceMarker = '[SW:SOURCE:threejs-visual-hero-slice5-animation-guard.js]';
 const insertionMarker = '// --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---';
 
@@ -40,6 +43,7 @@ function verifyRuntimeSafety(value) {
     'animals.pop(',
     'animals.shift(',
     'animals.unshift(',
+    'neonFunnelUnlocked =',
     'storm.pos.set(',
     'storm.pos.copy(',
     'storm.pos.add(',
@@ -52,11 +56,13 @@ function verifyRuntimeSafety(value) {
 if (html.includes(marker)) {
   [
     sourceMarker,
+    neonGateSourceMarker,
     guardSourceMarker,
     '[SW:VISUAL:HERO_SLICE5]',
+    '[SW:VISUAL:HERO_SLICE5:NEON_GATE]',
     '[SW:VISUAL:HERO_SLICE5:ANIMATION_GUARD]',
     'buildLivingCountyWithHeroSlice5FunReset',
-    'swVisualHeroSlice5UpdateRainbow',
+    'swVisualHeroSlice5UpdateRainbowWhenNeonSelected',
     'swVisualHeroSlice5UpdateCowLevelGuarded',
     'SWVisualHeroSlice5CowLevel',
   ].forEach(requireMarker);
@@ -74,12 +80,15 @@ for (const prerequisite of [
   if (!html.includes(prerequisite)) throw new Error(`Hero Slice 5 requires the sealed Hero Slice 4 output: missing ${prerequisite}`);
 }
 
-verifyRuntimeSafety(`${runtime}\n${guard}`);
+verifyRuntimeSafety(`${runtime}\n${neonGate}\n${guard}`);
 const newline = html.includes('\r\n') ? '\r\n' : '\n';
 const bundle = [
   '',
   `// ${sourceMarker}`,
   runtime,
+  '',
+  `// ${neonGateSourceMarker}`,
+  neonGate,
   '',
   `// ${guardSourceMarker}`,
   guard,
@@ -88,18 +97,21 @@ const bundle = [
 html = html.replace(insertionMarker, `${bundle}${newline}${insertionMarker}`);
 html = html.replace(
   '</head>',
-  `<!-- ${marker} -->${newline}<!-- [SW:VISUAL:HERO_SLICE5] -->${newline}</head>`,
+  `<!-- ${marker} -->${newline}<!-- [SW:VISUAL:HERO_SLICE5] -->${newline}<!-- THREEJS_VISUAL_HERO_SLICE5_NEON_GATE_V1 -->${newline}</head>`,
 );
 await writeFile(sourcePath, html, 'utf8');
 
 for (const required of [
   marker,
+  'THREEJS_VISUAL_HERO_SLICE5_NEON_GATE_V1',
   '[SW:VISUAL:HERO_SLICE5]',
+  '[SW:VISUAL:HERO_SLICE5:NEON_GATE]',
   '[SW:VISUAL:HERO_SLICE5:ANIMATION_GUARD]',
   sourceMarker,
+  neonGateSourceMarker,
   guardSourceMarker,
   'buildLivingCountyWithHeroSlice5FunReset',
-  'swVisualHeroSlice5UpdateRainbow',
+  'swVisualHeroSlice5UpdateRainbowWhenNeonSelected',
   'swVisualHeroSlice5UpdateCowLevelGuarded',
   'SWVisualHeroSlice5RainbowFunnel',
   'SWVisualHeroSlice5CowLevel',
@@ -108,10 +120,14 @@ for (const required of [
 
 const slice4Index = html.indexOf('[SW:SOURCE:threejs-visual-hero-slice4.js]');
 const slice5Index = html.indexOf(sourceMarker);
+const neonGateIndex = html.indexOf(neonGateSourceMarker);
 const guardIndex = html.indexOf(guardSourceMarker);
 const loopIndex = html.indexOf(insertionMarker);
-if (slice4Index < 0 || slice5Index < 0 || guardIndex < 0 || loopIndex < 0 || slice4Index > slice5Index || slice5Index > guardIndex || guardIndex > loopIndex) {
-  throw new Error('Hero Slice 5 must remain ordered after Hero Slice 4, then its animation guard, then the main animation loop.');
+if (
+  slice4Index < 0 || slice5Index < 0 || neonGateIndex < 0 || guardIndex < 0 || loopIndex < 0
+  || slice4Index > slice5Index || slice5Index > neonGateIndex || neonGateIndex > guardIndex || guardIndex > loopIndex
+) {
+  throw new Error('Hero Slice 5 must remain ordered after Hero Slice 4, then the Neon menu gate, animation guard, and main animation loop.');
 }
 
-console.log(`Applied Three.js Hero Slice 5 rainbow funnel + cow level to ${sourcePath}`);
+console.log(`Applied Three.js Hero Slice 5 menu-gated rainbow funnel + cow level to ${sourcePath}`);
