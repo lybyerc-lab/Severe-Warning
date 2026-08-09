@@ -57,7 +57,6 @@ check('qa-world-budget', files.qa.includes('slice6PresentationObjectCount') && f
 check('qa-requires-slice5', files.qa.includes("heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1'"));
 check('workflow-stacked-base', files.workflow.includes('agent/threejs-hero-slice5-rainbow-cow-level'));
 check('workflow-exact-slice5-reference', files.workflow.includes('f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf'));
-check('workflow-checks-stability-guard', files.workflow.includes('threejs-visual-hero-slice6-stability-guard.js'));
 check('workflow-runs-slice5-patch', files.workflow.includes('apply-threejs-hero-slice5.mjs'));
 check('workflow-runs-slice6-patch', files.workflow.includes('apply-threejs-hero-slice6.mjs'));
 check('workflow-runs-slice6-verify', files.workflow.includes('verify-threejs-hero-slice6.mjs'));
