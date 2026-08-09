@@ -1,144 +1,101 @@
 # Active Handoff
 
-Last updated: 2026-08-08 14:23 America/Chicago
+Last updated: 2026-08-09 18:10 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
-Current production direction: Three.js visual production
-Active branch: `agent/threejs-visual-production-foundation`
-Active build train: `Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`
-Visual style law: `Docs/THREEJS_VISUAL_STYLE_BIBLE.md`
-Asset intake law: `Docs/ASSET_INTAKE_AND_PROVENANCE.md`
+Production renderer: Three.js r128
+Project mode: Stage 2A visual production with parallel worker lanes
+Director/ops branch: `agent/director-multi-agent-ops`
+Current world/storm PR: #45
+Current world/storm branch: `agent/threejs-hero-slice6-world-identity-storm-silhouette`
+Public QA root: `https://lybyerc-lab.github.io/Severe-Warning/`
 
 ## Start here
 
-The repository is the authoritative project memory. Do not restart renderer selection or migrate away from Three.js because the current art is unfinished.
-
-Required startup sequence:
-
 1. Read `AGENTS.md`.
-2. Read `CURRENT_STATUS.md`.
-3. Read this file.
-4. Read `Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`.
-5. Read `Docs/THREEJS_VISUAL_STYLE_BIBLE.md`.
-6. Read `Docs/ASSET_INTAKE_AND_PROVENANCE.md` and `assets/production/asset-provenance.json`.
-7. Read `Docs/DECISIONS.md`, especially D-012.
-8. Inspect sealed Stage 1 source `f2060dff08ddb9df9f90ecd245940d8db86c7266` and current visual branch before changing production code.
-9. Treat PlayCanvas branches/artifacts as research only unless the owner explicitly reopens that direction.
+2. Read the exact assigned GitHub issue/task handoff.
+3. Read `Docs/ACTIVE_PRODUCTION_SLATE.md`.
+4. Read only additional documents named by the task.
+5. Verify the exact task base SHA and worker branch before changing anything.
 
-## Frozen fun reference
+The repository is durable memory. Chat is temporary working context.
 
-PR #26 exact head:
+## Current production truth
 
-`1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+- Frozen gameplay/fun baseline: PR #26 head `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`.
+- Sealed Stage 1 graphics source: `f2060dff08ddb9df9f90ecd245940d8db86c7266`.
+- Hero Slice 5 parent for Slice 6: `f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf`.
+- PR #45 is the current bounded world/storm visual pass and remains NOT ACCEPTED until exact visual evidence and owner review pass.
+- QA-root browser iteration is the fast human test loop.
+- Android debug APK generation is opt-in for deliberate device checkpoints.
 
-Reference evidence:
+## Parallel production model
 
-- Workflow Run 6: `31094966986`
-- artifact: `severe-weather-presentation-identity-6`
-- debug APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
+The owner remains creative director and should be free to brainstorm, jump between ideas, and react to builds.
 
-Protected gameplay includes direct storm steering, forward movement feel, Pull/Gust/Grid Zap, natural storm-contact destruction, score/combo/timer/stage/campaign truth, Cow 17 and safe-animal law, pause/reset cleanup, gameplay camera feel, and Android landscape input layout.
+The Director/Integration lane converts ideas into bounded tasks, keeps the production slate current, assigns exact file territory, reviews worker output, chooses merge order, manages QA, and records decisions.
 
-## Sealed Stage 1 asset-pipeline source
+Worker lanes operate independently on separate branches/worktrees. One writer per branch.
 
-Exact source:
+Initial lanes:
 
-`f2060dff08ddb9df9f90ecd245940d8db86c7266`
+### WORLD
 
-Evidence:
+Finish Hero Slice 6 visual quality without weakening its road law or gameplay protections.
 
-- Three.js Asset Pipeline Foundation Run 5: `31270418326`, success
-- artifact: `severe-weather-threejs-asset-pipeline-5`
-- artifact digest: `sha256:90360c1811f0976d6f8d798c75997fb07b5eb6f6e51a8b1d885fa6ab3de0f3e5`
-- debug APK SHA-256: `496439b2adc434c29cb0fd7db5ce6f03047efa20d964ba19cf397ef42be95b10`
-- public QA: `https://lybyerc-lab.github.io/Severe-Warning/threejs/`
-- QA overlay deployment Run 1: `31271092725`, success
+Focus:
 
-The owner tested this public Three.js browser candidate and reported: **“Great build. Plays really well. I missed it.”**
+- Main Street must stop reading as prototype box massing;
+- water tower/municipal landmark must read as authored world art;
+- road/curb/sidewalk/verge/lot hierarchy must remain obvious;
+- farm fence/ditch must remain road-safe;
+- default tornado silhouette must remain irregular and storm-like;
+- keep mobile presentation cost bounded.
 
-That closes the browser owner gate for Stage 1 gameplay/fun and the authored-presentation seam. It does not approve current final graphics and it does not claim physical acceptance of the exact debug APK on Galaxy S26 Ultra.
+### QA
 
-## Owner visual mandate
+Reduce iteration wall-clock time without weakening evidence.
 
-On 2026-08-08 the owner directed:
+Focus:
 
-- stay on this Three.js path until it is beautiful;
-- build a much better graphics pipeline;
-- make the opening cinematic beautiful;
-- make the rest of the game reach the same visual standard;
-- investigate useful sprites/assets on GitHub where they can help.
+- split the large sequential Hero Slice workflow into reusable build/evidence and parallel QA jobs;
+- stop rebuilding immutable baselines unnecessarily;
+- add path-aware triggering so docs-only/task-only updates do not launch expensive visual CI;
+- generalize the QA Pages publisher around artifact manifests instead of hard-coded Slice 4/5 branches;
+- preserve exact-source artifact identity and blocking regression gates.
 
-Do not interpret this as permission to sacrifice the fun baseline.
+### CINEMATIC
 
-## Active art direction
+Build the opening-cinematic foundation in isolated presentation modules without wiring it into gameplay authority yet.
+
+Locked scene direction:
+
+`newspaper -> farm reveal -> bipedal Cow 17 leaning at fence with chickens -> Moo Brew sip -> weather/radio shift -> slow double take -> last sip -> cup drop -> chicken panic -> Cow 17 escape -> roof peel -> touchdown -> seamless gameplay handoff`
+
+The first cinematic worker should focus on actor/prop/shot-controller foundations and deterministic QA framing, not a full production integration in one task.
+
+## Protected gameplay
+
+Unless a task explicitly says otherwise, workers must not change steering/input, gameplay camera feel, storm movement authority, Pull/Gust/Grid Zap, scoring/timing/campaign state, target damage/collision authority, Cow 17 safety, Neon persistence, pause/reset lifecycle, or Android touch layout.
+
+## Visual identity
 
 Art thesis: **storm-charged stylized Americana**.
 
 Visual promise: **beautiful at a glance, readable at speed, cinematic up close**.
 
-Do not aim for photorealism, generic toy-plastic low-poly, pixel-art collage, or unrelated asset-pack aesthetics.
+Spatial law:
 
-External assets are ingredients only. Hero structures, destruction anatomy, Cow 17/Moo Brew identity, tornado presentation, landmarks, and cinematic close-up assets require a coherent project-owned/restyled visual language.
+`road -> curb -> sidewalk -> verge -> lot -> building`
 
-## External asset gate
+Stop solving architecture by stacking generic boxes.
 
-Nothing from GitHub or another source enters production without exact provenance and license evidence.
+## Evidence law
 
-Current reviewed candidates are recorded in `assets/production/asset-provenance.json`:
+- Green CI is engineering evidence, not visual acceptance.
+- Browser approval is not physical Android acceptance.
+- Workers do not merge their own work or promote QA.
+- Worker completion must return exact final SHA, changed files, test evidence, screenshots/reports when required, limitations, and protected-area statement.
 
-- Kenney Particle Pack, CC0, candidate for selected VFX sprites/cards;
-- KayKit City Builder Bits, CC0, candidate secondary props/reference pool;
-- Kenney Starter Kit City Builder assets, README-declared CC0 asset set, research-only until exact individual paths are recorded.
+## Next chat / next agent
 
-No runtime network asset dependency is allowed. Production files must ship locally in the web and Capacitor packages.
-
-## Immediate milestone: hero visual acceptance slice
-
-Stay narrow until the pipeline looks genuinely good.
-
-Build one representative slice with:
-
-- Hart Farm block with Cow 17/Moo Brew identity;
-- Prairie Junction street/storefront view;
-- road/terrain separation;
-- production sky, storm light, haze/weather atmosphere;
-- vegetation and utility dressing;
-- one authored destructible structure with staged readable anatomy;
-- selected dust/rain/debris VFX cards;
-- deterministic pristine and damage evidence views.
-
-The point is not to decorate the whole map. The point is to make one slice beautiful enough to become the yardstick for the whole game and the opening cinematic.
-
-## Destruction requirement inside the hero slice
-
-Ordinary tornado contact must visibly damage/destroy without an ability. Avoid roof-only spectacle and giant generic chunks. Use wall, interior, frame, trim, windows/doors, roof, and secondary material-specific debris within the mobile budget.
-
-Pull/Gust/Zap amplify spectacle; they do not gate it.
-
-## Opening cinematic follow-up
-
-Keep the approved story:
-
-newspaper -> farm reveal -> Cow 17 drinks Moo Brew -> weather/radio shift -> Cow 17 double take -> chickens scatter -> barn roof/tornado touchdown -> gameplay.
-
-Rebuild it in the same production Three.js world and visual language as gameplay. The current DOM/CSS intro is a temporary story prototype. No loading break. Keep it skippable. Start the warning clock at gameplay handoff.
-
-## Acceptance law
-
-Every meaningful visual candidate must satisfy both objective regressions and hands-on owner judgment.
-
-Ask:
-
-- Is steering still direct and fun?
-- Is ordinary contact destruction satisfying?
-- Does the world look authored rather than prototype-generated?
-- Are roads and targets readable at gameplay speed?
-- Do VFX add scale without obscuring control?
-- Does destruction reveal believable anatomy rather than roof-heavy slabs?
-- Would the opening cinematic look like this same game?
-- Is this at least as fun as the sealed Three.js reference?
-
-A green build that loses those comparisons does not advance.
-
-## New-chat prompt
-
-> Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md`, `CURRENT_STATUS.md`, `Docs/ACTIVE_HANDOFF.md`, `Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`, `Docs/THREEJS_VISUAL_STYLE_BIBLE.md`, `Docs/ASSET_INTAKE_AND_PROVENANCE.md`, and `Docs/DECISIONS.md`. Three.js is production. The sealed Stage 1 source is `f2060dff08ddb9df9f90ecd245940d8db86c7266`, and the owner browser verdict says it plays really well. Active work is the hero visual-production slice on `agent/threejs-visual-production-foundation`. Preserve gameplay authority. Use external assets only through the provenance/license/style gate. Stay on the representative slice until it is genuinely beautiful before widening the art conversion.
+Open the assigned task ticket first. Do not use an old generic handoff when a newer exact task handoff exists.
