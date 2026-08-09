@@ -257,3 +257,70 @@ Build #5 physical testing proved the damage pipeline, stage transitions, target 
 **Rejected alternatives:** A second map before the first town has memorable blocks; imported high-poly asset packs that compromise the self-contained mobile build; more empty map area; military enemies; chain-reaction humor involving people or real disasters.
 
 **Revisit condition:** Add another town only after a complete v4 browser run, retry, synchronized Android build, physical-device round, and human feedback show that clearing blocks and discovering chain sites materially improve replay desire.
+
+## 2026-08-09 - Decision PROD-01: Use a repository production slate for nonlinear creative work
+
+### Decision
+
+Keep GitHub as the durable project memory and add `Docs/ACTIVE_PRODUCTION_SLATE.md` as the canonical near-term work inventory. New ideas may be explored whenever they occur, but meaningful ideas must be captured as active, queued, parked, or rejected rather than being left only in chat.
+
+### Evidence
+
+The owner frequently moves between graphics, cinematic, gameplay, and expansion ideas and explicitly wants that freedom without losing previously approved direction. Long chat threads become heavy quickly and are a poor long-term planning surface.
+
+### Rejected alternatives
+
+- forcing all creative discussion into a strict linear sequence;
+- relying on chat history to remember unresolved work;
+- treating every new idea as an automatic scope change.
+
+### Revisit condition
+
+The slate may later move into a richer issue/project system, but the repository must continue to contain a self-contained durable record of active and queued direction.
+
+## 2026-08-09 - Decision QA-01: Browser-first iteration with opt-in Android device checkpoints
+
+### Decision
+
+Use the public QA root as the default rapid human iteration surface. Pull-request visual workflows should build and verify the browser candidate, preserve screenshots/reports/performance evidence, and support QA-root promotion without compiling an APK every time. Android packaging remains available as a deliberate manual device-checkpoint action.
+
+For Hero Slice 6, the workflow-dispatch input `package_android` controls whether JDK setup, Capacitor Android synchronization, Gradle assembly, and APK evidence are produced. Ordinary PR runs remain browser/evidence runs.
+
+### Evidence
+
+The current development APK does not update conveniently over the installed app and requires uninstall/reinstall to replace it. That friction adds little value to frequent presentation-only iterations. The project already uses the QA root successfully for browser visual/fun review, while physical Android testing remains most valuable for milestone validation and device-specific behavior.
+
+### Rejected alternatives
+
+- compiling and archiving an APK for every visual tweak;
+- stopping Android testing entirely;
+- treating browser approval as physical-device acceptance.
+
+### Revisit condition
+
+Return to automatic APK generation if the development install/update path becomes low-friction or if active work begins changing touch, camera, WebView, lifecycle, audio, thermal, or other device-specific behavior frequently enough to justify every-run packaging.
+
+## 2026-08-09 - Decision CIN-01: Lock the Moo Brew opening as a Three.js character-performance scene
+
+### Decision
+
+The final opening cinematic uses the same Three.js world, assets, materials, lighting, atmosphere, Cow 17 identity, and VFX language as gameplay. The current DOM/CSS opening remains a story prototype only.
+
+The farm reveal is staged as a character-performance beat: Cow 17 is upright/bipedal for the scene, casually leaning on a fence and sipping from a recognizable Moo Brew cup while chickens gather around with small conversational reactions resembling coworkers at an office water cooler. Environmental warning signs build while the group remains casually occupied. Cow 17 performs the planned slow double take, takes one final ill-advised sip, drops the cup, chickens scatter, Cow 17 switches into an exaggerated action-hero escape, the barn roof begins peeling, the tornado touches down, and the camera hands directly into gameplay.
+
+The warning clock begins only at the gameplay handoff. Target length remains roughly 10 to 15 seconds. Later viewings remain skippable and may rotate newspaper headlines.
+
+### Evidence
+
+`Docs/PRODUCT_VISION_AND_ROADMAP.md` already locks the Moo Brew touchdown story and requires the same Three.js runtime as gameplay. `CURRENT_STATUS.md` already rejects a separate cheap-animation universe. The owner explicitly approved the bipedal fence/water-cooler acting direction and the associated directorial choices on 2026-08-09.
+
+### Rejected alternatives
+
+- polishing the existing DOM/CSS character presentation into the final cinematic;
+- static billboard actors with no readable posing or acting;
+- a disconnected pre-rendered-looking sequence that does not match gameplay;
+- starting the warning clock before player control.
+
+### Revisit condition
+
+The owner may change performance details later, and mobile constraints may simplify articulation, but the same-world Three.js presentation, Cow 17/Moo Brew character beat, comedic timing, and seamless gameplay handoff remain the default direction.
