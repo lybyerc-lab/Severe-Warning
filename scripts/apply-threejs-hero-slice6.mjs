@@ -131,8 +131,8 @@ for (const required of [
   'swVisualHeroSlice6RoadLawBuildStreetBoundaries',
   'swVisualHeroSlice6RoadLawApplyParcelCompliance',
   'swVisualHeroSlice6BuildRoadSafeFarmEdge',
-  'SWVisualHeroSlice6RoadLawSidewalkBatch',
-  'SWVisualHeroSlice6RoadLawCurbBatch',
+  'SWVisualSlice6RoadLawSidewalkBatch',
+  'SWVisualSlice6RoadLawCurbBatch',
   'SWVisualHeroSlice6StormSilhouette',
   'SWVisualHeroSlice6WorldIdentity',
 ]) requireMarker(required);
