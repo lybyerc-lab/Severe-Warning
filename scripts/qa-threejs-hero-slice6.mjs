@@ -13,7 +13,7 @@ await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
 const report = {
-  version: 'THREEJS_HERO_SLICE6_QA_V1',
+  version: 'THREEJS_HERO_SLICE6_QA_V2',
   generatedAt: new Date().toISOString(),
   passed: false,
   defaultStorm: null,
@@ -41,6 +41,7 @@ async function createPage() {
   await page.waitForFunction(() => typeof globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot === 'function');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice6Version === 'THREEJS_VISUAL_HERO_SLICE6_V1');
+  await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice6RoadLawVersion === 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getSnapshot?.().appliedCount >= 1);
   await page.waitForFunction(() => {
     const visual = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.();
@@ -59,6 +60,35 @@ async function snapshot(page) {
 
 async function slice6Probe(page) {
   return page.evaluate(() => {
+    const roadStep = 80;
+    const roadHalf = 8.75;
+    const nearestRoadDistance = (value) => Math.abs(Number(value || 0) - Math.round(Number(value || 0) / roadStep) * roadStep);
+    const boxCrossesRoad = (box) => {
+      if (!box || box.isEmpty?.()) return false;
+      const minXLine = Math.floor((box.min.x - roadHalf) / roadStep) * roadStep;
+      const maxXLine = Math.ceil((box.max.x + roadHalf) / roadStep) * roadStep;
+      for (let line = minXLine; line <= maxXLine; line += roadStep) {
+        if (box.max.x >= line - roadHalf && box.min.x <= line + roadHalf) return true;
+      }
+      const minZLine = Math.floor((box.min.z - roadHalf) / roadStep) * roadStep;
+      const maxZLine = Math.ceil((box.max.z + roadHalf) / roadStep) * roadStep;
+      for (let line = minZLine; line <= maxZLine; line += roadStep) {
+        if (box.max.z >= line - roadHalf && box.min.z <= line + roadHalf) return true;
+      }
+      return false;
+    };
+    const legacyParcelMesh = (object) => {
+      if (!object?.isMesh) return false;
+      const parameters = object.geometry?.parameters || {};
+      const width = Number(parameters.width);
+      const height = Number(parameters.height);
+      const approx = (a, b) => Number.isFinite(a) && Math.abs(a - b) <= 0.08;
+      return (approx(width, 60) && approx(height, 60))
+        || (approx(width, 54) && approx(height, 3.2))
+        || (approx(width, 3.2) && approx(height, 54))
+        || (approx(width, 4.2) && approx(height, 48));
+    };
+
     const stormRoot = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
     const worldRoot = scene?.getObjectByName?.('SWVisualHeroSlice6WorldIdentity') || null;
     const shells = stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6StormShell')) || [];
@@ -113,6 +143,59 @@ async function slice6Probe(page) {
       }
     });
 
+    const independentTargetRoadIntrusions = [];
+    const targetList = typeof targets !== 'undefined' && Array.isArray(targets) ? targets : [];
+    targetList.forEach((target) => {
+      const group = target?.meshData?.group;
+      if (!group || Boolean(target.destroyed) || Boolean(target.isTree) || group.visible === false) return;
+      group.updateMatrixWorld?.(true);
+      const box = new THREE.Box3().setFromObject(group);
+      if (!boxCrossesRoad(box)) return;
+      independentTargetRoadIntrusions.push({
+        kind: String(target.kind || target.meshData?.label || 'unknown'),
+        x: Number(target.x),
+        z: Number(target.z),
+        group: String(group.name || ''),
+      });
+    });
+
+    let legacyVisibleParcelMeshes = 0;
+    if (typeof townDressGroup !== 'undefined' && townDressGroup?.children) {
+      townDressGroup.children.forEach((object) => {
+        if (object.visible !== false && legacyParcelMesh(object)) legacyVisibleParcelMeshes += 1;
+      });
+    }
+
+    const sidewalkBatch = scene?.getObjectByName?.('SWVisualSlice6RoadLawSidewalkBatch') || null;
+    const curbBatch = scene?.getObjectByName?.('SWVisualSlice6RoadLawCurbBatch') || null;
+    const vergeBatch = scene?.getObjectByName?.('SWVisualSlice6RoadLawVergeBatch') || null;
+
+    const independentFenceRoadIntrusions = [];
+    const inspectInstancedFence = (object, axisLength = 0) => {
+      if (!object?.isInstancedMesh) return;
+      object.updateMatrixWorld?.(true);
+      const local = new THREE.Matrix4();
+      const world = new THREE.Matrix4();
+      const position = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      for (let index = 0; index < object.count; index += 1) {
+        object.getMatrixAt(index, local);
+        world.multiplyMatrices(object.matrixWorld, local);
+        world.decompose(position, quaternion, scale);
+        const xDistance = nearestRoadDistance(position.x);
+        const zDistance = nearestRoadDistance(position.z);
+        const halfLength = axisLength > 0 ? axisLength * Math.abs(scale.z) * 0.5 : 0;
+        if (xDistance <= roadHalf || zDistance <= roadHalf + halfLength) {
+          independentFenceRoadIntrusions.push({ name: object.name, index, x: position.x, z: position.z, halfLength });
+        }
+      }
+    };
+    inspectInstancedFence(scene?.getObjectByName?.('SWVisualSlice6FarmFencePosts'), 0);
+    inspectInstancedFence(scene?.getObjectByName?.('SWVisualSlice6FarmFenceRails1'), 5);
+    inspectInstancedFence(scene?.getObjectByName?.('SWVisualSlice6FarmFenceRails2'), 5);
+
+    const visual = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.() || null;
     return {
       stormRootPresent: Boolean(stormRoot?.parent),
       worldRootPresent: Boolean(worldRoot?.parent),
@@ -121,14 +204,24 @@ async function slice6Probe(page) {
       edgeWispCount: stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6EdgeWisp')).length || 0,
       groundBurstCount: stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6GroundBurst')).length || 0,
       buildingIdentityGroups,
-      serviceAlleyPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice6ServiceAlley')),
+      sidewalkBatchPresent: Boolean(sidewalkBatch?.parent),
+      curbBatchPresent: Boolean(curbBatch?.parent),
+      vergeBatchPresent: Boolean(vergeBatch?.parent),
+      sidewalkBatchRectCount: Number(sidewalkBatch?.geometry?.userData?.swSlice6RoadLawRectCount || 0),
+      curbBatchRectCount: Number(curbBatch?.geometry?.userData?.swSlice6RoadLawRectCount || 0),
+      vergeBatchRectCount: Number(vergeBatch?.geometry?.userData?.swSlice6RoadLawRectCount || 0),
       farmFencePresent: Boolean(scene?.getObjectByName?.('SWVisualSlice6FarmFencePosts')),
-      farmDitchPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice6FarmDitch')),
-      roadsideClumpsPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice6RoadsideClumps')),
+      farmDitchPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice6FarmDitchSegments')),
+      farmShoulderPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice6FarmShoulderSegments')),
+      parcelClumpsPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice6ParcelClumps')),
       inheritedShellMaxOpacity: inheritedShellOpacities.length ? Math.max(...inheritedShellOpacities) : null,
       defaultFunnelOpacity: typeof funnelMat !== 'undefined' ? Number(funnelMat.opacity) : null,
       slice6PresentationObjectCount,
       rainbowRootPresent: Boolean(scene?.getObjectByName?.('SWVisualHeroSlice5RainbowFunnel')?.parent),
+      independentTargetRoadIntrusions,
+      independentFenceRoadIntrusions,
+      legacyVisibleParcelMeshes,
+      roadLaw: visual?.worldIdentity?.roadLaw || null,
     };
   });
 }
@@ -148,6 +241,7 @@ try {
   requireCondition(visual?.rainbowFunnel?.enabled === false && probe?.rainbowRootPresent === false, 'Slice 6 default storm unexpectedly forced the Neon rainbow cosmetic.');
   requireCondition(visual?.heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1', `Inherited Hero Slice 5 version mismatch: ${visual?.heroSlice5Version}.`);
   requireCondition(visual?.heroSlice6Version === 'THREEJS_VISUAL_HERO_SLICE6_V1', `Hero Slice 6 version mismatch: ${visual?.heroSlice6Version}.`);
+  requireCondition(visual?.heroSlice6RoadLawVersion === 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1', `Hero Slice 6 road-law version mismatch: ${visual?.heroSlice6RoadLawVersion}.`);
   requireCondition(visual?.stormSilhouette?.profile === 'asymmetric-storm-v1', `Unexpected Slice 6 storm profile ${visual?.stormSilhouette?.profile}.`);
   requireCondition(probe?.stormRootPresent === true, 'Slice 6 storm silhouette root is missing.');
   requireCondition(Number(probe?.warpedShellCount) >= 3, `Only ${probe?.warpedShellCount} warped storm shells are active.`);
@@ -156,7 +250,7 @@ try {
   requireCondition(Number(probe?.groundBurstCount) >= 9, `Only ${probe?.groundBurstCount} irregular ground bursts are active.`);
   requireCondition(Number(probe?.inheritedShellMaxOpacity) <= 0.09, `Inherited Slice 4 cone shells remain too dominant: ${probe?.inheritedShellMaxOpacity}.`);
   requireCondition(Number(probe?.defaultFunnelOpacity) <= 0.22, `Legacy funnel remains too opaque in default mode: ${probe?.defaultFunnelOpacity}.`);
-  requireCondition(Number(probe?.slice6PresentationObjectCount) <= 140, `Slice 6 presentation object budget exceeded: ${probe?.slice6PresentationObjectCount}.`);
+  requireCondition(Number(probe?.slice6PresentationObjectCount) <= 110, `Slice 6 presentation object budget exceeded: ${probe?.slice6PresentationObjectCount}.`);
   requireCondition(!visual?.heroSlice6LastError, `Slice 6 runtime error: ${visual?.heroSlice6LastError}.`);
   if (stormPage.errors.length) report.failures.push(`Storm browser errors: ${stormPage.errors.join(' | ')}`);
 } finally {
@@ -167,21 +261,28 @@ const streetPage = await createPage();
 try {
   const prepared = await streetPage.page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('slice6-street'));
   requireCondition(prepared === true, 'Slice 6 main-street QA view did not prepare.');
-  await streetPage.page.waitForTimeout(220);
+  await streetPage.page.waitForTimeout(240);
   report.mainStreet = await snapshot(streetPage.page);
   report.mainStreet.probe = await slice6Probe(streetPage.page);
   await streetPage.page.screenshot({ path: path.join(outputDir, 'threejs-hero-slice6-main-street.png'), fullPage: true });
 
   const visual = report.mainStreet.visual;
   const probe = report.mainStreet.probe;
-  requireCondition(visual?.worldIdentity?.profile === 'authored-main-street-v1', `Unexpected world identity profile ${visual?.worldIdentity?.profile}.`);
+  const roadLaw = visual?.worldIdentity?.roadLaw;
+  requireCondition(visual?.worldIdentity?.profile === 'road-first-parcels-v2', `Unexpected world identity profile ${visual?.worldIdentity?.profile}.`);
+  requireCondition(roadLaw?.version === 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1', `Road-law snapshot missing or stale: ${roadLaw?.version}.`);
   requireCondition(probe?.worldRootPresent === true, 'Slice 6 world identity root is missing.');
-  requireCondition(Number(probe?.buildingIdentityGroups) >= 4, `Only ${probe?.buildingIdentityGroups} nearby buildings received authored identity kits.`);
-  requireCondition(visual?.worldIdentity?.transitionCount >= 6, `Only ${visual?.worldIdentity?.transitionCount} terrain/road transition elements are active.`);
-  requireCondition(probe?.serviceAlleyPresent === true, 'Main Street service alley treatment is missing.');
-  requireCondition(probe?.roadsideClumpsPresent === true, 'Roadside vegetation pocket is missing.');
+  requireCondition(Number(probe?.buildingIdentityGroups) === 0 && Number(roadLaw?.stackedSlice6BuildingKits) === 0, `Stacked Slice 6 box kits are still active: groups=${probe?.buildingIdentityGroups}, snapshot=${roadLaw?.stackedSlice6BuildingKits}.`);
+  requireCondition(probe?.sidewalkBatchPresent === true && probe?.curbBatchPresent === true && probe?.vergeBatchPresent === true, 'Road-first sidewalk/curb/verge boundaries are incomplete.');
+  requireCondition(Number(roadLaw?.sidewalkSegmentCount) >= 120 && Number(probe?.sidewalkBatchRectCount) >= 120, `Only ${roadLaw?.sidewalkSegmentCount} sidewalk boundary segments are active.`);
+  requireCondition(Number(roadLaw?.curbSegmentCount) >= 120 && Number(probe?.curbBatchRectCount) >= 120, `Only ${roadLaw?.curbSegmentCount} curb boundary segments are active.`);
+  requireCondition(Number(roadLaw?.hiddenLegacyParcelMeshes) >= 36, `Only ${roadLaw?.hiddenLegacyParcelMeshes} legacy square parcel overlays were suppressed.`);
+  requireCondition(Number(probe?.legacyVisibleParcelMeshes) === 0, `${probe?.legacyVisibleParcelMeshes} legacy square parcel overlays remain visible.`);
+  requireCondition(Number(roadLaw?.parcelAdjustedTargetCount) > 0, 'Parcel compliance did not adjust any oversized building presentation.');
+  requireCondition(Number(roadLaw?.targetRoadIntrusionCount) === 0, `Road-law telemetry still reports ${roadLaw?.targetRoadIntrusionCount} building road intrusions: ${JSON.stringify(roadLaw?.targetRoadIntrusions || [])}`);
+  requireCondition(Array.isArray(probe?.independentTargetRoadIntrusions) && probe.independentTargetRoadIntrusions.length === 0, `Independent QA found building geometry inside protected roads: ${JSON.stringify(probe?.independentTargetRoadIntrusions || [])}`);
   requireCondition(Number(visual?.worldGrade?.exposure) <= 0.93, `World exposure was not restrained: ${visual?.worldGrade?.exposure}.`);
-  requireCondition(Number(probe?.slice6PresentationObjectCount) <= 140, `Slice 6 presentation object budget exceeded in street view: ${probe?.slice6PresentationObjectCount}.`);
+  requireCondition(Number(probe?.slice6PresentationObjectCount) <= 110, `Slice 6 presentation object budget exceeded in street view: ${probe?.slice6PresentationObjectCount}.`);
   requireCondition(Number(report.mainStreet.gameplayAnimalCount) > 0, 'Authoritative gameplay animal array disappeared during Slice 6 street QA.');
   requireCondition(!visual?.heroSlice6LastError, `Slice 6 runtime error in street view: ${visual?.heroSlice6LastError}.`);
   if (streetPage.errors.length) report.failures.push(`Main-street browser errors: ${streetPage.errors.join(' | ')}`);
@@ -193,17 +294,23 @@ const farmPage = await createPage();
 try {
   const prepared = await farmPage.page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('slice6-farm-edge'));
   requireCondition(prepared === true, 'Slice 6 farm-edge QA view did not prepare.');
-  await farmPage.page.waitForTimeout(220);
+  await farmPage.page.waitForTimeout(240);
   report.farmEdge = await snapshot(farmPage.page);
   report.farmEdge.probe = await slice6Probe(farmPage.page);
   await farmPage.page.screenshot({ path: path.join(outputDir, 'threejs-hero-slice6-farm-edge.png'), fullPage: true });
 
   const visual = report.farmEdge.visual;
   const probe = report.farmEdge.probe;
+  const roadLaw = visual?.worldIdentity?.roadLaw;
   requireCondition(probe?.farmFencePresent === true, 'Farm-edge fence presentation is missing.');
-  requireCondition(probe?.farmDitchPresent === true, 'Farm-edge ditch transition is missing.');
-  requireCondition(Number(visual?.worldIdentity?.fenceInstanceCount) >= 13, `Only ${visual?.worldIdentity?.fenceInstanceCount} fence-post instances are active.`);
-  requireCondition(Number(probe?.slice6PresentationObjectCount) <= 140, `Slice 6 presentation object budget exceeded in farm view: ${probe?.slice6PresentationObjectCount}.`);
+  requireCondition(probe?.farmDitchPresent === true && probe?.farmShoulderPresent === true, 'Farm-edge ditch/shoulder segmentation is missing.');
+  requireCondition(Number(roadLaw?.farmFencePostCount) >= 4, `Only ${roadLaw?.farmFencePostCount} road-safe fence posts remain.`);
+  requireCondition(Number(roadLaw?.farmFenceRailCount) >= 4, `Only ${roadLaw?.farmFenceRailCount} road-safe fence rails remain.`);
+  requireCondition(Number(roadLaw?.farmFenceGapCount) >= 1, 'Farm fence did not open a road crossing gap.');
+  requireCondition(Number(roadLaw?.farmFenceRoadIntrusionCount) === 0, `Farm fence telemetry reports ${roadLaw?.farmFenceRoadIntrusionCount} road intrusions.`);
+  requireCondition(Array.isArray(probe?.independentFenceRoadIntrusions) && probe.independentFenceRoadIntrusions.length === 0, `Independent QA found fence geometry inside the road: ${JSON.stringify(probe?.independentFenceRoadIntrusions || [])}`);
+  requireCondition(Number(roadLaw?.farmDitchSegmentCount) > 0 && Number(roadLaw?.farmShoulderSegmentCount) > 0, 'Farm ditch/shoulder lost all road-safe segments.');
+  requireCondition(Number(probe?.slice6PresentationObjectCount) <= 110, `Slice 6 presentation object budget exceeded in farm view: ${probe?.slice6PresentationObjectCount}.`);
   requireCondition(report.farmEdge.neonSelected === false, 'Farm-edge QA unexpectedly enabled Neon.');
   requireCondition(!visual?.heroSlice6LastError, `Slice 6 runtime error in farm view: ${visual?.heroSlice6LastError}.`);
   if (farmPage.errors.length) report.failures.push(`Farm-edge browser errors: ${farmPage.errors.join(' | ')}`);
