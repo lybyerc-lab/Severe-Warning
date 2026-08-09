@@ -13,7 +13,7 @@ await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
 const report = {
-  version: 'THREEJS_HERO_SLICE5_QA_V2',
+  version: 'THREEJS_HERO_SLICE5_QA_V3',
   generatedAt: new Date().toISOString(),
   passed: false,
   defaultStorm: null,
@@ -42,6 +42,7 @@ async function createPage() {
   await page.waitForFunction(() => typeof globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot === 'function');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.heroSlice5NeonGateVersion === 'THREEJS_VISUAL_HERO_SLICE5_NEON_GATE_V1');
+  await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.heroSlice5PolishVersion === 'THREEJS_VISUAL_HERO_SLICE5_POLISH_V1');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getSnapshot?.().appliedCount >= 1);
   return { page, errors };
 }
@@ -71,6 +72,7 @@ try {
   requireCondition(defaultVisual?.heroSlice4Version === 'THREEJS_VISUAL_HERO_SLICE4_V1', `Inherited Hero Slice 4 version mismatch: ${defaultVisual?.heroSlice4Version}.`);
   requireCondition(defaultVisual?.heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1', `Hero Slice 5 version mismatch: ${defaultVisual?.heroSlice5Version}.`);
   requireCondition(defaultVisual?.neonGate?.version === 'THREEJS_VISUAL_HERO_SLICE5_NEON_GATE_V1', `Neon gate version mismatch: ${defaultVisual?.neonGate?.version}.`);
+  requireCondition(defaultVisual?.heroSlice5PolishVersion === 'THREEJS_VISUAL_HERO_SLICE5_POLISH_V1', `Polish version mismatch: ${defaultVisual?.heroSlice5PolishVersion}.`);
   requireCondition(defaultVisual?.rainbowFunnel?.neonSelected === false, 'Snapshot says Neon is selected before the player selects it.');
   requireCondition(defaultVisual?.rainbowFunnel?.enabled === false, 'Rainbow funnel is enabled while Neon is OFF.');
   requireCondition(defaultVisual?.rainbowFunnel?.rootPresent === false, 'Rainbow funnel root exists while Neon is OFF.');
@@ -99,13 +101,19 @@ try {
   report.rainbow = await snapshot(rainbowPage.page);
   const rainbowProbe = await rainbowPage.page.evaluate(() => {
     const root = scene?.getObjectByName?.('SWVisualHeroSlice5RainbowFunnel') || null;
-    const shell = scene?.getObjectByName?.('SWVisualSlice5RainbowShell1') || null;
+    const shells = root?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice5RainbowShell')) || [];
     const ribbons = root?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice5RainbowRibbon')) || [];
+    const glow = root?.getObjectByName?.('SWVisualSlice5RainbowGlow') || null;
     return {
       rootPresent: Boolean(root?.parent),
-      shellHasVertexColors: Boolean(shell?.geometry?.getAttribute?.('color')),
+      shellHasVertexColors: shells.every((entry) => Boolean(entry.geometry?.getAttribute?.('color'))),
+      shellCount: shells.length,
+      shellUsesNormalBlending: shells.every((entry) => entry.material?.blending === THREE.NormalBlending),
+      maxShellOpacity: shells.reduce((value, entry) => Math.max(value, Number(entry.material?.opacity || 0)), 0),
       ribbonCount: ribbons.length,
       ribbonUsesAdditiveBlending: ribbons.every((entry) => entry.material?.blending === THREE.AdditiveBlending),
+      maxRibbonOpacity: ribbons.reduce((value, entry) => Math.max(value, Number(entry.material?.opacity || 0)), 0),
+      glowIntensity: Number(glow?.intensity || 0),
     };
   });
   report.rainbow.probe = rainbowProbe;
@@ -114,6 +122,7 @@ try {
   const visual = report.rainbow.visual;
   requireCondition(report.rainbow.neonSelected === true, 'Canonical menu state is not ON in the Neon evidence frame.');
   requireCondition(visual?.rainbowFunnel?.gateSource === 'neonFunnelUnlocked', `Unexpected Neon gate source ${visual?.rainbowFunnel?.gateSource}.`);
+  requireCondition(visual?.rainbowFunnel?.polishProfile === 'balanced-neon-v1', `Unexpected Neon polish profile ${visual?.rainbowFunnel?.polishProfile}.`);
   requireCondition(visual?.rainbowFunnel?.neonSelected === true && visual?.rainbowFunnel?.enabled === true, 'Rainbow funnel did not follow the selected Neon menu state.');
   requireCondition(visual?.rainbowFunnel?.rootPresent === true, 'Rainbow funnel root is missing after selecting Neon.');
   requireCondition(Number(visual?.rainbowFunnel?.shellCount) >= 2, `Only ${visual?.rainbowFunnel?.shellCount} rainbow shells are active.`);
@@ -121,8 +130,12 @@ try {
   requireCondition(Number(visual?.rainbowFunnel?.lightCount) >= 1, 'Rainbow funnel glow light is missing.');
   requireCondition(visual?.rainbowFunnel?.legacyFunnelDimmed === true, 'Legacy gray funnel was not dimmed beneath the selected Neon presentation.');
   requireCondition(visual?.rainbowFunnel?.presentationOnly === true, 'Rainbow funnel is not labeled presentation-only.');
-  requireCondition(rainbowProbe?.shellHasVertexColors === true, 'Rainbow shell does not contain vertex-color bands.');
+  requireCondition(rainbowProbe?.shellHasVertexColors === true, 'Rainbow shells do not contain vertex-color bands.');
+  requireCondition(rainbowProbe?.shellUsesNormalBlending === true, 'Balanced Neon shells still use additive blending and may white out.');
   requireCondition(rainbowProbe?.ribbonCount >= 7 && rainbowProbe?.ribbonUsesAdditiveBlending === true, 'Neon ribbon rendering probe failed.');
+  requireCondition(Number(rainbowProbe?.maxShellOpacity) <= 0.15, `Neon shell opacity is too high: ${rainbowProbe?.maxShellOpacity}.`);
+  requireCondition(Number(rainbowProbe?.maxRibbonOpacity) <= 0.30, `Neon ribbon opacity is too high: ${rainbowProbe?.maxRibbonOpacity}.`);
+  requireCondition(Number(rainbowProbe?.glowIntensity) <= 0.16, `Neon glow light is too intense: ${rainbowProbe?.glowIntensity}.`);
   requireCondition(!visual?.heroSlice5LastError, `Hero Slice 5 runtime error: ${visual?.heroSlice5LastError}.`);
 
   const toggleOff = await rainbowPage.page.evaluate(() => {
@@ -153,24 +166,36 @@ try {
 
 const cowPage = await createPage();
 try {
-  const prepared = await cowPage.page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('farm'));
-  requireCondition(prepared === true, 'Cow-level farm QA view did not prepare.');
+  const prepared = await cowPage.page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('cow-level'));
+  requireCondition(prepared === true, 'Dedicated cow-level QA view did not prepare.');
   await cowPage.page.waitForTimeout(220);
   report.cowLevel = await snapshot(cowPage.page);
   const cowProbe = await cowPage.page.evaluate(() => {
     const root = scene?.getObjectByName?.('SWVisualHeroSlice5CowLevel') || null;
     const gameplayMeshes = new Set((typeof animals !== 'undefined' && Array.isArray(animals) ? animals : []).map((entry) => entry?.mesh).filter(Boolean));
     let visualMeshCount = 0;
+    let instancedMeshCount = 0;
+    let totalInstances = 0;
     let gameplayOverlapCount = 0;
     root?.traverse?.((object) => {
       if (!object?.isMesh) return;
       visualMeshCount += 1;
+      if (object.isInstancedMesh) {
+        instancedMeshCount += 1;
+        totalInstances += Number(object.count || 0);
+      }
       if (gameplayMeshes.has(object)) gameplayOverlapCount += 1;
     });
+    const center = new THREE.Vector3();
+    root?.getWorldPosition?.(center);
     return {
       rootPresent: Boolean(root?.parent),
+      rootVisible: Boolean(root?.visible),
       visualMeshCount,
+      instancedMeshCount,
+      totalInstances,
       gameplayOverlapCount,
+      cameraDistance: root ? Number(camera.position.distanceTo(center)) : Infinity,
       championPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice5CowChampion')),
       signPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice5CowLevelSign')),
       ringPresent: Boolean(scene?.getObjectByName?.('SWVisualSlice5CowLevelRing')),
@@ -184,15 +209,20 @@ try {
   requireCondition(report.cowLevel.neonSelected === false, 'Fresh cow-level QA page unexpectedly started with Neon selected.');
   requireCondition(visual?.rainbowFunnel?.enabled === false && cowProbe?.rainbowRootPresent === false, 'Cow-level Easter egg incorrectly forces the Neon rainbow funnel.');
   requireCondition(visual?.cowLevel?.rootPresent === true, 'Hart Farm cow-level root is missing.');
+  requireCondition(visual?.cowLevel?.visible === true && cowProbe?.rootVisible === true, 'Dedicated cow-level QA framing left the secret hidden.');
   requireCondition(Number(visual?.cowLevel?.cowCount) >= 9, `Cow level has only ${visual?.cowLevel?.cowCount} presentation cows.`);
+  requireCondition(Number(visual?.cowLevel?.meshBudget) === 55, `Unexpected cow mesh budget ${visual?.cowLevel?.meshBudget}.`);
   requireCondition(visual?.cowLevel?.signPresent === true, 'MOO LEVEL sign is missing.');
   requireCondition(visual?.cowLevel?.ringPresent === true, 'Cow-level crop ring is missing.');
   requireCondition(visual?.cowLevel?.presentationOnly === true, 'Cow level is not labeled presentation-only.');
   requireCondition(cowProbe?.championPresent === true && cowProbe?.signPresent === true && cowProbe?.ringPresent === true, 'Cow-level scene probe is incomplete.');
   requireCondition(Number(cowProbe?.visualMeshCount) >= 45, `Cow level visual anatomy is unexpectedly sparse: ${cowProbe?.visualMeshCount} meshes.`);
+  requireCondition(Number(cowProbe?.visualMeshCount) <= 55, `Cow level exceeded the 55-mesh presentation budget: ${cowProbe?.visualMeshCount}.`);
+  requireCondition(Number(cowProbe?.instancedMeshCount) >= 20 && Number(cowProbe?.totalInstances) >= 60, `Cow-level instancing did not consolidate repeated detail parts: instancedMeshes=${cowProbe?.instancedMeshCount}, instances=${cowProbe?.totalInstances}.`);
+  requireCondition(Number(cowProbe?.cameraDistance) <= 60, `Cow-level QA camera is too far from the secret: ${cowProbe?.cameraDistance}.`);
   requireCondition(Number(cowProbe?.gameplayOverlapCount) === 0, 'Cow-level presentation meshes leaked into the authoritative gameplay animal array.');
   requireCondition(Number(report.cowLevel.gameplayAnimalCount) > 0, 'Authoritative gameplay animal array disappeared during cow-level QA.');
-  requireCondition(!visual?.heroSlice5LastError, `Hero Slice 5 runtime error in farm view: ${visual?.heroSlice5LastError}.`);
+  requireCondition(!visual?.heroSlice5LastError, `Hero Slice 5 runtime error in cow-level view: ${visual?.heroSlice5LastError}.`);
   if (cowPage.errors.length) report.failures.push(`Cow-level browser errors: ${cowPage.errors.join(' | ')}`);
 } finally {
   await cowPage.page.close();
