@@ -200,6 +200,7 @@ try {
 
 const comparison = {
   version: 'MODERNIZATION_PHASE6_DUAL_BUILD_PERFORMANCE_V3',
+  passed: true,
   generatedAt: new Date().toISOString(),
   runnerNote: 'Frame timings are same-runner advisory evidence. Integration and bounded-resource contracts remain blocking.',
   captureMethod: {
