@@ -69,6 +69,7 @@ try {
   await snapshot('last-sip', 8.85, 'sw-cin-003-last-sip.png');
   const panic = await snapshot('panic-touchdown', 11.35, 'sw-cin-003-panic-touchdown.png');
   requireCondition(panic.stormRevealPresent === true, 'Panic/touchdown frame is missing the presentation storm reveal.');
+  requireCondition(panic.stormRevealProfile === 'world-slice6-asymmetric-storm-v2' && panic.stormRevealUsesProductionStorm === true, 'Panic/touchdown frame did not reuse the WORLD-002 production storm silhouette.');
   requireCondition(panic.roofPeelPresent === true, 'Panic/touchdown frame is missing the barn roof peel presentation.');
 
   await page.evaluate(() => globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.finish('natural'));

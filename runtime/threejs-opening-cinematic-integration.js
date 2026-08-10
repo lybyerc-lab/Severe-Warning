@@ -29,6 +29,7 @@
     savedHud: new Map(),
     savedLights: null,
     savedStormVisibility: null,
+    savedWorldStormVisibility: null,
     canSkip: false,
     sirenPlayed: false,
     mooPlayed: false,
@@ -140,8 +141,16 @@
   }
 
   function createStormReveal(stage) {
-    const group = new THREE.Group();
-    group.name = 'SWCinematicTouchdownPresentation';
+    const productionStorm = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
+    if (!productionStorm) {
+      state.lastError = 'WORLD-002 production storm silhouette is unavailable for cinematic touchdown.';
+      return null;
+    }
+    // Reuse WORLD-002's production silhouette instead of constructing a second,
+    // simplified touchdown storm. The clone shares the accepted warped-shell,
+    // debris, and material language while remaining temporary cinematic framing.
+    const group = productionStorm.clone(true);
+    group.name = 'SWCinematicTouchdownProductionStorm';
     group.userData.swPresentationOnly = true;
     const towardGameplay = new THREE.Vector2(-stage.x, -stage.z);
     if (towardGameplay.lengthSq() < 1) towardGameplay.set(-1, -1);
@@ -151,42 +160,18 @@
     const y = typeof terrainHeightAt === 'function' ? terrainHeightAt(x, z) : 0;
     group.position.set(x, y, z);
 
-    const funnelMaterial = new THREE.MeshStandardMaterial({
-      color: '#24353b', roughness: 0.82, metalness: 0.01,
-      transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide,
-    });
-    const cloudMaterial = new THREE.MeshStandardMaterial({
-      color: '#27363d', roughness: 0.92, metalness: 0,
-      transparent: true, opacity: 0, depthWrite: false,
-    });
-    const dustMaterial = new THREE.MeshBasicMaterial({
-      color: '#947c5f', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide,
-    });
-    [funnelMaterial, cloudMaterial, dustMaterial].forEach((material) => { material.userData.swCinematicOwnMaterial = true; });
-
-    const funnel = new THREE.Mesh(new THREE.CylinderGeometry(10.5, 1.2, 25, 24, 8, true), funnelMaterial);
-    funnel.name = 'SWCinematicTouchdownFunnel';
-    funnel.position.y = 12.5;
-    funnel.scale.set(0.62, 0.82, 0.76);
-    funnel.userData.swPresentationOnly = true;
-    group.add(funnel);
-
-    const cloud = new THREE.Mesh(new THREE.SphereGeometry(9.5, 18, 10), cloudMaterial);
-    cloud.name = 'SWCinematicTouchdownCloud';
-    cloud.position.set(-1.8, 25.8, 0.4);
-    cloud.scale.set(2.0, 0.58, 1.46);
-    cloud.userData.swPresentationOnly = true;
-    group.add(cloud);
-
-    const dust = new THREE.Mesh(new THREE.RingGeometry(2.2, 7.8, 36), dustMaterial);
-    dust.name = 'SWCinematicTouchdownDust';
-    dust.rotation.x = -Math.PI / 2;
-    dust.position.y = 0.45;
-    dust.userData.swPresentationOnly = true;
-    group.add(dust);
-
     scene.add(group);
-    return { group, funnel, cloud, dust };
+    return {
+      group,
+      source: productionStorm.name,
+      profile: 'world-slice6-asymmetric-storm-v2',
+      baseScale: group.scale.clone(),
+      baseRotationY: group.rotation.y,
+    };
+  }
+
+  function removePresentationRoot(root) {
+    if (root?.parent) root.parent.remove(root);
   }
 
   function disposeCustomRoot(root) {
@@ -255,8 +240,13 @@
         if (group) group.visible = state.savedStormVisibility[index];
       });
     }
+    if (state.savedWorldStormVisibility !== null) {
+      const productionStorm = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
+      if (productionStorm) productionStorm.visible = state.savedWorldStormVisibility;
+    }
     state.savedLights = null;
     state.savedStormVisibility = null;
+    state.savedWorldStormVisibility = null;
   }
 
   function cameraPose(position, target, fov, mix = 1) {
@@ -308,7 +298,7 @@
     state.session = null;
     disposeCustomRoot(state.customRoot);
     state.customRoot = null;
-    if (state.stormReveal?.group) disposeCustomRoot(state.stormReveal.group);
+    if (state.stormReveal?.group) removePresentationRoot(state.stormReveal.group);
     state.stormReveal = null;
     state.newspaper = null;
     state.barnBody = null;
@@ -354,6 +344,9 @@
     state.stage = makeStage();
     savePresentationState();
     [tornadoGroup, supercellGroup, derechoGroup].forEach((group) => { if (group) group.visible = false; });
+    const productionStorm = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
+    state.savedWorldStormVisibility = productionStorm ? Boolean(productionStorm.visible) : null;
+    if (productionStorm) productionStorm.visible = false;
 
     state.session = bridge.createFoundation({ scene, position: [state.stage.x, state.stage.y, state.stage.z] });
     state.customRoot = new THREE.Group();
@@ -455,14 +448,9 @@
 
     if (state.stormReveal) {
       const reveal = smooth((t - 9.4) / 2.1);
-      state.stormReveal.funnel.material.opacity = reveal * 0.34;
-      state.stormReveal.cloud.material.opacity = reveal * 0.48;
-      state.stormReveal.dust.material.opacity = reveal * 0.30;
-      state.stormReveal.group.scale.setScalar(lerp(0.55, 1.0, reveal));
-      state.stormReveal.group.rotation.y = t * (0.12 + reveal * 0.25);
-      state.stormReveal.funnel.rotation.y = -t * 0.35;
-      state.stormReveal.cloud.rotation.y = t * 0.16;
-      state.stormReveal.dust.rotation.z = t * 0.28;
+      state.stormReveal.group.visible = reveal > 0.005;
+      state.stormReveal.group.scale.copy(state.stormReveal.baseScale).multiplyScalar(lerp(0.58, 1, reveal));
+      state.stormReveal.group.rotation.y = state.stormReveal.baseRotationY + t * (0.06 + reveal * 0.14);
     }
 
     const fence = shotWorldPose('fence-conversation');
@@ -542,6 +530,8 @@
       actors: state.session?.getSnapshot?.()?.actors || null,
       budget: state.session?.getSnapshot?.()?.budget || null,
       stormRevealPresent: Boolean(state.stormReveal?.group?.parent),
+      stormRevealProfile: state.stormReveal?.profile || null,
+      stormRevealUsesProductionStorm: state.stormReveal?.source === 'SWVisualHeroSlice6StormSilhouette',
       newspaperPresent: Boolean(state.newspaper?.parent),
       roofPeelPresent: Boolean(state.roofPeel?.parent),
       handoffCount: state.handoffCount,

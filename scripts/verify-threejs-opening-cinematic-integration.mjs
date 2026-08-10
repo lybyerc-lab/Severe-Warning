@@ -36,10 +36,12 @@ check('camera ownership is temporary and build-hooked', apply.includes('swOpenin
 check('menu launch wraps existing start path', integration.includes('baseStartRunFromMenu') && integration.includes('startRunFromMenuWithPlayableOpening'));
 check('HUD hides only for cinematic and restores at handoff', integration.includes("const hudIds = ['hud', 'easBanner', 'joystickZone']") && integration.includes('setHudVisible(false)') && integration.includes('setHudVisible(true)'));
 check('farm anchor is the authored Hart Farm presentation anchor', integration.includes('swVisualGetHartFarmPresentationAnchor') && integration.includes('farmFound'));
-check('canonical comedy beats are represented', ['SWCinematicNewspaper', 'ChickenCinematicRig-1', 'ChickenCinematicRig-2', 'MooBrewCup', 'SWCinematicBarnRoofPeel', 'SWCinematicTouchdownPresentation'].every((token) => integration.includes(token)));
+check('canonical comedy beats are represented', ['SWCinematicNewspaper', 'ChickenCinematicRig-1', 'ChickenCinematicRig-2', 'MooBrewCup', 'SWCinematicBarnRoofPeel', 'SWCinematicTouchdownProductionStorm'].every((token) => integration.includes(token)));
+check('touchdown reuses the WORLD-002 production storm silhouette', integration.includes("getObjectByName?.('SWVisualHeroSlice6StormSilhouette')") && integration.includes('productionStorm.clone(true)') && integration.includes("profile: 'world-slice6-asymmetric-storm-v2'"));
+check('touchdown does not recreate the rejected saucer primitives', !integration.includes('new THREE.CylinderGeometry') && !integration.includes('new THREE.SphereGeometry') && !integration.includes('new THREE.RingGeometry'));
 check('first viewing state and later skip are deterministic', integration.includes('severe_weather_opening_seen_v1') && integration.includes('state.canSkip = hasSeen()') && integration.includes("event.code === 'Escape'"));
 check('visibility pauses cinematic time naturally through bounded frame delta', integration.includes('Math.min(0.1, Number(dt)') && !integration.includes('Date.now() -'));
-check('cleanup disposes presentation roots and retained foundation', integration.includes('state.session?.dispose?.()') && integration.includes('disposeCustomRoot(state.customRoot)') && integration.includes('disposeCustomRoot(state.stormReveal.group)'));
+check('cleanup disposes owned presentation roots and removes the shared WORLD storm clone', integration.includes('state.session?.dispose?.()') && integration.includes('disposeCustomRoot(state.customRoot)') && integration.includes('removePresentationRoot(state.stormReveal.group)'));
 check('apply order requires sealed Slice 6 before cinematic', apply.includes('THREEJS_VISUAL_HERO_SLICE6_V1') && apply.includes('[SW:SOURCE:threejs-visual-hero-slice6-town-polish.js]') && apply.includes('integrationIndex > loopIndex'));
 check('foundation documentation records deferred integration origin', docs.includes('Deferred integration') && docs.includes('warning clock'));
 

@@ -107,7 +107,7 @@ for (const required of [
   'timerFrozenDuringCinematic',
   'SWCinematicNewspaper',
   'SWCinematicBarnRoofPeel',
-  'SWCinematicTouchdownPresentation',
+  'SWCinematicTouchdownProductionStorm',
   frameHook,
   cinematicCameraGate,
 ]) requireMarker(required);
