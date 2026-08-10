@@ -133,10 +133,11 @@ Before editing:
 1. Read this file.
 2. Read the assigned task issue/handoff completely.
 3. Read `Docs/ACTIVE_PRODUCTION_SLATE.md`.
-4. Read only the additional docs named by the task.
-5. Verify `git rev-parse HEAD` equals the exact task base SHA.
-6. Verify the current branch matches the task branch/worktree.
-7. Inspect only the relevant implementation and tests before proposing edits.
+4. Read `Docs/IMPLEMENTATION_TRUTH_GATE.md`; its machine-checkable implementation-truth rules remain blocking.
+5. Read only the additional docs named by the task.
+6. Verify `git rev-parse HEAD` equals the exact task base SHA.
+7. Verify the current branch matches the task branch/worktree.
+8. Inspect only the relevant implementation and tests before proposing edits.
 
 ## Worker completion contract
 
