@@ -13,6 +13,14 @@ The quality bar is not "good for Three.js," "good for an AI project," or "techni
 
 The project should also be a credible demonstration of what ChatGPT plus coordinated coding agents can build when given creative direction and a durable production system.
 
+## Canonical title law
+
+The game is called **Severe Weather Warning**.
+
+Player-facing branding must use **Severe Weather Warning** as the product title. Do not silently shorten the game name to "Severe Weather" in menus, headers, splash screens, manifests, scorecards, store-facing copy, promotional material, or other identity surfaces unless a specific platform field has a documented length constraint and an explicitly approved short label is required.
+
+The repository name `Severe-Warning` and casual conversational shorthand do not redefine the product name.
+
 ## Player fantasy
 
 You are the storm.
@@ -45,6 +53,37 @@ World spaces must feel authored. Main Street, farms, fairgrounds, roadside busin
 Destruction should expose believable anatomy and hierarchy. Players should be able to understand what failed and why, even when the action is chaotic.
 
 Mobile restraint remains mandatory. Visual quality comes from composition, hierarchy, motion, material choices, lighting, authored detail, and selective effects, not unlimited particles or draw calls.
+
+## Newspaper presentation identity
+
+Newspaper presentation is a recurring part of the Severe Weather Warning identity, not merely a one-time cinematic prop.
+
+Any newspaper shown in the game should have a **goofy local-newspaper vibe**. The humor should feel like a small-town paper taking ridiculous weather, civic problems, bovine incidents, sponsor notices, and storm statistics with absurd seriousness.
+
+The newspaper language should connect the beginning and end of a run through one coherent UI family:
+
+1. opening/newspaper cinematic moments;
+2. pre-run storm-type selection;
+3. the **UNLEASH STORM** action;
+4. end-of-run score/results.
+
+Target visual language:
+
+- strong old-local-paper or tabloid masthead energy;
+- large readable headlines;
+- columns, rules, boxes, captions, stamps, classifieds, ads, and sidebars used selectively;
+- slightly imperfect print, ink, and paper character without harming mobile legibility;
+- restrained newsprint foundation with selective game accents and images where useful;
+- goofy local copy, Moo Brew ads, weather bureaucracy, bovine/legal notices, and absurd statistics;
+- authored composition rather than a generic newspaper CSS template.
+
+The storm selector should feel like a weather special edition. Each storm can be treated as a featured forecast or story while keeping gameplay traits obvious. **UNLEASH STORM** should feel like a giant headline, press action, special-edition callout, or equivalent newspaper-native launch device rather than an ordinary floating button.
+
+The results screen should feel like a fresh edition reporting what the player just did. Score, rank, major destruction events, cow/grid/secret statistics, best-score progress, unlocks, and near misses should be presented as readable stories, sidebars, callouts, and headlines. A dynamic run headline is encouraged where practical. Replay, continue, and Weather Map actions must remain obvious.
+
+The end-of-run edition should be visually strong enough to feel screenshot-worthy and shareable.
+
+Humor never outranks comprehension. The primary action and important run information must remain instantly readable.
 
 ## Game feel
 
@@ -117,6 +156,18 @@ The Cow Level should be the kind of secret players tell friends about. It must b
 
 Cow 17 and animal-safety rules remain protected unless a specific design contract intentionally changes them.
 
+## PWA and phone-access direction
+
+The GitHub Pages build should become installable as a Progressive Web App when the queued PWA task is sequenced safely with QA infrastructure.
+
+The PWA exists to make browser-first playtesting and casual sharing feel more like launching a real app:
+
+`visit Pages -> install Severe Weather Warning -> home-screen icon -> standalone launch`
+
+PWA implementation must preserve exact build identity and must not trap testers on stale cached QA builds. Fresh deployment discovery and deterministic cache/version invalidation are blocking requirements.
+
+PWA installability is not a substitute for physical Android acceptance. APK/device checkpoints remain deliberate when actual device behavior matters.
+
 ## Current owner playtest truth: QA #29
 
 Exact source: `b501737e71e61b979901d4899d969390aa37b1f4`
@@ -185,7 +236,7 @@ Use after a direction has earned acceptance.
 
 Do not force every exploratory visual idea through the full production digestive tract before anyone has seen whether it is good.
 
-## What Severe Weather must not become
+## What Severe Weather Warning must not become
 
 - a generic block-town destroyer;
 - a renderer demonstration searching for a game;
