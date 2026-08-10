@@ -71,6 +71,33 @@ Useful future roles may include:
 
 Do not require Cow 17 to appear in every level. Scarcity makes cameos more valuable.
 
+## Cow-fucius incubator
+
+**Cow-fucius** is an approved humor-incubator character/name inspired by the Confucius wordplay.
+
+Do not force Cow-fucius into the main story or assign a mandatory gameplay role yet. Preserve the name and explore it as a recurring background/callback opportunity whose value comes from appearing unexpectedly and being treated with complete seriousness.
+
+Possible uses include:
+
+- tiny newspaper quote boxes or "wisdom of the day" sidebars;
+- loading or transition aphorisms;
+- Moo Brew fortune-cookie-style promotional copy;
+- a statue, portrait, mural, shrine, library book, museum exhibit, or civic plaque;
+- rare loading-screen or Weather Map sayings;
+- absurdly profound commentary on destruction, cows, MOO-LAH, weather, or player behavior;
+- a secret collectible set of Cow-fucius sayings;
+- a Cow Level cameo or unlock flavor if it earns the joke.
+
+Tone rule: the sayings should sound *almost* wise, then bend toward the Severe Weather Warning universe. Avoid relying on nonstop "moo" substitutions. The joke should survive because Cow-fucius appears to have a coherent bovine philosophy, not because every sentence is a pun.
+
+Potential example tone, for later writing only:
+
+- "Cow-fucius says: fence that stands before storm is merely future lumber."
+- "Cow-fucius says: he who chases high score should first respect low barn."
+- "Cow-fucius says: MOO-LAH saved is MOO-LAH not yet irresponsibly spent."
+
+These examples establish direction, not final shipping copy.
+
 ## Moo Brew
 
 **Moo Brew is the recurring commercial/comedy brand of the universe.**
