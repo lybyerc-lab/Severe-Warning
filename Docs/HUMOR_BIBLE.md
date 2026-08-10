@@ -77,13 +77,36 @@ Do not require Cow 17 to appear in every level. Scarcity makes cameos more valua
 
 Do not force Cow-fucius into the main story or assign a mandatory gameplay role yet. Preserve the name and explore it as a recurring background/callback opportunity whose value comes from appearing unexpectedly and being treated with complete seriousness.
 
+### Preferred first role: loading-screen philosopher
+
+The strongest current fit for Cow-fucius is as a recurring **loading-screen / transition philosopher**. This gives the character repeated exposure without interrupting gameplay, and allows his sayings to become a familiar part of the game's rhythm.
+
+Cow-fucius loading screens may combine:
+
+- a portrait, woodcut, newspaper engraving, statue-like pose, or other stylized likeness;
+- one short saying that is either genuinely useful, almost useful, or absurdly philosophical;
+- occasional real gameplay guidance disguised as Cow-fucius wisdom;
+- occasional references to score chasing, cooldown discipline, route choice, MOO-LAH, cows, destruction, or weather;
+- rare callbacks that change after major unlocks or discoveries;
+- a small Moo Brew sponsorship mark or endorsement when appropriate.
+
+Loading-screen copy should remain brief enough that it can be read before the transition finishes. Do not make loading screens linger merely to deliver a joke.
+
+### Moo Brew relationship: intentionally unresolved
+
+Cow-fucius may eventually become a **Moo Brew spokesperson, official philosopher, licensed likeness, historical mascot, or suspicious corporate endorsement figure**, but that status is deliberately not locked yet.
+
+Preferred early treatment: Moo Brew behaves as though it has a relationship with Cow-fucius, while the exact nature of that relationship remains unclear. Examples might include a tiny `Presented by Moo Brew` stamp, a dubious quotation credit, or a corporate footer beneath one of his sayings.
+
+This ambiguity is part of the joke. Do not immediately reduce Cow-fucius to an ordinary advertising mascot unless later playtest/writing work proves that version stronger.
+
 Possible uses include:
 
 - tiny newspaper quote boxes or "wisdom of the day" sidebars;
 - loading or transition aphorisms;
 - Moo Brew fortune-cookie-style promotional copy;
 - a statue, portrait, mural, shrine, library book, museum exhibit, or civic plaque;
-- rare loading-screen or Weather Map sayings;
+- rare Weather Map sayings;
 - absurdly profound commentary on destruction, cows, MOO-LAH, weather, or player behavior;
 - a secret collectible set of Cow-fucius sayings;
 - a Cow Level cameo or unlock flavor if it earns the joke.
@@ -95,6 +118,7 @@ Potential example tone, for later writing only:
 - "Cow-fucius says: fence that stands before storm is merely future lumber."
 - "Cow-fucius says: he who chases high score should first respect low barn."
 - "Cow-fucius says: MOO-LAH saved is MOO-LAH not yet irresponsibly spent."
+- "Cow-fucius says: wise storm watches cooldown; wiser storm has already chosen next target."
 
 These examples establish direction, not final shipping copy.
 
