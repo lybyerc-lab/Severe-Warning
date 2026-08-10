@@ -66,6 +66,8 @@ World spaces must feel authored. Main Street, farms, fairgrounds, roadside busin
 
 Destruction should expose believable anatomy and hierarchy. Players should be able to understand what failed and why, even when the action is chaotic.
 
+**Pretty is a product requirement.** Fun and destruction remain the first priority, but visual beauty, coherence, color, lighting, composition, storm quality, and authored place identity are part of the fantasy rather than optional polish.
+
 Mobile restraint remains mandatory. Visual quality comes from composition, hierarchy, motion, material choices, lighting, authored detail, and selective effects, not unlimited particles or draw calls.
 
 ## Newspaper presentation identity
@@ -142,7 +144,17 @@ Replay systems should deepen the core tornado fantasy rather than becoming detac
 
 The current four levels are a foundation, not the intended final content count.
 
+**The existing town and county structure stays.** It is the home territory, campaign backbone, and part of the identity of Severe Weather Warning. Expansion sites add breadth around that foundation rather than replacing it.
+
 Severe Weather Warning needs a scalable library of authored destruction playgrounds. New locations do not all need the same objectives, props, landmarks, or gameplay structure. Some may be campaign anchors with goals and secrets. Others may be nearly pure score-attack destruction.
+
+The library should deliberately support **different level scales**:
+
+- larger county/destination maps with multiple districts or landmark clusters;
+- medium focused locations such as fairgrounds, malls, stadiums, piers, campuses, or amusement parks;
+- tighter destruction playgrounds and bonus sites that are still large enough for meaningful tornado movement, route choice, combos, and spectacle.
+
+Avoid tiny arenas that make the tornado fantasy feel cramped or disposable. Smaller levels should feel concentrated, not miniature.
 
 Preferred architecture is a data-driven **Storm Site** registry or equivalent level-definition system so future locations can be added through bounded site packages rather than repeated campaign-core rewrites.
 
@@ -176,6 +188,12 @@ Established location families include:
 - strip mall / roadside retail;
 - stadium / event grounds;
 - grocery-store variants;
+- amusement parks;
+- zoos;
+- train stations / rail yards;
+- schools / campuses;
+- libraries / civic districts;
+- playgrounds / parks;
 - additional future regional destruction playgrounds.
 
 A fairground can simply be a glorious destruction level. It does not need a story excuse.
@@ -240,6 +258,29 @@ Prefer upgrades that preserve the accepted steering feel, such as debris-orbit u
 
 Raw movement speed/turn response should not become a mandatory stat treadmill without explicit playtest evidence that it improves the game.
 
+### Spectacle / major storm abilities
+
+The progression system may include higher-impact abilities that temporarily change the destruction fantasy rather than only modifying percentages.
+
+Established candidate: **Twin Tornadoes**.
+
+A twin-tornado ability should create a short-lived second vortex or paired circulation with clearly readable behavior and a spectacular destruction payoff. It should feel like a major earned power, not a permanent replacement for normal tornado control.
+
+## Power / cooldown law
+
+As ability power and spectacle increase, the game may generally answer with a longer cooldown, limited duration, charge requirement, or another equally readable cost.
+
+This is a balancing tool, not a punishment system.
+
+Rules:
+
+- stronger abilities should feel stronger;
+- cooldowns should remain short enough that the player actually gets to enjoy the toys they unlocked;
+- high-tier powers may be rarer without becoming once-per-level novelties unless that is specifically fun;
+- upgrades may improve cooldown/efficiency within bounded limits;
+- power/cooldown tuning must be judged by play feel and destruction value, not spreadsheet symmetry;
+- **fun and destruction outrank perfect numerical balance** within reasonable limits.
+
 Avoid both common failures:
 
 1. **fake RPG**, where upgrades barely matter;
@@ -253,11 +294,13 @@ The Weather Map should eventually become a growing destination board rather than
 
 It can contain:
 
-- campaign anchors;
-- destruction playgrounds;
+- the existing town/county campaign backbone;
+- larger destination maps;
+- medium focused destruction sites;
+- tighter but still substantial bonus playgrounds;
 - secret levels;
 - bonus score attacks;
-- coastal, retail, civic, farm, fairground, stadium, and regional sites;
+- coastal, retail, civic, farm, fairground, stadium, amusement, education, transit, and regional sites;
 - locked nodes that tease unusual discovery conditions.
 
 The map should create anticipation before the player presses **UNLEASH STORM**.
@@ -265,6 +308,8 @@ The map should create anticipation before the player presses **UNLEASH STORM**.
 ## Humor and identity
 
 Humor should feel embedded in the world rather than pasted on top.
+
+Cows and Moo Brew are the main comedic backbone of the universe. They should recur through characters, brands, statistics, rewards, newspaper language, world details, and callbacks without turning every joke into a cow pun or covering every location in bovine branding.
 
 Recurring identity anchors include:
 
@@ -326,8 +371,11 @@ Blocking quality notes and new direction:
 - the owner wants an actual Cow Level, with the current encounter serving as an unlock path;
 - the game needs materially stronger replayability and commercial-mobile presentation;
 - the current four levels are only a starting set;
+- the existing town/county campaign stays as the home backbone while larger and smaller Storm Sites expand around it;
 - future levels should include strongly themed destruction playgrounds with authored run-to-run variation;
-- the original light-action-RPG intent remains active and should include upgradeable abilities and persistent earned rewards.
+- the original light-action-RPG intent remains active and should include upgradeable abilities and persistent earned rewards;
+- high-impact abilities such as Twin Tornadoes are desired, with power generally balanced by reasonable cooldown/charge cost;
+- fun, destruction, and visual beauty remain the priority over sterile balance.
 
 These notes outrank green CI when evaluating the current visual/product state.
 
@@ -347,6 +395,7 @@ When the owner says things such as:
 - "I want a real cow level";
 - "I want to run the tornado around a beach";
 - "this was supposed to be a light action RPG";
+- "imagine twin tornadoes being an ability";
 
 The Director must translate the observation into concrete design hypotheses, priorities, worker contracts, and acceptance criteria.
 
@@ -392,7 +441,9 @@ Do not force every exploratory visual idea through the full production digestive
 - a four-level game that feels exhausted after one clear;
 - a fake RPG where upgrades are meaningless;
 - a grind RPG where the base storm is deliberately weak;
+- a cooldown simulator where powerful abilities are too rare to enjoy;
 - a cow joke with no playable payoff;
+- a visually muddy game that excuses weak presentation because the mechanics are fun;
 - a project where green CI is mistaken for artistic success;
 - a project that requires the owner to become a software or game-development project manager.
 
