@@ -216,6 +216,7 @@ jobs:
         with:
           name: severe-weather-threejs-hero-slice6-build-${{ github.run_number }}
           path: dist/threejs-hero-slice6-build
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
 
@@ -427,6 +428,7 @@ jobs:
         with:
           name: severe-weather-threejs-hero-slice6-web-${{ github.run_number }}
           path: dist/threejs-hero-slice6
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
 
