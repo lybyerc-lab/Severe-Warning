@@ -1,20 +1,23 @@
-name: Deploy QA Pages
+name: Deploy sealed QA candidate to Pages
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - qa
-    paths:
-      - '.github/workflows/deploy-qa-pages.yml'
-      - 'MechanicsLab/SevereWeather_3D_Lab.html'
-      - 'assets/audio/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'scripts/**'
+    inputs:
+      source_run_id:
+        description: Successful Hero Slice workflow run ID that produced the candidate artifact
+        required: true
+        type: string
+      artifact_name:
+        description: Exact final evidence artifact name, for example severe-weather-threejs-hero-slice6-web-123
+        required: true
+        type: string
+      source_commit:
+        description: Exact source commit declared by the candidate manifest
+        required: true
+        type: string
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -24,151 +27,54 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  validate-and-publish:
+    name: Validate sealed candidate then publish
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-
     steps:
-      - name: Check out QA branch
+      - name: Check out publisher contract
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
         with:
           node-version: 22
 
-      - name: Install pinned JavaScript dependencies
-        shell: bash
-        run: |
-          npm install --global pnpm@11.9.0
-          pnpm install --frozen-lockfile
-
-      - name: Verify QA patch and harness syntax
-        shell: bash
-        run: |
-          node --check scripts/apply-qa-corrections-patch.mjs
-          node --check scripts/apply-audio-mix-followup-patch.mjs
-          node --check scripts/apply-ui-polish-followup-patch.mjs
-          node --check scripts/apply-score-continuity-fix.mjs
-          node --check scripts/apply-qa4-deterministic-lab-patch.mjs
-          node --check scripts/apply-qa4-mobile-input-fix.mjs
-          node --check scripts/apply-qa4-run-lock-fix.mjs
-          node --check scripts/apply-qa4-pause-forensics.mjs
-          node --check scripts/apply-pause-overlay-hit-test-fix.mjs
-          node --check scripts/apply-pause-overlay-hard-hide.mjs
-          node --check scripts/apply-qa4-popup-assertion-fix.mjs
-          node --check scripts/apply-qa4-rampage-popup-fix.mjs
-          node --check scripts/apply-v500-campaign-patch.mjs
-          node --check scripts/apply-v500-cow-signature-patch.mjs
-          node --check scripts/verify-v500-campaign.mjs
-          node --check scripts/verify-qa-package.mjs
-          node --check scripts/run-qa4-headless.mjs
-
-      - name: Install FFmpeg for audio generation
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg
-          ffmpeg -hide_banner -version | head -n 1
-
-      - name: Generate verified audio
-        run: pnpm run audio:generate
-
-      - name: Build and verify Phase 5 web package
-        shell: bash
-        run: |
-          set -euo pipefail
-          pnpm run patch:v431
-          pnpm run patch:v440
-          pnpm run patch:v441
-          pnpm run patch:v442
-          pnpm run patch:v450
-          pnpm run patch:v500
-          pnpm run verify:v500
-          pnpm run patch:v510
-          pnpm run verify:v510
-          pnpm run patch:phase2
-          pnpm run verify:phase2
-          pnpm run patch:phase3
-          pnpm run verify:phase3
-          pnpm run patch:phase4
-          pnpm run verify:phase4
-          pnpm run patch:phase5
-          pnpm run verify:phase5
-          pnpm run modern:typecheck
-          pnpm run modern:build
-          node scripts/build-web.mjs
-          node scripts/stamp-qa-pages.mjs
-          node scripts/verify-qa-package.mjs
-          grep -F 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2' www/index.html
-          grep -F 'phase-5-rendering-world' www/modern/modern-shell.js
-
-      - name: Run deterministic QA4 in headless Chrome
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p qa-artifacts
-          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
-          test -n "$CHROME_BIN"
-          echo "Using Chrome: $CHROME_BIN"
-
-          python3 -m http.server 4173 --directory www > qa-artifacts/server.log 2>&1 &
-          SERVER_PID=$!
-          "$CHROME_BIN" \
-            --headless=new \
-            --no-sandbox \
-            --disable-gpu \
-            --disable-dev-shm-usage \
-            --autoplay-policy=no-user-gesture-required \
-            --remote-debugging-port=9222 \
-            --remote-allow-origins='*' \
-            --user-data-dir=/tmp/severe-weather-qa4-chrome \
-            'http://127.0.0.1:4173/?qa4=run' \
-            > qa-artifacts/chrome.log 2>&1 &
-          CHROME_PID=$!
-
-          cleanup() {
-            kill "$CHROME_PID" "$SERVER_PID" 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          for attempt in $(seq 1 40); do
-            if curl --silent --fail http://127.0.0.1:4173/ > /dev/null; then
-              break
-            fi
-            sleep 0.25
-          done
-
-          curl --silent --fail http://127.0.0.1:4173/ > /dev/null
-          node scripts/run-qa4-headless.mjs
-
-      - name: Upload QA4 diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Download exact candidate artifact from its successful source run
+        uses: actions/download-artifact@v7
         with:
-          name: qa4-diagnostics-${{ github.run_number }}
-          path: qa-artifacts
-          if-no-files-found: warn
-          retention-days: 7
+          name: ${{ inputs.artifact_name }}
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: candidate
+
+      - name: Reject mismatched, incomplete, or failed candidate evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/qa-candidate-contract.mjs
+          node scripts/qa-candidate-contract.mjs validate \
+            --root candidate --manifest package-manifest.json --expected-source '${{ inputs.source_commit }}'
+          test "$(tr -d '\n' < candidate/SOURCE_COMMIT.txt)" = '${{ inputs.source_commit }}'
+          test -s candidate/web-preview/index.html
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Pages artifact
+      - name: Upload validated Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: www
+          path: candidate/web-preview
 
   deploy:
-    needs: build
+    needs: validate-and-publish
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy GitHub Pages
         id: deployment
