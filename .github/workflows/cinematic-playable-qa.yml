@@ -1,0 +1,156 @@
+name: Playable Cow 17 Opening Cinematic QA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - agent/threejs-hero-slice5-rainbow-cow-level
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-cin-003-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+  SOURCE_BRANCH: ${{ github.head_ref || github.ref_name }}
+
+jobs:
+  playable-opening:
+    name: Build production world and verify playable opening
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'agent/sw-cin-') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - name: Check out exact cinematic candidate
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          echo "Verified SW-CIN-003 source: $SOURCE_COMMIT"
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install frozen dependencies and Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          npx playwright install --with-deps chromium
+
+      - name: Verify cinematic source boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run verify:process
+          node --check runtime/threejs-opening-cinematic-foundation.js
+          node --check runtime/threejs-opening-cinematic-integration.js
+          node --check scripts/apply-threejs-opening-cinematic.mjs
+          node --check scripts/verify-threejs-opening-cinematic-integration.mjs
+          node --check scripts/qa-threejs-opening-cinematic-integration.mjs
+          node scripts/verify-threejs-opening-cinematic-foundation.mjs
+          node scripts/verify-threejs-opening-cinematic-integration.mjs
+          pnpm run modern:typecheck
+
+      - name: Build exact production Three.js candidate with playable opening
+        shell: bash
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+          pnpm run audio:generate
+          pnpm run patch:v431 && pnpm run patch:v440 && pnpm run patch:v441 && pnpm run patch:v442
+          pnpm run patch:v450 && pnpm run patch:v500 && pnpm run verify:v500 && pnpm run patch:v510 && pnpm run verify:v510
+          pnpm run patch:phase2 && pnpm run verify:phase2 && pnpm run patch:phase3 && pnpm run verify:phase3
+          pnpm run patch:phase4 && pnpm run verify:phase4 && pnpm run patch:phase5 && pnpm run verify:phase5
+          pnpm run patch:phase6 && pnpm run verify:phase6 && pnpm run patch:city-fabric && pnpm run verify:city-fabric
+          pnpm run patch:presentation-identity && pnpm run verify:presentation-identity
+          pnpm run patch:asset-pipeline && pnpm run verify:asset-pipeline && pnpm run patch:visual-foundation && pnpm run verify:visual-foundation
+          node scripts/apply-threejs-hero-slice4.mjs && node scripts/verify-threejs-hero-slice4.mjs
+          node scripts/apply-threejs-hero-slice5.mjs && node scripts/verify-threejs-hero-slice5.mjs
+          node scripts/apply-threejs-hero-slice6.mjs && node scripts/verify-threejs-hero-slice6.mjs
+          node scripts/verify-threejs-opening-cinematic-integration.mjs
+          grep -F 'SW_CIN_002_ACTING_POLISH_V1' MechanicsLab/SevereWeather_3D_Lab.html
+          grep -F 'SW_CIN_003_PLAYABLE_OPENING_V1' MechanicsLab/SevereWeather_3D_Lab.html
+          grep -F 'swOpeningCinematicOwnsFrame' MechanicsLab/SevereWeather_3D_Lab.html
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/stamp-qa-pages.mjs
+          node scripts/verify-qa-package.mjs
+          grep -F 'THREEJS_VISUAL_HERO_SLICE6_V1' www/index.html
+          grep -F 'SW_CIN_003_PLAYABLE_OPENING_V1' www/index.html
+
+      - name: Run playable opening in the production world
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/opening-cinematic-playable
+          python3 -m http.server 4191 --directory www > qa-artifacts/opening-cinematic-playable/server.log 2>&1 &
+          SERVER_PID=$!; trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do curl --silent --fail http://127.0.0.1:4191/ > /dev/null && break; sleep 0.25; done
+          env \
+            SEVERE_WEATHER_QA_URL='http://127.0.0.1:4191/' \
+            SEVERE_WEATHER_QA_DIR='qa-artifacts/opening-cinematic-playable' \
+            node scripts/qa-threejs-opening-cinematic-integration.mjs
+
+      - name: Seal exact cinematic evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          output_dir='dist/sw-cin-003'
+          mkdir -p "$output_dir/qa-evidence"
+          cp -R www "$output_dir/web-preview"
+          cp qa-artifacts/opening-cinematic/sw-cin-001-static-report.json "$output_dir/qa-evidence/"
+          cp qa-artifacts/opening-cinematic/sw-cin-003-static-report.json "$output_dir/qa-evidence/"
+          cp qa-artifacts/opening-cinematic-playable/sw-cin-003-browser-report.json "$output_dir/qa-evidence/"
+          cp qa-artifacts/opening-cinematic-playable/sw-cin-003-newspaper.png "$output_dir/qa-evidence/"
+          cp qa-artifacts/opening-cinematic-playable/sw-cin-003-fence-conversation.png "$output_dir/qa-evidence/"
+          cp qa-artifacts/opening-cinematic-playable/sw-cin-003-double-take.png "$output_dir/qa-evidence/"
+          cp qa-artifacts/opening-cinematic-playable/sw-cin-003-last-sip.png "$output_dir/qa-evidence/"
+          cp qa-artifacts/opening-cinematic-playable/sw-cin-003-panic-touchdown.png "$output_dir/qa-evidence/"
+          cp qa-artifacts/opening-cinematic-playable/sw-cin-003-gameplay-handoff.png "$output_dir/qa-evidence/"
+          printf '%s\n' "$SOURCE_COMMIT" > "$output_dir/SOURCE_COMMIT.txt"
+          printf '%s\n' "$GITHUB_RUN_ID" > "$output_dir/WORKFLOW_RUN_ID.txt"
+          node scripts/qa-candidate-contract.mjs create \
+            --root "$output_dir" --manifest cinematic-candidate.json \
+            --source-commit "$SOURCE_COMMIT" --source-branch "$SOURCE_BRANCH" --workflow-run-id "$GITHUB_RUN_ID" \
+            --renderer 'Three.js r128' --acceptance cinematic-browser-candidate-not-owner-accepted-not-physical-android-accepted --web-root web-preview \
+            --require-file SOURCE_COMMIT.txt --require-file WORKFLOW_RUN_ID.txt \
+            --require-marker 'web-preview/index.html::THREEJS_VISUAL_HERO_SLICE6_V1' \
+            --require-marker 'web-preview/index.html::SW_CIN_003_PLAYABLE_OPENING_V1' \
+            --require-report 'qa-evidence/sw-cin-001-static-report.json' \
+            --require-report 'qa-evidence/sw-cin-003-static-report.json' \
+            --require-report 'qa-evidence/sw-cin-003-browser-report.json' \
+            --require-evidence 'qa-evidence/sw-cin-003-newspaper.png' \
+            --require-evidence 'qa-evidence/sw-cin-003-fence-conversation.png' \
+            --require-evidence 'qa-evidence/sw-cin-003-double-take.png' \
+            --require-evidence 'qa-evidence/sw-cin-003-last-sip.png' \
+            --require-evidence 'qa-evidence/sw-cin-003-panic-touchdown.png' \
+            --require-evidence 'qa-evidence/sw-cin-003-gameplay-handoff.png'
+          node scripts/qa-candidate-contract.mjs validate \
+            --root "$output_dir" --manifest cinematic-candidate.json \
+            --expected-source "$SOURCE_COMMIT" --expected-workflow-run-id "$GITHUB_RUN_ID"
+
+      - name: Upload playable cinematic candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: severe-weather-sw-cin-003-${{ github.run_number }}
+          path: dist/sw-cin-003
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
