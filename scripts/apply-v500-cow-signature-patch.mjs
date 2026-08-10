@@ -364,7 +364,7 @@ function activateCowCam(cow, forced = false) {
   if (!cow || bovineCowCam.active || (bovineCowCam.triggered && !forced)) return false;
   if (!forced && cow.id !== 17) return false;
   bovineCowCam.active = true;
-  bovineCowCam.timer = 1.85;
+  bovineCowCam.timer = 3.1;
   bovineCowCam.triggered = true;
   bovineCowCam.cow = cow;
   const detail = getCachedEl('cowCamDetail');

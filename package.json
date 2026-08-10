@@ -37,6 +37,7 @@
     "verify:presentation-identity": "node scripts/verify-presentation-identity-moo-brew.mjs",
     "verify:asset-pipeline": "node scripts/verify-threejs-asset-pipeline.mjs",
     "verify:visual-foundation": "node scripts/verify-threejs-visual-foundation.mjs",
+    "verify:sw-game-001": "node scripts/verify-sw-game-001.mjs",
     "verify:process": "node scripts/verify-implementation-truth.mjs",
     "qa:v510": "node scripts/qa-v510-production-slice.mjs",
     "qa:phase2": "node scripts/qa-modernization-phase2-clocks.mjs",
