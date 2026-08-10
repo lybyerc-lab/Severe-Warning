@@ -56,6 +56,8 @@ check('town-polish-injected', files.patch.includes('[SW:SOURCE:threejs-visual-he
 check('storm-root', files.runtime.includes('SWVisualHeroSlice6StormSilhouette'));
 check('storm-warped-geometry', files.runtime.includes('swVisualHeroSlice6WarpedFunnelGeometry') && files.runtime.includes('swSlice6Warped'));
 check('storm-asymmetric-corrugation', files.runtime.includes('corrugation') && files.runtime.includes('bendStrength') && files.runtime.includes('bendX') && files.runtime.includes('bendZ'));
+check('storm-legacy-cone-restrained', files.runtime.includes('ProductionMiddleVortex') && files.runtime.includes('ProductionDarkCore') && files.runtime.includes('legacyStormRingCount'));
+check('storm-ground-rings-restrained', files.runtime.includes("geometryType !== 'RingGeometry'") && files.runtime.includes("geometryType !== 'TorusGeometry'") && files.runtime.includes('stormRingCount'));
 check('storm-edge-wisps', files.runtime.includes('SWVisualSlice6EdgeWisp') && files.runtime.includes('stormEdgeWispCount'));
 check('storm-irregular-ground-bursts', files.runtime.includes('SWVisualSlice6GroundBurst') && files.runtime.includes('stormGroundBurstCount'));
 check('storm-default-not-neon-forced', files.runtime.includes('swVisualHeroSlice5IsNeonSelected') && !/\bneonFunnelUnlocked\s*(?:\+\+|--|[+\-*/]?=(?!=))/.test(runtimeBundle));
@@ -72,10 +74,11 @@ check('stacked-box-kits-disabled', files.roadLaw.includes('swVisualHeroSlice6Sta
 check('farm-fence-road-gaps', files.roadLaw.includes('fenceGapHalf: 12.6') && files.roadLaw.includes('swVisualHeroSlice6RoadLawFenceCrossings'));
 check('farm-fence-segmented-rails', files.roadLaw.includes('SWVisualSlice6FarmFenceRails') && files.roadLaw.includes('farmFenceRailCount'));
 check('farm-ditch-segmented', files.roadLaw.includes('SWVisualSlice6FarmDitchSegments') && files.roadLaw.includes('SWVisualSlice6FarmShoulderSegments'));
-check('town-polish-water-tower-standpipe', files.townPolish.includes('SWVisualSlice6WaterTowerStandpipe') && files.townPolish.includes("color: '#7c8583'"));
+check('town-polish-water-tower-standpipe', files.townPolish.includes('SWVisualSlice6WaterTowerStandpipe') && files.townPolish.includes("color: '#949b92'"));
 check('town-polish-pitched-rooflines', files.townPolish.includes('swVisualHeroSlice6TownPolishGableGeometry') && files.townPolish.includes('SWVisualSlice6MainStreetGable'));
-check('town-polish-lowers-tall-massing', files.townPolish.includes('swSlice6TownHeightScale') && files.townPolish.includes('height >= 24 ? 0.62'));
-check('town-polish-keeps-roofs-inside-footprint', files.townPolish.includes('width * 0.94') && files.townPolish.includes('depth * 0.94') && files.townPolish.includes('roof.rotation.y = 0'));
+check('town-polish-false-fronts-and-awnings', files.townPolish.includes('SWVisualSlice6MainStreetFalseFront') && files.townPolish.includes('SWVisualSlice6MainStreetAwning'));
+check('town-polish-lowers-tall-massing', files.townPolish.includes('swSlice6TownHeightScale') && files.townPolish.includes('height >= 24 ? 0.52'));
+check('town-polish-keeps-roofs-inside-footprint', files.townPolish.includes('width * 0.90') && files.townPolish.includes('depth * 0.90') && files.townPolish.includes('roof.rotation.y = ordinal % 3'));
 check('world-grade', files.runtime.includes('toneMappingExposure') && files.runtime.includes('fogColor'));
 check('no-runtime-http-assets', !/https?:\/\//.test(runtimeBundle));
 check('qa-default-storm-evidence', files.qa.includes('threejs-hero-slice6-default-storm.png'));

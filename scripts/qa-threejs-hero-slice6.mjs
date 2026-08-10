@@ -203,6 +203,7 @@ async function slice6Probe(page) {
       lateralCenterOffset,
       edgeWispCount: stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6EdgeWisp')).length || 0,
       groundBurstCount: stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6GroundBurst')).length || 0,
+      legacyStormRingCount: Number(visual?.stormSilhouette?.legacyStormRingCount || 0),
       buildingIdentityGroups,
       sidewalkBatchPresent: Boolean(sidewalkBatch?.parent),
       curbBatchPresent: Boolean(curbBatch?.parent),
@@ -242,12 +243,13 @@ try {
   requireCondition(visual?.heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1', `Inherited Hero Slice 5 version mismatch: ${visual?.heroSlice5Version}.`);
   requireCondition(visual?.heroSlice6Version === 'THREEJS_VISUAL_HERO_SLICE6_V1', `Hero Slice 6 version mismatch: ${visual?.heroSlice6Version}.`);
   requireCondition(visual?.heroSlice6RoadLawVersion === 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1', `Hero Slice 6 road-law version mismatch: ${visual?.heroSlice6RoadLawVersion}.`);
-  requireCondition(visual?.stormSilhouette?.profile === 'asymmetric-storm-v1', `Unexpected Slice 6 storm profile ${visual?.stormSilhouette?.profile}.`);
+  requireCondition(visual?.stormSilhouette?.profile === 'asymmetric-storm-v2', `Unexpected Slice 6 storm profile ${visual?.stormSilhouette?.profile}.`);
   requireCondition(probe?.stormRootPresent === true, 'Slice 6 storm silhouette root is missing.');
   requireCondition(Number(probe?.warpedShellCount) >= 3, `Only ${probe?.warpedShellCount} warped storm shells are active.`);
   requireCondition(Number(probe?.lateralCenterOffset) >= 0.25, `Storm shell centerline is still too geometrically straight: ${probe?.lateralCenterOffset}.`);
   requireCondition(Number(probe?.edgeWispCount) >= 14, `Only ${probe?.edgeWispCount} edge wisps are active.`);
   requireCondition(Number(probe?.groundBurstCount) >= 9, `Only ${probe?.groundBurstCount} irregular ground bursts are active.`);
+  requireCondition(Number(probe?.legacyStormRingCount) >= 3, `Expected inherited storm ground rings to be restrained, found ${probe?.legacyStormRingCount}.`);
   requireCondition(Number(probe?.inheritedShellMaxOpacity) <= 0.09, `Inherited Slice 4 cone shells remain too dominant: ${probe?.inheritedShellMaxOpacity}.`);
   requireCondition(Number(probe?.defaultFunnelOpacity) <= 0.22, `Legacy funnel remains too opaque in default mode: ${probe?.defaultFunnelOpacity}.`);
   requireCondition(Number(probe?.slice6PresentationObjectCount) <= 110, `Slice 6 presentation object budget exceeded: ${probe?.slice6PresentationObjectCount}.`);
@@ -279,6 +281,8 @@ try {
   requireCondition(Number.isFinite(Number(roadLaw?.hiddenLegacyParcelMeshes)), 'Legacy parcel suppression telemetry is missing.');
   requireCondition(Number(probe?.legacyVisibleParcelMeshes) === 0, `${probe?.legacyVisibleParcelMeshes} legacy square parcel overlays remain visible.`);
   requireCondition(Number(roadLaw?.parcelAdjustedTargetCount) > 0, 'Parcel compliance did not adjust any oversized building presentation.');
+  requireCondition(Number(visual?.worldIdentity?.townPolish?.mainStreetRooflineCount) >= 3, 'Main Street roofline pass did not reach the required minimum coverage.');
+  requireCondition(Number(visual?.worldIdentity?.townPolish?.falseFrontCount) >= 3 && Number(visual?.worldIdentity?.townPolish?.awningCount) >= 3, 'Main Street false-front and awning pass is incomplete.');
   requireCondition(Number(roadLaw?.targetRoadIntrusionCount) === 0, `Road-law telemetry still reports ${roadLaw?.targetRoadIntrusionCount} building road intrusions: ${JSON.stringify(roadLaw?.targetRoadIntrusions || [])}`);
   requireCondition(Array.isArray(probe?.independentTargetRoadIntrusions) && probe.independentTargetRoadIntrusions.length === 0, `Independent QA found building geometry inside protected roads: ${JSON.stringify(probe?.independentTargetRoadIntrusions || [])}`);
   requireCondition(Number(visual?.worldGrade?.exposure) <= 0.93, `World exposure was not restrained: ${visual?.worldGrade?.exposure}.`);

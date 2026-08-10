@@ -35,6 +35,39 @@ function swVisualHeroSlice6TuneInheritedStormStable(seconds) {
       outerFunnelMat.needsUpdate = true;
     }
   }
+
+  const middleVortex = scene?.getObjectByName?.('ProductionMiddleVortex');
+  if (middleVortex?.material) {
+    middleVortex.material.opacity = 0.06;
+    middleVortex.material.color?.set?.('#26383d');
+    middleVortex.material.needsUpdate = true;
+  }
+  const darkCore = scene?.getObjectByName?.('ProductionDarkCore');
+  if (darkCore?.material) {
+    darkCore.material.opacity = 0.34;
+    darkCore.material.color?.set?.('#1b2b31');
+    darkCore.material.needsUpdate = true;
+  }
+
+  let stormRingCount = 0;
+  if (scene?.traverse && storm?.pos) {
+    const stormOrigin = new THREE.Vector3(storm.pos.x, storm.pos.y, storm.pos.z);
+    const worldPosition = new THREE.Vector3();
+    scene.traverse((object) => {
+      const geometryType = String(object?.geometry?.type || '');
+      if (geometryType !== 'RingGeometry' && geometryType !== 'TorusGeometry') return;
+      object.getWorldPosition?.(worldPosition);
+      if (worldPosition.distanceToSquared(stormOrigin) > 18 * 18) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.filter(Boolean).forEach((material) => {
+        material.opacity = Math.min(Number(material.opacity || 1), 0.035);
+        material.transparent = true;
+        material.needsUpdate = true;
+      });
+      stormRingCount += 1;
+    });
+  }
+  swVisualHeroSlice6State.legacyStormRingCount = stormRingCount;
 }
 
 swVisualHeroSlice6TuneInheritedStorm = swVisualHeroSlice6TuneInheritedStormStable;
