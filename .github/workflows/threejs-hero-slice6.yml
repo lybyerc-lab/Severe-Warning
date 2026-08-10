@@ -42,7 +42,7 @@ jobs:
         with:
           ref: f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf
           path: slice5-base
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Check out contract tools
         uses: actions/checkout@v6
