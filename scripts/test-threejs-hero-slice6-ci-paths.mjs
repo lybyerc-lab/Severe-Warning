@@ -17,7 +17,7 @@ assert.equal(shouldRun(['scripts/qa-threejs-hero-slice6.mjs']), true);
 assert.equal(shouldRun(['assets/production/vfx/kenney/dirt_01.png']), true);
 assert.equal(shouldRun(['.github/workflows/threejs-hero-slice6.yml']), true);
 assert.match(workflow, /prepare-slice5-reference:/);
-assert.match(workflow, /build-candidate:\s*[\s\S]*?needs: prepare-slice5-reference/);
+assert.match(workflow, /prepare-slice5-reference:[\s\S]*?build-candidate:\s*[\s\S]*?runs-on: ubuntu-24\.04/);
 assert.match(workflow, /core-browser-qa:\s*[\s\S]*?needs: build-candidate/);
 assert.match(workflow, /presentation-browser-qa:\s*[\s\S]*?needs: build-candidate/);
 assert.match(workflow, /same-runner-performance:\s*[\s\S]*?needs: \[prepare-slice5-reference, build-candidate\]/);
