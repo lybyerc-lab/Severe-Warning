@@ -80,15 +80,8 @@ try {
   requireCondition(handoff.runActive === true, 'Gameplay did not activate after handoff.');
   requireCondition(handoff.handoffCount === 1, `Expected one handoff, received ${handoff.handoffCount}.`);
   requireCondition(Number(handoff.runTimeRemaining) > 179.7, `Gameplay clock lost time during cinematic (${handoff.runTimeRemaining}).`);
-
-  const cleanupCounts = await page.evaluate(() => ({
-    foundationRoots: document.querySelectorAll('canvas').length,
-    sceneFoundationRoots: globalThis.scene?.getObjectByName?.('MooBrewOpeningFoundationRoot') ? 1 : 0,
-    customRoots: globalThis.scene?.getObjectByName?.('SWCinematicPlayableOpeningPresentation') ? 1 : 0,
-    revealRoots: globalThis.scene?.getObjectByName?.('SWCinematicTouchdownPresentation') ? 1 : 0,
-  }));
-  report.lifecycle.cleanup = cleanupCounts;
-  requireCondition(cleanupCounts.sceneFoundationRoots === 0 && cleanupCounts.customRoots === 0 && cleanupCounts.revealRoots === 0, `Cinematic cleanup left scene roots behind: ${JSON.stringify(cleanupCounts)}.`);
+  requireCondition(handoff.actors === null && handoff.budget === null, 'Foundation session telemetry remained live after handoff cleanup.');
+  requireCondition(handoff.stormRevealPresent === false && handoff.newspaperPresent === false && handoff.roofPeelPresent === false, 'Custom cinematic presentation remained attached after handoff cleanup.');
 
   await page.evaluate(() => {
     globalThis.resetWarningRun();
@@ -100,15 +93,12 @@ try {
   requireCondition(secondStart.canSkip === true, 'Seen-state did not enable later-viewing skip eligibility.');
   requireCondition(secondStart.startCount === 2, `Expected second mount count 2, received ${secondStart.startCount}.`);
   await page.evaluate(() => globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.finish('skip'));
-  const secondCleanup = await page.evaluate(() => ({
-    foundation: globalThis.scene?.getObjectByName?.('MooBrewOpeningFoundationRoot') ? 1 : 0,
-    custom: globalThis.scene?.getObjectByName?.('SWCinematicPlayableOpeningPresentation') ? 1 : 0,
-    reveal: globalThis.scene?.getObjectByName?.('SWCinematicTouchdownPresentation') ? 1 : 0,
-    snapshot: globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.getSnapshot(),
-  }));
+  const secondCleanup = await page.evaluate(() => globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.getSnapshot());
   report.lifecycle.secondCleanup = secondCleanup;
-  requireCondition(secondCleanup.foundation === 0 && secondCleanup.custom === 0 && secondCleanup.reveal === 0, 'Second cleanup left duplicate cinematic roots.');
-  requireCondition(secondCleanup.snapshot.runActive === true, 'Skip path did not resume gameplay.');
+  requireCondition(secondCleanup.active === false, 'Skip cleanup left the cinematic active.');
+  requireCondition(secondCleanup.runActive === true, 'Skip path did not resume gameplay.');
+  requireCondition(secondCleanup.actors === null && secondCleanup.budget === null, 'Skip cleanup left the retained foundation mounted.');
+  requireCondition(secondCleanup.stormRevealPresent === false && secondCleanup.newspaperPresent === false && secondCleanup.roofPeelPresent === false, 'Skip cleanup left custom cinematic presentation mounted.');
 } finally {
   await writeFile(path.join(outputDir, 'sw-cin-003-browser.log'), `${logs.join('\n')}\n`, 'utf8');
   await browser.close();
