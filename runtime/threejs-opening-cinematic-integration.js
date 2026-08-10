@@ -285,10 +285,14 @@
     const farm = typeof swVisualGetHartFarmPresentationAnchor === 'function'
       ? swVisualGetHartFarmPresentationAnchor()
       : null;
-    const x = Number(farm?.x ?? -118);
-    const z = Number(farm?.z ?? 126);
+    // The authored anchor is the signature barn's center. Stage the actors on
+    // the adjoining farm apron so close shots do not begin inside barn geometry.
+    const farmX = Number(farm?.x ?? -118);
+    const farmZ = Number(farm?.z ?? 126);
+    const x = farmX + 30;
+    const z = farmZ + 25;
     const y = typeof terrainHeightAt === 'function' ? terrainHeightAt(x, z) : 0;
-    return Object.freeze({ x, y, z, farmFound: Boolean(farm) });
+    return Object.freeze({ x, y, z, farmX, farmZ, farmFound: Boolean(farm) });
   }
 
   function markSeen() {
@@ -376,6 +380,23 @@
     const t = Math.max(0, Math.min(DURATION, time));
     state.session.setTime(Math.min(12, t));
 
+    // `frame()` and deterministic QA seek both revisit this function. Reset the
+    // presentation-only offsets before applying the current timestamp so a cup,
+    // chicken, roof, or funnel can never drift farther on every render.
+    const cup = state.session.root?.getObjectByName?.('MooBrewCup') || null;
+    const chickenA = state.session.root?.getObjectByName?.('ChickenCinematicRig-1') || null;
+    const chickenB = state.session.root?.getObjectByName?.('ChickenCinematicRig-2') || null;
+    if (cup) {
+      cup.rotation.y = 0;
+      cup.rotation.z = 0;
+    }
+    if (chickenA) chickenA.position.z = 1.9;
+    if (chickenB) chickenB.position.z = 2.65;
+    if (state.roofPeel) {
+      state.roofPeel.position.set(-10.8, 5.8, -8.8);
+      state.roofPeel.rotation.set(0, 0, 0.08);
+    }
+
     const weather = smooth((t - 2.45) / 3.5);
     if (state.savedLights) {
       ambientLight.intensity = lerp(state.savedLights.ambientIntensity, Math.max(0.45, state.savedLights.ambientIntensity * 0.62), weather);
@@ -409,7 +430,6 @@
       state.newspaper.rotation.z = Math.sin(t * 1.7) * 0.018;
     }
 
-    const cup = state.session.root?.getObjectByName?.('MooBrewCup') || null;
     if (cup && t >= 10.0) {
       const drop = smooth((t - 10.0) / 0.72);
       cup.position.y -= drop * 2.75;
@@ -418,8 +438,6 @@
       cup.rotation.x += drop * 0.65;
     }
 
-    const chickenA = state.session.root?.getObjectByName?.('ChickenCinematicRig-1') || null;
-    const chickenB = state.session.root?.getObjectByName?.('ChickenCinematicRig-2') || null;
     if (t >= 10.0) {
       const panic = smooth((t - 10.0) / 1.45);
       if (chickenA) { chickenA.position.x -= panic * 3.8; chickenA.position.z += panic * 1.8; chickenA.rotation.y -= panic * 0.8; }
@@ -441,10 +459,10 @@
       state.stormReveal.cloud.material.opacity = reveal * 0.48;
       state.stormReveal.dust.material.opacity = reveal * 0.30;
       state.stormReveal.group.scale.setScalar(lerp(0.55, 1.0, reveal));
-      state.stormReveal.group.rotation.y += 0.012 + reveal * 0.025;
-      state.stormReveal.funnel.rotation.y -= 0.035;
-      state.stormReveal.cloud.rotation.y += 0.016;
-      state.stormReveal.dust.rotation.z += 0.028;
+      state.stormReveal.group.rotation.y = t * (0.12 + reveal * 0.25);
+      state.stormReveal.funnel.rotation.y = -t * 0.35;
+      state.stormReveal.cloud.rotation.y = t * 0.16;
+      state.stormReveal.dust.rotation.z = t * 0.28;
     }
 
     const fence = shotWorldPose('fence-conversation');
@@ -472,10 +490,20 @@
     } else {
       const reveal = smooth((t - 10.15) / 2.05);
       const stormPos = state.stormReveal?.group?.position || new THREE.Vector3(0, 0, 0);
-      const pullback = new THREE.Vector3(state.stage.x + 18, state.stage.y + 12.5, state.stage.z + 25);
+      // Pull back on the actor side of the touchdown vector so the panic is
+      // foreground comedy and the funnel remains the escalating background.
+      const touchdownDirection = stormPos.clone().sub(new THREE.Vector3(state.stage.x, state.stage.y, state.stage.z));
+      touchdownDirection.y = 0;
+      if (touchdownDirection.lengthSq() < 0.01) touchdownDirection.set(1, 0, -1);
+      touchdownDirection.normalize();
+      const pullback = new THREE.Vector3(
+        state.stage.x - touchdownDirection.x * 28,
+        state.stage.y + 12.5,
+        state.stage.z - touchdownDirection.z * 28,
+      );
       const p = sip.position.clone().lerp(pullback, reveal);
       const target = sip.target.clone().lerp(new THREE.Vector3(stormPos.x, stormPos.y + 13, stormPos.z), reveal);
-      cameraPose(p, target, lerp(sip.fov, 43, reveal), 1);
+      cameraPose(p, target, lerp(sip.fov, 55, reveal), 1);
     }
 
     return true;
@@ -510,7 +538,7 @@
       runActive: Boolean(runActive),
       runTimeRemaining: Number(runTimeRemaining),
       timerFrozenDuringCinematic: state.active ? (runActive === false && Math.abs(runTimeRemaining - 180) < 0.001) : null,
-      stage: state.stage ? { x: state.stage.x, y: state.stage.y, z: state.stage.z, farmFound: state.stage.farmFound } : null,
+      stage: state.stage ? { x: state.stage.x, y: state.stage.y, z: state.stage.z, farmX: state.stage.farmX, farmZ: state.stage.farmZ, farmFound: state.stage.farmFound } : null,
       actors: state.session?.getSnapshot?.()?.actors || null,
       budget: state.session?.getSnapshot?.()?.budget || null,
       stormRevealPresent: Boolean(state.stormReveal?.group?.parent),

@@ -20,8 +20,12 @@ const integrationSourceMarker = '[SW:SOURCE:threejs-opening-cinematic-integratio
 const insertionMarker = '// --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---';
 const dtAnchor = '  const dt = realDelta;';
 const frameHook = "  const swOpeningCinematicOwnsFrame = globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__?.frame?.(now, dt) === true;";
-const cameraAnchor = `  camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);\n  camera.position.y = THREE.MathUtils.lerp(camera.position.y, storm.pos.y + currentCamY, 0.08);\n  camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);\n  camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 1.5, storm.pos.z + (moveZ * 8));`;
-const cameraReplacement = `  if (!swOpeningCinematicOwnsFrame) {\n    camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);\n    camera.position.y = THREE.MathUtils.lerp(camera.position.y, storm.pos.y + currentCamY, 0.08);\n    camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);\n    camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 1.5, storm.pos.z + (moveZ * 8));\n  }`;
+const cinematicCameraGate = 'if (!swOpeningCinematicOwnsFrame &&';
+// Slice 6 owns a Cow-cam-or-gameplay camera branch around the ordinary camera
+// writes. Gate that whole branch, rather than assuming the older bare writes
+// still exist after the protected GAME integration.
+const cameraOwnershipGuard = '  if (!globalThis.productionQaPrepared && !(typeof globalThis.isPhase5PresentationLatched === \'function\' && globalThis.isPhase5PresentationLatched())) {';
+const cameraOwnershipReplacement = '  if (!swOpeningCinematicOwnsFrame && !globalThis.productionQaPrepared && !(typeof globalThis.isPhase5PresentationLatched === \'function\' && globalThis.isPhase5PresentationLatched())) {';
 
 function requireMarker(value) {
   if (!html.includes(value)) throw new Error(`SW-CIN-003 apply verification failed: missing ${value}`);
@@ -50,7 +54,7 @@ function verifyRuntimeSafety(value, label) {
   }
 }
 
-if (html.includes(marker) && html.includes(frameHook) && html.includes('if (!swOpeningCinematicOwnsFrame)')) {
+if (html.includes(marker) && html.includes(frameHook) && html.includes(cinematicCameraGate)) {
   [foundationSourceMarker, integrationSourceMarker, foundationMarker, marker, '__SW_OPENING_CINEMATIC_PLAYABLE__'].forEach(requireMarker);
   console.log(`SW-CIN-003 already applied to ${sourcePath}`);
   process.exit(0);
@@ -63,7 +67,7 @@ for (const prerequisite of [
   '[SW:SOURCE:threejs-visual-hero-slice6-town-polish.js]',
   insertionMarker,
   dtAnchor,
-  cameraAnchor,
+  cameraOwnershipGuard,
   'function startRunFromMenu()',
   'function resetWarningRun()',
 ]) {
@@ -84,7 +88,7 @@ const bundle = [
 ].join(newline);
 html = html.replace(insertionMarker, `${bundle}${newline}${insertionMarker}`);
 html = html.replace(dtAnchor, `${dtAnchor}${newline}${frameHook}`);
-html = html.replace(cameraAnchor, cameraReplacement);
+html = html.replace(cameraOwnershipGuard, cameraOwnershipReplacement);
 html = html.replace(
   '</head>',
   `<!-- ${foundationMarker} -->${newline}<!-- ${marker} -->${newline}<!-- [SW:CINEMATIC:PLAYABLE_OPENING] -->${newline}</head>`,
@@ -105,7 +109,7 @@ for (const required of [
   'SWCinematicBarnRoofPeel',
   'SWCinematicTouchdownPresentation',
   frameHook,
-  'if (!swOpeningCinematicOwnsFrame)',
+  cinematicCameraGate,
 ]) requireMarker(required);
 
 const slice6Index = html.indexOf('[SW:SOURCE:threejs-visual-hero-slice6-town-polish.js]');

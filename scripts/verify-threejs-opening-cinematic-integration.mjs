@@ -32,7 +32,7 @@ check('no storm gameplay position or tuning authority writes', !/storm\.pos\.(?:
 check('no target damage/destruction/scoring authority writes', !/(?:target\.(?:health|maxHealth|damageStage|destroyed|points)|destructionScore|comboMultiplier)\s*=/.test(integration));
 check('utility and ability authority are untouched', !/(?:powerPoles\.(?:push|splice)|triggerAbility\s*=|cooldowns\s*=)/.test(integration));
 check('Neon persistence remains read-only', !/neonFunnelUnlocked\s*=/.test(integration));
-check('camera ownership is temporary and build-hooked', apply.includes('swOpeningCinematicOwnsFrame') && apply.includes('if (!swOpeningCinematicOwnsFrame)') && integration.includes('cameraPose('));
+check('camera ownership is temporary and build-hooked', apply.includes('swOpeningCinematicOwnsFrame') && apply.includes('cinematicCameraGate') && integration.includes('cameraPose('));
 check('menu launch wraps existing start path', integration.includes('baseStartRunFromMenu') && integration.includes('startRunFromMenuWithPlayableOpening'));
 check('HUD hides only for cinematic and restores at handoff', integration.includes("const hudIds = ['hud', 'easBanner', 'joystickZone']") && integration.includes('setHudVisible(false)') && integration.includes('setHudVisible(true)'));
 check('farm anchor is the authored Hart Farm presentation anchor', integration.includes('swVisualGetHartFarmPresentationAnchor') && integration.includes('farmFound'));
