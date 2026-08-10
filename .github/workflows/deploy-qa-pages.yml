@@ -1,18 +1,24 @@
-name: Deploy QA Candidate to Pages
+name: Deploy sealed QA candidate to Pages
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - qa
-    paths:
-      - '.github/workflows/deploy-qa-pages.yml'
-      - 'qa-candidate.json'
-      - 'scripts/stamp-qa-artifact.mjs'
+    inputs:
+      source_run_id:
+        description: Successful Hero Slice workflow run ID that produced the candidate artifact
+        required: true
+        type: string
+      artifact_name:
+        description: Exact final evidence artifact name, for example severe-weather-threejs-hero-slice6-web-123
+        required: true
+        type: string
+      source_commit:
+        description: Exact source commit declared by the candidate manifest
+        required: true
+        type: string
 
 permissions:
-  contents: read
   actions: read
+  contents: read
   pages: write
   id-token: write
 
@@ -21,269 +27,89 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Verify exact QA artifact and prepare Pages
+  validate-and-publish:
+    name: Validate sealed candidate then publish
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      GH_TOKEN: ${{ github.token }}
-    outputs:
-      source_commit: ${{ steps.pointer.outputs.source_commit }}
-      artifact_name: ${{ steps.pointer.outputs.artifact_name }}
-      required_bridge: ${{ steps.pointer.outputs.required_bridge }}
-
+    timeout-minutes: 20
     steps:
-      - name: Check out QA publisher
+      - name: Check out publisher contract
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
-      - name: Read QA candidate pointer
-        id: pointer
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Verify source workflow run identity and successful conclusion
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_WORKFLOW_RUN_ID: ${{ inputs.source_run_id }}
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
         run: |
           set -euo pipefail
-          node --check scripts/stamp-qa-artifact.mjs
+          [[ "$EXPECTED_WORKFLOW_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$EXPECTED_SOURCE_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]
+          curl --fail --silent --show-error --location \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$EXPECTED_WORKFLOW_RUN_ID" \
+            --output source-workflow-run.json
           node - <<'NODE'
-          const fs = require('fs');
-          const candidate = JSON.parse(fs.readFileSync('qa-candidate.json', 'utf8'));
-          const required = [
-            'version', 'label', 'pagesRoot', 'sourceBranch', 'sourceCommit',
-            'workflowRunId', 'workflowRunNumber', 'artifactName', 'artifactId',
-            'artifactDigest', 'renderer', 'requiredBridge'
-          ];
-          for (const key of required) {
-            if (candidate[key] === undefined || candidate[key] === null || candidate[key] === '') {
-              throw new Error(`qa-candidate.json missing ${key}`);
-            }
-          }
-          if (candidate.version !== 'SW_QA_PAGES_CANDIDATE_V1') throw new Error(`Unexpected candidate pointer version ${candidate.version}`);
-          if (!/^[0-9a-f]{40}$/.test(candidate.sourceCommit)) throw new Error(`Invalid source commit ${candidate.sourceCommit}`);
-          if (!String(candidate.artifactDigest).startsWith('sha256:')) throw new Error(`Invalid artifact digest ${candidate.artifactDigest}`);
-          const supported = [
-            'THREEJS_VISUAL_HERO_SLICE4_V1',
-            'THREEJS_VISUAL_HERO_SLICE5_V1',
-            'THREEJS_VISUAL_HERO_SLICE6_V1'
-          ];
-          if (!supported.includes(candidate.requiredBridge)) throw new Error(`Unsupported QA bridge ${candidate.requiredBridge}`);
-          const markers = Array.isArray(candidate.requiredMarkers) && candidate.requiredMarkers.length
-            ? candidate.requiredMarkers
-            : [candidate.requiredBridge];
-          const values = {
-            QA_LABEL: candidate.label,
-            QA_PAGES_ROOT: candidate.pagesRoot,
-            QA_SOURCE_BRANCH: candidate.sourceBranch,
-            QA_SOURCE_COMMIT: candidate.sourceCommit,
-            QA_RUN_ID: candidate.workflowRunId,
-            QA_RUN_NUMBER: candidate.workflowRunNumber,
-            QA_ARTIFACT_NAME: candidate.artifactName,
-            QA_ARTIFACT_ID: candidate.artifactId,
-            QA_ARTIFACT_DIGEST: candidate.artifactDigest,
-            QA_RENDERER: candidate.renderer,
-            QA_REQUIRED_BRIDGE: candidate.requiredBridge,
-            QA_REQUIRED_MARKERS_JSON: JSON.stringify(markers),
-          };
-          const env = fs.createWriteStream(process.env.GITHUB_ENV, { flags: 'a' });
-          for (const [key, value] of Object.entries(values)) env.write(`${key}=${value}\n`);
-          env.end();
-          const output = fs.createWriteStream(process.env.GITHUB_OUTPUT, { flags: 'a' });
-          output.write(`source_commit=${candidate.sourceCommit}\n`);
-          output.write(`artifact_name=${candidate.artifactName}\n`);
-          output.write(`required_bridge=${candidate.requiredBridge}\n`);
-          output.end();
+          const fs = require('node:fs');
+          const run = JSON.parse(fs.readFileSync('source-workflow-run.json', 'utf8'));
+          const expectedRunId = process.env.EXPECTED_WORKFLOW_RUN_ID;
+          const expectedCommit = process.env.EXPECTED_SOURCE_COMMIT;
+          if (String(run.id) !== expectedRunId) throw new Error(`Workflow run ID mismatch: expected ${expectedRunId}, received ${run.id}`);
+          if (run.conclusion !== 'success') throw new Error(`Workflow run ${expectedRunId} conclusion must be success, received ${run.conclusion}`);
+          if (run.head_sha !== expectedCommit) throw new Error(`Workflow run ${expectedRunId} head SHA mismatch: expected ${expectedCommit}, received ${run.head_sha}`);
+          console.log(`Verified successful source workflow run ${expectedRunId} at ${expectedCommit}.`);
           NODE
 
-      - name: Verify exact GitHub Actions artifact metadata
+      - name: Download exact candidate artifact from its successful source run
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ inputs.artifact_name }}
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: candidate
+
+      - name: Reject mismatched, incomplete, or failed candidate evidence
         shell: bash
+        env:
+          EXPECTED_WORKFLOW_RUN_ID: ${{ inputs.source_run_id }}
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
         run: |
           set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${QA_RUN_ID}/artifacts" > artifact-list.json
-          node - <<'NODE'
-          const fs = require('fs');
-          const candidate = JSON.parse(fs.readFileSync('qa-candidate.json', 'utf8'));
-          const payload = JSON.parse(fs.readFileSync('artifact-list.json', 'utf8'));
-          const matches = (payload.artifacts || []).filter((artifact) => artifact.name === candidate.artifactName);
-          if (matches.length !== 1) throw new Error(`Expected one artifact named ${candidate.artifactName}; found ${matches.length}`);
-          const artifact = matches[0];
-          if (Number(artifact.id) !== Number(candidate.artifactId)) throw new Error(`Artifact id mismatch: ${artifact.id}`);
-          if (artifact.digest !== candidate.artifactDigest) throw new Error(`Artifact digest mismatch: ${artifact.digest}`);
-          if (artifact.expired) throw new Error('QA candidate artifact is expired.');
-          if (artifact.workflow_run?.id !== Number(candidate.workflowRunId)) throw new Error(`Artifact run mismatch: ${artifact.workflow_run?.id}`);
-          if (artifact.workflow_run?.head_sha !== candidate.sourceCommit) throw new Error(`Artifact source mismatch: ${artifact.workflow_run?.head_sha}`);
-          if (artifact.workflow_run?.head_branch !== candidate.sourceBranch) throw new Error(`Artifact branch mismatch: ${artifact.workflow_run?.head_branch}`);
-          console.log(`Verified artifact ${artifact.name} (${artifact.id}) at ${artifact.digest}.`);
-          NODE
-
-      - name: Download exact QA candidate artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf candidate-artifact
-          mkdir -p candidate-artifact
-          gh run download "$QA_RUN_ID" \
-            --repo "$GITHUB_REPOSITORY" \
-            --name "$QA_ARTIFACT_NAME" \
-            --dir candidate-artifact
-
-      - name: Verify sealed candidate evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const fs = require('fs');
-          const candidate = JSON.parse(fs.readFileSync('qa-candidate.json', 'utf8'));
-          const root = 'candidate-artifact';
-          const file = (path) => `${root}/${path}`;
-          const requireFile = (path) => {
-            const full = file(path);
-            if (!fs.existsSync(full) || fs.statSync(full).size === 0) throw new Error(`Missing candidate evidence ${path}`);
-          };
-          const requirePassed = (path) => {
-            requireFile(path);
-            const report = JSON.parse(fs.readFileSync(file(path), 'utf8'));
-            if (report.passed !== true) throw new Error(`Required report is not green: ${path}`);
-            return report;
-          };
-
-          for (const path of [
-            'SOURCE_COMMIT.txt',
-            'WORKFLOW_RUN_ID.txt',
-            'package-manifest.json',
-            'qa-evidence/visual-run5/threejs-visual-foundation-report.json',
-            'qa-evidence/asset/threejs-asset-pipeline-report.json',
-            'qa-evidence/performance/comparison-report.json',
-            'web-preview/index.html',
-            'web-preview/assets/production/vfx/kenney/dirt_01.png',
-            'web-preview/assets/production/vfx/kenney/smoke_03.png',
-            'web-preview/assets/production/vfx/kenney/trace_03.png',
-          ]) requireFile(path);
-
-          if (fs.readFileSync(file('SOURCE_COMMIT.txt'), 'utf8').trim() !== candidate.sourceCommit) throw new Error('SOURCE_COMMIT.txt mismatch');
-          if (fs.readFileSync(file('WORKFLOW_RUN_ID.txt'), 'utf8').trim() !== String(candidate.workflowRunId)) throw new Error('WORKFLOW_RUN_ID.txt mismatch');
-
-          const manifest = JSON.parse(fs.readFileSync(file('package-manifest.json'), 'utf8'));
-          if (manifest.sourceCommit !== candidate.sourceCommit) throw new Error(`Manifest source mismatch ${manifest.sourceCommit}`);
-          if (manifest.sourceBranch !== candidate.sourceBranch) throw new Error(`Manifest branch mismatch ${manifest.sourceBranch}`);
-          if (String(manifest.workflowRunId) !== String(candidate.workflowRunId)) throw new Error(`Manifest run mismatch ${manifest.workflowRunId}`);
-          if (Number(manifest.workflowRunNumber) !== Number(candidate.workflowRunNumber)) throw new Error(`Manifest run number mismatch ${manifest.workflowRunNumber}`);
-          if (manifest.renderer !== candidate.renderer) throw new Error(`Renderer mismatch ${manifest.renderer}`);
-          if (String(manifest.acceptance || '').includes('physical-android-accepted') && !String(manifest.acceptance).includes('not-physical-android-accepted')) {
-            throw new Error('Browser artifact must not claim physical Android acceptance.');
-          }
-
-          requirePassed('qa-evidence/visual-run5/threejs-visual-foundation-report.json');
-          requirePassed('qa-evidence/asset/threejs-asset-pipeline-report.json');
-
-          if (candidate.requiredBridge === 'THREEJS_VISUAL_HERO_SLICE4_V1') {
-            if (manifest.heroSlice4Bridge !== 'THREEJS_VISUAL_HERO_SLICE4_V1') throw new Error(`Hero Slice 4 bridge mismatch ${manifest.heroSlice4Bridge}`);
-            requirePassed('threejs-hero-slice4-static-report.json');
-            requirePassed('qa-evidence/visual-slice4/threejs-hero-slice4-report.json');
-            for (const path of [
-              'qa-evidence/visual-slice4/threejs-hero-slice4-pristine-street.png',
-              'qa-evidence/visual-slice4/threejs-hero-slice4-storm-volume.png',
-              'qa-evidence/visual-slice4/threejs-hero-slice4-damaged-storefront.png',
-            ]) requireFile(path);
-          } else if (candidate.requiredBridge === 'THREEJS_VISUAL_HERO_SLICE5_V1') {
-            if (manifest.heroSlice5Bridge !== 'THREEJS_VISUAL_HERO_SLICE5_V1') throw new Error(`Hero Slice 5 bridge mismatch ${manifest.heroSlice5Bridge}`);
-            requirePassed('threejs-hero-slice5-static-report.json');
-            requirePassed('qa-evidence/visual-slice5/threejs-hero-slice5-report.json');
-            requirePassed('qa-evidence/visual-slice4/threejs-hero-slice4-report.json');
-            for (const path of [
-              'qa-evidence/visual-slice5/threejs-hero-slice5-default-storm.png',
-              'qa-evidence/visual-slice5/threejs-hero-slice5-rainbow-funnel.png',
-              'qa-evidence/visual-slice5/threejs-hero-slice5-cow-level.png',
-            ]) requireFile(path);
-          } else if (candidate.requiredBridge === 'THREEJS_VISUAL_HERO_SLICE6_V1') {
-            if (manifest.heroSlice6Bridge !== 'THREEJS_VISUAL_HERO_SLICE6_V1') throw new Error(`Hero Slice 6 bridge mismatch ${manifest.heroSlice6Bridge}`);
-            if (manifest.inheritedHeroSlice5Bridge !== 'THREEJS_VISUAL_HERO_SLICE5_V1') throw new Error(`Inherited Hero Slice 5 bridge mismatch ${manifest.inheritedHeroSlice5Bridge}`);
-            requirePassed('threejs-hero-slice6-static-report.json');
-            const slice6 = requirePassed('qa-evidence/visual-slice6/threejs-hero-slice6-report.json');
-            requirePassed('qa-evidence/visual-slice5/threejs-hero-slice5-report.json');
-            requirePassed('qa-evidence/visual-slice4/threejs-hero-slice4-report.json');
-            for (const path of [
-              'qa-evidence/visual-slice6/threejs-hero-slice6-default-storm.png',
-              'qa-evidence/visual-slice6/threejs-hero-slice6-main-street.png',
-              'qa-evidence/visual-slice6/threejs-hero-slice6-farm-edge.png',
-            ]) requireFile(path);
-            const roadLaw = slice6.mainStreet?.visual?.worldIdentity?.roadLaw;
-            const farmRoadLaw = slice6.farmEdge?.visual?.worldIdentity?.roadLaw;
-            const townPolish = slice6.mainStreet?.visual?.worldIdentity?.townPolish;
-            if (!roadLaw || roadLaw.targetRoadIntrusionCount !== 0) throw new Error('Slice 6 building-road intrusion gate failed.');
-            if (!farmRoadLaw || farmRoadLaw.farmFenceRoadIntrusionCount !== 0 || farmRoadLaw.farmFenceGapCount < 1) throw new Error('Slice 6 farm road-gap gate failed.');
-            if (!townPolish || townPolish.waterTowerStyled !== true || townPolish.mainStreetRooflineCount < 1) throw new Error('Slice 6 town polish evidence is incomplete.');
-          }
-          console.log(`Verified sealed QA candidate ${candidate.sourceCommit} from workflow ${candidate.workflowRunId}.`);
-          NODE
-
-      - name: Prepare root Pages build from candidate web preview
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf www
-          cp -R candidate-artifact/web-preview www
-          node scripts/stamp-qa-artifact.mjs
-          node - <<'NODE'
-          const fs = require('fs');
-          const candidate = JSON.parse(fs.readFileSync('qa-candidate.json', 'utf8'));
-          const html = fs.readFileSync('www/index.html', 'utf8');
-          const markers = Array.isArray(candidate.requiredMarkers) && candidate.requiredMarkers.length
-            ? candidate.requiredMarkers
-            : [candidate.requiredBridge];
-          for (const marker of markers) {
-            if (!html.includes(marker)) throw new Error(`Published preview missing required marker ${marker}`);
-          }
-          NODE
-          grep -F "$QA_SOURCE_COMMIT" www/qa-build.json
-          grep -F "$QA_ARTIFACT_NAME" www/qa-build.json
-          test -s www/404.html
-          test -f www/.nojekyll
+          node --check scripts/qa-candidate-contract.mjs
+          node scripts/qa-candidate-contract.mjs validate \
+            --root candidate --manifest package-manifest.json --expected-source "$EXPECTED_SOURCE_COMMIT" \
+            --expected-workflow-run-id "$EXPECTED_WORKFLOW_RUN_ID"
+          test "$(tr -d '\n' < candidate/SOURCE_COMMIT.txt)" = "$EXPECTED_SOURCE_COMMIT"
+          test -s candidate/web-preview/index.html
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Pages artifact
+      - name: Upload validated Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: www
+          path: candidate/web-preview
 
   deploy:
-    name: Publish QA candidate at root URL
-    needs: build
+    needs: validate-and-publish
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Verify live root is the exact QA candidate
-        shell: bash
-        env:
-          QA_ROOT_URL: https://lybyerc-lab.github.io/Severe-Warning/
-          QA_METADATA_URL: https://lybyerc-lab.github.io/Severe-Warning/qa-build.json
-          EXPECTED_SOURCE_SHA: ${{ needs.build.outputs.source_commit }}
-          EXPECTED_ARTIFACT: ${{ needs.build.outputs.artifact_name }}
-          EXPECTED_BRIDGE: ${{ needs.build.outputs.required_bridge }}
+      - name: Show deployed URL
         run: |
-          set -euo pipefail
-          for attempt in $(seq 1 40); do
-            if root_html="$(curl --fail --silent --show-error --location "$QA_ROOT_URL")" \
-              && metadata="$(curl --fail --silent --show-error --location "$QA_METADATA_URL")" \
-              && grep -Fq "$EXPECTED_BRIDGE" <<< "$root_html" \
-              && grep -Fq "$EXPECTED_SOURCE_SHA" <<< "$metadata" \
-              && grep -Fq "$EXPECTED_ARTIFACT" <<< "$metadata"; then
-              echo "Live QA root verified: $QA_ROOT_URL"
-              echo "Source: $EXPECTED_SOURCE_SHA"
-              echo "Artifact: $EXPECTED_ARTIFACT"
-              echo "Bridge: $EXPECTED_BRIDGE"
-              exit 0
-            fi
-            echo "Pages propagation attempt $attempt/40 not ready yet."
-            sleep 3
-          done
-          echo 'Live QA root did not converge to the expected exact candidate.' >&2
-          exit 1
+          echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
