@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +11,7 @@ const runtimePath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice
 const guardPath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6-stability-guard.js');
 const roadLawPath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6-road-law.js');
 const townPolishPath = path.join(projectRoot, 'runtime', 'threejs-visual-hero-slice6-town-polish.js');
+const cinematicApplyPath = path.join(projectRoot, 'scripts', 'apply-threejs-opening-cinematic.mjs');
 
 let html = await readFile(sourcePath, 'utf8');
 const runtime = (await readFile(runtimePath, 'utf8')).trim();
@@ -20,6 +21,7 @@ const townPolish = (await readFile(townPolishPath, 'utf8')).trim();
 const marker = 'THREEJS_VISUAL_HERO_SLICE6_V1';
 const roadLawMarker = 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1';
 const townPolishMarker = 'THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_V1';
+const cinematicMarker = 'SW_CIN_003_PLAYABLE_OPENING_V1';
 const sourceMarker = '[SW:SOURCE:threejs-visual-hero-slice6.js]';
 const guardSourceMarker = '[SW:SOURCE:threejs-visual-hero-slice6-stability-guard.js]';
 const roadLawSourceMarker = '[SW:SOURCE:threejs-visual-hero-slice6-road-law.js]';
@@ -28,6 +30,20 @@ const insertionMarker = '// --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---'
 
 function requireMarker(value) {
   if (!html.includes(value)) throw new Error(`Hero Slice 6 patch verification failed: missing ${value}`);
+}
+
+async function applyOptionalPlayableOpening() {
+  try {
+    await access(cinematicApplyPath);
+  } catch (_) {
+    return false;
+  }
+  const current = await readFile(sourcePath, 'utf8');
+  if (current.includes(cinematicMarker)) return true;
+  await import('./apply-threejs-opening-cinematic.mjs');
+  const updated = await readFile(sourcePath, 'utf8');
+  if (!updated.includes(cinematicMarker)) throw new Error('Playable opening integration script ran but the CIN-003 marker is missing.');
+  return true;
 }
 
 function verifyRuntimeSafety(value) {
@@ -88,7 +104,8 @@ if (html.includes(marker)) {
     'SWVisualSlice6WaterTowerStandpipe',
     'SWVisualSlice6MainStreetGable',
   ].forEach(requireMarker);
-  console.log(`Hero Slice 6 already applied to ${sourcePath}`);
+  const cinematicApplied = await applyOptionalPlayableOpening();
+  console.log(`Hero Slice 6 already applied to ${sourcePath}${cinematicApplied ? '; playable opening present' : ''}`);
   process.exit(0);
 }
 
@@ -176,4 +193,5 @@ if (
   throw new Error('Hero Slice 6 must remain ordered after Hero Slice 5 polish, then stability guard, road law, town polish, and the main animation loop.');
 }
 
-console.log(`Applied Three.js Hero Slice 6 road-first world identity + town massing polish + storm silhouette to ${sourcePath}`);
+const cinematicApplied = await applyOptionalPlayableOpening();
+console.log(`Applied Three.js Hero Slice 6 road-first world identity + town massing polish + storm silhouette to ${sourcePath}${cinematicApplied ? ' + playable Cow 17 opening' : ''}`);
