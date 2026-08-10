@@ -5,7 +5,7 @@ Base: `d0ebca88328fd1af590ce2d3916368426df07938`
 
 ## Shared utility-network authority
 
-The generated gameplay source remains authoritative for the rendered pole group, the 81 rendered overhead wire segments, `powerPoles` coordinates, and Grid Zap topology. The route now has nine deterministic east-west groups, each with ten poles. All 90 poles use the same `x`, `z`, `networkGroup`, and `networkIndex` record; no presentation-only offset exists. The wires are built from those ordered records, so a visible connection and a Grid Zap connection cannot diverge.
+The generated gameplay source remains authoritative for the rendered pole group, the 81 rendered overhead wire segments, `powerPoles` coordinates, and Grid Zap topology. The route now has nine deterministic east-west groups, each with ten poles. All 90 poles use the same `x`, `z`, `networkGroup`, and `networkIndex` record; no presentation-only offset exists. The 81 wire segments are batched into one `THREE.LineSegments` object from those ordered records, so a visible connection and a Grid Zap connection cannot diverge.
 
 Road centers are the existing 80-unit grid at `-320` through `320`. The road/shoulder protected half-width is 8.5 units. Every pole is placed 13.5 units from its parallel road center and at least 13.5 units from any road centerline, leaving a minimum 5.0-unit clearance beyond the protected corridor. Baseline producer count was 117 poles; the aligned network has 90.
 
@@ -20,7 +20,7 @@ Road centers are the existing 80-unit grid at `-320` through `320`. The road/sho
 | Cooldown / charge | unchanged | unchanged |
 | Duplicate target hit rule | pole spark guard only | per-activation target `Set` |
 
-The cascade begins at the nearest acquired pole, then travels only to an adjacent `networkIndex` in the same `networkGroup`; geographic proximity alone cannot cross to a disconnected route. The eight-node cap bounds the visual work and damage. Existing pole score values remain `110` for the first pole and `75` for later poles. Generic tertiary prop damage, Pull, Gust, steering, contact destruction, scoring authority, and cooldowns were not changed.
+The acquisition radius chooses only the nearest seed pole. From that seed, the cascade may continue outside the initial radius only to an adjacent `networkIndex` in the same `networkGroup`, subject to the 82-unit hop limit and eight-node cap; geographic proximity alone cannot cross to a disconnected route. The deterministic topology fixture proves that this selects eight nodes versus two under the former acquisition-bounded walk, crosses the initial radius after seed acquisition, rejects a nearby different-network pole, and never duplicates a node. Existing pole score values remain `110` for the first pole and `75` for later poles. Generic tertiary prop damage, Pull, Gust, steering, contact destruction, scoring authority, and cooldowns were not changed.
 
 ## Cow-Cam
 

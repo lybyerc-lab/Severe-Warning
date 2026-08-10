@@ -2,6 +2,7 @@ import { readFile, rm, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { selectGridZapTopology } from './grid-zap-topology.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -91,17 +92,55 @@ const minimumCenterlineClearance = Math.min(...poles.map((pole) => Math.min(
 )));
 const protectedClearance = minimumCenterlineClearance - 8.5;
 
+function selectBaselineAcquisitionBoundedTopology(poles, options) {
+  const candidates = poles
+    .map((pole) => ({ pole, distance: Math.hypot(pole.x - options.stormX, pole.z - options.stormZ) }))
+    .filter((entry) => entry.distance <= options.acquisitionRadius)
+    .sort((left, right) => left.distance - right.distance);
+  if (!candidates.length) return [];
+  const selected = [candidates.shift().pole];
+  while (selected.length < options.maxNodes && candidates.length) {
+    const previous = selected[selected.length - 1];
+    const nextIndex = candidates.findIndex((entry) => entry.pole.networkGroup === previous.networkGroup
+      && Math.abs(entry.pole.networkIndex - previous.networkIndex) === 1
+      && Math.hypot(entry.pole.x - previous.x, entry.pole.z - previous.z) <= options.maxHopDistance);
+    if (nextIndex < 0) break;
+    selected.push(candidates.splice(nextIndex, 1)[0].pole);
+  }
+  return selected;
+}
+
+const topologyFixture = [
+  ...Array.from({ length: 10 }, (_, networkIndex) => ({ x: networkIndex * 75, z: 0, networkGroup: 'main', networkIndex })),
+  { x: 60, z: 4, networkGroup: 'nearby-other-network', networkIndex: 1 },
+];
+const topologyOptions = {
+  stormX: 0,
+  stormZ: 0,
+  acquisitionRadius: 80,
+  maxHopDistance: 82,
+  maxNodes: 8,
+};
+const baselineTopology = selectBaselineAcquisitionBoundedTopology(topologyFixture, topologyOptions);
+const updatedTopology = selectGridZapTopology(topologyFixture, topologyOptions);
+const updatedTopologyIds = updatedTopology.map((pole) => `${pole.networkGroup}:${pole.networkIndex}`);
+
 check('utility network marker', generated.includes('[SW:GAME:UTILITY_NETWORK_V1]'));
 check('road-safe utility count', poles.length === 90, `count=${poles.length}`);
 check('no pole-road intrusions', protectedClearance > 0, `minimumCenterline=${minimumCenterlineClearance.toFixed(1)} protectedClearance=${protectedClearance.toFixed(1)}`);
 check('utility topology is ordered', generated.includes("networkGroup: utilityRoute") && generated.includes('networkIndex,'));
 check('rendered and Grid Zap pole authority is shared', generated.includes('poleGroup.position.set(px, terrainHeightAt(px, pz), pz);') && generated.includes('powerPoles.push({'));
-check('rendered utility lines follow the same ordered topology', generated.includes('const utilityRoutes = new Map()') && generated.includes('route.sort((a, b) => a.networkIndex - b.networkIndex)') && generated.includes('scene.add(new THREE.Line(geometry, utilityLineMat));'));
+check('rendered utility lines are batched into one LineSegments object', generated.includes('const utilityWirePositions = []') && generated.includes('new THREE.LineSegments(utilityWireGeometry, utilityLineMat)') && !generated.includes('scene.add(new THREE.Line(geometry, utilityLineMat));'));
 check('Grid Zap acquisition increased', generated.includes('GRID_ZAP_ACQUISITION_RADIUS_MULTIPLIER = 5.25'));
 check('Grid Zap remains bounded at eight connected nodes', generated.includes('GRID_ZAP_MAX_CONNECTED_NODES = 8'));
-check('Grid Zap uses adjacent same-network connectivity', generated.includes('entry.pole.networkGroup === previous.networkGroup') && generated.includes('Math.abs(entry.pole.networkIndex - previous.networkIndex) === 1'));
+check('Grid Zap uses the shared topology selector', generated.includes('selectGridZapTopology(powerPoles, {') && generated.includes('acquisitionRadius: storm.radius * GRID_ZAP_ACQUISITION_RADIUS_MULTIPLIER'));
 check('Grid Zap direct target damage is 135', generated.includes('GRID_ZAP_TARGET_DAMAGE = 135') && generated.includes("damageTarget(target, GRID_ZAP_TARGET_DAMAGE, 'grid-zap')"));
 check('Grid Zap blocks duplicate target damage', generated.includes('const hitTargets = new Set()') && generated.includes('if (hitTargets.has(target) || target.destroyed) return;'));
+check('topology propagation continues beyond the initial acquisition radius', updatedTopology.some((pole) => Math.hypot(pole.x, pole.z) > topologyOptions.acquisitionRadius), `selected=${updatedTopologyIds.join(',')}`);
+check('updated Zap reaches more connected nodes than acquisition-bounded baseline', updatedTopology.length > baselineTopology.length, `baseline=${baselineTopology.length} updated=${updatedTopology.length}`);
+check('nearby pole from another network is rejected', !updatedTopologyIds.includes('nearby-other-network:1'));
+check('topology node cap is respected', updatedTopology.length === topologyOptions.maxNodes, `selected=${updatedTopology.length} cap=${topologyOptions.maxNodes}`);
+check('topology never selects the same node twice', new Set(updatedTopologyIds).size === updatedTopologyIds.length, `selected=${updatedTopologyIds.join(',')}`);
 check('Cow-Cam player-visible linger is 3.1 seconds', generated.includes('bovineCowCam.timer = 3.1;'));
 check('Cow-Cam retains normal control fallback', generated.includes('if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh)') && generated.includes('camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);'));
 
@@ -119,12 +158,14 @@ console.log(JSON.stringify({
     groups: poleZs.length,
     polesPerGroup: poleXs.length,
     renderedLineSegments: poleZs.length * (poleXs.length - 1),
+    renderedLineObjects: 1,
     minimumCenterlineClearance,
     protectedClearance,
   },
   gridZap: {
     baseline: { acquisitionRadiusMultiplier: 4.2, maxConnectedNodes: 6, maxHopDistance: 78, directTargetDamage: 0 },
     updated: { acquisitionRadiusMultiplier: 5.25, maxConnectedNodes: 8, maxHopDistance: 82, directTargetDamage: 135, targetRange: 16 },
+    topologyFixture: { baselineSelectedNodes: baselineTopology.length, updatedSelectedNodes: updatedTopology.length },
   },
   cowCam: { baselineSeconds: 1.85, updatedSeconds: 3.1 },
 }, null, 2));

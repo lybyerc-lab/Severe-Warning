@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gridZapTopologyRuntime } from './grid-zap-topology.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -95,18 +96,21 @@ powerPoles.forEach(pole => {
   if (!utilityRoutes.has(pole.networkGroup)) utilityRoutes.set(pole.networkGroup, []);
   utilityRoutes.get(pole.networkGroup).push(pole);
 });
+const utilityWirePositions = [];
 utilityRoutes.forEach(route => {
   route.sort((a, b) => a.networkIndex - b.networkIndex);
   for (let index = 1; index < route.length; index++) {
     const previous = route[index - 1];
     const next = route[index];
-    const geometry = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(previous.x, terrainHeightAt(previous.x, previous.z) + 10.35, previous.z),
-      new THREE.Vector3(next.x, terrainHeightAt(next.x, next.z) + 10.35, next.z)
-    ]);
-    scene.add(new THREE.Line(geometry, utilityLineMat));
+    utilityWirePositions.push(
+      previous.x, terrainHeightAt(previous.x, previous.z) + 10.35, previous.z,
+      next.x, terrainHeightAt(next.x, next.z) + 10.35, next.z
+    );
   }
 });
+const utilityWireGeometry = new THREE.BufferGeometry();
+utilityWireGeometry.setAttribute('position', new THREE.Float32BufferAttribute(utilityWirePositions, 3));
+scene.add(new THREE.LineSegments(utilityWireGeometry, utilityLineMat));
 
 function addInstancedRoadMarks`,
   'rendered utility network continuity'
@@ -201,34 +205,21 @@ function createUtilityArc(start, end, delayMs, hopIndex) {
   }, delayMs);
 }
 
+${gridZapTopologyRuntime}
+
 function triggerGridZapCascade() {
   clearGridZapEffects();
-  const candidates = powerPoles
-    .map(pole => ({ pole, distance: Math.hypot(pole.x - storm.pos.x, pole.z - storm.pos.z) }))
-    .filter(entry => entry.distance < storm.radius * GRID_ZAP_ACQUISITION_RADIUS_MULTIPLIER)
-    .sort((a, b) => a.distance - b.distance);
+  const selected = selectGridZapTopology(powerPoles, {
+    stormX: storm.pos.x,
+    stormZ: storm.pos.z,
+    acquisitionRadius: storm.radius * GRID_ZAP_ACQUISITION_RADIUS_MULTIPLIER,
+    maxHopDistance: GRID_ZAP_MAX_CONNECTED_HOP_DISTANCE,
+    maxNodes: GRID_ZAP_MAX_CONNECTED_NODES
+  });
 
-  if (!candidates.length) {
+  if (!selected.length) {
     triggerLightningStrike(storm.pos.x + 8, storm.pos.z + 8);
     return;
-  }
-
-  const selected = [candidates.shift().pole];
-  while (selected.length < GRID_ZAP_MAX_CONNECTED_NODES && candidates.length) {
-    const previous = selected[selected.length - 1];
-    let bestIndex = -1;
-    let bestDistance = Infinity;
-    candidates.forEach((entry, index) => {
-      const distance = Math.hypot(entry.pole.x - previous.x, entry.pole.z - previous.z);
-      const connected = entry.pole.networkGroup === previous.networkGroup
-        && Math.abs(entry.pole.networkIndex - previous.networkIndex) === 1;
-      if (connected && distance < bestDistance && distance <= GRID_ZAP_MAX_CONNECTED_HOP_DISTANCE) {
-        bestDistance = distance;
-        bestIndex = index;
-      }
-    });
-    if (bestIndex < 0) break;
-    selected.push(candidates.splice(bestIndex, 1)[0].pole);
   }
 
   const stormStart = new THREE.Vector3(storm.pos.x, 36, storm.pos.z);
