@@ -30,6 +30,7 @@
     savedLights: null,
     savedStormVisibility: null,
     savedWorldStormVisibility: null,
+    worldStorm: null,
     canSkip: false,
     sirenPlayed: false,
     mooPlayed: false,
@@ -140,8 +141,27 @@
     return { body, roof };
   }
 
+  function resolveProductionStorm() {
+    const rootName = 'SWVisualHeroSlice6StormSilhouette';
+    const findStorm = () => scene?.getObjectByName?.(rootName)
+      || (typeof swVisualHeroSlice6StormRoot !== 'undefined' ? swVisualHeroSlice6StormRoot : null);
+    let productionStorm = findStorm();
+    if (productionStorm) return productionStorm;
+
+    // The opening takes ownership before the first normal visual frame. Ask the
+    // WORLD-002 presentation bridge to initialize its existing silhouette, then
+    // use its synchronous builder when its texture cache is already available.
+    globalScope.__SW_THREEJS_VISUAL_FOUNDATION__?.refreshHeroSlice6?.();
+    productionStorm = findStorm();
+    if (!productionStorm && typeof swVisualHeroSlice6BuildStormSilhouette === 'function') {
+      swVisualHeroSlice6BuildStormSilhouette();
+      productionStorm = findStorm();
+    }
+    return productionStorm;
+  }
+
   function createStormReveal(stage) {
-    const productionStorm = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
+    const productionStorm = resolveProductionStorm();
     if (!productionStorm) {
       state.lastError = 'WORLD-002 production storm silhouette is unavailable for cinematic touchdown.';
       return null;
@@ -240,13 +260,13 @@
         if (group) group.visible = state.savedStormVisibility[index];
       });
     }
-    if (state.savedWorldStormVisibility !== null) {
-      const productionStorm = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
-      if (productionStorm) productionStorm.visible = state.savedWorldStormVisibility;
+    if (state.savedWorldStormVisibility !== null && state.worldStorm) {
+      state.worldStorm.visible = state.savedWorldStormVisibility;
     }
     state.savedLights = null;
     state.savedStormVisibility = null;
     state.savedWorldStormVisibility = null;
+    state.worldStorm = null;
   }
 
   function cameraPose(position, target, fov, mix = 1) {
@@ -344,7 +364,8 @@
     state.stage = makeStage();
     savePresentationState();
     [tornadoGroup, supercellGroup, derechoGroup].forEach((group) => { if (group) group.visible = false; });
-    const productionStorm = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
+    const productionStorm = resolveProductionStorm();
+    state.worldStorm = productionStorm;
     state.savedWorldStormVisibility = productionStorm ? Boolean(productionStorm.visible) : null;
     if (productionStorm) productionStorm.visible = false;
 
