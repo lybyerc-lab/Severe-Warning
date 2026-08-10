@@ -195,6 +195,26 @@ async function slice6Probe(page) {
     inspectInstancedFence(scene?.getObjectByName?.('SWVisualSlice6FarmFenceRails1'), 5);
     inspectInstancedFence(scene?.getObjectByName?.('SWVisualSlice6FarmFenceRails2'), 5);
 
+    const utilityPoleRoadIntrusions = [];
+    const utilityPoleList = typeof powerPoles !== 'undefined' && Array.isArray(powerPoles) ? powerPoles : [];
+    utilityPoleList.forEach((pole, index) => {
+      const x = Number(pole?.x);
+      const z = Number(pole?.z);
+      if (!Number.isFinite(x) || !Number.isFinite(z) || nearestRoadDistance(x) > 8.5 && nearestRoadDistance(z) > 8.5) return;
+      utilityPoleRoadIntrusions.push({
+        index,
+        x,
+        z,
+        networkGroup: String(pole?.networkGroup || ''),
+        networkIndex: Number(pole?.networkIndex),
+      });
+    });
+    const utilityLineSegmentObjects = [];
+    scene?.traverse?.((object) => {
+      const position = object?.geometry?.getAttribute?.('position');
+      if (object?.isLineSegments && Number(position?.count) === 162) utilityLineSegmentObjects.push(object);
+    });
+
     const visual = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.() || null;
     return {
       stormRootPresent: Boolean(stormRoot?.parent),
@@ -221,6 +241,9 @@ async function slice6Probe(page) {
       rainbowRootPresent: Boolean(scene?.getObjectByName?.('SWVisualHeroSlice5RainbowFunnel')?.parent),
       independentTargetRoadIntrusions,
       independentFenceRoadIntrusions,
+      utilityPoleCount: utilityPoleList.length,
+      utilityPoleRoadIntrusions,
+      utilityLineSegmentObjects: utilityLineSegmentObjects.length,
       legacyVisibleParcelMeshes,
       roadLaw: visual?.worldIdentity?.roadLaw || null,
     };
@@ -285,6 +308,9 @@ try {
   requireCondition(Number(visual?.worldIdentity?.townPolish?.falseFrontCount) >= 3 && Number(visual?.worldIdentity?.townPolish?.awningCount) >= 3, 'Main Street false-front and awning pass is incomplete.');
   requireCondition(Number(roadLaw?.targetRoadIntrusionCount) === 0, `Road-law telemetry still reports ${roadLaw?.targetRoadIntrusionCount} building road intrusions: ${JSON.stringify(roadLaw?.targetRoadIntrusions || [])}`);
   requireCondition(Array.isArray(probe?.independentTargetRoadIntrusions) && probe.independentTargetRoadIntrusions.length === 0, `Independent QA found building geometry inside protected roads: ${JSON.stringify(probe?.independentTargetRoadIntrusions || [])}`);
+  requireCondition(Number(probe?.utilityPoleCount) === 90, `Expected 90 authoritative utility poles, found ${probe?.utilityPoleCount}.`);
+  requireCondition(Array.isArray(probe?.utilityPoleRoadIntrusions) && probe.utilityPoleRoadIntrusions.length === 0, `Authoritative utility poles intrude into protected road/shoulder space: ${JSON.stringify(probe?.utilityPoleRoadIntrusions || [])}`);
+  requireCondition(Number(probe?.utilityLineSegmentObjects) === 1, `Expected one batched utility LineSegments object with 81 segments, found ${probe?.utilityLineSegmentObjects}.`);
   requireCondition(Number(visual?.worldGrade?.exposure) <= 0.93, `World exposure was not restrained: ${visual?.worldGrade?.exposure}.`);
   requireCondition(Number(probe?.slice6PresentationObjectCount) <= 110, `Slice 6 presentation object budget exceeded in street view: ${probe?.slice6PresentationObjectCount}.`);
   requireCondition(Number(report.mainStreet.gameplayAnimalCount) > 0, 'Authoritative gameplay animal array disappeared during Slice 6 street QA.');
