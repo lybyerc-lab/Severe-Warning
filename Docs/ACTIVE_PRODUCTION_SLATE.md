@@ -1,6 +1,6 @@
 # Severe Weather Warning Active Production Slate
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 Status: canonical near-term work queue
 
 This file exists so project direction survives short chat windows. Chat may explore ideas freely, but durable scope, locks, queues, assignments, and parked ideas belong here or in another canonical repo document.
@@ -16,6 +16,7 @@ This file exists so project direction survives short chat windows. Chat may expl
 - Android APK generation is a deliberate device-checkpoint action, not a requirement for every visual iteration.
 - Multi-agent work follows `AGENTS.md` and `Docs/MULTI_AGENT_OPERATING_MODEL.md`.
 - One worker, one bounded task, one writable branch/worktree.
+- If two desired changes share authoritative source/data, one worker owns the whole shared seam. Do not split presentation from gameplay truth when both depend on the same coordinates or objects.
 
 ## Current live QA checkpoint
 
@@ -36,17 +37,17 @@ Current deployed gameplay candidate:
 
 Captured from direct phone playtesting of the QA root:
 
-1. **Utility/power-line poles must be moved out of streets.** The road-first spatial law now explicitly extends to visible utility poles. This is owned by `SW-WORLD-001`; visible poles must respect protected road/shoulder corridors and receive deterministic intrusion QA.
+1. **Utility/power-line poles must be moved out of streets.** First SW-WORLD inspection proved pole placement and Grid Zap share authoritative pole coordinates/groups. Director resolved the seam to `SW-GAME-001`, which now owns authoritative pole relocation plus Grid Zap topology/tuning together.
 2. **Cow cam should linger roughly 1-2 seconds longer.** This is an explicitly authorized bounded gameplay/presentation timing adjustment in `SW-GAME-001`.
-3. **Grid Zap should hit harder and travel farther down connected power lines.** This is an explicitly authorized bounded gameplay tuning request in `SW-GAME-001`. The worker must document current and proposed damage/chain/range/cap values and preserve a bounded connected-network rule.
+3. **Grid Zap should hit harder and travel farther down connected power lines.** This is an explicitly authorized bounded gameplay tuning request in `SW-GAME-001`. The worker must document exact current and proposed damage/chain/range/cap values and preserve a bounded connected-network rule.
 
 These notes do not authorize unrelated gameplay retuning.
 
 ## Parallel worker assignments
 
-Coordination base SHA for the first parallel batch:
+Coordination base SHA for the current parallel batch:
 
-`b9cd567173761adf1484460ef8ca4b1eede56bde`
+`d0ebca88328fd1af590ce2d3916368426df07938`
 
 Director/ops branch:
 
@@ -56,7 +57,7 @@ Director/ops branch:
 
 Issue: #46  
 Branch: `agent/sw-world-001-slice6-finish`  
-State: ready for worker launch
+State: ready to resume after successful ownership discovery
 
 Goal: finish the bounded Hero Slice 6 visual acceptance pass without weakening the road law or gameplay protections.
 
@@ -66,16 +67,24 @@ Owns:
 - Main Street massing cleanup;
 - municipal water-tower presentation;
 - default storm silhouette cleanup;
-- road-first utility-pole placement so visible poles do not occupy protected streets;
-- bounded Slice 6 verifier/visual-QA adjustments required by the implementation.
+- bounded Slice 6 verifier/visual-QA adjustments required by those visual changes.
 
-Does not own Grid Zap tuning, QA workflow architecture, or cinematic foundation.
+Explicitly does **not** own:
+
+- utility-pole placement;
+- power-line topology;
+- Grid Zap;
+- Cow-camera timing;
+- QA workflow architecture;
+- cinematic foundation.
+
+The first SW-WORLD run made no changes because it correctly found that pole presentation and Grid Zap share authoritative data in protected source. That discovery is now resolved by assigning the shared electrical seam to SW-GAME.
 
 ### SW-QA-001
 
 Issue: #47  
 Branch: `agent/sw-qa-001-throughput`  
-State: ready for worker launch
+State: running in isolated physical worktree
 
 Goal: reduce iteration wall-clock time without weakening evidence.
 
@@ -88,13 +97,13 @@ Owns:
 - manifest-driven QA-root publisher design;
 - preservation of browser-first / opt-in Android cadence.
 
-Does not own visual runtime code.
+Does not own visual or gameplay runtime code.
 
 ### SW-CIN-001
 
 Issue: #48  
 Branch: `agent/sw-cin-001-moo-brew-foundation`  
-State: ready for worker launch
+State: running/ready in isolated physical worktree
 
 Goal: build the isolated Three.js actor/prop/timeline foundation for the Moo Brew fence/water-cooler character beat.
 
@@ -113,17 +122,21 @@ Does not integrate the full opening into gameplay yet and does not own warning-c
 
 Issue: #50  
 Branch: `agent/sw-game-001-cowcam-gridzap-polish`  
-State: **queued; Director file-ownership overlap check required before launch**
+State: **ready for launch; ownership overlap resolved**
 
-Goal: implement only the explicitly owner-authorized gameplay feel changes from live QA:
+Goal: implement exactly three owner-authorized live-QA changes as one coherent electrical/gameplay seam:
 
-- extend the existing player-visible Cow 17 camera moment by roughly 1-2 seconds;
-- increase Grid Zap damage;
-- extend Grid Zap farther along connected power-line infrastructure while keeping a bounded maximum and correct connectivity.
+- relocate authoritative power-line poles out of protected road corridors while preserving network continuity;
+- increase Grid Zap damage and extend bounded propagation farther along connected utility infrastructure;
+- extend the existing player-visible Cow 17 camera moment by roughly 1-2 seconds.
 
-Before this worker edits anything, locate exact utility/network, Grid Zap, and Cow-camera functions. If utility-pole placement/network data overlaps files/functions owned by `SW-WORLD-001`, the Director must sequence or re-scope the tasks rather than allowing concurrent writes.
+Director ownership resolution:
 
-No other gameplay tuning is authorized by this task.
+- visible pole construction/positioning and Grid Zap consume the same authoritative `powerPoles` coordinates/groups;
+- therefore SW-GAME owns both authoritative utility placement and Grid Zap for this task;
+- SW-WORLD is forbidden from visually offsetting the poles independently;
+- SW-GAME must add pole-road intrusion QA and return exact before/after Grid Zap tuning values;
+- no other gameplay tuning is authorized.
 
 ## Active product milestone
 
@@ -175,12 +188,11 @@ Implementation should use lightweight articulated Three.js actors rather than st
 
 ## Remaining Stage 2A table
 
-These items remain alive even if they are not all launched in the first parallel batch:
+These items remain alive even if they are not all launched in the current parallel batch:
 
 ### World / visual production
 
 - finish Hero Slice 6 human visual acceptance;
-- utility poles obey street boundaries;
 - stronger authored identity across ordinary town/farm views;
 - destruction readability and believable structure anatomy rather than roof-heavy/generic chunks;
 - environmental storytelling and authored place details without procedural clutter;
@@ -188,8 +200,9 @@ These items remain alive even if they are not all launched in the first parallel
 - further default-storm quality work if the funnel still reads geometric at gameplay speed;
 - render-cost/draw-call/material cleanup as visual complexity rises.
 
-### Gameplay feel
+### Gameplay feel / electrical network
 
+- authoritative utility poles obey street boundaries while remaining aligned with Grid Zap truth;
 - owner-authorized Cow-cam timing adjustment;
 - owner-authorized Grid Zap damage/connected-line propagation adjustment;
 - preserve direct steering, ordinary-contact destruction, Pull, Gust, scoring/campaign truth, Cow 17 safety, and lifecycle behavior unless separately and explicitly reopened.
@@ -211,21 +224,19 @@ These items remain alive even if they are not all launched in the first parallel
 
 ### Multi-agent operations
 
+- continue using separate physical Git worktrees for simultaneous local Codex workers;
 - validate the first worker round before merging PR #49;
 - keep agent startup truth singular and repo-driven;
 - inspect returned worker diffs/CI before integration;
-- only run tasks truly in parallel when file ownership is disjoint.
+- only run tasks truly in parallel when file ownership is disjoint or the Director has explicitly assigned an entire shared authority seam to one worker.
 
-## Tomorrow launch recommendation
+## Current launch recommendation
 
-This is a clean stopping point. Do not start more implementation merely to keep activity going.
-
-Recommended first launch order when the user is back at a computer:
-
-1. `SW-WORLD-001` and `SW-QA-001` can launch in parallel.
-2. `SW-CIN-001` can launch in parallel because it is isolated by design.
-3. Before launching `SW-GAME-001`, perform a quick exact-code ownership check between utility-pole/network placement and Grid Zap implementation. If disjoint, launch it in parallel. If shared, sequence it after the world worker or split ownership cleanly.
-4. Director reviews outputs, integrates only verified work, promotes a new exact candidate to QA root, and returns to owner playtesting.
+1. `SW-QA-001` and `SW-CIN-001` continue in their isolated worktrees.
+2. Resume `SW-WORLD-001` in the WORLD worktree using the revised Issue #46, which now excludes the electrical seam.
+3. Launch `SW-GAME-001` in a fourth isolated physical worktree using revised Issue #50. It owns authoritative utility placement + Grid Zap + Cow-cam timing together.
+4. Director reviews returned branches independently, checks overlap and regression evidence, then integrates verified work into an exact candidate.
+5. Promote only an integrated, green, manually reviewed candidate to the QA root for owner playtesting.
 
 ## QA and build cadence
 
@@ -278,5 +289,5 @@ The owner reports that multiple people have played the game and the response has
 - Three.js remains production.
 - Frozen gameplay/fun baseline remains the default protection law.
 - Steering/input/general gameplay-camera feel, ordinary-contact destruction, Pull/Gust, scoring/timing/campaign authority, Cow 17 safety, and lifecycle behavior are not retuned to make art integration easier.
-- The 2026-08-09 Cow-cam timing and Grid Zap requests are explicit bounded owner exceptions and must remain isolated, measured, and QA-gated.
+- The owner-authorized utility alignment, Cow-cam timing, and Grid Zap requests are explicit bounded exceptions and must remain isolated, measured, and QA-gated.
 - Stage 2A remains active until the visual language holds across ordinary gameplay and the opening cinematic direction is implemented to the same standard.
