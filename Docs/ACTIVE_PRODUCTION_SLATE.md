@@ -17,6 +17,31 @@ This file exists so project direction survives short chat windows. Chat may expl
 - Multi-agent work follows `AGENTS.md` and `Docs/MULTI_AGENT_OPERATING_MODEL.md`.
 - One worker, one bounded task, one writable branch/worktree.
 
+## Current live QA checkpoint
+
+Public QA root:
+
+`https://lybyerc-lab.github.io/Severe-Warning/`
+
+Current deployed gameplay candidate:
+
+- Hero Slice 6 Browser QA #18
+- source `242cb92451073acf7b193a5baa8c60c551335b7a`
+- source branch `agent/threejs-hero-slice6-world-identity-storm-silhouette`
+- exact web artifact `severe-weather-threejs-hero-slice6-web-18`
+- Pages promotion Run #82 completed successfully
+- status: playable QA candidate, **not owner visual-accepted**, not physical Android accepted
+
+### Owner live-QA notes, 2026-08-09
+
+Captured from direct phone playtesting of the QA root:
+
+1. **Utility/power-line poles must be moved out of streets.** The road-first spatial law now explicitly extends to visible utility poles. This is owned by `SW-WORLD-001`; visible poles must respect protected road/shoulder corridors and receive deterministic intrusion QA.
+2. **Cow cam should linger roughly 1-2 seconds longer.** This is an explicitly authorized bounded gameplay/presentation timing adjustment in `SW-GAME-001`.
+3. **Grid Zap should hit harder and travel farther down connected power lines.** This is an explicitly authorized bounded gameplay tuning request in `SW-GAME-001`. The worker must document current and proposed damage/chain/range/cap values and preserve a bounded connected-network rule.
+
+These notes do not authorize unrelated gameplay retuning.
+
 ## Parallel worker assignments
 
 Coordination base SHA for the first parallel batch:
@@ -41,9 +66,10 @@ Owns:
 - Main Street massing cleanup;
 - municipal water-tower presentation;
 - default storm silhouette cleanup;
+- road-first utility-pole placement so visible poles do not occupy protected streets;
 - bounded Slice 6 verifier/visual-QA adjustments required by the implementation.
 
-Does not own QA workflow architecture or cinematic foundation.
+Does not own Grid Zap tuning, QA workflow architecture, or cinematic foundation.
 
 ### SW-QA-001
 
@@ -83,6 +109,22 @@ Owns:
 
 Does not integrate the full opening into gameplay yet and does not own warning-clock/gameplay authority.
 
+### SW-GAME-001
+
+Issue: #50  
+Branch: `agent/sw-game-001-cowcam-gridzap-polish`  
+State: **queued; Director file-ownership overlap check required before launch**
+
+Goal: implement only the explicitly owner-authorized gameplay feel changes from live QA:
+
+- extend the existing player-visible Cow 17 camera moment by roughly 1-2 seconds;
+- increase Grid Zap damage;
+- extend Grid Zap farther along connected power-line infrastructure while keeping a bounded maximum and correct connectivity.
+
+Before this worker edits anything, locate exact utility/network, Grid Zap, and Cow-camera functions. If utility-pole placement/network data overlaps files/functions owned by `SW-WORLD-001`, the Director must sequence or re-scope the tasks rather than allowing concurrent writes.
+
+No other gameplay tuning is authorized by this task.
+
 ## Active product milestone
 
 ### Hero Slice 6: World Identity + Storm Silhouette
@@ -93,15 +135,15 @@ Stage: 2A
 
 Current goals:
 
-- make roads own protected corridors and keep buildings/fences out of street space;
+- make roads own protected corridors and keep buildings/fences/utility poles out of street space;
 - maintain `curb -> sidewalk -> verge -> lot -> building` hierarchy;
 - eliminate square-on-square prototype massing;
-- replace the bright legacy WATER TOWER presentation with a believable muted municipal landmark;
+- keep the municipal water tower reading as a believable muted landmark rather than a primitive;
 - reduce naked tall rectangular Main Street silhouettes with restrained small-town rooflines;
 - keep the default tornado irregular, storm-like, and visually dominant without becoming a clean cone;
-- preserve the frozen gameplay/fun baseline.
+- preserve the fun baseline except for separately documented owner-authorized bounded gameplay tuning.
 
-Acceptance remains visual as well as automated. Do not promote a green artifact if screenshots still look like prototype geometry.
+Acceptance remains visual as well as automated. The current live QA root is for owner/playtester feedback, not a declaration that Slice 6 is visually finished.
 
 ## Queued / parallel foundation
 
@@ -131,6 +173,60 @@ Director choices locked on 2026-08-09:
 
 Implementation should use lightweight articulated Three.js actors rather than static billboards.
 
+## Remaining Stage 2A table
+
+These items remain alive even if they are not all launched in the first parallel batch:
+
+### World / visual production
+
+- finish Hero Slice 6 human visual acceptance;
+- utility poles obey street boundaries;
+- stronger authored identity across ordinary town/farm views;
+- destruction readability and believable structure anatomy rather than roof-heavy/generic chunks;
+- environmental storytelling and authored place details without procedural clutter;
+- consistent material/lighting language across locations;
+- further default-storm quality work if the funnel still reads geometric at gameplay speed;
+- render-cost/draw-call/material cleanup as visual complexity rises.
+
+### Gameplay feel
+
+- owner-authorized Cow-cam timing adjustment;
+- owner-authorized Grid Zap damage/connected-line propagation adjustment;
+- preserve direct steering, ordinary-contact destruction, Pull, Gust, scoring/campaign truth, Cow 17 safety, and lifecycle behavior unless separately and explicitly reopened.
+
+### Opening cinematic
+
+- build `SW-CIN-001` actor/prop/timeline foundation;
+- Director review deterministic fence-conversation/double-take/last-sip frames;
+- later integrate the full newspaper -> farm -> touchdown -> gameplay sequence;
+- preserve seamless Three.js handoff, skip/replay law, and warning-clock start at gameplay control.
+
+### QA / production throughput
+
+- complete `SW-QA-001` build-once/test-many and parallel QA work;
+- safely reuse immutable reference evidence instead of rebuilding it blindly;
+- suppress heavyweight visual CI for planning/docs-only changes;
+- finish manifest-driven QA publisher so later slices do not require hard-coded publisher surgery;
+- keep APK generation opt-in for meaningful physical-device checkpoints.
+
+### Multi-agent operations
+
+- validate the first worker round before merging PR #49;
+- keep agent startup truth singular and repo-driven;
+- inspect returned worker diffs/CI before integration;
+- only run tasks truly in parallel when file ownership is disjoint.
+
+## Tomorrow launch recommendation
+
+This is a clean stopping point. Do not start more implementation merely to keep activity going.
+
+Recommended first launch order when the user is back at a computer:
+
+1. `SW-WORLD-001` and `SW-QA-001` can launch in parallel.
+2. `SW-CIN-001` can launch in parallel because it is isolated by design.
+3. Before launching `SW-GAME-001`, perform a quick exact-code ownership check between utility-pole/network placement and Grid Zap implementation. If disjoint, launch it in parallel. If shared, sequence it after the world worker or split ownership cleanly.
+4. Director reviews outputs, integrates only verified work, promotes a new exact candidate to QA root, and returns to owner playtesting.
+
 ## QA and build cadence
 
 ### Rapid iteration
@@ -143,10 +239,6 @@ Primary loop:
 4. promote the reviewed candidate to the public QA root;
 5. owner and informal playtesters play the root candidate;
 6. record visual/fun feedback in the repo before the next meaningful change.
-
-Public QA root:
-
-`https://lybyerc-lab.github.io/Severe-Warning/`
 
 ### Android device checkpoints
 
@@ -184,6 +276,7 @@ The owner reports that multiple people have played the game and the response has
 ## Protected truths
 
 - Three.js remains production.
-- Frozen gameplay/fun baseline remains protected.
-- Steering/input/camera feel, Pull/Gust/Grid Zap, scoring/timing/campaign authority, Cow 17 safety, and lifecycle behavior are not retuned to make art integration easier.
+- Frozen gameplay/fun baseline remains the default protection law.
+- Steering/input/general gameplay-camera feel, ordinary-contact destruction, Pull/Gust, scoring/timing/campaign authority, Cow 17 safety, and lifecycle behavior are not retuned to make art integration easier.
+- The 2026-08-09 Cow-cam timing and Grid Zap requests are explicit bounded owner exceptions and must remain isolated, measured, and QA-gated.
 - Stage 2A remains active until the visual language holds across ordinary gameplay and the opening cinematic direction is implemented to the same standard.
