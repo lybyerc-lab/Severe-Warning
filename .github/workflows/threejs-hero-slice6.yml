@@ -47,6 +47,7 @@ jobs:
       - name: Check out contract tools
         uses: actions/checkout@v6
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: candidate-tools
           fetch-depth: 1
 

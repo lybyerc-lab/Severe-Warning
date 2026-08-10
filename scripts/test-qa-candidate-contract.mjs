@@ -26,10 +26,12 @@ try {
   await writeFile(path.join(root, 'web-preview', 'index.html'), '<!-- REQUIRED_BRIDGE -->');
   await writeFile(path.join(root, 'reports', 'core.json'), '{"passed":true}\n');
   await writeFile(path.join(root, 'evidence', 'frame.png'), 'not-a-real-png-but-nonempty');
-  const create = ['create', '--root', root, '--manifest', 'package-manifest.json', '--source-commit', sourceCommit, '--source-branch', 'agent/test', '--renderer', 'Three.js r128', '--acceptance', 'browser-candidate', '--web-root', 'web-preview', '--require-marker', 'web-preview/index.html::REQUIRED_BRIDGE', '--require-evidence', 'evidence/frame.png', '--require-report', 'reports/core.json'];
+  const workflowRunId = '987654321';
+  const create = ['create', '--root', root, '--manifest', 'package-manifest.json', '--source-commit', sourceCommit, '--source-branch', 'agent/test', '--workflow-run-id', workflowRunId, '--renderer', 'Three.js r128', '--acceptance', 'browser-candidate', '--web-root', 'web-preview', '--require-marker', 'web-preview/index.html::REQUIRED_BRIDGE', '--require-evidence', 'evidence/frame.png', '--require-report', 'reports/core.json'];
   run(create);
-  run(['validate', '--root', root, '--manifest', 'package-manifest.json', '--expected-source', sourceCommit]);
+  run(['validate', '--root', root, '--manifest', 'package-manifest.json', '--expected-source', sourceCommit, '--expected-workflow-run-id', workflowRunId]);
   run(['validate', '--root', root, '--manifest', 'package-manifest.json', '--expected-source', 'fedcba9876543210fedcba9876543210fedcba98'], false);
+  run(['validate', '--root', root, '--manifest', 'package-manifest.json', '--expected-workflow-run-id', '987654322'], false);
   await writeFile(path.join(root, 'web-preview', 'index.html'), '<!-- bridge removed -->');
   run(['validate', '--root', root, '--manifest', 'package-manifest.json'], false);
   await writeFile(path.join(root, 'web-preview', 'index.html'), '<!-- REQUIRED_BRIDGE -->');

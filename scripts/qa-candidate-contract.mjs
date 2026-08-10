@@ -65,7 +65,7 @@ async function hashTree(root) {
   return createHash('sha256').update(entries.join('\n')).digest('hex');
 }
 
-async function validateContract(manifest, root, expectedSource) {
+async function validateContract(manifest, root, expectedSource, expectedWorkflowRunId) {
   const errors = [];
   const requireValue = (condition, detail) => { if (!condition) errors.push(detail); };
   requireValue(manifest?.version === 'SEVERE_WEATHER_QA_CANDIDATE_V1', 'unsupported or missing version');
@@ -74,6 +74,7 @@ async function validateContract(manifest, root, expectedSource) {
   requireValue(typeof manifest?.renderer === 'string' && manifest.renderer.length > 0, 'missing renderer');
   requireValue(typeof manifest?.acceptance === 'string' && manifest.acceptance.length > 0, 'missing acceptance vocabulary');
   if (expectedSource) requireValue(manifest?.source?.commit === expectedSource, `source mismatch: expected ${expectedSource}, received ${manifest?.source?.commit || 'missing'}`);
+  if (expectedWorkflowRunId) requireValue(String(manifest?.source?.workflowRunId) === expectedWorkflowRunId, `workflow run ID mismatch: expected ${expectedWorkflowRunId}, received ${manifest?.source?.workflowRunId || 'missing'}`);
   const webRoot = asRelativePath(manifest?.web?.root || '', 'web.root');
   const webPath = path.join(root, webRoot);
   requireValue(await isFile(path.join(webPath, 'index.html')), `missing web entry ${webRoot}/index.html`);
@@ -131,12 +132,12 @@ if (options.command === 'create') {
     requiredEvidence: options.requireEvidence.map(value => asRelativePath(value, 'required evidence')),
     requiredReports: options.requireReport.map(value => ({ path: asRelativePath(value, 'required report') })),
   };
-  await validateContract(manifest, root, options.expectedSource);
+  await validateContract(manifest, root, options.expectedSource, options.expectedWorkflowRunId);
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   console.log(`Created validated QA candidate contract: ${manifestPath}`);
 } else {
   await access(manifestPath);
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  await validateContract(manifest, root, options.expectedSource);
+  await validateContract(manifest, root, options.expectedSource, options.expectedWorkflowRunId);
   console.log(`Validated QA candidate contract: ${manifestPath}`);
 }
