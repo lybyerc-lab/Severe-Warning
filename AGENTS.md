@@ -4,11 +4,13 @@ This repository is the durable project memory. Chat is working context only.
 
 ## Mission
 
-Build **Severe Weather Warning** as a fun, humorous, polished Three.js mobile arcade destruction game while protecting the gameplay feel that already works.
+Build **Severe Weather Warning** as a fun, humorous, polished, replayable Three.js mobile arcade destruction game while protecting the gameplay feel that already works.
 
-The owner is the creative director. The owner is expected to brainstorm freely, jump between ideas, react to builds, and decide what is fun. The owner is **not** expected to manually coordinate branches, QA, task dependencies, or implementation details.
+The commercial/product north star is `Docs/GAME_DIRECTOR.md`. Workers must treat it as binding product direction unless an exact task explicitly narrows scope.
 
-The Director/Integration agent owns decomposition, sequencing, worker handoffs, conflict prevention, evidence review, integration, QA promotion, and repository memory.
+The owner is the creative director. The owner is expected to brainstorm freely, jump between ideas, react to builds, and decide what is fun. The owner is **not** expected to manually coordinate branches, QA, task dependencies, implementation details, or game-development vocabulary.
+
+The Director/Integration agent owns product interpretation, decomposition, sequencing, worker handoffs, conflict prevention, evidence review, integration, QA promotion, and repository memory. When owner feedback is qualitative, the Director is expected to translate it into concrete game-design and implementation contracts rather than asking the owner to specify technical solutions.
 
 Worker agents execute bounded tasks. They do not silently redirect the product.
 
@@ -18,12 +20,13 @@ When sources disagree, prefer newer exact evidence over older confident prose.
 
 1. Exact task ticket/handoff for the worker's assigned task
 2. Current repository code and exact-commit CI/QA evidence
-3. `Docs/ACTIVE_PRODUCTION_SLATE.md`
-4. `CURRENT_STATUS.md`
-5. `Docs/ACTIVE_HANDOFF.md`
-6. `Docs/DECISION_LOG.md` and `Docs/DECISIONS.md`
-7. Active visual/build-train documentation
-8. Accepted-behavior, QA, system-map, and historical documentation
+3. `Docs/GAME_DIRECTOR.md`
+4. `Docs/ACTIVE_PRODUCTION_SLATE.md`
+5. `CURRENT_STATUS.md`
+6. `Docs/ACTIVE_HANDOFF.md`
+7. `Docs/DECISION_LOG.md` and `Docs/DECISIONS.md`
+8. Active visual/build-train documentation
+9. Accepted-behavior, QA, system-map, and historical documentation
 
 Historical Unity, Godot, PlayCanvas, and older HTML experiments remain evidence only. They do not override the current Three.js production direction.
 
@@ -33,7 +36,9 @@ Historical Unity, Godot, PlayCanvas, and older HTML experiments remain evidence 
 - Production renderer: **Three.js r128**
 - Frozen gameplay/fun reference: PR #26 head `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
 - Sealed Stage 1 graphics source: `f2060dff08ddb9df9f90ecd245940d8db86c7266`
-- Current Stage 2A world/storm work: PR #45, branch `agent/threejs-hero-slice6-world-identity-storm-silhouette`
+- Stage 2A integrated QA #29 source: `b501737e71e61b979901d4899d969390aa37b1f4`
+- Active phase: **Stage 2B: Make It Feel Like a Game**
+- Canonical game direction: `Docs/GAME_DIRECTOR.md`
 - Current project slate: `Docs/ACTIVE_PRODUCTION_SLATE.md`
 - Public browser QA root: `https://lybyerc-lab.github.io/Severe-Warning/`
 - Android APK generation is opt-in for deliberate device checkpoints, not ordinary visual iteration.
@@ -57,6 +62,7 @@ Exact task base SHA is always supplied in the worker ticket. Do not infer a newe
 5. New ideas discovered during implementation belong in the production slate or an issue. Do not expand the current task just because the idea is attractive.
 6. A worker's successful test run is evidence, not acceptance. Integration and visual review remain separate gates.
 7. The Director/Integration lane decides merge order and whether stale worker branches should be refreshed, cherry-picked, or abandoned.
+8. Prototype branches may intentionally test alternate visual/gameplay hypotheses, but they never gain production authority merely because they run.
 
 ## Protected gameplay law
 
@@ -74,15 +80,19 @@ Unless a task explicitly says otherwise, do **not** retune or rewrite:
 
 Presentation layers may read gameplay truth. They may not become gameplay authority.
 
+Stage 2B tasks may explicitly reopen bounded replay/progression, destruction-feedback, secret-level, or reward-loop authority. The issue must name the reopened systems and preserve all unrelated gameplay laws.
+
 ## Current visual laws
 
 - Art thesis: **storm-charged stylized Americana**.
 - Visual promise: **beautiful at a glance, readable at speed, cinematic up close**.
+- Commercial bar: it must read as a finished mobile video game, not a Three.js demonstration.
 - Roads own protected corridors before decorative placement.
 - Town spatial hierarchy: `road -> curb -> sidewalk -> verge -> lot -> building`.
 - Farm spatial hierarchy must visibly stop fences/ditches/details for road crossings and resume afterward.
 - Stop solving architecture by stacking generic boxes.
-- Storm is the hero.
+- Storm is the hero and must read as one connected atmospheric mass.
+- Detached bubble-like sprites, visible effect primitives, target rings, stacked-disc silhouettes, and clean-cone reads are visual failures for the default tornado.
 - Mobile restraint matters: bounded objects, draw calls, effects, particles, and materials.
 - External assets require exact provenance/license evidence and must be made stylistically coherent.
 
@@ -107,20 +117,34 @@ Locked director choices:
 
 ## QA cadence
 
-### Rapid iteration
+### Prototype gear
 
-Browser-first is the default loop:
+Use when the question is "which direction is actually better?"
+
+1. exact bounded branch and base;
+2. enough static/browser safety to avoid corrupting the test;
+3. rapid playable or screenshot evidence;
+4. compare alternatives by feel and visual read;
+5. discard losing experiments freely;
+6. production integration forbidden until a direction is selected.
+
+Do not make exploratory art/game-feel questions wait for the full production pipeline when a faster isolated comparison can answer them safely.
+
+### Production gear
+
+Use after a direction earns integration candidacy:
 
 1. exact-source build;
 2. static/process checks;
 3. inherited gameplay regression QA;
-4. bounded visual QA;
+4. bounded visual/gameplay QA;
 5. same-runner performance evidence where relevant;
 6. exact web evidence artifact;
-7. human screenshot review;
-8. promote reviewed candidate to QA root;
-9. owner/informal playtest feedback;
-10. record outcome in repo memory.
+7. Director screenshot/evidence review;
+8. integrate exact reviewed heads;
+9. promote exact green integration candidate to QA root;
+10. owner/informal playtest feedback;
+11. record outcome in repo memory.
 
 ### Android
 
@@ -132,12 +156,13 @@ Before editing:
 
 1. Read this file.
 2. Read the assigned task issue/handoff completely.
-3. Read `Docs/ACTIVE_PRODUCTION_SLATE.md`.
-4. Read `Docs/IMPLEMENTATION_TRUTH_GATE.md`; its machine-checkable implementation-truth rules remain blocking.
-5. Read only the additional docs named by the task.
-6. Verify `git rev-parse HEAD` equals the exact task base SHA.
-7. Verify the current branch matches the task branch/worktree.
-8. Inspect only the relevant implementation and tests before proposing edits.
+3. Read `Docs/GAME_DIRECTOR.md`.
+4. Read `Docs/ACTIVE_PRODUCTION_SLATE.md`.
+5. Read `Docs/IMPLEMENTATION_TRUTH_GATE.md`; its machine-checkable implementation-truth rules remain blocking.
+6. Read only the additional docs named by the task.
+7. Verify `git rev-parse HEAD` equals the exact task base SHA.
+8. Verify the current branch matches the task branch/worktree.
+9. Inspect only the relevant implementation and tests before proposing edits.
 
 ## Worker completion contract
 
@@ -159,6 +184,7 @@ Do not merge. Do not promote QA. Do not claim owner visual acceptance or physica
 - **Committed**: source exists in Git.
 - **Building**: CI is running.
 - **Built**: CI produced expected evidence.
+- **Prototype-ready**: bounded experiment is playable/reviewable, not production-approved.
 - **Browser-QA passed**: repository browser verification passed for the exact source.
 - **Public QA deployed**: exact verified web artifact is live at the QA root.
 - **Owner browser-approved**: owner played and approved the bounded browser-stage behavior.
