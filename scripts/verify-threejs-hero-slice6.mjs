@@ -77,12 +77,18 @@ check('farm-ditch-segmented', files.roadLaw.includes('SWVisualSlice6FarmDitchSeg
 check('town-polish-water-tower-standpipe', files.townPolish.includes('SWVisualSlice6WaterTowerStandpipe') && files.townPolish.includes("color: '#949b92'"));
 check('town-polish-pitched-rooflines', files.townPolish.includes('swVisualHeroSlice6TownPolishGableGeometry') && files.townPolish.includes('SWVisualSlice6MainStreetGable'));
 check('town-polish-false-fronts-and-awnings', files.townPolish.includes('SWVisualSlice6MainStreetFalseFront') && files.townPolish.includes('SWVisualSlice6MainStreetAwning'));
-check('town-polish-lowers-tall-massing', files.townPolish.includes('swSlice6TownHeightScale') && files.townPolish.includes('height >= 24 ? 0.52'));
+check('town-polish-blocktown-break-version', files.townPolish.includes('THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_V1'));
+check('town-polish-bounded-commercial-archetypes', files.townPolish.includes("['shop', 'office', 'civic', 'apartment']") && files.townPolish.includes('.slice(0, 12)'));
+check('town-polish-authored-signage', files.townPolish.includes('swVisualHeroSlice6TownPolishSignMaterial') && files.townPolish.includes("'MOO BREW'"));
+check('town-polish-parapets-and-sidewalk-props', files.townPolish.includes('TownPolishParapet') && files.townPolish.includes('TownPolishPlanter'));
+check('town-polish-lowers-tall-massing', files.townPolish.includes('swSlice6TownHeightScale') && files.townPolish.includes('height >= 24 ? 0.50'));
 check('town-polish-keeps-roofs-inside-footprint', files.townPolish.includes('width * 0.90') && files.townPolish.includes('depth * 0.90') && files.townPolish.includes('roof.rotation.y = ordinal % 3'));
+check('town-polish-broken-storm-debris-column', files.townPolish.includes('SWVisualSlice6StormDebrisColumn') && files.townPolish.includes('stormDebrisClusterCount'));
 check('world-grade', files.runtime.includes('toneMappingExposure') && files.runtime.includes('fogColor'));
 check('no-runtime-http-assets', !/https?:\/\//.test(runtimeBundle));
 check('qa-default-storm-evidence', files.qa.includes('threejs-hero-slice6-default-storm.png'));
 check('qa-main-street-evidence', files.qa.includes('threejs-hero-slice6-main-street.png'));
+check('qa-street-corner-evidence', files.qa.includes('threejs-hero-slice6-street-corner.png'));
 check('qa-farm-edge-evidence', files.qa.includes('threejs-hero-slice6-farm-edge.png'));
 check('qa-neon-off-default', files.qa.includes('Neon must remain OFF') && files.qa.includes('rainbowFunnel?.enabled === false'));
 check('qa-asymmetry-probe', files.qa.includes('warpedShellCount') && files.qa.includes('lateralCenterOffset'));
@@ -93,6 +99,8 @@ check('qa-zero-target-road-intrusions', files.qa.includes('independentTargetRoad
 check('qa-fence-road-gap', files.qa.includes('farmFenceGapCount') && files.qa.includes('independentFenceRoadIntrusions'));
 check('qa-zero-stacked-kits', files.qa.includes('stackedSlice6BuildingKits'));
 check('qa-world-budget', files.qa.includes('slice6PresentationObjectCount') && files.qa.includes('<= 110'));
+check('qa-blocktown-authorship', files.qa.includes('storefrontArchetypeCount') && files.qa.includes('targetCoordinateMutations'));
+check('qa-broken-storm-body', files.qa.includes('stormDebrisClusterCount'));
 check('qa-requires-slice5', files.qa.includes("heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1'"));
 check('workflow-stacked-base', files.workflow.includes('agent/threejs-hero-slice5-rainbow-cow-level'));
 check('workflow-exact-slice5-reference', files.workflow.includes('f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf'));
