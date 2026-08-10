@@ -200,7 +200,7 @@ async function slice6Probe(page) {
     utilityPoleList.forEach((pole, index) => {
       const x = Number(pole?.x);
       const z = Number(pole?.z);
-      if (!Number.isFinite(x) || !Number.isFinite(z) || nearestRoadDistance(x) > 8.5 && nearestRoadDistance(z) > 8.5) return;
+      if (Number.isFinite(x) && Number.isFinite(z) && nearestRoadDistance(x) > 8.5 && nearestRoadDistance(z) > 8.5) return;
       utilityPoleRoadIntrusions.push({
         index,
         x,
