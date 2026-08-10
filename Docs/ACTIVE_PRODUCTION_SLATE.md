@@ -3,11 +3,12 @@
 Last updated: 2026-08-10
 Status: canonical near-term work queue
 
-This file exists so project direction survives short chat windows. Product identity lives in `Docs/GAME_DIRECTOR.md`. Chat is temporary working context.
+This file exists so project direction survives short chat windows. Product identity lives in `Docs/GAME_DIRECTOR.md`. Detailed replay expansion direction lives in `Docs/LEVEL_AND_RPG_EXPANSION.md`. Chat is temporary working context.
 
 ## Operating law
 
 - The game is **Severe Weather Warning**. Player-facing branding uses the full title unless a documented platform constraint requires an explicitly approved short label.
+- Severe Weather Warning is a mobile arcade destruction game with **light action RPG progression**.
 - GitHub is durable project memory.
 - Owner feedback may be qualitative. The Director translates it into game-design and implementation contracts.
 - The owner is not the branch/QA/task coordinator.
@@ -39,7 +40,7 @@ Positive:
 - a full round was fun;
 - core tornado-control/destruction gameplay remains worth protecting.
 
-Blocking notes:
+Blocking notes and Stage 2B direction:
 
 1. Default tornado reads like **"attack bubbles"**.
 2. Graphics feel regressed in some areas.
@@ -49,6 +50,10 @@ Blocking notes:
 6. Quality target is a real video game that is exciting to show people, not merely a demonstration of Three.js or AI-generated code.
 7. Newspaper presentation should become a goofy recurring local-news UI language across opening, storm select, **UNLEASH STORM**, and end-of-run results.
 8. GitHub Pages PWA installability is desired to make phone playtesting and sharing feel more app-like without replacing Android device checkpoints.
+9. The current four levels are a starting set, not the intended final content count.
+10. Future destruction sites should include fairgrounds, piers/boardwalks, beaches, malls/strip malls, stadium/event grounds, grocery-store variants, and other authored locations.
+11. Replays of a site may vary in authored ways and do not need identical props/objectives every time.
+12. The original light-action-RPG intent remains active: earned currency, storm-form unlocks, and upgradeable abilities should become part of the long-term replay loop.
 
 These notes are product truth for Stage 2B.
 
@@ -127,7 +132,47 @@ Goal:
 
 ## Next queue after first batch
 
-Do not launch these until first-batch evidence teaches us what should be kept and the Director assigns an exact base that avoids file-ownership conflicts.
+Do not launch these until first-batch evidence teaches us what should be kept and the Director assigns exact conflict-safe bases.
+
+### SW-LEVEL-001: Extensible Storm Site framework
+
+Issue: #66
+State: queued after GAME-002 review because map/progression seams may overlap.
+
+Goal:
+
+- move beyond four fixed levels through a reusable Storm Site/level-definition system;
+- preserve authored locations while allowing bounded run-to-run variation;
+- support levels with different target families, objective pools, secrets, rewards, or pure-destruction score-attack behavior;
+- prove the framework with substantially different content packages.
+
+Preferred first proof directions:
+
+1. county fair/fairground pure-destruction vertical slice;
+2. coastal boardwalk/pier vertical slice with boats and a future Waterspout unlock feat.
+
+Established future families include beaches, malls/open-air retail, strip malls, stadiums/event grounds, grocery-store variants, and regional destruction playgrounds.
+
+Product read: **same place, different storm day**, not featureless procedural generation.
+
+### SW-RPG-001: MOO-LAH economy and ability progression
+
+Issue: #67
+State: queued after GAME-002 and first Stage 2B playtest evidence.
+
+Goal:
+
+- restore the intended light-action-RPG layer;
+- working earned soft currency: **MOO-LAH**;
+- cow/Cow 17 face coin motif on one side, udder emblem on the reverse;
+- currency earned through good play, objectives, secrets, ranks, challenges, and selected feats;
+- persistent bounded upgrades for Pull, Gust, Grid Zap, and later storm-core utility;
+- base abilities remain complete and fun;
+- no real-money economy by default;
+- avoid fake upgrades and grind treadmills;
+- selected storm forms remain feat unlocks rather than purchases.
+
+Established feat example: **launch a boat on a coastal site -> unlock Waterspout skin/form**.
 
 ### SW-UI-001: Newspaper presentation system
 
@@ -175,20 +220,6 @@ Focus:
 
 The task should preserve ordinary-contact destruction authority unless a specific behavior is deliberately reopened.
 
-### Replay loop and progression pass
-
-Build on real playtest lessons from the Moo Level rather than inventing a detached meta-game.
-
-Candidate systems:
-
-- score mastery and challenge routes;
-- rotating/branching objectives;
-- persistent secret/cosmetic/storm-form unlocks;
-- campaign/map reasons to revisit locations;
-- local-news/media collection or milestone moments;
-- absurd tracked statistics;
-- clear near-miss goals that generate "one more run."
-
 ### Commercial presentation pass
 
 Focus on moments that make the game feel shippable:
@@ -198,9 +229,27 @@ Focus on moments that make the game feel shippable:
 - results-screen motivation;
 - readable objective presentation;
 - sound/UI transitions;
-- visual consistency across cinematic, gameplay, newspaper presentation, and results.
+- visual consistency across cinematic, gameplay, newspaper presentation, progression, and results.
 
-SW-UI-001 (#65) now owns the first concrete newspaper identity slice of this broader pass.
+SW-UI-001 (#65) owns the first concrete newspaper identity slice of this broader pass.
+
+## Level-library product law
+
+The current four levels are the beginning of the content library.
+
+Future sites do not all need the same things. A fairground may be almost pure destruction. A pier can be built around rides, arcades, boats, and beach objects. A stadium can focus on grandstands, scoreboards, lights, concessions, and tailgate lots. A retail site can use malls, strip malls, grocery anchors, parking lots, signs, carts, and loading areas.
+
+Strongly themed locations matter more than forcing every site through one campaign template.
+
+## Light-RPG product law
+
+The progression loop should make players care about what happens after the score screen without making the arcade game feel stingy.
+
+Preferred loop:
+
+`play -> earn MOO-LAH/progress -> make a meaningful upgrade or unlock choice -> revisit favorite site or open a new one -> play differently`
+
+Not every unlock is purchased. Secrets and feats remain important.
 
 ## Existing accepted/protected features
 
@@ -208,8 +257,8 @@ Preserve unless a specific Stage 2B issue reopens them:
 
 - direct steering/input/general gameplay-camera feel;
 - ordinary tornado movement authority;
-- Pull and Gust behavior;
-- integrated Grid Zap values/topology from SW-GAME-001;
+- current base Pull and Gust behavior outside declared future upgrade layers;
+- integrated Grid Zap values/topology from SW-GAME-001 outside declared future upgrade layers;
 - road-safe utilities;
 - normal campaign scoring/timing/objectives;
 - Neon unlock/selection/persistence;
@@ -245,6 +294,8 @@ The owner should be able to say things like:
 - "Blocktown";
 - "it feels regressed";
 - "I want an actual cow level";
+- "I want to run the tornado around a beach";
+- "this was supposed to be a light action RPG";
 - "this isn't satisfying enough";
 - "this is fun";
 
