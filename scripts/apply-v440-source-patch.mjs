@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gridZapTopologyRuntime } from './grid-zap-topology.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -34,8 +35,85 @@ replaceExact(
 );
 replaceExact(
   "const powerPoles = [];\nconst eastWestLaneDashes = [];",
-  "const powerPoles = [];\nconst activeGridZapEffects = [];\nconst eastWestLaneDashes = [];",
+  `const powerPoles = [];
+const activeGridZapEffects = [];
+const eastWestLaneDashes = [];
+
+// [SW:GAME:UTILITY_NETWORK_V1] The pole objects below are the single source of
+// truth for the rendered mesh, navigation collision read, and Grid Zap topology.
+const UTILITY_ROAD_CENTERS = [-320, -240, -160, -80, 0, 80, 160, 240, 320];
+const UTILITY_PROTECTED_HALF_WIDTH = 8.5;
+const UTILITY_ROUTE_OFFSET = 13.5;
+const UTILITY_POLE_XS = [-340, -265, -190, -115, -40, 35, 110, 185, 260, 335];
+const GRID_ZAP_ACQUISITION_RADIUS_MULTIPLIER = 5.25;
+const GRID_ZAP_MAX_CONNECTED_NODES = 8;
+const GRID_ZAP_MAX_CONNECTED_HOP_DISTANCE = 82;
+const GRID_ZAP_TARGET_DAMAGE = 135;
+const GRID_ZAP_TARGET_RANGE = 16;`,
   'Grid Zap effect registry'
+);
+replaceExact(
+  '  for (let px = -300; px <= 300; px += 50) {',
+  `  const utilityRoute = 'east-west-' + r;
+  UTILITY_POLE_XS.forEach((px, networkIndex) => {`,
+  'road-safe utility network producer'
+);
+replaceExact(
+  `    poleGroup.position.set(px, terrainHeightAt(px, r + 13.5), r + 13.5);
+    scene.add(poleGroup);
+    powerPoles.push({ group: poleGroup, x: px, z: r + 13.5, sparked: false });
+  }
+}`,
+  `    const pz = r + UTILITY_ROUTE_OFFSET;
+    poleGroup.position.set(px, terrainHeightAt(px, pz), pz);
+    scene.add(poleGroup);
+    powerPoles.push({
+      group: poleGroup,
+      x: px,
+      z: pz,
+      networkGroup: utilityRoute,
+      networkIndex,
+      sparked: false
+    });
+  });
+}`,
+  'road-safe utility network coordinates'
+);
+replaceExact(
+  `  });
+}
+
+function addInstancedRoadMarks`,
+  `  });
+}
+
+// Each rendered wire follows the same ordered records consumed by Grid Zap.
+// Crossing a road happens overhead between road-safe poles; no invisible topology
+// shortcut can make a disconnected route look electrically connected.
+const utilityLineMat = new THREE.LineBasicMaterial({ color: '#1e293b', transparent: true, opacity: 0.78 });
+const utilityRoutes = new Map();
+powerPoles.forEach(pole => {
+  if (!utilityRoutes.has(pole.networkGroup)) utilityRoutes.set(pole.networkGroup, []);
+  utilityRoutes.get(pole.networkGroup).push(pole);
+});
+const utilityWirePositions = [];
+utilityRoutes.forEach(route => {
+  route.sort((a, b) => a.networkIndex - b.networkIndex);
+  for (let index = 1; index < route.length; index++) {
+    const previous = route[index - 1];
+    const next = route[index];
+    utilityWirePositions.push(
+      previous.x, terrainHeightAt(previous.x, previous.z) + 10.35, previous.z,
+      next.x, terrainHeightAt(next.x, next.z) + 10.35, next.z
+    );
+  }
+});
+const utilityWireGeometry = new THREE.BufferGeometry();
+utilityWireGeometry.setAttribute('position', new THREE.Float32BufferAttribute(utilityWirePositions, 3));
+scene.add(new THREE.LineSegments(utilityWireGeometry, utilityLineMat));
+
+function addInstancedRoadMarks`,
+  'rendered utility network continuity'
 );
 replaceExact(
   "const poleMat = new THREE.MeshStandardMaterial({ color: '#542605', roughness: 0.7 });",
@@ -127,36 +205,26 @@ function createUtilityArc(start, end, delayMs, hopIndex) {
   }, delayMs);
 }
 
+${gridZapTopologyRuntime}
+
 function triggerGridZapCascade() {
   clearGridZapEffects();
-  const candidates = powerPoles
-    .map(pole => ({ pole, distance: Math.hypot(pole.x - storm.pos.x, pole.z - storm.pos.z) }))
-    .filter(entry => entry.distance < storm.radius * 4.2)
-    .sort((a, b) => a.distance - b.distance);
+  const selected = selectGridZapTopology(powerPoles, {
+    stormX: storm.pos.x,
+    stormZ: storm.pos.z,
+    acquisitionRadius: storm.radius * GRID_ZAP_ACQUISITION_RADIUS_MULTIPLIER,
+    maxHopDistance: GRID_ZAP_MAX_CONNECTED_HOP_DISTANCE,
+    maxNodes: GRID_ZAP_MAX_CONNECTED_NODES
+  });
 
-  if (!candidates.length) {
+  if (!selected.length) {
     triggerLightningStrike(storm.pos.x + 8, storm.pos.z + 8);
     return;
   }
 
-  const selected = [candidates.shift().pole];
-  while (selected.length < 6 && candidates.length) {
-    const previous = selected[selected.length - 1];
-    let bestIndex = -1;
-    let bestDistance = Infinity;
-    candidates.forEach((entry, index) => {
-      const distance = Math.hypot(entry.pole.x - previous.x, entry.pole.z - previous.z);
-      if (distance < bestDistance && distance <= 78) {
-        bestDistance = distance;
-        bestIndex = index;
-      }
-    });
-    if (bestIndex < 0) break;
-    selected.push(candidates.splice(bestIndex, 1)[0].pole);
-  }
-
   const stormStart = new THREE.Vector3(storm.pos.x, 36, storm.pos.z);
   let previousPoint = stormStart;
+  const hitTargets = new Set();
   selected.forEach((pole, index) => {
     const polePoint = utilityTopPoint(pole);
     createUtilityArc(previousPoint, polePoint, index * 105, index);
@@ -166,6 +234,14 @@ function triggerGridZapCascade() {
         pole.sparked = true;
         addScore(index === 0 ? 110 : 75);
       }
+      targets.forEach(target => {
+        if (hitTargets.has(target) || target.destroyed) return;
+        const targetDistance = Math.hypot(target.x - pole.x, target.z - pole.z);
+        if (targetDistance <= GRID_ZAP_TARGET_RANGE) {
+          hitTargets.add(target);
+          damageTarget(target, GRID_ZAP_TARGET_DAMAGE, 'grid-zap');
+        }
+      });
       pole.group.scale.set(1.08, 1.08, 1.08);
       setTimeout(() => pole.group.scale.set(1, 1, 1), 120);
       playSound('zap');
