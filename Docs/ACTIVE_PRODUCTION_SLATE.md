@@ -57,6 +57,14 @@ Umbrella issue: #60
 
 North star: `Docs/GAME_DIRECTOR.md`
 
+Director docs branch: `agent/director-stage2b-game-direction`
+
+First-batch coordination base:
+
+`ca7ec1a9dcdc4c6ca8d73304fd99108385f29f39`
+
+That coordination base descends directly from public QA #29 source `b501737e71e61b979901d4899d969390aa37b1f4` and adds Stage 2B direction/docs only. It does not alter gameplay/runtime behavior.
+
 Acceptance question:
 
 > Does the candidate look and play materially more like a finished, replayable commercial mobile game than QA #29?
@@ -65,9 +73,7 @@ If the answer requires an explanation of where to look, the change probably did 
 
 ## First parallel batch
 
-All first-batch workers start from exact QA #29 source:
-
-`b501737e71e61b979901d4899d969390aa37b1f4`
+All first-batch workers verify HEAD equals the Stage 2B coordination base above before editing.
 
 ### SW-WORLD-003: Storm hero recovery
 
