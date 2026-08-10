@@ -24,8 +24,13 @@ const swVisualHeroSlice6TownPolishState = {
   roadFacingFacadeCount: 0,
   footprintVarietyCount: 0,
   detailedStorefrontCount: 0,
+  storefrontArchetypeCount: 0,
+  parapetCount: 0,
+  signageCount: 0,
+  streetPropCount: 0,
   stormRetaperedShellCount: 0,
   stormRetaperedWispCount: 0,
+  stormDebrisClusterCount: 0,
   profile: 'small-town-massing-v3-break-blocktown',
   lastError: null,
 };
@@ -72,6 +77,26 @@ function swVisualHeroSlice6TownPolishGableGeometry(width, depth, height) {
   return geometry;
 }
 
+function swVisualHeroSlice6TownPolishSignMaterial(label, background, ink) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 384;
+  canvas.height = 96;
+  const context = canvas.getContext('2d');
+  context.fillStyle = background;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.strokeStyle = '#e7d6ae';
+  context.lineWidth = 8;
+  context.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+  context.fillStyle = ink;
+  context.font = '700 38px Arial, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(label, canvas.width * 0.5, canvas.height * 0.53);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.82, metalness: 0.02 });
+}
+
 function swVisualHeroSlice6TownPolishFrontage(target, width, depth) {
   const x = Number(target?.x);
   const z = Number(target?.z);
@@ -114,6 +139,7 @@ function swVisualHeroSlice6TownPolishEnsureFacadeRig(group, frontage, height, or
   const faceWidth = Math.max(4.2, Math.min(frontage.frontageWidth * 0.86, 11.5));
   const archetype = ordinal % 5;
   const signPalette = ['#c69a55', '#9d5f48', '#57777a', '#b4a16d', '#765f72'];
+  const signNames = ['MOO BREW', 'HARDWARE', 'MERCANTILE', 'COUNTY BANK', 'STORM CELLAR'];
 
   let falseFront = rig.getObjectByName?.('SWVisualSlice6MainStreetFalseFront') || null;
   if (!falseFront) {
@@ -125,9 +151,11 @@ function swVisualHeroSlice6TownPolishEnsureFacadeRig(group, frontage, height, or
     falseFront.castShadow = true;
     falseFront.receiveShadow = true;
     falseFront.userData.swPresentationOnly = true;
+    falseFront.userData.swTownPolish = true;
     rig.add(falseFront);
   }
   falseFront.position.set(0, height + 0.08, -0.08);
+  falseFront.visible = archetype !== 2;
 
   let awning = rig.getObjectByName?.('SWVisualSlice6MainStreetAwning') || null;
   if (!awning) {
@@ -139,22 +167,40 @@ function swVisualHeroSlice6TownPolishEnsureFacadeRig(group, frontage, height, or
     awning.castShadow = false;
     awning.receiveShadow = true;
     awning.userData.swPresentationOnly = true;
+    awning.userData.swTownPolish = true;
     rig.add(awning);
   }
   awning.position.set(archetype === 4 ? -faceWidth * 0.12 : 0, Math.min(height * 0.23, 3.6), -0.56);
   awning.rotation.x = -0.08;
+
+  let parapet = rig.getObjectByName?.('TownPolishParapet') || null;
+  if (!parapet) {
+    parapet = new THREE.Mesh(
+      new THREE.BoxGeometry(faceWidth * (archetype === 2 ? 0.96 : 0.72), archetype === 1 ? 1.18 : 0.64, 0.34),
+      new THREE.MeshStandardMaterial({ color: archetype === 1 ? '#6e5a48' : shellColor, roughness: 0.88, metalness: 0.02 }),
+    );
+    parapet.name = 'TownPolishParapet';
+    parapet.castShadow = true;
+    parapet.receiveShadow = true;
+    parapet.userData.swPresentationOnly = true;
+    parapet.userData.swTownPolish = true;
+    rig.add(parapet);
+  }
+  parapet.position.set(archetype === 4 ? faceWidth * 0.16 : 0, height + (archetype === 1 ? 0.48 : 0.20), -0.11);
+  parapet.visible = archetype === 1 || archetype === 2 || archetype === 4;
 
   if (ordinal < 8) {
     let signboard = rig.getObjectByName?.('TownPolishSignboard') || null;
     if (!signboard) {
       signboard = new THREE.Mesh(
         new THREE.BoxGeometry(faceWidth * (archetype === 0 ? 0.44 : 0.34), archetype === 1 ? 0.92 : 0.68, 0.18),
-        new THREE.MeshStandardMaterial({ color: signPalette[archetype], roughness: 0.74, metalness: 0.02 }),
+        swVisualHeroSlice6TownPolishSignMaterial(signNames[ordinal % signNames.length], signPalette[archetype], '#f2e4ba'),
       );
       signboard.name = 'TownPolishSignboard';
       signboard.castShadow = false;
       signboard.receiveShadow = true;
-      signboard.userData.swPresentationOnly = true;
+        signboard.userData.swPresentationOnly = true;
+        signboard.userData.swTownPolish = true;
       rig.add(signboard);
     }
     signboard.position.set((ordinal % 2 ? -1 : 1) * faceWidth * 0.16, Math.min(height * 0.31, 4.7), -0.24);
@@ -173,6 +219,7 @@ function swVisualHeroSlice6TownPolishEnsureFacadeRig(group, frontage, height, or
       windowBand.castShadow = false;
       windowBand.receiveShadow = true;
       windowBand.userData.swPresentationOnly = true;
+      windowBand.userData.swTownPolish = true;
       rig.add(windowBand);
     }
     windowBand.position.set(0, Math.min(height * 0.12, 2.15), -0.20);
@@ -187,9 +234,25 @@ function swVisualHeroSlice6TownPolishEnsureFacadeRig(group, frontage, height, or
       door.castShadow = false;
       door.receiveShadow = true;
       door.userData.swPresentationOnly = true;
+      door.userData.swTownPolish = true;
       rig.add(door);
     }
     door.position.set((ordinal % 2 ? 1 : -1) * faceWidth * 0.30, 0.95, -0.22);
+
+    let planter = rig.getObjectByName?.('TownPolishPlanter') || null;
+    if (!planter) {
+      planter = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.28, 0.38, 0.52, 8),
+        new THREE.MeshStandardMaterial({ color: '#7b6651', roughness: 0.92, metalness: 0.01 }),
+      );
+      planter.name = 'TownPolishPlanter';
+      planter.castShadow = true;
+      planter.receiveShadow = true;
+      planter.userData.swPresentationOnly = true;
+      planter.userData.swTownPolish = true;
+      rig.add(planter);
+    }
+    planter.position.set((ordinal % 2 ? -1 : 1) * faceWidth * 0.43, 0.28, -0.56);
   }
 
   return rig;
@@ -217,28 +280,37 @@ function swVisualHeroSlice6TownPolishStyleMainStreet(storefront) {
 
   targetList
     .map((target) => ({ target, distance: Math.hypot(Number(target?.x) - centerX, Number(target?.z) - centerZ) }))
-    .filter((entry) => entry.distance <= 132)
+    .filter((entry) => {
+      const kind = String(entry.target?.kind || '');
+      const x = Math.abs(Number(entry.target?.x));
+      const z = Math.abs(Number(entry.target?.z));
+      return entry.distance <= 288
+        && x <= 152
+        && z <= 82
+        && ['shop', 'office', 'civic', 'apartment'].includes(kind);
+    })
     .sort((a, b) => a.distance - b.distance)
+    .slice(0, 12)
     .forEach((entry, ordinal) => {
       const target = entry.target;
       const group = target?.meshData?.group;
       const base = target?.meshData?.base;
       if (!group || !base || Boolean(target.destroyed) || Boolean(target.isTree)) return;
       const groupName = String(group.name || '');
-      if (groupName === 'structure.storefront.v1' || groupName === 'HartFarmSignatureBarn') return;
+      if (groupName === 'HartFarmSignatureBarn') return;
       const parameters = base.geometry?.parameters || {};
       const width = Number(parameters.width || 0);
       const height = Number(parameters.height || 0);
       const depth = Number(parameters.depth || 0);
-      if (!base.geometry?.type?.includes('Box') || width < 7 || depth < 7 || height < 10) return;
+      if (!base.geometry?.type?.includes('Box') || width < 7 || depth < 7 || height < 5) return;
 
       if (!group.userData.swSlice6TownPolishBaseScaleX) group.userData.swSlice6TownPolishBaseScaleX = Number(group.scale.x) || 1;
       if (!group.userData.swSlice6TownPolishBaseScaleY) group.userData.swSlice6TownPolishBaseScaleY = Number(group.scale.y) || 1;
       if (!group.userData.swSlice6TownPolishBaseScaleZ) group.userData.swSlice6TownPolishBaseScaleZ = Number(group.scale.z) || 1;
 
       const profile = footprintProfiles[ordinal % footprintProfiles.length];
-      const heightScaleBase = height >= 24 ? 0.52 : (height >= 18 ? 0.64 : 0.76);
-      const heightScale = THREE.MathUtils.clamp(heightScaleBase * profile.y, 0.42, 0.78);
+      const heightScaleBase = height >= 24 ? 0.50 : (height >= 18 ? 0.60 : 0.82);
+      const heightScale = THREE.MathUtils.clamp(heightScaleBase * profile.y, 0.42, 0.88);
       group.scale.x = group.userData.swSlice6TownPolishBaseScaleX * profile.x;
       group.scale.y = group.userData.swSlice6TownPolishBaseScaleY * heightScale;
       group.scale.z = group.userData.swSlice6TownPolishBaseScaleZ * profile.z;
@@ -294,6 +366,10 @@ function swVisualHeroSlice6TownPolishStyleMainStreet(storefront) {
   swVisualHeroSlice6TownPolishState.roadFacingFacadeCount = roadFacing;
   swVisualHeroSlice6TownPolishState.footprintVarietyCount = varied;
   swVisualHeroSlice6TownPolishState.detailedStorefrontCount = detailed;
+  swVisualHeroSlice6TownPolishState.storefrontArchetypeCount = rooflines;
+  swVisualHeroSlice6TownPolishState.parapetCount = rooflines;
+  swVisualHeroSlice6TownPolishState.signageCount = detailed;
+  swVisualHeroSlice6TownPolishState.streetPropCount = detailed;
   return rooflines;
 }
 
@@ -384,20 +460,20 @@ function swVisualHeroSlice6TownPolishRetaperStorm() {
           const z = position.getZ(index);
           const mix = THREE.MathUtils.clamp((y - minY) / span, 0, 1);
           const angle = Math.atan2(z, x);
-          const upperTaper = 0.96 - mix * (0.30 + objectIndex * 0.025);
-          const irregular = 1 + Math.sin(angle * 2.4 + mix * 5.2 + objectIndex) * 0.055;
-          const shearX = Math.sin(mix * 3.7 + objectIndex * 1.4) * mix * 1.35;
-          const shearZ = Math.cos(mix * 4.1 + objectIndex * 0.8) * mix * 1.05;
+           const upperTaper = 0.90 - mix * (0.38 + objectIndex * 0.045);
+           const irregular = 1 + Math.sin(angle * 2.4 + mix * 5.2 + objectIndex) * 0.105;
+           const shearX = Math.sin(mix * 3.7 + objectIndex * 1.4) * mix * 2.2;
+           const shearZ = Math.cos(mix * 4.1 + objectIndex * 0.8) * mix * 1.75;
           position.setXYZ(index, x * upperTaper * irregular + shearX, y, z * upperTaper * (2 - irregular) + shearZ);
         }
         position.needsUpdate = true;
         geometry.computeVertexNormals();
         geometry.userData.swSlice6BlocktownRetapered = true;
       }
-      object.userData.baseOpacity = Math.min(Number(object.userData.baseOpacity || 0.08), 0.078 - objectIndex * 0.009);
+      object.userData.baseOpacity = Math.min(Number(object.userData.baseOpacity || 0.14), 0.128 - objectIndex * 0.014);
       if (object.material) {
         object.material.opacity = object.userData.baseOpacity;
-        object.material.color?.set?.(objectIndex === 0 ? '#263a3f' : (objectIndex === 1 ? '#394d51' : '#59676a'));
+        object.material.color?.set?.(objectIndex === 0 ? '#172a31' : (objectIndex === 1 ? '#294047' : '#4a5b5e'));
         object.material.needsUpdate = true;
       }
       shellCount += 1;
@@ -411,13 +487,68 @@ function swVisualHeroSlice6TownPolishRetaperStorm() {
         object.scale.y *= 1.22;
         object.userData.swSlice6BlocktownRetapered = true;
       }
-      if (object.material) object.material.opacity = Math.min(0.16, Number(object.material.opacity || 0.12) * 1.08);
-      wispCount += 1;
+       if (object.material) object.material.opacity = Math.min(0.20, Number(object.material.opacity || 0.12) * 1.16);
+       wispCount += 1;
     }
   });
 
   swVisualHeroSlice6TownPolishState.stormRetaperedShellCount = shellCount;
   swVisualHeroSlice6TownPolishState.stormRetaperedWispCount = wispCount;
+  const smoke = swVisualHeroSlice4Textures?.smoke || null;
+  let debrisRoot = swVisualHeroSlice6StormRoot.getObjectByName?.('SWVisualSlice6StormDebrisColumn') || null;
+  if (!debrisRoot && smoke) {
+    debrisRoot = new THREE.Group();
+    debrisRoot.name = 'SWVisualSlice6StormDebrisColumn';
+    debrisRoot.userData.swPresentationOnly = true;
+    debrisRoot.userData.swTownPolish = true;
+    const clusterSpecs = [
+      { x: 2.6, z: -1.3, y: 4.5, w: 12, h: 5.8, opacity: 0.24, color: '#625c4f' },
+      { x: -3.1, z: 1.6, y: 8.8, w: 15, h: 7.4, opacity: 0.21, color: '#4e5856' },
+      { x: 3.8, z: 0.8, y: 13.3, w: 18, h: 8.3, opacity: 0.18, color: '#3e5154' },
+      { x: -4.7, z: -1.8, y: 18.0, w: 20, h: 9.8, opacity: 0.17, color: '#354a4e' },
+      { x: 5.9, z: 1.3, y: 22.8, w: 22, h: 10.2, opacity: 0.15, color: '#2b4046' },
+      { x: -3.8, z: 2.7, y: 27.2, w: 19, h: 9.0, opacity: 0.14, color: '#31454a' },
+    ];
+    clusterSpecs.forEach((spec, index) => {
+      const sprite = swVisualHeroSlice6Sprite(smoke, spec.color, spec.opacity, `SWVisualSlice6StormDebris${index + 1}`);
+      sprite.position.set(spec.x, spec.y, spec.z);
+      sprite.scale.set(spec.w, spec.h, 1);
+      sprite.userData.swTownPolish = true;
+      debrisRoot.add(sprite);
+    });
+    const turbulence = new THREE.Group();
+    turbulence.name = 'SWVisualSlice6StormTurbulence';
+    turbulence.userData.swPresentationOnly = true;
+    turbulence.userData.swTownPolish = true;
+    const turbulenceSpecs = [
+      { x: 1.8, z: -1.4, y: 5.0, sx: 5.8, sy: 2.8, sz: 4.8, opacity: 0.34, color: '#4e5048' },
+      { x: -2.4, z: 1.6, y: 9.1, sx: 5.2, sy: 3.4, sz: 4.2, opacity: 0.31, color: '#364b4d' },
+      { x: 3.3, z: 0.4, y: 13.2, sx: 7.2, sy: 3.8, sz: 5.5, opacity: 0.28, color: '#2d464b' },
+      { x: -3.7, z: -1.5, y: 17.6, sx: 6.4, sy: 4.5, sz: 5.8, opacity: 0.25, color: '#273e45' },
+      { x: 4.9, z: 1.2, y: 22.7, sx: 8.8, sy: 4.8, sz: 7.0, opacity: 0.22, color: '#21373f' },
+      { x: -3.1, z: 2.5, y: 28.1, sx: 8.0, sy: 4.1, sz: 6.5, opacity: 0.19, color: '#263b42' },
+    ];
+    turbulenceSpecs.forEach((spec, index) => {
+      const material = new THREE.MeshBasicMaterial({
+        color: spec.color,
+        transparent: true,
+        opacity: spec.opacity,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const fragment = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 1), material);
+      fragment.name = `SWVisualSlice6StormTurbulence${index + 1}`;
+      fragment.position.set(spec.x, spec.y, spec.z);
+      fragment.scale.set(spec.sx, spec.sy, spec.sz);
+      fragment.rotation.set(index * 0.28, index * 0.63, index * -0.19);
+      fragment.userData.swPresentationOnly = true;
+      fragment.userData.swTownPolish = true;
+      turbulence.add(fragment);
+    });
+    debrisRoot.add(turbulence);
+    swVisualHeroSlice6StormRoot.add(debrisRoot);
+  }
+  swVisualHeroSlice6TownPolishState.stormDebrisClusterCount = debrisRoot?.children?.length || 0;
   return shellCount > 0;
 }
 
@@ -487,6 +618,31 @@ swVisualHeroSlice6RefreshWorld = function swVisualHeroSlice6RefreshWorldWithTown
   return result;
 };
 
+const swVisualHeroSlice6TownPolishPrepareQaBase = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.prepareQaView;
+function swVisualHeroSlice6TownPolishPrepareQaView(mode = 'storefront') {
+  if (mode !== 'slice6-street' && mode !== 'slice6-corner') {
+    return swVisualHeroSlice6TownPolishPrepareQaBase?.(mode) ?? false;
+  }
+  const prepared = swVisualHeroSlice6TownPolishPrepareQaBase?.('slice6-street') ?? false;
+  if (!prepared) return false;
+  const applied = globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getAppliedTargets?.() || [];
+  const storefront = applied.find((entry) => entry.assetId === 'structure.storefront.v1') || null;
+  if (!storefront || !camera) return false;
+  const x = Number(storefront.x);
+  const z = Number(storefront.z);
+  const y = typeof terrainHeightAt === 'function' ? terrainHeightAt(x, z) : 0;
+  if (mode === 'slice6-corner') {
+    camera.position.set(x + 50, y + 14, z - 35);
+    camera.lookAt(x + 13, y + 5.5, z + 13);
+  } else {
+    camera.position.set(x + 36, y + 12, z - 24);
+    camera.lookAt(x + 8, y + 5.0, z + 5);
+  }
+  swVisualUpdate(0, 1000);
+  renderer.render(scene, camera);
+  return true;
+}
+
 const swVisualHeroSlice6TownPolishSnapshotBase = swVisualSnapshot;
 swVisualSnapshot = function swVisualSnapshotWithSlice6TownPolish() {
   const base = swVisualHeroSlice6TownPolishSnapshotBase();
@@ -507,8 +663,13 @@ swVisualSnapshot = function swVisualSnapshotWithSlice6TownPolish() {
         roadFacingFacadeCount: swVisualHeroSlice6TownPolishState.roadFacingFacadeCount,
         footprintVarietyCount: swVisualHeroSlice6TownPolishState.footprintVarietyCount,
         detailedStorefrontCount: swVisualHeroSlice6TownPolishState.detailedStorefrontCount,
+        storefrontArchetypeCount: swVisualHeroSlice6TownPolishState.storefrontArchetypeCount,
+        parapetCount: swVisualHeroSlice6TownPolishState.parapetCount,
+        signageCount: swVisualHeroSlice6TownPolishState.signageCount,
+        streetPropCount: swVisualHeroSlice6TownPolishState.streetPropCount,
         stormRetaperedShellCount: swVisualHeroSlice6TownPolishState.stormRetaperedShellCount,
         stormRetaperedWispCount: swVisualHeroSlice6TownPolishState.stormRetaperedWispCount,
+        stormDebrisClusterCount: swVisualHeroSlice6TownPolishState.stormDebrisClusterCount,
         presentationOnly: true,
       }),
     }),
@@ -522,6 +683,7 @@ const swVisualHeroSlice6TownPolishBridgeBase = globalThis.__SW_THREEJS_VISUAL_FO
 globalThis.__SW_THREEJS_VISUAL_FOUNDATION__ = Object.freeze({
   ...swVisualHeroSlice6TownPolishBridgeBase,
   getSnapshot: swVisualSnapshot,
+  prepareQaView: swVisualHeroSlice6TownPolishPrepareQaView,
   refreshHeroSlice6: swVisualHeroSlice6RefreshWorld,
   heroSlice6TownPolishVersion: THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_VERSION,
   heroSlice6BlocktownBreakVersion: THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_VERSION,

@@ -13,11 +13,12 @@ await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
 const report = {
-  version: 'THREEJS_HERO_SLICE6_QA_V3',
+  version: 'THREEJS_HERO_SLICE6_QA_V4',
   generatedAt: new Date().toISOString(),
   passed: false,
   defaultStorm: null,
   mainStreet: null,
+  streetCorner: null,
   farmEdge: null,
   failures: [],
 };
@@ -42,6 +43,7 @@ async function createPage() {
   await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice6Version === 'THREEJS_VISUAL_HERO_SLICE6_V1');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice6RoadLawVersion === 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1');
+  await page.waitForFunction(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.().heroSlice6BlocktownBreakVersion === 'THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_V1');
   await page.waitForFunction(() => globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getSnapshot?.().appliedCount >= 1);
   await page.waitForFunction(() => {
     const visual = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.();
@@ -129,11 +131,17 @@ async function slice6Probe(page) {
     });
 
     let slice6PresentationObjectCount = 0;
+    let townPolishPresentationObjectCount = 0;
+    let townPolishSignboardCount = 0;
     let buildingIdentityGroups = 0;
     scene?.traverse?.((object) => {
-      if (!String(object?.name || '').startsWith('SWVisualSlice6')) return;
-      slice6PresentationObjectCount += 1;
-      if (String(object.name).startsWith('SWVisualSlice6BuildingIdentity')) buildingIdentityGroups += 1;
+      const name = String(object?.name || '');
+      if (name.startsWith('SWVisualSlice6')) {
+        slice6PresentationObjectCount += 1;
+        if (name.startsWith('SWVisualSlice6BuildingIdentity')) buildingIdentityGroups += 1;
+      }
+      if (object.userData?.swTownPolish === true) townPolishPresentationObjectCount += 1;
+      if (name === 'TownPolishSignboard') townPolishSignboardCount += 1;
     });
 
     const inheritedShellOpacities = [];
@@ -216,9 +224,18 @@ async function slice6Probe(page) {
     });
 
     const visual = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.getSnapshot?.() || null;
+    const targetCoordinatesBeforeRefresh = targetList.map((target, index) => ({ index, x: Number(target?.x), z: Number(target?.z) }));
+    globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.refreshHeroSlice6?.();
+    const targetCoordinateMutations = targetCoordinatesBeforeRefresh.filter((before) => {
+      const after = targets?.[before.index];
+      return Number(after?.x) !== before.x || Number(after?.z) !== before.z;
+    });
+    const refreshedStormRoot = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
+    const refreshedWorldRoot = scene?.getObjectByName?.('SWVisualHeroSlice6WorldIdentity') || null;
+    const stormDebrisColumn = refreshedStormRoot?.getObjectByName?.('SWVisualSlice6StormDebrisColumn') || null;
     return {
-      stormRootPresent: Boolean(stormRoot?.parent),
-      worldRootPresent: Boolean(worldRoot?.parent),
+      stormRootPresent: Boolean(refreshedStormRoot?.parent),
+      worldRootPresent: Boolean(refreshedWorldRoot?.parent),
       warpedShellCount,
       lateralCenterOffset,
       edgeWispCount: stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6EdgeWisp')).length || 0,
@@ -238,6 +255,9 @@ async function slice6Probe(page) {
       inheritedShellMaxOpacity: inheritedShellOpacities.length ? Math.max(...inheritedShellOpacities) : null,
       defaultFunnelOpacity: typeof funnelMat !== 'undefined' ? Number(funnelMat.opacity) : null,
       slice6PresentationObjectCount,
+      townPolishPresentationObjectCount,
+      townPolishSignboardCount,
+      stormDebrisClusterCount: stormDebrisColumn?.children?.length || 0,
       rainbowRootPresent: Boolean(scene?.getObjectByName?.('SWVisualHeroSlice5RainbowFunnel')?.parent),
       independentTargetRoadIntrusions,
       independentFenceRoadIntrusions,
@@ -245,6 +265,7 @@ async function slice6Probe(page) {
       utilityPoleRoadIntrusions,
       utilityLineSegmentObjects: utilityLineSegmentObjects.length,
       legacyVisibleParcelMeshes,
+      targetCoordinateMutations,
       roadLaw: visual?.worldIdentity?.roadLaw || null,
     };
   });
@@ -266,11 +287,13 @@ try {
   requireCondition(visual?.heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1', `Inherited Hero Slice 5 version mismatch: ${visual?.heroSlice5Version}.`);
   requireCondition(visual?.heroSlice6Version === 'THREEJS_VISUAL_HERO_SLICE6_V1', `Hero Slice 6 version mismatch: ${visual?.heroSlice6Version}.`);
   requireCondition(visual?.heroSlice6RoadLawVersion === 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1', `Hero Slice 6 road-law version mismatch: ${visual?.heroSlice6RoadLawVersion}.`);
+  requireCondition(visual?.heroSlice6BlocktownBreakVersion === 'THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_V1', `Blocktown-break version mismatch: ${visual?.heroSlice6BlocktownBreakVersion}.`);
   requireCondition(visual?.stormSilhouette?.profile === 'asymmetric-storm-v2', `Unexpected Slice 6 storm profile ${visual?.stormSilhouette?.profile}.`);
   requireCondition(probe?.stormRootPresent === true, 'Slice 6 storm silhouette root is missing.');
   requireCondition(Number(probe?.warpedShellCount) >= 3, `Only ${probe?.warpedShellCount} warped storm shells are active.`);
   requireCondition(Number(probe?.lateralCenterOffset) >= 0.25, `Storm shell centerline is still too geometrically straight: ${probe?.lateralCenterOffset}.`);
   requireCondition(Number(probe?.edgeWispCount) >= 14, `Only ${probe?.edgeWispCount} edge wisps are active.`);
+  requireCondition(Number(probe?.stormDebrisClusterCount) >= 6, `Only ${probe?.stormDebrisClusterCount} broken storm debris clusters are active.`);
   requireCondition(Number(probe?.groundBurstCount) >= 9, `Only ${probe?.groundBurstCount} irregular ground bursts are active.`);
   requireCondition(Number(probe?.legacyStormRingCount) >= 3, `Expected inherited storm ground rings to be restrained, found ${probe?.legacyStormRingCount}.`);
   requireCondition(Number(probe?.inheritedShellMaxOpacity) <= 0.09, `Inherited Slice 4 cone shells remain too dominant: ${probe?.inheritedShellMaxOpacity}.`);
@@ -306,8 +329,13 @@ try {
   requireCondition(Number(roadLaw?.parcelAdjustedTargetCount) > 0, 'Parcel compliance did not adjust any oversized building presentation.');
   requireCondition(Number(visual?.worldIdentity?.townPolish?.mainStreetRooflineCount) >= 3, 'Main Street roofline pass did not reach the required minimum coverage.');
   requireCondition(Number(visual?.worldIdentity?.townPolish?.falseFrontCount) >= 3 && Number(visual?.worldIdentity?.townPolish?.awningCount) >= 3, 'Main Street false-front and awning pass is incomplete.');
+  requireCondition(Number(visual?.worldIdentity?.townPolish?.storefrontArchetypeCount) >= 10, 'Main Street did not reach the authored commercial archetype minimum.');
+  requireCondition(Number(visual?.worldIdentity?.townPolish?.signageCount) >= 8 && Number(probe?.townPolishSignboardCount) >= 8, 'Main Street sign-band coverage is incomplete.');
+  requireCondition(Number(visual?.worldIdentity?.townPolish?.streetPropCount) >= 8, 'Main Street sidewalk prop coverage is incomplete.');
+  requireCondition(Number(probe?.townPolishPresentationObjectCount) <= 96, `Town-polish presentation budget exceeded: ${probe?.townPolishPresentationObjectCount}.`);
   requireCondition(Number(roadLaw?.targetRoadIntrusionCount) === 0, `Road-law telemetry still reports ${roadLaw?.targetRoadIntrusionCount} building road intrusions: ${JSON.stringify(roadLaw?.targetRoadIntrusions || [])}`);
   requireCondition(Array.isArray(probe?.independentTargetRoadIntrusions) && probe.independentTargetRoadIntrusions.length === 0, `Independent QA found building geometry inside protected roads: ${JSON.stringify(probe?.independentTargetRoadIntrusions || [])}`);
+  requireCondition(Array.isArray(probe?.targetCoordinateMutations) && probe.targetCoordinateMutations.length === 0, `Presentation refresh changed protected target coordinates: ${JSON.stringify(probe?.targetCoordinateMutations || [])}`);
   requireCondition(Number(probe?.utilityPoleCount) === 90, `Expected 90 authoritative utility poles, found ${probe?.utilityPoleCount}.`);
   requireCondition(Array.isArray(probe?.utilityPoleRoadIntrusions) && probe.utilityPoleRoadIntrusions.length === 0, `Authoritative utility poles intrude into protected road/shoulder space: ${JSON.stringify(probe?.utilityPoleRoadIntrusions || [])}`);
   requireCondition(Number(probe?.utilityLineSegmentObjects) === 1, `Expected one batched utility LineSegments object with 81 segments, found ${probe?.utilityLineSegmentObjects}.`);
@@ -318,6 +346,27 @@ try {
   if (streetPage.errors.length) report.failures.push(`Main-street browser errors: ${streetPage.errors.join(' | ')}`);
 } finally {
   await streetPage.page.close();
+}
+
+const cornerPage = await createPage();
+try {
+  const prepared = await cornerPage.page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('slice6-corner'));
+  requireCondition(prepared === true, 'Slice 6 street-corner QA view did not prepare.');
+  await cornerPage.page.waitForTimeout(240);
+  report.streetCorner = await snapshot(cornerPage.page);
+  report.streetCorner.probe = await slice6Probe(cornerPage.page);
+  await cornerPage.page.screenshot({ path: path.join(outputDir, 'threejs-hero-slice6-street-corner.png'), fullPage: true });
+
+  const visual = report.streetCorner.visual;
+  const probe = report.streetCorner.probe;
+  requireCondition(visual?.heroSlice6BlocktownBreakVersion === 'THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_V1', 'Street-corner evidence did not retain the Blocktown-break presentation layer.');
+  requireCondition(Number(visual?.worldIdentity?.townPolish?.storefrontArchetypeCount) >= 10, 'Street-corner evidence lacks the authored commercial archetypes.');
+  requireCondition(Number(probe?.townPolishSignboardCount) >= 8, 'Street-corner evidence lacks readable storefront sign bands.');
+  requireCondition(Array.isArray(probe?.independentTargetRoadIntrusions) && probe.independentTargetRoadIntrusions.length === 0, `Street-corner QA found building geometry inside protected roads: ${JSON.stringify(probe?.independentTargetRoadIntrusions || [])}`);
+  requireCondition(Array.isArray(probe?.targetCoordinateMutations) && probe.targetCoordinateMutations.length === 0, `Street-corner refresh changed protected target coordinates: ${JSON.stringify(probe?.targetCoordinateMutations || [])}`);
+  if (cornerPage.errors.length) report.failures.push(`Street-corner browser errors: ${cornerPage.errors.join(' | ')}`);
+} finally {
+  await cornerPage.page.close();
 }
 
 const farmPage = await createPage();
