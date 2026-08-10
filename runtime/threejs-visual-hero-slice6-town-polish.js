@@ -1,15 +1,18 @@
 // ============================================================================
 // [SW:VISUAL:HERO_SLICE6:TOWN_POLISH]
 // THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_V1
+// THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_V1
 //
-// Presentation-only correction after Slice 6 Run #9 visual review.
-// The road-first parcel law is already authoritative for presentation placement.
-// This pass removes the bright prototype water-tower read and breaks tall Main
-// Street box silhouettes with lower massing and pitched rooflines. It does not
-// move target coordinates or write health, damage, collision, scoring, storm,
-// ability, campaign, animal, or Neon-selection authority.
+// Presentation-only correction after owner QA on the exact green Run #25.
+// Road-first parcel law remains the spatial authority. This pass makes Main
+// Street read as an authored place at gameplay distance and retapers the
+// default storm presentation so it reads as a turbulent vertical storm body,
+// not a stack of broad saucers. It does not move target coordinates or write
+// health, damage, collision, scoring, storm, ability, campaign, animal, or
+// Neon-selection authority.
 // ============================================================================
 const THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_VERSION = 'THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_V1';
+const THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_VERSION = 'THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_V1';
 
 const swVisualHeroSlice6TownPolishState = {
   waterTowerStyled: false,
@@ -18,7 +21,12 @@ const swVisualHeroSlice6TownPolishState = {
   compressedTallBuildingCount: 0,
   falseFrontCount: 0,
   awningCount: 0,
-  profile: 'small-town-massing-v2',
+  roadFacingFacadeCount: 0,
+  footprintVarietyCount: 0,
+  detailedStorefrontCount: 0,
+  stormRetaperedShellCount: 0,
+  stormRetaperedWispCount: 0,
+  profile: 'small-town-massing-v3-break-blocktown',
   lastError: null,
 };
 
@@ -64,22 +72,152 @@ function swVisualHeroSlice6TownPolishGableGeometry(width, depth, height) {
   return geometry;
 }
 
+function swVisualHeroSlice6TownPolishFrontage(target, width, depth) {
+  const x = Number(target?.x);
+  const z = Number(target?.z);
+  const gridStep = 80;
+  const xRoad = Math.round(x / gridStep) * gridStep;
+  const zRoad = Math.round(z / gridStep) * gridStep;
+  const dx = Math.abs(x - xRoad);
+  const dz = Math.abs(z - zRoad);
+
+  if (dx <= dz) {
+    const direction = xRoad < x ? -1 : 1;
+    return {
+      rotationY: direction < 0 ? Math.PI * 0.5 : -Math.PI * 0.5,
+      x: direction * Math.max(0.2, width * 0.5 - 0.09),
+      z: 0,
+      frontageWidth: depth,
+    };
+  }
+
+  const direction = zRoad < z ? -1 : 1;
+  return {
+    rotationY: direction < 0 ? 0 : Math.PI,
+    x: 0,
+    z: direction * Math.max(0.2, depth * 0.5 - 0.09),
+    frontageWidth: width,
+  };
+}
+
+function swVisualHeroSlice6TownPolishEnsureFacadeRig(group, frontage, height, ordinal, shellColor, roofColor) {
+  let rig = group.getObjectByName?.('TownPolishFacadeRig') || null;
+  if (!rig) {
+    rig = new THREE.Group();
+    rig.name = 'TownPolishFacadeRig';
+    rig.userData.swPresentationOnly = true;
+    group.add(rig);
+  }
+  rig.position.set(frontage.x, 0, frontage.z);
+  rig.rotation.y = frontage.rotationY;
+
+  const faceWidth = Math.max(4.2, Math.min(frontage.frontageWidth * 0.86, 11.5));
+  const archetype = ordinal % 5;
+  const signPalette = ['#c69a55', '#9d5f48', '#57777a', '#b4a16d', '#765f72'];
+
+  let falseFront = rig.getObjectByName?.('SWVisualSlice6MainStreetFalseFront') || null;
+  if (!falseFront) {
+    falseFront = new THREE.Mesh(
+      swVisualHeroSlice6TownPolishGableGeometry(faceWidth * (archetype === 0 ? 0.92 : 0.62), 0.18, Math.max(1.25, height * 0.085)),
+      new THREE.MeshStandardMaterial({ color: shellColor, roughness: 0.90, metalness: 0.01 }),
+    );
+    falseFront.name = 'SWVisualSlice6MainStreetFalseFront';
+    falseFront.castShadow = true;
+    falseFront.receiveShadow = true;
+    falseFront.userData.swPresentationOnly = true;
+    rig.add(falseFront);
+  }
+  falseFront.position.set(0, height + 0.08, -0.08);
+
+  let awning = rig.getObjectByName?.('SWVisualSlice6MainStreetAwning') || null;
+  if (!awning) {
+    awning = new THREE.Mesh(
+      new THREE.BoxGeometry(faceWidth * (archetype === 3 ? 0.84 : 0.64), 0.18, archetype === 3 ? 1.45 : 1.08),
+      new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.82, metalness: 0.04 }),
+    );
+    awning.name = 'SWVisualSlice6MainStreetAwning';
+    awning.castShadow = false;
+    awning.receiveShadow = true;
+    awning.userData.swPresentationOnly = true;
+    rig.add(awning);
+  }
+  awning.position.set(archetype === 4 ? -faceWidth * 0.12 : 0, Math.min(height * 0.23, 3.6), -0.56);
+  awning.rotation.x = -0.08;
+
+  if (ordinal < 8) {
+    let signboard = rig.getObjectByName?.('TownPolishSignboard') || null;
+    if (!signboard) {
+      signboard = new THREE.Mesh(
+        new THREE.BoxGeometry(faceWidth * (archetype === 0 ? 0.44 : 0.34), archetype === 1 ? 0.92 : 0.68, 0.18),
+        new THREE.MeshStandardMaterial({ color: signPalette[archetype], roughness: 0.74, metalness: 0.02 }),
+      );
+      signboard.name = 'TownPolishSignboard';
+      signboard.castShadow = false;
+      signboard.receiveShadow = true;
+      signboard.userData.swPresentationOnly = true;
+      rig.add(signboard);
+    }
+    signboard.position.set((ordinal % 2 ? -1 : 1) * faceWidth * 0.16, Math.min(height * 0.31, 4.7), -0.24);
+
+    let windowBand = rig.getObjectByName?.('TownPolishWindowBand') || null;
+    if (!windowBand) {
+      windowBand = new THREE.Mesh(
+        new THREE.BoxGeometry(faceWidth * 0.72, archetype === 2 ? 1.55 : 1.22, 0.12),
+        new THREE.MeshStandardMaterial({
+          color: '#263f47', roughness: 0.28, metalness: 0.08,
+          emissive: '#0c181d', emissiveIntensity: 0.045,
+          transparent: true, opacity: 0.88,
+        }),
+      );
+      windowBand.name = 'TownPolishWindowBand';
+      windowBand.castShadow = false;
+      windowBand.receiveShadow = true;
+      windowBand.userData.swPresentationOnly = true;
+      rig.add(windowBand);
+    }
+    windowBand.position.set(0, Math.min(height * 0.12, 2.15), -0.20);
+
+    let door = rig.getObjectByName?.('TownPolishDoor') || null;
+    if (!door) {
+      door = new THREE.Mesh(
+        new THREE.BoxGeometry(0.92, 1.85, 0.13),
+        new THREE.MeshStandardMaterial({ color: '#443f38', roughness: 0.86, metalness: 0.01 }),
+      );
+      door.name = 'TownPolishDoor';
+      door.castShadow = false;
+      door.receiveShadow = true;
+      door.userData.swPresentationOnly = true;
+      rig.add(door);
+    }
+    door.position.set((ordinal % 2 ? 1 : -1) * faceWidth * 0.30, 0.95, -0.22);
+  }
+
+  return rig;
+}
+
 function swVisualHeroSlice6TownPolishStyleMainStreet(storefront) {
   const targetList = typeof targets !== 'undefined' && Array.isArray(targets) ? targets : [];
   if (!storefront || !targetList.length) return 0;
   const centerX = Number(storefront.x);
   const centerZ = Number(storefront.z);
-  const shellPalette = ['#a49b89', '#9ca58f', '#aa9079', '#8d9997', '#b0a58f'];
-  const roofPalette = ['#484c4b', '#524841', '#465158', '#5a5047'];
+  const shellPalette = ['#9a765f', '#80908b', '#a8896f', '#7d8d95', '#a69a79'];
+  const roofPalette = ['#404947', '#514741', '#3e4d55', '#5b4b40', '#464b50'];
+  const footprintProfiles = [
+    { x: 0.78, z: 0.92, y: 0.90 },
+    { x: 0.92, z: 0.74, y: 1.00 },
+    { x: 0.84, z: 0.84, y: 0.94 },
+    { x: 0.72, z: 0.94, y: 0.82 },
+    { x: 0.88, z: 0.78, y: 1.04 },
+  ];
   let rooflines = 0;
   let compressed = 0;
+  let roadFacing = 0;
+  let varied = 0;
+  let detailed = 0;
 
   targetList
-    .map((target) => ({
-      target,
-      distance: Math.hypot(Number(target?.x) - centerX, Number(target?.z) - centerZ),
-    }))
-    .filter((entry) => entry.distance <= 156)
+    .map((target) => ({ target, distance: Math.hypot(Number(target?.x) - centerX, Number(target?.z) - centerZ) }))
+    .filter((entry) => entry.distance <= 132)
     .sort((a, b) => a.distance - b.distance)
     .forEach((entry, ordinal) => {
       const target = entry.target;
@@ -92,75 +230,59 @@ function swVisualHeroSlice6TownPolishStyleMainStreet(storefront) {
       const width = Number(parameters.width || 0);
       const height = Number(parameters.height || 0);
       const depth = Number(parameters.depth || 0);
-      if (!base.geometry?.type?.includes('Box') || width < 7 || depth < 7 || height < 13) return;
+      if (!base.geometry?.type?.includes('Box') || width < 7 || depth < 7 || height < 10) return;
 
-      if (!group.userData.swSlice6TownPolishBaseScaleY) {
-        group.userData.swSlice6TownPolishBaseScaleY = Number(group.scale.y) || 1;
-      }
-      const heightScale = height >= 24 ? 0.52 : (height >= 18 ? 0.64 : 0.76);
+      if (!group.userData.swSlice6TownPolishBaseScaleX) group.userData.swSlice6TownPolishBaseScaleX = Number(group.scale.x) || 1;
+      if (!group.userData.swSlice6TownPolishBaseScaleY) group.userData.swSlice6TownPolishBaseScaleY = Number(group.scale.y) || 1;
+      if (!group.userData.swSlice6TownPolishBaseScaleZ) group.userData.swSlice6TownPolishBaseScaleZ = Number(group.scale.z) || 1;
+
+      const profile = footprintProfiles[ordinal % footprintProfiles.length];
+      const heightScaleBase = height >= 24 ? 0.52 : (height >= 18 ? 0.64 : 0.76);
+      const heightScale = THREE.MathUtils.clamp(heightScaleBase * profile.y, 0.42, 0.78);
+      group.scale.x = group.userData.swSlice6TownPolishBaseScaleX * profile.x;
       group.scale.y = group.userData.swSlice6TownPolishBaseScaleY * heightScale;
+      group.scale.z = group.userData.swSlice6TownPolishBaseScaleZ * profile.z;
       group.userData.swSlice6TownHeightScale = heightScale;
+      group.userData.swSlice6TownFootprintScale = Object.freeze({ x: profile.x, z: profile.z });
       group.userData.swSlice6TownPolished = true;
+      group.userData.swSlice6BlocktownBreak = true;
       compressed += 1;
+      varied += 1;
 
       const facadeTexture = typeof swVisualHeroSlice3Texture === 'function'
-        ? swVisualHeroSlice3Texture(ordinal % 2 === 0 ? 'brick' : 'wood')
+        ? swVisualHeroSlice3Texture(ordinal % 3 === 1 ? 'wood' : 'brick')
         : null;
       swVisualHeroSlice6TownPolishSetMaterial(base.material, {
         map: facadeTexture,
         color: shellPalette[ordinal % shellPalette.length],
-        emissive: '#000000',
-        emissiveIntensity: 0,
-        roughness: 0.90,
-        metalness: 0.02,
+        emissive: '#000000', emissiveIntensity: 0, roughness: 0.90, metalness: 0.02,
       });
 
+      const frontage = swVisualHeroSlice6TownPolishFrontage(target, width, depth);
       const desiredWorldRoofHeight = height >= 22 ? 3.7 : 3.1;
       const localRoofHeight = desiredWorldRoofHeight / Math.max(0.45, heightScale);
       let roof = group.getObjectByName?.('SWVisualSlice6MainStreetGable') || null;
       if (!roof) {
         const geometry = swVisualHeroSlice6TownPolishGableGeometry(width * 0.90, depth * 0.90, localRoofHeight);
-        const material = new THREE.MeshStandardMaterial({
-          color: roofPalette[ordinal % roofPalette.length],
-          roughness: 0.88,
-          metalness: 0.04,
-        });
+        const material = new THREE.MeshStandardMaterial({ color: roofPalette[ordinal % roofPalette.length], roughness: 0.88, metalness: 0.04 });
         roof = new THREE.Mesh(geometry, material);
         roof.name = 'SWVisualSlice6MainStreetGable';
         roof.position.y = height + 0.18;
-        roof.rotation.y = ordinal % 3 === 1 ? Math.PI * 0.5 : 0;
         roof.castShadow = true;
         roof.receiveShadow = true;
         roof.userData.swPresentationOnly = true;
         group.add(roof);
       }
-      let falseFront = group.getObjectByName?.('SWVisualSlice6MainStreetFalseFront') || null;
-      if (!falseFront) {
-        falseFront = new THREE.Mesh(
-          swVisualHeroSlice6TownPolishGableGeometry(width * 0.54, 0.18, localRoofHeight * 1.12),
-          new THREE.MeshStandardMaterial({ color: shellPalette[(ordinal + 2) % shellPalette.length], roughness: 0.90, metalness: 0.01 }),
-        );
-        falseFront.name = 'SWVisualSlice6MainStreetFalseFront';
-        falseFront.position.set(0, height + 0.1, -(depth * 0.5 - 0.11));
-        falseFront.castShadow = true;
-        falseFront.receiveShadow = true;
-        falseFront.userData.swPresentationOnly = true;
-        group.add(falseFront);
-      }
-      let awning = group.getObjectByName?.('SWVisualSlice6MainStreetAwning') || null;
-      if (!awning) {
-        awning = new THREE.Mesh(
-          new THREE.PlaneGeometry(Math.min(width * 0.62, 5.4), Math.max(1.1, height * 0.075)),
-          new THREE.MeshStandardMaterial({ color: roofPalette[(ordinal + 1) % roofPalette.length], roughness: 0.82, metalness: 0.05, side: THREE.DoubleSide }),
-        );
-        awning.name = 'SWVisualSlice6MainStreetAwning';
-        awning.position.set(0, Math.min(height * 0.24, 3.4), -(depth * 0.5 - 0.09));
-        awning.rotation.x = -0.18;
-        awning.castShadow = false;
-        awning.receiveShadow = true;
-        awning.userData.swPresentationOnly = true;
-        group.add(awning);
-      }
+      roof.rotation.y = ordinal % 3 === 1 ? frontage.rotationY + Math.PI * 0.5 : frontage.rotationY;
+
+      swVisualHeroSlice6TownPolishEnsureFacadeRig(
+        group, frontage, height, ordinal,
+        shellPalette[(ordinal + 2) % shellPalette.length],
+        roofPalette[(ordinal + 1) % roofPalette.length],
+      );
+
+      roadFacing += 1;
+      if (ordinal < 8) detailed += 1;
       rooflines += 1;
       group.updateMatrixWorld?.(true);
     });
@@ -169,12 +291,15 @@ function swVisualHeroSlice6TownPolishStyleMainStreet(storefront) {
   swVisualHeroSlice6TownPolishState.compressedTallBuildingCount = compressed;
   swVisualHeroSlice6TownPolishState.falseFrontCount = rooflines;
   swVisualHeroSlice6TownPolishState.awningCount = rooflines;
+  swVisualHeroSlice6TownPolishState.roadFacingFacadeCount = roadFacing;
+  swVisualHeroSlice6TownPolishState.footprintVarietyCount = varied;
+  swVisualHeroSlice6TownPolishState.detailedStorefrontCount = detailed;
   return rooflines;
 }
 
 function swVisualHeroSlice6TownPolishStyleWaterTower() {
   const landmarkList = typeof landmarks !== 'undefined' && Array.isArray(landmarks) ? landmarks : [];
-  const waterTower = landmarkList.find((landmark) => landmark?.icon === '💧' || String(landmark?.name || '') === 'WATER TOWER') || null;
+  const waterTower = landmarkList.find((landmark) => landmark?.icon === '\u{1F4A7}' || String(landmark?.name || '') === 'WATER TOWER') || null;
   const group = waterTower?.meshData?.group;
   const base = waterTower?.meshData?.base;
   if (!group || !base || Boolean(waterTower?.destroyed)) {
@@ -185,12 +310,7 @@ function swVisualHeroSlice6TownPolishStyleWaterTower() {
 
   const metalMap = typeof swVisualHeroSlice3Texture === 'function' ? swVisualHeroSlice3Texture('metal') : null;
   swVisualHeroSlice6TownPolishSetMaterial(base.material, {
-    map: metalMap,
-    color: '#949b92',
-    emissive: '#000000',
-    emissiveIntensity: 0,
-    roughness: 0.78,
-    metalness: 0.22,
+    map: metalMap, color: '#949b92', emissive: '#000000', emissiveIntensity: 0, roughness: 0.78, metalness: 0.22,
   });
 
   let dressing = group.getObjectByName?.('SWVisualSlice6WaterTowerStandpipe') || null;
@@ -198,32 +318,23 @@ function swVisualHeroSlice6TownPolishStyleWaterTower() {
     dressing = new THREE.Group();
     dressing.name = 'SWVisualSlice6WaterTowerStandpipe';
     dressing.userData.swPresentationOnly = true;
-
     const steelMaterial = new THREE.MeshStandardMaterial({ color: '#9aa19a', roughness: 0.74, metalness: 0.25, map: metalMap });
     const darkSteelMaterial = new THREE.MeshStandardMaterial({ color: '#59615f', roughness: 0.76, metalness: 0.24 });
-
-    const dome = new THREE.Mesh(
-      new THREE.SphereGeometry(4.18, 14, 7, 0, Math.PI * 2, 0, Math.PI * 0.5),
-      steelMaterial,
-    );
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(4.18, 14, 7, 0, Math.PI * 2, 0, Math.PI * 0.5), steelMaterial);
     dome.position.y = 17.0;
     dome.castShadow = true;
     dome.receiveShadow = true;
     dressing.add(dome);
-
     [4.4, 8.7, 13.0, 16.6].forEach((y) => {
       const band = new THREE.Mesh(new THREE.TorusGeometry(4.23, 0.09, 6, 24), darkSteelMaterial);
       band.rotation.x = Math.PI * 0.5;
       band.position.y = y;
-      band.castShadow = false;
       dressing.add(band);
     });
-
     const ladderMaterial = new THREE.MeshStandardMaterial({ color: '#434b49', roughness: 0.82, metalness: 0.22 });
     [-0.27, 0.27].forEach((z) => {
       const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 12.5, 6), ladderMaterial);
       rail.position.set(4.29, 8.1, z);
-      rail.castShadow = false;
       dressing.add(rail);
     });
     const rungCount = 8;
@@ -243,11 +354,71 @@ function swVisualHeroSlice6TownPolishStyleWaterTower() {
     waterTower.meshData.beacon.scale.setScalar(0.68);
     waterTower.meshData.beacon.material?.color?.set?.('#c69b54');
   }
-
   if (waterTower.meshData) waterTower.meshData.color = '#949b92';
   swVisualHeroSlice6TownPolishState.waterTowerStyled = true;
   swVisualHeroSlice6TownPolishState.waterTowerBaseColor = base.material?.color?.getHexString ? `#${base.material.color.getHexString()}` : null;
   return true;
+}
+
+function swVisualHeroSlice6TownPolishRetaperStorm() {
+  if (!swVisualHeroSlice6StormRoot?.children) return false;
+  let shellCount = 0;
+  let wispCount = 0;
+
+  swVisualHeroSlice6StormRoot.children.forEach((object, objectIndex) => {
+    if (object.name?.startsWith('SWVisualSlice6StormShell')) {
+      const geometry = object.geometry;
+      const position = geometry?.getAttribute?.('position');
+      if (!position?.count) return;
+      if (geometry.userData.swSlice6BlocktownRetapered !== true) {
+        let minY = Infinity;
+        let maxY = -Infinity;
+        for (let index = 0; index < position.count; index += 1) {
+          minY = Math.min(minY, position.getY(index));
+          maxY = Math.max(maxY, position.getY(index));
+        }
+        const span = Math.max(0.001, maxY - minY);
+        for (let index = 0; index < position.count; index += 1) {
+          const x = position.getX(index);
+          const y = position.getY(index);
+          const z = position.getZ(index);
+          const mix = THREE.MathUtils.clamp((y - minY) / span, 0, 1);
+          const angle = Math.atan2(z, x);
+          const upperTaper = 0.96 - mix * (0.30 + objectIndex * 0.025);
+          const irregular = 1 + Math.sin(angle * 2.4 + mix * 5.2 + objectIndex) * 0.055;
+          const shearX = Math.sin(mix * 3.7 + objectIndex * 1.4) * mix * 1.35;
+          const shearZ = Math.cos(mix * 4.1 + objectIndex * 0.8) * mix * 1.05;
+          position.setXYZ(index, x * upperTaper * irregular + shearX, y, z * upperTaper * (2 - irregular) + shearZ);
+        }
+        position.needsUpdate = true;
+        geometry.computeVertexNormals();
+        geometry.userData.swSlice6BlocktownRetapered = true;
+      }
+      object.userData.baseOpacity = Math.min(Number(object.userData.baseOpacity || 0.08), 0.078 - objectIndex * 0.009);
+      if (object.material) {
+        object.material.opacity = object.userData.baseOpacity;
+        object.material.color?.set?.(objectIndex === 0 ? '#263a3f' : (objectIndex === 1 ? '#394d51' : '#59676a'));
+        object.material.needsUpdate = true;
+      }
+      shellCount += 1;
+      return;
+    }
+
+    if (object.name?.startsWith('SWVisualSlice6EdgeWisp')) {
+      if (object.userData.swSlice6BlocktownRetapered !== true) {
+        object.userData.radius = Number(object.userData.radius || 8) * 0.72;
+        object.scale.x *= 0.84;
+        object.scale.y *= 1.22;
+        object.userData.swSlice6BlocktownRetapered = true;
+      }
+      if (object.material) object.material.opacity = Math.min(0.16, Number(object.material.opacity || 0.12) * 1.08);
+      wispCount += 1;
+    }
+  });
+
+  swVisualHeroSlice6TownPolishState.stormRetaperedShellCount = shellCount;
+  swVisualHeroSlice6TownPolishState.stormRetaperedWispCount = wispCount;
+  return shellCount > 0;
 }
 
 function swVisualHeroSlice6TownPolishApply() {
@@ -256,6 +427,7 @@ function swVisualHeroSlice6TownPolishApply() {
     const storefront = applied.find((entry) => entry.assetId === 'structure.storefront.v1') || null;
     swVisualHeroSlice6TownPolishStyleMainStreet(storefront);
     swVisualHeroSlice6TownPolishStyleWaterTower();
+    swVisualHeroSlice6TownPolishRetaperStorm();
     swVisualHeroSlice6TownPolishState.lastError = null;
     return true;
   } catch (error) {
@@ -263,6 +435,50 @@ function swVisualHeroSlice6TownPolishApply() {
     return false;
   }
 }
+
+const swVisualHeroSlice6TownPolishStormBuildBase = swVisualHeroSlice6BuildStormSilhouette;
+swVisualHeroSlice6BuildStormSilhouette = function swVisualHeroSlice6BuildStormSilhouetteBreakBlocktown(...args) {
+  const result = swVisualHeroSlice6TownPolishStormBuildBase.apply(this, args);
+  if (result) swVisualHeroSlice6TownPolishRetaperStorm();
+  return result;
+};
+
+const swVisualHeroSlice6TownPolishStormTuneBase = swVisualHeroSlice6TuneInheritedStorm;
+swVisualHeroSlice6TuneInheritedStorm = function swVisualHeroSlice6TuneInheritedStormBreakBlocktown(seconds) {
+  swVisualHeroSlice6TownPolishStormTuneBase(seconds);
+  const neonSelected = typeof swVisualHeroSlice5IsNeonSelected === 'function'
+    ? swVisualHeroSlice5IsNeonSelected()
+    : (typeof neonFunnelUnlocked !== 'undefined' && neonFunnelUnlocked === true);
+  if (neonSelected) return;
+
+  if (swVisualHeroSlice4StormRoot?.children) {
+    swVisualHeroSlice4StormRoot.children.forEach((object) => {
+      if (!object.name?.startsWith('SWVisualSlice4VolumeShell') || !object.material) return;
+      const base = Number(object.userData.baseOpacity || 0.14);
+      object.material.opacity = Math.min(Number(object.material.opacity || base), base * 0.27);
+      object.material.needsUpdate = true;
+    });
+  }
+  if (typeof funnelMat !== 'undefined' && funnelMat) {
+    funnelMat.opacity = Math.min(Number(funnelMat.opacity || 0.12), 0.105);
+    funnelMat.needsUpdate = true;
+  }
+  if (typeof outerFunnelMat !== 'undefined' && outerFunnelMat) {
+    outerFunnelMat.opacity = Math.min(Number(outerFunnelMat.opacity || 0.05), 0.045);
+    outerFunnelMat.needsUpdate = true;
+  }
+  const middleVortex = scene?.getObjectByName?.('ProductionMiddleVortex');
+  if (middleVortex?.material) {
+    middleVortex.material.opacity = 0.035;
+    middleVortex.material.needsUpdate = true;
+  }
+  const darkCore = scene?.getObjectByName?.('ProductionDarkCore');
+  if (darkCore?.material) {
+    darkCore.material.opacity = 0.15;
+    darkCore.material.color?.set?.('#1c2b31');
+    darkCore.material.needsUpdate = true;
+  }
+};
 
 const swVisualHeroSlice6TownPolishRefreshBase = swVisualHeroSlice6RefreshWorld;
 swVisualHeroSlice6RefreshWorld = function swVisualHeroSlice6RefreshWorldWithTownPolish(...args) {
@@ -280,6 +496,7 @@ swVisualSnapshot = function swVisualSnapshotWithSlice6TownPolish() {
       ...(base.worldIdentity || {}),
       townPolish: Object.freeze({
         version: THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_VERSION,
+        breakBlocktownVersion: THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_VERSION,
         profile: swVisualHeroSlice6TownPolishState.profile,
         waterTowerStyled: swVisualHeroSlice6TownPolishState.waterTowerStyled,
         waterTowerBaseColor: swVisualHeroSlice6TownPolishState.waterTowerBaseColor,
@@ -287,10 +504,16 @@ swVisualSnapshot = function swVisualSnapshotWithSlice6TownPolish() {
         compressedTallBuildingCount: swVisualHeroSlice6TownPolishState.compressedTallBuildingCount,
         falseFrontCount: swVisualHeroSlice6TownPolishState.falseFrontCount,
         awningCount: swVisualHeroSlice6TownPolishState.awningCount,
+        roadFacingFacadeCount: swVisualHeroSlice6TownPolishState.roadFacingFacadeCount,
+        footprintVarietyCount: swVisualHeroSlice6TownPolishState.footprintVarietyCount,
+        detailedStorefrontCount: swVisualHeroSlice6TownPolishState.detailedStorefrontCount,
+        stormRetaperedShellCount: swVisualHeroSlice6TownPolishState.stormRetaperedShellCount,
+        stormRetaperedWispCount: swVisualHeroSlice6TownPolishState.stormRetaperedWispCount,
         presentationOnly: true,
       }),
     }),
     heroSlice6TownPolishVersion: THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_VERSION,
+    heroSlice6BlocktownBreakVersion: THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_VERSION,
     heroSlice6TownPolishLastError: swVisualHeroSlice6TownPolishState.lastError,
   });
 };
@@ -301,6 +524,7 @@ globalThis.__SW_THREEJS_VISUAL_FOUNDATION__ = Object.freeze({
   getSnapshot: swVisualSnapshot,
   refreshHeroSlice6: swVisualHeroSlice6RefreshWorld,
   heroSlice6TownPolishVersion: THREEJS_VISUAL_HERO_SLICE6_TOWN_POLISH_VERSION,
+  heroSlice6BlocktownBreakVersion: THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_VERSION,
 });
 
 Promise.resolve().then(() => swVisualHeroSlice6TownPolishApply());
