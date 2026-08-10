@@ -7,6 +7,7 @@ This file exists so project direction survives short chat windows. Product ident
 
 ## Operating law
 
+- The game is **Severe Weather Warning**. Player-facing branding uses the full title unless a documented platform constraint requires an explicitly approved short label.
 - GitHub is durable project memory.
 - Owner feedback may be qualitative. The Director translates it into game-design and implementation contracts.
 - The owner is not the branch/QA/task coordinator.
@@ -46,6 +47,8 @@ Blocking notes:
 4. Owner wants a genuine secret Cow Level. The Hart Farm encounter should unlock it.
 5. Game needs stronger replayability and commercial-mobile presentation.
 6. Quality target is a real video game that is exciting to show people, not merely a demonstration of Three.js or AI-generated code.
+7. Newspaper presentation should become a goofy recurring local-news UI language across opening, storm select, **UNLEASH STORM**, and end-of-run results.
+8. GitHub Pages PWA installability is desired to make phone playtesting and sharing feel more app-like without replacing Android device checkpoints.
 
 These notes are product truth for Stage 2B.
 
@@ -61,9 +64,11 @@ Director docs branch: `agent/director-stage2b-game-direction`
 
 First-batch coordination base:
 
-`ca7ec1a9dcdc4c6ca8d73304fd99108385f29f39`
+`82e6c6fbeffffc3ee929c00260f924e36c70de28`
 
 That coordination base descends directly from public QA #29 source `b501737e71e61b979901d4899d969390aa37b1f4` and adds Stage 2B direction/docs only. It does not alter gameplay/runtime behavior.
+
+The Director docs branch may continue accumulating later product decisions. Do not silently move already-prepared worker branches off the exact first-batch coordination base merely because Director documentation advanced afterward.
 
 Acceptance question:
 
@@ -122,7 +127,37 @@ Goal:
 
 ## Next queue after first batch
 
-Do not launch these until first-batch evidence teaches us what should be kept.
+Do not launch these until first-batch evidence teaches us what should be kept and the Director assigns an exact base that avoids file-ownership conflicts.
+
+### SW-UI-001: Newspaper presentation system
+
+Issue: #65
+State: queued after first-batch review, especially after GAME-002 because menu/results wiring may overlap.
+
+Product law:
+
+- any newspaper shown in-game has a goofy local-paper/tabloid vibe;
+- storm-type selection uses the newspaper language;
+- **UNLEASH STORM** becomes a newspaper-native launch action rather than a generic button;
+- the end-of-run scorecard is laid out like a fresh newspaper edition reporting the run;
+- opening newspapers use the same identity family;
+- all player-facing title/branding uses **Severe Weather Warning**.
+
+Target outcome: beginning and end of a run feel like connected editions of the same ridiculous local-news universe, with the final scorecard strong enough to be screenshot-worthy.
+
+### SW-PWA-001: Installable GitHub Pages app shell
+
+Issue: #64
+State: queued after SW-QA-002 because build/deployment files may overlap.
+
+Goal:
+
+- make the GitHub Pages build installable as **Severe Weather Warning**;
+- home-screen icon and standalone app-like launch;
+- correct `/Severe-Warning/` scope/start path behavior;
+- update/cache strategy that cannot strand QA testers on stale builds;
+- preserve exact build identity and full production QA authority;
+- retain Android APK/device checkpoints for actual physical acceptance.
 
 ### Destruction and game-feel pass
 
@@ -163,7 +198,9 @@ Focus on moments that make the game feel shippable:
 - results-screen motivation;
 - readable objective presentation;
 - sound/UI transitions;
-- visual consistency across cinematic, gameplay, and results.
+- visual consistency across cinematic, gameplay, newspaper presentation, and results.
+
+SW-UI-001 (#65) now owns the first concrete newspaper identity slice of this broader pass.
 
 ## Existing accepted/protected features
 
@@ -190,6 +227,14 @@ The desired folklore is:
 
 > "Wait, you haven't unlocked the cow level yet?"
 
+## Newspaper product law
+
+Newspaper presentation is part of the game's recurring identity.
+
+Any newspaper should feel goofy, local, authored, and unmistakably part of the Severe Weather Warning universe. Storm selection, **UNLEASH STORM**, and results should become connected newspaper-style presentation surfaces rather than isolated generic UI panels.
+
+Humor may use Moo Brew ads, fake civic seriousness, weather bureaucracy, bovine/legal notices, local headlines, and absurd statistics, but readability and primary actions always win.
+
 ## Director autonomy decision
 
 The owner has explicitly asked the Director to take the reins on game-development translation.
@@ -207,9 +252,11 @@ and have the Director turn that into concrete design, worker scope, sequencing, 
 
 Do not make the owner pre-specify technical implementation merely because the feedback is qualitative.
 
-## Android
+## Android and PWA
 
 Android remains opt-in for deliberate physical-device checkpoints. Browser approval never silently becomes device acceptance.
+
+PWA installability is a browser-first convenience and product-feel improvement, not a declaration of Android acceptance.
 
 ## Integration law
 
