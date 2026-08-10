@@ -1,0 +1,124 @@
+name: Auto-promote green integration candidate to QA Pages
+
+on:
+  pull_request:
+    branches:
+      - agent/threejs-hero-slice5-rainbow-cow-level
+    types: [opened, synchronize, reopened]
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  wait-validate-deploy:
+    name: Wait for sealed integration candidate then publish QA
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'agent/sw-int-') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Check out exact integration source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Wait for exact Hero Slice workflow result
+        id: source-run
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 4200))
+          while (( SECONDS < deadline )); do
+            response="$(curl --fail --silent --show-error --location \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GITHUB_TOKEN" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/threejs-hero-slice6.yml/runs?event=pull_request&head_sha=$SOURCE_COMMIT&per_page=20")"
+
+            run="$(printf '%s' "$response" | jq -c --arg sha "$SOURCE_COMMIT" \
+              '.workflow_runs | map(select(.head_sha == $sha)) | sort_by(.created_at) | reverse | .[0] // empty')"
+
+            if [[ -n "$run" ]]; then
+              status="$(printf '%s' "$run" | jq -r '.status')"
+              conclusion="$(printf '%s' "$run" | jq -r '.conclusion // empty')"
+              run_id="$(printf '%s' "$run" | jq -r '.id')"
+              run_number="$(printf '%s' "$run" | jq -r '.run_number')"
+              echo "Hero Slice run #$run_number ($run_id) status=$status conclusion=${conclusion:-pending}"
+
+              if [[ "$status" == "completed" ]]; then
+                if [[ "$conclusion" != "success" ]]; then
+                  echo "Exact Hero Slice run #$run_number failed with conclusion '$conclusion'. QA promotion blocked." >&2
+                  exit 1
+                fi
+                echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+                echo "run_number=$run_number" >> "$GITHUB_OUTPUT"
+                break
+              fi
+            else
+              echo "Waiting for Hero Slice run at $SOURCE_COMMIT to appear..."
+            fi
+
+            sleep 15
+          done
+
+          if [[ -z "${run_id:-}" ]]; then
+            echo "Timed out waiting for exact Hero Slice run at $SOURCE_COMMIT." >&2
+            exit 1
+          fi
+
+      - name: Download exact sealed candidate
+        uses: actions/download-artifact@v7
+        with:
+          name: severe-weather-threejs-hero-slice6-web-${{ steps.source-run.outputs.run_number }}
+          run-id: ${{ steps.source-run.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: candidate
+
+      - name: Validate exact publisher contract
+        shell: bash
+        env:
+          EXPECTED_WORKFLOW_RUN_ID: ${{ steps.source-run.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          node --check scripts/qa-candidate-contract.mjs
+          node scripts/qa-candidate-contract.mjs validate \
+            --root candidate --manifest package-manifest.json \
+            --expected-source "$SOURCE_COMMIT" \
+            --expected-workflow-run-id "$EXPECTED_WORKFLOW_RUN_ID"
+          test "$(tr -d '\n' < candidate/SOURCE_COMMIT.txt)" = "$SOURCE_COMMIT"
+          test "$(tr -d '\n' < candidate/WORKFLOW_RUN_ID.txt)" = "$EXPECTED_WORKFLOW_RUN_ID"
+          test -s candidate/web-preview/index.html
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload validated QA root artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: candidate/web-preview
+
+      - name: Deploy exact candidate to QA root
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Show deployed QA URL
+        run: |
+          echo "QA URL: ${{ steps.deployment.outputs.page_url }}"
