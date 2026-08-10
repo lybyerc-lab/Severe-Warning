@@ -1,282 +1,212 @@
 # Severe Weather Warning Active Production Slate
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 Status: canonical near-term work queue
 
-This file exists so project direction survives short chat windows. Chat may explore ideas freely, but durable scope, locks, queues, assignments, and parked ideas belong here or in another canonical repo document.
+This file exists so project direction survives short chat windows. Product identity lives in `Docs/GAME_DIRECTOR.md`. Chat is temporary working context.
 
 ## Operating law
 
-- GitHub is the durable project memory. Chat is temporary working context.
-- New ideas are captured without silently replacing active work.
-- Meaningful ideas must end up as **active**, **queued**, **parked**, or **rejected**. Nothing important should be left only in chat.
-- A queued or parked idea is not implementation approval. It is preserved inventory.
-- Green CI is engineering evidence, not visual acceptance.
-- QA-root browser testing is the default rapid human iteration loop.
-- Android APK generation is a deliberate device-checkpoint action, not a requirement for every visual iteration.
-- Multi-agent work follows `AGENTS.md` and `Docs/MULTI_AGENT_OPERATING_MODEL.md`.
-- One worker, one bounded task, one writable branch/worktree.
+- GitHub is durable project memory.
+- Owner feedback may be qualitative. The Director translates it into game-design and implementation contracts.
+- The owner is not the branch/QA/task coordinator.
+- Green CI is engineering evidence, not game-quality acceptance.
+- Prototype gear is for answering uncertain visual/game-feel questions quickly.
+- Production gear remains exact-source, sealed, regression-gated, integration-reviewed, and owner-playtested.
+- One worker, one task, one writable branch/worktree.
 
-## Current live QA checkpoint
+## Current public QA checkpoint
 
 Public QA root:
 
 `https://lybyerc-lab.github.io/Severe-Warning/`
 
-Current deployed gameplay candidate:
+Exact deployed Stage 2A integration candidate:
 
-- Hero Slice 6 Browser QA #18
-- source `242cb92451073acf7b193a5baa8c60c551335b7a`
-- source branch `agent/threejs-hero-slice6-world-identity-storm-silhouette`
-- exact web artifact `severe-weather-threejs-hero-slice6-web-18`
-- Pages promotion Run #82 completed successfully
-- status: playable QA candidate, **not owner visual-accepted**, not physical Android accepted
+- PR #59
+- Hero Slice Run #29
+- source `b501737e71e61b979901d4899d969390aa37b1f4`
+- artifact `severe-weather-threejs-hero-slice6-web-29`
+- Pages publisher Run #84
 
-### Owner live-QA notes, 2026-08-09
+Status: technically green and publicly playable, but **not visual/product accepted**.
 
-Captured from direct phone playtesting of the QA root:
+## QA #29 owner playtest truth
 
-1. **Utility/power-line poles must be moved out of streets.** The road-first spatial law now explicitly extends to visible utility poles. This is owned by `SW-WORLD-001`; visible poles must respect protected road/shoulder corridors and receive deterministic intrusion QA.
-2. **Cow cam should linger roughly 1-2 seconds longer.** This is an explicitly authorized bounded gameplay/presentation timing adjustment in `SW-GAME-001`.
-3. **Grid Zap should hit harder and travel farther down connected power lines.** This is an explicitly authorized bounded gameplay tuning request in `SW-GAME-001`. The worker must document current and proposed damage/chain/range/cap values and preserve a bounded connected-network rule.
+Positive:
 
-These notes do not authorize unrelated gameplay retuning.
+- a full round was fun;
+- core tornado-control/destruction gameplay remains worth protecting.
 
-## Parallel worker assignments
+Blocking notes:
 
-Coordination base SHA for the first parallel batch:
+1. Default tornado reads like **"attack bubbles"**.
+2. Graphics feel regressed in some areas.
+3. Existing Hart Farm cow-ring Easter egg has no clear gameplay purpose.
+4. Owner wants a genuine secret Cow Level. The Hart Farm encounter should unlock it.
+5. Game needs stronger replayability and commercial-mobile presentation.
+6. Quality target is a real video game that is exciting to show people, not merely a demonstration of Three.js or AI-generated code.
 
-`b9cd567173761adf1484460ef8ca4b1eede56bde`
+These notes are product truth for Stage 2B.
 
-Director/ops branch:
+## Active phase
 
-`agent/director-multi-agent-ops`
+# Stage 2B: Make It Feel Like a Game
 
-### SW-WORLD-001
+Umbrella issue: #60
 
-Issue: #46  
-Branch: `agent/sw-world-001-slice6-finish`  
-State: ready for worker launch
+North star: `Docs/GAME_DIRECTOR.md`
 
-Goal: finish the bounded Hero Slice 6 visual acceptance pass without weakening the road law or gameplay protections.
+Acceptance question:
 
-Owns:
+> Does the candidate look and play materially more like a finished, replayable commercial mobile game than QA #29?
 
-- Slice 6 world/storm presentation;
-- Main Street massing cleanup;
-- municipal water-tower presentation;
-- default storm silhouette cleanup;
-- road-first utility-pole placement so visible poles do not occupy protected streets;
-- bounded Slice 6 verifier/visual-QA adjustments required by the implementation.
+If the answer requires an explanation of where to look, the change probably did not move far enough.
 
-Does not own Grid Zap tuning, QA workflow architecture, or cinematic foundation.
+## First parallel batch
 
-### SW-QA-001
+All first-batch workers start from exact QA #29 source:
 
-Issue: #47  
-Branch: `agent/sw-qa-001-throughput`  
-State: ready for worker launch
+`b501737e71e61b979901d4899d969390aa37b1f4`
 
-Goal: reduce iteration wall-clock time without weakening evidence.
+### SW-WORLD-003: Storm hero recovery
 
-Owns:
+Issue: #61
+Branch: `agent/sw-world-003-storm-hero-recovery`
+State: ready for WORLD Codex launch
 
-- build-once/test-many workflow topology;
-- safe reuse of immutable Slice 5 reference output;
-- parallel independent browser QA;
-- docs/task-only heavy-CI suppression;
-- manifest-driven QA-root publisher design;
-- preservation of browser-first / opt-in Android cadence.
+Goal:
 
-Does not own visual runtime code.
+- remove the mobile "attack bubbles" read;
+- recover the tornado as one connected atmospheric hero mass;
+- audit graphics regression against stronger earlier visual evidence;
+- preserve gameplay authority.
 
-### SW-CIN-001
+Director visual bias: ragged condensation-column/wedge hybrid, continuous mass, streak structure, dark inner core, lower debris sheath, strong ground attachment, broken cloud-base transition, no visible effect primitives.
 
-Issue: #48  
-Branch: `agent/sw-cin-001-moo-brew-foundation`  
-State: ready for worker launch
+### SW-GAME-002: Real Moo Level path
 
-Goal: build the isolated Three.js actor/prop/timeline foundation for the Moo Brew fence/water-cooler character beat.
+Issue: #62
+Branch: `agent/sw-game-002-moo-level-unlock`
+State: ready for GAME Codex launch
 
-Owns:
+Goal:
 
-- lightweight bipedal Cow 17 presentation rig;
-- Moo Brew cup prop;
-- conversational chicken presentation rigs;
-- fence composition helper;
-- deterministic shot/timeline foundation;
-- cinematic-only static/browser QA framing.
+- convert Hart Farm cow ring into a clear short unlock challenge;
+- persist `mooLevelUnlocked`;
+- reveal a secret MOO LEVEL node;
+- build a dedicated roughly 90-second Moo County Fair bovine score-attack bonus stage;
+- make cow relocation/airtime and a MOO METER meaningful;
+- provide a replayable best score and clear return path.
 
-Does not integrate the full opening into gameplay yet and does not own warning-clock/gameplay authority.
+This is an intentional bounded reopening of secret-level/progression authority. Unrelated gameplay remains protected.
 
-### SW-GAME-001
+### SW-QA-002: Rapid prototype evidence lane
 
-Issue: #50  
-Branch: `agent/sw-game-001-cowcam-gridzap-polish`  
-State: **queued; Director file-ownership overlap check required before launch**
+Issue: #63
+Branch: `agent/sw-qa-002-rapid-prototype-lane`
+State: ready for QA Codex launch
 
-Goal: implement only the explicitly owner-authorized gameplay feel changes from live QA:
+Goal:
 
-- extend the existing player-visible Cow 17 camera moment by roughly 1-2 seconds;
-- increase Grid Zap damage;
-- extend Grid Zap farther along connected power-line infrastructure while keeping a bounded maximum and correct connectivity.
+- create a fast exact-source build/smoke/screenshot/web-artifact lane for prototypes;
+- materially shorten the time from idea to visual evidence;
+- give prototype evidence zero production authority;
+- preserve all existing full sealed QA and Pages-publisher contracts.
 
-Before this worker edits anything, locate exact utility/network, Grid Zap, and Cow-camera functions. If utility-pole placement/network data overlaps files/functions owned by `SW-WORLD-001`, the Director must sequence or re-scope the tasks rather than allowing concurrent writes.
+## Next queue after first batch
 
-No other gameplay tuning is authorized by this task.
+Do not launch these until first-batch evidence teaches us what should be kept.
 
-## Active product milestone
+### Destruction and game-feel pass
 
-### Hero Slice 6: World Identity + Storm Silhouette
+Planned owner: GAME plus presentation support.
 
-Production branch: `agent/threejs-hero-slice6-world-identity-storm-silhouette`  
-PR: #45  
-Stage: 2A
+Focus:
 
-Current goals:
+- stronger impact/readability;
+- destruction-stage anatomy;
+- directional debris and dust;
+- restrained camera impulse;
+- sound/music punctuation;
+- combo/score feedback;
+- escalating spectacle without visual clutter.
 
-- make roads own protected corridors and keep buildings/fences/utility poles out of street space;
-- maintain `curb -> sidewalk -> verge -> lot -> building` hierarchy;
-- eliminate square-on-square prototype massing;
-- keep the municipal water tower reading as a believable muted landmark rather than a primitive;
-- reduce naked tall rectangular Main Street silhouettes with restrained small-town rooflines;
-- keep the default tornado irregular, storm-like, and visually dominant without becoming a clean cone;
-- preserve the fun baseline except for separately documented owner-authorized bounded gameplay tuning.
+The task should preserve ordinary-contact destruction authority unless a specific behavior is deliberately reopened.
 
-Acceptance remains visual as well as automated. The current live QA root is for owner/playtester feedback, not a declaration that Slice 6 is visually finished.
+### Replay loop and progression pass
 
-## Queued / parallel foundation
+Build on real playtest lessons from the Moo Level rather than inventing a detached meta-game.
 
-### Opening Cinematic: Moo Brew Touchdown
+Candidate systems:
 
-Direction is locked unless explicitly changed by the owner. `SW-CIN-001` may build isolated foundations in parallel, but full production integration waits for Director review and the appropriate world checkpoint.
+- score mastery and challenge routes;
+- rotating/branching objectives;
+- persistent secret/cosmetic/storm-form unlocks;
+- campaign/map reasons to revisit locations;
+- local-news/media collection or milestone moments;
+- absurd tracked statistics;
+- clear near-miss goals that generate "one more run."
 
-Canonical story:
+### Commercial presentation pass
 
-`newspaper -> farm reveal -> Cow 17 and chickens -> weather/radio shift -> slow double take -> Moo Brew cup drop -> chicken panic -> Cow 17 escape -> barn roof peel -> tornado touchdown -> seamless gameplay handoff`
+Focus on moments that make the game feel shippable:
 
-Director choices locked on 2026-08-09:
+- menu/weather-map hierarchy;
+- unlock/reward moments;
+- results-screen motivation;
+- readable objective presentation;
+- sound/UI transitions;
+- visual consistency across cinematic, gameplay, and results.
 
-- build the final opening inside the same Three.js world and visual language as gameplay;
-- no separate DOM/CSS cartoon universe and no loading break;
-- Cow 17 is upright/bipedal for the character beat, casually leaning on the fence like a coworker at an office water cooler;
-- Cow 17 holds and sips a recognizable Moo Brew cup;
-- two or more chickens gather around Cow 17 with small conversational acting beats such as pecking, head bobs, glances, interruption-like reactions, and delayed recognition of the weather change;
-- humor comes from body language and timing rather than requiring spoken dialogue;
-- Cow 17 keeps sipping while the environment becomes increasingly wrong, then performs the planned slow double take;
-- the final ill-advised sip, cup drop, chicken scatter, and sudden action-hero escape are the comedy pivot;
-- the Moo Brew logo should face camera during the exaggerated cup-drop beat when practical;
-- warning clock starts only when control transfers to gameplay;
-- target cinematic length remains roughly 10 to 15 seconds;
-- first viewing may be mandatory, later viewings remain skippable;
-- repeat runs may rotate newspaper headlines.
+## Existing accepted/protected features
 
-Implementation should use lightweight articulated Three.js actors rather than static billboards.
+Preserve unless a specific Stage 2B issue reopens them:
 
-## Remaining Stage 2A table
+- direct steering/input/general gameplay-camera feel;
+- ordinary tornado movement authority;
+- Pull and Gust behavior;
+- integrated Grid Zap values/topology from SW-GAME-001;
+- road-safe utilities;
+- normal campaign scoring/timing/objectives;
+- Neon unlock/selection/persistence;
+- Cow 17 safety/targetability;
+- opening Moo Brew cinematic lifecycle and warning-clock handoff;
+- browser-first rapid iteration and opt-in Android checkpoints.
 
-These items remain alive even if they are not all launched in the first parallel batch:
+## Moo Level product law
 
-### World / visual production
+The Hart Farm ring is an unlock encounter, not the final secret level.
 
-- finish Hero Slice 6 human visual acceptance;
-- utility poles obey street boundaries;
-- stronger authored identity across ordinary town/farm views;
-- destruction readability and believable structure anatomy rather than roof-heavy/generic chunks;
-- environmental storytelling and authored place details without procedural clutter;
-- consistent material/lighting language across locations;
-- further default-storm quality work if the funnel still reads geometric at gameplay speed;
-- render-cost/draw-call/material cleanup as visual complexity rises.
+The actual Moo Level must be a dedicated authored playable bonus stage with its own objective/score identity and replay reason.
 
-### Gameplay feel
+The desired folklore is:
 
-- owner-authorized Cow-cam timing adjustment;
-- owner-authorized Grid Zap damage/connected-line propagation adjustment;
-- preserve direct steering, ordinary-contact destruction, Pull, Gust, scoring/campaign truth, Cow 17 safety, and lifecycle behavior unless separately and explicitly reopened.
+> "Wait, you haven't unlocked the cow level yet?"
 
-### Opening cinematic
+## Director autonomy decision
 
-- build `SW-CIN-001` actor/prop/timeline foundation;
-- Director review deterministic fence-conversation/double-take/last-sip frames;
-- later integrate the full newspaper -> farm -> touchdown -> gameplay sequence;
-- preserve seamless Three.js handoff, skip/replay law, and warning-clock start at gameplay control.
+The owner has explicitly asked the Director to take the reins on game-development translation.
 
-### QA / production throughput
+The owner should be able to say things like:
 
-- complete `SW-QA-001` build-once/test-many and parallel QA work;
-- safely reuse immutable reference evidence instead of rebuilding it blindly;
-- suppress heavyweight visual CI for planning/docs-only changes;
-- finish manifest-driven QA publisher so later slices do not require hard-coded publisher surgery;
-- keep APK generation opt-in for meaningful physical-device checkpoints.
+- "attack bubbles";
+- "Blocktown";
+- "it feels regressed";
+- "I want an actual cow level";
+- "this isn't satisfying enough";
+- "this is fun";
 
-### Multi-agent operations
+and have the Director turn that into concrete design, worker scope, sequencing, evidence, and acceptance criteria.
 
-- validate the first worker round before merging PR #49;
-- keep agent startup truth singular and repo-driven;
-- inspect returned worker diffs/CI before integration;
-- only run tasks truly in parallel when file ownership is disjoint.
+Do not make the owner pre-specify technical implementation merely because the feedback is qualitative.
 
-## Tomorrow launch recommendation
+## Android
 
-This is a clean stopping point. Do not start more implementation merely to keep activity going.
+Android remains opt-in for deliberate physical-device checkpoints. Browser approval never silently becomes device acceptance.
 
-Recommended first launch order when the user is back at a computer:
+## Integration law
 
-1. `SW-WORLD-001` and `SW-QA-001` can launch in parallel.
-2. `SW-CIN-001` can launch in parallel because it is isolated by design.
-3. Before launching `SW-GAME-001`, perform a quick exact-code ownership check between utility-pole/network placement and Grid Zap implementation. If disjoint, launch it in parallel. If shared, sequence it after the world worker or split ownership cleanly.
-4. Director reviews outputs, integrates only verified work, promotes a new exact candidate to QA root, and returns to owner playtesting.
+Workers do not merge themselves. The Director reviews exact heads and evidence first.
 
-## QA and build cadence
-
-### Rapid iteration
-
-Primary loop:
-
-1. exact-source browser build;
-2. automated regression, visual, and same-runner performance evidence;
-3. assistant/director evidence review;
-4. promote the reviewed candidate to the public QA root;
-5. owner and informal playtesters play the root candidate;
-6. record visual/fun feedback in the repo before the next meaningful change.
-
-### Android device checkpoints
-
-APK generation is paused for ordinary visual iterations because replacing the installed development build currently requires uninstalling the existing app first. That install friction does not add value to every art revision.
-
-Generate an APK deliberately when one or more of these are true:
-
-- a milestone is visually close enough to warrant physical-device acceptance;
-- touch/input/camera behavior changed;
-- WebView, lifecycle, audio, heat, battery, frame pacing, or device-only behavior needs validation;
-- a release candidate or major integrated slice is ready.
-
-Physical Android acceptance still requires an actual install and run on the target device. Browser approval never silently becomes Galaxy acceptance.
-
-## Expansion incubator
-
-Expansion ideas are welcome during production and should be captured as they arise without interrupting the current acceptance slice unless they solve an active blocker.
-
-Already-established expansion families include:
-
-- additional compact regional campaigns;
-- stronger local-news personalities and media spectacle;
-- deeper Moo Brew world branding and recurring jokes;
-- Cow 17 recurring campaign comedy and statistics;
-- waterspouts for a coast campaign after water interaction exists;
-- multi-vortex and twin-funnel advanced storm forms;
-- region-specific architecture, props, weather interaction, audio, and finales.
-
-New expansion ideas should be added here or to the product roadmap with a short statement of what makes them fun or mechanically distinct. Do not implement an expansion merely because it sounds possible.
-
-## Informal playtest signal
-
-The owner reports that multiple people have played the game and the response has been consistently positive. Treat this as a strong qualitative signal that the core game is worth protecting, not as formal acceptance data. Continue improving presentation without sacrificing the movement, destruction, humor, and direct-control loop people are already enjoying.
-
-## Protected truths
-
-- Three.js remains production.
-- Frozen gameplay/fun baseline remains the default protection law.
-- Steering/input/general gameplay-camera feel, ordinary-contact destruction, Pull/Gust, scoring/timing/campaign authority, Cow 17 safety, and lifecycle behavior are not retuned to make art integration easier.
-- The 2026-08-09 Cow-cam timing and Grid Zap requests are explicit bounded owner exceptions and must remain isolated, measured, and QA-gated.
-- Stage 2A remains active until the visual language holds across ordinary gameplay and the opening cinematic direction is implemented to the same standard.
+A Stage 2B integrated candidate may auto-promote to the QA root only after it passes the normal exact-source integration workflow. Public QA is still a playtest gate, not production/release approval.
