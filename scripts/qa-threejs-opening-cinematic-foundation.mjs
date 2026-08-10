@@ -65,7 +65,7 @@ page.on('console', (message) => {
   logs.push(`[${message.type()}] ${message.text()}`);
   if (message.type() === 'error') errors.push(`console: ${message.text()}`);
 });
-const report = { version: 'SW_CIN_001_BROWSER_QA_V1', generatedAt: new Date().toISOString(), passed: false, frames: {}, telemetry: null, rendererRevision: null, errors, failures: [] };
+const report = { version: 'SW_CIN_002_BROWSER_QA_V1', generatedAt: new Date().toISOString(), passed: false, frames: {}, telemetry: null, rendererRevision: null, errors, failures: [] };
 function requireCondition(condition, message) { if (!condition) report.failures.push(message); }
 
 try {
@@ -87,6 +87,9 @@ try {
   report.telemetry = report.frames['last-sip-setup']?.budget || null;
   requireCondition(Number(report.telemetry?.meshes) > 0, 'Presentation mesh telemetry is missing.');
   requireCondition(Number(report.telemetry?.materials) > 0, 'Presentation material telemetry is missing.');
+  // SW-CIN-001 baseline: 57 meshes / 15 materials. The acting pass keeps the isolated kit within the issue's ~15% cost guard.
+  requireCondition(Number(report.telemetry?.meshes) <= 66, `Presentation mesh count ${report.telemetry?.meshes} exceeds the SW-CIN-002 mobile guard.`);
+  requireCondition(Number(report.telemetry?.materials) <= 17, `Presentation material count ${report.telemetry?.materials} exceeds the SW-CIN-002 mobile guard.`);
 } finally {
   await page.evaluate(() => globalThis.__SW_CINEMATIC_QA_SESSION__?.cleanup?.()).catch(() => {});
   await writeFile(path.join(outputDir, 'sw-cin-001-browser.log'), `${logs.join('\n')}\n`, 'utf8');

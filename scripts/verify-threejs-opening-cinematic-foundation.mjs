@@ -19,19 +19,20 @@ let syntaxError = null;
 try { new vm.Script(runtime, { filename: path.basename(runtimePath) }); } catch (error) { syntaxError = String(error?.message || error); }
 
 check('runtime syntax', syntaxError === null, syntaxError || 'ok');
-check('foundation version and bridge', runtime.includes('SW_CIN_001_MOO_BREW_FOUNDATION_V1') && runtime.includes('__SW_OPENING_CINEMATIC_FOUNDATION__'));
+check('foundation version and bridge', runtime.includes('SW_CIN_002_ACTING_POLISH_V1') && runtime.includes('__SW_OPENING_CINEMATIC_FOUNDATION__'));
 check('uses existing scene contract', runtime.includes('mount requires an existing Three.js scene') && runtime.includes('scene.add(root)'));
 check('no renderer authority', !runtime.includes('new THREE.WebGLRenderer'));
 check('no scene authority', !runtime.includes('new THREE.Scene'));
 check('no gameplay authority references', !/\b(score|combo|remainingSeconds|currentStage|selectedCampaignIndex|triggerAbility|usePull|useGust|useZap)\b/.test(runtime));
 check('Cow 17 bipedal pose controls', ['cow17-left-shoulder', 'cow17-right-shoulder', 'cow17-left-leg', 'cow17-right-leg', 'cow17-head', 'cow17-ear-tag'].every((token) => runtime.includes(token)));
 check('fence lean and cup hold controls', ['cow17-left-resting-hoof', 'MooBrewCup', 'moo-brew-logo', 'logo-camera-ready'].every((token) => runtime.includes(token)));
+check('Cow 17 readable pattern and physical contact cues', ['cow17-face-patch', 'cow17-torso-front-patch-large', 'cow17-hips-front-patch', 'cow17-left-fence-contact-pad', 'cow17-right-cup-thumb'].every((token) => runtime.includes(token)));
 check('two conversational chicken rigs', runtime.includes('ChickenCinematicRig-${id}') && runtime.includes('geometry, palette, 1, -1') && runtime.includes('geometry, palette, 2, 1') && runtime.includes('idle-peck') && runtime.includes('scatter-transition'));
 check('authored fence composition', ['MooBrewFenceConversationComposition', 'cinematic-fence-post-', 'cinematic-fence-rail-'].every((token) => runtime.includes(token)));
 check('deterministic required frames', ['fence-conversation', 'double-take', 'last-sip-setup'].every((token) => runtime.includes(token)));
 check('timeline includes performance beats', ['first-chicken-noticing', 'cow-delayed-turn', 'escape-transition'].every((token) => runtime.includes(token)));
 check('telemetry includes mobile budget', runtime.includes('budget: counts') && runtime.includes('meshes') && runtime.includes('materials'));
-check('browser QA uses local Three r128 in an explicit QA-only harness', qa.includes('threeMatch') && qa.includes('QA-only renderer') && qa.includes("rendererRevision === '128'"));
+check('browser QA uses local Three r128 in an explicit QA-only harness', qa.includes('threeMatch') && qa.includes('QA-only renderer') && qa.includes("rendererRevision === '128'") && qa.includes('SW-CIN-002 mobile guard'));
 check('documentation records deferred integration', documentation.includes('Deferred integration') && documentation.includes('warning clock'));
 
 const failedChecks = checks.filter((entry) => !entry.passed);

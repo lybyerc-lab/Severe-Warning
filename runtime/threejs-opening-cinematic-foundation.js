@@ -7,7 +7,7 @@
 (function installMooBrewOpeningFoundation(globalScope) {
   'use strict';
 
-  const VERSION = 'SW_CIN_001_MOO_BREW_FOUNDATION_V1';
+  const VERSION = 'SW_CIN_002_ACTING_POLISH_V1';
   const SHOTS = Object.freeze({
     'fence-conversation': Object.freeze({
       beat: 'fence-conversation',
@@ -154,14 +154,19 @@
     root.userData.cinematicRole = 'cow17-presentation-rig';
     const hips = pivot(THREE, root, 'cow17-hips', [0, 2.6, 0]);
     part(THREE, hips, geometry.box, palette.cream, 'cow17-hips-mass', [0, 0, 0], [1.7, 1.05, 0.86]);
+    part(THREE, hips, geometry.sphere, palette.charcoal, 'cow17-hips-front-patch', [0.34, 0.02, 0.47], [0.56, 0.42, 0.07]);
     const torso = pivot(THREE, hips, 'cow17-torso', [0, 0.45, 0]);
     part(THREE, torso, geometry.box, palette.cream, 'cow17-torso-mass', [0, 1.0, 0], [2.05, 2.15, 1.1]);
     part(THREE, torso, geometry.box, palette.charcoal, 'cow17-torso-spot-left', [-1.04, 1.15, 0.15], [0.09, 0.72, 0.54]);
     part(THREE, torso, geometry.box, palette.charcoal, 'cow17-torso-spot-right', [1.04, 0.62, -0.08], [0.09, 0.62, 0.48]);
+    part(THREE, torso, geometry.sphere, palette.charcoal, 'cow17-torso-front-patch-large', [-0.46, 1.42, 0.59], [0.63, 0.78, 0.08]);
+    part(THREE, torso, geometry.sphere, palette.charcoal, 'cow17-torso-front-patch-small', [0.62, 0.42, 0.59], [0.42, 0.5, 0.08]);
     const neck = pivot(THREE, torso, 'cow17-neck', [0, 2.05, 0.05]);
     part(THREE, neck, geometry.cylinder, palette.cream, 'cow17-neck-mass', [0, 0.38, 0], [0.66, 0.9, 0.66]);
+    part(THREE, neck, geometry.sphere, palette.charcoal, 'cow17-neck-front-patch', [-0.2, 0.48, 0.67], [0.26, 0.38, 0.06]);
     const head = pivot(THREE, neck, 'cow17-head', [0, 1.05, 0.12]);
     part(THREE, head, geometry.box, palette.cream, 'cow17-head-mass', [0, 0, 0.12], [1.34, 1.08, 1.12]);
+    part(THREE, head, geometry.sphere, palette.charcoal, 'cow17-face-patch', [-0.38, 0.23, 0.7], [0.34, 0.36, 0.065]);
     part(THREE, head, geometry.box, palette.pink, 'cow17-muzzle', [0, -0.3, 0.75], [0.94, 0.48, 0.52]);
     part(THREE, head, geometry.sphere, palette.black, 'cow17-eye-left', [-0.37, 0.21, 0.62], [0.12, 0.12, 0.08]);
     part(THREE, head, geometry.sphere, palette.black, 'cow17-eye-right', [0.37, 0.21, 0.62], [0.12, 0.12, 0.08]);
@@ -178,6 +183,8 @@
     part(THREE, leftArm, geometry.box, palette.cream, 'cow17-left-upper-foreleg', [0, -0.5, 0], [0.52, 1.34, 0.52]);
     part(THREE, leftForeleg, geometry.box, palette.cream, 'cow17-left-lower-foreleg', [0, -0.55, 0.22], [0.48, 1.2, 0.48]);
     const leftHoof = part(THREE, leftForeleg, geometry.box, palette.hoof, 'cow17-left-resting-hoof', [0, -1.1, 0.42], [0.64, 0.34, 0.72]);
+    // The flattened contact pad deliberately overhangs the top rail: a clear planted point, not a floating arm.
+    part(THREE, leftForeleg, geometry.sphere, palette.hoof, 'cow17-left-fence-contact-pad', [0, -1.28, 0.42], [0.43, 0.08, 0.5]);
     // Lowered articulation keeps the casual lean in physical contact with the top rail.
     leftArm.position.y = 1.2;
     leftForeleg.position.y = -0.95;
@@ -190,6 +197,8 @@
     cup.position.set(0, -1.37, 0.76);
     cup.rotation.x = -0.18;
     rightForeleg.add(cup);
+    // A small visible thumb overlaps the disposable cup, making the grip read from the QA camera.
+    part(THREE, rightForeleg, geometry.box, palette.cream, 'cow17-right-cup-thumb', [-0.22, -1.15, 0.78], [0.22, 0.34, 0.24], [0, 0, -0.28]);
 
     const leftLeg = pivot(THREE, hips, 'cow17-left-leg', [-0.6, -0.52, 0]);
     const rightLeg = pivot(THREE, hips, 'cow17-right-leg', [0.6, -0.52, 0]);
@@ -280,31 +289,44 @@
       const doubleTake = ease((t - 6.15) / 1.85);
       const lastSip = ease((t - 8.0) / 1.7);
       const escape = ease((t - 10.0) / 2.0);
-      cow.hips.position.x = -0.12 * notice + 0.55 * escape;
-      cow.hips.rotation.z = -0.13 + 0.12 * doubleTake - 0.18 * escape;
-      cow.torso.rotation.z = -0.19 + 0.12 * doubleTake;
-      cow.head.rotation.y = 0.05 + 0.18 * notice + 0.88 * doubleTake;
-      cow.head.rotation.x = -0.06 - 0.08 * lastSip + 0.2 * escape;
-      cow.leftEar.rotation.z = -0.14 - 0.16 * doubleTake;
-      cow.rightEar.rotation.z = 0.14 + 0.28 * doubleTake;
-      cow.leftArm.rotation.z = -0.78 + 0.14 * escape;
+      // The relaxed pose favors a settled hip and planted hoof; the later beats deliberately break that silhouette.
+      cow.hips.position.x = -0.16 * notice + 0.24 * doubleTake + 0.55 * escape;
+      cow.hips.position.y = 2.53 + 0.1 * doubleTake;
+      cow.hips.rotation.z = -0.16 + 0.3 * doubleTake - 0.18 * escape;
+      cow.torso.rotation.z = -0.24 + 0.32 * doubleTake;
+      cow.torso.rotation.y = 0.16 * notice - 0.28 * doubleTake;
+      // Cow 17 listens to the chickens first, then snaps past center into an unmistakable delayed reaction.
+      cow.head.rotation.y = -0.34 + 0.2 * notice + 1.18 * doubleTake;
+      cow.head.rotation.z = -0.04 - 0.22 * doubleTake + 0.14 * escape;
+      cow.head.rotation.x = -0.04 - 0.13 * lastSip + 0.2 * escape;
+      cow.leftEar.rotation.z = -0.12 - 0.42 * doubleTake;
+      cow.rightEar.rotation.z = 0.16 + 0.52 * doubleTake;
+      cow.leftArm.rotation.z = -0.8 + 0.14 * escape;
       cow.leftForeleg.rotation.x = 0.48;
-      cow.rightArm.rotation.z = 0.26 - 0.22 * lastSip + 0.35 * escape;
-      cow.rightForeleg.rotation.x = -0.45 - 0.72 * lastSip;
-      cow.cup.rotation.x = -0.18 - 0.46 * lastSip;
-      cow.leftLeg.rotation.z = 0.08 - 0.22 * escape;
-      cow.rightLeg.rotation.z = -0.08 + 0.27 * escape;
-      cow.tail.rotation.z = 0.12 + 0.32 * doubleTake;
+      cow.rightArm.rotation.z = 0.36 - 0.74 * lastSip + 0.35 * escape;
+      cow.rightForeleg.rotation.x = -0.34 - 0.98 * lastSip;
+      cow.rightForeleg.position.y = -0.68 + 0.18 * lastSip;
+      cow.rightHoof.position.set(0, -1.02 + 1.02 * lastSip, 0.38 + 0.14 * lastSip);
+      cow.rightHoof.rotation.z = -0.28 * lastSip;
+      cow.cup.position.set(0, -1.37 + 1.72 * lastSip, 0.76 + 0.16 * lastSip);
+      cow.cup.rotation.x = -0.18 - 0.58 * lastSip;
+      const cupThumb = cow.rightForeleg.getObjectByName('cow17-right-cup-thumb');
+      if (cupThumb) cupThumb.position.set(-0.22, -1.15 + 1.08 * lastSip, 0.78 + 0.16 * lastSip);
+      cow.leftLeg.rotation.z = 0.13 - 0.32 * doubleTake - 0.22 * escape;
+      cow.rightLeg.rotation.z = -0.12 + 0.36 * doubleTake + 0.27 * escape;
+      cow.tail.rotation.z = 0.12 + 0.48 * doubleTake;
       chickenA.body.position.y = 0.85 + Math.sin(t * 7.2) * 0.04;
-      chickenA.head.rotation.y = 0.32 + 0.64 * notice;
-      chickenA.head.rotation.x = -0.28 + Math.sin(t * 9.5) * 0.12;
-      chickenA.leftWing.rotation.z = -0.12 - 0.52 * doubleTake;
-      chickenA.rightWing.rotation.z = 0.12 + 0.52 * doubleTake;
+      chickenA.root.rotation.y = -0.42 + 0.5 * notice;
+      chickenA.head.rotation.y = 0.32 + 0.92 * notice;
+      chickenA.head.rotation.x = -0.28 - 0.3 * notice + Math.sin(t * 9.5) * 0.12;
+      chickenA.leftWing.rotation.z = -0.12 - 0.72 * doubleTake;
+      chickenA.rightWing.rotation.z = 0.12 + 0.72 * doubleTake;
       chickenB.body.position.y = 0.85 + Math.sin(t * 6.3 + 1.5) * 0.05;
-      chickenB.head.rotation.y = -0.28 + 0.18 * notice;
-      chickenB.head.rotation.x = -0.22 + Math.sin(t * 8.2 + 1.2) * 0.13;
-      chickenB.leftWing.rotation.z = -0.08 - 0.36 * doubleTake;
-      chickenB.rightWing.rotation.z = 0.08 + 0.36 * doubleTake;
+      chickenB.root.rotation.y = 0.3 - 0.3 * notice;
+      chickenB.head.rotation.y = -0.28 + 0.42 * notice;
+      chickenB.head.rotation.x = -0.22 - 0.18 * notice + Math.sin(t * 8.2 + 1.2) * 0.13;
+      chickenB.leftWing.rotation.z = -0.08 - 0.48 * doubleTake;
+      chickenB.rightWing.rotation.z = 0.08 + 0.48 * doubleTake;
       chickenA.root.position.x = -2.65 - 0.9 * escape;
       chickenB.root.position.x = 2.65 + 1.2 * escape;
       return { notice, turn, doubleTake, lastSip, escape };
