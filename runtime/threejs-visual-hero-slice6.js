@@ -18,7 +18,8 @@ const swVisualHeroSlice6State = {
   transitionCount: 0,
   fenceInstanceCount: 0,
   vegetationInstanceCount: 0,
-  silhouetteProfile: 'asymmetric-storm-v1',
+  legacyStormRingCount: 0,
+  silhouetteProfile: 'asymmetric-storm-v2',
   worldProfile: 'authored-main-street-v1',
   lastError: null,
 };
@@ -69,6 +70,11 @@ function swVisualHeroSlice6Material(color, options = {}) {
   });
 }
 
+function swVisualHeroSlice6MaterialList(material) {
+  if (!material) return [];
+  return Array.isArray(material) ? material : [material];
+}
+
 function swVisualHeroSlice6WarpedFunnelGeometry(radiusTop, radiusBottom, height, radialSegments, heightSegments, phase) {
   const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments, heightSegments, true);
   const position = geometry.getAttribute('position');
@@ -80,9 +86,10 @@ function swVisualHeroSlice6WarpedFunnelGeometry(radiusTop, radiusBottom, height,
     const radius = Math.hypot(sourceX, sourceZ);
     const heightMix = THREE.MathUtils.clamp((sourceY + height * 0.5) / Math.max(0.001, height), 0, 1);
     const corrugation = 1
-      + Math.sin(angle * 3.0 + heightMix * 2.8 + phase) * 0.085
-      + Math.sin(angle * 5.0 - heightMix * 5.4 + phase * 1.7) * 0.045;
-    const bendStrength = 0.32 + heightMix * 1.25;
+      + Math.sin(angle * 3.0 + heightMix * 2.8 + phase) * 0.145
+      + Math.sin(angle * 5.0 - heightMix * 5.4 + phase * 1.7) * 0.082
+      + Math.cos(angle * 2.0 + heightMix * 7.2 - phase) * 0.048;
+    const bendStrength = 0.58 + heightMix * 1.92;
     const bendX = Math.sin(heightMix * 3.4 + phase) * bendStrength;
     const bendZ = Math.cos(heightMix * 2.7 + phase * 1.3) * bendStrength * 0.78;
     position.setXYZ(
@@ -127,9 +134,9 @@ function swVisualHeroSlice6BuildStormSilhouette() {
   swVisualRoot.add(swVisualHeroSlice6StormRoot);
 
   const shellSpecs = [
-    { top: 28.5, bottom: 5.1, height: 34.5, y: 17.1, opacity: 0.085, color: '#35444a', spin: 0.10, phase: 0.25 },
-    { top: 23.8, bottom: 3.8, height: 33.5, y: 16.5, opacity: 0.072, color: '#4b5a5e', spin: -0.14, phase: 1.55 },
-    { top: 19.2, bottom: 2.4, height: 31.5, y: 15.7, opacity: 0.060, color: '#657074', spin: 0.18, phase: 2.85 },
+    { top: 27.5, bottom: 5.4, height: 35.5, y: 17.5, opacity: 0.122, color: '#24383e', spin: 0.10, phase: 0.25 },
+    { top: 23.1, bottom: 3.5, height: 34.0, y: 16.8, opacity: 0.098, color: '#344b50', spin: -0.14, phase: 1.55 },
+    { top: 18.4, bottom: 2.2, height: 32.0, y: 16.0, opacity: 0.078, color: '#536469', spin: 0.18, phase: 2.85 },
   ];
   shellSpecs.forEach((spec, index) => {
     const geometry = swVisualHeroSlice6WarpedFunnelGeometry(
@@ -229,18 +236,53 @@ function swVisualHeroSlice6TuneInheritedStorm(seconds) {
 
   if (!neonSelected) {
     if (typeof funnelMat !== 'undefined' && funnelMat?.color) {
-      funnelMat.color.set('#2c383d');
-      funnelMat.opacity = 0.19;
+      funnelMat.color.set('#1e3036');
+      funnelMat.opacity = 0.12;
       funnelMat.emissive?.set?.('#0a1114');
       if ('emissiveIntensity' in funnelMat) funnelMat.emissiveIntensity = 0.05;
       funnelMat.needsUpdate = true;
     }
     if (typeof outerFunnelMat !== 'undefined' && outerFunnelMat?.color) {
-      outerFunnelMat.color.set('#526064');
-      outerFunnelMat.opacity = 0.085;
+      outerFunnelMat.color.set('#3b5156');
+      outerFunnelMat.opacity = 0.05;
       outerFunnelMat.needsUpdate = true;
     }
   }
+
+  // The accepted tornado mesh remains the authority.  These are only the
+  // inherited presentation primitives that made the default funnel read as a
+  // clean cone with target-like ground rings.
+  const middleVortex = scene?.getObjectByName?.('ProductionMiddleVortex');
+  if (middleVortex?.material) {
+    middleVortex.material.opacity = 0.06;
+    middleVortex.material.color?.set?.('#26383d');
+    middleVortex.material.needsUpdate = true;
+  }
+  const darkCore = scene?.getObjectByName?.('ProductionDarkCore');
+  if (darkCore?.material) {
+    darkCore.material.opacity = 0.34;
+    darkCore.material.color?.set?.('#1b2b31');
+    darkCore.material.needsUpdate = true;
+  }
+
+  let stormRingCount = 0;
+  if (scene?.traverse && storm?.pos) {
+    const stormOrigin = new THREE.Vector3(storm.pos.x, storm.pos.y, storm.pos.z);
+    const worldPosition = new THREE.Vector3();
+    scene.traverse((object) => {
+      const geometryType = String(object?.geometry?.type || '');
+      if (geometryType !== 'RingGeometry' && geometryType !== 'TorusGeometry') return;
+      object.getWorldPosition?.(worldPosition);
+      if (worldPosition.distanceToSquared(stormOrigin) > 18 * 18) return;
+      swVisualHeroSlice6MaterialList(object.material).forEach((material) => {
+        material.opacity = Math.min(Number(material.opacity || 1), 0.035);
+        material.transparent = true;
+        material.needsUpdate = true;
+      });
+      stormRingCount += 1;
+    });
+  }
+  swVisualHeroSlice6State.legacyStormRingCount = stormRingCount;
 }
 
 function swVisualHeroSlice6UpdateStorm(dt, now) {
@@ -582,6 +624,7 @@ swVisualSnapshot = function swVisualSnapshotWithHeroSlice6() {
       shellCount: swVisualHeroSlice6State.stormShellCount,
       edgeWispCount: swVisualHeroSlice6State.stormEdgeWispCount,
       groundBurstCount: swVisualHeroSlice6State.stormGroundBurstCount,
+      legacyStormRingCount: swVisualHeroSlice6State.legacyStormRingCount,
       profile: swVisualHeroSlice6State.silhouetteProfile,
       presentationOnly: true,
     }),
