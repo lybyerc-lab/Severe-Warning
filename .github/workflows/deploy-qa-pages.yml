@@ -45,6 +45,7 @@ jobs:
       - name: Verify source workflow run identity and successful conclusion
         shell: bash
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           EXPECTED_WORKFLOW_RUN_ID: ${{ inputs.source_run_id }}
           EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
         run: |
