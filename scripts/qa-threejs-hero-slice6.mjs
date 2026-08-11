@@ -136,6 +136,9 @@ async function slice6Probe(page) {
     const condensationStreaks = stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6CondensationStreak')) || [];
     const groundPulls = stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6GroundPull')) || [];
     const edgeWisps = stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6EdgeWisp')) || [];
+    const raggedShellCount = shells.filter((entry) => entry.geometry?.userData?.swSlice6RaggedProfile === true).length;
+    const edgeWispSpriteCount = edgeWisps.filter((entry) => entry.isSprite === true).length;
+    const groundPullSpriteCount = groundPulls.filter((entry) => entry.isSprite === true).length;
     let verticalStreakGeometryCount = 0;
     condensationStreaks.forEach((streak) => {
       const position = streak.geometry?.getAttribute?.('position');
@@ -153,6 +156,8 @@ async function slice6Probe(page) {
     let townPolishPresentationObjectCount = 0;
     let townPolishSignboardCount = 0;
     let visibleInheritedRoundStormSpriteCount = 0;
+    let visibleInheritedStormShellCount = 0;
+    let visibleInheritedStormRainTraceCount = 0;
     let visibleFoundationStormDustCount = 0;
     let buildingIdentityGroups = 0;
     scene?.traverse?.((object) => {
@@ -166,14 +171,32 @@ async function slice6Probe(page) {
       if (object.visible !== false && (name.startsWith('SWVisualSlice4VolumeWisp') || name.startsWith('SWVisualSlice4GroundSkirt'))) {
         visibleInheritedRoundStormSpriteCount += 1;
       }
+      if (object.visible !== false && name.startsWith('SWVisualSlice4VolumeShell')) visibleInheritedStormShellCount += 1;
+      if (object.visible !== false && name.startsWith('SWVisualSlice4RainTrace')) visibleInheritedStormRainTraceCount += 1;
       if (object.visible !== false && name.startsWith('SWVisualStormDust')) visibleFoundationStormDustCount += 1;
     });
     let visibleProductionTornadoDodecahedronCount = 0;
+    let visibleProductionTornadoBoxDebrisCount = 0;
+    const visibleLegacyStormPointCount = typeof particleSystem !== 'undefined' && particleSystem.visible !== false ? 1 : 0;
+    let visibleLegacyStormRingCount = 0;
     productionTornadoLayers?.traverse?.((object) => {
       if (object.visible !== false && object.isMesh && object.geometry?.type === 'DodecahedronGeometry') {
         visibleProductionTornadoDodecahedronCount += 1;
       }
+      if (object.visible !== false && object.isInstancedMesh && object.geometry?.type === 'BoxGeometry') {
+        visibleProductionTornadoBoxDebrisCount += 1;
+      }
     });
+    if (scene?.traverse && storm?.pos) {
+      const stormOrigin = new THREE.Vector3(storm.pos.x, storm.pos.y, storm.pos.z);
+      const ringPosition = new THREE.Vector3();
+      scene.traverse((object) => {
+        const geometryType = String(object?.geometry?.type || '');
+        if (object.visible === false || (geometryType !== 'RingGeometry' && geometryType !== 'TorusGeometry')) return;
+        object.getWorldPosition?.(ringPosition);
+        if (ringPosition.distanceToSquared(stormOrigin) <= 18 * 18) visibleLegacyStormRingCount += 1;
+      });
+    }
 
     const inheritedShellOpacities = [];
     scene?.getObjectByName?.('SWVisualHeroSlice4StormVolume')?.children?.forEach?.((object) => {
@@ -268,13 +291,17 @@ async function slice6Probe(page) {
       stormRootPresent: Boolean(refreshedStormRoot?.parent),
       worldRootPresent: Boolean(refreshedWorldRoot?.parent),
       warpedShellCount,
+      raggedShellCount,
       lateralCenterOffset,
       edgeWispCount: edgeWisps.length,
-      edgeWispMaxAspectRatio: edgeWisps.length ? Math.max(...edgeWisps.map((entry) => Math.abs(Number(entry.scale?.y || 0) / Math.max(0.001, Number(entry.scale?.x || 0))))) : null,
+      edgeWispMaxAspectRatio: edgeWisps.length ? Math.max(...edgeWisps.map((entry) => Number(entry.userData?.widthToHeight || 0))) : null,
+      edgeWispSpriteCount,
       condensationStreakCount: condensationStreaks.length,
       verticalStreakGeometryCount,
       groundPullCount: groundPulls.length,
+      groundPullSpriteCount,
       legacyStormRingCount: Number(visual?.stormSilhouette?.legacyStormRingCount || 0),
+      visibleLegacyStormRingCount,
       buildingIdentityGroups,
       sidewalkBatchPresent: Boolean(sidewalkBatch?.parent),
       curbBatchPresent: Boolean(curbBatch?.parent),
@@ -292,8 +319,12 @@ async function slice6Probe(page) {
       townPolishPresentationObjectCount,
       townPolishSignboardCount,
       visibleInheritedRoundStormSpriteCount,
+      visibleInheritedStormShellCount,
+      visibleInheritedStormRainTraceCount,
       visibleFoundationStormDustCount,
       visibleProductionTornadoDodecahedronCount,
+      visibleProductionTornadoBoxDebrisCount,
+      visibleLegacyStormPointCount,
       legacyDustBowlVisible: typeof dustBowlGroup !== 'undefined' ? dustBowlGroup.visible !== false : null,
       stormDebrisClusterCount: stormDebrisColumn?.children?.length || 0,
       rainbowRootPresent: Boolean(scene?.getObjectByName?.('SWVisualHeroSlice5RainbowFunnel')?.parent),
@@ -326,19 +357,25 @@ try {
   requireCondition(visual?.heroSlice6Version === 'THREEJS_VISUAL_HERO_SLICE6_V1', `Hero Slice 6 version mismatch: ${visual?.heroSlice6Version}.`);
   requireCondition(visual?.heroSlice6RoadLawVersion === 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1', `Hero Slice 6 road-law version mismatch: ${visual?.heroSlice6RoadLawVersion}.`);
   requireCondition(visual?.heroSlice6BlocktownBreakVersion === 'THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_V1', `Blocktown-break version mismatch: ${visual?.heroSlice6BlocktownBreakVersion}.`);
-  requireCondition(visual?.stormSilhouette?.profile === 'ragged-wedge-storm-v3', `Unexpected Slice 6 storm profile ${visual?.stormSilhouette?.profile}.`);
+  requireCondition(visual?.stormSilhouette?.profile === 'ragged-wedge-storm-v4-mesh-ribbons', `Unexpected Slice 6 storm profile ${visual?.stormSilhouette?.profile}.`);
   requireCondition(probe?.stormRootPresent === true, 'Slice 6 storm silhouette root is missing.');
   requireCondition(Number(probe?.warpedShellCount) >= 3, `Only ${probe?.warpedShellCount} warped storm shells are active.`);
+  requireCondition(Number(probe?.raggedShellCount) >= 3, `Only ${probe?.raggedShellCount} non-linear ragged storm shells are active.`);
   requireCondition(Number(probe?.lateralCenterOffset) >= 0.25, `Storm shell centerline is still too geometrically straight: ${probe?.lateralCenterOffset}.`);
   requireCondition(Number(probe?.condensationStreakCount) >= 7, `Only ${probe?.condensationStreakCount} vertical condensation streaks are active.`);
   requireCondition(Number(probe?.verticalStreakGeometryCount) >= 7, `Only ${probe?.verticalStreakGeometryCount} condensation streaks span the tornado body.`);
-  requireCondition(Number(probe?.edgeWispCount) <= 9 && Number(probe?.edgeWispMaxAspectRatio) <= 0.36, `Subordinate edge sprites are too numerous or round: count=${probe?.edgeWispCount}, aspect=${probe?.edgeWispMaxAspectRatio}.`);
+  requireCondition(Number(probe?.edgeWispCount) <= 9 && Number(probe?.edgeWispMaxAspectRatio) <= 0.14 && Number(probe?.edgeWispSpriteCount) === 0, `Edge condensation must remain mesh ribbons, not billboard sprites: count=${probe?.edgeWispCount}, aspect=${probe?.edgeWispMaxAspectRatio}, sprites=${probe?.edgeWispSpriteCount}.`);
   requireCondition(Number(probe?.groundPullCount) >= 6, `Only ${probe?.groundPullCount} directional ground-pull streaks are active.`);
+  requireCondition(Number(probe?.groundPullSpriteCount) === 0, `Ground contact still uses billboard effect primitives: ${probe?.groundPullSpriteCount}.`);
   requireCondition(Number(probe?.visibleInheritedRoundStormSpriteCount) === 0, `Visible inherited round storm sprites remain: ${probe?.visibleInheritedRoundStormSpriteCount}.`);
+  requireCondition(Number(probe?.visibleInheritedStormShellCount) === 0, `Visible inherited storm cone shells remain: ${probe?.visibleInheritedStormShellCount}.`);
+  requireCondition(Number(probe?.visibleInheritedStormRainTraceCount) === 0, `Visible inherited square rain-trace sprites remain: ${probe?.visibleInheritedStormRainTraceCount}.`);
   requireCondition(Number(probe?.visibleFoundationStormDustCount) === 0, `Visible round visual-foundation storm dust remains: ${probe?.visibleFoundationStormDustCount}.`);
   requireCondition(Number(probe?.visibleProductionTornadoDodecahedronCount) === 0, `Visible production tornado dodecahedron fragments remain: ${probe?.visibleProductionTornadoDodecahedronCount}.`);
+  requireCondition(Number(probe?.visibleProductionTornadoBoxDebrisCount) === 0, `Visible production tornado box debris remains: ${probe?.visibleProductionTornadoBoxDebrisCount}.`);
+  requireCondition(Number(probe?.visibleLegacyStormPointCount) === 0, `Visible legacy storm point effects remain: ${probe?.visibleLegacyStormPointCount}.`);
   requireCondition(probe?.legacyDustBowlVisible === false, `Historical dust-bowl presentation remains visible: ${probe?.legacyDustBowlVisible}.`);
-  requireCondition(Number(probe?.legacyStormRingCount) >= 3, `Expected inherited storm ground rings to be restrained, found ${probe?.legacyStormRingCount}.`);
+  requireCondition(Number(probe?.legacyStormRingCount) >= 3 && Number(probe?.visibleLegacyStormRingCount) === 0, `Legacy storm ground rings must be suppressed, suppressed=${probe?.legacyStormRingCount}, visible=${probe?.visibleLegacyStormRingCount}.`);
   requireCondition(Number(probe?.inheritedShellMaxOpacity) <= 0.09, `Inherited Slice 4 cone shells remain too dominant: ${probe?.inheritedShellMaxOpacity}.`);
   requireCondition(Number(probe?.defaultFunnelOpacity) <= 0.22, `Legacy funnel remains too opaque in default mode: ${probe?.defaultFunnelOpacity}.`);
   requireCondition(Number(probe?.slice6PresentationObjectCount) <= 110, `Slice 6 presentation object budget exceeded: ${probe?.slice6PresentationObjectCount}.`);
@@ -359,7 +396,7 @@ try {
 
   const visual = report.stormMainStreet.visual;
   const probe = report.stormMainStreet.probe;
-  requireCondition(visual?.stormSilhouette?.profile === 'ragged-wedge-storm-v3', 'Storm-over-main-street evidence used the wrong storm profile.');
+  requireCondition(visual?.stormSilhouette?.profile === 'ragged-wedge-storm-v4-mesh-ribbons', 'Storm-over-main-street evidence used the wrong storm profile.');
   requireCondition(Number(probe?.verticalStreakGeometryCount) >= 7, 'Storm-over-main-street evidence lacks a continuous vertical storm body.');
   requireCondition(Number(probe?.groundPullCount) >= 6, 'Storm-over-main-street evidence lacks lower directional circulation.');
   requireCondition(!visual?.heroSlice6LastError, `Slice 6 runtime error in storm-over-main-street view: ${visual?.heroSlice6LastError}.`);
@@ -381,7 +418,7 @@ try {
   const probe = report.groundContact.probe;
   requireCondition(Number(probe?.groundPullCount) >= 6, 'Ground-contact evidence lacks directional dirt-pull streaks.');
   requireCondition(Number(probe?.condensationStreakCount) >= 7, 'Ground-contact evidence lacks its connected condensation body.');
-  requireCondition(Number(probe?.edgeWispCount) <= 9, `Ground-contact evidence has too many round edge sprites: ${probe?.edgeWispCount}.`);
+  requireCondition(Number(probe?.edgeWispCount) <= 9 && Number(probe?.edgeWispSpriteCount) === 0 && Number(probe?.groundPullSpriteCount) === 0, `Ground-contact evidence must use non-billboard mesh ribbons: edgeSprites=${probe?.edgeWispSpriteCount}, groundSprites=${probe?.groundPullSpriteCount}.`);
   requireCondition(!visual?.heroSlice6LastError, `Slice 6 runtime error in ground-contact view: ${visual?.heroSlice6LastError}.`);
   if (groundContactPage.errors.length) report.failures.push(`Ground-contact browser errors: ${groundContactPage.errors.join(' | ')}`);
 } finally {
