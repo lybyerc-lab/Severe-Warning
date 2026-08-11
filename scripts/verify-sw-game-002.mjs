@@ -13,16 +13,20 @@ const patchScripts = [
   'apply-audio-mix-followup-patch.mjs', 'apply-ui-polish-followup-patch.mjs', 'apply-score-continuity-fix.mjs', 'apply-qa4-deterministic-lab-patch.mjs',
   'apply-qa4-mobile-input-fix.mjs', 'apply-qa4-run-lock-fix.mjs', 'apply-qa4-pause-forensics.mjs', 'apply-pause-overlay-hit-test-fix.mjs',
   'apply-pause-overlay-hard-hide.mjs', 'apply-qa4-popup-assertion-fix.mjs', 'apply-v500-campaign-patch.mjs', 'apply-v500-realtime-clock-fix.mjs',
-  'apply-v500-world-tour-patch.mjs', 'apply-v500-mobile-layout-fix.mjs', 'apply-v500-cow-signature-patch.mjs',
-  'apply-v510-production-slice.mjs', 'apply-sw-game-002-moo-level.mjs'
+  'apply-v500-world-tour-patch.mjs', 'apply-v500-mobile-layout-fix.mjs', 'apply-v500-cow-signature-patch.mjs'
 ];
 function check(name, passed, detail = '') { checks.push({ name, passed: Boolean(passed), detail }); console.log(`${passed ? 'PASS' : 'FAIL'} ${name}${detail ? ` :: ${detail}` : ''}`); }
 function apply(script) { execFileSync(process.execPath, [path.join(root, 'scripts', script)], { cwd: root, env: { ...process.env, SEVERE_WEATHER_SOURCE_PATH: temporary }, stdio: 'pipe' }); }
+function verify(script) { execFileSync(process.execPath, [path.join(root, 'scripts', script)], { cwd: root, env: { ...process.env, SEVERE_WEATHER_SOURCE_PATH: temporary }, stdio: 'inherit' }); }
 
 await writeFile(temporary, await readFile(source, 'utf8'), 'utf8');
 let generated = '';
 try {
   patchScripts.forEach(apply);
+  verify('verify-v500-campaign.mjs');
+  apply('apply-v510-production-slice.mjs');
+  verify('verify-v510-production-slice.mjs');
+  apply('apply-sw-game-002-moo-level.mjs');
   generated = await readFile(temporary, 'utf8');
 } finally { await rm(temporary, { force: true }); }
 
