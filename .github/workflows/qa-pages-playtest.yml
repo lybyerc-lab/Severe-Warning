@@ -51,6 +51,9 @@ jobs:
       - name: Build modern shell
         run: pnpm run modern:build
 
+      - name: Generate deterministic storm audio
+        run: node scripts/generate-storm-audio.mjs
+
       - name: Assemble exact RPG-002 playtest source
         shell: bash
         run: |
