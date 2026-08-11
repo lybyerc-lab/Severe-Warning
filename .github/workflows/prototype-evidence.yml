@@ -1,6 +1,16 @@
 name: Prototype Evidence (Not Production QA)
 
 on:
+  push:
+    branches:
+      - agent/sw-qa-002-rapid-prototype-lane
+    paths:
+      - .github/workflows/prototype-evidence.yml
+      - Docs/PROTOTYPE_EVIDENCE_LANE.md
+      - scripts/build-prototype-evidence-candidate.mjs
+      - scripts/qa-prototype-evidence.mjs
+      - scripts/test-prototype-evidence-lane.mjs
+      - scripts/verify-prototype-web.mjs
   workflow_dispatch:
     inputs:
       source_ref:
@@ -22,7 +32,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: prototype-evidence-${{ inputs.prototype_task_id }}-${{ github.ref }}
+  group: prototype-evidence-${{ inputs.prototype_task_id || 'SW-QA-002-preintegration' }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -95,8 +105,8 @@ jobs:
         shell: bash
         env:
           SEVERE_WEATHER_PROTOTYPE_DIR: prototype-evidence
-          SEVERE_WEATHER_PROTOTYPE_TASK_ID: ${{ inputs.prototype_task_id }}
-          SEVERE_WEATHER_PROTOTYPE_PROFILE: ${{ inputs.screenshot_profile }}
+          SEVERE_WEATHER_PROTOTYPE_TASK_ID: ${{ inputs.prototype_task_id || 'SW-QA-002-preintegration' }}
+          SEVERE_WEATHER_PROTOTYPE_PROFILE: ${{ inputs.screenshot_profile || 'mobile-default' }}
           SEVERE_WEATHER_PROTOTYPE_SOURCE_COMMIT: ${{ steps.source.outputs.source_commit }}
           SEVERE_WEATHER_PROTOTYPE_SOURCE_REF: ${{ steps.source.outputs.source_ref }}
         run: |
@@ -117,8 +127,8 @@ jobs:
         env:
           SOURCE_COMMIT: ${{ steps.source.outputs.source_commit }}
           SOURCE_REF: ${{ steps.source.outputs.source_ref }}
-          PROTOTYPE_TASK_ID: ${{ inputs.prototype_task_id }}
-          SCREENSHOT_PROFILE: ${{ inputs.screenshot_profile }}
+          PROTOTYPE_TASK_ID: ${{ inputs.prototype_task_id || 'SW-QA-002-preintegration' }}
+          SCREENSHOT_PROFILE: ${{ inputs.screenshot_profile || 'mobile-default' }}
           STARTED_EPOCH: ${{ steps.timing.outputs.started_epoch }}
         run: |
           set -euo pipefail
@@ -151,7 +161,7 @@ jobs:
       - name: Upload prototype-only web preview and evidence
         uses: actions/upload-artifact@v7
         with:
-          name: severe-weather-prototype-${{ inputs.prototype_task_id }}-${{ github.run_number }}
+          name: severe-weather-prototype-${{ inputs.prototype_task_id || 'SW-QA-002-preintegration' }}-${{ github.run_number }}
           path: dist/prototype-evidence
           if-no-files-found: error
           retention-days: 14

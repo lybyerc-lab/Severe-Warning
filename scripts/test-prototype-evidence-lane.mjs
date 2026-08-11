@@ -13,6 +13,18 @@ const autoPromoter = await read('.github/workflows/auto-promote-integration-qa.y
 
 assert.match(prototypeWorkflow, /name: Prototype Evidence \(Not Production QA\)/);
 assert.match(prototypeWorkflow, /workflow_dispatch:/);
+assert.match(prototypeWorkflow, /push:\s+branches:\s+- agent\/sw-qa-002-rapid-prototype-lane\s+paths:/);
+for (const lanePath of [
+  '.github/workflows/prototype-evidence.yml',
+  'Docs/PROTOTYPE_EVIDENCE_LANE.md',
+  'scripts/build-prototype-evidence-candidate.mjs',
+  'scripts/qa-prototype-evidence.mjs',
+  'scripts/test-prototype-evidence-lane.mjs',
+  'scripts/verify-prototype-web.mjs',
+]) {
+  assert.match(prototypeWorkflow, new RegExp(`- ${lanePath.replace(/\\./g, '\\\\.')}`));
+}
+assert.match(prototypeWorkflow, /SW-QA-002-preintegration/);
 assert.match(prototypeWorkflow, /Start prototype wall-clock measurement/);
 assert.doesNotMatch(prototypeWorkflow, /pull_request:|deploy-qa-pages|auto-promote|same-runner|slice5-base|package-evidence|setup-java|gradle|capacitor|assembleDebug|android-device-checkpoint/i);
 assert.match(prototypeWorkflow, /PROTOTYPE ONLY - NOT PRODUCTION QA/);
