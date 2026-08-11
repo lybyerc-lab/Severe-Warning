@@ -85,6 +85,12 @@ function scorekeeperRunStats(moo) {
   };
 }
 
+function scorekeeperActiveBuildMetadata() {
+  const metadata = globalThis.getSwRpgBuildMetadata?.();
+  if (!metadata || typeof metadata !== 'object') return { ...SCOREKEEPER_FUTURE_METADATA };
+  return { ...SCOREKEEPER_FUTURE_METADATA, ...metadata };
+}
+
 function scorekeeperLiveRun() {
   const bucket = scorekeeperBucketForLiveRun();
   const moo = bucket.mode === 'moo';
@@ -101,7 +107,10 @@ function scorekeeperLiveRun() {
       stormForm: moo ? 'moo-county-score-attack' : String(typeof currentStorm === 'undefined' ? 'tornado' : currentStorm),
       visualBuild: typeof productionQuality === 'undefined' ? 'unknown' : String(productionQuality),
       campaignMultiplier: moo || typeof campaignScoreMultiplier !== 'function' ? 1 : scorekeeperNumber(campaignScoreMultiplier(), 1),
-      futureMetadata: { ...SCOREKEEPER_FUTURE_METADATA }
+      // SW-RPG-001 may activate this metadata seam after this observer is
+      // installed. The scorekeeper remains a recorder: it reads the immutable
+      // current build identity and never awards currency or changes a loadout.
+      futureMetadata: scorekeeperActiveBuildMetadata()
     }
   };
 }
