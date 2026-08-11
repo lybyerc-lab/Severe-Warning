@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = relativePath => readFile(path.join(projectRoot, relativePath), 'utf8');
+const prototypeWorkflow = await read('.github/workflows/prototype-evidence.yml');
+const prototypeSmoke = await read('scripts/qa-prototype-evidence.mjs');
+const productionWorkflow = await read('.github/workflows/threejs-hero-slice6.yml');
+const publisherWorkflow = await read('.github/workflows/deploy-qa-pages.yml');
+const autoPromoter = await read('.github/workflows/auto-promote-integration-qa.yml');
+
+assert.match(prototypeWorkflow, /name: Prototype Evidence \(Not Production QA\)/);
+assert.match(prototypeWorkflow, /workflow_dispatch:/);
+assert.match(prototypeWorkflow, /Start prototype wall-clock measurement/);
+assert.doesNotMatch(prototypeWorkflow, /pull_request:|deploy-qa-pages|auto-promote|same-runner|slice5-base|package-evidence|setup-java|gradle|capacitor|assembleDebug|android-device-checkpoint/i);
+assert.match(prototypeWorkflow, /PROTOTYPE ONLY - NOT PRODUCTION QA/);
+assert.match(prototypeWorkflow, /pnpm install --frozen-lockfile/);
+assert.match(prototypeWorkflow, /pnpm run verify:process/);
+assert.match(prototypeWorkflow, /build-prototype-evidence-candidate\.mjs/);
+assert.match(prototypeWorkflow, /verify-prototype-web\.mjs/);
+assert.match(prototypeWorkflow, /qa-prototype-evidence\.mjs/);
+assert.match(prototypeWorkflow, /if-no-files-found: error/);
+assert.match(prototypeSmoke, /PROTOTYPE ONLY - NOT PRODUCTION QA/);
+assert.match(prototypeSmoke, /#btnStartMenu/);
+assert.match(prototypeSmoke, /KeyW/);
+assert.match(prototypeSmoke, /mobile-screenshot\.png/);
+assert.match(prototypeSmoke, /productionAuthority: false/);
+assert.match(await read('scripts/verify-prototype-web.mjs'), /Three\.js r128/);
+assert.match(await read('scripts/build-prototype-evidence-candidate.mjs'), /PROTOTYPE ONLY - NOT PRODUCTION QA/);
+assert.doesNotMatch(await read('scripts/build-prototype-evidence-candidate.mjs'), /slice5-base|same-runner|deploy-qa-pages|package-evidence/i);
+assert.match(productionWorkflow, /same-runner-performance:/);
+assert.match(productionWorkflow, /package-evidence:/);
+assert.match(productionWorkflow, /android-device-checkpoint:/);
+assert.match(publisherWorkflow, /actions\/deploy-pages@v4/);
+assert.match(autoPromoter, /Dispatch allowed QA-branch publisher/);
+console.log('Prototype evidence lane isolation tests: PASS');
