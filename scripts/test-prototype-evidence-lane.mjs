@@ -34,6 +34,7 @@ assert.match(prototypeWorkflow, /pnpm run verify:process/);
 assert.match(prototypeWorkflow, /build-prototype-evidence-candidate\.mjs/);
 assert.match(prototypeWorkflow, /verify-prototype-web\.mjs/);
 assert.match(prototypeWorkflow, /qa-prototype-evidence\.mjs/);
+assert.match(prototypeWorkflow, /mkdir -p prototype-evidence\s+python3 -m http\.server 4173 --directory www > prototype-evidence\/server\.log/);
 assert.match(prototypeWorkflow, /if-no-files-found: error/);
 assert.match(prototypeSmoke, /PROTOTYPE ONLY - NOT PRODUCTION QA/);
 assert.match(prototypeSmoke, /#btnStartMenu/);

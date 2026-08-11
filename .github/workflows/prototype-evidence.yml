@@ -113,6 +113,7 @@ jobs:
           SEVERE_WEATHER_PROTOTYPE_SOURCE_REF: ${{ steps.source.outputs.source_ref }}
         run: |
           set -euo pipefail
+          mkdir -p prototype-evidence
           python3 -m http.server 4173 --directory www > prototype-evidence/server.log 2>&1 &
           SERVER_PID=$!
           cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
