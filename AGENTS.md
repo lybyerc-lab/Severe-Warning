@@ -1,3 +1,27 @@
+# CURRENT DIRECTOR REDIRECT
+
+**Fresh ChatGPT/Director sessions: do not use this `main`-branch file as current Severe Weather Warning execution authority.**
+
+`main` is the GitHub default branch and contains useful historical repository-memory snapshots, but active Stage 2B Director authority currently lives on:
+
+`agent/director-stage2b-game-direction`
+
+Before interpreting project status:
+
+1. Use the GitHub connector.
+2. Read GitHub Issue **#71 — DIRECTOR START HERE: current authority and fresh-chat recovery protocol**.
+3. Follow Issue #71 to the current Director branch.
+4. Read `Docs/ACTIVE_HANDOFF.md` from that Director branch first for current execution truth.
+5. Reconcile all prose against exact issue/branch/commit/CI evidence.
+
+Do not switch project authority back to `main` merely because GitHub opens it by default.
+
+---
+
+# HISTORICAL MAIN-BRANCH STARTUP CONTRACT
+
+The content below is retained as historical repository memory. It does **not** override Issue #71 or the current Director branch.
+
 # Severe Weather Repository Startup Contract
 
 This repository is the durable project memory. Chat history is working context only.
