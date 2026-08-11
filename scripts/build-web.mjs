@@ -12,6 +12,7 @@ const packageJsonPath = path.join(projectRoot, 'package.json');
 const sourceAudioDir = path.join(projectRoot, 'assets', 'audio');
 const sourceProductionAssetsDir = path.join(projectRoot, 'assets', 'production');
 const sourceRuntimeDir = path.join(projectRoot, 'runtime');
+const sourcePwaDir = path.join(projectRoot, 'pwa');
 const modernDistDir = path.join(projectRoot, 'modern-dist');
 const modernEntryPath = path.join(modernDistDir, 'modern-shell.js');
 const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
@@ -22,6 +23,7 @@ const outputAudio = path.join(outputDir, 'audio');
 const outputProductionAssets = path.join(outputDir, 'assets', 'production');
 const outputRuntime = path.join(outputDir, 'runtime');
 const outputModern = path.join(outputDir, 'modern');
+const outputPwa = path.join(outputDir, 'pwa');
 
 const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
 const buildVersion = packageJson.version;
@@ -81,22 +83,43 @@ for (const runtimeFile of runtimeFiles) {
 await access(sourceProductionAssetsDir);
 await access(path.join(sourceProductionAssetsDir, 'structures', 'storefront-v1.json'));
 await access(modernEntryPath);
+for (const pwaFile of [
+  'manifest.webmanifest',
+  'offline.html',
+  'service-worker.js',
+  'register-pwa.js',
+  'cache-policy.js',
+  'icons/severe-weather-warning.svg'
+]) {
+  await access(path.join(sourcePwaDir, pwaFile));
+}
 
 const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';
+const pwaHeadTags = `<!-- SEVERE_WEATHER_PWA_SHELL_V1 -->\n<link rel="manifest" href="./manifest.webmanifest">\n<meta name="application-name" content="Severe Weather Warning">\n<meta name="apple-mobile-web-app-title" content="Severe Weather Warning">\n<meta name="theme-color" content="#030712">\n<link rel="icon" href="./pwa/icons/severe-weather-warning.svg" type="image/svg+xml">\n<link rel="apple-touch-icon" href="./pwa/icons/severe-weather-warning.svg">`;
+const pwaScriptTag = '<script type="module" src="./pwa/register-pwa.js"></script>';
 if (html.includes(modernScriptTag)) {
   throw new Error('Source gameplay HTML must not contain the generated modern-shell script tag.');
 }
+if (html.includes('SEVERE_WEATHER_PWA_SHELL_V1')) {
+  throw new Error('Source gameplay HTML must not contain generated PWA shell markers.');
+}
+const headCloseIndex = html.lastIndexOf('</head>');
+if (headCloseIndex < 0) {
+  throw new Error('Gameplay source is missing </head>; cannot attach the PWA shell.');
+}
+html = `${html.slice(0, headCloseIndex)}${pwaHeadTags}\n${html.slice(headCloseIndex)}`;
 const bodyCloseIndex = html.lastIndexOf('</body>');
 if (bodyCloseIndex < 0) {
   throw new Error('Gameplay source is missing </body>; cannot attach the modern shell.');
 }
-html = `${html.slice(0, bodyCloseIndex)}${modernScriptTag}\n${html.slice(bodyCloseIndex)}`;
+html = `${html.slice(0, bodyCloseIndex)}${modernScriptTag}\n${pwaScriptTag}\n${html.slice(bodyCloseIndex)}`;
 
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputFonts, { recursive: true });
 await mkdir(outputAudio, { recursive: true });
 await mkdir(outputProductionAssets, { recursive: true });
 await mkdir(outputRuntime, { recursive: true });
+await mkdir(outputPwa, { recursive: true });
 await writeFile(path.join(outputDir, 'index.html'), html, 'utf8');
 
 for (const [packagePath, outputName] of fontFiles) {
@@ -108,6 +131,10 @@ for (const audioFile of await readdir(sourceAudioDir)) {
 await cp(sourceProductionAssetsDir, outputProductionAssets, { recursive: true });
 await cp(sourceRuntimeDir, outputRuntime, { recursive: true });
 await cp(modernDistDir, outputModern, { recursive: true });
+await cp(sourcePwaDir, outputPwa, { recursive: true });
+await copyFile(path.join(sourcePwaDir, 'manifest.webmanifest'), path.join(outputDir, 'manifest.webmanifest'));
+await copyFile(path.join(sourcePwaDir, 'offline.html'), path.join(outputDir, 'offline.html'));
+await copyFile(path.join(sourcePwaDir, 'service-worker.js'), path.join(outputDir, 'service-worker.js'));
 
 const sourceSha256 = createHash('sha256').update(html).digest('hex');
 const audioSha256 = createHash('sha256').update(await readFile(path.join(sourceAudioDir, 'storm-feel-sprite.wav'))).digest('hex');
@@ -135,4 +162,4 @@ await writeFile(
   'utf8'
 );
 
-console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files), authored storefront (${storefrontSha256})`);
+console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), PWA shell (manifest + root-scoped service worker), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files), authored storefront (${storefrontSha256})`);
