@@ -394,6 +394,7 @@ globalThis.getMooLevelQaState = function getMooLevelQaState() {
 
 globalThis.__SW_MOO_LEVEL_QA__ = {
   beginEncounter() { mooLevelMode = 'normal'; startRunFromMenu(); const anchor = mooAnchor(); storm.pos.set(anchor.x, terrainHeightAt(anchor.x, anchor.z), anchor.z); tornadoGroup.position.copy(storm.pos); },
+  expireEncounter() { if (mooEncounter) { mooEncounter.activated = true; mooEncounter.remaining = 0.01; } },
   primeEncounterSuccess() { hartFarmRing.forEach((cow, index) => { cow.airborne = true; cow.altitude = 6; cow.x = cow.mooStartX + 20 + index; cow.z = cow.mooStartZ; }); },
   beginMooLevel() { mooLevelProgress = { ...mooLevelProgress, mooLevelUnlocked: true }; saveMooLevelProgress(); startMooLevelFromMenu(); },
   primeMooObjectives() { animals.filter((cow) => cow.mooRole === 'moo-level').slice(0, 20).forEach((cow, index) => { cow.airborne = true; cow.altitude = 7; cow.x = cow.mooStartX + 18 + index; }); mooSponsorProps.slice(0, 10).forEach((prop) => { prop.health = 0; prop.destroyed = true; scene.remove(prop.meshData.group); }); },

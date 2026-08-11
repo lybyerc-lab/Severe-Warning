@@ -16,8 +16,13 @@ await page.goto(`${baseUrl}?mooqa=1`, { waitUntil: 'networkidle', timeout: 60000
 await page.waitForFunction(() => globalThis.getMooLevelQaState?.().marker === 'SW_GAME_002_MOO_LEVEL_V1', null, { timeout: 15000 });
 await page.waitForTimeout(500);
 const started = await page.evaluate(() => globalThis.getMooLevelQaState());
+await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.expireEncounter());
+await page.waitForTimeout(500);
+const failedEncounter = await page.evaluate(() => globalThis.getMooLevelQaState());
+await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());
+await page.waitForTimeout(500);
 await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());
-await page.waitForTimeout(2500);
+await page.waitForTimeout(3000);
 const unlocked = await page.evaluate(() => globalThis.getMooLevelQaState());
 await page.screenshot({ path: path.join(outputDir, 'hart-farm-unlocked.png') });
 await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());
@@ -34,6 +39,7 @@ const runtimeConsoleErrors = consoleErrors.filter((message) => !assetTransportEr
 const checks = {
   executorIntegration: started.executorTicks > 0 && unlocked.executorTicks > started.executorTicks && mooCompleted.executorTicks > mooStarted.executorTicks,
   hartFarmActivated: started.encounter?.activated === true,
+  encounterFailureRearms: failedEncounter.encounter?.state === 'failed' && failedEncounter.progress?.mooLevelUnlocked === false,
   encounterUnlocked: unlocked.progress?.mooLevelUnlocked === true && unlocked.encounter?.state === 'complete',
   persistence: persisted.mooLevelUnlocked === true,
   lockedToUnlockedAccess: await page.locator('#menuCardMooLevel').count() === 1,
@@ -44,7 +50,7 @@ const checks = {
   noPageErrors: pageErrors.length === 0,
   noRuntimeConsoleErrors: runtimeConsoleErrors.length === 0
 };
-const report = { task: 'SW-GAME-002', baseUrl, started, unlocked, mooStarted, mooCompleted, persisted, checks, pageErrors, runtimeConsoleErrors, assetTransportErrors, passed: Object.values(checks).every(Boolean) };
+const report = { task: 'SW-GAME-002', baseUrl, started, failedEncounter, unlocked, mooStarted, mooCompleted, persisted, checks, pageErrors, runtimeConsoleErrors, assetTransportErrors, passed: Object.values(checks).every(Boolean) };
 await writeFile(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 await browser.close();
 for (const [name, passed] of Object.entries(checks)) console.log(`${passed ? 'PASS' : 'FAIL'} ${name}`);
