@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 13:32 America/Chicago
+Last updated: 2026-08-11 13:51 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -43,7 +43,7 @@ Branch: `agent/sw-game-002-moo-level-unlock`
 Exact accepted head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 Director status: **ACCEPTED integration candidate**.
 
-Independent QA passed `verify:sw-game-002` 10/10 and browser QA 12/12, including deterministic failure/rearm, persistent unlock, dedicated Moo County Fair, cow safety, normal campaign regression, and protected gameplay authority.
+Independent QA passed verifier 10/10 and browser QA 12/12, including deterministic failure/rearm, persistent unlock, dedicated Moo County Fair, cow safety, normal campaign regression, and protected gameplay authority.
 
 ### #63 SW-QA-002 - rapid prototype evidence lane
 
@@ -61,46 +61,56 @@ Director status: **ACCEPTED integration candidate**.
 
 `test:pwa`, `qa:pwa`, and process verification are durable PASS. Physical Android install acceptance and production deployment remain separate gates.
 
+### #68 SW-SCORE-001 - persistent scorekeeper
+
+Branch: `agent/sw-score-001-persistent-scorekeeper`
+Approved base: `43348db9b56ec18bca8418c8dfe13470aad4722d`
+Exact accepted head: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
+Director acceptance comment: `5257473178`
+Director status: **ACCEPTED integration candidate**.
+
+The returned head is one bounded commit touching only `package.json`, `runtime/sw-score-001-persistent-scorekeeper.js`, and its apply/verify/browser-QA scripts. The scorekeeper observes existing accepted run/result truth rather than recalculating score authority.
+
+Returned browser evidence is 13/13 PASS with:
+- first-run durable record creation;
+- lower-score PB protection;
+- higher-score NEW PERSONAL BEST with correct previous best and margin;
+- reload persistence;
+- campaign site/variant isolation;
+- separate Moo record bucket;
+- game build and scoring-version identity;
+- reserved-only future Storm Triangle/upgrade metadata;
+- newspaper record presentation plus replay/map actions;
+- inherited GAME-002/campaign regression;
+- zero page/runtime-console errors.
+
+Freeze this exact head for downstream ancestry. No self-merge or production promotion is implied.
+
 ## Returned work with acceptance blockers
 
 ### #61 SW-WORLD-003 - storm hero
 
-Recovered branch: `agent/sw-world-003-storm-hero-recovery`
 Recovered head: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
+QA returned **FAIL for Director visual acceptance**.
 
-QA completed independent exact-head visual acceptance on `agent/sw-qa-004-world-003-visual-acceptance` and returned **FAIL for Director visual acceptance**.
+Automated evidence is strong: static verifier 95/95, modern typecheck/build pass, browser QA pass, mobile budgets respected, bubble/round primitives suppressed, and no intentional protected gameplay-authority writes.
 
-Automated evidence is strong:
-- static verifier 95/95;
-- modern typecheck/build pass;
-- browser QA PASS with zero failures;
-- presentation counts within mobile budgets;
-- inherited round sprites / production dodecahedra / legacy dust bowl suppressed;
-- no intentional protected gameplay-authority writes.
-
-But human visual judgment remains a blocker: the attack-bubble read is gone, yet the default storm still reads too much like a clean translucent geometric cone with visible square/effect primitives, especially at lower funnel / ground contact. It does not yet read as the required ragged connected condensation-column / wedge mass.
+Human visual blocker remains: the storm no longer reads as attack bubbles, but still reads too much like a clean translucent geometric cone with visible square/effect primitives, especially at lower funnel / ground contact.
 
 ### Current WORLD assignment for #61
 
 Branch: `agent/sw-world-004-storm-hero-acceptance-fix`
 Exact base: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
-Issue #61 Director activation comment: `5257312200`
+Issue #61 activation comment: `5257312200`
 
-Scope is only the proven visual defect:
-- break the clean translucent cone read;
-- eliminate or visually bury obvious square/effect primitives;
-- retain one coherent storm mass, strong ground attachment, asymmetry, ragged upper transition, and directional lower circulation;
-- do not regress to attack bubbles, stacked discs, or disconnected wisps;
-- preserve mobile budgets and all gameplay authority.
-
-No #66 imports, no broad town/world rewrite, no RPG/scorekeeper/newspaper/PWA work.
+Scope is only the proven visual defect: break the clean cone read, bury obvious effect primitives, preserve one coherent ragged connected storm mass and strong ground attachment, and keep gameplay authority/mobile budgets unchanged.
 
 ### #65 SW-UI-001 - newspaper presentation
 
 Branch: `agent/sw-ui-001-newspaper-presentation`
 Exact durable head: `43348db9b56ec18bca8418c8dfe13470aad4722d`
 
-Worker verification passed and the exact source is the approved sequencing base for scorekeeper work. Final owner/product visual acceptance remains separate because returned screenshots were not made durable in GitHub.
+Worker verification passed and the source is the accepted sequencing base for #68. Final owner/product visual acceptance remains separate because returned screenshots were not made durable in GitHub.
 
 ### #66 SW-LEVEL-001 - Storm Site framework
 
@@ -108,73 +118,47 @@ Branch: `agent/sw-level-001-storm-site-framework`
 Base: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 Exact durable head: `07e089f03bdb2943e6b3d64033010736805afb4a`
 
-WORLD successfully recovered, froze, and published the preserved result. Durability is **PASS**. Exact diff is one bounded commit containing only `package.json`, `runtime/sw-level-001-storm-site-framework.js`, and its apply/verify/QA scripts.
+Durability is PASS and the diff is bounded. Static verification passed 9/9 plus inherited campaign 66/66 and V5.1 55/55.
 
-The framework establishes:
-- `STORM_SITE_REGISTRY` with Heartland home, County Fair, and Coastal Boardwalk;
-- common Storm Site launch contract;
-- authored replay variation telemetry;
-- County Fair and Coastal site bounds / object caps;
-- Ferris-wheel signature telemetry;
-- Coastal boat-launch signal defined statically;
-- Moo protection maintained.
-
-Static verification passed 9/9 plus inherited campaign 66/66 and V5.1 55/55.
-
-Director acceptance is **FAIL / blocked** because the fresh browser run exposed:
-1. return-to-home leaves Storm Site target/decor telemetry behind, so campaign-home restoration is not proven;
-2. boat-launch signal was not actually demonstrated in the browser path;
-3. seven isolated-run console 404s need classification;
-4. County Fair / Coastal screenshots still read too much like Heartland overlays or small arenas rather than materially authored distinct places.
+Director acceptance remains blocked because browser QA exposed four issues:
+1. return-to-home leaves Storm Site target/decor telemetry behind;
+2. Coastal boat-launch signal was not actually demonstrated;
+3. seven isolated-run console 404s require classification;
+4. County Fair / Coastal screenshots still read too much like Heartland overlays or small arenas instead of materially authored places.
 
 ### Current QA assignment for #66
 
 Verification branch: `agent/sw-qa-005-level-001-defect-repro`
 Exact source/base: `07e089f03bdb2943e6b3d64033010736805afb4a`
-Issue #66 Director activation comment: `5257314336`
+Issue #66 activation comment: `5257314336`
 
-QA must independently reproduce and classify all four blockers, distinguish product defects from harness defects, identify 404 origins, determine boat-launch reachability/testability, inspect authored-place identity, and rerun protected regressions. No product-code edits are authorized.
+QA must independently reproduce/classify all four blockers, distinguish product defects from harness defects, identify 404 origins, determine boat-launch reachability/testability, inspect authored-place identity, and rerun protected regressions. No product-code edits are authorized.
 
-## #68 SW-SCORE-001 - persistent scorekeeper
+## Current GAME assignment: #67 SW-RPG-001 first implementation slice
 
-Branch: `agent/sw-score-001-persistent-scorekeeper`
-Approved base: `43348db9b56ec18bca8418c8dfe13470aad4722d`
+Branch: `agent/sw-rpg-001-moolah-storm-triangle`
+Exact base: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
+Issue #67 activation comment: `5257476257`
 
-Owner reports SW-SCORE-001 is **complete and committed locally**, and later reports all workers finished their current tasks. However, Director's latest GitHub check still shows remote `agent/sw-score-001-persistent-scorekeeper` at the untouched base `43348db9...`; Issue #68 contains no exact completed source SHA / return package yet.
+GAME is now authorized to implement a bounded first RPG slice from the accepted scorekeeper head.
 
-Treat #68 as **worker-complete locally, durable return missing**. Do not invent a head or base downstream work on `43348db9...`.
+Required slice:
+1. local-first MOO-LAH persistence and deterministic earn events from existing accepted run/results truth;
+2. MOO-LAH earned surfaced through the existing newspaper/results language without redesigning #65;
+3. a small persistent upgrade model for Pull, Gust, and Grid Zap, with at least one meaningful bounded upgrade path per ability and exact base/upgraded values documented;
+4. exactly three active abilities per run as the Storm Triangle contract, with current roster establishing the loadout/persistence/schema/UI seam and no extra permanent HUD slots;
+5. active upgrade/loadout identity written into #68 scorekeeper build metadata so records remain interpretable;
+6. no movement-speed/turn-response treadmill. Storm Core progression, if touched, should be utility/combo-oriented.
 
-GAME publication/evidence closure remains required: publish the exact completed commit and return PB creation / lower-score preservation / higher-score NEW PERSONAL BEST / previous-best margin / reload persistence / mode isolation / Moo separation / scoring-version identity / newspaper legibility / protected regression / drift evidence.
+Held for later #67 slices: Twin Tornadoes, Waterspout unlock, satellite feat, full Slingshot physics/record loop, full U.S. map, online economy/accounts, and broad progression content.
 
-## Current GAME assignment: #67 read-only preflight
-
-Issue: `SW-RPG-001: MOO-LAH economy and light action RPG ability progression`
-Director preflight comment: `5257316620`
-
-Because #68 is complete locally but not durable, GAME may advance only through a **read-only preflight** using the actual local completed #68 commit.
-
-Before anything else GAME must record exact local #68 SHA, branch, and status. No #67 code edits or implementation commits are authorized yet.
-
-Preflight deliverable maps:
-- MOO-LAH persistence and earning events from existing run/result truth;
-- newspaper reward integration without redesign;
-- bounded Pull/Gust/Grid Zap upgrade dimensions with current/base values identified;
-- Storm Core utility without movement-speed/turn-response treadmill;
-- exactly three active abilities in Storm Triangle; storm form/passives separate;
-- interaction with #68 build/version record metadata;
-- Coastal boat-launch -> Waterspout feat seam without assuming #66 acceptance;
-- Pull + Gust = Slingshot synergy authority;
-- anti-grind/local-first limits;
-- exact files/seams likely to change;
-- smallest player-meaningful implementation slice.
-
-No source changes until actual #68 head is durable and Director establishes the exact #67 base.
+Required return: exact final SHA/changed files, browser proof for MOO-LAH earn/reload, persistent purchases, exact upgrade effects, correct scorekeeper build identity, newspaper legibility, normal campaign/GAME-002/#65/#68 regressions, anti-grind notes, and drift report.
 
 ## Integration
 
 No Integration worker is active.
 
-First-batch integration remains blocked by #61 visual acceptance. #62, #63, and #64 are accepted candidates. #65 is a durable downstream base but still has separate product visual acceptance. #66 is durable but acceptance-blocked. #68 is locally complete but non-durable.
+First-batch integration remains blocked by #61 visual acceptance. #62, #63, #64, and #68 are accepted candidates. #65 is durable but retains separate product visual acceptance. #66 is durable but acceptance-blocked.
 
 Do not production-merge rejected QA #29.
 
@@ -199,10 +183,9 @@ Do not production-merge rejected QA #29.
 
 1. Review exact WORLD correction return on `agent/sw-world-004-storm-hero-acceptance-fix`; then send corrected head to independent visual acceptance.
 2. Review QA #66 defect classification and turn only confirmed implementation defects into a bounded WORLD follow-up after #61.
-3. Watch for the actual #68 completed head to become durable. Do not authorize #67 source edits before that exact SHA exists in durable repo state.
-4. Once #68 is durable, review scorekeeper behavior/version integrity; if accepted enough for sequencing, create #67 implementation branch from that exact head.
-5. Preserve #62/#63/#64 accepted heads exactly.
-6. Start Integration only when the first-batch acceptance set and merge order are explicit.
+3. Review GAME #67 exact return for MOO-LAH persistence, bounded upgrade effects, scorekeeper build identity, anti-grind behavior, and protected regressions.
+4. Preserve #62/#63/#64/#68 accepted heads exactly.
+5. Start Integration only when the first-batch acceptance set and merge order are explicit.
 
 ## Chat rollover rule
 
