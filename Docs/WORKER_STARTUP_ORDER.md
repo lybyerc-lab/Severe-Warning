@@ -49,11 +49,59 @@ The required sequence is:
 
 `assigned worktree -> assigned branch -> exact SHA verified -> governing docs read -> bounded task interpretation -> implementation`
 
+## Stage 2B execution adjustments discovered in practice
+
+These are now part of the process model, not informal chat memory.
+
+### 1. Checkout context comes before documentation context
+
+The first Stage 2B launch prompt accidentally told workers to read governing files before switching/verifying their assigned checkout. WORLD, GAME, and QA all independently hit the same failure mode. Future launch prompts must always put branch/SHA verification before task-versioned document reading.
+
+### 2. Environment gaps are not automatically repository defects
+
+QA-002 reported that the local Windows worktree did not have `ffmpeg`, while the Ubuntu GitHub Actions workflow deliberately installs it before the dependent evidence steps.
+
+Director rule:
+
+- distinguish missing local tooling from a product/repository failure before changing source;
+- run safe local checks that the environment supports;
+- use the declared CI environment for evidence owned by that environment;
+- record the local limitation in return evidence;
+- do not add dependencies, rewrite workflows, or weaken gates merely to make one developer machine resemble CI.
+
+If CI cannot cover a genuinely required local-only dependency, stop and report the dependency instead of improvising.
+
+### 3. New workflow tasks need a pre-integration self-proof path
+
+QA-002 introduced a new `workflow_dispatch`-only prototype workflow on its worker branch. GitHub manual dispatch requires the workflow file to exist on the repository default branch before it can receive a dispatch, so the branch could not execute its own required harmless example run before integration.
+
+Future workflow-authoring tasks must answer during task design:
+
+- How can this new workflow be executed before it reaches the default branch?
+- Is a temporary branch-only/path-limited trigger required for self-validation?
+- Can the validation trigger be structurally prevented from promoting QA, merging, publishing, or gaining production authority?
+
+A workflow implementation is not acceptance-complete until its required execution evidence is actually obtainable.
+
+### 4. Code-shape approval and acceptance evidence are separate gates
+
+QA-002 demonstrated a useful distinction: a branch can have an excellent drift profile and still be incomplete because required executed evidence is missing.
+
+Director review should therefore explicitly separate:
+
+- **scope/drift verdict**: did the branch change only what the ticket authorized?
+- **implementation verdict**: does the code appear to implement the requested mechanism?
+- **execution/evidence verdict**: did the required run, artifact, screenshot, regression, or device evidence actually occur?
+
+Do not promote a clean diff into a completed task merely because the implementation looks correct.
+
 ## Director / task-authoring rule
 
 Future worker launch prompts and issue startup instructions should reflect this same order. Do not tell workers to read task-versioned governing docs before switching/verifying the task checkout.
 
 When a newer process law must apply to a deliberately frozen older base, add that law directly to the task issue/launch note rather than rebasing the worker solely to obtain newer documentation.
+
+For tasks that create or materially change CI/workflow machinery, the ticket must include an explicit pre-integration execution plan so the new machinery can prove itself before it gains authority.
 
 ## Completion relevance
 
@@ -63,10 +111,16 @@ Checkout identity is part of drift evidence. Worker completion should report:
 - starting base SHA;
 - final SHA;
 - confirmation that governing docs were read only after task checkout verification;
-- any mismatch encountered before editing.
+- any mismatch encountered before editing;
+- environment-specific limitations that affected local verification;
+- for new workflows, exact executed validation evidence or a clearly stated blocker.
 
 ## Process lesson
 
-This incident is not treated as a worker mistake to remember informally. It is treated as a production-system defect with a durable fix.
+These incidents are not treated as worker mistakes to remember informally. They are treated as production-system defects with durable fixes.
 
 **Never interpret task authority from an unverified checkout.**
+
+**Never change the repository merely because one local environment differs from the declared evidence environment.**
+
+**Never call a new workflow complete until there is a valid way to execute and prove it.**
