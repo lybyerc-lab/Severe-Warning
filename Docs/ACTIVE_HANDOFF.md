@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 11:18 America/Chicago
+Last updated: 2026-08-11 11:53 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -13,16 +13,17 @@ Public QA root: `https://lybyerc-lab.github.io/Severe-Warning/`
 
 Repository state is durable memory. Chat is temporary context.
 
-1. Read `AGENTS.md` from the Director branch.
-2. Read `Docs/GAME_DIRECTOR.md` and `Docs/WORKER_STARTUP_ORDER.md`.
-3. Read this handoff and `Docs/ACTIVE_PRODUCTION_SLATE.md`.
-4. Read exact active issues and latest Director comments.
-5. Inspect live worker branch heads before claiming completion, liveness, or acceptance.
-6. Never use `main` as project authority.
+1. Read `AGENTS.md`, `Docs/GAME_DIRECTOR.md`, and `Docs/WORKER_STARTUP_ORDER.md` from the Director branch.
+2. Read this handoff and `Docs/ACTIVE_PRODUCTION_SLATE.md`.
+3. Read exact active issues and latest Director comments.
+4. Inspect exact branch heads before claiming completion, liveness, or acceptance.
+5. Never use `main` as project authority.
 
 Startup law:
 
 `assigned worktree -> assigned branch -> exact SHA verified -> task-versioned governing docs -> intended change / protected behavior / proof plan -> edit`
+
+A Director launch comment or prepared branch is assignment authority, not proof that an external worker session is actually running. Actual liveness requires branch movement, an explicit worker return, or an owner statement.
 
 If a prepared remote branch is absent locally and network is unavailable, the Director may explicitly authorize local branch creation from the exact approved SHA only when that exact commit object already exists locally. Never substitute another SHA.
 
@@ -36,90 +37,141 @@ If a prepared remote branch is absent locally and network is unavailable, the Di
 - Green CI is engineering evidence, not product acceptance.
 - Drift is a product defect.
 
-## First-batch state
+## Accepted / frozen work
 
-### WORLD #61 - SW-WORLD-003
+### #62 SW-GAME-002 - Hart Farm unlock + real Moo Level
 
-Branch: `agent/sw-world-003-storm-hero-recovery`
-Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
-
-Owner previously reported WORLD-003 complete, but GitHub still shows the assigned branch at the untouched base and no durable worker return.
-
-**Current WORLD assignment:** recovery/evidence only. Locate, freeze, and persist the already-completed local WORLD-003 state without redesign or retuning. WORLD-003 remains the first-batch visual gate until the actual completed head and required screenshots are durable and Director-reviewed.
-
-### GAME #62 - SW-GAME-002
-
-Finished GAME branch: `agent/sw-game-002-moo-level-unlock`
-Frozen GAME head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
-
-Director code-shape review remains provisionally PASS for the Hart Farm unlock encounter and persistent dedicated MOO LEVEL.
-
-**Current QA assignment:** independent GAME-002 evidence closure on verification branch `agent/sw-qa-003-game-002-evidence-closure`, starting exactly at `89aeac92d032bfc6546cb8da7c52effc7a408aa1`.
-
-QA must execute and persist the existing `verify:sw-game-002` and `qa:sw-game-002` proof, including Hart Farm unlock, failure rearm, persistence, dedicated Moo County Fair launch, cow safety, normal-campaign regression, screenshots, exact commands/environment, and drift statement. No product-code change is expected.
-
-### QA #63 - SW-QA-002
-
-Accepted branch: `agent/sw-qa-002-rapid-prototype-lane`
-Accepted head: `73b28e07a5b05dd632226af851b06a32e99bb068`
+Branch: `agent/sw-game-002-moo-level-unlock`
+Exact accepted head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
 Director status: **ACCEPTED integration candidate**.
 
-Exact-head GitHub Actions Run `31494975840` completed successfully and uploaded artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`). Prototype authority remains explicitly non-production.
+QA independently executed the exact source and returned:
+- `verify:sw-game-002` PASS 10/10;
+- `qa:sw-game-002` PASS 12/12;
+- Hart Farm deterministic failure -> later success/rearm without campaign penalty;
+- locked -> unlocked persistence;
+- dedicated `mode: "moo"` Moo County Fair launch with safe cows and sponsor props;
+- objective completion evidence;
+- normal campaign regression and zero browser/runtime errors;
+- protected movement/camera/abilities/scoring/world authority unchanged.
 
-## Next-wave state
+### #63 SW-QA-002 - rapid prototype evidence lane
 
-### QA #64 - SW-PWA-001
+Branch: `agent/sw-qa-002-rapid-prototype-lane`
+Exact accepted head: `73b28e07a5b05dd632226af851b06a32e99bb068`
+
+Director status: **ACCEPTED integration candidate**.
+
+Exact-head GitHub Actions Run `31494975840` succeeded with artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`). Prototype authority remains explicitly non-production.
+
+### #64 SW-PWA-001 - installable shell
 
 Branch: `agent/sw-pwa-001-installable-shell`
-Approved base: `73b28e07a5b05dd632226af851b06a32e99bb068`
-Worker-complete head: `7cda055a4773c5c9dc69c0d02018cd9454a86628`
+Exact accepted head: `7cda055a4773c5c9dc69c0d02018cd9454a86628`
 
-Owner reports QA completed the assignment. Director scope/code-shape verdict: **PASS and frozen**.
+Director status: **ACCEPTED integration candidate**.
 
-The implementation is confined to the PWA/build/QA surface and provides the Severe Weather Warning install shell, project-relative scope/start paths, deterministic source identity, stale-cache defenses, versioned managed cache cleanup, offline fallback, and static/Playwright QA harnesses. No gameplay or promotion authority moved.
+Scope/code-shape PASS plus durable execution evidence:
+- `pnpm run test:pwa` PASS;
+- `pnpm run qa:pwa` PASS for `/Severe-Warning/` scope, non-installed browser play, deterministic build-identity supersession, offline fallback, and no page errors;
+- `pnpm run verify:process` PASS 28/28.
 
-Final acceptance remains separate because no exact-head GitHub Actions run is associated with `7cda055a...` and the worker's executed local `test:pwa` / `qa:pwa` report is not yet persisted in the issue. Do not reopen PWA feature scope merely to close evidence.
+Physical Android install acceptance and production deployment remain separate gates.
 
-QA has moved on to #62 evidence closure.
+## Completed work awaiting final acceptance / durability
 
-### GAME #65 - SW-UI-001
+### #61 SW-WORLD-003 - storm hero recovery
+
+Branch: `agent/sw-world-003-storm-hero-recovery`
+Frozen base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
+Recovered durable head: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
+
+The recovery is now durable. Exact diff is one commit and stays bounded to:
+- `runtime/threejs-visual-hero-slice6-town-polish.js`;
+- `runtime/threejs-visual-hero-slice6.js`;
+- `scripts/qa-threejs-hero-slice6.mjs`;
+- `scripts/verify-threejs-hero-slice6.mjs`.
+
+The recovered implementation suppresses inherited round/bubble-like storm primitives and builds a more connected ragged wedge/condensation-column read with condensation streaks and lower-circulation ground pull.
+
+Final visual acceptance still requires exact-head executed/browser evidence that a human can inspect: default storm hero, Main Street, lower-funnel/ground-contact, before/after comparison, mobile budget counts, and protected-gameplay regression.
+
+Latest Director launch on #61 assigns QA to independent exact-head visual acceptance on verification branch `agent/sw-qa-004-world-003-visual-acceptance`, based exactly at `f9430bc0cee0d02b3aacf2eb0909183d14912617`. No product-code edits are authorized.
+
+### #65 SW-UI-001 - newspaper presentation
 
 Branch: `agent/sw-ui-001-newspaper-presentation`
-Starting SHA: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
+Exact completed head: `43348db9b56ec18bca8418c8dfe13470aad4722d`
 
-Owner reports GAME has completed SW-UI-001.
+GAME published the exact completed result and return package. The branch is one commit ahead of GAME-002 and changes only:
+- `package.json`;
+- `runtime/sw-ui-001-newspaper-presentation.js`;
+- bounded apply/verify/browser-QA scripts.
 
-At the latest Director check, GitHub still shows the assigned remote branch at the untouched starting SHA and Issue #65 has no final worker return. Treat #65 as **worker-complete locally, durable return missing**, not as unfinished feature work.
+Returned verification:
+- SW-UI-001 verifier 8/8;
+- inherited campaign verifier 66/66;
+- V5.1 production slice 55/55;
+- inherited SW-GAME-002 10/10;
+- process verifier 28/28;
+- browser presentation report 9/9 with no page/runtime-console errors.
 
-**Current GAME assignment:** publication/evidence closure only. Preserve the completed local newspaper state exactly, record its exact SHA/status/log evidence, freeze exact completed contents into a bounded commit only if they are still uncommitted on the verified assigned branch, preserve the required mobile screenshots, and publish the exact finished state when connectivity permits.
+Worker reports preserved mobile evidence for storm select, Moo card/results, and normal results. Those screenshots were not committed at the returned head, so final Director visual/product acceptance remains separate. However, the exact head is durable and is approved as the real sequencing base for #68. Do not reopen #65 feature scope unless visual review exposes a concrete defect.
 
-Do not redesign, retune, rebase, expand, or begin #68 from a guessed base while #65 is not durable.
-
-Required #65 evidence remains: storm-select newspaper, selected storm/readable traits, UNLEASH STORM, ordinary results, Moo Level locked/unlocked presentation/results, replay/continue/weather-map actions, executed UI/regression checks, no-gameplay-authority-change proof, drift report, and known limitations.
-
-### WORLD #66 - SW-LEVEL-001
+### #66 SW-LEVEL-001 - Storm Site framework
 
 Branch: `agent/sw-level-001-storm-site-framework`
-Starting SHA: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
+Approved start: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
-Owner reports WORLD completed this task. GitHub still shows the remote branch at the starting SHA and Issue #66 has no final worker return.
+Owner reports WORLD completed the implementation, but GitHub still shows the remote branch at the untouched starting SHA. Treat #66 as **worker-complete locally, durable return missing**.
 
-Treat #66 as **worker-complete locally, durable return missing**. Preserve/freeze the local completed state. Do not reset, rebase, delete, overwrite, or add new #66 feature work. WORLD is currently reassigned to #61 recovery because WORLD-003 is the higher-value integration blocker.
+Latest Director assignment on #66 is publication/evidence closure only: return to the preserved completed #66 worktree, identify/freeze the exact completed state, publish that exact state, and return the original browser/visual/regression package. Do not rebuild it from memory, reset/rebase it, or add new feature scope.
 
-## Queue / next sequencing
+## Next-wave assignments issued
 
-### #68 SW-SCORE-001
+Important: the following launch authority is durable, but actual external worker-session liveness must still be verified by branch movement/return or an owner statement.
 
-This is the **next intended GAME feature lane after #65** because the scorekeeper should build directly on the actual newspaper/results seam established by SW-UI-001.
+### GAME -> #68 SW-SCORE-001
 
-Do not launch #68 until the real completed #65 head is durable enough to establish the exact base. Do not use `89aeac92...` or another guessed ancestor merely to keep GAME busy. The latest Director comment on #68 records this sequencing rule.
+Branch: `agent/sw-score-001-persistent-scorekeeper`
+Exact base: `43348db9b56ec18bca8418c8dfe13470aad4722d`
+
+The branch already exists at the exact completed #65 head.
+
+Goal: local-first persistent records and competitive replay loop that plugs into the real newspaper/results seam.
+
+Required direction:
+- PB per site and meaningful mode/variant;
+- best rank/medal and selected absurd/site records from existing truth;
+- durable reload persistence;
+- storm/build identity available today;
+- scoring/game version identity;
+- NEW PERSONAL BEST, previous best/margin, next milestone, and replay motivation in the existing newspaper language;
+- reserve clean schema seams for future Storm Triangle/upgrade metadata without implementing #67 RPG.
+
+Protected: no score-formula rewrite, no newspaper redesign, no MOO-LAH/RPG, no online account requirement, no movement/camera/ability/campaign/cow/world/PWA authority changes.
+
+### QA -> #61 WORLD-003 exact-head visual acceptance
+
+Verification branch: `agent/sw-qa-004-world-003-visual-acceptance`
+Exact source/base: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
+
+No product edits. Execute and persist the storm visual/regression evidence needed for Director acceptance.
+
+### WORLD -> #66 publication/evidence closure
+
+Return to the preserved completed #66 local state and make the exact already-completed result durable. No new site implementation until that state is safe and reviewable.
+
+## Queue after this wave
 
 ### #67 SW-RPG-001
 
-Keep queued until progression/ability tuning can reopen safely and the active UI/site/evidence seams are stable enough for an exact base. Do not collide this with unresolved results/score architecture.
+Keep queued while GAME owns #68 and until progression/ability tuning can reopen without colliding with score/results architecture. MOO-LAH, Storm Triangle, meaningful upgrades, and physical synergies remain the intended next major progression layer after the current score/evidence seams are safe.
 
-No Stage 2B Integration worker is active. First-batch integration waits for WORLD-003 visual evidence and GAME-002 evidence reconciliation plus an explicit merge order.
+### Integration
+
+No Integration worker is active yet. First-batch integration can begin only after #61 visual acceptance is resolved and an explicit merge order is chosen. #62, #63, and #64 are accepted candidates. #65 is a durable downstream sequencing base but still has separate visual/product acceptance. #66 remains non-durable until WORLD publishes its completed state.
 
 ## Product laws
 
@@ -140,14 +192,13 @@ No Stage 2B Integration worker is active. First-batch integration waits for WORL
 
 ## Immediate Director actions
 
-1. Manage WORLD on #61 recovery until the completed storm head and visual evidence are durable and reviewable.
-2. Preserve completed #66 locally and review it once its exact head/evidence are published.
-3. Manage QA on #62 exact-head evidence closure; accept or pin a concrete defect from executed proof.
-4. Reconcile the already-completed PWA #64 local execution evidence without reopening feature scope.
-5. Manage GAME on #65 publication/evidence closure and visually review the exact returned newspaper head when it becomes durable.
-6. As soon as #65 is durable enough to establish the real downstream base, launch GAME on #68 SW-SCORE-001 from that exact head.
-7. Keep #67 queued until its progression/ability authority can reopen without seam collision.
-8. Do not production-merge rejected QA #29.
+1. Verify actual next-wave worker liveness by branch movement/return, not by comments alone.
+2. Review QA's exact-head #61 visual evidence and accept/reject WORLD-003 on the human visual question.
+3. Review #66 immediately when WORLD publishes the exact completed head/evidence; then feed WORLD the next conflict-safe site/world task.
+4. Review #68 exact-head return for local record correctness, persistence, version integrity, and newspaper integration; then decide whether GAME moves to #67 or another results/progression seam.
+5. Preserve #62/#63/#64 accepted heads exactly.
+6. Do not production-merge rejected QA #29.
+7. Start Integration only when the first-batch acceptance set and merge order are explicit.
 
 ## Chat rollover rule
 
