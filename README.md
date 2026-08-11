@@ -1,4 +1,18 @@
-# Severe Weather
+# Severe Weather Warning — Current Project Redirect
+
+The GitHub default branch (`main`) contains older implementation and repository-memory history. It is **not the current Stage 2B Director authority**.
+
+For current project state, start with GitHub Issue **#71 — DIRECTOR START HERE: current authority and fresh-chat recovery protocol**, then follow it to branch:
+
+`agent/director-stage2b-game-direction`
+
+Current execution truth lives in that branch's `Docs/ACTIVE_HANDOFF.md` plus exact active issue/branch/CI evidence.
+
+The product is **Severe Weather Warning**.
+
+---
+
+# Historical main-branch README: Severe Weather
 
 Severe Weather is a mobile-first, single-player arcade destruction game. The player directly controls a tornado, supercell, or derecho across stylized town and city districts.
 
@@ -60,4 +74,4 @@ GitHub Actions compiled the v3.2.0 debug APK successfully. The APK installed on 
 
 The v3.3.1 County Roads APK compiled in GitHub Actions and the user confirmed that it looked and played like the HTML build on a Galaxy S26 Ultra. The first v4.0.0 browser startup/visual pass rendered the authored blocks and richer structures at a reported 60-61 FPS with no observed console warnings or errors. The offline builder and inline-script parser also pass. A complete v4.0.0 bot run, retry check, synchronized APK build, and physical-device acceptance are still required before v4 is called stable.
 
-Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work.
+Read `CURRENT_STATUS.md` and `Docs/DECISION_LOG.md` before planning implementation work in this historical snapshot.
