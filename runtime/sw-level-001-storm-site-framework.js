@@ -94,6 +94,37 @@ function restoreAcceptedWorldVisibility() {
   if (productionSliceRoot) productionSliceRoot.visible = true;
 }
 
+function restoreAcceptedCampaignWorld() {
+  // init3DWorld has already rebuilt the accepted campaign arrays before this
+  // hook runs.  Removing the former Site root and clearing its private state
+  // here makes Heartland a real restoration, rather than merely changing the
+  // selected menu value while its prior Site telemetry survives.
+  disposeStormSiteWorld();
+  restoreAcceptedWorldVisibility();
+}
+
+function stormSitePresentationSnapshot() {
+  return globalThis.__SW_PRESENTATION_IDENTITY_BRIDGE__?.getSnapshot?.().intro || null;
+}
+
+function dismissHeartlandOpeningForStormSite() {
+  // A Storm Site is already a deliberate playable destination.  It must not
+  // inherit Heartland's Cow 17/newspaper opening over its first playable
+  // frame.  Use the presentation layer's own cleanup bridge, and preserve the
+  // Heartland "first view" flag so normal campaign presentation remains its
+  // authority on a later home launch.
+  const bridge = globalThis.__SW_PRESENTATION_IDENTITY_BRIDGE__;
+  if (!bridge?.hideIntro || !stormSitePresentationSnapshot()?.active) return false;
+  let introSeen = null;
+  try { introSeen = sessionStorage.getItem('severe_weather_moo_brew_intro_seen'); } catch (_) {}
+  bridge.hideIntro();
+  try {
+    if (introSeen === null) sessionStorage.removeItem('severe_weather_moo_brew_intro_seen');
+    else sessionStorage.setItem('severe_weather_moo_brew_intro_seen', introSeen);
+  } catch (_) {}
+  return true;
+}
+
 function addStormSitePart(parent, geometry, color, x, y, z, options = {}) {
   const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, roughness: options.roughness ?? 0.78, emissive: options.emissive || '#000000', emissiveIntensity: options.emissiveIntensity || 0 }));
   mesh.position.set(x, y, z);
@@ -191,13 +222,13 @@ function buildCoastalBoardwalkSite(site) {
 
 function buildStormSiteWorld() {
   const site = stormSiteDefinition(stormSiteSelection);
-  if (site.id === STORM_SITE_HOME_ID) { restoreAcceptedWorldVisibility(); return; }
+  if (site.id === STORM_SITE_HOME_ID) { restoreAcceptedCampaignWorld(); return; }
   disposeStormSiteWorld(); clearAcceptedWorldForStormSite();
   stormSiteRoot = new THREE.Group(); stormSiteRoot.name = `StormSite:${site.id}`; scene.add(stormSiteRoot);
   stormSiteLaunches++;
   stormSiteActiveVariant = stormSiteVariant(site);
   if (site.id === 'county-fair') buildCountyFairSite(site); else buildCoastalBoardwalkSite(site);
-  publishMediaHeadline(`${site.newspaperFlavor}: ${stormSiteActiveVariant.replaceAll('-', ' ').toUpperCase()}.`, 4.2);
+  publishMediaHeadline(`${site.displayName.toUpperCase()} — ${site.newspaperFlavor}: ${stormSiteActiveVariant.replaceAll('-', ' ').toUpperCase()}.`, 4.2);
   showGagToast(`${site.displayName.toUpperCase()}: SAME PLACE, DIFFERENT STORM DAY.`);
 }
 
@@ -228,6 +259,7 @@ function ensureStormSiteUi() {
 function startStormSiteFromMenu(siteId) {
   if (!STORM_SITE_REGISTRY[siteId] || siteId === STORM_SITE_HOME_ID) return false;
   stormSiteSelection = siteId;
+  dismissHeartlandOpeningForStormSite();
   return stormSiteBaseStartRunFromMenu();
 }
 
@@ -253,22 +285,32 @@ globalThis.__SW_V510_UPDATE__ = function stormSiteExecutorUpdate(dt, now, isMovi
 
 globalThis.getStormSiteQaState = function getStormSiteQaState() {
   const site = stormSiteDefinition(stormSiteSelection);
+  const intro = stormSitePresentationSnapshot();
   return {
     marker: STORM_SITE_MARKER, executorTicks: stormSiteRuntimeTicks, selectedSiteId: site.id,
     launchContract: site.launch, activeVariant: stormSiteActiveVariant,
     targetCount: stormSiteTargets.length, decorativeMeshCount: stormSiteRoot ? stormSiteRoot.children.length : 0,
+    stormSiteWorldAttached: Boolean(stormSiteRoot?.parent),
+    acceptedCampaignTargetCount: targets.length,
+    acceptedCampaignDecorativeCount: landmarks.length + substations.length + comedyProps.length + chainSetpieces.length + animals.length,
     bounds: site.layout?.bounds || null,
     acceptedRunState: { runTimeRemaining: Math.round(runTimeRemaining), currentStage, currentStorm },
     signature: { ...stormSiteSignatureState }, registryIds: Object.keys(STORM_SITE_REGISTRY),
     campaignHomeSelected: stormSiteSelection === STORM_SITE_HOME_ID,
     mooProtected: typeof getMooLevelQaState === 'function' ? getMooLevelQaState().normalCampaignMode : false,
     boatLaunchSignalOnly: site.id !== 'coastal-boardwalk' || site.rewards.rule === 'boat-launch-signal-only',
+    presentationIntroActive: Boolean(intro?.active),
+    presentationIntroPhase: intro?.phase || null,
   };
 };
 
 globalThis.__SW_STORM_SITE_QA__ = {
   launch(siteId) { return startStormSiteFromMenu(siteId); },
-  destroySignature() { const target = stormSiteTargets.find(entry => entry.stormSiteSignature); if (target) damageTarget(target, target.maxHealth, 'storm-site-qa'); },
+  destroySignature(signature) {
+    const target = stormSiteTargets.find(entry => entry.stormSiteSignature === (signature || (stormSiteSelection === 'coastal-boardwalk' ? 'boat-launch-signal' : 'fair-wheel-flight')));
+    if (target) damageTarget(target, target.maxHealth, 'storm-site-qa');
+    return Boolean(target);
+  },
   returnHome() { stormSiteSelection = STORM_SITE_HOME_ID; return stormSiteBaseStartRunFromMenu(); },
 };
 
