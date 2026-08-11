@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 11:10 America/Chicago
+Last updated: 2026-08-11 11:18 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -17,7 +17,7 @@ Repository state is durable memory. Chat is temporary context.
 2. Read `Docs/GAME_DIRECTOR.md` and `Docs/WORKER_STARTUP_ORDER.md`.
 3. Read this handoff and `Docs/ACTIVE_PRODUCTION_SLATE.md`.
 4. Read exact active issues and latest Director comments.
-5. Inspect live worker branch heads before claiming completion or liveness.
+5. Inspect live worker branch heads before claiming completion, liveness, or acceptance.
 6. Never use `main` as project authority.
 
 Startup law:
@@ -45,7 +45,7 @@ Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 
 Owner previously reported WORLD-003 complete, but GitHub still shows the assigned branch at the untouched base and no durable worker return.
 
-**Current WORLD assignment:** recovery/evidence only. The latest Director comment on #61 directs WORLD to locate, freeze, and persist the already-completed local WORLD-003 state without redesign or retuning. WORLD-003 remains the first-batch visual gate until the actual completed head and required screenshots are durable and Director-reviewed.
+**Current WORLD assignment:** recovery/evidence only. Locate, freeze, and persist the already-completed local WORLD-003 state without redesign or retuning. WORLD-003 remains the first-batch visual gate until the actual completed head and required screenshots are durable and Director-reviewed.
 
 ### GAME #62 - SW-GAME-002
 
@@ -56,7 +56,7 @@ Director code-shape review remains provisionally PASS for the Hart Farm unlock e
 
 **Current QA assignment:** independent GAME-002 evidence closure on verification branch `agent/sw-qa-003-game-002-evidence-closure`, starting exactly at `89aeac92d032bfc6546cb8da7c52effc7a408aa1`.
 
-QA must execute and persist the existing `verify:sw-game-002` and `qa:sw-game-002` proof, including Hart Farm unlock, failure rearm, persistence, dedicated Moo County Fair launch, cow safety, normal-campaign regression, screenshots, exact commands/environment, and drift statement. No product-code change is expected. If the exact commit is unavailable locally and network is unavailable, stop and report rather than substituting authority.
+QA must execute and persist the existing `verify:sw-game-002` and `qa:sw-game-002` proof, including Hart Farm unlock, failure rearm, persistence, dedicated Moo County Fair launch, cow safety, normal-campaign regression, screenshots, exact commands/environment, and drift statement. No product-code change is expected.
 
 ### QA #63 - SW-QA-002
 
@@ -75,24 +75,28 @@ Branch: `agent/sw-pwa-001-installable-shell`
 Approved base: `73b28e07a5b05dd632226af851b06a32e99bb068`
 Worker-complete head: `7cda055a4773c5c9dc69c0d02018cd9454a86628`
 
-Owner reports QA completed the assignment. Director review finds the branch exactly one commit ahead with changes confined to package scripts, `pwa/*`, bounded web build/serve/QA scripts, and QA-package verification.
+Owner reports QA completed the assignment. Director scope/code-shape verdict: **PASS and frozen**.
 
-Director scope/code-shape verdict: **PASS and frozen**.
+The implementation is confined to the PWA/build/QA surface and provides the Severe Weather Warning install shell, project-relative scope/start paths, deterministic source identity, stale-cache defenses, versioned managed cache cleanup, offline fallback, and static/Playwright QA harnesses. No gameplay or promotion authority moved.
 
-The implementation provides the Severe Weather Warning manifest/install shell, project-relative scope/start paths, source identity, stale-cache defenses, versioned managed cache cleanup, offline fallback, and static/Playwright QA harnesses. No gameplay or promotion authority moved.
-
-Final acceptance remains separate because no exact-head GitHub Actions run is associated with `7cda055a...` and the worker's executed local `test:pwa` / `qa:pwa` report is not yet persisted in the issue. Do not send QA back for feature work merely because that evidence is not yet durable. Reconcile the existing evidence independently when available.
+Final acceptance remains separate because no exact-head GitHub Actions run is associated with `7cda055a...` and the worker's executed local `test:pwa` / `qa:pwa` report is not yet persisted in the issue. Do not reopen PWA feature scope merely to close evidence.
 
 QA has moved on to #62 evidence closure.
 
 ### GAME #65 - SW-UI-001
 
 Branch: `agent/sw-ui-001-newspaper-presentation`
-Exact starting SHA: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
+Starting SHA: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
-Goal: one coherent **Severe Weather Warning** local-newspaper presentation family across storm selection, **UNLEASH STORM**, opening-newspaper identity where practical, and end-run results.
+Owner reports GAME has completed SW-UI-001.
 
-At the latest Director check, the remote branch still points to its exact starting SHA. Do not infer active execution merely from assignment. Protect GAME-002 Moo Level behavior, unlock truth, score/stat calculations, storm-selection semantics, movement/camera, campaign timing/objectives, WORLD presentation, and QA/PWA authority.
+At the latest Director check, GitHub still shows the assigned remote branch at the untouched starting SHA and Issue #65 has no final worker return. Treat #65 as **worker-complete locally, durable return missing**, not as unfinished feature work.
+
+**Current GAME assignment:** publication/evidence closure only. Preserve the completed local newspaper state exactly, record its exact SHA/status/log evidence, freeze exact completed contents into a bounded commit only if they are still uncommitted on the verified assigned branch, preserve the required mobile screenshots, and publish the exact finished state when connectivity permits.
+
+Do not redesign, retune, rebase, expand, or begin #68 from a guessed base while #65 is not durable.
+
+Required #65 evidence remains: storm-select newspaper, selected storm/readable traits, UNLEASH STORM, ordinary results, Moo Level locked/unlocked presentation/results, replay/continue/weather-map actions, executed UI/regression checks, no-gameplay-authority-change proof, drift report, and known limitations.
 
 ### WORLD #66 - SW-LEVEL-001
 
@@ -103,10 +107,17 @@ Owner reports WORLD completed this task. GitHub still shows the remote branch at
 
 Treat #66 as **worker-complete locally, durable return missing**. Preserve/freeze the local completed state. Do not reset, rebase, delete, overwrite, or add new #66 feature work. WORLD is currently reassigned to #61 recovery because WORLD-003 is the higher-value integration blocker.
 
-## Queue after current seams
+## Queue / next sequencing
 
-- #67 `SW-RPG-001`: MOO-LAH, Storm Triangle, meaningful upgrades, synergies. Keep queued until progression/ability tuning can reopen safely and current UI/site seams are stable enough for an exact base.
-- #68 `SW-SCORE-001`: persistent local-first scorekeeper, records, competitive replay loop. Keep queued until #65 establishes the results/newspaper seam so persistence does not collide with parallel results UI work.
+### #68 SW-SCORE-001
+
+This is the **next intended GAME feature lane after #65** because the scorekeeper should build directly on the actual newspaper/results seam established by SW-UI-001.
+
+Do not launch #68 until the real completed #65 head is durable enough to establish the exact base. Do not use `89aeac92...` or another guessed ancestor merely to keep GAME busy. The latest Director comment on #68 records this sequencing rule.
+
+### #67 SW-RPG-001
+
+Keep queued until progression/ability tuning can reopen safely and the active UI/site/evidence seams are stable enough for an exact base. Do not collide this with unresolved results/score architecture.
 
 No Stage 2B Integration worker is active. First-batch integration waits for WORLD-003 visual evidence and GAME-002 evidence reconciliation plus an explicit merge order.
 
@@ -133,9 +144,9 @@ No Stage 2B Integration worker is active. First-batch integration waits for WORL
 2. Preserve completed #66 locally and review it once its exact head/evidence are published.
 3. Manage QA on #62 exact-head evidence closure; accept or pin a concrete defect from executed proof.
 4. Reconcile the already-completed PWA #64 local execution evidence without reopening feature scope.
-5. Watch GAME #65 and visually review the newspaper presentation when its exact returned head appears.
-6. Immediately feed freed lanes the next conflict-safe task after acceptance or a bounded return blocker.
-7. Keep #67 and #68 queued until their overlap seams are safe.
+5. Manage GAME on #65 publication/evidence closure and visually review the exact returned newspaper head when it becomes durable.
+6. As soon as #65 is durable enough to establish the real downstream base, launch GAME on #68 SW-SCORE-001 from that exact head.
+7. Keep #67 queued until its progression/ability authority can reopen without seam collision.
 8. Do not production-merge rejected QA #29.
 
 ## Chat rollover rule
