@@ -22,6 +22,8 @@ Do only this first:
 4. Inspect only the exact branch/issue evidence needed to verify the handoff's **immediate active action** or any status claim you are about to make.
 5. Give the owner a short recovered-state reply and the single next owner action, if any.
 
+**Stopping rule:** once the immediate state is verified well enough to answer the owner accurately, stop browsing and respond. Do not keep loading files simply because they exist.
+
 Do **not** preload the entire project, every active issue, every branch, or every historical document before the first response.
 
 ## Pass 2 — load deeper law only when needed
