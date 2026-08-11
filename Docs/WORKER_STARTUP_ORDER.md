@@ -95,6 +95,24 @@ Director review should therefore explicitly separate:
 
 Do not promote a clean diff into a completed task merely because the implementation looks correct.
 
+### 5. Prepared remote branches may be absent locally
+
+A Director-created task branch can exist correctly on GitHub while a worker's local worktree lacks that ref, especially when the worker environment cannot fetch from the network.
+
+Director rule:
+
+- first independently verify the remote task branch and exact base SHA through repository authority;
+- if the worker's local branch ref is absent, do not substitute another checkout or another SHA;
+- if the exact assigned base commit object already exists locally, the Director may explicitly authorize creation of the local task branch directly from that exact SHA;
+- after local branch creation, the worker must verify both branch name and exact HEAD before reading governing docs or editing;
+- if the exact commit object is not local, stop and require a real repository transfer/fetch rather than improvising.
+
+This recovery is valid only when the Director has explicitly authorized it for the task. It does not change the task base, scope, or documentation context.
+
+Canonical recovery shape:
+
+`remote branch exact SHA independently verified -> local ref missing -> exact commit object exists locally -> Director-authorized local branch creation from exact SHA -> branch/HEAD reverified -> governing docs read -> work begins`
+
 ## Director / task-authoring rule
 
 Future worker launch prompts and issue startup instructions should reflect this same order. Do not tell workers to read task-versioned governing docs before switching/verifying the task checkout.
@@ -102,6 +120,8 @@ Future worker launch prompts and issue startup instructions should reflect this 
 When a newer process law must apply to a deliberately frozen older base, add that law directly to the task issue/launch note rather than rebasing the worker solely to obtain newer documentation.
 
 For tasks that create or materially change CI/workflow machinery, the ticket must include an explicit pre-integration execution plan so the new machinery can prove itself before it gains authority.
+
+When the Director prepares a remote worker branch, the launch note should also specify the exact-SHA local recovery path in case the worker worktree cannot see the new remote ref.
 
 ## Completion relevance
 
@@ -113,6 +133,7 @@ Checkout identity is part of drift evidence. Worker completion should report:
 - confirmation that governing docs were read only after task checkout verification;
 - any mismatch encountered before editing;
 - environment-specific limitations that affected local verification;
+- whether an exact-SHA local ref recovery was used;
 - for new workflows, exact executed validation evidence or a clearly stated blocker.
 
 ## Process lesson
@@ -122,5 +143,7 @@ These incidents are not treated as worker mistakes to remember informally. They 
 **Never interpret task authority from an unverified checkout.**
 
 **Never change the repository merely because one local environment differs from the declared evidence environment.**
+
+**Never substitute a nearby branch or SHA merely because the prepared task ref is missing locally.**
 
 **Never call a new workflow complete until there is a valid way to execute and prove it.**
