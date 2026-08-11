@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 16:56 America/Chicago
+Last updated: 2026-08-11 16:59 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -23,14 +23,13 @@ Green CI is engineering evidence, not product acceptance. Worker-reported comple
 ## Accepted / frozen foundation
 
 - #62 SW-GAME-002 Hart Farm unlock + real Moo Level
-  - branch `agent/sw-game-002-moo-level-unlock`
   - accepted head `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 - #63 SW-QA-002 prototype evidence lane only
   - head `73b28e07a5b05dd632226af851b06a32e99bb068`
   - do not promote prototype authority wholesale
 - #64 SW-PWA-001 installable shell
   - accepted head `7cda055a4773c5c9dc69c0d02018cd9454a86628`
-  - Integration uses the task delta relative to `73b28e07a5b05dd632226af851b06a32e99bb068`
+  - Integration uses only the task delta relative to `73b28e07a5b05dd632226af851b06a32e99bb068`
 - #65 SW-UI-001 newspaper presentation
   - durable head `43348db9b56ec18bca8418c8dfe13470aad4722d`
 - #68 SW-SCORE-001 persistent scorekeeper
@@ -46,8 +45,6 @@ Issue: #61
 Rejected exact head: `347159f1baa4988fa2c93428cd4562ef78b38a9d`
 QA closure comment: `5259177517`
 
-SW-QA-006 tested the exact head and returned **FAIL for Director visual acceptance**.
-
 What improved:
 - attack-bubble read removed;
 - no visible square/card primitive system;
@@ -55,7 +52,7 @@ What improved:
 - typecheck/build/browser green;
 - protected gameplay/system drift not found.
 
-Sole pinned remaining product defect:
+Sole pinned product defect:
 **The tornado still reads as a tidy translucent planar geometric cone, strongest at lower-funnel/ground contact.** Long clean translucent strips converge too orderly instead of reading as dirty irregular condensation/lower circulation.
 
 WORLD-004 stays OUT of Integration.
@@ -73,15 +70,9 @@ Scope is one defect only:
 - do not regress to bubbles, discs, cards, disconnected wisps, or broad redesign;
 - preserve movement/camera/abilities/scoring/campaign/cows/Moo/Storm Sites/newspaper/scorekeeper/RPG/PWA/Neon/cinematic lifecycle.
 
-At shutdown, remote WORLD-006 branch still resolves to exact base `347159f1...`; assignment is active, execution branch movement not yet proven.
+At shutdown, remote WORLD-006 still resolves to exact base `347159f1...`; assignment is active, execution branch movement not yet proven.
 
 ## #66 Storm Site lane
-
-Original head `07e089f03bdb2943e6b3d64033010736805afb4a` failed QA-005 because:
-- Storm Site -> Heartland left stale Site state;
-- player-facing Fair/Coastal captures were obscured by inherited opening presentation;
-- old QA helper did not explicitly select the boat signal;
-- three Kenney VFX inputs required approved vendor preparation.
 
 ### WORLD-005 durable correction
 
@@ -95,28 +86,55 @@ Verified one commit ahead of base, changing only:
 - `scripts/qa-sw-level-001.mjs`
 - `scripts/verify-sw-level-001.mjs`
 
-Returned evidence:
-- Heartland restoration clears Site root/state, targets, decor, variant, signatures and restores accepted campaign world;
-- Fair/Coastal opening overlay issue corrected for player-visible launch proof;
-- Coastal explicitly tests `boat-launch-signal` through accepted damage handling;
-- no Waterspout unlock/progression;
-- approved VFX preparation resolves `dirt_01.png`, `smoke_03.png`, `trace_03.png`;
-- focused packaged Storm Site QA 12/12 PASS;
+WORLD returned evidence for:
+- full Storm Site -> Heartland teardown/restoration;
+- player-visible Fair/Coastal handoff;
+- explicit accepted-path `boat-launch-signal` damage proof;
+- no Waterspout unlock;
+- approved vendor preparation of three Kenney VFX inputs;
+- focused Storm Site browser 12/12 PASS;
 - campaign 66/66, V5.1 55/55, process 28/28 PASS;
-- inherited V5.1/movement/abilities/scoring browser QA PASS;
-- zero page/HTTP/runtime-console errors in focused package;
-- separate Moo `encounterUnlocked` red remains classified pre-existing/unrelated and was not patched.
+- zero page/HTTP/runtime-console errors in WORLD's prepared package;
+- separate Moo `encounterUnlocked` red left untouched/unattributed.
 
-### QA-007 assigned
+### SW-QA-007 result: BLOCKED / NOT ACCEPTED
 
-Issue: #72 `SW-QA-007: Independent SW-WORLD-005 Storm Site acceptance`
+Issue: #72
 Verification branch: `agent/sw-qa-007-level-001-acceptance`
 Exact source: `1350cee7535220fb9fc5e7c1b4de284e6aae8156`
 Director activation #66: comment `5259238266`
+Director classification #66: comment `5259334731`
+Director classification #72: comment `5259335632`
 
-No product edits. Must independently accept/reject teardown restoration, authored Fair/Coastal visibility, explicit boat signal, vendor-prepared zero-error browser proof, and protected regressions.
+Independent QA passed:
+- implementation-truth 28/28;
+- campaign fixture 66/66;
+- V5.1 fixture 55/55;
+- Storm Site static/contract gate 12/12;
+- real executor binding;
+- authored Fair/Coastal contracts;
+- teardown ordering;
+- explicit `boat-launch-signal` damage-path contract;
+- no Waterspout unlock authority;
+- candidate diff remains limited to the declared LEVEL runtime plus two QA scripts, with no static movement/ability/scoring/Grid Zap/Moo/tornado-renderer retune found.
 
-Do not feed #66 to Integration until QA-007 passes and Director freezes the exact head.
+Independent browser acceptance was NOT validly produced because:
+1. exact-source build hit the repository-required recorded-storm-effects step and `ffmpeg` was unavailable in the QA Windows environment; QA did not bypass it;
+2. the local QA checkout did not contain the three prepared Kenney VFX inputs:
+   - `assets/production/vfx/kenney/dirt_01.png`
+   - `assets/production/vfx/kenney/smoke_03.png`
+   - `assets/production/vfx/kenney/trace_03.png`
+3. therefore no valid independent Fair/Coastal screenshots/hashes, teardown runtime telemetry, page/HTTP/runtime-console observations, or runtime boat-damage proof were captured.
+
+Director classification:
+- **QA BLOCKED / NOT ACCEPTED**;
+- no new LEVEL gameplay defect is proven;
+- do NOT reopen WORLD-005 product code from this result;
+- keep exact `1350cee...` frozen;
+- no Integration handoff yet;
+- next QA run must use a suitable environment with `ffmpeg`, perform the already-approved checksum-pinned VFX preparation, build the exact frozen source, then rerun full browser acceptance;
+- if that prepared exact-source run fails behaviorally, classify the concrete product defect then;
+- separate Moo `encounterUnlocked` remains unexercised/unattributed in QA-007.
 
 ## GAME lane: SW-RPG-002 Slingshot
 
@@ -127,18 +145,11 @@ Exact durable head: `97aa6ae792ed5fb201c0fd35d748a4dfff971e61`
 Worker closure comment: `5259294815`
 Status: **DURABLE / NOT YET DIRECTOR ACCEPTED**. Independent acceptance still required before Integration input.
 
-Changed files:
-- `package.json`
-- `runtime/sw-rpg-002-slingshot.js`
-- `scripts/apply-sw-rpg-002-slingshot.mjs`
-- `scripts/verify-sw-rpg-002-slingshot.mjs`
-- `scripts/qa-sw-rpg-002-slingshot.mjs`
-
 Returned behavior/evidence:
 - Pull captures eligible physical target through accepted Pull loop;
 - Gust in valid held window releases bounded moving debris;
 - direction derives from player/storm motion or camera-forward aim, not target-position auto-targeting;
-- light/heavy differentiation observed: mass 1 speed 145 vs mass 5 speed 67.08;
+- light/heavy differentiation: mass 1 speed 145 vs mass 5 speed 67.08;
 - ordinary Pull remains independent;
 - ordinary Gust retains accepted standalone 90 damage;
 - exactly three Storm Triangle slots remain;
@@ -149,7 +160,7 @@ Returned behavior/evidence:
 - process 28/28 PASS;
 - separate protected UI-001 `mooResultsLegibleFixture` remains 8/9 and was not masked or patched.
 
-Next GAME step next session: independent exact-head QA / Director review. Do not hand to Integration before acceptance.
+Next GAME step: independent exact-head QA / Director review. Do not hand to Integration before acceptance.
 
 ## Integration lane: SW-INT-003
 
@@ -157,19 +168,11 @@ Issue: #70
 Branch: `agent/sw-int-003-stage2b-accepted-stack`
 Exact remote SHA at shutdown: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
 
-Integration assembled the accepted-stack candidate locally, but mandatory GAME-002 browser QA was red. Correctly did NOT push.
+Integration assembled the accepted-stack candidate locally, but mandatory GAME-002 browser QA was red. It correctly did NOT push.
 
 Director landing directive #70: comment `5259284234`.
 
-Owner reports Integration finished the assigned landing-mode tasks before shutdown. Treat that as valid direct session evidence. However, as of this handoff update, the exact final local-candidate closure report is not durable on Issue #70, and the remote branch intentionally remains untouched.
-
-Known durable classification:
-- local assembled candidate existed;
-- mandatory GAME-002 browser QA red;
-- no bad/red candidate pushed;
-- preserve local assembly rather than rebuild/reset/rebase;
-- do not weaken QA;
-- do not import #66, WORLD, or RPG-002 while the inherited gate is red.
+Owner reports Integration finished the assigned landing-mode tasks. Treat that as valid direct session evidence. Exact final local-candidate closure evidence is still not durable on Issue #70, and the remote branch intentionally remains untouched.
 
 First Integration action next session:
 1. recover/preserve the exact local assembled candidate;
@@ -179,7 +182,7 @@ First Integration action next session:
 5. state whether accepted-source `ce1e47c...` comparison was completed in the same runner; if not, say `comparison not completed`;
 6. only then classify integration defect vs harness/pre-existing discrepancy.
 
-Do not reconstruct from scratch unless the preserved local state is genuinely lost and that loss is explicitly proven.
+Do not reconstruct from scratch unless preserved local state is genuinely lost and that loss is explicitly proven. Do not weaken QA or import #66/WORLD/RPG-002 while the inherited gate is red.
 
 ## Product laws
 
@@ -205,12 +208,12 @@ Do not reconstruct from scratch unless the preserved local state is genuinely lo
 
 1. Fetch this file live first.
 2. Integration: recover and durably post the preserved SW-INT-003 landing evidence before any new assembly work.
-3. QA: complete SW-QA-007 exact-head acceptance of `1350cee...`.
+3. QA-007: rerun exact `1350cee...` only in a build-capable environment with `ffmpeg` and approved checksum-pinned VFX preparation; do not change LEVEL source merely to make QA runnable.
 4. WORLD: continue SW-WORLD-006 from `347159f1...`; accept only if the planar-cone read is genuinely gone.
 5. GAME: independently verify/Director-review Slingshot exact head `97aa6ae...`; if accepted, freeze it for later Integration append.
 6. Keep WORLD-004 rejected and out of Integration.
 7. Keep #66 and RPG-002 out of Integration until exact-head Director acceptance.
-8. Never treat the separate Moo/clock/UI red signals as authority for opportunistic fixes without causal proof.
+8. Never treat separate Moo/clock/UI red signals as authority for opportunistic fixes without causal proof.
 
 ## Repo housekeeping
 
