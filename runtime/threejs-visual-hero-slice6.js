@@ -5,6 +5,8 @@
 // Stage 2A presentation-only pass: world identity + storm silhouette.
 // This layer may reshape visual-only storm geometry, add authored streetscape
 // dressing, and grade presentation. Gameplay authority remains frozen.
+// SW-WORLD-003: the default storm is a ragged condensation-column/wedge,
+// with a connected dark core and directional lower circulation.
 // ============================================================================
 const THREEJS_VISUAL_HERO_SLICE6_VERSION = 'THREEJS_VISUAL_HERO_SLICE6_V1';
 
@@ -14,12 +16,14 @@ const swVisualHeroSlice6State = {
   stormShellCount: 0,
   stormEdgeWispCount: 0,
   stormGroundBurstCount: 0,
+  stormCondensationStreakCount: 0,
+  stormGroundPullCount: 0,
   buildingIdentityCount: 0,
   transitionCount: 0,
   fenceInstanceCount: 0,
   vegetationInstanceCount: 0,
   legacyStormRingCount: 0,
-  silhouetteProfile: 'asymmetric-storm-v2',
+  silhouetteProfile: 'ragged-wedge-storm-v3',
   worldProfile: 'authored-main-street-v1',
   lastError: null,
 };
@@ -44,6 +48,8 @@ function swVisualHeroSlice6DisposeStorm() {
   swVisualHeroSlice6State.stormShellCount = 0;
   swVisualHeroSlice6State.stormEdgeWispCount = 0;
   swVisualHeroSlice6State.stormGroundBurstCount = 0;
+  swVisualHeroSlice6State.stormCondensationStreakCount = 0;
+  swVisualHeroSlice6State.stormGroundPullCount = 0;
 }
 
 function swVisualHeroSlice6DisposeWorld() {
@@ -120,9 +126,58 @@ function swVisualHeroSlice6Sprite(texture, color, opacity, name) {
   return sprite;
 }
 
+function swVisualHeroSlice6CondensationStreakGeometry(spec) {
+  const segments = 10;
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+  for (let index = 0; index <= segments; index += 1) {
+    const mix = index / segments;
+    const y = spec.bottomY + mix * spec.height;
+    const angle = spec.angle + mix * spec.twist;
+    const radius = THREE.MathUtils.lerp(spec.bottomRadius, spec.topRadius, mix)
+      + Math.sin(mix * 9.0 + spec.phase) * 0.8;
+    const centerX = Math.cos(angle) * radius + Math.sin(mix * 4.5 + spec.phase) * spec.shear;
+    const centerZ = Math.sin(angle) * radius + Math.cos(mix * 3.6 + spec.phase * 1.7) * spec.shear * 0.66;
+    const width = THREE.MathUtils.lerp(spec.bottomWidth, spec.topWidth, mix)
+      * (0.86 + Math.sin(mix * 7.0 + spec.phase) * 0.16);
+    const sideX = Math.cos(angle + Math.PI * 0.5) * width;
+    const sideZ = Math.sin(angle + Math.PI * 0.5) * width;
+    positions.push(centerX - sideX, y, centerZ - sideZ, centerX + sideX, y, centerZ + sideZ);
+    uvs.push(0, mix, 1, mix);
+  }
+  for (let index = 0; index < segments; index += 1) {
+    const left = index * 2;
+    indices.push(left, left + 1, left + 3, left, left + 3, left + 2);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.userData.swSlice6VerticalStreak = true;
+  return geometry;
+}
+
+function swVisualHeroSlice6SuppressInheritedRoundStormSprites() {
+  swVisualHeroSlice4StormRoot?.children?.forEach((object) => {
+    if (object.name?.startsWith('SWVisualSlice4VolumeWisp') || object.name?.startsWith('SWVisualSlice4GroundSkirt')) {
+      object.visible = false;
+    }
+  });
+  scene?.traverse?.((object) => {
+    if (object.name?.startsWith('SWVisualStormDust')) object.visible = false;
+  });
+  scene?.getObjectByName?.('V510ProductionTornadoLayers')?.traverse?.((object) => {
+    if (object.isMesh && object.geometry?.type === 'DodecahedronGeometry') object.visible = false;
+  });
+  if (typeof dustBowlGroup !== 'undefined') dustBowlGroup.visible = false;
+}
+
 function swVisualHeroSlice6BuildStormSilhouette() {
   swVisualHeroSlice6DisposeStorm();
   if (!swVisualRoot || !swVisualHeroSlice4Textures?.smoke || !swVisualHeroSlice4Textures?.dirt) return false;
+  swVisualHeroSlice6SuppressInheritedRoundStormSprites();
 
   const smoke = swVisualHeroSlice4Textures.smoke;
   const dirt = swVisualHeroSlice4Textures.dirt;
@@ -134,9 +189,9 @@ function swVisualHeroSlice6BuildStormSilhouette() {
   swVisualRoot.add(swVisualHeroSlice6StormRoot);
 
   const shellSpecs = [
-    { top: 27.5, bottom: 5.4, height: 35.5, y: 17.5, opacity: 0.122, color: '#24383e', spin: 0.10, phase: 0.25 },
-    { top: 23.1, bottom: 3.5, height: 34.0, y: 16.8, opacity: 0.098, color: '#344b50', spin: -0.14, phase: 1.55 },
-    { top: 18.4, bottom: 2.2, height: 32.0, y: 16.0, opacity: 0.078, color: '#536469', spin: 0.18, phase: 2.85 },
+    { top: 23.5, bottom: 4.8, height: 37.0, y: 18.5, opacity: 0.155, color: '#263b40', spin: 0.075, phase: 0.25 },
+    { top: 17.2, bottom: 2.9, height: 34.5, y: 17.0, opacity: 0.142, color: '#182f35', spin: -0.11, phase: 1.55 },
+    { top: 11.8, bottom: 1.7, height: 30.5, y: 15.4, opacity: 0.118, color: '#42565a', spin: 0.14, phase: 2.85 },
   ];
   shellSpecs.forEach((spec, index) => {
     const geometry = swVisualHeroSlice6WarpedFunnelGeometry(
@@ -169,7 +224,40 @@ function swVisualHeroSlice6BuildStormSilhouette() {
   });
   swVisualHeroSlice6State.stormShellCount = shellSpecs.length;
 
-  const wispCount = mobile ? 14 : 22;
+  const streakCount = mobile ? 7 : 10;
+  for (let index = 0; index < streakCount; index += 1) {
+    const phase = index * 0.83;
+    const material = new THREE.MeshBasicMaterial({
+      map: smoke,
+      color: index % 3 === 0 ? '#6b7774' : '#34494d',
+      transparent: true,
+      opacity: 0.17 + (index % 3) * 0.018,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      fog: true,
+    });
+    const streak = new THREE.Mesh(swVisualHeroSlice6CondensationStreakGeometry({
+      bottomY: 1.2 + (index % 2) * 0.65,
+      height: 31.5 + (index % 3) * 1.7,
+      angle: (index / streakCount) * Math.PI * 2 + 0.32,
+      twist: (index % 2 ? -1 : 1) * (0.94 + (index % 4) * 0.16),
+      bottomRadius: 1.7 + (index % 3) * 0.48,
+      topRadius: 8.5 + (index % 4) * 1.45,
+      bottomWidth: 0.54 + (index % 2) * 0.15,
+      topWidth: 1.15 + (index % 3) * 0.24,
+      shear: 1.1 + (index % 3) * 0.25,
+      phase,
+    }), material);
+    streak.name = `SWVisualSlice6CondensationStreak${index + 1}`;
+    streak.userData.spin = (index % 2 ? -1 : 1) * (0.09 + (index % 4) * 0.018);
+    streak.userData.phase = phase;
+    streak.userData.swPresentationOnly = true;
+    streak.renderOrder = 11 + index;
+    swVisualHeroSlice6StormRoot.add(streak);
+  }
+  swVisualHeroSlice6State.stormCondensationStreakCount = streakCount;
+
+  const wispCount = mobile ? 6 : 9;
   for (let index = 0; index < wispCount; index += 1) {
     const height = 3.2 + (index / Math.max(1, wispCount - 1)) * 34;
     const seed = swVisualHeroSlice6Hash(`storm-wisp-${index}`);
@@ -178,7 +266,7 @@ function swVisualHeroSlice6BuildStormSilhouette() {
     const sprite = swVisualHeroSlice6Sprite(
       smoke,
       index % 4 === 0 ? '#7f8987' : '#536267',
-      0.11 + (index % 3) * 0.018,
+      0.065 + (index % 3) * 0.011,
       `SWVisualSlice6EdgeWisp${index + 1}`,
     );
     sprite.userData.height = height;
@@ -186,13 +274,13 @@ function swVisualHeroSlice6BuildStormSilhouette() {
     sprite.userData.radius = radius;
     sprite.userData.spin = (index % 2 ? -1 : 1) * (0.31 + (index % 5) * 0.035);
     sprite.userData.phase = index * 0.71;
-    const scale = 7.0 + height * 0.20 + (seed % 4) * 1.2;
-    sprite.scale.set(scale, scale * (0.58 + (index % 3) * 0.07), 1);
+    const scale = 8.0 + height * 0.18 + (seed % 4) * 1.1;
+    sprite.scale.set(scale, scale * (0.16 + (index % 3) * 0.04), 1);
     swVisualHeroSlice6StormRoot.add(sprite);
   }
   swVisualHeroSlice6State.stormEdgeWispCount = wispCount;
 
-  const burstCount = mobile ? 9 : 13;
+  const burstCount = mobile ? 6 : 8;
   for (let index = 0; index < burstCount; index += 1) {
     const seed = swVisualHeroSlice6Hash(`ground-burst-${index}`);
     const angle = (index / burstCount) * Math.PI * 2 + ((seed % 29) / 29) * 0.92;
@@ -200,18 +288,19 @@ function swVisualHeroSlice6BuildStormSilhouette() {
     const sprite = swVisualHeroSlice6Sprite(
       index % 4 === 0 ? smoke : dirt,
       index % 3 === 0 ? '#6f6657' : '#8b7b65',
-      0.13 + (index % 3) * 0.022,
-      `SWVisualSlice6GroundBurst${index + 1}`,
+      0.13 + (index % 3) * 0.018,
+      `SWVisualSlice6GroundPull${index + 1}`,
     );
     sprite.userData.angle = angle;
     sprite.userData.radius = radius;
     sprite.userData.spin = 0.24 + (index % 4) * 0.045;
     sprite.userData.phase = index * 0.83;
-    const scale = 8.5 + (seed % 5) * 1.6;
-    sprite.scale.set(scale, scale * 0.48, 1);
+    const scale = 13.0 + (seed % 5) * 1.8;
+    sprite.scale.set(scale, 1.25 + (seed % 3) * 0.24, 1);
     swVisualHeroSlice6StormRoot.add(sprite);
   }
   swVisualHeroSlice6State.stormGroundBurstCount = burstCount;
+  swVisualHeroSlice6State.stormGroundPullCount = burstCount;
   return true;
 }
 
@@ -226,10 +315,11 @@ function swVisualHeroSlice6TuneInheritedStorm(seconds) {
         const base = Number(object.userData.baseOpacity || 0.14);
         object.material.opacity = base * (0.43 + Math.sin(seconds * 1.1 + index) * 0.025);
       }
-      if (object.name?.startsWith('SWVisualSlice4GroundSkirt') && object.material) {
-        const pulse = 0.72 + Math.sin(seconds * 1.9 + index * 0.8) * 0.12;
-        object.material.opacity = (0.09 + (index % 3) * 0.012) * pulse;
-        object.scale.x *= index % 2 === 0 ? 1.015 : 0.985;
+      if (object.name?.startsWith('SWVisualSlice4VolumeWisp') || object.name?.startsWith('SWVisualSlice4GroundSkirt')) {
+        // Slice 4's round smoke cards are superseded by Slice 6's connected
+        // streak mesh and directional ground pull. They must not read as
+        // detached attack bubbles beneath the recovered default storm.
+        object.visible = false;
       }
     });
   }
@@ -307,6 +397,12 @@ function swVisualHeroSlice6UpdateStorm(dt, now) {
         * (0.90 + Math.sin(seconds * 1.45 + index) * 0.10);
       return;
     }
+    if (object.name.startsWith('SWVisualSlice6CondensationStreak')) {
+      object.rotation.y += Math.max(0, Number(dt || 0)) * Number(object.userData.spin || 0.1);
+      object.material.opacity = (0.16 + (index % 3) * 0.018)
+        * (0.88 + Math.sin(seconds * 1.25 + Number(object.userData.phase || 0)) * 0.10);
+      return;
+    }
     if (object.name.startsWith('SWVisualSlice6EdgeWisp')) {
       const phase = Number(object.userData.phase || 0);
       const angle = Number(object.userData.angle || 0) + seconds * Number(object.userData.spin || 0.3);
@@ -320,14 +416,14 @@ function swVisualHeroSlice6UpdateStorm(dt, now) {
       object.material.rotation = -angle * 0.22 + Math.sin(seconds * 0.7 + phase) * 0.16;
       return;
     }
-    if (object.name.startsWith('SWVisualSlice6GroundBurst')) {
+    if (object.name.startsWith('SWVisualSlice6GroundPull')) {
       const phase = Number(object.userData.phase || 0);
       const angle = Number(object.userData.angle || 0) + seconds * Number(object.userData.spin || 0.24);
       const radius = Number(object.userData.radius || 7) * (0.88 + Math.sin(seconds * 1.5 + phase) * 0.12);
       object.position.set(
-        Math.cos(angle) * radius,
+        Math.cos(angle) * radius * 0.78,
         1.0 + Math.sin(seconds * 2.0 + phase) * 0.38,
-        Math.sin(angle) * radius,
+        Math.sin(angle) * radius * 0.78,
       );
       object.material.rotation = -angle * 0.18;
     }
@@ -624,6 +720,8 @@ swVisualSnapshot = function swVisualSnapshotWithHeroSlice6() {
       shellCount: swVisualHeroSlice6State.stormShellCount,
       edgeWispCount: swVisualHeroSlice6State.stormEdgeWispCount,
       groundBurstCount: swVisualHeroSlice6State.stormGroundBurstCount,
+      condensationStreakCount: swVisualHeroSlice6State.stormCondensationStreakCount,
+      groundPullCount: swVisualHeroSlice6State.stormGroundPullCount,
       legacyStormRingCount: swVisualHeroSlice6State.legacyStormRingCount,
       profile: swVisualHeroSlice6State.silhouetteProfile,
       presentationOnly: true,
@@ -647,7 +745,7 @@ swVisualSnapshot = function swVisualSnapshotWithHeroSlice6() {
 
 const swVisualHeroSlice6PrepareQaViewBase = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.prepareQaView;
 function swVisualHeroSlice6PrepareQaView(mode = 'storefront') {
-  if (!['slice6-storm', 'slice6-street', 'slice6-farm-edge'].includes(mode)) {
+  if (!['slice6-storm', 'slice6-storm-main-street', 'slice6-ground-contact', 'slice6-street', 'slice6-farm-edge'].includes(mode)) {
     return swVisualHeroSlice6PrepareQaViewBase?.(mode) ?? false;
   }
 
@@ -661,6 +759,14 @@ function swVisualHeroSlice6PrepareQaView(mode = 'storefront') {
     if (!storm?.pos) return false;
     camera.position.set(storm.pos.x + 52, storm.pos.y + 27, storm.pos.z + 46);
     camera.lookAt(storm.pos.x, storm.pos.y + 13, storm.pos.z);
+  } else if (mode === 'slice6-storm-main-street') {
+    if (!storm?.pos) return false;
+    camera.position.set(storm.pos.x + 68, storm.pos.y + 22, storm.pos.z + 78);
+    camera.lookAt(storm.pos.x, storm.pos.y + 12, storm.pos.z);
+  } else if (mode === 'slice6-ground-contact') {
+    if (!storm?.pos) return false;
+    camera.position.set(storm.pos.x + 27, storm.pos.y + 7.5, storm.pos.z + 25);
+    camera.lookAt(storm.pos.x, storm.pos.y + 5.0, storm.pos.z);
   } else if (mode === 'slice6-street') {
     const applied = globalThis.__SW_THREEJS_ASSET_PIPELINE__?.getAppliedTargets?.() || [];
     const storefront = applied.find((entry) => entry.assetId === 'structure.storefront.v1') || null;

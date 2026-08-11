@@ -58,8 +58,11 @@ check('storm-warped-geometry', files.runtime.includes('swVisualHeroSlice6WarpedF
 check('storm-asymmetric-corrugation', files.runtime.includes('corrugation') && files.runtime.includes('bendStrength') && files.runtime.includes('bendX') && files.runtime.includes('bendZ'));
 check('storm-legacy-cone-restrained', files.runtime.includes('ProductionMiddleVortex') && files.runtime.includes('ProductionDarkCore') && files.runtime.includes('legacyStormRingCount'));
 check('storm-ground-rings-restrained', files.runtime.includes("geometryType !== 'RingGeometry'") && files.runtime.includes("geometryType !== 'TorusGeometry'") && files.runtime.includes('stormRingCount'));
-check('storm-edge-wisps', files.runtime.includes('SWVisualSlice6EdgeWisp') && files.runtime.includes('stormEdgeWispCount'));
-check('storm-irregular-ground-bursts', files.runtime.includes('SWVisualSlice6GroundBurst') && files.runtime.includes('stormGroundBurstCount'));
+check('storm-ragged-wedge-profile', files.runtime.includes("silhouetteProfile: 'ragged-wedge-storm-v3'") && files.runtime.includes('ragged condensation-column/wedge'));
+check('storm-connected-condensation-streaks', files.runtime.includes('swVisualHeroSlice6CondensationStreakGeometry') && files.runtime.includes('SWVisualSlice6CondensationStreak') && files.runtime.includes('stormCondensationStreakCount'));
+check('storm-sprites-are-subordinate', files.runtime.includes('wispCount = mobile ? 6 : 9') && files.runtime.includes('SWVisualSlice6EdgeWisp'));
+check('storm-directional-ground-pull', files.runtime.includes('SWVisualSlice6GroundPull') && files.runtime.includes('stormGroundPullCount'));
+check('storm-inherited-round-sprites-suppressed', files.runtime.includes("object.name?.startsWith('SWVisualSlice4VolumeWisp')") && files.runtime.includes("object.name?.startsWith('SWVisualSlice4GroundSkirt')") && files.runtime.includes("object.name?.startsWith('SWVisualStormDust')") && files.runtime.includes("object.geometry?.type === 'DodecahedronGeometry'") && files.runtime.includes('dustBowlGroup.visible = false') && files.runtime.includes('object.visible = false'));
 check('storm-default-not-neon-forced', files.runtime.includes('swVisualHeroSlice5IsNeonSelected') && !/\bneonFunnelUnlocked\s*(?:\+\+|--|[+\-*/]?=(?!=))/.test(runtimeBundle));
 check('world-root', files.runtime.includes('SWVisualHeroSlice6WorldIdentity'));
 check('road-grid-is-canonical-80', files.roadLaw.includes('gridStep: 80'));
@@ -83,11 +86,13 @@ check('town-polish-authored-signage', files.townPolish.includes('swVisualHeroSli
 check('town-polish-parapets-and-sidewalk-props', files.townPolish.includes('TownPolishParapet') && files.townPolish.includes('TownPolishPlanter'));
 check('town-polish-lowers-tall-massing', files.townPolish.includes('swSlice6TownHeightScale') && files.townPolish.includes('height >= 24 ? 0.50'));
 check('town-polish-keeps-roofs-inside-footprint', files.townPolish.includes('width * 0.90') && files.townPolish.includes('depth * 0.90') && files.townPolish.includes('roof.rotation.y = ordinal % 3'));
-check('town-polish-broken-storm-debris-column', files.townPolish.includes('SWVisualSlice6StormDebrisColumn') && files.townPolish.includes('stormDebrisClusterCount'));
+check('town-polish-does-not-recreate-storm-bubbles', files.townPolish.includes('stormDebrisClusterCount = 0') && !files.townPolish.includes('SWVisualSlice6StormTurbulence') && !files.townPolish.includes('DodecahedronGeometry'));
 check('world-grade', files.runtime.includes('toneMappingExposure') && files.runtime.includes('fogColor'));
 check('no-runtime-http-assets', !/https?:\/\//.test(runtimeBundle));
 check('qa-default-storm-evidence', files.qa.includes('threejs-hero-slice6-default-storm.png'));
 check('qa-main-street-evidence', files.qa.includes('threejs-hero-slice6-main-street.png'));
+check('qa-storm-main-street-evidence', files.qa.includes('threejs-hero-slice6-storm-main-street.png'));
+check('qa-ground-contact-evidence', files.qa.includes('threejs-hero-slice6-ground-contact.png'));
 check('qa-street-corner-evidence', files.qa.includes('threejs-hero-slice6-street-corner.png'));
 check('qa-farm-edge-evidence', files.qa.includes('threejs-hero-slice6-farm-edge.png'));
 check('qa-neon-off-default', files.qa.includes('Neon must remain OFF') && files.qa.includes('rainbowFunnel?.enabled === false'));
@@ -100,7 +105,8 @@ check('qa-fence-road-gap', files.qa.includes('farmFenceGapCount') && files.qa.in
 check('qa-zero-stacked-kits', files.qa.includes('stackedSlice6BuildingKits'));
 check('qa-world-budget', files.qa.includes('slice6PresentationObjectCount') && files.qa.includes('<= 110'));
 check('qa-blocktown-authorship', files.qa.includes('storefrontArchetypeCount') && files.qa.includes('targetCoordinateMutations'));
-check('qa-broken-storm-body', files.qa.includes('stormDebrisClusterCount'));
+check('qa-connected-storm-body', files.qa.includes('verticalStreakGeometryCount') && files.qa.includes('condensationStreakCount') && files.qa.includes('groundPullCount'));
+check('qa-no-inherited-round-storm-sprites', files.qa.includes('visibleInheritedRoundStormSpriteCount') && files.qa.includes('visibleFoundationStormDustCount') && files.qa.includes('visibleProductionTornadoDodecahedronCount') && files.qa.includes('legacyDustBowlVisible') && files.qa.includes('Visible inherited round storm sprites remain') && files.qa.includes('Visible round visual-foundation storm dust remains') && files.qa.includes('Visible production tornado dodecahedron fragments remain') && files.qa.includes('Historical dust-bowl presentation remains visible'));
 check('qa-requires-slice5', files.qa.includes("heroSlice5Version === 'THREEJS_VISUAL_HERO_SLICE5_V1'"));
 check('workflow-stacked-base', files.workflow.includes('agent/threejs-hero-slice5-rainbow-cow-level'));
 check('workflow-exact-slice5-reference', files.workflow.includes('f42f12b3e4e6b38d49f6bcc0b129b4e335f13ecf'));

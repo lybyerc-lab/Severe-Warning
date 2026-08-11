@@ -13,10 +13,12 @@ await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
 const report = {
-  version: 'THREEJS_HERO_SLICE6_QA_V4',
+  version: 'THREEJS_HERO_SLICE6_QA_V5',
   generatedAt: new Date().toISOString(),
   passed: false,
   defaultStorm: null,
+  stormMainStreet: null,
+  groundContact: null,
   mainStreet: null,
   streetCorner: null,
   farmEdge: null,
@@ -93,6 +95,7 @@ async function slice6Probe(page) {
 
     const stormRoot = scene?.getObjectByName?.('SWVisualHeroSlice6StormSilhouette') || null;
     const worldRoot = scene?.getObjectByName?.('SWVisualHeroSlice6WorldIdentity') || null;
+    const productionTornadoLayers = scene?.getObjectByName?.('V510ProductionTornadoLayers') || null;
     const shells = stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6StormShell')) || [];
     let warpedShellCount = 0;
     let lateralCenterOffset = 0;
@@ -130,9 +133,27 @@ async function slice6Probe(page) {
       }
     });
 
+    const condensationStreaks = stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6CondensationStreak')) || [];
+    const groundPulls = stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6GroundPull')) || [];
+    const edgeWisps = stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6EdgeWisp')) || [];
+    let verticalStreakGeometryCount = 0;
+    condensationStreaks.forEach((streak) => {
+      const position = streak.geometry?.getAttribute?.('position');
+      if (!position?.count) return;
+      let minY = Infinity;
+      let maxY = -Infinity;
+      for (let index = 0; index < position.count; index += 1) {
+        minY = Math.min(minY, position.getY(index));
+        maxY = Math.max(maxY, position.getY(index));
+      }
+      if (maxY - minY >= 22 && streak.geometry?.userData?.swSlice6VerticalStreak === true) verticalStreakGeometryCount += 1;
+    });
+
     let slice6PresentationObjectCount = 0;
     let townPolishPresentationObjectCount = 0;
     let townPolishSignboardCount = 0;
+    let visibleInheritedRoundStormSpriteCount = 0;
+    let visibleFoundationStormDustCount = 0;
     let buildingIdentityGroups = 0;
     scene?.traverse?.((object) => {
       const name = String(object?.name || '');
@@ -142,6 +163,16 @@ async function slice6Probe(page) {
       }
       if (object.userData?.swTownPolish === true) townPolishPresentationObjectCount += 1;
       if (name === 'TownPolishSignboard') townPolishSignboardCount += 1;
+      if (object.visible !== false && (name.startsWith('SWVisualSlice4VolumeWisp') || name.startsWith('SWVisualSlice4GroundSkirt'))) {
+        visibleInheritedRoundStormSpriteCount += 1;
+      }
+      if (object.visible !== false && name.startsWith('SWVisualStormDust')) visibleFoundationStormDustCount += 1;
+    });
+    let visibleProductionTornadoDodecahedronCount = 0;
+    productionTornadoLayers?.traverse?.((object) => {
+      if (object.visible !== false && object.isMesh && object.geometry?.type === 'DodecahedronGeometry') {
+        visibleProductionTornadoDodecahedronCount += 1;
+      }
     });
 
     const inheritedShellOpacities = [];
@@ -238,8 +269,11 @@ async function slice6Probe(page) {
       worldRootPresent: Boolean(refreshedWorldRoot?.parent),
       warpedShellCount,
       lateralCenterOffset,
-      edgeWispCount: stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6EdgeWisp')).length || 0,
-      groundBurstCount: stormRoot?.children?.filter?.((entry) => entry.name?.startsWith('SWVisualSlice6GroundBurst')).length || 0,
+      edgeWispCount: edgeWisps.length,
+      edgeWispMaxAspectRatio: edgeWisps.length ? Math.max(...edgeWisps.map((entry) => Math.abs(Number(entry.scale?.y || 0) / Math.max(0.001, Number(entry.scale?.x || 0))))) : null,
+      condensationStreakCount: condensationStreaks.length,
+      verticalStreakGeometryCount,
+      groundPullCount: groundPulls.length,
       legacyStormRingCount: Number(visual?.stormSilhouette?.legacyStormRingCount || 0),
       buildingIdentityGroups,
       sidewalkBatchPresent: Boolean(sidewalkBatch?.parent),
@@ -257,6 +291,10 @@ async function slice6Probe(page) {
       slice6PresentationObjectCount,
       townPolishPresentationObjectCount,
       townPolishSignboardCount,
+      visibleInheritedRoundStormSpriteCount,
+      visibleFoundationStormDustCount,
+      visibleProductionTornadoDodecahedronCount,
+      legacyDustBowlVisible: typeof dustBowlGroup !== 'undefined' ? dustBowlGroup.visible !== false : null,
       stormDebrisClusterCount: stormDebrisColumn?.children?.length || 0,
       rainbowRootPresent: Boolean(scene?.getObjectByName?.('SWVisualHeroSlice5RainbowFunnel')?.parent),
       independentTargetRoadIntrusions,
@@ -288,13 +326,18 @@ try {
   requireCondition(visual?.heroSlice6Version === 'THREEJS_VISUAL_HERO_SLICE6_V1', `Hero Slice 6 version mismatch: ${visual?.heroSlice6Version}.`);
   requireCondition(visual?.heroSlice6RoadLawVersion === 'THREEJS_VISUAL_HERO_SLICE6_ROAD_LAW_V1', `Hero Slice 6 road-law version mismatch: ${visual?.heroSlice6RoadLawVersion}.`);
   requireCondition(visual?.heroSlice6BlocktownBreakVersion === 'THREEJS_VISUAL_HERO_SLICE6_BLOCKTOWN_BREAK_V1', `Blocktown-break version mismatch: ${visual?.heroSlice6BlocktownBreakVersion}.`);
-  requireCondition(visual?.stormSilhouette?.profile === 'asymmetric-storm-v2', `Unexpected Slice 6 storm profile ${visual?.stormSilhouette?.profile}.`);
+  requireCondition(visual?.stormSilhouette?.profile === 'ragged-wedge-storm-v3', `Unexpected Slice 6 storm profile ${visual?.stormSilhouette?.profile}.`);
   requireCondition(probe?.stormRootPresent === true, 'Slice 6 storm silhouette root is missing.');
   requireCondition(Number(probe?.warpedShellCount) >= 3, `Only ${probe?.warpedShellCount} warped storm shells are active.`);
   requireCondition(Number(probe?.lateralCenterOffset) >= 0.25, `Storm shell centerline is still too geometrically straight: ${probe?.lateralCenterOffset}.`);
-  requireCondition(Number(probe?.edgeWispCount) >= 14, `Only ${probe?.edgeWispCount} edge wisps are active.`);
-  requireCondition(Number(probe?.stormDebrisClusterCount) >= 6, `Only ${probe?.stormDebrisClusterCount} broken storm debris clusters are active.`);
-  requireCondition(Number(probe?.groundBurstCount) >= 9, `Only ${probe?.groundBurstCount} irregular ground bursts are active.`);
+  requireCondition(Number(probe?.condensationStreakCount) >= 7, `Only ${probe?.condensationStreakCount} vertical condensation streaks are active.`);
+  requireCondition(Number(probe?.verticalStreakGeometryCount) >= 7, `Only ${probe?.verticalStreakGeometryCount} condensation streaks span the tornado body.`);
+  requireCondition(Number(probe?.edgeWispCount) <= 9 && Number(probe?.edgeWispMaxAspectRatio) <= 0.36, `Subordinate edge sprites are too numerous or round: count=${probe?.edgeWispCount}, aspect=${probe?.edgeWispMaxAspectRatio}.`);
+  requireCondition(Number(probe?.groundPullCount) >= 6, `Only ${probe?.groundPullCount} directional ground-pull streaks are active.`);
+  requireCondition(Number(probe?.visibleInheritedRoundStormSpriteCount) === 0, `Visible inherited round storm sprites remain: ${probe?.visibleInheritedRoundStormSpriteCount}.`);
+  requireCondition(Number(probe?.visibleFoundationStormDustCount) === 0, `Visible round visual-foundation storm dust remains: ${probe?.visibleFoundationStormDustCount}.`);
+  requireCondition(Number(probe?.visibleProductionTornadoDodecahedronCount) === 0, `Visible production tornado dodecahedron fragments remain: ${probe?.visibleProductionTornadoDodecahedronCount}.`);
+  requireCondition(probe?.legacyDustBowlVisible === false, `Historical dust-bowl presentation remains visible: ${probe?.legacyDustBowlVisible}.`);
   requireCondition(Number(probe?.legacyStormRingCount) >= 3, `Expected inherited storm ground rings to be restrained, found ${probe?.legacyStormRingCount}.`);
   requireCondition(Number(probe?.inheritedShellMaxOpacity) <= 0.09, `Inherited Slice 4 cone shells remain too dominant: ${probe?.inheritedShellMaxOpacity}.`);
   requireCondition(Number(probe?.defaultFunnelOpacity) <= 0.22, `Legacy funnel remains too opaque in default mode: ${probe?.defaultFunnelOpacity}.`);
@@ -303,6 +346,46 @@ try {
   if (stormPage.errors.length) report.failures.push(`Storm browser errors: ${stormPage.errors.join(' | ')}`);
 } finally {
   await stormPage.page.close();
+}
+
+const stormMainStreetPage = await createPage();
+try {
+  const prepared = await stormMainStreetPage.page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('slice6-storm-main-street'));
+  requireCondition(prepared === true, 'Slice 6 storm-over-main-street QA view did not prepare.');
+  await stormMainStreetPage.page.waitForTimeout(260);
+  report.stormMainStreet = await snapshot(stormMainStreetPage.page);
+  report.stormMainStreet.probe = await slice6Probe(stormMainStreetPage.page);
+  await stormMainStreetPage.page.screenshot({ path: path.join(outputDir, 'threejs-hero-slice6-storm-main-street.png'), fullPage: true });
+
+  const visual = report.stormMainStreet.visual;
+  const probe = report.stormMainStreet.probe;
+  requireCondition(visual?.stormSilhouette?.profile === 'ragged-wedge-storm-v3', 'Storm-over-main-street evidence used the wrong storm profile.');
+  requireCondition(Number(probe?.verticalStreakGeometryCount) >= 7, 'Storm-over-main-street evidence lacks a continuous vertical storm body.');
+  requireCondition(Number(probe?.groundPullCount) >= 6, 'Storm-over-main-street evidence lacks lower directional circulation.');
+  requireCondition(!visual?.heroSlice6LastError, `Slice 6 runtime error in storm-over-main-street view: ${visual?.heroSlice6LastError}.`);
+  if (stormMainStreetPage.errors.length) report.failures.push(`Storm-over-main-street browser errors: ${stormMainStreetPage.errors.join(' | ')}`);
+} finally {
+  await stormMainStreetPage.page.close();
+}
+
+const groundContactPage = await createPage();
+try {
+  const prepared = await groundContactPage.page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('slice6-ground-contact'));
+  requireCondition(prepared === true, 'Slice 6 lower-funnel ground-contact QA view did not prepare.');
+  await groundContactPage.page.waitForTimeout(260);
+  report.groundContact = await snapshot(groundContactPage.page);
+  report.groundContact.probe = await slice6Probe(groundContactPage.page);
+  await groundContactPage.page.screenshot({ path: path.join(outputDir, 'threejs-hero-slice6-ground-contact.png'), fullPage: true });
+
+  const visual = report.groundContact.visual;
+  const probe = report.groundContact.probe;
+  requireCondition(Number(probe?.groundPullCount) >= 6, 'Ground-contact evidence lacks directional dirt-pull streaks.');
+  requireCondition(Number(probe?.condensationStreakCount) >= 7, 'Ground-contact evidence lacks its connected condensation body.');
+  requireCondition(Number(probe?.edgeWispCount) <= 9, `Ground-contact evidence has too many round edge sprites: ${probe?.edgeWispCount}.`);
+  requireCondition(!visual?.heroSlice6LastError, `Slice 6 runtime error in ground-contact view: ${visual?.heroSlice6LastError}.`);
+  if (groundContactPage.errors.length) report.failures.push(`Ground-contact browser errors: ${groundContactPage.errors.join(' | ')}`);
+} finally {
+  await groundContactPage.page.close();
 }
 
 const streetPage = await createPage();
