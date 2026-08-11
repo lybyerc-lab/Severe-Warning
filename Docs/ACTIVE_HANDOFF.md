@@ -1,4 +1,19 @@
-# Active Handoff
+# CURRENT HANDOFF REDIRECT
+
+This `main`-branch handoff is **historical**. Do not use it to determine current Severe Weather Warning work.
+
+Fresh Director recovery:
+
+1. Read GitHub Issue **#71 — DIRECTOR START HERE: current authority and fresh-chat recovery protocol**.
+2. Use branch `agent/director-stage2b-game-direction`.
+3. Read `Docs/ACTIVE_HANDOFF.md` from that Director branch for current execution truth.
+4. Verify current active issues and exact branch heads before claiming status.
+
+The historical snapshot below is retained for provenance only.
+
+---
+
+# HISTORICAL ACTIVE HANDOFF
 
 Last updated: 2026-08-01
 Repository: `lybyerc-lab/Severe-Warning`
@@ -58,8 +73,6 @@ Do not regress these while correcting v4.5.0:
 9. Build a new APK only after browser QA passes.
 10. Establish persistent QA signing so later APKs update in place.
 
-## New-chat startup prompt
-
-Use this exact instruction:
+## Historical new-chat startup prompt
 
 > Open `lybyerc-lab/Severe-Warning`. Read `AGENTS.md` and every file it lists. Then inspect PR #10 and the `qa` branch before changing anything. Treat repository records as authoritative and ask before overriding an accepted behavior or durable decision.
