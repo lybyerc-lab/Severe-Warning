@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 15:38 America/Chicago
+Last updated: 2026-08-11 15:42 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -47,9 +47,9 @@ Independent QA passed verifier 10/10 and browser QA 12/12, including determinist
 ### #63 SW-QA-002 - rapid prototype evidence lane
 Branch: `agent/sw-qa-002-rapid-prototype-lane`
 Exact accepted head: `73b28e07a5b05dd632226af851b06a32e99bb068`
-Status: **ACCEPTED integration candidate**.
+Status: **ACCEPTED prototype evidence lane**.
 
-Exact-head Actions Run `31494975840` succeeded with artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`). Prototype authority remains non-production.
+Exact-head Actions Run `31494975840` succeeded with artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`). Prototype authority remains non-production and is not promoted merely because downstream PWA work used it as a base.
 
 ### #64 SW-PWA-001 - installable shell
 Branch: `agent/sw-pwa-001-installable-shell`
@@ -106,7 +106,7 @@ Durability PASS; static verification passed 9/9 plus campaign 66/66 and V5.1 55/
 
 ## Current worker-return closure state
 
-Owner reports **all current worker tasks completed** at 2026-08-11 15:38 America/Chicago. Director checked durable repo state before accepting anything.
+Owner reports **all current feature/QA worker tasks completed** at 2026-08-11 15:38 America/Chicago. Director checked durable repo state before accepting anything.
 
 ### WORLD - SW-WORLD-004 correction
 Assigned branch: `agent/sw-world-004-storm-hero-acceptance-fix`
@@ -123,7 +123,7 @@ WORLD's next work is publication/evidence closure only:
 - return default/Main Street/ground-contact visual evidence, before/after, counts, regression/drift proof;
 - explicitly confirm the candidate avoids attack bubbles, tidy cone, and visible square/card primitives.
 
-Do not assign further WORLD feature work until this exact correction state is durable. Once durable, send exact correction SHA to independent visual acceptance. If it passes, #61 can stop blocking first-batch integration.
+Once durable, send exact correction SHA to independent visual acceptance. If it passes, the exact accepted correction can be fed into Integration.
 
 ### QA - SW-QA-005 LEVEL-001 defect reproduction
 Verification branch/source under test: `agent/sw-qa-005-level-001-defect-repro` / `07e089f03bdb2943e6b3d64033010736805afb4a`
@@ -142,7 +142,7 @@ QA's next work is evidence publication only. Return:
 - ranked product defect / harness defect / proof limitation list;
 - confirmation of zero product-code edits.
 
-Once durable, Director converts only confirmed product defects into WORLD's next bounded #66 correction after WORLD-004 closure.
+Once durable, Director converts only confirmed product defects into WORLD's next bounded #66 correction. Integration does not import #66 until the exact correction is Director accepted.
 
 ### GAME - SW-RPG-002 Slingshot synergy
 Assigned branch: `agent/sw-rpg-002-slingshot-synergy`
@@ -162,13 +162,40 @@ GAME's next work is publication/evidence closure only:
 - return telemetry/record proof if implemented plus inherited regressions and drift report;
 - confirm player/storm aim drives launch and there is no invisible auto-targeting or extra HUD slot.
 
-Do not launch Twin Tornadoes, Waterspout, satellite feat, map, online systems, #66 fixes, or WORLD renderer work from a guessed base. Once Slingshot is durable and accepted, establish the next GAME base from that exact head.
+Once Slingshot is durable and accepted, feed that exact head into the rolling Integration candidate before establishing any next downstream GAME base that depends on integration truth.
 
-## Integration
+## Integration - ACTIVE ASSEMBLY LANE
 
-No Integration worker is active.
+The owner correctly reaffirmed the established Integration & Release Worker contract: **Integration is the final assembly lane**. It should take Director-accepted branch outputs and assemble a coherent candidate; it should not be left idle merely because unrelated blocked lanes still have acceptance work.
 
-First-batch integration remains blocked by #61 visual acceptance. Accepted candidates currently include #62, #63, #64, #68, and first #67 RPG slice. #65 is durable but retains separate product visual acceptance. #66 is durable but acceptance-blocked. Do not production-merge rejected QA #29.
+Issue: **#70 SW-INT-003 — Stage 2B accepted-stack integration candidate**
+Branch: `agent/sw-int-003-stage2b-accepted-stack`
+Exact starting SHA: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+Director activation comment: `5258622796`
+Status: **ASSIGNED / PREPARED for Integration worker; branch existence alone is not proof an external Integration session has started**.
+
+The exact base already contains the accepted GAME lineage:
+- #62 Moo Level as ancestor `89aeac92d032bfc6546cb8da7c52effc7a408aa1`;
+- #65 newspaper `43348db9b56ec18bca8418c8dfe13470aad4722d`;
+- #68 scorekeeper `3d1661cfdd019f0285dc8556d0e598c22f0cb489`;
+- #67 first RPG slice `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`.
+
+Integration must add the accepted **PWA task delta** from #64 exact head `7cda055a4773c5c9dc69c0d02018cd9454a86628` relative to its parent `73b28e07a5b05dd632226af851b06a32e99bb068`, without promoting prototype-only #63 authority.
+
+Integration purpose now:
+- prove the already accepted gameplay/UI/progression/PWA stack coexists immediately;
+- surface merge/package/build conflicts early;
+- run the full inherited exact-source regression/PWA chain;
+- produce a clean rolling Stage 2B assembly candidate;
+- later add exact Director-accepted WORLD-004, #66 correction, and RPG-002 outputs as they clear their gates.
+
+Explicitly not included yet:
+- #61 WORLD-004 local completion until exact durable corrected head passes independent visual acceptance;
+- #66 until exact product defects are corrected and accepted;
+- RPG-002 Slingshot until exact durable head is reviewed/accepted;
+- Twin Tornadoes, Waterspout, satellite feat, U.S. map, online/accounts.
+
+Integration is not allowed to invent features, retune gameplay, weaken QA, silently absorb prototype authority, or self-merge. Public QA remains a playtest gate, not release acceptance.
 
 ## Product laws
 
@@ -189,12 +216,12 @@ First-batch integration remains blocked by #61 visual acceptance. Accepted candi
 
 ## Immediate Director actions
 
-1. Wait only for durable return closure, not more feature authoring.
-2. When WORLD-004 publishes, inspect exact diff/evidence and send exact head to independent visual QA. Do not self-accept from WORLD return alone.
-3. When QA-005 posts classification, convert only confirmed #66 product defects into a bounded WORLD correction after #61 is closed.
-4. When RPG-002 publishes, inspect exact Slingshot source/behavior and either accept/freeze it or pin a concrete defect before assigning the next GAME slice.
-5. Preserve #62/#63/#64/#68/#67-first-slice accepted heads exactly.
-6. Start Integration only when the first-batch acceptance set and merge order are explicit.
+1. Keep Integration assembling the already accepted stack now; do not wait idle for every blocked lane.
+2. When WORLD-004 publishes, inspect exact diff/evidence and send exact head to independent visual QA. If accepted, add that exact head to Integration.
+3. When QA-005 posts classification, convert only confirmed #66 product defects into a bounded WORLD correction. Add #66 to Integration only after exact correction acceptance.
+4. When RPG-002 publishes, inspect exact Slingshot source/behavior and either accept/freeze it or pin a concrete defect. If accepted, add exact RPG-002 head to Integration.
+5. Preserve #62/#64/#68/#67-first-slice accepted heads exactly and keep #63 prototype authority non-production.
+6. Let Integration own merge/cherry-pick conflict resolution, combined exact-source verification, candidate packaging, and release-artifact assembly. Feature workers do not perform final assembly.
 
 ## Chat rollover rule
 
