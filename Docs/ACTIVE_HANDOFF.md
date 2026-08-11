@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 08:00 America/Chicago
+Last updated: 2026-08-11 08:19 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -9,136 +9,143 @@ Director branch: `agent/director-stage2b-game-direction`
 First-batch coordination base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 Public QA root: `https://lybyerc-lab.github.io/Severe-Warning/`
 
-## Start here in a new chat / new Director session
+## New Director session startup
 
 The repository is durable memory. Chat is temporary working context.
 
-1. Read `AGENTS.md` on `agent/director-stage2b-game-direction` for current operating law.
-2. Read `Docs/GAME_DIRECTOR.md` for product direction.
-3. Read `Docs/WORKER_STARTUP_ORDER.md` for the Stage 2B drift/process adjustments discovered during launch.
-4. Read `Docs/ACTIVE_PRODUCTION_SLATE.md` for sequencing.
-5. For any worker task, read the exact GitHub issue and its latest Director comments before acting.
-6. Do not infer worker completion from branch activity alone. Review exact returned heads and required evidence.
+1. Read `AGENTS.md` from `agent/director-stage2b-game-direction`.
+2. Read `Docs/GAME_DIRECTOR.md`.
+3. Read `Docs/WORKER_STARTUP_ORDER.md`.
+4. Read this handoff and `Docs/ACTIVE_PRODUCTION_SLATE.md`.
+5. Read the exact active issues and latest Director comments before acting.
+6. Inspect live worker branch heads. Newer exact evidence beats this prose.
+7. Do not use `main` as project authority.
 
-Important startup law for workers:
+Mandatory worker startup law:
 
-`assigned worktree -> assigned branch -> exact SHA verified -> task-versioned governing docs -> scope/protection/proof plan -> edit`
+`assigned worktree -> assigned branch -> exact SHA verified -> task-versioned governing docs -> intended change / protected behavior / proof plan -> edit`
 
 Never interpret task authority from an unverified checkout.
 
-## Current production truth
+## Production truth
 
 - Frozen gameplay/fun reference: PR #26 head `1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`.
 - Sealed Stage 1 graphics source: `f2060dff08ddb9df9f90ecd245940d8db86c7266`.
 - Rejected but technically green QA #29 source: `b501737e71e61b979901d4899d969390aa37b1f4`.
-- QA #29 remains **owner product-rejected** because the default tornado read as attack bubbles / graphics regression and the Cow Level was presentation-only.
-- Do not production-merge QA #29 merely because its CI was green.
-- Browser-first remains the active production path. Android packaging is deliberate/opt-in for physical checkpoints.
-- Phone is a platform, not the intended size of the game. Design toward substantial handheld/controller-friendly play without claiming a solved console port.
+- QA #29 remains owner product-rejected because the default tornado read as attack bubbles / graphics regression and the Cow Level was presentation-only.
+- Browser-first remains the production path. Android is opt-in for deliberate physical checkpoints.
+- Green CI is engineering evidence, not product acceptance.
+- Drift is treated as a product defect.
 
-## Stage 2B first batch status
+## Stage 2B live worker board
 
 ### WORLD #61 — SW-WORLD-003
 
-Issue: `https://github.com/lybyerc-lab/Severe-Warning/issues/61`
+Issue: #61
 Branch: `agent/sw-world-003-storm-hero-recovery`
-Base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
+Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 
-Goal: recover the default tornado as one coherent dangerous storm mass and remove the attack-bubble read without touching protected gameplay authority.
+Status at this handoff: **still active / not yet Director-reviewed as complete** unless newer branch evidence exists.
 
-At the 2026-08-11 08:00 checkpoint, the GitHub branch still pointed at the exact base SHA. Treat WORLD as launched/in progress but with **no committed result yet** unless newer evidence exists.
+Goal remains to recover the default tornado as one coherent, dangerous atmospheric hero mass and remove the attack-bubble read without changing protected gameplay authority.
+
+WORLD remains the visual gate for the first Stage 2B integrated candidate. Green tests alone are insufficient. Acceptance requires representative mobile screenshots including default hero read, Main Street, and lower funnel / ground contact.
 
 ### GAME #62 — SW-GAME-002
 
-Issue: `https://github.com/lybyerc-lab/Severe-Warning/issues/62`
-Branch: `agent/sw-game-002-moo-level-unlock`
-Base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
-Observed branch head at checkpoint: `3d3733b18cd45c877c7f4bcf3990bf77fc625f0f`
+Issue: #62
+Finished worker branch: `agent/sw-game-002-moo-level-unlock`
+Frozen worker head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
+Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 
-Goal: Hart Farm becomes a real unlock encounter for a persistent, separate, replayable MOO LEVEL bonus stage.
+Owner reported on 2026-08-11 that the GAME worker completed its task.
 
-The branch has active commits, but **has not yet been Director-reviewed in this handoff**. Do not call it finished or integrate it without reviewing the exact worker return, diff, deterministic evidence, persistence, cow safety, and normal-campaign regression proof.
+Director code-shape review already found the implementation on-scope: Hart Farm unlock challenge, persistent `mooLevelUnlocked`, locked/unlocked MOO LEVEL node, dedicated Moo County Fair score attack, safe-cow identity, best score, return path, and guarded normal-campaign wrappers.
+
+Important acceptance distinction: the GitHub issue currently does not contain the worker's final executed browser/QA evidence return. Do not send GAME back for more feature work merely because the evidence is not persisted. Keep the finished branch frozen. Before integrating GAME-002, the Director still must reconcile the exact-head executed proof for failure/rearm, persistence, dedicated Moo Level, cow safety, and normal-campaign regression. If that proof exists outside GitHub, persist the outcome or independently verify rather than asking the owner to coordinate logs.
 
 ### QA #63 — SW-QA-002
 
-Issue: `https://github.com/lybyerc-lab/Severe-Warning/issues/63`
-Branch: `agent/sw-qa-002-rapid-prototype-lane`
-Base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
-Reviewed head: `4361a1cb8931766548281379ae22d703675ee1df`
+Issue: #63
+Finished/accepted branch: `agent/sw-qa-002-rapid-prototype-lane`
+Accepted head: `73b28e07a5b05dd632226af851b06a32e99bb068`
+Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 
-Director drift/code-shape verdict: **PASS**.
+Director status: **ACCEPTED integration candidate**.
 
-The branch is exactly one commit ahead of the frozen base and added only six bounded prototype/QA files. It did not modify runtime/gameplay/presentation or existing production/publisher/auto-promoter/Android workflows.
+Exact-head GitHub Actions Run `31494975840` completed successfully. It verified exact source identity, built the prototype candidate, ran mobile Chromium boot/control/render/screenshot smoke, packaged evidence, and uploaded artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`).
 
-Acceptance is **not complete yet** because the new workflow is `workflow_dispatch`-only and exists only on the worker branch. GitHub requires a manually dispatched workflow to exist on the default branch, so the required harmless example run/artifact/screenshots could not yet self-prove pre-integration.
+The prototype lane remains explicitly non-production with `productionAuthority: false`, `qaPagesDispatched: false`, and no Pages/publisher/Android promotion authority.
 
-Latest Director comment on #63 requires the smallest safe pre-integration execution path, followed by a real example run proving exact SHA, elapsed time, artifact/screenshots, `productionAuthority: false`, `qaPagesDispatched: false`, and no publisher/Pages dispatch.
+Keep the accepted QA branch frozen unless a new Director correction is issued.
 
-Do not weaken production QA or touch runtime/gameplay/presentation to solve this.
+## Newly launched follow-up work
 
-## Process adjustments learned during this batch
+GAME and QA workers are free after completing their first-batch tasks. The next wave was launched with exact bases and inherited-behavior guards rather than leaving the lanes idle.
 
-These are binding lessons, not chat-only observations.
+### QA -> PWA #64 — SW-PWA-001
 
-1. **Checkout before docs.** WORLD, GAME, and QA all initially read governing files from the wrong checkout because the launch wording put doc reading before branch/SHA verification. The launch notes were corrected and `Docs/WORKER_STARTUP_ORDER.md` now makes the order permanent.
-2. **Environment gap != repository defect.** QA lacked local Windows `ffmpeg`, while the Ubuntu workflow deliberately installs it. Use CI for CI-owned evidence; do not mutate the repo merely to make one local machine match CI.
-3. **New workflows need a self-proof plan.** A branch-only `workflow_dispatch` file cannot manually dispatch itself before it exists on the default branch. Workflow tasks must include a safe pre-integration execution mechanism in their design.
-4. **Clean diff != complete ticket.** QA-002 has excellent drift discipline but still needs the executed evidence required by its ticket. Keep scope verdict, implementation verdict, and execution/evidence verdict separate.
-5. **Drift is a defect.** Every task states what changes, what remains unchanged, and how both will be proved. Integration rejects unexplained collateral changes even when tests are green.
+Issue: #64
+Branch: `agent/sw-pwa-001-installable-shell`
+Exact base: `73b28e07a5b05dd632226af851b06a32e99bb068`
 
-## Stage 2B product direction that must survive chat rollover
+Launch authority is the latest Director comment on #64, which supersedes the older queued line in the issue body.
 
-Core genre: **arcade destruction game with light action RPG progression**.
+Goal: make the GitHub Pages/browser build installable as **Severe Weather Warning** with correct `/Severe-Warning/` project scope, standalone launch, manifest/icons, and a cache/update strategy that cannot trap testers on stale QA builds.
 
-Current high-level loop:
+Protected: sealed production QA/Pages publisher/Android gates, prototype zero-authority semantics, normal browser play, all gameplay.
 
-`U.S. Weather Map -> choose Storm Site -> choose Storm Form + exactly 3 active abilities -> UNLEASH STORM -> destruction/objectives/secrets -> newspaper results + records -> MOO-LAH/progression -> upgrades/unlocks -> replay or move`
+### GAME -> Newspaper UI #65 — SW-UI-001
 
-Important laws/directions:
+Issue: #65
+Branch: `agent/sw-ui-001-newspaper-presentation`
+Exact base: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
-- Full player-facing title is **Severe Weather Warning**.
+Launch authority is the latest Director comment on #65, which supersedes the older queued line in the issue body.
+
+Goal: create one coherent **Severe Weather Warning** local-newspaper presentation family across storm selection, **UNLEASH STORM**, opening-newspaper identity where practical, and end-run results.
+
+Protected: GAME-002 Moo Level behavior, unlock truth, scores/stats calculations, storm-selection semantics, Pull/Gust/Grid Zap, movement/camera, campaign timing/objectives, WORLD presentation, QA/PWA authority. This task does not add MOO-LAH, RPG systems, scorekeeper architecture, U.S. map expansion, or unrelated replay features.
+
+## Remaining queue
+
+Do not launch these blindly. Choose exact bases after the active seams and acceptance evidence are known.
+
+- #66 `SW-LEVEL-001`: extensible Storm Site framework / U.S. map destination structure.
+- #67 `SW-RPG-001`: MOO-LAH, Storm Triangle, upgrades, synergies.
+- #68 `SW-SCORE-001`: persistent scorekeeper, records, competitive replay loop.
+
+No Stage 2B Integration worker is active yet unless newer exact direction says otherwise.
+
+## Product direction that must survive rollover
+
+Canonical direction remains in `Docs/GAME_DIRECTOR.md` and issue-specific companions. High-level laws:
+
+- Genre: arcade destruction game with light action RPG progression.
+- Full player-facing title: **Severe Weather Warning**.
 - Fun/destruction first; beauty is first-class.
-- Cows and Moo Brew are the comic backbone, not the entire joke vocabulary.
-- **MOO-LAH** is the gameplay currency direction, earned through play rather than a manipulative retention economy.
-- Exactly **three active abilities** are equipped per run in the **Storm Triangle**. Storm form and passives are separate.
-- Ability synergies should be physical/discoverable, not spreadsheet bonuses. Canonical prototype example: **Pull + Gust = Slingshot**, pulling an object in and launching it across the map.
-- Synergy can grow into feats/secrets/unlocks, including deliberately absurd late-game discoveries such as pulling down a satellite when the right build/progression/site conditions are met.
-- Individual abilities must remain fun on their own. Synergy adds discovery rather than repairing weak abilities.
-- Persistent scorekeeping is a must-have core system. Local-first records precede optional social leaderboards. Records should retain site/build/Storm Triangle/version identity.
-- Newspaper presentation is the recurring UI family for storm selection, UNLEASH STORM, and end-run score/record results.
-- The Weather Map should evolve into a stylized nostalgic U.S. destination-select map.
-- Storm Sites should be authored substantial places with recognizable destruction fantasies and signature chains, not featureless procedural maps.
-- Free Storm, location mastery, Storm Day variants, archive/scrapbook, score pace, and special challenge editions are approved directions with places in the game, but should be sequenced rather than dumped into the current first-batch workers.
-- Cow-fucius is an approved recurring humor concept. Loading/transitions are the preferred first home; Moo Brew spokesperson/philosopher connection remains intentionally flexible.
+- Storm is the visual hero and must read as one connected dangerous mass.
+- Cows and Moo Brew are the comic backbone.
+- Exactly three active abilities per run in the Storm Triangle; storm form/passives are separate.
+- Physical/discoverable synergy is a replay pillar. Named prototype: **Pull + Gust = Slingshot**.
+- Individual abilities remain fun on their own.
+- MOO-LAH is earned gameplay currency, not a manipulative retention economy.
+- Persistent local-first scorekeeping is a must-have core system.
+- Newspaper presentation is recurring UI identity for storm select, UNLEASH STORM, and results.
+- Weather Map direction is a stylized nostalgic U.S. destination selector.
+- Storm Sites are authored substantial destruction fantasies with signature moments, not generic procedural arenas.
+- Phone is a platform, not the intended size of the game. Preserve controller-friendly architecture where practical.
+- Become C++-ready, not C++-dependent. No rewrite.
 
-## Current queue after first-batch evidence
+## Immediate Director actions
 
-Do not launch all of these blindly. Choose exact bases and seams after reviewing #61/#62/#63 returns.
-
-- #64 PWA shell, especially after QA lane semantics are settled.
-- #65 newspaper presentation family.
-- #66 Storm Site registry / U.S. map expansion / authored site structure.
-- #67 RPG, MOO-LAH, Storm Triangle, upgrades, synergies.
-- #68 persistent scorekeeper / records / competitive replay loop.
-
-No CIN worker and no Integration worker are active for this Stage 2B first batch unless newer exact task direction says otherwise.
-
-## Architecture direction
-
-Do **not** start a C++ rewrite now.
-
-Strategic direction is to become **C++-ready, not C++-dependent**: keep simulation/game state/input/rendering boundaries clean so expensive isolated systems could later be tested as C++/WebAssembly modules if profiling proves a real need. Stage 2B should remain focused on proving the game and minimizing drift rather than opening another rewrite era.
-
-## Next actions in a fresh chat
-
-1. When QA returns from the #63 bounded follow-up, inspect GitHub directly and decide whether the real example run closes the remaining acceptance blocker.
-2. When GAME says finished, inspect its exact head, diff, unlock persistence, dedicated MOO LEVEL, cow safety, and normal-campaign regression evidence. Do not rely on the pasted worker summary alone.
-3. When WORLD says finished, inspect exact screenshots/evidence and judge the tornado visually against the attack-bubble rejection. Green tests alone are insufficient.
-4. Only after first-batch seams are known should the Director assign exact bases for #64-#68.
-5. No production merge of rejected QA #29.
+1. Watch WORLD #61 for its first committed completion evidence and judge the tornado visually, not only structurally.
+2. Reconcile GAME #62 final executed evidence before integration; do not ask the owner to reconstruct worker logs.
+3. Manage active PWA #64 and UI #65 workers against their exact launch comments and bases.
+4. Do not launch #66-#68 until exact conflict-safe bases are chosen.
+5. Do not production-merge rejected QA #29.
+6. Do not start Integration until the first-batch candidate set is actually acceptable and the merge order is explicit.
 
 ## Chat rollover rule
 
-When the active chat becomes heavy enough that context handling feels sluggish or uncertain, refresh this durable handoff and start a new project chat instead of trying to preserve everything through one giant conversation.
-
-The new chat should treat GitHub issues, exact SHAs, `AGENTS.md`, `Docs/GAME_DIRECTOR.md`, `Docs/WORKER_STARTUP_ORDER.md`, and this handoff as the source of truth. The owner should not have to reconstruct the project manually.
+When context becomes heavy or uncertain, refresh this file and start a new project chat. The next Director should recover from GitHub, not from owner memory.
