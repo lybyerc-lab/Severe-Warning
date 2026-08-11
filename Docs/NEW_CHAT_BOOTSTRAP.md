@@ -26,6 +26,8 @@ Do only this first:
 
 Do **not** preload the entire project, every active issue, every branch, or every historical document before the first response.
 
+If a chat already began recovery under an older version of this protocol, do not restart its tool sequence merely because this file changed. Let that turn finish unless it is clearly stuck or making an unsafe/destructive change. The two-pass rule applies to the next recovery decision.
+
 ## Pass 2 — load deeper law only when needed
 
 Before planning, assigning, reviewing, integrating, or changing anything, load the relevant deeper authority from the Director branch:
