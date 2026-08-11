@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 08:19 America/Chicago
+Last updated: 2026-08-11 09:02 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -37,7 +37,15 @@ Never interpret task authority from an unverified checkout.
 - Green CI is engineering evidence, not product acceptance.
 - Drift is treated as a product defect.
 
-## Stage 2B live worker board
+## Worker activity truth
+
+**No worker is actively working on a task at this checkpoint.**
+
+Prepared branches and Director issue comments are planning/launch material only. They must not be described as active worker execution unless a worker session has actually been started and is working from that exact assignment.
+
+The previous handoff incorrectly described QA as working on #64 and GAME as working on #65 merely because branches and launch notes had been prepared. That was a Director-state error and is corrected here.
+
+## Stage 2B first-batch status
 
 ### WORLD #61 — SW-WORLD-003
 
@@ -45,11 +53,11 @@ Issue: #61
 Branch: `agent/sw-world-003-storm-hero-recovery`
 Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 
-Status at this handoff: **still active / not yet Director-reviewed as complete** unless newer branch evidence exists.
+Owner reports the WORLD worker has completed its task.
 
-Goal remains to recover the default tornado as one coherent, dangerous atmospheric hero mass and remove the attack-bubble read without changing protected gameplay authority.
+At the latest GitHub check, however, the assigned branch still pointed at the untouched frozen base and Issue #61 did not yet contain the worker's pushed implementation/evidence return. Treat this as **worker-reported complete, durable return still missing**, not as active implementation work.
 
-WORLD remains the visual gate for the first Stage 2B integrated candidate. Green tests alone are insufficient. Acceptance requires representative mobile screenshots including default hero read, Main Street, and lower funnel / ground contact.
+Do not send WORLD back for redesign merely because GitHub lacks the return. The next Director step is to reconcile/persist the completed result and visually judge the required tornado evidence when it becomes available.
 
 ### GAME #62 — SW-GAME-002
 
@@ -58,7 +66,7 @@ Finished worker branch: `agent/sw-game-002-moo-level-unlock`
 Frozen worker head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 
-Owner reported on 2026-08-11 that the GAME worker completed its task.
+Owner reports the GAME worker completed its task.
 
 Director code-shape review already found the implementation on-scope: Hart Farm unlock challenge, persistent `mooLevelUnlocked`, locked/unlocked MOO LEVEL node, dedicated Moo County Fair score attack, safe-cow identity, best score, return path, and guarded normal-campaign wrappers.
 
@@ -79,43 +87,39 @@ The prototype lane remains explicitly non-production with `productionAuthority: 
 
 Keep the accepted QA branch frozen unless a new Director correction is issued.
 
-## Newly launched follow-up work
+## Prepared follow-up work — not active
 
-GAME and QA workers are free after completing their first-batch tasks. The next wave was launched with exact bases and inherited-behavior guards rather than leaving the lanes idle.
+The following branches and issue launch notes have been prepared, but **no worker is currently executing them**.
 
-### QA -> PWA #64 — SW-PWA-001
+### Prepared QA follow-up: PWA #64 — SW-PWA-001
 
 Issue: #64
-Branch: `agent/sw-pwa-001-installable-shell`
-Exact base: `73b28e07a5b05dd632226af851b06a32e99bb068`
+Prepared branch: `agent/sw-pwa-001-installable-shell`
+Prepared base: `73b28e07a5b05dd632226af851b06a32e99bb068`
 
-Launch authority is the latest Director comment on #64, which supersedes the older queued line in the issue body.
-
-Goal: make the GitHub Pages/browser build installable as **Severe Weather Warning** with correct `/Severe-Warning/` project scope, standalone launch, manifest/icons, and a cache/update strategy that cannot trap testers on stale QA builds.
+Goal if/when explicitly launched: make the GitHub Pages/browser build installable as **Severe Weather Warning** with correct `/Severe-Warning/` project scope, standalone launch, manifest/icons, and a cache/update strategy that cannot trap testers on stale QA builds.
 
 Protected: sealed production QA/Pages publisher/Android gates, prototype zero-authority semantics, normal browser play, all gameplay.
 
-### GAME -> Newspaper UI #65 — SW-UI-001
+### Prepared GAME follow-up: Newspaper UI #65 — SW-UI-001
 
 Issue: #65
-Branch: `agent/sw-ui-001-newspaper-presentation`
-Exact base: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
+Prepared branch: `agent/sw-ui-001-newspaper-presentation`
+Prepared base: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
-Launch authority is the latest Director comment on #65, which supersedes the older queued line in the issue body.
-
-Goal: create one coherent **Severe Weather Warning** local-newspaper presentation family across storm selection, **UNLEASH STORM**, opening-newspaper identity where practical, and end-run results.
+Goal if/when explicitly launched: create one coherent **Severe Weather Warning** local-newspaper presentation family across storm selection, **UNLEASH STORM**, opening-newspaper identity where practical, and end-run results.
 
 Protected: GAME-002 Moo Level behavior, unlock truth, scores/stats calculations, storm-selection semantics, Pull/Gust/Grid Zap, movement/camera, campaign timing/objectives, WORLD presentation, QA/PWA authority. This task does not add MOO-LAH, RPG systems, scorekeeper architecture, U.S. map expansion, or unrelated replay features.
 
 ## Remaining queue
 
-Do not launch these blindly. Choose exact bases after the active seams and acceptance evidence are known.
+Do not launch these blindly. Choose exact bases after the first-batch acceptance/integration seams are known.
 
 - #66 `SW-LEVEL-001`: extensible Storm Site framework / U.S. map destination structure.
 - #67 `SW-RPG-001`: MOO-LAH, Storm Triangle, upgrades, synergies.
 - #68 `SW-SCORE-001`: persistent scorekeeper, records, competitive replay loop.
 
-No Stage 2B Integration worker is active yet unless newer exact direction says otherwise.
+No Stage 2B Integration worker is active.
 
 ## Product direction that must survive rollover
 
@@ -139,12 +143,13 @@ Canonical direction remains in `Docs/GAME_DIRECTOR.md` and issue-specific compan
 
 ## Immediate Director actions
 
-1. Watch WORLD #61 for its first committed completion evidence and judge the tornado visually, not only structurally.
-2. Reconcile GAME #62 final executed evidence before integration; do not ask the owner to reconstruct worker logs.
-3. Manage active PWA #64 and UI #65 workers against their exact launch comments and bases.
-4. Do not launch #66-#68 until exact conflict-safe bases are chosen.
-5. Do not production-merge rejected QA #29.
-6. Do not start Integration until the first-batch candidate set is actually acceptable and the merge order is explicit.
+1. Do not claim any worker is active unless an actual worker session has been launched.
+2. Reconcile/persist WORLD #61's completed return and judge the tornado visually when evidence is available.
+3. Reconcile GAME #62 final executed evidence before integration; do not ask the owner to reconstruct worker logs.
+4. Keep #64 and #65 as prepared assignments until workers are explicitly launched.
+5. Do not launch #66-#68 until exact conflict-safe bases are chosen.
+6. Do not production-merge rejected QA #29.
+7. Do not start Integration until the first-batch candidate set is actually acceptable and the merge order is explicit.
 
 ## Chat rollover rule
 
