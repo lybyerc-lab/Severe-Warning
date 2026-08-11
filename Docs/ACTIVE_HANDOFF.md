@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 13:51 America/Chicago
+Last updated: 2026-08-11 15:04 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -71,20 +71,27 @@ Director status: **ACCEPTED integration candidate**.
 
 The returned head is one bounded commit touching only `package.json`, `runtime/sw-score-001-persistent-scorekeeper.js`, and its apply/verify/browser-QA scripts. The scorekeeper observes existing accepted run/result truth rather than recalculating score authority.
 
-Returned browser evidence is 13/13 PASS with:
-- first-run durable record creation;
-- lower-score PB protection;
-- higher-score NEW PERSONAL BEST with correct previous best and margin;
-- reload persistence;
-- campaign site/variant isolation;
-- separate Moo record bucket;
-- game build and scoring-version identity;
-- reserved-only future Storm Triangle/upgrade metadata;
-- newspaper record presentation plus replay/map actions;
-- inherited GAME-002/campaign regression;
-- zero page/runtime-console errors.
+Returned browser evidence is 13/13 PASS with first-run durable record creation, lower-score PB protection, higher-score NEW PERSONAL BEST with correct previous best/margin, reload persistence, site/variant isolation, separate Moo records, game/scoring version identity, newspaper record presentation, replay/map actions, inherited GAME-002/campaign regression, and zero page/runtime-console errors.
 
-Freeze this exact head for downstream ancestry. No self-merge or production promotion is implied.
+### #67 SW-RPG-001 - MOO-LAH + Storm Triangle foundation
+
+Branch: `agent/sw-rpg-001-moolah-storm-triangle`
+Exact base: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
+Exact accepted head: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+Director acceptance / next-slice comment: `5258244702`
+Director status: **ACCEPTED integration candidate for the first RPG slice**.
+
+The branch is exactly one bounded commit from accepted SCORE-001 and changes only `package.json`, the RPG runtime/apply/verify/QA scripts, and the minimal scorekeeper metadata seam.
+
+Accepted first-slice behavior:
+- local-first `severe_weather_moolah_v1` persistence;
+- deterministic MOO-LAH awards from finalized scorekeeper results at `floor(score / 100)` with no sub-100 participation stipend;
+- newspaper MOO-LAH reward/purchase rail;
+- exactly three fixed Storm Triangle slots: Pull, Gust, Grid Zap;
+- persistent bounded upgrades: Pull `2.50s -> 3.25s`, Gust target damage `90 -> 115`, Grid Zap node cap `8 -> 10` while damage remains `135`;
+- active upgrade/loadout identity written into SCORE-001 build metadata.
+
+Returned proof: RPG verifier 9/9, RPG browser QA 10/10, campaign 66/66, V5.1 55/55, GAME-002 10/10, UI-001 8/8 + browser 9/9, SCORE-001 9/9 + browser 13/13, implementation truth 28/28. Economy quantities remain subject to later owner play-feel tuning; that does not block this architecture/behavior foundation.
 
 ## Returned work with acceptance blockers
 
@@ -104,6 +111,8 @@ Exact base: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
 Issue #61 activation comment: `5257312200`
 
 Scope is only the proven visual defect: break the clean cone read, bury obvious effect primitives, preserve one coherent ragged connected storm mass and strong ground attachment, and keep gameplay authority/mobile budgets unchanged.
+
+Last Director check at 2026-08-11 15:04 America/Chicago: remote branch still equals the exact starting SHA and Issue #61 has no newer WORLD correction return. This does not prove the external worker is idle; it only means no new durable correction is reviewable yet.
 
 ### #65 SW-UI-001 - newspaper presentation
 
@@ -134,31 +143,33 @@ Issue #66 activation comment: `5257314336`
 
 QA must independently reproduce/classify all four blockers, distinguish product defects from harness defects, identify 404 origins, determine boat-launch reachability/testability, inspect authored-place identity, and rerun protected regressions. No product-code edits are authorized.
 
-## Current GAME assignment: #67 SW-RPG-001 first implementation slice
+Last Director check at 2026-08-11 15:04 America/Chicago: the verification branch remains at the exact source under test and Issue #66 has no QA completion return yet. Branch immobility is expected for a no-product-edit QA task; no durable verdict is available yet.
 
-Branch: `agent/sw-rpg-001-moolah-storm-triangle`
-Exact base: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
-Issue #67 activation comment: `5257476257`
+## Current GAME assignment: SW-RPG-002 Slingshot synergy prototype
 
-GAME is now authorized to implement a bounded first RPG slice from the accepted scorekeeper head.
+Branch: `agent/sw-rpg-002-slingshot-synergy`
+Exact base: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+Issue #67 activation comment: `5258244702`
+
+GAME is now assigned the first named physical Storm Triangle synergy:
+
+**Pull + Gust = Slingshot**
 
 Required slice:
-1. local-first MOO-LAH persistence and deterministic earn events from existing accepted run/results truth;
-2. MOO-LAH earned surfaced through the existing newspaper/results language without redesigning #65;
-3. a small persistent upgrade model for Pull, Gust, and Grid Zap, with at least one meaningful bounded upgrade path per ability and exact base/upgraded values documented;
-4. exactly three active abilities per run as the Storm Triangle contract, with current roster establishing the loadout/persistence/schema/UI seam and no extra permanent HUD slots;
-5. active upgrade/loadout identity written into #68 scorekeeper build metadata so records remain interpretable;
-6. no movement-speed/turn-response treadmill. Storm Core progression, if touched, should be utility/combo-oriented.
+1. Require an object/debris mass to be captured through existing Pull authority.
+2. Gust during a valid held/release window turns that held object into a deliberate high-velocity projectile.
+3. Preserve player/storm aim and physical state; no invisible auto-targeting.
+4. Keep object mass/size meaningful rather than flattening all projectiles.
+5. Expose bounded Slingshot telemetry/record hooks where practical without rewriting score authority.
+6. Add bounded wind-up/launch/impact presentation hooks without touching the default storm hero renderer.
 
-Held for later #67 slices: Twin Tornadoes, Waterspout unlock, satellite feat, full Slingshot physics/record loop, full U.S. map, online economy/accounts, and broad progression content.
-
-Required return: exact final SHA/changed files, browser proof for MOO-LAH earn/reload, persistent purchases, exact upgrade effects, correct scorekeeper build identity, newspaper legibility, normal campaign/GAME-002/#65/#68 regressions, anti-grind notes, and drift report.
+Protected: ordinary Pull and Gust semantics, movement/steering/camera, score formula, WORLD renderer, #66 site fixes, three-slot Storm Triangle limit. Twin Tornadoes, Waterspout, satellite feat, full U.S. map, and online/accounts remain held.
 
 ## Integration
 
 No Integration worker is active.
 
-First-batch integration remains blocked by #61 visual acceptance. #62, #63, #64, and #68 are accepted candidates. #65 is durable but retains separate product visual acceptance. #66 is durable but acceptance-blocked.
+First-batch integration remains blocked by #61 visual acceptance. #62, #63, #64, #68, and the first #67 RPG slice are accepted candidates. #65 is durable but retains separate product visual acceptance. #66 is durable but acceptance-blocked.
 
 Do not production-merge rejected QA #29.
 
@@ -183,8 +194,8 @@ Do not production-merge rejected QA #29.
 
 1. Review exact WORLD correction return on `agent/sw-world-004-storm-hero-acceptance-fix`; then send corrected head to independent visual acceptance.
 2. Review QA #66 defect classification and turn only confirmed implementation defects into a bounded WORLD follow-up after #61.
-3. Review GAME #67 exact return for MOO-LAH persistence, bounded upgrade effects, scorekeeper build identity, anti-grind behavior, and protected regressions.
-4. Preserve #62/#63/#64/#68 accepted heads exactly.
+3. Review GAME SW-RPG-002 exact return for real physical Pull+Gust interaction, preserved individual ability behavior, telemetry, and drift.
+4. Preserve #62/#63/#64/#68 and accepted first #67 slice exactly.
 5. Start Integration only when the first-batch acceptance set and merge order are explicit.
 
 ## Chat rollover rule
