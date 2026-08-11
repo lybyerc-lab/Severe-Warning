@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 15:04 America/Chicago
+Last updated: 2026-08-11 15:38 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -23,7 +23,7 @@ Startup law:
 
 `assigned worktree -> assigned branch -> exact SHA verified -> task-versioned governing docs -> intended change / protected behavior / proof plan -> edit`
 
-A Director launch comment or prepared branch is assignment authority, not proof that an external worker session is actually running. Actual liveness requires branch movement, an explicit worker return, or an owner statement.
+A Director branch/comment assignment is authority to start, not proof an external worker session is active. Owner report of completion is **worker-reported complete** until the exact commit/evidence is durable and reviewable.
 
 ## Production truth
 
@@ -38,140 +38,137 @@ A Director launch comment or prepared branch is assignment authority, not proof 
 ## Accepted / frozen work
 
 ### #62 SW-GAME-002 - Hart Farm unlock + real Moo Level
-
 Branch: `agent/sw-game-002-moo-level-unlock`
 Exact accepted head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
-Director status: **ACCEPTED integration candidate**.
+Status: **ACCEPTED integration candidate**.
 
 Independent QA passed verifier 10/10 and browser QA 12/12, including deterministic failure/rearm, persistent unlock, dedicated Moo County Fair, cow safety, normal campaign regression, and protected gameplay authority.
 
 ### #63 SW-QA-002 - rapid prototype evidence lane
-
 Branch: `agent/sw-qa-002-rapid-prototype-lane`
 Exact accepted head: `73b28e07a5b05dd632226af851b06a32e99bb068`
-Director status: **ACCEPTED integration candidate**.
+Status: **ACCEPTED integration candidate**.
 
-Exact-head Actions Run `31494975840` succeeded with artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`). Prototype authority remains explicitly non-production.
+Exact-head Actions Run `31494975840` succeeded with artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`). Prototype authority remains non-production.
 
 ### #64 SW-PWA-001 - installable shell
-
 Branch: `agent/sw-pwa-001-installable-shell`
 Exact accepted head: `7cda055a4773c5c9dc69c0d02018cd9454a86628`
-Director status: **ACCEPTED integration candidate**.
+Status: **ACCEPTED integration candidate**.
 
 `test:pwa`, `qa:pwa`, and process verification are durable PASS. Physical Android install acceptance and production deployment remain separate gates.
 
 ### #68 SW-SCORE-001 - persistent scorekeeper
-
 Branch: `agent/sw-score-001-persistent-scorekeeper`
-Approved base: `43348db9b56ec18bca8418c8dfe13470aad4722d`
 Exact accepted head: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
-Director acceptance comment: `5257473178`
-Director status: **ACCEPTED integration candidate**.
+Status: **ACCEPTED integration candidate**.
 
-The returned head is one bounded commit touching only `package.json`, `runtime/sw-score-001-persistent-scorekeeper.js`, and its apply/verify/browser-QA scripts. The scorekeeper observes existing accepted run/result truth rather than recalculating score authority.
-
-Returned browser evidence is 13/13 PASS with first-run durable record creation, lower-score PB protection, higher-score NEW PERSONAL BEST with correct previous best/margin, reload persistence, site/variant isolation, separate Moo records, game/scoring version identity, newspaper record presentation, replay/map actions, inherited GAME-002/campaign regression, and zero page/runtime-console errors.
+Returned browser evidence is 13/13 PASS with durable first-run records, lower-score PB protection, NEW PERSONAL BEST/previous-best margin, reload persistence, site/variant isolation, separate Moo records, game/scoring version identity, newspaper presentation, replay/map actions, and inherited GAME-002/campaign regression.
 
 ### #67 SW-RPG-001 - MOO-LAH + Storm Triangle foundation
-
 Branch: `agent/sw-rpg-001-moolah-storm-triangle`
-Exact base: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
 Exact accepted head: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
-Director acceptance / next-slice comment: `5258244702`
-Director status: **ACCEPTED integration candidate for the first RPG slice**.
+Status: **ACCEPTED integration candidate for first RPG slice**.
 
-The branch is exactly one bounded commit from accepted SCORE-001 and changes only `package.json`, the RPG runtime/apply/verify/QA scripts, and the minimal scorekeeper metadata seam.
-
-Accepted first-slice behavior:
+Accepted behavior:
 - local-first `severe_weather_moolah_v1` persistence;
-- deterministic MOO-LAH awards from finalized scorekeeper results at `floor(score / 100)` with no sub-100 participation stipend;
+- deterministic MOO-LAH at `floor(final accepted score / 100)` with no sub-100 participation stipend;
 - newspaper MOO-LAH reward/purchase rail;
-- exactly three fixed Storm Triangle slots: Pull, Gust, Grid Zap;
+- exactly three Storm Triangle slots: Pull, Gust, Grid Zap;
 - persistent bounded upgrades: Pull `2.50s -> 3.25s`, Gust target damage `90 -> 115`, Grid Zap node cap `8 -> 10` while damage remains `135`;
 - active upgrade/loadout identity written into SCORE-001 build metadata.
 
-Returned proof: RPG verifier 9/9, RPG browser QA 10/10, campaign 66/66, V5.1 55/55, GAME-002 10/10, UI-001 8/8 + browser 9/9, SCORE-001 9/9 + browser 13/13, implementation truth 28/28. Economy quantities remain subject to later owner play-feel tuning; that does not block this architecture/behavior foundation.
+Proof: RPG verifier 9/9, browser QA 10/10, campaign 66/66, V5.1 55/55, GAME-002 10/10, UI-001 8/8 + browser 9/9, SCORE-001 9/9 + browser 13/13, implementation truth 28/28.
 
-## Returned work with acceptance blockers
+## Durable but acceptance-blocked work
 
 ### #61 SW-WORLD-003 - storm hero
+Recovered exact head: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
+Independent QA verdict: **FAIL for product visual acceptance**.
 
-Recovered head: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
-QA returned **FAIL for Director visual acceptance**.
-
-Automated evidence is strong: static verifier 95/95, modern typecheck/build pass, browser QA pass, mobile budgets respected, bubble/round primitives suppressed, and no intentional protected gameplay-authority writes.
-
-Human visual blocker remains: the storm no longer reads as attack bubbles, but still reads too much like a clean translucent geometric cone with visible square/effect primitives, especially at lower funnel / ground contact.
-
-### Current WORLD assignment for #61
-
-Branch: `agent/sw-world-004-storm-hero-acceptance-fix`
-Exact base: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
-Issue #61 activation comment: `5257312200`
-
-Scope is only the proven visual defect: break the clean cone read, bury obvious effect primitives, preserve one coherent ragged connected storm mass and strong ground attachment, and keep gameplay authority/mobile budgets unchanged.
-
-Last Director check at 2026-08-11 15:04 America/Chicago: remote branch still equals the exact starting SHA and Issue #61 has no newer WORLD correction return. This does not prove the external worker is idle; it only means no new durable correction is reviewable yet.
+Automated evidence passes, bubble clusters are gone, and protected gameplay authority stayed clean. Remaining visual defect: storm still reads too much like a tidy translucent geometric cone with visible square/card effect primitives, especially at lower funnel/ground contact.
 
 ### #65 SW-UI-001 - newspaper presentation
-
 Branch: `agent/sw-ui-001-newspaper-presentation`
 Exact durable head: `43348db9b56ec18bca8418c8dfe13470aad4722d`
 
-Worker verification passed and the source is the accepted sequencing base for #68. Final owner/product visual acceptance remains separate because returned screenshots were not made durable in GitHub.
+Worker verification passed and this is the accepted sequencing base for #68. Final owner/product visual acceptance remains separate because returned screenshots were not made durable in GitHub.
 
 ### #66 SW-LEVEL-001 - Storm Site framework
-
 Branch: `agent/sw-level-001-storm-site-framework`
-Base: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 Exact durable head: `07e089f03bdb2943e6b3d64033010736805afb4a`
 
-Durability is PASS and the diff is bounded. Static verification passed 9/9 plus inherited campaign 66/66 and V5.1 55/55.
+Durability PASS; static verification passed 9/9 plus campaign 66/66 and V5.1 55/55. Product/behavioral acceptance remains blocked pending exact QA classification of:
+1. site -> home teardown/restoration;
+2. Coastal boat-launch signal reachability/proof;
+3. seven isolated-run 404s;
+4. County Fair / Coastal Boardwalk authored-place identity.
 
-Director acceptance remains blocked because browser QA exposed four issues:
-1. return-to-home leaves Storm Site target/decor telemetry behind;
-2. Coastal boat-launch signal was not actually demonstrated;
-3. seven isolated-run console 404s require classification;
-4. County Fair / Coastal screenshots still read too much like Heartland overlays or small arenas instead of materially authored places.
+## Current worker-return closure state
 
-### Current QA assignment for #66
+Owner reports **all current worker tasks completed** at 2026-08-11 15:38 America/Chicago. Director checked durable repo state before accepting anything.
 
-Verification branch: `agent/sw-qa-005-level-001-defect-repro`
-Exact source/base: `07e089f03bdb2943e6b3d64033010736805afb4a`
-Issue #66 activation comment: `5257314336`
+### WORLD - SW-WORLD-004 correction
+Assigned branch: `agent/sw-world-004-storm-hero-acceptance-fix`
+Exact starting SHA: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
+Remote at Director check: **still exactly the starting SHA**.
+Issue #61 closure comment: `5258598452`.
 
-QA must independently reproduce/classify all four blockers, distinguish product defects from harness defects, identify 404 origins, determine boat-launch reachability/testability, inspect authored-place identity, and rerun protected regressions. No product-code edits are authorized.
+Status: **worker-reported complete locally; exact correction commit/evidence not yet durable**.
 
-Last Director check at 2026-08-11 15:04 America/Chicago: the verification branch remains at the exact source under test and Issue #66 has no QA completion return yet. Branch immobility is expected for a no-product-edit QA task; no durable verdict is available yet.
+WORLD's next work is publication/evidence closure only:
+- preserve exact completed local correction;
+- record final SHA/clean state/changed files;
+- push exact commit without amend/rebase/retune;
+- return default/Main Street/ground-contact visual evidence, before/after, counts, regression/drift proof;
+- explicitly confirm the candidate avoids attack bubbles, tidy cone, and visible square/card primitives.
 
-## Current GAME assignment: SW-RPG-002 Slingshot synergy prototype
+Do not assign further WORLD feature work until this exact correction state is durable. Once durable, send exact correction SHA to independent visual acceptance. If it passes, #61 can stop blocking first-batch integration.
 
-Branch: `agent/sw-rpg-002-slingshot-synergy`
-Exact base: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
-Issue #67 activation comment: `5258244702`
+### QA - SW-QA-005 LEVEL-001 defect reproduction
+Verification branch/source under test: `agent/sw-qa-005-level-001-defect-repro` / `07e089f03bdb2943e6b3d64033010736805afb4a`
+Branch staying at source SHA is expected because product-code edits are forbidden.
+Issue #66 closure comment: `5258599910`.
 
-GAME is now assigned the first named physical Storm Triangle synergy:
+Status: **worker-reported complete; classification return not yet durable in Issue #66**.
 
-**Pull + Gust = Slingshot**
+QA's next work is evidence publication only. Return:
+- exact commands/environment and tested SHA;
+- teardown/restoration reproduction and telemetry;
+- boat-launch signal reachability/observability and product-vs-harness classification;
+- all seven 404 origins and classification;
+- County Fair/Coastal authored-place visual verdict with screenshot refs/hashes where available;
+- inherited protected regressions;
+- ranked product defect / harness defect / proof limitation list;
+- confirmation of zero product-code edits.
 
-Required slice:
-1. Require an object/debris mass to be captured through existing Pull authority.
-2. Gust during a valid held/release window turns that held object into a deliberate high-velocity projectile.
-3. Preserve player/storm aim and physical state; no invisible auto-targeting.
-4. Keep object mass/size meaningful rather than flattening all projectiles.
-5. Expose bounded Slingshot telemetry/record hooks where practical without rewriting score authority.
-6. Add bounded wind-up/launch/impact presentation hooks without touching the default storm hero renderer.
+Once durable, Director converts only confirmed product defects into WORLD's next bounded #66 correction after WORLD-004 closure.
 
-Protected: ordinary Pull and Gust semantics, movement/steering/camera, score formula, WORLD renderer, #66 site fixes, three-slot Storm Triangle limit. Twin Tornadoes, Waterspout, satellite feat, full U.S. map, and online/accounts remain held.
+### GAME - SW-RPG-002 Slingshot synergy
+Assigned branch: `agent/sw-rpg-002-slingshot-synergy`
+Exact starting SHA: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+Remote at Director check: **still exactly the starting SHA**.
+Issue #67 closure comment: `5258601296`.
+
+Status: **worker-reported complete locally; exact Slingshot commit/evidence not yet durable**.
+
+GAME's next work is publication/evidence closure only:
+- preserve exact completed local Slingshot state;
+- record final SHA/clean state/changed files;
+- push exact commit without amend/rebase/retune;
+- return deterministic Pull capture -> Gust launch -> substantial travel -> physical impact proof;
+- prove ordinary Pull and Gust remain correct independently;
+- prove light/heavy object differentiation;
+- return telemetry/record proof if implemented plus inherited regressions and drift report;
+- confirm player/storm aim drives launch and there is no invisible auto-targeting or extra HUD slot.
+
+Do not launch Twin Tornadoes, Waterspout, satellite feat, map, online systems, #66 fixes, or WORLD renderer work from a guessed base. Once Slingshot is durable and accepted, establish the next GAME base from that exact head.
 
 ## Integration
 
 No Integration worker is active.
 
-First-batch integration remains blocked by #61 visual acceptance. #62, #63, #64, #68, and the first #67 RPG slice are accepted candidates. #65 is durable but retains separate product visual acceptance. #66 is durable but acceptance-blocked.
-
-Do not production-merge rejected QA #29.
+First-batch integration remains blocked by #61 visual acceptance. Accepted candidates currently include #62, #63, #64, #68, and first #67 RPG slice. #65 is durable but retains separate product visual acceptance. #66 is durable but acceptance-blocked. Do not production-merge rejected QA #29.
 
 ## Product laws
 
@@ -183,7 +180,7 @@ Do not production-merge rejected QA #29.
 - Exactly three active abilities per run in the Storm Triangle; storm form/passives are separate.
 - Physical/discoverable synergy is a replay pillar. Named prototype: **Pull + Gust = Slingshot**.
 - MOO-LAH is earned gameplay currency, not a manipulative retention economy.
-- Persistent local-first scorekeeping is a must-have core system.
+- Persistent local-first scorekeeping is a core system.
 - Newspaper presentation is recurring UI identity for storm select, UNLEASH STORM, and results.
 - Weather Map direction is a stylized nostalgic U.S. destination selector.
 - Storm Sites are authored substantial destruction fantasies with signature moments, not generic procedural arenas.
@@ -192,11 +189,12 @@ Do not production-merge rejected QA #29.
 
 ## Immediate Director actions
 
-1. Review exact WORLD correction return on `agent/sw-world-004-storm-hero-acceptance-fix`; then send corrected head to independent visual acceptance.
-2. Review QA #66 defect classification and turn only confirmed implementation defects into a bounded WORLD follow-up after #61.
-3. Review GAME SW-RPG-002 exact return for real physical Pull+Gust interaction, preserved individual ability behavior, telemetry, and drift.
-4. Preserve #62/#63/#64/#68 and accepted first #67 slice exactly.
-5. Start Integration only when the first-batch acceptance set and merge order are explicit.
+1. Wait only for durable return closure, not more feature authoring.
+2. When WORLD-004 publishes, inspect exact diff/evidence and send exact head to independent visual QA. Do not self-accept from WORLD return alone.
+3. When QA-005 posts classification, convert only confirmed #66 product defects into a bounded WORLD correction after #61 is closed.
+4. When RPG-002 publishes, inspect exact Slingshot source/behavior and either accept/freeze it or pin a concrete defect before assigning the next GAME slice.
+5. Preserve #62/#63/#64/#68/#67-first-slice accepted heads exactly.
+6. Start Integration only when the first-batch acceptance set and merge order are explicit.
 
 ## Chat rollover rule
 
