@@ -29,6 +29,7 @@ assert.match(prototypeWorkflow, /Start prototype wall-clock measurement/);
 assert.doesNotMatch(prototypeWorkflow, /pull_request:|deploy-qa-pages|auto-promote|same-runner|slice5-base|package-evidence|setup-java|gradle|capacitor|assembleDebug|android-device-checkpoint/i);
 assert.match(prototypeWorkflow, /PROTOTYPE ONLY - NOT PRODUCTION QA/);
 assert.match(prototypeWorkflow, /pnpm install --frozen-lockfile/);
+assert.match(prototypeWorkflow, /Check out requested prototype source[\s\S]*fetch-depth: 0/);
 assert.match(prototypeWorkflow, /pnpm run verify:process/);
 assert.match(prototypeWorkflow, /build-prototype-evidence-candidate\.mjs/);
 assert.match(prototypeWorkflow, /verify-prototype-web\.mjs/);
