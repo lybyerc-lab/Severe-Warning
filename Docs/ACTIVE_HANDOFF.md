@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 09:02 America/Chicago
+Last updated: 2026-08-11 10:21 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -17,7 +17,7 @@ The repository is durable memory. Chat is temporary working context.
 2. Read `Docs/GAME_DIRECTOR.md`.
 3. Read `Docs/WORKER_STARTUP_ORDER.md`.
 4. Read this handoff and `Docs/ACTIVE_PRODUCTION_SLATE.md`.
-5. Read the exact active issues and latest Director comments before acting.
+5. Read exact active issues and latest Director comments before acting.
 6. Inspect live worker branch heads. Newer exact evidence beats this prose.
 7. Do not use `main` as project authority.
 
@@ -37,93 +37,86 @@ Never interpret task authority from an unverified checkout.
 - Green CI is engineering evidence, not product acceptance.
 - Drift is treated as a product defect.
 
-## Worker activity truth
+## First-batch completion state
 
-**No worker is actively working on a task at this checkpoint.**
+### WORLD #61 - SW-WORLD-003
 
-Prepared branches and Director issue comments are planning/launch material only. They must not be described as active worker execution unless a worker session has actually been started and is working from that exact assignment.
+Owner reports the WORLD worker completed its task. At the latest GitHub check, the assigned branch still pointed at the original frozen base and the durable implementation/evidence return had not appeared yet.
 
-The previous handoff incorrectly described QA as working on #64 and GAME as working on #65 merely because branches and launch notes had been prepared. That was a Director-state error and is corrected here.
+Treat #61 as **worker-reported complete, durable return still missing**. Do not send WORLD back for redesign. Reconcile/persist the completed result and visually judge the required tornado screenshots before first-batch integration acceptance.
 
-## Stage 2B first-batch status
+### GAME #62 - SW-GAME-002
 
-### WORLD #61 — SW-WORLD-003
+Finished branch: `agent/sw-game-002-moo-level-unlock`
+Frozen head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
-Issue: #61
-Branch: `agent/sw-world-003-storm-hero-recovery`
-Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
+Owner reports GAME completed its task. Director code-shape review found it on-scope for the Hart Farm unlock encounter and persistent dedicated MOO LEVEL. Final exact-head browser/QA evidence still needs Director reconciliation before integration. Do not send GAME back for feature work merely because the evidence is not persisted.
 
-Owner reports the WORLD worker has completed its task.
+### QA #63 - SW-QA-002
 
-At the latest GitHub check, however, the assigned branch still pointed at the untouched frozen base and Issue #61 did not yet contain the worker's pushed implementation/evidence return. Treat this as **worker-reported complete, durable return still missing**, not as active implementation work.
-
-Do not send WORLD back for redesign merely because GitHub lacks the return. The next Director step is to reconcile/persist the completed result and visually judge the required tornado evidence when it becomes available.
-
-### GAME #62 — SW-GAME-002
-
-Issue: #62
-Finished worker branch: `agent/sw-game-002-moo-level-unlock`
-Frozen worker head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
-Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
-
-Owner reports the GAME worker completed its task.
-
-Director code-shape review already found the implementation on-scope: Hart Farm unlock challenge, persistent `mooLevelUnlocked`, locked/unlocked MOO LEVEL node, dedicated Moo County Fair score attack, safe-cow identity, best score, return path, and guarded normal-campaign wrappers.
-
-Important acceptance distinction: the GitHub issue currently does not contain the worker's final executed browser/QA evidence return. Do not send GAME back for more feature work merely because the evidence is not persisted. Keep the finished branch frozen. Before integrating GAME-002, the Director still must reconcile the exact-head executed proof for failure/rearm, persistence, dedicated Moo Level, cow safety, and normal-campaign regression. If that proof exists outside GitHub, persist the outcome or independently verify rather than asking the owner to coordinate logs.
-
-### QA #63 — SW-QA-002
-
-Issue: #63
 Finished/accepted branch: `agent/sw-qa-002-rapid-prototype-lane`
 Accepted head: `73b28e07a5b05dd632226af851b06a32e99bb068`
-Original base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 
 Director status: **ACCEPTED integration candidate**.
 
-Exact-head GitHub Actions Run `31494975840` completed successfully. It verified exact source identity, built the prototype candidate, ran mobile Chromium boot/control/render/screenshot smoke, packaged evidence, and uploaded artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`).
+Exact-head GitHub Actions Run `31494975840` completed successfully and uploaded artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`). Prototype authority remains explicitly non-production.
 
-The prototype lane remains explicitly non-production with `productionAuthority: false`, `qaPagesDispatched: false`, and no Pages/publisher/Android promotion authority.
+## Next worker wave - Director launch authority issued 2026-08-11 10:21
 
-Keep the accepted QA branch frozen unless a new Director correction is issued.
+The owner directed the Game Director to keep worker lanes moving. The following assignments are now explicitly activated by the latest Director comments on their issues.
 
-## Prepared follow-up work — not active
+Important state law: assignment/launch authority is durable in GitHub, but actual worker-session liveness must still be verified by branch movement, worker return, or other exact execution evidence. Do not confuse an assigned branch with proof that an external worker process is alive.
 
-The following branches and issue launch notes have been prepared, but **no worker is currently executing them**.
-
-### Prepared QA follow-up: PWA #64 — SW-PWA-001
+### QA -> #64 SW-PWA-001
 
 Issue: #64
-Prepared branch: `agent/sw-pwa-001-installable-shell`
-Prepared base: `73b28e07a5b05dd632226af851b06a32e99bb068`
+Branch: `agent/sw-pwa-001-installable-shell`
+Exact starting SHA: `73b28e07a5b05dd632226af851b06a32e99bb068`
 
-Goal if/when explicitly launched: make the GitHub Pages/browser build installable as **Severe Weather Warning** with correct `/Severe-Warning/` project scope, standalone launch, manifest/icons, and a cache/update strategy that cannot trap testers on stale QA builds.
+Goal: installable **Severe Weather Warning** PWA shell with correct `/Severe-Warning/` scope, standalone launch, manifest/icons, deterministic source identity, and an update/cache strategy that cannot trap testers on stale QA builds.
 
-Protected: sealed production QA/Pages publisher/Android gates, prototype zero-authority semantics, normal browser play, all gameplay.
+Protected: SW-QA-002 zero production authority, sealed QA/Pages/publisher/Android gates, ordinary browser play, all gameplay.
 
-### Prepared GAME follow-up: Newspaper UI #65 — SW-UI-001
+Latest Director activation comment on #64 supersedes the earlier prepared-only correction.
+
+### GAME -> #65 SW-UI-001
 
 Issue: #65
-Prepared branch: `agent/sw-ui-001-newspaper-presentation`
-Prepared base: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
+Branch: `agent/sw-ui-001-newspaper-presentation`
+Exact starting SHA: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
-Goal if/when explicitly launched: create one coherent **Severe Weather Warning** local-newspaper presentation family across storm selection, **UNLEASH STORM**, opening-newspaper identity where practical, and end-run results.
+Goal: one coherent **Severe Weather Warning** local-newspaper presentation family across storm selection, **UNLEASH STORM**, opening-newspaper identity where practical, and end-run results.
 
-Protected: GAME-002 Moo Level behavior, unlock truth, scores/stats calculations, storm-selection semantics, Pull/Gust/Grid Zap, movement/camera, campaign timing/objectives, WORLD presentation, QA/PWA authority. This task does not add MOO-LAH, RPG systems, scorekeeper architecture, U.S. map expansion, or unrelated replay features.
+Protected: GAME-002 Moo Level behavior, unlock truth, score/stat calculations, storm-selection semantics, Pull/Gust/Grid Zap, movement/camera, campaign timing/objectives, WORLD presentation, QA/PWA authority.
 
-## Remaining queue
+Latest Director activation comment on #65 supersedes the earlier prepared-only correction.
 
-Do not launch these blindly. Choose exact bases after the first-batch acceptance/integration seams are known.
+### WORLD -> #66 SW-LEVEL-001
 
-- #66 `SW-LEVEL-001`: extensible Storm Site framework / U.S. map destination structure.
-- #67 `SW-RPG-001`: MOO-LAH, Storm Triangle, upgrades, synergies.
-- #68 `SW-SCORE-001`: persistent scorekeeper, records, competitive replay loop.
+Issue: #66
+Branch: `agent/sw-level-001-storm-site-framework`
+Exact starting SHA: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
-No Stage 2B Integration worker is active.
+Goal: first scalable Storm Site registration/definition framework, preserving the existing town/county campaign as home territory and proving the contract with a County Fair/Fairground site and a Coastal Boardwalk/Pier site.
+
+Key laws:
+- authored variability should read **same place, different storm day**;
+- sites must remain substantial enough for real tornado movement, route choice, combos, and spectacle;
+- County Fair must remain distinct from the secret Moo Level;
+- coastal proof may expose a boat-launch feat signal, but Waterspout progression remains later authority;
+- do not implement newspaper UI, MOO-LAH/RPG, scorekeeper, or full U.S. map UI in this task;
+- do not absorb or rewrite the missing WORLD-003 storm-renderer return.
+
+Latest Director launch comment on #66 is the exact task authority.
+
+## Queue after this wave
+
+- #67 `SW-RPG-001`: MOO-LAH, Storm Triangle, meaningful upgrades, synergies. Keep queued until the first Stage 2B acceptance/playtest seam is solid enough to reopen progression and ability tuning safely.
+- #68 `SW-SCORE-001`: persistent local-first scorekeeper, records, competitive replay loop. Keep queued until #65 establishes the results/newspaper seam so score persistence can integrate without parallel results-UI collision.
+
+No Stage 2B Integration worker is active yet. Integration waits for first-batch acceptance reconciliation and exact merge order.
 
 ## Product direction that must survive rollover
-
-Canonical direction remains in `Docs/GAME_DIRECTOR.md` and issue-specific companions. High-level laws:
 
 - Genre: arcade destruction game with light action RPG progression.
 - Full player-facing title: **Severe Weather Warning**.
@@ -132,7 +125,6 @@ Canonical direction remains in `Docs/GAME_DIRECTOR.md` and issue-specific compan
 - Cows and Moo Brew are the comic backbone.
 - Exactly three active abilities per run in the Storm Triangle; storm form/passives are separate.
 - Physical/discoverable synergy is a replay pillar. Named prototype: **Pull + Gust = Slingshot**.
-- Individual abilities remain fun on their own.
 - MOO-LAH is earned gameplay currency, not a manipulative retention economy.
 - Persistent local-first scorekeeping is a must-have core system.
 - Newspaper presentation is recurring UI identity for storm select, UNLEASH STORM, and results.
@@ -143,13 +135,13 @@ Canonical direction remains in `Docs/GAME_DIRECTOR.md` and issue-specific compan
 
 ## Immediate Director actions
 
-1. Do not claim any worker is active unless an actual worker session has been launched.
-2. Reconcile/persist WORLD #61's completed return and judge the tornado visually when evidence is available.
-3. Reconcile GAME #62 final executed evidence before integration; do not ask the owner to reconstruct worker logs.
-4. Keep #64 and #65 as prepared assignments until workers are explicitly launched.
-5. Do not launch #66-#68 until exact conflict-safe bases are chosen.
+1. Verify branch movement/worker return on #64, #65, and #66 rather than assuming external worker liveness from launch comments.
+2. Reconcile/persist WORLD #61's completed return and judge the tornado visually when evidence becomes available.
+3. Reconcile GAME #62 final executed evidence before integration.
+4. Review each next-wave exact returned head and evidence, then immediately assign the freed lane its next conflict-safe task rather than leaving it idle.
+5. Keep #67 and #68 queued until their declared seams are safe.
 6. Do not production-merge rejected QA #29.
-7. Do not start Integration until the first-batch candidate set is actually acceptable and the merge order is explicit.
+7. Do not start Integration until the first-batch candidate set is acceptable and merge order is explicit.
 
 ## Chat rollover rule
 
