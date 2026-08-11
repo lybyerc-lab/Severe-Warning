@@ -7,6 +7,11 @@ on:
         description: Exact commit SHA or ref to publish as the QA playtest
         required: true
         default: 97aa6ae792ed5fb201c0fd35d748a4dfff971e61
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/qa-pages-playtest.yml
 
 permissions:
   contents: read
@@ -27,7 +32,7 @@ jobs:
       - name: Checkout exact playtest source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref }}
+          ref: ${{ inputs.source_ref || '97aa6ae792ed5fb201c0fd35d748a4dfff971e61' }}
           fetch-depth: 1
 
       - name: Set up Node
@@ -88,7 +93,7 @@ jobs:
             node "scripts/$script"
           done
           node scripts/build-web.mjs
-          printf '%s\n' "{\"sourceRef\":\"${{ inputs.source_ref }}\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
+          printf '%s\n' "{\"sourceRef\":\"${{ inputs.source_ref || '97aa6ae792ed5fb201c0fd35d748a4dfff971e61' }}\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
