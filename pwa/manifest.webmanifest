@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Severe Weather Warning",
+  "short_name": "Severe Weather Warning",
+  "description": "A storm-charged stylized Americana arcade destruction game.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "icons": [
+    {
+      "src": "./pwa/icons/severe-weather-warning.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

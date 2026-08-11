@@ -46,6 +46,8 @@
     "verify:sw-score-001": "node scripts/verify-sw-score-001-persistent-scorekeeper.mjs",
     "verify:sw-rpg-001": "node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs",
     "verify:process": "node scripts/verify-implementation-truth.mjs",
+    "test:pwa": "node scripts/test-pwa-shell.mjs",
+    "qa:pwa": "node scripts/qa-pwa-shell.mjs",
     "qa:v510": "node scripts/qa-v510-production-slice.mjs",
     "qa:phase2": "node scripts/qa-modernization-phase2-clocks.mjs",
     "qa:phase3": "node scripts/qa-modernization-phase3-input-abilities.mjs",
