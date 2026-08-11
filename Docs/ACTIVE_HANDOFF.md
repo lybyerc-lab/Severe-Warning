@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-11 15:42 America/Chicago
+Last updated: 2026-08-11 16:05 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -9,21 +9,19 @@ Director branch: `agent/director-stage2b-game-direction`
 First-batch coordination base: `82e6c6fbeffffc3ee929c00260f924e36c70de28`
 Public QA root: `https://lybyerc-lab.github.io/Severe-Warning/`
 
-## Director startup
+## Director operating law
 
-Repository state is durable memory. Chat is temporary context.
-
-1. Read `AGENTS.md`, `Docs/GAME_DIRECTOR.md`, and `Docs/WORKER_STARTUP_ORDER.md` from the Director branch.
-2. Read this handoff and `Docs/ACTIVE_PRODUCTION_SLATE.md`.
-3. Read exact active issues and latest Director comments.
-4. Inspect exact branch heads before claiming completion, liveness, or acceptance.
-5. Never use `main` as project authority.
+Repository state is durable memory. Chat is temporary context. Never use `main` as project authority.
 
 Startup law:
 
 `assigned worktree -> assigned branch -> exact SHA verified -> task-versioned governing docs -> intended change / protected behavior / proof plan -> edit`
 
-A Director branch/comment assignment is authority to start, not proof an external worker session is active. Owner report of completion is **worker-reported complete** until the exact commit/evidence is durable and reviewable.
+Worker-state law, reaffirmed by owner:
+
+**Assignment is authority to start. Branch movement / returned evidence is proof that work actually happened. Director acceptance is a separate gate.**
+
+Do not confuse lack of branch movement with lack of assignment/authority. Conversely, do not infer completed execution merely from an assignment, prepared branch, or owner-independent assumption.
 
 ## Production truth
 
@@ -42,14 +40,10 @@ Branch: `agent/sw-game-002-moo-level-unlock`
 Exact accepted head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 Status: **ACCEPTED integration candidate**.
 
-Independent QA passed verifier 10/10 and browser QA 12/12, including deterministic failure/rearm, persistent unlock, dedicated Moo County Fair, cow safety, normal campaign regression, and protected gameplay authority.
-
 ### #63 SW-QA-002 - rapid prototype evidence lane
 Branch: `agent/sw-qa-002-rapid-prototype-lane`
 Exact accepted head: `73b28e07a5b05dd632226af851b06a32e99bb068`
-Status: **ACCEPTED prototype evidence lane**.
-
-Exact-head Actions Run `31494975840` succeeded with artifact `severe-weather-prototype-SW-QA-002-preintegration-4` (artifact ID `9102613291`). Prototype authority remains non-production and is not promoted merely because downstream PWA work used it as a base.
+Status: **ACCEPTED prototype evidence lane only**. Do not promote prototype authority into production.
 
 ### #64 SW-PWA-001 - installable shell
 Branch: `agent/sw-pwa-001-installable-shell`
@@ -58,144 +52,170 @@ Status: **ACCEPTED integration candidate**.
 
 `test:pwa`, `qa:pwa`, and process verification are durable PASS. Physical Android install acceptance and production deployment remain separate gates.
 
+### #65 SW-UI-001 - newspaper presentation
+Branch: `agent/sw-ui-001-newspaper-presentation`
+Exact durable head: `43348db9b56ec18bca8418c8dfe13470aad4722d`
+Status: durable accepted sequencing lineage; final owner/product visual acceptance remains separate because original returned screenshots were not durable.
+
 ### #68 SW-SCORE-001 - persistent scorekeeper
 Branch: `agent/sw-score-001-persistent-scorekeeper`
 Exact accepted head: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
 Status: **ACCEPTED integration candidate**.
-
-Returned browser evidence is 13/13 PASS with durable first-run records, lower-score PB protection, NEW PERSONAL BEST/previous-best margin, reload persistence, site/variant isolation, separate Moo records, game/scoring version identity, newspaper presentation, replay/map actions, and inherited GAME-002/campaign regression.
 
 ### #67 SW-RPG-001 - MOO-LAH + Storm Triangle foundation
 Branch: `agent/sw-rpg-001-moolah-storm-triangle`
 Exact accepted head: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
 Status: **ACCEPTED integration candidate for first RPG slice**.
 
-Accepted behavior:
-- local-first `severe_weather_moolah_v1` persistence;
-- deterministic MOO-LAH at `floor(final accepted score / 100)` with no sub-100 participation stipend;
-- newspaper MOO-LAH reward/purchase rail;
-- exactly three Storm Triangle slots: Pull, Gust, Grid Zap;
-- persistent bounded upgrades: Pull `2.50s -> 3.25s`, Gust target damage `90 -> 115`, Grid Zap node cap `8 -> 10` while damage remains `135`;
-- active upgrade/loadout identity written into SCORE-001 build metadata.
+Accepted foundation:
+- local-first `severe_weather_moolah_v1`;
+- deterministic score-derived MOO-LAH;
+- newspaper reward/purchase rail;
+- exactly three Storm Triangle active slots: Pull, Gust, Grid Zap;
+- bounded persistent upgrades;
+- active upgrade/loadout identity in SCORE-001 metadata;
+- no movement/camera or score-formula authority drift.
 
-Proof: RPG verifier 9/9, browser QA 10/10, campaign 66/66, V5.1 55/55, GAME-002 10/10, UI-001 8/8 + browser 9/9, SCORE-001 9/9 + browser 13/13, implementation truth 28/28.
+## WORLD-004 tornado correction - durable, awaiting independent QA
 
-## Durable but acceptance-blocked work
+Issue: #61
+Implementation branch: `agent/sw-world-004-storm-hero-acceptance-fix`
+Base: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
+Exact durable head: `347159f1baa4988fa2c93428cd4562ef78b38a9d`
+Worker return comment: `5258823665`
 
-### #61 SW-WORLD-003 - storm hero
-Recovered exact head: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
-Independent QA verdict: **FAIL for product visual acceptance**.
+Director verified the exact head is one commit ahead of base and changes only:
+- `runtime/threejs-visual-hero-slice6-stability-guard.js`
+- `runtime/threejs-visual-hero-slice6.js`
+- `scripts/qa-threejs-hero-slice6.mjs`
+- `scripts/verify-threejs-hero-slice6.mjs`
 
-Automated evidence passes, bubble clusters are gone, and protected gameplay authority stayed clean. Remaining visual defect: storm still reads too much like a tidy translucent geometric cone with visible square/card effect primitives, especially at lower funnel/ground contact.
+WORLD return reports:
+- ragged wedge/condensation mesh-ribbon profile;
+- `visibleBoxes: 0` and `visiblePhase6Dust: 0` in required frames;
+- 99/99 static verifier PASS;
+- modern build PASS;
+- focused Chromium evidence PASS;
+- no intentional protected gameplay/system drift.
 
-### #65 SW-UI-001 - newspaper presentation
-Branch: `agent/sw-ui-001-newspaper-presentation`
-Exact durable head: `43348db9b56ec18bca8418c8dfe13470aad4722d`
+WORLD self-report is **not** Director visual acceptance.
 
-Worker verification passed and this is the accepted sequencing base for #68. Final owner/product visual acceptance remains separate because returned screenshots were not made durable in GitHub.
+### QA assignment - SW-QA-006
+Branch: `agent/sw-qa-006-world-004-visual-acceptance`
+Exact source under test: `347159f1baa4988fa2c93428cd4562ef78b38a9d`
+Director activation comment #61: `5258867278`
+Status: **ASSIGNED / AUTHORIZED TO START**. For this no-product-edit task, branch movement is not required; return evidence proves execution.
 
-### #66 SW-LEVEL-001 - Storm Site framework
-Branch: `agent/sw-level-001-storm-site-framework`
-Exact durable head: `07e089f03bdb2943e6b3d64033010736805afb4a`
+Binary acceptance question:
+Does the exact corrected head read immediately as one connected ragged tornado/storm mass, with no attack-bubble read, no tidy translucent cone, and no visible square/card effect primitives?
 
-Durability PASS; static verification passed 9/9 plus campaign 66/66 and V5.1 55/55. Product/behavioral acceptance remains blocked pending exact QA classification of:
-1. site -> home teardown/restoration;
-2. Coastal boat-launch signal reachability/proof;
-3. seven isolated-run 404s;
-4. County Fair / Coastal Boardwalk authored-place identity.
+If QA passes, freeze `347159f1...` as the WORLD visual integration input and feed that exact head to Integration. If QA fails, pin only the concrete visual defect.
 
-## Current worker-return closure state
+## #66 SW-LEVEL-001 - QA classification complete; WORLD correction assigned
 
-Owner reports **all current feature/QA worker tasks completed** at 2026-08-11 15:38 America/Chicago. Director checked durable repo state before accepting anything.
+Original implementation branch: `agent/sw-level-001-storm-site-framework`
+Base: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
+Durable head: `07e089f03bdb2943e6b3d64033010736805afb4a`
+Original status: durability PASS, product/behavioral acceptance FAIL.
 
-### WORLD - SW-WORLD-004 correction
-Assigned branch: `agent/sw-world-004-storm-hero-acceptance-fix`
-Exact starting SHA: `f9430bc0cee0d02b3aacf2eb0909183d14912617`
-Remote at Director check: **still exactly the starting SHA**.
-Issue #61 closure comment: `5258598452`.
+### QA-005 classification return
+Issue #66 QA return comment: `5258792205`
+Exact tested source: `07e089f03bdb2943e6b3d64033010736805afb4a`
+No product source edits.
 
-Status: **worker-reported complete locally; exact correction commit/evidence not yet durable**.
+Confirmed findings:
+1. **P0 product/runtime defect:** Storm Site -> Heartland/home restores selection flag but leaves stale site world state. Post-return still has active site variant, 13 site targets, 16 decorative meshes, and boat signature state. Root cause: Heartland path restores visibility but does not dispose Storm Site world/targets.
+2. **Boat signal product behavior PASS; QA helper defect:** real `boat-launch-signal` is reachable and observable. Existing `destroySignature()` chooses the first signature target, pier coaster, instead of the boat.
+3. **Packaging/preparation:** three unique missing Kenney VFX textures, not seven unique origins: `dirt_01.png`, `smoke_03.png`, `trace_03.png`. Existing checksum-pinned vendor preparation resolves them. Final package preparation belongs to Integration.
+4. **P1 product-facing acceptance blocker:** County Fair / Coastal captures are obscured by Hart Farm/newspaper opening presentation, so screenshots do not prove the authored locations. This is a launch/cinematic-handoff or evidence-timing failure that must be corrected/proven.
+5. Static campaign/V5.1/LEVEL and main browser input/scoring/V5.1 protections passed. Separate red signals remain for `playerPauseForensicsHidden` and Hart Farm activation/failure/unlock progression in the assembled QA run. QA did not prove those were caused by LEVEL source; do not absorb them opportunistically into the LEVEL fix.
 
-WORLD's next work is publication/evidence closure only:
-- preserve exact completed local correction;
-- record final SHA/clean state/changed files;
-- push exact commit without amend/rebase/retune;
-- return default/Main Street/ground-contact visual evidence, before/after, counts, regression/drift proof;
-- explicitly confirm the candidate avoids attack bubbles, tidy cone, and visible square/card primitives.
+### WORLD assignment - SW-WORLD-005
+Branch: `agent/sw-world-005-level-001-acceptance-fix`
+Exact base: `07e089f03bdb2943e6b3d64033010736805afb4a`
+Director activation comment #66: `5258869511`
+Status: **ASSIGNED / AUTHORIZED TO START**.
 
-Once durable, send exact correction SHA to independent visual acceptance. If it passes, the exact accepted correction can be fed into Integration.
+Authorized correction only:
+- P0 full Storm Site teardown + accepted Heartland/home world restoration;
+- P1 player-visible County Fair / Coastal handoff so authored place is actually visible/playable and screenshot-proofable;
+- fix the level QA helper to explicitly test `boat-launch-signal`;
+- use existing approved vendor preparation for browser proof, without redesigning storm VFX.
 
-### QA - SW-QA-005 LEVEL-001 defect reproduction
-Verification branch/source under test: `agent/sw-qa-005-level-001-defect-repro` / `07e089f03bdb2943e6b3d64033010736805afb4a`
-Branch staying at source SHA is expected because product-code edits are forbidden.
-Issue #66 closure comment: `5258599910`.
+Protected:
+- no WORLD-004 renderer imports;
+- no RPG/scorekeeper/newspaper/PWA feature changes;
+- no Waterspout/U.S. map implementation;
+- no movement/camera/ability/scoring/campaign/cow retune;
+- do not silently fix unrelated clock/Moo red results unless exact causal proof points to this LEVEL diff.
 
-Status: **worker-reported complete; classification return not yet durable in Issue #66**.
+Do not feed #66 into Integration until the correction exact head is Director accepted.
 
-QA's next work is evidence publication only. Return:
-- exact commands/environment and tested SHA;
-- teardown/restoration reproduction and telemetry;
-- boat-launch signal reachability/observability and product-vs-harness classification;
-- all seven 404 origins and classification;
-- County Fair/Coastal authored-place visual verdict with screenshot refs/hashes where available;
-- inherited protected regressions;
-- ranked product defect / harness defect / proof limitation list;
-- confirmation of zero product-code edits.
+## GAME - SW-RPG-002 Slingshot restarted cleanly
 
-Once durable, Director converts only confirmed product defects into WORLD's next bounded #66 correction. Integration does not import #66 until the exact correction is Director accepted.
+Issue: #67
+Task: **Pull + Gust = Slingshot**
+Approved exact base: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+Branch: `agent/sw-rpg-002-slingshot-synergy`
+Director correction/restart comment: `5258871547`
 
-### GAME - SW-RPG-002 Slingshot synergy
-Assigned branch: `agent/sw-rpg-002-slingshot-synergy`
-Exact starting SHA: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
-Remote at Director check: **still exactly the starting SHA**.
-Issue #67 closure comment: `5258601296`.
+### Critical truth correction
+The prior assumption that a completed Slingshot state existed was false.
 
-Status: **worker-reported complete locally; exact Slingshot commit/evidence not yet durable**.
+GAME returned conclusive local evidence:
+- no local Slingshot branch;
+- no usable origin branch in the GAME checkout;
+- no worktree or reflog containing Slingshot work;
+- current clean GAME worktree remains RPG-001 at `ce1e47c...`;
+- sole unreachable commit is unrelated Slice 6 presentation work.
 
-GAME's next work is publication/evidence closure only:
-- preserve exact completed local Slingshot state;
-- record final SHA/clean state/changed files;
-- push exact commit without amend/rebase/retune;
-- return deterministic Pull capture -> Gust launch -> substantial travel -> physical impact proof;
-- prove ordinary Pull and Gust remain correct independently;
-- prove light/heavy object differentiation;
-- return telemetry/record proof if implemented plus inherited regressions and drift report;
-- confirm player/storm aim drives launch and there is no invisible auto-targeting or extra HUD slot.
+Connector-side GitHub does contain the prepared Slingshot branch, but it is untouched at exact base `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`.
 
-Once Slingshot is durable and accepted, feed that exact head into the rolling Integration candidate before establishing any next downstream GAME base that depends on integration truth.
+Therefore:
+- SW-RPG-002 was assigned previously;
+- execution/completion was never proven;
+- there is **no completed Slingshot state to recover or accept**;
+- the false closure assumption is superseded.
 
-## Integration - ACTIVE ASSEMBLY LANE
+GAME is now **ASSIGNED / AUTHORIZED TO START** a clean implementation of the existing Slingshot contract from exact base `ce1e47c...`.
 
-The owner correctly reaffirmed the established Integration & Release Worker contract: **Integration is the final assembly lane**. It should take Director-accepted branch outputs and assemble a coherent candidate; it should not be left idle merely because unrelated blocked lanes still have acceptance work.
+If the GAME checkout cannot see the remote branch but has the exact base commit locally, Director pre-authorizes local task branch creation directly from that SHA, followed by exact branch/HEAD verification.
 
-Issue: **#70 SW-INT-003 — Stage 2B accepted-stack integration candidate**
+Required behavior remains:
+- Pull captures/holds physical debris;
+- Gust during a valid window launches it as a substantial projectile;
+- player/storm aim and physical state determine direction;
+- no invisible auto-targeting;
+- light/heavy object differentiation;
+- ordinary Pull and Gust independently preserved;
+- no extra HUD slot;
+- no WORLD/#66/Twins/Waterspout/satellite/map/online drift.
+
+Branch movement/return evidence will prove this restarted implementation actually happened.
+
+## Integration - owner-confirmed running
+
+Issue: #70 SW-INT-003
 Branch: `agent/sw-int-003-stage2b-accepted-stack`
 Exact starting SHA: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
-Director activation comment: `5258622796`
-Status: **ASSIGNED / PREPARED for Integration worker; branch existence alone is not proof an external Integration session has started**.
+Director activation: `5258622796`
+Latest Director status: `5258872735`
 
-The exact base already contains the accepted GAME lineage:
-- #62 Moo Level as ancestor `89aeac92d032bfc6546cb8da7c52effc7a408aa1`;
-- #65 newspaper `43348db9b56ec18bca8418c8dfe13470aad4722d`;
-- #68 scorekeeper `3d1661cfdd019f0285dc8556d0e598c22f0cb489`;
-- #67 first RPG slice `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`.
+Owner explicitly confirms Integration is **still running** as of 2026-08-11 16:05 America/Chicago. Treat the session as active. Current remote branch still resolving to the starting SHA does not contradict that; branch movement/evidence will prove executed work when it lands.
 
-Integration must add the accepted **PWA task delta** from #64 exact head `7cda055a4773c5c9dc69c0d02018cd9454a86628` relative to its parent `73b28e07a5b05dd632226af851b06a32e99bb068`, without promoting prototype-only #63 authority.
+Current accepted assembly input:
+- #62 Moo Level lineage;
+- #65 newspaper lineage;
+- #68 scorekeeper lineage;
+- accepted #67 RPG-001 lineage;
+- add exact #64 PWA task delta without promoting prototype-only #63 authority.
 
-Integration purpose now:
-- prove the already accepted gameplay/UI/progression/PWA stack coexists immediately;
-- surface merge/package/build conflicts early;
-- run the full inherited exact-source regression/PWA chain;
-- produce a clean rolling Stage 2B assembly candidate;
-- later add exact Director-accepted WORLD-004, #66 correction, and RPG-002 outputs as they clear their gates.
+Do not yet import:
+- WORLD-004 until SW-QA-006 passes exact `347159f1...`;
+- #66 until SW-WORLD-005 correction is accepted;
+- Slingshot until GAME actually implements it and Director accepts the exact head.
 
-Explicitly not included yet:
-- #61 WORLD-004 local completion until exact durable corrected head passes independent visual acceptance;
-- #66 until exact product defects are corrected and accepted;
-- RPG-002 Slingshot until exact durable head is reviewed/accepted;
-- Twin Tornadoes, Waterspout, satellite feat, U.S. map, online/accounts.
-
-Integration is not allowed to invent features, retune gameplay, weaken QA, silently absorb prototype authority, or self-merge. Public QA remains a playtest gate, not release acceptance.
+Integration owns final assembly, intentional conflict resolution, exact-source combined verification, PWA/package preparation, candidate packaging, and release-artifact reporting. It does not invent missing feature work.
 
 ## Product laws
 
@@ -207,21 +227,21 @@ Integration is not allowed to invent features, retune gameplay, weaken QA, silen
 - Exactly three active abilities per run in the Storm Triangle; storm form/passives are separate.
 - Physical/discoverable synergy is a replay pillar. Named prototype: **Pull + Gust = Slingshot**.
 - MOO-LAH is earned gameplay currency, not a manipulative retention economy.
-- Persistent local-first scorekeeping is a core system.
+- Persistent local-first scorekeeping is core.
 - Newspaper presentation is recurring UI identity for storm select, UNLEASH STORM, and results.
 - Weather Map direction is a stylized nostalgic U.S. destination selector.
 - Storm Sites are authored substantial destruction fantasies with signature moments, not generic procedural arenas.
-- Phone is a platform, not the intended size of the game. Preserve controller-friendly architecture where practical.
+- Phone is a platform, not the intended size of the game.
 - Become C++-ready, not C++-dependent. No rewrite.
 
 ## Immediate Director actions
 
-1. Keep Integration assembling the already accepted stack now; do not wait idle for every blocked lane.
-2. When WORLD-004 publishes, inspect exact diff/evidence and send exact head to independent visual QA. If accepted, add that exact head to Integration.
-3. When QA-005 posts classification, convert only confirmed #66 product defects into a bounded WORLD correction. Add #66 to Integration only after exact correction acceptance.
-4. When RPG-002 publishes, inspect exact Slingshot source/behavior and either accept/freeze it or pin a concrete defect. If accepted, add exact RPG-002 head to Integration.
-5. Preserve #62/#64/#68/#67-first-slice accepted heads exactly and keep #63 prototype authority non-production.
-6. Let Integration own merge/cherry-pick conflict resolution, combined exact-source verification, candidate packaging, and release-artifact assembly. Feature workers do not perform final assembly.
+1. QA executes exact-head WORLD-004 visual acceptance on `347159f1...`.
+2. WORLD executes bounded #66 acceptance correction from `07e089f...`.
+3. GAME executes Slingshot cleanly from accepted RPG-001 `ce1e47c...`; do not refer to it as recovery/completion until evidence exists.
+4. Integration continues the accepted-stack assembly while those lanes work.
+5. When exact accepted outputs return, feed them to Integration one at a time with provenance.
+6. Keep separate clock/Moo red signals visible; do not attribute them to #66 without causal proof.
 
 ## Chat rollover rule
 
