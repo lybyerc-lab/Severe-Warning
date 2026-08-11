@@ -155,6 +155,10 @@ jobs:
             elapsedSeconds: Math.max(0, Math.floor(Date.now() / 1000) - Number(process.env.STARTED_EPOCH || 0)),
           };
           fs.writeFileSync('dist/prototype-evidence/prototype-manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
+          if (manifest.productionAuthority !== false || manifest.qaPagesDispatched !== false || manifest.androidPackaged !== false) {
+            throw new Error('Prototype evidence manifest gained production authority.');
+          }
+          console.log(JSON.stringify({ prototypeEvidenceManifest: manifest }));
           NODE
           test -s "$output_dir/web-preview/index.html"
           test -s "$output_dir/evidence/prototype-evidence-report.json"
