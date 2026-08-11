@@ -64,6 +64,43 @@ Exact task base SHA is always supplied in the worker ticket. Do not infer a newe
 7. The Director/Integration lane decides merge order and whether stale worker branches should be refreshed, cherry-picked, or abandoned.
 8. Prototype branches may intentionally test alternate visual/gameplay hypotheses, but they never gain production authority merely because they run.
 
+## Drift-control gate
+
+**Drift is treated as a product defect.** Fast iteration is welcome; uncontrolled reinterpretation is not.
+
+Every task must answer these questions before implementation begins:
+
+1. **What are we intentionally changing?** Name the player-facing or infrastructure outcome narrowly.
+2. **What must remain the same?** Name the accepted gameplay, visual, data, QA, performance, or product laws that are protected for this task.
+3. **How will we prove both?** Define evidence for the intended improvement and regression evidence for protected behavior.
+
+Drift-control rules:
+
+- One worker task should have one primary question or outcome. Split unrelated goals instead of hiding them in a broad pass.
+- Every task needs explicit **non-goals**. If a tempting improvement is outside scope, record it for later rather than implementing it opportunistically.
+- No unrelated cleanup, architecture rewrite, renaming sweep, retuning, dependency change, or visual restyle unless it is required for the exact task and called out in the contract.
+- Preserve accepted behavior by default. A new implementation does not gain authority merely because it is newer, cleaner, faster, or more sophisticated.
+- Compare player-facing candidates against a named accepted or known baseline. For visual work, use before/after evidence. For gameplay work, include regression checks or deterministic assertions for protected behavior.
+- Prototype gear may be messy and disposable, but a winning prototype still needs a bounded production task before integration. Prototype success never silently redefines production law.
+- Workers may **propose** adjacent ideas in their return notes. They may not implement those ideas without scope authority.
+- Integration must reject unexplained diffs, incidental behavior changes, or changes whose benefit cannot be tied to the assigned task.
+- If a task discovers that the requested change requires reopening a protected system, stop and escalate. Do not solve the conflict by quietly changing the protected system.
+- When fragile behavior depends on code structure, preserve or add stable section markers, IDs, design-law comments, and changelog-style notes so future agents can understand why the structure exists before replacing it.
+- Avoid silent system replacement. If a system must be superseded, name the old authority, the new authority, migration/compatibility behavior, and the exact acceptance evidence.
+- Queued ideas are not automatically active work. The Director sequences ideas into the slate only when dependencies, ownership, and acceptance gates are clear.
+
+At worker completion, explicitly report:
+
+- intended change delivered;
+- protected areas verified unchanged or any known deviations;
+- any adjacent ideas discovered but intentionally not implemented.
+
+The Director/Integration agent is responsible for asking the final drift question before accepting a candidate:
+
+> **Did we improve the thing we meant to improve without quietly changing the game around it?**
+
+If that answer is unclear, the candidate is not ready to integrate.
+
 ## Protected gameplay law
 
 Unless a task explicitly says otherwise, do **not** retune or rewrite:
@@ -163,6 +200,7 @@ Before editing:
 7. Verify `git rev-parse HEAD` equals the exact task base SHA.
 8. Verify the current branch matches the task branch/worktree.
 9. Inspect only the relevant implementation and tests before proposing edits.
+10. State the task's **intended change**, **protected unchanged behavior**, and **proof plan** before making edits.
 
 ## Worker completion contract
 
@@ -175,7 +213,8 @@ Return all of the following:
 - tests/commands run and their result;
 - screenshots/reports when the task requires them;
 - known limitations or follow-up dependencies;
-- explicit statement that protected gameplay areas were not intentionally changed.
+- explicit statement that protected gameplay areas were not intentionally changed;
+- explicit drift report: intended change, protected behavior verification, and adjacent ideas intentionally left out of scope.
 
 Do not merge. Do not promote QA. Do not claim owner visual acceptance or physical Android acceptance.
 
