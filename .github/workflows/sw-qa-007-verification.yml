@@ -89,12 +89,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== APPLYING PATCH CHAIN FOR ${{ matrix.source.label }} ==="
-          candidate="$RUNNER_TEMP/sw-qa-007-candidate.html"
-          cp MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
-          export SEVERE_WEATHER_SOURCE_PATH="$candidate"
-          echo "SEVERE_WEATHER_SOURCE_PATH=$candidate" >> "$GITHUB_ENV"
-
+          echo "=== APPLYING IN-PLACE PATCH CHAIN FOR ${{ matrix.source.label }} ==="
           for script in \
             apply-v431-source-patch.mjs \
             apply-v440-source-patch.mjs \
@@ -141,7 +136,7 @@ jobs:
           fi
 
           mkdir -p qa-artifacts/causal
-          sha256sum "$candidate" | tee qa-artifacts/causal/constructed-source-sha256.txt
+          sha256sum MechanicsLab/SevereWeather_3D_Lab.html | tee qa-artifacts/causal/constructed-source-sha256.txt
 
       - name: Build modern shell & offline web package
         shell: bash
