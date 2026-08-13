@@ -118,21 +118,21 @@ jobs:
           retention-days: 14
 
   job-source-b:
-    name: Source B (6fc3d64) Candidate Isolation
+    name: Source B (00e5796 Corrected) Candidate Isolation
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
     steps:
-      - name: Checkout Source B (6fc3d64)
+      - name: Checkout Source B (00e5796 Corrected)
         uses: actions/checkout@v4
         with:
-          ref: 6fc3d64c81b286f7743aaac46ba98e1f4a916dc3
+          ref: 00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3
 
       - name: Verify SHA and Git Status
         run: |
           echo "=== SOURCE B SHA VERIFICATION ==="
           git rev-parse HEAD
-          test "$(git rev-parse HEAD)" = "6fc3d64c81b286f7743aaac46ba98e1f4a916dc3"
+          test "$(git rev-parse HEAD)" = "00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3"
           git status --short
 
       - name: Set up Node.js 22
