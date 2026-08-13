@@ -1,0 +1,219 @@
+name: SW-INT-003 Clean Ubuntu A/B Closure Harness
+
+on:
+  push:
+    branches:
+      - 'ci/sw-int-003-ubuntu-ab-harness'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-int-003-ubuntu-ab-harness
+  cancel-in-progress: true
+
+jobs:
+  job-source-a:
+    name: Source A (ce1e47c) Baseline Isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Source A (ce1e47c)
+        uses: actions/checkout@v4
+        with:
+          ref: ce1e47c858cdbca5039fb7ad7ad2545f4537c238
+
+      - name: Verify SHA and Git Status
+        run: |
+          echo "=== SOURCE A SHA VERIFICATION ==="
+          git rev-parse HEAD
+          test "$(git rev-parse HEAD)" = "ce1e47c858cdbca5039fb7ad7ad2545f4537c238"
+          git status --short
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install System and Node Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile || pnpm install
+          npx playwright install --with-deps chromium
+
+      - name: Raw-Source Static Verifications
+        run: |
+          echo "=== RAW-SOURCE STATIC VERIFICATION (A) ==="
+          node scripts/verify-implementation-truth.mjs
+          node scripts/verify-sw-game-002.mjs
+          node scripts/verify-sw-score-001-persistent-scorekeeper.mjs
+          node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
+
+      - name: Construct Playable Source
+        env:
+          CI: "true"
+        run: |
+          echo "=== CONSTRUCT PLAYABLE SOURCE (A) ==="
+          pnpm run audio:generate
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run patch:v510
+          pnpm run patch:phase2
+          pnpm run patch:phase3
+          pnpm run patch:phase4
+          pnpm run patch:phase5
+          pnpm run patch:phase6
+          pnpm run patch:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run patch:asset-pipeline
+          pnpm run patch:visual-foundation
+          node scripts/apply-sw-game-002-moo-level.mjs
+          pnpm run patch:sw-ui-001
+          pnpm run patch:sw-score-001
+          pnpm run patch:sw-rpg-001
+          pnpm run modern:build
+          node scripts/build-web.mjs
+
+      - name: Run Browser QA Suites (GAME-002 First)
+        continue-on-error: true
+        run: |
+          echo "=== BROWSER QA (A) ==="
+          node scripts/serve-www.mjs &
+          SERVER_PID=$!
+          sleep 3
+
+          echo "--- GAME-002 BROWSER QA ---"
+          node scripts/qa-sw-game-002.mjs || true
+
+          echo "--- SCOREKEEPER BROWSER QA ---"
+          node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
+
+          echo "--- RPG-001 BROWSER QA ---"
+          node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs || true
+
+          kill $SERVER_PID || true
+
+      - name: Print GAME-002 Report JSON
+        run: |
+          echo "=== SOURCE A GAME-002 REPORT JSON ==="
+          cat qa-artifacts/sw-game-002/report.json || echo "No report.json found"
+
+      - name: Upload Source A QA Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-artifacts-source-a
+          path: qa-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+  job-source-b:
+    name: Source B (6fc3d64) Candidate Isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Source B (6fc3d64)
+        uses: actions/checkout@v4
+        with:
+          ref: 6fc3d64c81b286f7743aaac46ba98e1f4a916dc3
+
+      - name: Verify SHA and Git Status
+        run: |
+          echo "=== SOURCE B SHA VERIFICATION ==="
+          git rev-parse HEAD
+          test "$(git rev-parse HEAD)" = "6fc3d64c81b286f7743aaac46ba98e1f4a916dc3"
+          git status --short
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install System and Node Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile || pnpm install
+          npx playwright install --with-deps chromium
+
+      - name: Raw-Source Static Verifications
+        run: |
+          echo "=== RAW-SOURCE STATIC VERIFICATION (B) ==="
+          node scripts/verify-implementation-truth.mjs
+          node scripts/verify-sw-game-002.mjs
+          node scripts/verify-sw-score-001-persistent-scorekeeper.mjs
+          node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
+          node scripts/test-pwa-shell.mjs
+
+      - name: Construct Playable Source
+        env:
+          CI: "true"
+        run: |
+          echo "=== CONSTRUCT PLAYABLE SOURCE (B) ==="
+          pnpm run audio:generate
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run patch:v510
+          pnpm run patch:phase2
+          pnpm run patch:phase3
+          pnpm run patch:phase4
+          pnpm run patch:phase5
+          pnpm run patch:phase6
+          pnpm run patch:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run patch:asset-pipeline
+          pnpm run patch:visual-foundation
+          node scripts/apply-sw-game-002-moo-level.mjs
+          pnpm run patch:sw-ui-001
+          pnpm run patch:sw-score-001
+          pnpm run patch:sw-rpg-001
+          pnpm run modern:build
+          node scripts/build-web.mjs
+
+      - name: Run Browser QA Suites (GAME-002 First)
+        continue-on-error: true
+        run: |
+          echo "=== BROWSER QA (B) ==="
+          node scripts/serve-www.mjs &
+          SERVER_PID=$!
+          sleep 3
+
+          echo "--- GAME-002 BROWSER QA ---"
+          node scripts/qa-sw-game-002.mjs || true
+
+          echo "--- SCOREKEEPER BROWSER QA ---"
+          node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
+
+          echo "--- RPG-001 BROWSER QA ---"
+          node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs || true
+
+          echo "--- PWA SHELL BROWSER QA ---"
+          node scripts/qa-pwa-shell.mjs || true
+
+          kill $SERVER_PID || true
+
+      - name: Print GAME-002 Report JSON
+        run: |
+          echo "=== SOURCE B GAME-002 REPORT JSON ==="
+          cat qa-artifacts/sw-game-002/report.json || echo "No report.json found"
+
+      - name: Upload Source B QA Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-artifacts-source-b
+          path: qa-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
