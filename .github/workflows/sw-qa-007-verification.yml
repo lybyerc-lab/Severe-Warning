@@ -1,0 +1,117 @@
+name: SW-QA-007 Exact-Source Verification Harness
+
+on:
+  push:
+    branches:
+      - agent/sw-qa-007-actions-harness
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-qa-007-verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-exact-source:
+    name: Run SW-QA-007 exact-source verification on Ubuntu runner
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out exact product source under test
+        uses: actions/checkout@v4
+        with:
+          ref: 1350cee7535220fb9fc5e7c1b4de284e6aae8156
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install system dependencies (ffmpeg)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -version
+
+      - name: Install pnpm 11.9.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install -g pnpm@11.9.0
+          pnpm --version
+
+      - name: Print and record environment metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== EXACT SOURCE METADATA ==="
+          echo "HEAD SHA: $(git rev-parse HEAD)"
+          echo "STATUS:"
+          git status --short
+          echo "=== TOOL VERSIONS ==="
+          echo "Node: $(node --version)"
+          echo "pnpm: $(pnpm --version)"
+          echo "ffmpeg: $(ffmpeg -version | head -n 1)"
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+
+      - name: Prepare approved Kenney VFX inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+
+      - name: Confirm prepared VFX inputs and record SHA-256 hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f assets/production/vfx/kenney/dirt_01.png
+          test -f assets/production/vfx/kenney/smoke_03.png
+          test -f assets/production/vfx/kenney/trace_03.png
+          echo "=== KENNEY VFX SHA-256 HASHES ==="
+          sha256sum assets/production/vfx/kenney/dirt_01.png
+          sha256sum assets/production/vfx/kenney/smoke_03.png
+          sha256sum assets/production/vfx/kenney/trace_03.png
+
+      - name: Install Playwright browser dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+
+      - name: Run verification chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== 1/6 pnpm run build ==="
+          pnpm run build
+          echo "=== 2/6 pnpm run verify:process ==="
+          pnpm run verify:process
+          echo "=== 3/6 pnpm run verify:v500 ==="
+          pnpm run verify:v500
+          echo "=== 4/6 pnpm run verify:v510 ==="
+          pnpm run verify:v510
+          echo "=== 5/6 pnpm run verify:sw-level-001 ==="
+          pnpm run verify:sw-level-001
+          echo "=== 6/6 pnpm run qa:sw-level-001 ==="
+          pnpm run qa:sw-level-001
+
+      - name: Upload QA and verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-qa-007-verification-artifacts
+          path: |
+            qa-artifacts/**
+            reports/**
+            screenshots/**
+            logs/**
+            *.json
