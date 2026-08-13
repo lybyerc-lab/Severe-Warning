@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-13 10:45 America/Chicago
+Last updated: 2026-08-13 13:54 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -9,7 +9,7 @@ Director branch: `agent/director-stage2b-game-direction`
 
 ## Director operating law
 
-Repository state is durable memory. Chat is temporary context. Never use `main` as project authority.
+Repository state is durable memory. Chat is temporary context. Never use `main` as product/gameplay authority.
 
 Startup law:
 `assigned worktree -> assigned branch -> exact SHA verified -> task-versioned governing docs -> intended change / protected behavior / proof plan -> edit`
@@ -19,50 +19,51 @@ Worker-state law:
 
 Green CI is evidence, not automatic product acceptance. Worker-reported completion is not Director acceptance. Drift is a product defect.
 
-Current tooling constraint: Codex/Work usage is exhausted until August 18, 2026. Antigravity may be used as a bounded worker harness only. It does not replace Director authority or GitHub source truth.
+Current tooling constraint: Codex/Work usage is exhausted until August 18, 2026. Antigravity may be used only as a bounded worker harness. It does not replace Director authority or GitHub source truth.
 
-## Accepted / frozen foundation
+## Accepted / frozen Stage 2B inputs
 
-- #62 SW-GAME-002 Hart Farm unlock + real Moo Level
-  - accepted head `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
-- #63 SW-QA-002 prototype evidence lane only
-  - head `73b28e07a5b05dd632226af851b06a32e99bb068`
-  - never promote prototype authority wholesale
-- #64 SW-PWA-001 installable shell
-  - accepted head `7cda055a4773c5c9dc69c0d02018cd9454a86628`
-  - Integration may use only the task delta relative to `73b28e07a5b05dd632226af851b06a32e99bb068`
-- #65 SW-UI-001 newspaper presentation
-  - durable head `43348db9b56ec18bca8418c8dfe13470aad4722d`
-- #68 SW-SCORE-001 persistent scorekeeper
-  - accepted head `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
-- #67 SW-RPG-001 MOO-LAH + Storm Triangle foundation
-  - accepted head `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+### #62 SW-GAME-002 Hart Farm unlock + real Moo Level
+Accepted head: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
 
-## GAME lane: SW-RPG-002 Slingshot — ACCEPTED
+### #64 SW-PWA-001 installable shell
+Accepted head: `7cda055a4773c5c9dc69c0d02018cd9454a86628`
+Prototype parent: `73b28e07a5b05dd632226af851b06a32e99bb068`
+Integration may use only the accepted PWA delta relative to that prototype parent. Never wholesale promote #63 prototype authority.
+
+### #65 SW-UI-001 newspaper presentation
+Durable head: `43348db9b56ec18bca8418c8dfe13470aad4722d`
+
+### #68 SW-SCORE-001 persistent scorekeeper
+Accepted head: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
+
+### #67 SW-RPG-001 MOO-LAH + Storm Triangle foundation
+Accepted head: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+
+## GAME lane: SW-RPG-002 Slingshot — DIRECTOR ACCEPTED
 
 Issue: #67
 Branch: `agent/sw-rpg-002-slingshot-synergy`
 Accepted base: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
 Exact accepted head: `97aa6ae792ed5fb201c0fd35d748a4dfff971e61`
-Worker closure comment: `5259294815`
 Director acceptance comment: `5282590058`
 
-Director re-verified:
-- remote branch resolves exactly to `97aa6ae792ed5fb201c0fd35d748a4dfff971e61`;
-- exactly one commit ahead / zero behind accepted base;
-- only five expected RPG-002 files changed: `package.json`, `runtime/sw-rpg-002-slingshot.js`, apply script, verifier, browser QA script;
-- independent Antigravity QA returned **PASS**;
-- ordinary Pull and Gust remain independently usable;
-- Pull + Gust produces bounded physical Slingshot launch/impact behavior;
-- no invisible target-position auto-targeting;
-- light/heavy behavior remains materially different;
+Verified:
+- exactly one commit ahead / zero behind accepted RPG-001 base;
+- only five expected RPG-002 files changed;
+- independent Antigravity QA verdict PASS;
+- Pull alone remains usable;
+- Gust alone remains usable and preserves accepted standalone semantics;
+- Pull + Gust produces bounded physical Slingshot capture/release/travel/impact behavior;
+- aim derives from player/storm motion or camera-forward direction, not target-position auto-targeting;
+- light/heavy behavior materially differs;
 - cows remain protected;
-- Storm Triangle remains exactly three active slots;
+- exactly three Storm Triangle active slots remain;
 - unrelated UI red was not patched or masked.
 
-Status: **DIRECTOR ACCEPTED AND FROZEN.** Do not edit, amend, rebase, or self-merge. Eligible for later Integration input only after Integration's existing blocked candidate is recovered and green.
+Status: **DIRECTOR ACCEPTED AND FROZEN.** Do not edit, amend, rebase, or self-merge.
 
-## WORLD visual lane: SW-WORLD-006 — ACCEPTED
+## WORLD lane: SW-WORLD-006 — DIRECTOR ACCEPTED
 
 Issue: #73
 Independent QA issue: #76 SW-QA-008
@@ -74,97 +75,121 @@ Director acceptance comment #73: `5282728612`
 
 History:
 - prior local WORLD-006 completion was lost and formally unrecoverable;
-- Antigravity was authorized to reconstruct only the pinned planar-cone defect from exact rejected base `347159f1...`;
-- durable reconstructed candidate is exactly one commit ahead / zero behind;
-- only changed file: `runtime/threejs-visual-hero-slice6.js`;
-- commit message: `fix(world-006): break planar cone read with dirty irregular volumetric lower funnel`.
+- Antigravity reconstructed only the pinned planar-cone defect from exact rejected base;
+- durable candidate is exactly one commit ahead / zero behind;
+- only changed file is `runtime/threejs-visual-hero-slice6.js`.
 
-Independent SW-QA-008 verdict: **PASS**.
+Independent QA verdict: PASS.
+Accepted result:
+- tidy translucent planar-cone read is gone;
+- default storm reads immediately as one dirty, irregular, connected tornado/condensation mass;
+- lower-funnel / ground contact reads as stronger dirty connected circulation;
+- no product mutation occurred during independent QA.
 
-Accepted visual result:
-- tidy translucent planar-cone read is genuinely gone;
-- default storm reads immediately as one dirty, irregular, connected tornado / condensation mass;
-- lower-funnel / ground contact now reads as stronger dirty connected circulation;
-- no product-code mutation or merge occurred during independent QA.
+Status: **DIRECTOR ACCEPTED AND FROZEN.** Do not edit, amend, rebase, or self-merge.
 
-Status: **DIRECTOR ACCEPTED AND FROZEN.** Do not edit, amend, rebase, or self-merge. Eligible for later Integration input after Integration recovery/green gates.
-
-## #66 Storm Site lane — FROZEN, NOT YET DIRECTOR ACCEPTED
+## LEVEL lane: SW-LEVEL-001 Storm Sites — DIRECTOR ACCEPTED
 
 Issue: #66
 QA issue: #72 SW-QA-007
 Branch: `agent/sw-world-005-level-001-acceptance-fix`
-Exact frozen head: `1350cee7535220fb9fc5e7c1b4de284e6aae8156`
-Latest Director QA classification comment #72: `5282502983`
+Exact accepted head: `1350cee7535220fb9fc5e7c1b4de284e6aae8156`
+QA final PASS comment #72: `5285073443`
+Director acceptance comment #66: `5285075102`
 
-The previous `ffmpeg` / missing prepared-VFX environment blocker is resolved by the GitHub Actions harness.
-
-Corrected Actions run `31715118431` successfully performed:
-- exact frozen source checkout;
-- ffmpeg setup;
-- approved checksum-pinned Kenney VFX preparation;
-- deterministic v5.1 + GAME-002 + LEVEL construction;
-- production packaging;
+Prior exact-source corrected QA run `31715118431` established:
+- ffmpeg/audio/VFX prerequisites valid;
 - implementation truth 28/28 PASS;
 - campaign fixture 66/66 PASS;
 - v5.1 fixture 55/55 PASS;
 - Storm Site static/contract 12/12 PASS;
-- real browser execution.
+- production web build PASS;
+- real browser executor integration PASS;
+- County Fair launch/replay/signature PASS;
+- Coastal launch/replay PASS;
+- accepted-path `boat-launch-signal` proof PASS;
+- campaign/home teardown-restoration PASS;
+- Moo protection PASS;
+- no HTTP errors;
+- Fair screenshot SHA-256 `669acaaafd62a4a2389c965c6c614d36edbd1e900f6e7c683662ca93bb4a58ee`;
+- Coastal screenshot SHA-256 `1e2cc19453f2b9f129b5286f29f73ff9bad12a141ad8d36d95e4e39c3e43cd16`.
 
-Focused LEVEL browser behavior is green:
-- executorIntegration PASS;
-- campaignHomeRestored PASS;
-- mooProtected PASS;
-- fairLaunch PASS;
-- fairReplayVariation PASS;
-- fairSignature PASS;
-- boardwalkLaunch PASS;
-- boardwalkReplayVariation PASS;
-- boatLaunchSignalOnly PASS;
-- noHttpErrors PASS.
+That run still reported a modern-shell legacy-contract error. Final causal A/B/C harness then tested:
+- A accepted pre-LEVEL base `89aeac92d032bfc6546cb8da7c52effc7a408aa1`;
+- B original LEVEL head `07e089f03bdb2943e6b3d64033010736805afb4a`;
+- C corrected LEVEL head `1350cee7535220fb9fc5e7c1b4de284e6aae8156`.
 
-Evidence hashes:
-- County Fair screenshot `669acaaafd62a4a2389c965c6c614d36edbd1e900f6e7c683662ca93bb4a58ee`
-- Coastal screenshot `1e2cc19453f2b9f129b5286f29f73ff9bad12a141ad8d36d95e4e39c3e43cd16`
+Harness branch: `agent/sw-qa-007-actions-harness`
+Exact harness SHA: `84934ea88296af84a21ef1500fd1a460a1cea822`
+Actions run: `31732518475`
 
-Remaining browser reds:
-- `noPageErrors` FAIL;
-- `noRuntimeConsoleErrors` FAIL.
+Causal result:
+- correctly constructed playable sources A/B/C all bootstrap successfully;
+- all three have `noPageErrors=true` and `noRuntimeConsoleErrors=true`;
+- all four bridge flags are true on all three;
+- zero HTTP errors;
+- no legacy-contract error appears on constructed playable sources;
+- raw/unpatched HTML reproduces the same missing-four-bridges error across A/B/C.
 
-Exact global modern-shell error:
-`Legacy runtime contract is incomplete: hasClockBridge, hasInputAbilityBridge, hasScoringCampaignBridge, hasPresentationWorldBridge`
+Therefore the bridge red was a **global shell/harness construction condition, not introduced by LEVEL**.
 
-Director classification:
-- this is no longer an environment/package blocker;
-- focused LEVEL behavior is green;
-- remaining red is a global modern-shell / legacy-contract bootstrap condition not yet causally attributed to LEVEL;
-- do NOT edit WORLD-005/LEVEL product source from this signal;
-- keep exact `1350cee...` frozen and OUT of Integration;
-- next action is same-runner/base A/B or equivalent causal proof for the modern-shell red.
+Important harness nuance: run `31732518475` is globally red because its later `verify:sw-level-001` step was incorrectly invoked after the checkout had already been transformed into the task-versioned playable source. On C, the verifier attempted to replay `apply-v431-source-patch.mjs` and failed with `document title: expected exactly one source match, found 0`. This is a double-application / harness-ordering error. It does not invalidate the prior exact-source 12/12 LEVEL verifier or the clean A/B/C browser causal result.
 
-## Integration lane: SW-INT-003 — FROZEN / BLOCKED LOCAL CANDIDATE
+Status: **DIRECTOR ACCEPTED AND FROZEN.** No LEVEL edits are authorized or required. Exact `1350cee...` is eligible for Integration input after the Integration base candidate is validated correctly.
+
+## Integration lane: SW-INT-003 — RECOVERED / PRESERVED / NOT YET PROMOTED
 
 Issue: #70
-Branch: `agent/sw-int-003-stage2b-accepted-stack`
-Exact remote SHA as of 2026-08-13: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+Canonical branch: `agent/sw-int-003-stage2b-accepted-stack`
+Canonical remote SHA: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+Preservation branch: `archive/sw-int-003-frozen-6fc3d64`
+Exact preserved candidate: `6fc3d64c81b286f7743aaac46ba98e1f4a916dc3`
+Case-B Director classification comment: `5284906545`
+Preservation verification comment: `5284939418`
 
-Remote remains intentionally untouched. Previous Integration worker assembled an accepted-stack candidate locally, but mandatory GAME-002 browser QA was red, so it correctly did not push.
+Recovery/classification result:
+- prior frozen local assembly was successfully recovered at exact `6fc3d64...`;
+- candidate is one local commit ahead of accepted base `ce1e47c...`;
+- same GAME-002 runner was executed against accepted baseline and recovered candidate;
+- baseline reproduced the same 11/12 red;
+- classification: **CASE B — baseline reproducibility / harness / environment discrepancy**;
+- no causal evidence currently ties the GAME-002 red to the PWA Integration assembly;
+- no product/test edits were made during recovery/classification;
+- canonical remote branch was intentionally left untouched.
 
-First Integration action remains recovery/classification, NOT new assembly:
-1. locate/preserve the exact prior local candidate if it still exists;
-2. return exact local SHA if committed, otherwise worktree/HEAD/status/staged/unstaged/untracked/changed-file set;
-3. recover exact PWA delta/conflict provenance;
-4. recover exact GAME-002 failing checks and observed vs expected state;
-5. run same-runner A/B against accepted source `ce1e47c...` if possible;
-6. classify integration regression vs harness/environment/pre-existing discrepancy;
-7. do not weaken QA, reset, clean, rebase, amend, or silently reconstruct missing local work.
+Durable preservation:
+- GitHub archive ref `archive/sw-int-003-frozen-6fc3d64` points exactly to `6fc3d64c81b286f7743aaac46ba98e1f4a916dc3`;
+- canonical Integration ref still points exactly to `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`.
 
-Do not append new inputs while Integration remains red.
+Local-worktree nuance:
+- the recovered worktree is not literally clean because it contains untracked tool/generated material such as `.tools/`, prepared VFX, QA reference material, and static reports;
+- zero product/test files were edited, staged, committed, or deleted;
+- none of those untracked artifacts are part of the preserved commit.
 
-Once Integration is genuinely green, append accepted inputs one at a time with full regression proof:
-1. SW-RPG-002 exact `97aa6ae...`;
-2. SW-WORLD-006 exact `1264617b...`;
-3. SW-LEVEL-001 only after separate Director acceptance of exact `1350cee...`.
+### Next Integration law
+
+Do **not** append Slingshot/WORLD/LEVEL immediately.
+
+First validate the exact preserved Integration candidate `6fc3d64...` in the **correct task-versioned constructed-source runner** that has now proven the modern-shell bridge behavior clean.
+
+Required next Integration proof:
+1. compare accepted base `ce1e47c...` and preserved candidate `6fc3d64...` under the same correct runner;
+2. verify exact PWA delta provenance and no prototype-wholesale import;
+3. run full inherited GAME-002 / scorekeeper / RPG-001 / PWA / process gates on the candidate;
+4. confirm browser/page/runtime/HTTP errors are clean or causally inherited;
+5. only after this base candidate is genuinely validated may the canonical Integration branch move.
+
+After the base candidate is validated, append Director-accepted inputs **one at a time**, with full regression proof after each append:
+1. SW-RPG-002 Slingshot exact `97aa6ae792ed5fb201c0fd35d748a4dfff971e61`;
+2. SW-WORLD-006 exact `1264617b49a95241024f52ba550713ba28d84888`;
+3. SW-LEVEL-001 exact `1350cee7535220fb9fc5e7c1b4de284e6aae8156`.
+
+No bulk merge. No feature authoring. No QA weakening. No opportunistic unrelated fixes.
+
+## QA Pages owner playtest
+
+Public QA URL: `https://lybyerc-lab.github.io/Severe-Warning/`
+Last confirmed published gameplay source: `97aa6ae792ed5fb201c0fd35d748a4dfff971e61` (RPG-002 owner-playtest stack). This is QA/playtest infrastructure, not product acceptance authority.
 
 ## Product laws
 
@@ -188,12 +213,11 @@ Once Integration is genuinely green, append accepted inputs one at a time with f
 
 ## Current priority order
 
-1. Classify SW-QA-007 modern-shell red with same-runner/base A/B or equivalent causal proof. No LEVEL edits without causality.
-2. Recover/preserve SW-INT-003 exact local candidate before any reconstruction or new imports.
-3. Once Integration base candidate is green, append accepted Slingshot and WORLD inputs one at a time, with exact provenance and full regression gates.
-4. Keep `1350cee...` out until Director accepted.
-5. Keep unrelated Moo/UI/clock signals separate unless causal proof ties them to the active diff.
-6. No new feature expansion until this accepted-stack landing is under control.
+1. Validate preserved Integration candidate `6fc3d64...` in the correct constructed-source runner.
+2. If clean, move the canonical Integration branch to that exact validated base candidate.
+3. Append accepted Slingshot, WORLD-006, and LEVEL-001 one at a time with full regression gates after every append.
+4. Keep unrelated Moo/UI/clock signals separate unless causal proof ties them to the active diff.
+5. No new feature expansion until the accepted Stage 2B stack is landed and owner-playtestable.
 
 ## Chat rollover rule
 
