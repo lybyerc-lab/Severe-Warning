@@ -12,13 +12,34 @@ const projectPath = path.join(fixtureRoot, 'Severe-Warning');
 const sourcePwa = path.join(projectRoot, 'pwa');
 let revision = { runNumber: '47', shortSha: 'old47aa' };
 let networkAvailable = true;
+const serverRequests = [];
 
 await mkdir(projectPath, { recursive: true });
 await cp(sourcePwa, path.join(projectPath, 'pwa'), { recursive: true });
 await cp(path.join(sourcePwa, 'manifest.webmanifest'), path.join(projectPath, 'manifest.webmanifest'));
 await cp(path.join(sourcePwa, 'offline.html'), path.join(projectPath, 'offline.html'));
 await cp(path.join(sourcePwa, 'service-worker.js'), path.join(projectPath, 'service-worker.js'));
+
+// QA-opt-in fixture index.html (with severe-weather-qa-build meta marker)
 await writeFile(path.join(projectPath, 'index.html'), `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <meta name="application-name" content="Severe Weather Warning">
+    <meta name="theme-color" content="#030712">
+    <meta name="severe-weather-qa-build" content="./qa-build.json">
+    <title>Severe Weather Warning</title>
+  </head>
+  <body>
+    <main data-browser-playable="true">Playable browser shell remains available without installation.</main>
+    <script type="module" src="./pwa/register-pwa.js"></script>
+  </body>
+</html>`, 'utf8');
+
+// Production-style fixture prod.html (WITHOUT severe-weather-qa-build meta marker)
+await writeFile(path.join(projectPath, 'prod.html'), `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -47,6 +68,7 @@ const server = http.createServer(async (request, response) => {
     return;
   }
   const parsed = new URL(request.url, 'http://127.0.0.1');
+  serverRequests.push(parsed.pathname);
   if (!parsed.pathname.startsWith('/Severe-Warning/')) {
     response.writeHead(404).end();
     return;
@@ -79,7 +101,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
 const baseUrl = `http://127.0.0.1:${address.port}/Severe-Warning/`;
 const report = {
-  version: 'SW_PWA_001_BROWSER_QA_V1',
+  version: 'SW_PWA_001_BROWSER_QA_V2',
   authority: 'PWA shell browser evidence only - not production QA or Android device acceptance',
   baseUrl,
   checks: {},
@@ -91,8 +113,14 @@ const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '
 const context = await browser.newContext({ viewport: { width: 932, height: 430 }, isMobile: true, hasTouch: true });
 const page = await context.newPage();
 page.on('pageerror', error => report.errors.push(error.message));
+page.on('console', msg => {
+  if (msg.type() === 'error') {
+    report.errors.push(`Console Error: ${msg.text()}`);
+  }
+});
 
 try {
+  // A. QA-opt-in fixture (index.html with meta marker)
   await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForFunction(() => globalThis.__SEVERE_WEATHER_PWA__?.status === 'registered', null, { timeout: 30000 });
   await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
@@ -119,6 +147,18 @@ try {
   await page.waitForFunction(() => globalThis.__SEVERE_WEATHER_PWA__?.sourceIdentity === 'QA #48 · new48bb', null, { timeout: 30000 });
   report.checks.newerIdentitySupersedesCachedOlderIdentity = (await page.title()) === 'Severe Weather Warning · QA #48 · new48bb';
 
+  // B. Production-style fixture (prod.html WITHOUT meta marker)
+  const prodUrl = `${baseUrl}prod.html`;
+  const prodRequestsStart = serverRequests.length;
+  await page.goto(prodUrl, { waitUntil: 'networkidle', timeout: 30000 });
+  await page.waitForFunction(() => globalThis.__SEVERE_WEATHER_PWA__?.sourceIdentity === 'v5.1.0 · abc1234', null, { timeout: 30000 });
+  const prodIdentity = await page.evaluate(() => globalThis.__SEVERE_WEATHER_PWA__?.sourceIdentity);
+  report.checks.productionStyleLoadsBuildInfoWithoutQaProbe = prodIdentity === 'v5.1.0 · abc1234';
+
+  const prodRequests = serverRequests.slice(prodRequestsStart);
+  report.checks.noQaBuildProbingHttp404 = !prodRequests.includes('/Severe-Warning/qa-build.json');
+
+  // Offline navigation test
   networkAvailable = false;
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   report.checks.offlineNavigationUsesTruthfulFallback = (await page.locator('body').innerText()).includes('Reconnect to load the latest storm warning');

@@ -11,8 +11,8 @@ function applySourceIdentity(identity) {
   document.title = `${productName} · ${identity}`;
 }
 
-async function loadSourceIdentity() {
-  const response = await fetch('./qa-build.json', { cache: 'no-store' });
+async function loadQaIdentity(qaBuildUrl) {
+  const response = await fetch(qaBuildUrl, { cache: 'no-store' });
   if (!response.ok) throw new Error(`qa-build.json returned ${response.status}`);
   const build = await response.json();
   if (!build.shortSha || !build.runNumber) throw new Error('qa-build.json is missing deterministic build identity');
@@ -28,14 +28,22 @@ async function loadFallbackIdentity() {
 }
 
 async function identifySource() {
-  try {
-    applySourceIdentity(await loadSourceIdentity());
-  } catch {
+  const qaMeta = document.querySelector('meta[name="severe-weather-qa-build"]');
+  const qaBuildUrl = qaMeta ? (qaMeta.getAttribute('content') || './qa-build.json') : null;
+
+  if (qaBuildUrl) {
     try {
-      applySourceIdentity(await loadFallbackIdentity());
+      applySourceIdentity(await loadQaIdentity(qaBuildUrl));
+      return;
     } catch {
-      applySourceIdentity('source identity unavailable');
+      // Fall through to standard build-info identity if QA marker points to missing file
     }
+  }
+
+  try {
+    applySourceIdentity(await loadFallbackIdentity());
+  } catch {
+    applySourceIdentity('source identity unavailable');
   }
 }
 

@@ -52,7 +52,7 @@ assert.match(serviceWorker, /self\.skipWaiting/);
 assert.match(serviceWorker, /self\.clients\.claim/);
 assert.match(registerPwa, /updateViaCache: 'none'/);
 assert.match(registerPwa, /registration\.update\(\)/);
-assert.match(registerPwa, /fetch\('\.\/qa-build\.json', \{ cache: 'no-store' \}\)/);
+assert.match(registerPwa, /meta\[name="severe-weather-qa-build"\]/);
 assert.match(registerPwa, /fetch\('\.\/build-info\.json', \{ cache: 'no-store' \}\)/);
 assert.match(registerPwa, /Severe Weather Warning/);
 assert.match(serveWww, /application\/manifest\+json/);
