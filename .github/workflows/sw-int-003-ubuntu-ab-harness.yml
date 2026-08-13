@@ -1,4 +1,4 @@
-name: SW-INT-003 Clean Ubuntu A/B Closure Harness
+name: SW-INT-003 Deterministic Ubuntu A/B Closure
 
 on:
   push:
@@ -14,291 +14,236 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  job-source-a:
-    name: Source A (ce1e47c) Baseline Isolation
+  verify-source:
+    name: Source ${{ matrix.label }} deterministic isolation
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: a
+            sha: ce1e47c858cdbca5039fb7ad7ad2545f4537c238
+            pwa: 'false'
+          - label: b
+            sha: 00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3
+            pwa: 'true'
 
     steps:
-      - name: Checkout Source A (ce1e47c)
+      - name: Checkout exact source
         uses: actions/checkout@v4
         with:
-          ref: ce1e47c858cdbca5039fb7ad7ad2545f4537c238
+          ref: ${{ matrix.sha }}
 
-      - name: Verify SHA and Git Status
+      - name: Verify exact SHA and clean checkout
         run: |
-          echo "=== SOURCE A SHA VERIFICATION ==="
-          git rev-parse HEAD
-          test "$(git rev-parse HEAD)" = "ce1e47c858cdbca5039fb7ad7ad2545f4537c238"
-          git status --short
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ matrix.sha }}"
+          test -z "$(git status --porcelain)"
+          printf 'source=%s\nsha=%s\n' '${{ matrix.label }}' '${{ matrix.sha }}'
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install System and Node Dependencies
+      - name: Install deterministic dependencies
         run: |
+          set -euo pipefail
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb
+          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb rsync
           npm install --global pnpm@11.9.0
-          pnpm install --frozen-lockfile || pnpm install
+          pnpm install --frozen-lockfile
           npx playwright install --with-deps chromium
+          node --version
+          pnpm --version
+          ffmpeg -version | head -n 1
 
-      - name: Prepare Generated Audio Assets and Modern Bundle
+      - name: Prepare approved generated assets
         run: |
-          echo "=== PREPARE GENERATED ASSETS AND BUNDLE (A) ==="
+          set -euo pipefail
           pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
           pnpm run modern:build
 
-      - name: Raw-Source Static Verifications
+      - name: Raw-source static verification
         run: |
-          echo "=== RAW-SOURCE STATIC VERIFICATION (A) ==="
+          set -euo pipefail
           node scripts/verify-implementation-truth.mjs
           node scripts/verify-sw-game-002.mjs
           node scripts/verify-sw-score-001-persistent-scorekeeper.mjs
           node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
 
-      - name: Isolated Scorekeeper Browser QA Execution
+      - name: Source B PWA static contract
+        if: matrix.pwa == 'true'
         run: |
-          echo "=== ISOLATED SCOREKEEPER BROWSER QA (A) ==="
-          mkdir -p ../scorekeeper-worktree
-          cp -r . ../scorekeeper-worktree
-          cd ../scorekeeper-worktree
-          pnpm run audio:generate
-          xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
-          cd ../Severe-Warning
-          mkdir -p qa-artifacts/sw-score-001
-          cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
-
-      - name: Evaluate Source A Scorekeeper Report Matrix
-        run: |
-          echo "=== EVALUATING SOURCE A SCOREKEEPER REPORT MATRIX ==="
-          node -e "
-          const fs = require('fs');
-          const assert = require('assert/strict');
-          const report = JSON.parse(fs.readFileSync('qa-artifacts/sw-score-001/report.json', 'utf8'));
-          console.log(JSON.stringify(report, null, 2));
-          const checks = report.checks || {};
-          assert.equal(checks.firstRunCreatesDurableSiteModeRecord, true, 'firstRunCreatesDurableSiteModeRecord');
-          assert.equal(checks.lowerRunDoesNotReplacePersonalBest, true, 'lowerRunDoesNotReplacePersonalBest');
-          assert.equal(checks.higherRunCreatesPbWithPreviousAndMargin, true, 'higherRunCreatesPbWithPreviousAndMargin');
-          assert.equal(checks.recordsSurviveReloadRestart, true, 'recordsSurviveReloadRestart');
-          assert.equal(checks.scoringVersionIsExplicitAndPartitioned, true, 'scoringVersionIsExplicitAndPartitioned');
-          assert.equal(checks.siteAndVariantBucketsDoNotContaminate, true, 'siteAndVariantBucketsDoNotContaminate');
-          assert.equal(checks.mooRecordsRemainDistinct, true, 'mooRecordsRemainDistinct');
-          assert.equal(checks.newspaperIsLegibleAndMotivating, true, 'newspaperIsLegibleAndMotivating');
-          assert.equal(checks.replayAndWeatherMapActionsWork, true, 'replayAndWeatherMapActionsWork');
-          assert.equal(checks.futureMetadataIsOnlyReserved, true, 'futureMetadataIsOnlyReserved');
-          assert.equal(checks.noPageErrors, true, 'noPageErrors');
-          assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
-          assert.deepEqual(report.pageErrors, [], 'pageErrors');
-          assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
-          console.log('Source A Scorekeeper Matrix Evaluator: PASS');
-          "
-
-      - name: Isolated RPG-001 Browser QA
-        run: |
-          echo "=== ISOLATED RPG-001 BROWSER QA (A) ==="
-          mkdir -p ../rpg-worktree
-          cp -r . ../rpg-worktree
-          cd ../rpg-worktree
-          pnpm run audio:generate
-          xvfb-run --auto-servernum node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
-          cd ../Severe-Warning
-          mkdir -p qa-artifacts/sw-rpg-001
-          cp -r ../rpg-worktree/qa-artifacts/sw-rpg-001/* qa-artifacts/sw-rpg-001/ || true
-
-      - name: Isolated GAME-002 Browser QA Execution
-        env:
-          CI: "true"
-        run: |
-          echo "=== ISOLATED GAME-002 BROWSER QA (A) ==="
-          mkdir -p ../game002-worktree
-          cp -r . ../game002-worktree
-          cd ../game002-worktree
-          pnpm run patch:v431
-          pnpm run patch:v440
-          pnpm run patch:v441
-          pnpm run patch:v442
-          pnpm run patch:v450
-          pnpm run patch:v500
-          pnpm run patch:v510
-          pnpm run patch:phase2
-          pnpm run patch:phase3
-          pnpm run patch:phase4
-          pnpm run patch:phase5
-          pnpm run patch:phase6
-          pnpm run patch:city-fabric
-          pnpm run patch:presentation-identity
-          pnpm run patch:asset-pipeline
-          pnpm run patch:visual-foundation
-          node scripts/apply-sw-game-002-moo-level.mjs
-          pnpm run patch:sw-ui-001
-          pnpm run patch:sw-score-001
-          pnpm run patch:sw-rpg-001
-          pnpm run modern:build
-          node scripts/build-web.mjs
-          node scripts/serve-www.mjs &
-          SERVER_PID=$!
-          sleep 3
-          xvfb-run --auto-servernum node scripts/qa-sw-game-002.mjs || true
-          kill $SERVER_PID || true
-          cd ../Severe-Warning
-          mkdir -p qa-artifacts/sw-game-002
-          cp -r ../game002-worktree/qa-artifacts/sw-game-002/* qa-artifacts/sw-game-002/
-
-      - name: Evaluate Source A GAME-002 Report Matrix
-        run: |
-          echo "=== EVALUATING SOURCE A GAME-002 REPORT MATRIX ==="
-          node -e "
-          const fs = require('fs');
-          const assert = require('assert/strict');
-          const report = JSON.parse(fs.readFileSync('qa-artifacts/sw-game-002/report.json', 'utf8'));
-          console.log(JSON.stringify(report, null, 2));
-          const checks = report.checks || {};
-          assert.equal(checks.executorIntegration, true, 'executorIntegration');
-          assert.equal(checks.hartFarmActivated, true, 'hartFarmActivated');
-          assert.equal(typeof checks.encounterFailureRearms, 'boolean', 'encounterFailureRearms');
-          assert.equal(typeof checks.encounterUnlocked, 'boolean', 'encounterUnlocked');
-          assert.equal(checks.persistence, true, 'persistence');
-          assert.equal(checks.lockedToUnlockedAccess, true, 'lockedToUnlockedAccess');
-          assert.equal(checks.dedicatedMooRun, true, 'dedicatedMooRun');
-          assert.equal(checks.objectiveSignals, true, 'objectiveSignals');
-          assert.equal(checks.cowSafety, true, 'cowSafety');
-          assert.equal(checks.normalCampaignRegression, true, 'normalCampaignRegression');
-          assert.equal(checks.noPageErrors, true, 'noPageErrors');
-          assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
-          assert.deepEqual(report.pageErrors, [], 'pageErrors');
-          assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
-          assert.deepEqual(report.assetTransportErrors, [], 'assetTransportErrors');
-          console.log('Source A GAME-002 Matrix Evaluator: PASS');
-          "
-
-      - name: Upload Source A QA Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: qa-artifacts-source-a
-          path: qa-artifacts/
-          if-no-files-found: warn
-          retention-days: 14
-
-  job-source-b:
-    name: Source B (00e5796 Corrected) Candidate Isolation
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    steps:
-      - name: Checkout Source B (00e5796 Corrected)
-        uses: actions/checkout@v4
-        with:
-          ref: 00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3
-
-      - name: Verify SHA and Git Status
-        run: |
-          echo "=== SOURCE B SHA VERIFICATION ==="
-          git rev-parse HEAD
-          test "$(git rev-parse HEAD)" = "00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3"
-          git status --short
-
-      - name: Set up Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install System and Node Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb
-          npm install --global pnpm@11.9.0
-          pnpm install --frozen-lockfile || pnpm install
-          npx playwright install --with-deps chromium
-
-      - name: Prepare Generated Audio Assets and Modern Bundle
-        run: |
-          echo "=== PREPARE GENERATED ASSETS AND BUNDLE (B) ==="
-          pnpm run audio:generate
-          pnpm run modern:build
-
-      - name: Raw-Source Static Verifications
-        run: |
-          echo "=== RAW-SOURCE STATIC VERIFICATION (B) ==="
-          node scripts/verify-implementation-truth.mjs
-          node scripts/verify-sw-game-002.mjs
-          node scripts/verify-sw-score-001-persistent-scorekeeper.mjs
-          node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
+          set -euo pipefail
           node scripts/test-pwa-shell.mjs
 
-      - name: Isolated Scorekeeper Browser QA Execution
+      - name: Build state-driven CI QA adapters
         run: |
-          echo "=== ISOLATED SCOREKEEPER BROWSER QA (B) ==="
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          function replaceExact(source, before, after, label) {
+            const count = source.split(before).length - 1;
+            if (count !== 1) throw new Error(`${label}: expected one timing anchor, found ${count}`);
+            return source.replace(before, after);
+          }
+
+          let game = await readFile('scripts/qa-sw-game-002.mjs', 'utf8');
+          game = replaceExact(
+            game,
+            "await page.waitForTimeout(500);\nconst started = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\nconst started = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'GAME started activation'
+          );
+          game = replaceExact(
+            game,
+            "await page.waitForTimeout(500);\nconst failedEncounter = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.state === 'failed', null, { timeout: 15000 });\nconst failedEncounter = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'GAME failure state'
+          );
+          game = replaceExact(
+            game,
+            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());\nawait page.waitForTimeout(500);\nawait page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());",
+            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());\nawait page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\nawait page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());",
+            'GAME second activation'
+          );
+          game = replaceExact(
+            game,
+            "await page.waitForTimeout(3000);\nconst unlocked = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "await page.waitForFunction(() => { const state = globalThis.getMooLevelQaState?.(); return state?.progress?.mooLevelUnlocked === true && state?.encounter?.state === 'complete'; }, null, { timeout: 30000 });\nconst unlocked = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'GAME unlock completion'
+          );
+          game = replaceExact(
+            game,
+            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());\nawait page.waitForTimeout(750);\nconst mooStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());\nawait page.waitForFunction(() => globalThis.getMooLevelQaState?.().mode === 'moo', null, { timeout: 15000 });\nconst mooStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'GAME Moo mode start'
+          );
+          game = replaceExact(
+            game,
+            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeMooObjectives());\nawait page.waitForTimeout(1800);\nconst mooCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeMooObjectives());\nawait page.waitForFunction(() => { const run = globalThis.getMooLevelQaState?.().mooRun; return run?.relocated >= 20 && run?.props >= 10 && run?.airtime > 0; }, null, { timeout: 20000 });\nconst mooCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'GAME Moo objectives'
+          );
+          await writeFile('scripts/.ci-qa-sw-game-002-state-driven.mjs', game, 'utf8');
+
+          let score = await readFile('scripts/qa-sw-score-001-persistent-scorekeeper.mjs', 'utf8');
+          score = replaceExact(
+            score,
+            "  await page.waitForTimeout(500);\n  const mooRegressionStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\n  const mooRegressionStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'SCORE started activation'
+          );
+          score = replaceExact(
+            score,
+            "  await page.waitForTimeout(500);\n  const mooRegressionFailed = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.state === 'failed', null, { timeout: 15000 });\n  const mooRegressionFailed = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'SCORE failure state'
+          );
+          score = replaceExact(
+            score,
+            "  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());\n  await page.waitForTimeout(500);\n  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());",
+            "  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());\n  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\n  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());",
+            'SCORE second activation'
+          );
+          score = replaceExact(
+            score,
+            "  await page.waitForTimeout(3000);\n  const mooRegressionUnlocked = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "  await page.waitForFunction(() => { const state = globalThis.getMooLevelQaState?.(); return state?.progress?.mooLevelUnlocked === true && state?.encounter?.state === 'complete'; }, null, { timeout: 30000 });\n  const mooRegressionUnlocked = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'SCORE unlock completion'
+          );
+          score = replaceExact(
+            score,
+            "  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());\n  await page.waitForTimeout(650);\n  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeMooObjectives());",
+            "  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());\n  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().mode === 'moo', null, { timeout: 15000 });\n  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeMooObjectives());",
+            'SCORE Moo mode start'
+          );
+          score = replaceExact(
+            score,
+            "  await page.waitForTimeout(1800);\n  const mooRegressionCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            "  await page.waitForFunction(() => { const state = globalThis.getMooLevelQaState?.(); const run = state?.mooRun; return run?.relocated >= 20 && run?.props >= 10 && run?.airtime > 0 && state?.allMooCowsSafe === true; }, null, { timeout: 20000 });\n  const mooRegressionCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
+            'SCORE Moo objectives'
+          );
+          await writeFile('scripts/.ci-qa-sw-score-001-state-driven.mjs', score, 'utf8');
+
+          console.log('Built state-driven CI adapters. Product and repository QA files remain unchanged.');
+          NODE
+
+      - name: Isolated state-driven Scorekeeper browser QA
+        run: |
+          set -euo pipefail
+          rm -rf ../scorekeeper-worktree
           mkdir -p ../scorekeeper-worktree
-          cp -r . ../scorekeeper-worktree
+          rsync -a --exclude='.git' --exclude='qa-artifacts' ./ ../scorekeeper-worktree/
           cd ../scorekeeper-worktree
-          pnpm run audio:generate
-          xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
-          cd ../Severe-Warning
+          xvfb-run --auto-servernum node scripts/.ci-qa-sw-score-001-state-driven.mjs
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-score-001/report.json', 'utf8'));
+          assert.equal(report.passed, true, 'Scorekeeper state-driven report must pass every check');
+          assert.deepEqual(report.pageErrors, [], 'Scorekeeper page errors');
+          assert.deepEqual(report.runtimeConsoleErrors, [], 'Scorekeeper runtime console errors');
+          assert.deepEqual(report.assetTransportErrors, [], 'Scorekeeper asset transport errors');
+          NODE
+          cd - >/dev/null
           mkdir -p qa-artifacts/sw-score-001
-          cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
+          cp -a ../scorekeeper-worktree/qa-artifacts/sw-score-001/. qa-artifacts/sw-score-001/
 
-      - name: Evaluate Source B Scorekeeper Report Matrix
+      - name: Isolated RPG-001 browser QA
         run: |
-          echo "=== EVALUATING SOURCE B SCOREKEEPER REPORT MATRIX ==="
-          node -e "
-          const fs = require('fs');
-          const assert = require('assert/strict');
-          const report = JSON.parse(fs.readFileSync('qa-artifacts/sw-score-001/report.json', 'utf8'));
-          console.log(JSON.stringify(report, null, 2));
-          const checks = report.checks || {};
-          assert.equal(checks.firstRunCreatesDurableSiteModeRecord, true, 'firstRunCreatesDurableSiteModeRecord');
-          assert.equal(checks.lowerRunDoesNotReplacePersonalBest, true, 'lowerRunDoesNotReplacePersonalBest');
-          assert.equal(checks.higherRunCreatesPbWithPreviousAndMargin, true, 'higherRunCreatesPbWithPreviousAndMargin');
-          assert.equal(checks.recordsSurviveReloadRestart, true, 'recordsSurviveReloadRestart');
-          assert.equal(checks.scoringVersionIsExplicitAndPartitioned, true, 'scoringVersionIsExplicitAndPartitioned');
-          assert.equal(checks.siteAndVariantBucketsDoNotContaminate, true, 'siteAndVariantBucketsDoNotContaminate');
-          assert.equal(checks.mooRecordsRemainDistinct, true, 'mooRecordsRemainDistinct');
-          assert.equal(checks.newspaperIsLegibleAndMotivating, true, 'newspaperIsLegibleAndMotivating');
-          assert.equal(checks.replayAndWeatherMapActionsWork, true, 'replayAndWeatherMapActionsWork');
-          assert.equal(checks.futureMetadataIsOnlyReserved, true, 'futureMetadataIsOnlyReserved');
-          assert.equal(checks.noPageErrors, true, 'noPageErrors');
-          assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
-          assert.deepEqual(report.pageErrors, [], 'pageErrors');
-          assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
-          console.log('Source B Scorekeeper Matrix Evaluator: PASS');
-          "
-
-      - name: Isolated RPG-001 Browser QA
-        run: |
-          echo "=== ISOLATED RPG-001 BROWSER QA (B) ==="
+          set -euo pipefail
+          rm -rf ../rpg-worktree
           mkdir -p ../rpg-worktree
-          cp -r . ../rpg-worktree
+          rsync -a --exclude='.git' --exclude='qa-artifacts' ./ ../rpg-worktree/
           cd ../rpg-worktree
-          pnpm run audio:generate
           xvfb-run --auto-servernum node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
-          cd ../Severe-Warning
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-rpg-001/report.json', 'utf8'));
+          assert.equal(report.passed, true, 'RPG-001 report must pass every check');
+          assert.deepEqual(report.pageErrors, [], 'RPG-001 page errors');
+          assert.deepEqual(report.runtimeConsoleErrors, [], 'RPG-001 runtime console errors');
+          assert.deepEqual(report.assetTransportErrors, [], 'RPG-001 asset transport errors');
+          NODE
+          cd - >/dev/null
           mkdir -p qa-artifacts/sw-rpg-001
-          cp -r ../rpg-worktree/qa-artifacts/sw-rpg-001/* qa-artifacts/sw-rpg-001/ || true
+          cp -a ../rpg-worktree/qa-artifacts/sw-rpg-001/. qa-artifacts/sw-rpg-001/
 
-      - name: Isolated PWA Shell Browser QA
+      - name: Source B isolated PWA browser QA
+        if: matrix.pwa == 'true'
         run: |
-          echo "=== ISOLATED PWA SHELL BROWSER QA (B) ==="
+          set -euo pipefail
+          rm -rf ../pwa-worktree
           mkdir -p ../pwa-worktree
-          cp -r . ../pwa-worktree
+          rsync -a --exclude='.git' --exclude='qa-artifacts' ./ ../pwa-worktree/
           cd ../pwa-worktree
-          pnpm run audio:generate
           xvfb-run --auto-servernum node scripts/qa-pwa-shell.mjs
-          cd ../Severe-Warning
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-pwa-001/pwa-browser-qa-report.json', 'utf8'));
+          assert.equal(report.passed, true, 'PWA browser QA must pass every check');
+          assert.deepEqual(report.errors, [], 'PWA browser errors');
+          assert.equal(report.checks.productionStyleLoadsBuildInfoWithoutQaProbe, true);
+          assert.equal(report.checks.noQaBuildProbingHttp404, true);
+          assert.equal(report.checks.noPageErrors, true);
+          NODE
+          cd - >/dev/null
           mkdir -p qa-artifacts/sw-pwa-001
-          cp -r ../pwa-worktree/qa-artifacts/sw-pwa-001/* qa-artifacts/sw-pwa-001/ || true
+          cp -a ../pwa-worktree/qa-artifacts/sw-pwa-001/. qa-artifacts/sw-pwa-001/
 
-      - name: Isolated GAME-002 Browser QA Execution
-        env:
-          CI: "true"
+      - name: Isolated state-driven GAME-002 packaged browser QA
         run: |
-          echo "=== ISOLATED GAME-002 BROWSER QA (B) ==="
+          set -euo pipefail
+          rm -rf ../game002-worktree
           mkdir -p ../game002-worktree
-          cp -r . ../game002-worktree
+          rsync -a --exclude='.git' --exclude='qa-artifacts' ./ ../game002-worktree/
           cd ../game002-worktree
           pnpm run patch:v431
           pnpm run patch:v440
@@ -322,47 +267,146 @@ jobs:
           pnpm run patch:sw-rpg-001
           pnpm run modern:build
           node scripts/build-web.mjs
-          node scripts/serve-www.mjs &
+          node scripts/serve-www.mjs > qa-server.log 2>&1 &
           SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || :' EXIT
           sleep 3
-          xvfb-run --auto-servernum node scripts/qa-sw-game-002.mjs || true
-          kill $SERVER_PID || true
-          cd ../Severe-Warning
+          xvfb-run --auto-servernum node scripts/.ci-qa-sw-game-002-state-driven.mjs
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-game-002/report.json', 'utf8'));
+          assert.equal(report.passed, true, 'GAME-002 state-driven report must pass every existing check');
+          assert.deepEqual(report.pageErrors, [], 'GAME-002 page errors');
+          assert.deepEqual(report.runtimeConsoleErrors, [], 'GAME-002 runtime console errors');
+          assert.deepEqual(report.assetTransportErrors, [], 'GAME-002 asset transport errors');
+          NODE
+          kill "$SERVER_PID"
+          trap - EXIT
+          cd - >/dev/null
           mkdir -p qa-artifacts/sw-game-002
-          cp -r ../game002-worktree/qa-artifacts/sw-game-002/* qa-artifacts/sw-game-002/
+          cp -a ../game002-worktree/qa-artifacts/sw-game-002/. qa-artifacts/sw-game-002/
+          cp ../game002-worktree/qa-server.log qa-artifacts/sw-game-002/server.log
 
-      - name: Evaluate Source B GAME-002 Report Matrix
+      - name: Record source metadata
         run: |
-          echo "=== EVALUATING SOURCE B GAME-002 REPORT MATRIX ==="
-          node -e "
-          const fs = require('fs');
-          const assert = require('assert/strict');
-          const report = JSON.parse(fs.readFileSync('qa-artifacts/sw-game-002/report.json', 'utf8'));
-          console.log(JSON.stringify(report, null, 2));
-          const checks = report.checks || {};
-          assert.equal(checks.executorIntegration, true, 'executorIntegration');
-          assert.equal(checks.hartFarmActivated, true, 'hartFarmActivated');
-          assert.equal(typeof checks.encounterFailureRearms, 'boolean', 'encounterFailureRearms');
-          assert.equal(typeof checks.encounterUnlocked, 'boolean', 'encounterUnlocked');
-          assert.equal(checks.persistence, true, 'persistence');
-          assert.equal(checks.lockedToUnlockedAccess, true, 'lockedToUnlockedAccess');
-          assert.equal(checks.dedicatedMooRun, true, 'dedicatedMooRun');
-          assert.equal(checks.objectiveSignals, true, 'objectiveSignals');
-          assert.equal(checks.cowSafety, true, 'cowSafety');
-          assert.equal(checks.normalCampaignRegression, true, 'normalCampaignRegression');
-          assert.equal(checks.noPageErrors, true, 'noPageErrors');
-          assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
-          assert.deepEqual(report.pageErrors, [], 'pageErrors');
-          assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
-          assert.deepEqual(report.assetTransportErrors, [], 'assetTransportErrors');
-          console.log('Source B GAME-002 Matrix Evaluator: PASS');
-          "
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { mkdir, writeFile } from 'node:fs/promises';
+          await mkdir('qa-artifacts', { recursive: true });
+          await writeFile('qa-artifacts/source-meta.json', JSON.stringify({
+            label: '${{ matrix.label }}',
+            sha: '${{ matrix.sha }}',
+            pwa: '${{ matrix.pwa }}' === 'true',
+            node: process.version,
+            adapterLaw: 'same assertions, state-driven waits only'
+          }, null, 2) + '\n');
+          NODE
 
-      - name: Upload Source B QA Artifacts
+      - name: Upload source evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: qa-artifacts-source-b
+          name: sw-int-003-source-${{ matrix.label }}
           path: qa-artifacts/
-          if-no-files-found: warn
+          if-no-files-found: error
+          retention-days: 14
+
+  compare-and-close:
+    name: A/B differential closure
+    if: always()
+    needs: verify-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download Source A evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: sw-int-003-source-a
+          path: comparison/a
+
+      - name: Download Source B evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: sw-int-003-source-b
+          path: comparison/b
+
+      - name: Enforce exact A/B closure contract
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+
+          const load = async (path) => JSON.parse(await readFile(path, 'utf8'));
+          const aMeta = await load('comparison/a/source-meta.json');
+          const bMeta = await load('comparison/b/source-meta.json');
+          assert.equal(aMeta.sha, 'ce1e47c858cdbca5039fb7ad7ad2545f4537c238');
+          assert.equal(bMeta.sha, '00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3');
+          assert.equal(aMeta.adapterLaw, 'same assertions, state-driven waits only');
+          assert.equal(bMeta.adapterLaw, 'same assertions, state-driven waits only');
+
+          const aGame = await load('comparison/a/sw-game-002/report.json');
+          const bGame = await load('comparison/b/sw-game-002/report.json');
+          assert.equal(aGame.passed, true, 'Source A GAME-002');
+          assert.equal(bGame.passed, true, 'Source B GAME-002');
+          assert.deepEqual(bGame.checks, aGame.checks, 'GAME-002 check matrix must match A/B');
+          for (const [label, report] of [['A', aGame], ['B', bGame]]) {
+            assert.deepEqual(report.pageErrors, [], `${label} GAME page errors`);
+            assert.deepEqual(report.runtimeConsoleErrors, [], `${label} GAME runtime errors`);
+            assert.deepEqual(report.assetTransportErrors, [], `${label} GAME asset errors`);
+          }
+
+          const aScore = await load('comparison/a/sw-score-001/report.json');
+          const bScore = await load('comparison/b/sw-score-001/report.json');
+          assert.equal(aScore.passed, true, 'Source A Scorekeeper');
+          assert.equal(bScore.passed, true, 'Source B Scorekeeper');
+          assert.deepEqual(bScore.checks, aScore.checks, 'Scorekeeper check matrix must match A/B');
+          for (const [label, report] of [['A', aScore], ['B', bScore]]) {
+            assert.deepEqual(report.pageErrors, [], `${label} Scorekeeper page errors`);
+            assert.deepEqual(report.runtimeConsoleErrors, [], `${label} Scorekeeper runtime errors`);
+            assert.deepEqual(report.assetTransportErrors, [], `${label} Scorekeeper asset errors`);
+          }
+
+          const aRpg = await load('comparison/a/sw-rpg-001/report.json');
+          const bRpg = await load('comparison/b/sw-rpg-001/report.json');
+          assert.equal(aRpg.passed, true, 'Source A RPG-001');
+          assert.equal(bRpg.passed, true, 'Source B RPG-001');
+          assert.deepEqual(bRpg.checks, aRpg.checks, 'RPG-001 check matrix must match A/B');
+          for (const [label, report] of [['A', aRpg], ['B', bRpg]]) {
+            assert.deepEqual(report.pageErrors, [], `${label} RPG page errors`);
+            assert.deepEqual(report.runtimeConsoleErrors, [], `${label} RPG runtime errors`);
+            assert.deepEqual(report.assetTransportErrors, [], `${label} RPG asset errors`);
+          }
+
+          const pwa = await load('comparison/b/sw-pwa-001/pwa-browser-qa-report.json');
+          assert.equal(pwa.passed, true, 'Source B PWA browser');
+          assert.deepEqual(pwa.errors, [], 'Source B PWA errors');
+          assert.equal(pwa.checks.productionStyleLoadsBuildInfoWithoutQaProbe, true);
+          assert.equal(pwa.checks.noQaBuildProbingHttp404, true);
+          assert.equal(pwa.checks.noPageErrors, true);
+
+          const summary = {
+            verdict: 'PASS',
+            sourceA: aMeta.sha,
+            sourceB: bMeta.sha,
+            game002: bGame.checks,
+            scorekeeper: bScore.checks,
+            rpg001: bRpg.checks,
+            pwa: pwa.checks,
+            pageErrors: { a: aGame.pageErrors, b: bGame.pageErrors },
+            runtimeConsoleErrors: { a: aGame.runtimeConsoleErrors, b: bGame.runtimeConsoleErrors },
+            assetTransportErrors: { a: aGame.assetTransportErrors, b: bGame.assetTransportErrors },
+            harnessLaw: 'No required acceptance command is masked. Timing adapters change waits only; assertions remain the repository assertions.'
+          };
+          await writeFile('sw-int-003-closure-summary.json', JSON.stringify(summary, null, 2) + '\n');
+          console.log(JSON.stringify(summary, null, 2));
+          NODE
+
+      - name: Upload closure summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-int-003-closure-summary
+          path: sw-int-003-closure-summary.json
+          if-no-files-found: error
           retention-days: 14
