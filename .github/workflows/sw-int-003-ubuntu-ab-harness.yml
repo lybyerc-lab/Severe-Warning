@@ -40,7 +40,7 @@ jobs:
       - name: Install System and Node Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg
+          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile || pnpm install
           npx playwright install --with-deps chromium
@@ -65,7 +65,7 @@ jobs:
           mkdir -p ../scorekeeper-worktree
           cp -r . ../scorekeeper-worktree
           cd ../scorekeeper-worktree
-          node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
+          xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-score-001
           cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
@@ -76,7 +76,7 @@ jobs:
           mkdir -p ../rpg-worktree
           cp -r . ../rpg-worktree
           cd ../rpg-worktree
-          node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
+          xvfb-run --auto-servernum node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-rpg-001
           cp -r ../rpg-worktree/qa-artifacts/sw-rpg-001/* qa-artifacts/sw-rpg-001/ || true
@@ -114,7 +114,7 @@ jobs:
           node scripts/serve-www.mjs &
           SERVER_PID=$!
           sleep 3
-          node scripts/qa-sw-game-002.mjs || true
+          xvfb-run --auto-servernum node scripts/qa-sw-game-002.mjs || true
           kill $SERVER_PID || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-game-002
@@ -182,7 +182,7 @@ jobs:
       - name: Install System and Node Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg
+          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile || pnpm install
           npx playwright install --with-deps chromium
@@ -208,7 +208,7 @@ jobs:
           mkdir -p ../scorekeeper-worktree
           cp -r . ../scorekeeper-worktree
           cd ../scorekeeper-worktree
-          node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
+          xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-score-001
           cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
@@ -219,7 +219,7 @@ jobs:
           mkdir -p ../rpg-worktree
           cp -r . ../rpg-worktree
           cd ../rpg-worktree
-          node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
+          xvfb-run --auto-servernum node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-rpg-001
           cp -r ../rpg-worktree/qa-artifacts/sw-rpg-001/* qa-artifacts/sw-rpg-001/ || true
@@ -230,7 +230,7 @@ jobs:
           mkdir -p ../pwa-worktree
           cp -r . ../pwa-worktree
           cd ../pwa-worktree
-          node scripts/qa-pwa-shell.mjs
+          xvfb-run --auto-servernum node scripts/qa-pwa-shell.mjs
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-pwa-001
           cp -r ../pwa-worktree/qa-artifacts/sw-pwa-001/* qa-artifacts/sw-pwa-001/ || true
@@ -247,6 +247,7 @@ jobs:
           pnpm run patch:v440
           pnpm run patch:v441
           pnpm run patch:v442
+          pnpm run patch:v450
           pnpm run patch:v500
           pnpm run patch:v510
           pnpm run patch:phase2
@@ -267,7 +268,7 @@ jobs:
           node scripts/serve-www.mjs &
           SERVER_PID=$!
           sleep 3
-          node scripts/qa-sw-game-002.mjs || true
+          xvfb-run --auto-servernum node scripts/qa-sw-game-002.mjs || true
           kill $SERVER_PID || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-game-002
