@@ -18,6 +18,8 @@ jobs:
     name: Source A (ce1e47c) Baseline Isolation
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      CHROME_BIN: /usr/bin/google-chrome
 
     steps:
       - name: Checkout Source A (ce1e47c)
@@ -160,6 +162,8 @@ jobs:
     name: Source B (00e5796 Corrected) Candidate Isolation
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      CHROME_BIN: /usr/bin/google-chrome
 
     steps:
       - name: Checkout Source B (00e5796 Corrected)
