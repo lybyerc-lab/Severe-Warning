@@ -131,6 +131,9 @@ jobs:
             fi
           done
 
+          if [ -f scripts/apply-sw-game-002-moo-level.mjs ]; then
+            node scripts/apply-sw-game-002-moo-level.mjs
+          fi
           if [ -f scripts/apply-sw-level-001-storm-site-framework.mjs ]; then
             node scripts/apply-sw-level-001-storm-site-framework.mjs
           fi
