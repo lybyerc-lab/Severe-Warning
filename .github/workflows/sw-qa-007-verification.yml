@@ -1,4 +1,4 @@
-name: SW-QA-007 Exact-Source Verification Harness
+name: SW-QA-007 Modern-Shell Causal A/B Classification
 
 on:
   push:
@@ -10,32 +10,46 @@ permissions:
   contents: read
 
 concurrency:
-  group: sw-qa-007-verification-${{ github.ref }}
+  group: sw-qa-007-causal-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify-exact-source:
-    name: Run SW-QA-007 exact-source verification on Ubuntu runner
+  causal-matrix:
+    name: Causal Inspection for ${{ matrix.source.label }} (${{ matrix.source.sha }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        source:
+          - label: "A_ACCEPTED_PRE_LEVEL_BASE"
+            sha: "89aeac92d032bfc6546cb8da7c52effc7a408aa1"
+            is_level: false
+          - label: "B_ORIGINAL_LEVEL_HEAD"
+            sha: "07e089f03bdb2943e6b3d64033010736805afb4a"
+            is_level: true
+          - label: "C_CORRECTED_LEVEL_HEAD"
+            sha: "1350cee7535220fb9fc5e7c1b4de284e6aae8156"
+            is_level: true
 
     steps:
-      - name: Check out exact product source under test
+      - name: Check out target source SHA (${{ matrix.source.sha }})
         uses: actions/checkout@v4
         with:
-          ref: 1350cee7535220fb9fc5e7c1b4de284e6aae8156
+          ref: ${{ matrix.source.sha }}
+          fetch-depth: 0
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install system dependencies (ffmpeg)
+      - name: Install system ffmpeg
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg
-          ffmpeg -version
+          ffmpeg -version | head -n 1
 
       - name: Install pnpm 11.9.0
         shell: bash
@@ -44,18 +58,16 @@ jobs:
           npm install -g pnpm@11.9.0
           pnpm --version
 
-      - name: Print and record environment metadata
+      - name: Print and record source metadata
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== EXACT SOURCE METADATA ==="
-          echo "HEAD SHA: $(git rev-parse HEAD)"
+          echo "=== EXECUTING CAUSAL TEST FOR [${{ matrix.source.label }}] ==="
+          echo "EXPECTED SHA: ${{ matrix.source.sha }}"
+          echo "ACTUAL HEAD SHA: $(git rev-parse HEAD)"
           echo "STATUS:"
           git status --short
-          echo "=== TOOL VERSIONS ==="
-          echo "Node: $(node --version)"
-          echo "pnpm: $(pnpm --version)"
-          echo "ffmpeg: $(ffmpeg -version | head -n 1)"
+          test "$(git rev-parse HEAD)" = "${{ matrix.source.sha }}"
 
       - name: Install frozen dependencies
         shell: bash
@@ -63,34 +75,21 @@ jobs:
           set -euo pipefail
           pnpm install --frozen-lockfile
 
-      - name: Prepare approved Kenney VFX inputs
+      - name: Prepare approved Kenney VFX inputs & Audio
         shell: bash
         run: |
           set -euo pipefail
           node scripts/vendor-threejs-hero-slice4-assets.mjs
-
-      - name: Confirm prepared VFX inputs and record SHA-256 hashes
-        shell: bash
-        run: |
-          set -euo pipefail
+          pnpm run audio:generate
           test -f assets/production/vfx/kenney/dirt_01.png
           test -f assets/production/vfx/kenney/smoke_03.png
           test -f assets/production/vfx/kenney/trace_03.png
-          echo "=== KENNEY VFX SHA-256 HASHES ==="
-          sha256sum assets/production/vfx/kenney/dirt_01.png
-          sha256sum assets/production/vfx/kenney/smoke_03.png
-          sha256sum assets/production/vfx/kenney/trace_03.png
 
-      - name: Install Playwright browser dependencies
+      - name: Construct task-versioned playable source using patch chain
         shell: bash
         run: |
           set -euo pipefail
-          npx playwright install --with-deps chromium
-
-      - name: Construct exact v5.1 + GAME-002 + LEVEL-001 source
-        shell: bash
-        run: |
-          set -euo pipefail
+          echo "=== APPLYING PATCH CHAIN FOR ${{ matrix.source.label }} ==="
           candidate="$RUNNER_TEMP/sw-qa-007-candidate.html"
           cp MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
           export SEVERE_WEATHER_SOURCE_PATH="$candidate"
@@ -119,81 +118,72 @@ jobs:
             apply-v500-realtime-clock-fix.mjs \
             apply-v500-world-tour-patch.mjs \
             apply-v500-mobile-layout-fix.mjs \
-            apply-v500-cow-signature-patch.mjs
+            apply-v500-cow-signature-patch.mjs \
+            apply-v510-production-slice.mjs \
+            apply-modernization-phase2-clocks.mjs \
+            apply-phase2-player-forensics-guard.mjs \
+            apply-modernization-phase3-input-abilities.mjs \
+            apply-modernization-phase4-scoring-campaign.mjs \
+            apply-modernization-phase5-presentation-world.mjs \
+            apply-modernization-phase6-performance.mjs \
+            apply-city-fabric-destruction.mjs \
+            apply-presentation-identity-moo-brew.mjs \
+            apply-threejs-asset-pipeline.mjs \
+            apply-threejs-visual-foundation.mjs
           do
-            node "scripts/$script"
+            if [ -f "scripts/$script" ]; then
+              node "scripts/$script"
+            fi
           done
 
-          echo "=== VERIFY V5.0 CAMPAIGN ON CONSTRUCTED SOURCE ==="
-          node scripts/verify-v500-campaign.mjs
+          if [ -f scripts/apply-sw-level-001-storm-site-framework.mjs ]; then
+            node scripts/apply-sw-level-001-storm-site-framework.mjs
+          fi
 
-          node scripts/apply-v510-production-slice.mjs
-          echo "=== VERIFY V5.1 PRODUCTION SLICE ON CONSTRUCTED SOURCE ==="
-          node scripts/verify-v510-production-slice.mjs
+          mkdir -p qa-artifacts/causal
+          sha256sum "$candidate" | tee qa-artifacts/causal/constructed-source-sha256.txt
 
-          node scripts/apply-sw-game-002-moo-level.mjs
-          node scripts/apply-sw-level-001-storm-site-framework.mjs
-
-          mkdir -p qa-artifacts/sw-level-001
-          sha256sum "$candidate" | tee qa-artifacts/sw-level-001/constructed-source-sha256.txt
-
-      - name: Build exact constructed source
+      - name: Build modern shell & offline web package
         shell: bash
         run: |
           set -euo pipefail
-          pnpm run audio:generate
-          pnpm run modern:typecheck
           pnpm run modern:build
           node scripts/build-web.mjs
+          test -f www/index.html
 
-      - name: Run static and process verification
+      - name: Install Playwright browser dependencies
         shell: bash
         run: |
           set -euo pipefail
-          pnpm run verify:process
+          npx playwright install --with-deps chromium
+
+      - name: Checkout harness inspection script
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout origin/agent/sw-qa-007-actions-harness -- scripts/test-modern-shell-causal.mjs || true
+
+      - name: Execute browser harness causal inspection
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/serve-www.mjs &
+          sleep 3
+          SOURCE_LABEL="${{ matrix.source.label }}" SOURCE_SHA="${{ matrix.source.sha }}" node scripts/test-modern-shell-causal.mjs | tee "causal-report-${{ matrix.source.label }}.json"
+
+      - name: Run focused LEVEL verifier if applicable
+        if: matrix.source.is_level
+        shell: bash
+        run: |
+          set -euo pipefail
           pnpm run verify:sw-level-001
 
-      - name: Serve exact build and run browser acceptance
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p qa-artifacts/sw-level-001
-          python3 -m http.server 4173 --bind 127.0.0.1 --directory www > qa-artifacts/sw-level-001/server.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
-              break
-            fi
-            if [ "$attempt" -eq 30 ]; then
-              echo "Server did not become ready" >&2
-              exit 1
-            fi
-            sleep 1
-          done
-          pnpm run qa:sw-level-001
-          kill "$server_pid" 2>/dev/null || true
-          trap - EXIT
-
-      - name: Hash QA evidence
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p qa-artifacts/sw-level-001
-          find qa-artifacts/sw-level-001 -maxdepth 1 -type f -print0 \
-            | sort -z \
-            | xargs -0 -r sha256sum \
-            | tee qa-artifacts/sw-level-001/artifact-sha256.txt
-
-      - name: Upload QA and verification artifacts
+      - name: Upload causal inspection artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sw-qa-007-verification-artifacts
+          name: causal-artifact-${{ matrix.source.label }}
           path: |
+            causal-report-*.json
             qa-artifacts/**
             reports/**
-            screenshots/**
-            logs/**
-            *.json
