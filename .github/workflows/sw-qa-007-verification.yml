@@ -87,22 +87,104 @@ jobs:
           set -euo pipefail
           npx playwright install --with-deps chromium
 
-      - name: Run verification chain
+      - name: Construct exact v5.1 + GAME-002 + LEVEL-001 source
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== 1/6 pnpm run build ==="
-          pnpm run build
-          echo "=== 2/6 pnpm run verify:process ==="
+          candidate="$RUNNER_TEMP/sw-qa-007-candidate.html"
+          cp MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
+          export SEVERE_WEATHER_SOURCE_PATH="$candidate"
+          echo "SEVERE_WEATHER_SOURCE_PATH=$candidate" >> "$GITHUB_ENV"
+
+          for script in \
+            apply-v431-source-patch.mjs \
+            apply-v440-source-patch.mjs \
+            apply-v441-source-patch.mjs \
+            apply-v442-source-patch.mjs \
+            fix-v450-parser.mjs \
+            apply-v450-source-patch.mjs \
+            apply-v450-rampage-music-patch.mjs \
+            apply-qa-corrections-patch.mjs \
+            apply-audio-mix-followup-patch.mjs \
+            apply-ui-polish-followup-patch.mjs \
+            apply-score-continuity-fix.mjs \
+            apply-qa4-deterministic-lab-patch.mjs \
+            apply-qa4-mobile-input-fix.mjs \
+            apply-qa4-run-lock-fix.mjs \
+            apply-qa4-pause-forensics.mjs \
+            apply-pause-overlay-hit-test-fix.mjs \
+            apply-pause-overlay-hard-hide.mjs \
+            apply-qa4-popup-assertion-fix.mjs \
+            apply-v500-campaign-patch.mjs \
+            apply-v500-realtime-clock-fix.mjs \
+            apply-v500-world-tour-patch.mjs \
+            apply-v500-mobile-layout-fix.mjs \
+            apply-v500-cow-signature-patch.mjs
+          do
+            node "scripts/$script"
+          done
+
+          echo "=== VERIFY V5.0 CAMPAIGN ON CONSTRUCTED SOURCE ==="
+          node scripts/verify-v500-campaign.mjs
+
+          node scripts/apply-v510-production-slice.mjs
+          echo "=== VERIFY V5.1 PRODUCTION SLICE ON CONSTRUCTED SOURCE ==="
+          node scripts/verify-v510-production-slice.mjs
+
+          node scripts/apply-sw-game-002-moo-level.mjs
+          node scripts/apply-sw-level-001-storm-site-framework.mjs
+
+          mkdir -p qa-artifacts/sw-level-001
+          sha256sum "$candidate" | tee qa-artifacts/sw-level-001/constructed-source-sha256.txt
+
+      - name: Build exact constructed source
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run audio:generate
+          pnpm run modern:typecheck
+          pnpm run modern:build
+          node scripts/build-web.mjs
+
+      - name: Run static and process verification
+        shell: bash
+        run: |
+          set -euo pipefail
           pnpm run verify:process
-          echo "=== 3/6 pnpm run verify:v500 ==="
-          pnpm run verify:v500
-          echo "=== 4/6 pnpm run verify:v510 ==="
-          pnpm run verify:v510
-          echo "=== 5/6 pnpm run verify:sw-level-001 ==="
           pnpm run verify:sw-level-001
-          echo "=== 6/6 pnpm run qa:sw-level-001 ==="
+
+      - name: Serve exact build and run browser acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/sw-level-001
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory www > qa-artifacts/sw-level-001/server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "Server did not become ready" >&2
+              exit 1
+            fi
+            sleep 1
+          done
           pnpm run qa:sw-level-001
+          kill "$server_pid" 2>/dev/null || true
+          trap - EXIT
+
+      - name: Hash QA evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/sw-level-001
+          find qa-artifacts/sw-level-001 -maxdepth 1 -type f -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum \
+            | tee qa-artifacts/sw-level-001/artifact-sha256.txt
 
       - name: Upload QA and verification artifacts
         if: always()
