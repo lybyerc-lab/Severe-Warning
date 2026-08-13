@@ -65,6 +65,7 @@ jobs:
           mkdir -p ../scorekeeper-worktree
           cp -r . ../scorekeeper-worktree
           cd ../scorekeeper-worktree
+          pnpm run audio:generate
           xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-score-001
@@ -103,6 +104,7 @@ jobs:
           mkdir -p ../rpg-worktree
           cp -r . ../rpg-worktree
           cd ../rpg-worktree
+          pnpm run audio:generate
           xvfb-run --auto-servernum node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-rpg-001
@@ -235,6 +237,7 @@ jobs:
           mkdir -p ../scorekeeper-worktree
           cp -r . ../scorekeeper-worktree
           cd ../scorekeeper-worktree
+          pnpm run audio:generate
           xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-score-001
@@ -273,6 +276,7 @@ jobs:
           mkdir -p ../rpg-worktree
           cp -r . ../rpg-worktree
           cd ../rpg-worktree
+          pnpm run audio:generate
           xvfb-run --auto-servernum node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-rpg-001
@@ -284,6 +288,7 @@ jobs:
           mkdir -p ../pwa-worktree
           cp -r . ../pwa-worktree
           cd ../pwa-worktree
+          pnpm run audio:generate
           xvfb-run --auto-servernum node scripts/qa-pwa-shell.mjs
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-pwa-001
