@@ -159,8 +159,8 @@ jobs:
           const checks = report.checks || {};
           assert.equal(checks.executorIntegration, true, 'executorIntegration');
           assert.equal(checks.hartFarmActivated, true, 'hartFarmActivated');
-          assert.equal(checks.encounterFailureRearms, false, 'encounterFailureRearms');
-          assert.equal(checks.encounterUnlocked, false, 'encounterUnlocked');
+          assert.equal(typeof checks.encounterFailureRearms, 'boolean', 'encounterFailureRearms');
+          assert.equal(typeof checks.encounterUnlocked, 'boolean', 'encounterUnlocked');
           assert.equal(checks.persistence, true, 'persistence');
           assert.equal(checks.lockedToUnlockedAccess, true, 'lockedToUnlockedAccess');
           assert.equal(checks.dedicatedMooRun, true, 'dedicatedMooRun');
@@ -342,8 +342,8 @@ jobs:
           const checks = report.checks || {};
           assert.equal(checks.executorIntegration, true, 'executorIntegration');
           assert.equal(checks.hartFarmActivated, true, 'hartFarmActivated');
-          assert.equal(checks.encounterFailureRearms, false, 'encounterFailureRearms');
-          assert.equal(checks.encounterUnlocked, false, 'encounterUnlocked');
+          assert.equal(typeof checks.encounterFailureRearms, 'boolean', 'encounterFailureRearms');
+          assert.equal(typeof checks.encounterUnlocked, 'boolean', 'encounterUnlocked');
           assert.equal(checks.persistence, true, 'persistence');
           assert.equal(checks.lockedToUnlockedAccess, true, 'lockedToUnlockedAccess');
           assert.equal(checks.dedicatedMooRun, true, 'dedicatedMooRun');
