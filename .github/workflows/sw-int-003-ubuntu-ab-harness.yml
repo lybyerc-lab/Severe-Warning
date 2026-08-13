@@ -45,10 +45,11 @@ jobs:
           pnpm install --frozen-lockfile || pnpm install
           npx playwright install --with-deps chromium
 
-      - name: Prepare Generated Audio Assets
+      - name: Prepare Generated Audio Assets and Modern Bundle
         run: |
-          echo "=== PREPARE GENERATED AUDIO (A) ==="
+          echo "=== PREPARE GENERATED ASSETS AND BUNDLE (A) ==="
           pnpm run audio:generate
+          pnpm run modern:build
 
       - name: Raw-Source Static Verifications
         run: |
@@ -64,11 +65,7 @@ jobs:
           mkdir -p ../scorekeeper-worktree
           cp -r . ../scorekeeper-worktree
           cd ../scorekeeper-worktree
-          node scripts/serve-www.mjs &
-          SERVER_PID=$!
-          sleep 3
           node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
-          kill $SERVER_PID || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-score-001
           cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
@@ -79,11 +76,7 @@ jobs:
           mkdir -p ../rpg-worktree
           cp -r . ../rpg-worktree
           cd ../rpg-worktree
-          node scripts/serve-www.mjs &
-          SERVER_PID=$!
-          sleep 3
           node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
-          kill $SERVER_PID || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-rpg-001
           cp -r ../rpg-worktree/qa-artifacts/sw-rpg-001/* qa-artifacts/sw-rpg-001/ || true
@@ -194,10 +187,11 @@ jobs:
           pnpm install --frozen-lockfile || pnpm install
           npx playwright install --with-deps chromium
 
-      - name: Prepare Generated Audio Assets
+      - name: Prepare Generated Audio Assets and Modern Bundle
         run: |
-          echo "=== PREPARE GENERATED AUDIO (B) ==="
+          echo "=== PREPARE GENERATED ASSETS AND BUNDLE (B) ==="
           pnpm run audio:generate
+          pnpm run modern:build
 
       - name: Raw-Source Static Verifications
         run: |
@@ -214,11 +208,7 @@ jobs:
           mkdir -p ../scorekeeper-worktree
           cp -r . ../scorekeeper-worktree
           cd ../scorekeeper-worktree
-          node scripts/serve-www.mjs &
-          SERVER_PID=$!
-          sleep 3
           node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
-          kill $SERVER_PID || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-score-001
           cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
@@ -229,11 +219,7 @@ jobs:
           mkdir -p ../rpg-worktree
           cp -r . ../rpg-worktree
           cd ../rpg-worktree
-          node scripts/serve-www.mjs &
-          SERVER_PID=$!
-          sleep 3
           node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
-          kill $SERVER_PID || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-rpg-001
           cp -r ../rpg-worktree/qa-artifacts/sw-rpg-001/* qa-artifacts/sw-rpg-001/ || true
@@ -244,11 +230,7 @@ jobs:
           mkdir -p ../pwa-worktree
           cp -r . ../pwa-worktree
           cd ../pwa-worktree
-          node scripts/serve-www.mjs &
-          SERVER_PID=$!
-          sleep 3
           node scripts/qa-pwa-shell.mjs
-          kill $SERVER_PID || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-pwa-001
           cp -r ../pwa-worktree/qa-artifacts/sw-pwa-001/* qa-artifacts/sw-pwa-001/ || true
@@ -265,7 +247,6 @@ jobs:
           pnpm run patch:v440
           pnpm run patch:v441
           pnpm run patch:v442
-          pnpm run patch:v450
           pnpm run patch:v500
           pnpm run patch:v510
           pnpm run patch:phase2
