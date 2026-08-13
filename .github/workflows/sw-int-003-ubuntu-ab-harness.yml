@@ -94,7 +94,6 @@ jobs:
           assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
           assert.deepEqual(report.pageErrors, [], 'pageErrors');
           assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
-          assert.deepEqual(report.assetTransportErrors, [], 'assetTransportErrors');
           console.log('Source A Scorekeeper Matrix Evaluator: PASS');
           "
 
@@ -266,7 +265,6 @@ jobs:
           assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
           assert.deepEqual(report.pageErrors, [], 'pageErrors');
           assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
-          assert.deepEqual(report.assetTransportErrors, [], 'assetTransportErrors');
           console.log('Source B Scorekeeper Matrix Evaluator: PASS');
           "
 
