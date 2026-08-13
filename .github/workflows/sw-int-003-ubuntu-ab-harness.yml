@@ -18,9 +18,6 @@ jobs:
     name: Source A (ce1e47c) Baseline Isolation
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    env:
-      GALLIUM_DRIVER: llvmpipe
-      MESA_GL_VERSION_OVERRIDE: "4.5"
 
     steps:
       - name: Checkout Source A (ce1e47c)
@@ -43,7 +40,7 @@ jobs:
       - name: Install System and Node Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb libgl1-mesa-dri libglx-mesa0
+          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile || pnpm install
           npx playwright install --with-deps chromium
@@ -62,16 +59,43 @@ jobs:
           node scripts/verify-sw-score-001-persistent-scorekeeper.mjs
           node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
 
-      - name: Isolated Scorekeeper Browser QA
+      - name: Isolated Scorekeeper Browser QA Execution
         run: |
           echo "=== ISOLATED SCOREKEEPER BROWSER QA (A) ==="
           mkdir -p ../scorekeeper-worktree
           cp -r . ../scorekeeper-worktree
           cd ../scorekeeper-worktree
-          xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
+          xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-score-001
           cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
+
+      - name: Evaluate Source A Scorekeeper Report Matrix
+        run: |
+          echo "=== EVALUATING SOURCE A SCOREKEEPER REPORT MATRIX ==="
+          node -e "
+          const fs = require('fs');
+          const assert = require('assert/strict');
+          const report = JSON.parse(fs.readFileSync('qa-artifacts/sw-score-001/report.json', 'utf8'));
+          console.log(JSON.stringify(report, null, 2));
+          const checks = report.checks || {};
+          assert.equal(checks.firstRunCreatesDurableSiteModeRecord, true, 'firstRunCreatesDurableSiteModeRecord');
+          assert.equal(checks.lowerRunDoesNotReplacePersonalBest, true, 'lowerRunDoesNotReplacePersonalBest');
+          assert.equal(checks.higherRunCreatesPbWithPreviousAndMargin, true, 'higherRunCreatesPbWithPreviousAndMargin');
+          assert.equal(checks.recordsSurviveReloadRestart, true, 'recordsSurviveReloadRestart');
+          assert.equal(checks.scoringVersionIsExplicitAndPartitioned, true, 'scoringVersionIsExplicitAndPartitioned');
+          assert.equal(checks.siteAndVariantBucketsDoNotContaminate, true, 'siteAndVariantBucketsDoNotContaminate');
+          assert.equal(checks.mooRecordsRemainDistinct, true, 'mooRecordsRemainDistinct');
+          assert.equal(checks.newspaperIsLegibleAndMotivating, true, 'newspaperIsLegibleAndMotivating');
+          assert.equal(checks.replayAndWeatherMapActionsWork, true, 'replayAndWeatherMapActionsWork');
+          assert.equal(checks.futureMetadataIsOnlyReserved, true, 'futureMetadataIsOnlyReserved');
+          assert.equal(checks.noPageErrors, true, 'noPageErrors');
+          assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
+          assert.deepEqual(report.pageErrors, [], 'pageErrors');
+          assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
+          assert.deepEqual(report.assetTransportErrors, [], 'assetTransportErrors');
+          console.log('Source A Scorekeeper Matrix Evaluator: PASS');
+          "
 
       - name: Isolated RPG-001 Browser QA
         run: |
@@ -163,9 +187,6 @@ jobs:
     name: Source B (00e5796 Corrected) Candidate Isolation
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    env:
-      GALLIUM_DRIVER: llvmpipe
-      MESA_GL_VERSION_OVERRIDE: "4.5"
 
     steps:
       - name: Checkout Source B (00e5796 Corrected)
@@ -188,7 +209,7 @@ jobs:
       - name: Install System and Node Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb libgl1-mesa-dri libglx-mesa0
+          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb
           npm install --global pnpm@11.9.0
           pnpm install --frozen-lockfile || pnpm install
           npx playwright install --with-deps chromium
@@ -208,16 +229,43 @@ jobs:
           node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
           node scripts/test-pwa-shell.mjs
 
-      - name: Isolated Scorekeeper Browser QA
+      - name: Isolated Scorekeeper Browser QA Execution
         run: |
           echo "=== ISOLATED SCOREKEEPER BROWSER QA (B) ==="
           mkdir -p ../scorekeeper-worktree
           cp -r . ../scorekeeper-worktree
           cd ../scorekeeper-worktree
-          xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
+          xvfb-run --auto-servernum node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
           cd ../Severe-Warning
           mkdir -p qa-artifacts/sw-score-001
           cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
+
+      - name: Evaluate Source B Scorekeeper Report Matrix
+        run: |
+          echo "=== EVALUATING SOURCE B SCOREKEEPER REPORT MATRIX ==="
+          node -e "
+          const fs = require('fs');
+          const assert = require('assert/strict');
+          const report = JSON.parse(fs.readFileSync('qa-artifacts/sw-score-001/report.json', 'utf8'));
+          console.log(JSON.stringify(report, null, 2));
+          const checks = report.checks || {};
+          assert.equal(checks.firstRunCreatesDurableSiteModeRecord, true, 'firstRunCreatesDurableSiteModeRecord');
+          assert.equal(checks.lowerRunDoesNotReplacePersonalBest, true, 'lowerRunDoesNotReplacePersonalBest');
+          assert.equal(checks.higherRunCreatesPbWithPreviousAndMargin, true, 'higherRunCreatesPbWithPreviousAndMargin');
+          assert.equal(checks.recordsSurviveReloadRestart, true, 'recordsSurviveReloadRestart');
+          assert.equal(checks.scoringVersionIsExplicitAndPartitioned, true, 'scoringVersionIsExplicitAndPartitioned');
+          assert.equal(checks.siteAndVariantBucketsDoNotContaminate, true, 'siteAndVariantBucketsDoNotContaminate');
+          assert.equal(checks.mooRecordsRemainDistinct, true, 'mooRecordsRemainDistinct');
+          assert.equal(checks.newspaperIsLegibleAndMotivating, true, 'newspaperIsLegibleAndMotivating');
+          assert.equal(checks.replayAndWeatherMapActionsWork, true, 'replayAndWeatherMapActionsWork');
+          assert.equal(checks.futureMetadataIsOnlyReserved, true, 'futureMetadataIsOnlyReserved');
+          assert.equal(checks.noPageErrors, true, 'noPageErrors');
+          assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
+          assert.deepEqual(report.pageErrors, [], 'pageErrors');
+          assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
+          assert.deepEqual(report.assetTransportErrors, [], 'assetTransportErrors');
+          console.log('Source B Scorekeeper Matrix Evaluator: PASS');
+          "
 
       - name: Isolated RPG-001 Browser QA
         run: |
