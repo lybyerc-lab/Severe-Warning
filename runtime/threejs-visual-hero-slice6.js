@@ -119,20 +119,25 @@ function swVisualHeroSlice6WarpedFunnelGeometry(radiusTop, radiusBottom, height,
 }
 
 function swVisualHeroSlice6CondensationStreakGeometry(spec) {
-  const segments = 10;
+  const segments = 12;
   const positions = [];
   const uvs = [];
   const indices = [];
   for (let index = 0; index <= segments; index += 1) {
     const mix = index / segments;
     const y = spec.bottomY + mix * spec.height;
-    const angle = spec.angle + mix * spec.twist;
+    const angle = spec.angle + mix * spec.twist + Math.sin(mix * 4.2 + spec.phase) * 0.18;
+    const lowerBulge = Math.exp(-Math.pow((mix - 0.06) / 0.22, 2)) * (1.15 + Math.sin(spec.angle * 2.5 + spec.phase * 1.4) * 0.75);
     const radius = THREE.MathUtils.lerp(spec.bottomRadius, spec.topRadius, mix)
+      + lowerBulge
       + Math.sin(mix * 9.0 + spec.phase) * 0.8;
-    const centerX = Math.cos(angle) * radius + Math.sin(mix * 4.5 + spec.phase) * spec.shear;
-    const centerZ = Math.sin(angle) * radius + Math.cos(mix * 3.6 + spec.phase * 1.7) * spec.shear * 0.66;
-    const width = THREE.MathUtils.lerp(spec.bottomWidth, spec.topWidth, mix)
-      * (0.86 + Math.sin(mix * 7.0 + spec.phase) * 0.16);
+    const lowerWobbleX = Math.sin(mix * 12.0 + spec.phase * 2.1) * (1.0 - mix) * 0.85;
+    const lowerWobbleZ = Math.cos(mix * 10.0 + spec.phase * 1.8) * (1.0 - mix) * 0.65;
+    const centerX = Math.cos(angle) * radius + Math.sin(mix * 4.5 + spec.phase) * spec.shear + lowerWobbleX;
+    const centerZ = Math.sin(angle) * radius + Math.cos(mix * 3.6 + spec.phase * 1.7) * spec.shear * 0.66 + lowerWobbleZ;
+    const lowerFlare = Math.exp(-mix * 3.8) * (0.85 + Math.cos(spec.angle * 3.0 + spec.phase) * 0.40);
+    const width = (THREE.MathUtils.lerp(spec.bottomWidth, spec.topWidth, mix) + lowerFlare)
+      * (0.86 + Math.sin(mix * 7.0 + spec.phase) * 0.16 + Math.sin(mix * 14.0 - spec.phase) * 0.10);
     const sideX = Math.cos(angle + Math.PI * 0.5) * width;
     const sideZ = Math.sin(angle + Math.PI * 0.5) * width;
     positions.push(centerX - sideX, y, centerZ - sideZ, centerX + sideX, y, centerZ + sideZ);
@@ -152,7 +157,7 @@ function swVisualHeroSlice6CondensationStreakGeometry(spec) {
 }
 
 function swVisualHeroSlice6GroundShearGeometry(spec) {
-  const segments = 7;
+  const segments = 8;
   const positions = [];
   const uvs = [];
   const indices = [];
@@ -160,10 +165,12 @@ function swVisualHeroSlice6GroundShearGeometry(spec) {
     const mix = index / segments;
     const radius = THREE.MathUtils.lerp(spec.innerRadius, spec.outerRadius, mix);
     const drift = Math.sin(mix * Math.PI * 1.7 + spec.phase) * spec.drift;
-    const width = THREE.MathUtils.lerp(spec.innerWidth, spec.outerWidth, mix) * (0.78 + Math.sin(mix * 8 + spec.phase) * 0.16);
-    const x = radius + drift;
-    const y = 0.18 + Math.sin(mix * Math.PI + spec.phase) * spec.lift;
-    positions.push(x, y, -width, x, y + (1 - mix) * 0.38, width);
+    const turbulence = Math.sin(mix * Math.PI * 2.6 + spec.phase) * 0.55;
+    const width = THREE.MathUtils.lerp(spec.innerWidth, spec.outerWidth, mix)
+      * (0.82 + Math.sin(mix * 9.0 + spec.phase) * 0.22);
+    const x = radius + drift + turbulence * 0.4;
+    const y = 0.14 + Math.sin(mix * Math.PI + spec.phase) * spec.lift + Math.pow(mix, 0.75) * 0.48;
+    positions.push(x, y, -width, x, y + (1 - mix) * 0.42 + 0.08, width);
     uvs.push(0, mix, 1, mix);
   }
   for (let index = 0; index < segments; index += 1) {
@@ -246,24 +253,25 @@ function swVisualHeroSlice6BuildStormSilhouette() {
   swVisualHeroSlice6State.stormShellCount = shellSpecs.length;
 
   const streakCount = mobile ? 11 : 13;
+  const streakColors = ['#3b3831', '#233338', '#4a4338', '#1c282c'];
   for (let index = 0; index < streakCount; index += 1) {
     const phase = index * 0.83;
     const material = new THREE.MeshBasicMaterial({
-      color: index % 3 === 0 ? '#536369' : '#263b42',
+      color: streakColors[index % streakColors.length],
       transparent: true,
-      opacity: 0.64 + (index % 3) * 0.045,
+      opacity: 0.66 + (index % 3) * 0.04,
       depthWrite: false,
       side: THREE.DoubleSide,
       fog: true,
     });
     const streak = new THREE.Mesh(swVisualHeroSlice6CondensationStreakGeometry({
-      bottomY: 1.2 + (index % 2) * 0.65,
+      bottomY: 0.8 + (index % 2) * 0.55,
       height: 31.5 + (index % 3) * 1.7,
       angle: (index / streakCount) * Math.PI * 2 + 0.32,
       twist: (index % 2 ? -1 : 1) * (0.94 + (index % 4) * 0.16),
-      bottomRadius: 1.45 + (index % 3) * 0.55,
+      bottomRadius: 1.25 + (index % 3) * 0.60,
       topRadius: 7.8 + (index % 4) * 1.6,
-      bottomWidth: 0.78 + (index % 2) * 0.26,
+      bottomWidth: 0.85 + (index % 2) * 0.28,
       topWidth: 3.2 + (index % 4) * 0.68,
       shear: 1.45 + (index % 3) * 0.34,
       phase,
@@ -285,9 +293,9 @@ function swVisualHeroSlice6BuildStormSilhouette() {
     const radius = 3.6 + height * 0.43 + (seed % 5) * 0.72;
     const ribbonHeight = 8.5 + (seed % 4) * 1.6;
     const material = new THREE.MeshBasicMaterial({
-      color: index % 4 === 0 ? '#778583' : '#4a5e61',
+      color: index % 4 === 0 ? '#635c52' : '#3d4b4e',
       transparent: true,
-      opacity: 0.26 + (index % 3) * 0.024,
+      opacity: 0.28 + (index % 3) * 0.024,
       depthWrite: false,
       side: THREE.DoubleSide,
       fog: true,
@@ -317,25 +325,26 @@ function swVisualHeroSlice6BuildStormSilhouette() {
   swVisualHeroSlice6State.stormEdgeWispCount = wispCount;
 
   const burstCount = mobile ? 6 : 8;
+  const burstColors = ['#483e32', '#3a342b', '#615444'];
   for (let index = 0; index < burstCount; index += 1) {
     const seed = swVisualHeroSlice6Hash(`ground-burst-${index}`);
     const angle = (index / burstCount) * Math.PI * 2 + ((seed % 29) / 29) * 0.92;
     const radius = 5.2 + (seed % 7) * 1.35;
     const material = new THREE.MeshBasicMaterial({
-      color: index % 3 === 0 ? '#665f52' : '#827460',
+      color: burstColors[index % burstColors.length],
       transparent: true,
-      opacity: 0.27 + (index % 3) * 0.022,
+      opacity: 0.32 + (index % 3) * 0.025,
       depthWrite: false,
       side: THREE.DoubleSide,
       fog: true,
     });
     const pull = new THREE.Mesh(swVisualHeroSlice6GroundShearGeometry({
-      innerRadius: 1.8 + (seed % 3) * 0.35,
+      innerRadius: 1.6 + (seed % 3) * 0.35,
       outerRadius: radius,
-      innerWidth: 0.34,
-      outerWidth: 1.1 + (seed % 4) * 0.18,
-      drift: 0.9 + (seed % 3) * 0.18,
-      lift: 0.42 + (seed % 3) * 0.08,
+      innerWidth: 0.38,
+      outerWidth: 1.25 + (seed % 4) * 0.20,
+      drift: 0.95 + (seed % 3) * 0.20,
+      lift: 0.48 + (seed % 3) * 0.10,
       phase: index * 0.83,
     }), material);
     pull.name = `SWVisualSlice6GroundPull${index + 1}`;
