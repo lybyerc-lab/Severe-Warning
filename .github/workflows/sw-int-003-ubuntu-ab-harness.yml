@@ -45,21 +45,57 @@ jobs:
           pnpm install --frozen-lockfile || pnpm install
           npx playwright install --with-deps chromium
 
+      - name: Prepare Generated Audio Assets
+        run: |
+          echo "=== PREPARE GENERATED AUDIO (A) ==="
+          pnpm run audio:generate
+
       - name: Raw-Source Static Verifications
-        continue-on-error: true
         run: |
           echo "=== RAW-SOURCE STATIC VERIFICATION (A) ==="
-          node scripts/verify-implementation-truth.mjs || true
-          node scripts/verify-sw-game-002.mjs || true
-          node scripts/verify-sw-score-001-persistent-scorekeeper.mjs || true
-          node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs || true
+          node scripts/verify-implementation-truth.mjs
+          node scripts/verify-sw-game-002.mjs
+          node scripts/verify-sw-score-001-persistent-scorekeeper.mjs
+          node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
 
-      - name: Construct Playable Source
+      - name: Isolated Scorekeeper Browser QA
+        run: |
+          echo "=== ISOLATED SCOREKEEPER BROWSER QA (A) ==="
+          mkdir -p ../scorekeeper-worktree
+          cp -r . ../scorekeeper-worktree
+          cd ../scorekeeper-worktree
+          node scripts/serve-www.mjs &
+          SERVER_PID=$!
+          sleep 3
+          node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
+          kill $SERVER_PID || true
+          cd ../Severe-Warning
+          mkdir -p qa-artifacts/sw-score-001
+          cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
+
+      - name: Isolated RPG-001 Browser QA
+        run: |
+          echo "=== ISOLATED RPG-001 BROWSER QA (A) ==="
+          mkdir -p ../rpg-worktree
+          cp -r . ../rpg-worktree
+          cd ../rpg-worktree
+          node scripts/serve-www.mjs &
+          SERVER_PID=$!
+          sleep 3
+          node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
+          kill $SERVER_PID || true
+          cd ../Severe-Warning
+          mkdir -p qa-artifacts/sw-rpg-001
+          cp -r ../rpg-worktree/qa-artifacts/sw-rpg-001/* qa-artifacts/sw-rpg-001/ || true
+
+      - name: Isolated GAME-002 Browser QA Execution
         env:
           CI: "true"
         run: |
-          echo "=== CONSTRUCT PLAYABLE SOURCE (A) ==="
-          pnpm run audio:generate
+          echo "=== ISOLATED GAME-002 BROWSER QA (A) ==="
+          mkdir -p ../game002-worktree
+          cp -r . ../game002-worktree
+          cd ../game002-worktree
           pnpm run patch:v431
           pnpm run patch:v440
           pnpm run patch:v441
@@ -82,31 +118,41 @@ jobs:
           pnpm run patch:sw-rpg-001
           pnpm run modern:build
           node scripts/build-web.mjs
-
-      - name: Run Browser QA Suites (GAME-002 First)
-        continue-on-error: true
-        run: |
-          echo "=== BROWSER QA (A) ==="
           node scripts/serve-www.mjs &
           SERVER_PID=$!
           sleep 3
-
-          echo "--- GAME-002 BROWSER QA ---"
           node scripts/qa-sw-game-002.mjs || true
-
-          echo "--- SCOREKEEPER BROWSER QA ---"
-          node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
-
-          echo "--- RPG-001 BROWSER QA ---"
-          node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs || true
-
           kill $SERVER_PID || true
+          cd ../Severe-Warning
+          mkdir -p qa-artifacts/sw-game-002
+          cp -r ../game002-worktree/qa-artifacts/sw-game-002/* qa-artifacts/sw-game-002/
 
-      - name: Print GAME-002 Report JSON
-        if: always()
+      - name: Evaluate Source A GAME-002 Report Matrix
         run: |
-          echo "=== SOURCE A GAME-002 REPORT JSON ==="
-          cat qa-artifacts/sw-game-002/report.json || echo "No report.json found"
+          echo "=== EVALUATING SOURCE A GAME-002 REPORT MATRIX ==="
+          node -e "
+          const fs = require('fs');
+          const assert = require('assert/strict');
+          const report = JSON.parse(fs.readFileSync('qa-artifacts/sw-game-002/report.json', 'utf8'));
+          console.log(JSON.stringify(report, null, 2));
+          const checks = report.checks || {};
+          assert.equal(checks.executorIntegration, true, 'executorIntegration');
+          assert.equal(checks.hartFarmActivated, true, 'hartFarmActivated');
+          assert.equal(checks.encounterFailureRearms, false, 'encounterFailureRearms');
+          assert.equal(checks.encounterUnlocked, false, 'encounterUnlocked');
+          assert.equal(checks.persistence, true, 'persistence');
+          assert.equal(checks.lockedToUnlockedAccess, true, 'lockedToUnlockedAccess');
+          assert.equal(checks.dedicatedMooRun, true, 'dedicatedMooRun');
+          assert.equal(checks.objectiveSignals, true, 'objectiveSignals');
+          assert.equal(checks.cowSafety, true, 'cowSafety');
+          assert.equal(checks.normalCampaignRegression, true, 'normalCampaignRegression');
+          assert.equal(checks.noPageErrors, true, 'noPageErrors');
+          assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
+          assert.deepEqual(report.pageErrors, [], 'pageErrors');
+          assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
+          assert.deepEqual(report.assetTransportErrors, [], 'assetTransportErrors');
+          console.log('Source A GAME-002 Matrix Evaluator: PASS');
+          "
 
       - name: Upload Source A QA Artifacts
         if: always()
@@ -148,22 +194,73 @@ jobs:
           pnpm install --frozen-lockfile || pnpm install
           npx playwright install --with-deps chromium
 
+      - name: Prepare Generated Audio Assets
+        run: |
+          echo "=== PREPARE GENERATED AUDIO (B) ==="
+          pnpm run audio:generate
+
       - name: Raw-Source Static Verifications
-        continue-on-error: true
         run: |
           echo "=== RAW-SOURCE STATIC VERIFICATION (B) ==="
-          node scripts/verify-implementation-truth.mjs || true
-          node scripts/verify-sw-game-002.mjs || true
-          node scripts/verify-sw-score-001-persistent-scorekeeper.mjs || true
-          node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs || true
-          node scripts/test-pwa-shell.mjs || true
+          node scripts/verify-implementation-truth.mjs
+          node scripts/verify-sw-game-002.mjs
+          node scripts/verify-sw-score-001-persistent-scorekeeper.mjs
+          node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
+          node scripts/test-pwa-shell.mjs
 
-      - name: Construct Playable Source
+      - name: Isolated Scorekeeper Browser QA
+        run: |
+          echo "=== ISOLATED SCOREKEEPER BROWSER QA (B) ==="
+          mkdir -p ../scorekeeper-worktree
+          cp -r . ../scorekeeper-worktree
+          cd ../scorekeeper-worktree
+          node scripts/serve-www.mjs &
+          SERVER_PID=$!
+          sleep 3
+          node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
+          kill $SERVER_PID || true
+          cd ../Severe-Warning
+          mkdir -p qa-artifacts/sw-score-001
+          cp -r ../scorekeeper-worktree/qa-artifacts/sw-score-001/* qa-artifacts/sw-score-001/ || true
+
+      - name: Isolated RPG-001 Browser QA
+        run: |
+          echo "=== ISOLATED RPG-001 BROWSER QA (B) ==="
+          mkdir -p ../rpg-worktree
+          cp -r . ../rpg-worktree
+          cd ../rpg-worktree
+          node scripts/serve-www.mjs &
+          SERVER_PID=$!
+          sleep 3
+          node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
+          kill $SERVER_PID || true
+          cd ../Severe-Warning
+          mkdir -p qa-artifacts/sw-rpg-001
+          cp -r ../rpg-worktree/qa-artifacts/sw-rpg-001/* qa-artifacts/sw-rpg-001/ || true
+
+      - name: Isolated PWA Shell Browser QA
+        run: |
+          echo "=== ISOLATED PWA SHELL BROWSER QA (B) ==="
+          mkdir -p ../pwa-worktree
+          cp -r . ../pwa-worktree
+          cd ../pwa-worktree
+          node scripts/serve-www.mjs &
+          SERVER_PID=$!
+          sleep 3
+          node scripts/qa-pwa-shell.mjs
+          kill $SERVER_PID || true
+          cd ../Severe-Warning
+          mkdir -p qa-artifacts/sw-pwa-001
+          cp -r ../pwa-worktree/qa-artifacts/sw-pwa-001/* qa-artifacts/sw-pwa-001/ || true
+
+      - name: Isolated GAME-002 Browser QA Execution
         env:
           CI: "true"
         run: |
-          echo "=== CONSTRUCT PLAYABLE SOURCE (B) ==="
-          pnpm run audio:generate
+          echo "=== ISOLATED GAME-002 BROWSER QA (B) ==="
+          mkdir -p ../game002-worktree
+          cp -r . ../game002-worktree
+          cd ../game002-worktree
           pnpm run patch:v431
           pnpm run patch:v440
           pnpm run patch:v441
@@ -186,34 +283,41 @@ jobs:
           pnpm run patch:sw-rpg-001
           pnpm run modern:build
           node scripts/build-web.mjs
-
-      - name: Run Browser QA Suites (GAME-002 First)
-        continue-on-error: true
-        run: |
-          echo "=== BROWSER QA (B) ==="
           node scripts/serve-www.mjs &
           SERVER_PID=$!
           sleep 3
-
-          echo "--- GAME-002 BROWSER QA ---"
           node scripts/qa-sw-game-002.mjs || true
-
-          echo "--- SCOREKEEPER BROWSER QA ---"
-          node scripts/qa-sw-score-001-persistent-scorekeeper.mjs || true
-
-          echo "--- RPG-001 BROWSER QA ---"
-          node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs || true
-
-          echo "--- PWA SHELL BROWSER QA ---"
-          node scripts/qa-pwa-shell.mjs || true
-
           kill $SERVER_PID || true
+          cd ../Severe-Warning
+          mkdir -p qa-artifacts/sw-game-002
+          cp -r ../game002-worktree/qa-artifacts/sw-game-002/* qa-artifacts/sw-game-002/
 
-      - name: Print GAME-002 Report JSON
-        if: always()
+      - name: Evaluate Source B GAME-002 Report Matrix
         run: |
-          echo "=== SOURCE B GAME-002 REPORT JSON ==="
-          cat qa-artifacts/sw-game-002/report.json || echo "No report.json found"
+          echo "=== EVALUATING SOURCE B GAME-002 REPORT MATRIX ==="
+          node -e "
+          const fs = require('fs');
+          const assert = require('assert/strict');
+          const report = JSON.parse(fs.readFileSync('qa-artifacts/sw-game-002/report.json', 'utf8'));
+          console.log(JSON.stringify(report, null, 2));
+          const checks = report.checks || {};
+          assert.equal(checks.executorIntegration, true, 'executorIntegration');
+          assert.equal(checks.hartFarmActivated, true, 'hartFarmActivated');
+          assert.equal(checks.encounterFailureRearms, false, 'encounterFailureRearms');
+          assert.equal(checks.encounterUnlocked, false, 'encounterUnlocked');
+          assert.equal(checks.persistence, true, 'persistence');
+          assert.equal(checks.lockedToUnlockedAccess, true, 'lockedToUnlockedAccess');
+          assert.equal(checks.dedicatedMooRun, true, 'dedicatedMooRun');
+          assert.equal(checks.objectiveSignals, true, 'objectiveSignals');
+          assert.equal(checks.cowSafety, true, 'cowSafety');
+          assert.equal(checks.normalCampaignRegression, true, 'normalCampaignRegression');
+          assert.equal(checks.noPageErrors, true, 'noPageErrors');
+          assert.equal(checks.noRuntimeConsoleErrors, true, 'noRuntimeConsoleErrors');
+          assert.deepEqual(report.pageErrors, [], 'pageErrors');
+          assert.deepEqual(report.runtimeConsoleErrors, [], 'runtimeConsoleErrors');
+          assert.deepEqual(report.assetTransportErrors, [], 'assetTransportErrors');
+          console.log('Source B GAME-002 Matrix Evaluator: PASS');
+          "
 
       - name: Upload Source B QA Artifacts
         if: always()
