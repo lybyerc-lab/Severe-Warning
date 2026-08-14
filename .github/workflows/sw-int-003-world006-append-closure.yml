@@ -1,0 +1,236 @@
+name: SW-INT-003 WORLD-006 Append Closure
+
+on:
+  push:
+    branches:
+      - 'ci/sw-int-003-ubuntu-ab-harness'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-int-003-world006-append-closure
+  cancel-in-progress: true
+
+jobs:
+  world006-closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact WORLD integration candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 5f9a75d9f979aff1e71df34138752b5c5cb997ea
+
+      - name: Verify exact source identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "5f9a75d9f979aff1e71df34138752b5c5cb997ea"
+          test -z "$(git status --porcelain)"
+
+      - name: Checkout proven CI-only adapters
+        uses: actions/checkout@v4
+        with:
+          ref: ci/sw-int-003-ubuntu-ab-harness
+          path: .ci-harness
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deterministic dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb rsync
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          npx playwright install --with-deps chromium
+
+      - name: Prepare generated assets and deterministic QA adapters
+        run: |
+          set -euo pipefail
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+          pnpm run modern:build
+          mkdir -p fonts
+          cp node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-800-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-900-normal.woff2 fonts/
+          cp node_modules/@fontsource/outfit/files/outfit-latin-700-normal.woff2 fonts/
+          cp node_modules/@fontsource/outfit/files/outfit-latin-900-normal.woff2 fonts/
+          node .ci-harness/.github/scripts/sw-int-003-ci-adapters.mjs
+          node .ci-harness/.github/scripts/sw-int-003-slingshot-ci-adapter.mjs
+          sed -i 's/animate(/swSlingshotTick(/g' scripts/qa-sw-rpg-002-slingshot.mjs
+
+      - name: Verify raw accepted contracts
+        run: |
+          set -euo pipefail
+          node scripts/verify-implementation-truth.mjs
+          node scripts/verify-sw-game-002.mjs
+          node scripts/verify-sw-score-001-persistent-scorekeeper.mjs
+          node scripts/verify-sw-rpg-001-moolah-storm-triangle.mjs
+          node scripts/verify-sw-rpg-002-slingshot.mjs
+          node scripts/test-pwa-shell.mjs
+          node scripts/verify-threejs-hero-slice6.mjs
+
+      - name: Isolated state-driven Scorekeeper browser QA
+        run: |
+          set -euo pipefail
+          rm -rf ../world-scorekeeper
+          mkdir -p ../world-scorekeeper
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../world-scorekeeper/
+          cd ../world-scorekeeper
+          xvfb-run --auto-servernum node scripts/.ci-qa-sw-score-001-state-driven.mjs
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-score-001
+          cp -a ../world-scorekeeper/qa-artifacts/sw-score-001/. qa-artifacts/sw-score-001/
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-score-001/report.json', 'utf8'));
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.pageErrors, []);
+          assert.deepEqual(report.runtimeConsoleErrors, []);
+          assert.deepEqual(report.assetTransportErrors, []);
+          NODE
+
+      - name: Isolated RPG-001 browser QA
+        run: |
+          set -euo pipefail
+          rm -rf ../world-rpg001
+          mkdir -p ../world-rpg001
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../world-rpg001/
+          cd ../world-rpg001
+          xvfb-run --auto-servernum node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-rpg-001
+          cp -a ../world-rpg001/qa-artifacts/sw-rpg-001/. qa-artifacts/sw-rpg-001/
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-rpg-001/report.json', 'utf8'));
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.pageErrors, []);
+          assert.deepEqual(report.runtimeConsoleErrors, []);
+          assert.deepEqual(report.assetTransportErrors, []);
+          NODE
+
+      - name: Isolated PWA browser QA
+        run: |
+          set -euo pipefail
+          rm -rf ../world-pwa
+          mkdir -p ../world-pwa
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../world-pwa/
+          cd ../world-pwa
+          xvfb-run --auto-servernum node scripts/qa-pwa-shell.mjs
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-pwa-001
+          cp -a ../world-pwa/qa-artifacts/sw-pwa-001/. qa-artifacts/sw-pwa-001/
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-pwa-001/pwa-browser-qa-report.json', 'utf8'));
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.errors, []);
+          assert.equal(report.checks.productionStyleLoadsBuildInfoWithoutQaProbe, true);
+          assert.equal(report.checks.noQaBuildProbingHttp404, true);
+          assert.equal(report.checks.noPageErrors, true);
+          NODE
+
+      - name: Isolated deterministic Slingshot browser QA
+        run: |
+          set -euo pipefail
+          rm -rf ../world-slingshot
+          mkdir -p ../world-slingshot
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../world-slingshot/
+          cd ../world-slingshot
+          xvfb-run --auto-servernum node scripts/qa-sw-rpg-002-slingshot.mjs
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-rpg-002
+          cp -a ../world-slingshot/qa-artifacts/sw-rpg-002/. qa-artifacts/sw-rpg-002/
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-rpg-002/report.json', 'utf8'));
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.pageErrors, []);
+          assert.deepEqual(report.runtimeConsoleErrors, []);
+          assert.deepEqual(report.assetTransportErrors, []);
+          for (const [name, value] of Object.entries(report.checks)) assert.equal(value, true, name);
+          NODE
+
+      - name: Build exact combined WORLD playable source
+        run: |
+          set -euo pipefail
+          rm -rf ../world-packed
+          mkdir -p ../world-packed
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../world-packed/
+          cd ../world-packed
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run patch:v510
+          pnpm run patch:phase2
+          pnpm run patch:phase3
+          pnpm run patch:phase4
+          pnpm run patch:phase5
+          pnpm run patch:phase6
+          pnpm run patch:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run patch:asset-pipeline
+          pnpm run patch:visual-foundation
+          node scripts/apply-threejs-hero-slice4.mjs
+          node scripts/apply-threejs-hero-slice5.mjs
+          node scripts/apply-threejs-hero-slice6.mjs
+          node scripts/apply-sw-game-002-moo-level.mjs
+          pnpm run patch:sw-ui-001
+          pnpm run patch:sw-score-001
+          pnpm run patch:sw-rpg-001
+          pnpm run patch:sw-rpg-002
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/serve-www.mjs > qa-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || :' EXIT
+          sleep 3
+          SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/' SEVERE_WEATHER_QA_DIR='qa-artifacts/world006' xvfb-run --auto-servernum node scripts/qa-threejs-hero-slice6.mjs
+          xvfb-run --auto-servernum node scripts/.ci-qa-sw-game-002-state-driven.mjs
+          kill "$SERVER_PID"
+          trap - EXIT
+          cd - >/dev/null
+          mkdir -p qa-artifacts/world006 qa-artifacts/sw-game-002
+          cp -a ../world-packed/qa-artifacts/world006/. qa-artifacts/world006/
+          cp -a ../world-packed/qa-artifacts/sw-game-002/. qa-artifacts/sw-game-002/
+          cp ../world-packed/qa-server.log qa-artifacts/world006/server.log
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const world = JSON.parse(await readFile('qa-artifacts/world006/threejs-hero-slice6-report.json', 'utf8'));
+          const game = JSON.parse(await readFile('qa-artifacts/sw-game-002/report.json', 'utf8'));
+          assert.equal(world.passed, true);
+          assert.deepEqual(world.failures, []);
+          assert.equal(game.passed, true);
+          assert.deepEqual(game.pageErrors, []);
+          assert.deepEqual(game.runtimeConsoleErrors, []);
+          assert.deepEqual(game.assetTransportErrors, []);
+          for (const [name, value] of Object.entries(game.checks)) assert.equal(value, true, name);
+          NODE
+
+      - name: Upload WORLD closure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-int-003-world006-append-closure
+          path: qa-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
