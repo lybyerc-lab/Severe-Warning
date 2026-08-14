@@ -1,0 +1,46 @@
+{
+  "task": "SW-UI-003",
+  "fixture": "packaged-web-bundle",
+  "viewport": {
+    "width": 844,
+    "height": 390
+  },
+  "screenshots": [
+    "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\qa-artifacts\\sw-ui-003-run-shell\\01_heartland_pause_overlay.png",
+    "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\qa-artifacts\\sw-ui-003-run-shell\\02_county_fair_pause_overlay.png",
+    "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\qa-artifacts\\sw-ui-003-run-shell\\03_coastal_boardwalk_pause_overlay.png",
+    "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\qa-artifacts\\sw-ui-003-run-shell\\04_moo_level_pause_overlay.png",
+    "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\qa-artifacts\\sw-ui-003-run-shell\\05_results_overlay_grade_stamp.png",
+    "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\qa-artifacts\\sw-ui-003-run-shell\\07_desktop_1280x720_results.png",
+    "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\qa-artifacts\\sw-ui-003-run-shell\\06_desktop_1280x720_pause.png"
+  ],
+  "checks": {
+    "moduleMarker": true,
+    "pauseConfigured": true,
+    "resultsConfigured": true,
+    "heartlandPauseActive": true,
+    "heartlandPauseMasthead": true,
+    "heartlandPauseLocation": true,
+    "heartlandPauseFits": true,
+    "countyFairPauseLocation": true,
+    "countyFairPauseKicker": true,
+    "countyFairSiteType": true,
+    "coastalPauseLocation": true,
+    "coastalPauseKicker": true,
+    "mooLevelPauseLocation": true,
+    "resultsOverlayActive": true,
+    "resultsGradeStamp": true,
+    "resultsBreakdownGrid": true,
+    "resultsCardFits": true,
+    "desktopResultsCardFits": true,
+    "desktopPauseCardFits": true,
+    "noPageErrors": true,
+    "noConsoleErrors": true,
+    "noAssetTransportErrors": true
+  },
+  "pageErrors": [],
+  "runtimeConsoleErrors": [],
+  "assetTransportErrors": [],
+  "http404Paths": [],
+  "passed": true
+}
