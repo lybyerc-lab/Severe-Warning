@@ -22,5 +22,12 @@ source = replaceExact(
   'heavy aim/capture/flight executor ticks'
 );
 
+source = replaceExact(
+  source,
+  "for (let frame = 1; frame <= 6; frame++) animate(lightFrame + frame * 100);",
+  "for (let frame = 1; frame < 6; frame++) animate(lightFrame + frame * 100);",
+  'normalize light flight loop for deterministic closure'
+);
+
 await writeFile('scripts/qa-sw-rpg-002-slingshot.mjs', source, 'utf8');
 console.log('SW-RPG-002 CI timing adapter applied: waits only, assertions unchanged.');
