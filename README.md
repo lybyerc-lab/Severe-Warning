@@ -1,142 +1,93 @@
 # Severe Weather Warning
 
-**Severe Weather Warning** is a mobile-first, single-player arcade destruction game in which the player directly controls the storm.
+**Severe Weather Warning** is a mobile arcade destruction game with light action RPG progression. The player fantasy is simple: **YOU ARE THE STORM**.
 
-The active production game is again the Three.js/WebGL build rooted at `MechanicsLab/SevereWeather_3D_Lab.html` and the accepted modernization/runtime layers. Capacitor packages the same offline web build for Android landscape play.
+Production uses **Three.js r128**. Browser/PWA QA is the normal rapid-review lane; Android remains the deliberate physical-device acceptance lane. Unity, Godot, Babylon.js, PlayCanvas, and older HTML experiments are preserved historical/research evidence and are not current production authority.
 
-PlayCanvas, Unity, Godot, and Babylon.js work remain preserved as experiments, research, or historical evidence. They are not the active production renderer path.
+## Current authority
 
-## Canonical identity
+GitHub is durable project memory. Chat is working context.
 
-- Full product name: **Severe Weather Warning**
-- Current campaign/content family: **Heartland**
-- Production renderer: **Three.js**
-- Primary platform: **Android landscape**
-- Browser build: QA and rapid gameplay/art review
-- Android build: physical touch, performance, audio, lifecycle, heat, battery, and final acceptance
+Do **not** treat the default `main` branch as current gameplay/project authority.
 
-“Heartland” is campaign terminology, not a replacement title for the game.
+Director authority branch:
 
-## Production revival baseline
+`agent/director-stage2b-game-direction`
 
-The production revival is intentionally rooted directly at draft PR #26 head:
+For current execution state, start with:
 
-`1f4292c05b3ff5c407d77d1f3eaa6493e43b9d3f`
+1. Issue #71, `DIRECTOR START HERE: current authority and fresh-chat recovery protocol`;
+2. `Docs/ACTIVE_HANDOFF.md` on the Director authority branch;
+3. exact task issue + exact branch/commit/CI/evidence for the lane being acted on.
 
-Reference evidence:
+Before planning, assigning, reviewing, integrating, or changing work, also read:
 
-- Workflow Run 6: `31094966986`
-- Artifact: `severe-weather-presentation-identity-6`
-- Debug APK SHA-256: `2b2afa4012601b0bfc763d02a61cdf6a0b3e0ae7d0dd51df5871df8428ae6999`
+- `AGENTS.md`
+- `Docs/GAME_DIRECTOR.md`
+- `Docs/WORKER_STARTUP_ORDER.md`
+- `Docs/ACTIVE_PRODUCTION_SLATE.md`
+- `Docs/IMPLEMENTATION_TRUTH_GATE.md`
 
-Active production revival branch:
+Exact current evidence outranks older prose.
 
-`agent/threejs-production-revival`
+## Current accepted Stage 2B base
 
-The branch begins at the exact Three.js gameplay build the owner preferred over the promoted PlayCanvas candidate. The pivot itself does not change gameplay code.
+Canonical integration branch:
 
-## Why the renderer direction changed back
+`agent/sw-int-003-stage2b-accepted-stack`
 
-A promoted PlayCanvas research candidate passed extensive automated QA but lost the owner hands-on comparison.
+Exact Director-accepted canonical head:
 
-Observed problems included:
+`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-- forward movement that felt like backing and steering a truck/trailer rather than directly driving the storm;
-- destruction that remained too roof-heavy and large-chunk oriented;
-- too much dependence on Pull/Gust/Zap for satisfying breakup;
-- an opening that looked like cheap separate animation;
-- an overall prototype visual feel;
-- less enjoyable gameplay and weaker natural destruction than the preserved Three.js build.
+This includes the accepted Stage 2B stack plus the completed owner-playtest QUALITY-001 / QUALITY-002 rescue. Issues #79 and #80 are closed completed.
 
-The lesson is simple: stable numbers are useful, but they do not automatically preserve fun.
+The prior canonical `271e5d3d7b438727df8b217ad59b7974ff1374b6` is a pre-rescue comparison baseline, not current gameplay authority.
 
-## Protected gameplay baseline
+## Active quality wave
 
-Graphics and art-pipeline work must preserve:
+The current parallel worker wave starts from exact base `7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`:
 
-- direct storm steering and forward play feel;
-- Pull, Gust, and Grid Zap behavior;
-- satisfying natural storm-contact destruction;
-- continuous scoring and accepted combo behavior;
-- forward-only district/stage progression;
-- three-minute real-time warning clock;
-- Heartland campaign progression and persistence contracts;
-- QA input isolation and deterministic reset/cleanup;
-- people protected and never targetable;
-- animals invincible, non-targetable, and used only for safe slapstick;
-- news crews and storm chasers as invincible witnesses, never enemies.
+- #81 `SW-WORLD-007` — Supercell and Derecho atmospheric identity overhaul
+- #82 `SW-FEEL-001` — physical destruction consequence presentation
+- #83 `SW-UI-003` — run-shell Americana identity for pause and results
 
-## Engine and pipeline decisions
+Branch creation or assignment is not proof a worker ran or completed. Worker evidence must be pushed and reviewed before Director acceptance.
 
-- Three.js is production.
-- Keep the production Three.js version frozen during the first graphics-pipeline milestone.
-- Do not combine an engine upgrade with asset-pipeline construction, destruction redesign, or cinematic work.
-- PlayCanvas is preserved research evidence, not production ancestry.
-- No engine rewrite is justified by visual dissatisfaction alone.
-- The immediate strategy is to improve the Three.js asset, art, destruction, rendering, and authoring pipeline while protecting the game that is already fun.
+## Product laws
 
-## Active milestone: graphics pipeline foundation
+- Full title: **Severe Weather Warning**.
+- Genre: mobile arcade destruction with light action RPG progression.
+- Storm is the visual hero and must read as one connected dangerous atmospheric mass.
+- Fun and destruction come first; beauty is a product requirement.
+- Visual thesis: **storm-charged stylized Americana**.
+- Visual promise: **beautiful at a glance, readable at speed, cinematic up close**.
+- Cows, Cow 17, and Moo Brew are recurring comic identity; cows remain protected/non-targetable.
+- Newspaper presentation connects storm select, `UNLEASH STORM`, and results.
+- The town/county campaign remains the home backbone while authored Storm Sites expand the game.
+- MOO-LAH is local-first earned currency. Exactly three active abilities are equipped in the Storm Triangle.
+- No stamina, wait timers, grind treadmill, or forced ads.
 
-See `Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`.
-
-The first implementation milestone is intentionally small:
-
-- establish one explicit production asset registry;
-- prefer authored GLB/glTF assets for production 3D presentation;
-- centralize loading/caching;
-- keep presentation meshes/materials separate from gameplay collision and damage truth;
-- define mobile geometry/texture budgets;
-- require offline/local Capacitor-compatible assets;
-- provide missing-asset fallbacks;
-- prove the pipeline on one existing destructible structure before converting the wider world.
-
-The first pipeline milestone must not retune steering, abilities, scoring, timing, camera feel, safe animals, or gameplay destruction authority.
-
-## Destruction visual direction
-
-The next destruction pass should make ordinary tornado contact satisfying on its own.
-
-Target presentation:
-
-- smaller and more varied breakup pieces where mobile performance allows;
-- wall/interior/frame/trim anatomy instead of roof-dominant breakup;
-- staged visible damage before final destruction;
-- Pull/Gust/Zap amplify or redirect spectacle rather than being required for it;
-- reusable destruction anatomy across at least two distinct structures;
-- deterministic reset and bounded debris.
-
-Useful presentation lessons from the PlayCanvas research, including staged anatomy and mass hierarchy, may be brought back without importing its gameplay executor.
-
-## Opening cinematic direction
-
-Keep the canonical story, replace the cheap separate-animation implementation.
-
-The production opening should use the same world, models, materials, lighting, characters, atmosphere, and renderer as gameplay:
-
-warning newspaper -> farm reveal -> Cow 17 drinks Moo Brew -> weather/radio shift -> Cow 17 double take -> chickens scatter -> barn roof/tornado touchdown -> direct gameplay handoff.
-
-It stays skippable, cannot consume the warning clock behind the scene, and should look like the same game the player is about to control.
+`Docs/GAME_DIRECTOR.md` is the canonical long-form product-direction contract.
 
 ## Repository map
 
-- `MechanicsLab/`: active Three.js game source and preserved browser laboratories
-- `runtime/`: maintained Three.js runtime source fragments
-- `android/`: Capacitor Android project
-- `scripts/`: build, patch, verification, QA, and packaging tools
-- `Docs/`: product direction, current decisions, device evidence, build trains, and historical records
-- `playcanvas-slice/`: preserved renderer-migration research, not active production
-- `Experiments/`: isolated renderer and visual-engine research
-- `Godot/`: preserved migration experiment
-- `Assets/`, `Packages/`, `ProjectSettings/`: preserved Unity history
+- `MechanicsLab/` — legacy production gameplay source and preserved browser laboratories
+- `runtime/` — maintained Three.js presentation/game-support runtime layers
+- `scripts/` — deterministic application, build, verification, and QA tools
+- `android/` — Capacitor Android wrapper
+- `Docs/` — current authority, product direction, evidence, and historical records
+- `artifacts/` — committed bounded QA/audit evidence when a task requires durable visual proof
+- legacy engine directories — preserved historical/research material only
 
-## Required reading before production implementation
+## Status vocabulary
 
-1. `CURRENT_STATUS.md`
-2. `Docs/ACTIVE_HANDOFF.md`
-3. `Docs/THREEJS_GRAPHICS_PIPELINE_BUILD_TRAIN.md`
-4. `Docs/DECISIONS.md`
-5. `Docs/ACCEPTED_BEHAVIOR.md`
-6. `Docs/QA_BACKLOG.md`
-7. `Docs/IMPLEMENTATION_TRUTH_GATE.md`
+A committed branch is not automatically accepted. Keep these gates separate:
 
-The repository is the durable project record. Chat is working context until resulting decisions and evidence are committed here.
+`committed -> executed QA evidence -> Director acceptance -> public QA / owner browser review -> physical Android acceptance when required`
+
+Green CI is engineering evidence, not automatic product acceptance.
+
+## Historical documentation
+
+The repository intentionally preserves old build trains, phase handoffs, validation reports, migration experiments, and engine research. Their dates and exact SHAs remain useful evidence, but they do **not** override Issue #71, `Docs/ACTIVE_HANDOFF.md`, the current Director laws, or exact task evidence unless explicitly reactivated.
