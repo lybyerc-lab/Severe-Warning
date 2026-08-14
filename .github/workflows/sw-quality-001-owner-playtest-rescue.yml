@@ -141,7 +141,23 @@ jobs:
         run: pnpm run qa:sw-ui-001
 
       - name: Preserve inherited Storm Site browser QA
-        run: pnpm run qa:sw-level-001
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/sw-level-001
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-level-001/head-server.log 2>&1 &
+          HEAD_SERVER_PID=$!
+          cleanup() {
+            kill "$HEAD_SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+          pnpm run qa:sw-level-001
 
       - name: Capture hostile visual review frames
         run: node scripts/capture-sw-quality-001-visual-review.mjs
