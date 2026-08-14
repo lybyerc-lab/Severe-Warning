@@ -151,19 +151,18 @@ try {
   check('openingAddsPresentationDetailAndRemovesPrototypeBadge', cinematic.barnTrim && cinematic.prototypeVisible === false, JSON.stringify(cinematic));
   await page.evaluate(() => globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.finish('quality-002-qa'));
 
-  const storm = await page.evaluate(() => {
+  await page.evaluate(() => {
     globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.prepareQaView?.('slice6-storm');
-    for (let index = 0; index < 3; index += 1) globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.update?.(0.1, 1000 + index * 100);
-    const before = globalThis.getSwQuality002State().stormVolume;
-    for (let index = 0; index < 10; index += 1) globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.update?.(0.1, 1500 + index * 100);
     renderer.render(scene, camera);
-    const after = globalThis.getSwQuality002State().stormVolume;
-    const prior = new Map(before.sample.map(item => [item.name, item.y]));
-    const moving = after.sample.filter(item => Math.abs(item.y - (prior.get(item.name) || 0)) >= 0.3).length;
-    return { before, after, moving };
   });
-  check('tornadoHasDirtyWholeColumnVolume', storm.after?.puffCount >= 18 && storm.after?.groundDustCount >= 9, JSON.stringify(storm.after));
-  check('tornadoVolumeCirculatesVisibly', storm.moving >= 5, `moving=${storm.moving}`);
+  const stormBefore = await page.evaluate(() => globalThis.getSwQuality002State().stormVolume);
+  await page.waitForTimeout(700);
+  await page.evaluate(() => renderer.render(scene, camera));
+  const stormAfter = await page.evaluate(() => globalThis.getSwQuality002State().stormVolume);
+  const priorStormAngles = new Map((stormBefore?.sample || []).map(item => [item.name, item.y]));
+  const stormMoving = (stormAfter?.sample || []).filter(item => Math.abs(item.y - (priorStormAngles.get(item.name) || 0)) >= 0.3).length;
+  check('tornadoHasDirtyWholeColumnVolume', stormAfter?.puffCount >= 18 && stormAfter?.groundDustCount >= 9, JSON.stringify(stormAfter));
+  check('tornadoVolumeCirculatesVisibly', stormMoving >= 5, `moving=${stormMoving}`);
 
   check('noPageErrors', pageErrors.length === 0, pageErrors.join(' | '));
   check('noRuntimeConsoleErrors', consoleErrors.length === 0, consoleErrors.join(' | '));
