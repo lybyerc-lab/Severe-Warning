@@ -15,6 +15,7 @@ on:
       - scripts/verify-sw-feel-001-structural-anatomy.mjs
       - scripts/verify-sw-feel-001-structural-priority.mjs
       - scripts/qa-sw-feel-001-destruction-consequence.mjs
+      - scripts/qa-sw-feel-001-single-structure.mjs
       - package.json
       - .github/workflows/sw-feel-001-destruction-consequence.yml
   workflow_dispatch:
@@ -162,6 +163,9 @@ jobs:
 
       - name: Prove corrected FEEL-001 destruction consequence
         run: pnpm run qa:sw-feel-001
+
+      - name: Prove one structural failure visually
+        run: node scripts/qa-sw-feel-001-single-structure.mjs
 
       - name: Upload FEEL-001 evidence
         if: always()
