@@ -49,6 +49,9 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Prove landscape UNLEASH STORM reachability
+        run: node scripts/qa-sw-ui-002-landscape-unleash.mjs
+
       - name: Preserve accepted newspaper contracts
         shell: bash
         run: |
@@ -58,9 +61,6 @@ jobs:
             echo "Inherited newspaper browser QA was red on first observation; retrying the unchanged suite once."
             node scripts/qa-sw-ui-001-newspaper-presentation.mjs
           fi
-
-      - name: Prove landscape UNLEASH STORM reachability
-        run: node scripts/qa-sw-ui-002-landscape-unleash.mjs
 
       - name: Upload landscape evidence
         if: always()
