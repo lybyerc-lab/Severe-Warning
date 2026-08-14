@@ -1,0 +1,78 @@
+name: SW-POLISH-001 Quality Rescue
+
+on:
+  push:
+    branches:
+      - agent/sw-polish-001-quality-rescue
+    paths:
+      - runtime/sw-polish-001-quality-rescue.js
+      - scripts/apply-sw-polish-001-quality-rescue.mjs
+      - scripts/verify-sw-polish-001-quality-rescue.mjs
+      - scripts/qa-sw-polish-001-quality-rescue.mjs
+      - .github/workflows/sw-polish-001-quality-rescue.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-polish-001-quality-rescue
+  cancel-in-progress: true
+
+jobs:
+  quality-rescue:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout correction branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.9.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare deterministic local assets
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Verify bounded quality correction
+        run: node scripts/verify-sw-polish-001-quality-rescue.mjs
+
+      - name: Run packaged hostile quality review
+        run: node scripts/qa-sw-polish-001-quality-rescue.mjs
+
+      - name: Preserve accepted static contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run verify:process
+          pnpm run verify:sw-game-002
+          pnpm run verify:sw-ui-001
+          pnpm run verify:sw-score-001
+          pnpm run verify:sw-rpg-001
+          pnpm run verify:sw-rpg-002
+          pnpm run verify:sw-level-001
+          pnpm run test:pwa
+
+      - name: Upload quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-polish-001-quality-rescue
+          path: qa-artifacts/sw-polish-001
+          if-no-files-found: warn
