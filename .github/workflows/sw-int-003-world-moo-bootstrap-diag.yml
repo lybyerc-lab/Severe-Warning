@@ -1,0 +1,153 @@
+name: SW-INT-003 WORLD Moo Bootstrap Diagnostic
+
+on:
+  push:
+    branches:
+      - 'ci/sw-int-003-world-moo-bootstrap-diag'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact WORLD candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 5f9a75d9f979aff1e71df34138752b5c5cb997ea
+
+      - name: Verify exact source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "5f9a75d9f979aff1e71df34138752b5c5cb997ea"
+          test -z "$(git status --porcelain)"
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deterministic dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          npx playwright install --with-deps chromium
+
+      - name: Construct exact packaged WORLD source
+        run: |
+          set -euo pipefail
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run patch:v510
+          pnpm run patch:phase2
+          pnpm run patch:phase3
+          pnpm run patch:phase4
+          pnpm run patch:phase5
+          pnpm run patch:phase6
+          pnpm run patch:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run patch:asset-pipeline
+          pnpm run patch:visual-foundation
+          node scripts/apply-threejs-hero-slice4.mjs
+          node scripts/apply-threejs-hero-slice5.mjs
+          node scripts/apply-threejs-hero-slice6.mjs
+          node scripts/apply-sw-game-002-moo-level.mjs
+          pnpm run patch:sw-ui-001
+          pnpm run patch:sw-score-001
+          pnpm run patch:sw-rpg-001
+          pnpm run patch:sw-rpg-002
+          pnpm run modern:build
+          node scripts/build-web.mjs
+
+      - name: Sample packaged Moo bootstrap telemetry
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/world-moo-bootstrap
+          node scripts/serve-www.mjs > qa-artifacts/world-moo-bootstrap/server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || :' EXIT
+          sleep 3
+          xvfb-run --auto-servernum node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import { writeFile } from 'node:fs/promises';
+
+          const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+          const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+          const pageErrors = [];
+          const consoleErrors = [];
+          const httpErrors = [];
+          page.on('pageerror', error => pageErrors.push(error.message));
+          page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+          page.on('response', response => { if (response.status() >= 400) httpErrors.push({ status: response.status(), url: response.url() }); });
+
+          await page.goto('http://127.0.0.1:4173/?mooqa=1', { waitUntil: 'domcontentloaded', timeout: 60000 });
+          await page.waitForFunction(() => globalThis.getMooLevelQaState?.().marker === 'SW_GAME_002_MOO_LEVEL_V1', null, { timeout: 30000 });
+
+          async function sample(label) {
+            const data = await page.evaluate(() => {
+              const moo = globalThis.getMooLevelQaState?.() ?? null;
+              const read = (name) => {
+                try { return Function(`return typeof ${name} !== 'undefined' ? ${name} : null`)(); }
+                catch { return null; }
+              };
+              let anchor = null;
+              let stormPos = null;
+              let distance = null;
+              try {
+                if (typeof mooAnchor === 'function') anchor = mooAnchor();
+                if (typeof storm !== 'undefined' && storm?.pos) stormPos = { x: storm.pos.x, y: storm.pos.y, z: storm.pos.z };
+                if (anchor && stormPos) distance = Math.hypot(stormPos.x - anchor.x, stormPos.z - anchor.z);
+              } catch {}
+              return {
+                href: location.href,
+                visibility: document.visibilityState,
+                hasQaApi: typeof globalThis.__SW_MOO_LEVEL_QA__ === 'object',
+                hasMooState: typeof globalThis.getMooLevelQaState === 'function',
+                hasV510Update: typeof globalThis.__SW_V510_UPDATE__ === 'function',
+                gameStarted: read('gameStarted'),
+                runActive: read('runActive'),
+                isPaused: read('isPaused'),
+                stormPos,
+                anchor,
+                distance,
+                moo,
+              };
+            });
+            return { label, at: Date.now(), data };
+          }
+
+          const samples = [];
+          samples.push(await sample('marker-ready'));
+          for (const delay of [1000, 4000, 10000, 20000]) {
+            await page.waitForTimeout(delay);
+            samples.push(await sample(`after-${delay}ms`));
+          }
+
+          const report = { source: '5f9a75d9f979aff1e71df34138752b5c5cb997ea', samples, pageErrors, consoleErrors, httpErrors };
+          console.log('MOO_BOOTSTRAP_DIAGNOSTIC ' + JSON.stringify(report));
+          await writeFile('qa-artifacts/world-moo-bootstrap/report.json', JSON.stringify(report, null, 2) + '\n', 'utf8');
+          await browser.close();
+          NODE
+          kill "$SERVER_PID"
+          trap - EXIT
+
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-int-003-world-moo-bootstrap-diag
+          path: qa-artifacts/world-moo-bootstrap/
+          if-no-files-found: warn
+          retention-days: 7
