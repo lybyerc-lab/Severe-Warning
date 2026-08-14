@@ -6,7 +6,7 @@ on:
       source_ref:
         description: Exact commit SHA or ref to publish as the QA playtest
         required: true
-        default: 271e5d3d7b438727df8b217ad59b7974ff1374b6
+        default: 7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4
   push:
     branches:
       - main
@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -32,7 +32,7 @@ jobs:
       - name: Checkout exact playtest source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '271e5d3d7b438727df8b217ad59b7974ff1374b6' }}
+          ref: ${{ inputs.source_ref || '7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4' }}
           fetch-depth: 1
 
       - name: Set up Node
@@ -45,8 +45,10 @@ jobs:
           corepack enable
           corepack prepare pnpm@11.9.0 --activate
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies and Chromium
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
 
       - name: Prepare deterministic local assets
         run: |
@@ -56,7 +58,13 @@ jobs:
           pnpm run audio:generate
           node scripts/vendor-threejs-hero-slice4-assets.mjs
 
-      - name: Assemble exact full Stage 2B playtest source + landscape correction
+      - name: Verify accepted rescue sources
+        run: |
+          set -euo pipefail
+          node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
+          node scripts/verify-sw-quality-002-visual-rescue.mjs
+
+      - name: Assemble accepted Stage 2B through QUALITY-001
         shell: bash
         run: |
           set -euo pipefail
@@ -108,13 +116,73 @@ jobs:
             apply-sw-rpg-001-moolah-storm-triangle.mjs \
             apply-sw-rpg-002-slingshot.mjs \
             apply-sw-level-001-storm-site-framework.mjs \
-            apply-sw-ui-002-landscape-unleash.mjs
+            apply-sw-ui-002-landscape-unleash.mjs \
+            apply-sw-quality-001-owner-playtest-rescue.mjs
           do
             node "scripts/$script"
           done
+          echo "SEVERE_WEATHER_SOURCE_PATH=$candidate" >> "$GITHUB_ENV"
+
+      - name: Preserve accepted static contracts
+        run: |
+          set -euo pipefail
+          pnpm run verify:process
+          pnpm run verify:sw-game-002
+          pnpm run verify:sw-ui-001
+          pnpm run verify:sw-score-001
+          pnpm run verify:sw-rpg-001
+          pnpm run verify:sw-rpg-002
+          pnpm run verify:sw-level-001
+
+      - name: Build QUALITY-001 package
+        run: |
+          set -euo pipefail
           pnpm run modern:build
           node scripts/build-web.mjs
-          printf '%s\n' "{\"sourceRef\":\"${{ inputs.source_ref || '271e5d3d7b438727df8b217ad59b7974ff1374b6' }}\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
+
+      - name: Prove QUALITY-001 functional rescue
+        run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
+
+      - name: Apply QUALITY-002 visual rescue and rebuild
+        run: |
+          set -euo pipefail
+          node scripts/apply-sw-quality-002-visual-rescue.mjs
+          node scripts/apply-sw-quality-002-storm-frame-bridge.mjs
+          node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
+          node scripts/verify-sw-quality-002-visual-rescue.mjs
+          node scripts/build-web.mjs
+
+      - name: Prove QUALITY-002 visual rescue
+        run: node scripts/qa-sw-quality-002-visual-rescue.mjs
+
+      - name: Preserve newspaper browser QA
+        run: pnpm run qa:sw-ui-001
+
+      - name: Preserve Storm Site browser QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/sw-level-001
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-level-001/pages-server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() {
+            kill "$SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+          pnpm run qa:sw-level-001
+
+      - name: Stamp exact playtest identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          resolved_ref="${{ inputs.source_ref || '7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4' }}"
+          printf '%s\n' "{\"sourceRef\":\"${resolved_ref}\",\"acceptedCanonical\":\"7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4\",\"composition\":\"Stage 2B + QUALITY-001 + QUALITY-002 visual/frame bridge\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
