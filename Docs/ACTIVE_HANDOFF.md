@@ -1,6 +1,6 @@
 # Active Handoff
 
-Last updated: 2026-08-14 16:49 America/Chicago
+Last updated: 2026-08-14 16:54 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
@@ -85,14 +85,14 @@ P1 gaps driving the current wave:
 All three tasks were assigned from exact base:
 `7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-Owner reports all AG workers show completed. Durable GitHub state must still govern.
+Owner reports all AG workers completed. All three now have durable task commits on origin, but none are authorized for integration until their exact evidence gates below are satisfied.
 
 ### #81 — SW-WORLD-007 Supercell and Derecho atmospheric identity
 
 Branch:
 `agent/sw-world-007-secondary-storm-forms`
 
-Latest durable head verified:
+Latest durable head verified at checkpoint:
 `bd24ea9e2cfa075459c2518d266584dfc6b8a81f`
 
 Diff state:
@@ -129,38 +129,74 @@ Fresh Director action: re-read the exact branch head. If it advanced beyond `bd2
 Branch:
 `agent/sw-feel-001-destruction-consequence`
 
-Latest durable remote head at checkpoint:
-`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
+Latest durable head verified:
+`1e77d38f00684c297c778ec0811859520ced21d8`
 
-That is still the untouched canonical base. The owner reports the AG worker completed locally, but no task commit was durably visible on GitHub at the last exact recheck.
+Diff state:
+- exactly one commit ahead of canonical base;
+- adds bounded FEEL-001 runtime/apply/verify/browser-QA files, completion report, telemetry, and three evidence captures;
+- no unrelated integration/deployment performed.
 
-Publish-only instruction was given:
-- no new product changes;
-- commit completed task source/QA/evidence;
-- push exact final HEAD to `agent/sw-feel-001-destruction-consequence`;
-- return pushed SHA and changed/evidence files;
-- no merge/deploy.
+Durable worker evidence:
+- completion report: `artifacts/feel-001-evidence/SW_FEEL_001_COMPLETION_REPORT.md`
+- static verifier: **16/16 PASS**
+- Playwright behavioral QA: **9/9 PASS**
+- inherited implementation-truth, city-fabric destruction, GAME-002, LEVEL-001, QUALITY-001, QUALITY-002 verifiers reported PASS;
+- fixed pools reported: 48 debris meshes, 8 shockwave rings, 24 dust puffs;
+- worker reports reset-to-zero cleanup and no intentional health/damage/collision/scoring/ability/Cow-safety drift.
 
-Fresh Director action: first re-read the branch head. If it moved, inspect exact base-to-head diff, QA/workflow evidence, captures/video, and drift. Do not ask owner to reconstruct the worker return.
+Evidence captures committed under:
+`artifacts/feel-001-evidence/captures/`
+
+At checkpoint there is **no GitHub Actions run** for this branch. Treat the committed worker QA as durable evidence, but not CI confirmation and not Director visual acceptance.
+
+Fresh Director action: inspect exact captures/telemetry and source seam, verify gameplay-authority invariants from diff/QA, and decide whether an independent visual acceptance pass is needed before integration.
 
 ### #83 — SW-UI-003 Run-shell Americana identity
 
 Branch:
 `agent/sw-ui-003-run-shell-identity`
 
-Latest durable remote head at checkpoint:
-`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
+Latest durable head verified:
+`87001b43933b07006d8ea1708c0f8d35aaa19673`
 
-That is still the untouched canonical base. The owner reports the AG worker completed locally, but no task commit was durably visible on GitHub at the last exact recheck.
+Diff state:
+- two commits ahead of canonical base;
+- adds bounded UI-003 runtime/apply/verify/browser-QA/workflow, committed pause/results captures, and `artifacts/sw-ui-003/report.json`;
+- no integration/deployment performed.
 
-Publish-only instruction was given:
-- no new product changes;
-- commit completed task source/QA/evidence;
-- push exact final HEAD to `agent/sw-ui-003-run-shell-identity`;
-- return pushed SHA and changed/evidence files;
+Durable local report:
+- `artifacts/sw-ui-003/report.json`
+- `passed: true`
+- Heartland/County Fair/Gullwind/Moo pause identity checks true;
+- results grade stamp/layout checks true;
+- 844x390 and 1280x720 fit checks true;
+- no page, console, asset transport, or HTTP 404 errors reported.
+
+GitHub Actions evidence:
+- workflow `SW-UI-003 Run Shell Identity`
+- run `31844332814`
+- exact head `87001b43933b07006d8ea1708c0f8d35aaa19673`
+- conclusion **failure before product tests ran**
+
+Exact failure cause:
+- `actions/setup-node@v4` is configured with `cache: npm`;
+- workflow then uses `npm ci`;
+- repository has no npm lockfile because the project uses pnpm;
+- setup-node fails with `Dependencies lock file is not found`;
+- install/verifier/browser-QA steps are skipped.
+
+Therefore #83 is **not rejected as product work**, but is **CI-unclosed**.
+
+A CI-only correction was requested from the UI-003 AG worker:
+- freeze product runtime and committed visual assertions/evidence;
+- change only workflow/harness to the established Node 22 + corepack/pnpm frozen-install pattern;
+- install Chromium if browser QA requires it;
+- rerun existing verifier/QA unchanged;
+- push correction to same branch;
 - no merge/deploy.
 
-Fresh Director action: first re-read the branch head. If it moved, inspect exact base-to-head diff, QA/workflow evidence, required site/pause/results captures, and drift. Do not ask owner to reconstruct the worker return.
+Fresh Director action: re-read branch head. If it advanced beyond `87001b4...`, verify the correction is workflow/harness-only and require green CI before Director acceptance.
 
 ## QA Pages publisher defect
 
@@ -215,13 +251,14 @@ Canonical accepted source remains `7d3e7e...`. Do not claim public QA serves tha
 
 1. Verify current Director branch head and this handoff.
 2. Re-read exact heads of #81/#82/#83 branches.
-3. For any branch that advanced, inspect exact diff + CI/QA + durable evidence + drift.
-4. For #81 specifically, reject any evidence set whose supposed distinct storm frames are identical or do not show gameplay.
-5. Do not integrate any worker merely because AG says completed.
-6. Once individual accepted heads exist, determine conflict/integration order from exact diffs.
-7. Keep canonical at `7d3e7e...` until that review is complete.
-8. Fix/review #84 separately before intentionally refreshing public QA Pages.
-9. No production/main merge or Android acceptance claim follows automatically from any of the above.
+3. For #81, require truthful distinct storm gameplay captures after the harness correction before visual acceptance.
+4. For #82, review the durable one-commit diff, telemetry, and captures; add independent visual QA if needed.
+5. For #83, require the CI-only pnpm workflow correction and a green exact-head run before acceptance.
+6. Do not integrate any worker merely because AG says completed.
+7. Once individual accepted heads exist, determine conflict/integration order from exact diffs.
+8. Keep canonical at `7d3e7e...` until that review is complete.
+9. Fix/review #84 separately before intentionally refreshing public QA Pages.
+10. No production/main merge or Android acceptance claim follows automatically from any of the above.
 
 ## Deliberately held follow-ons
 
