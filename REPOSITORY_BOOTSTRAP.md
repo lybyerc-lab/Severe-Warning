@@ -1,28 +1,23 @@
 # Repository Bootstrap
 
+> **CURRENT STATUS: superseded bootstrap.**
+>
+> The original contents of this file described the old Unity production workflow. Unity is no longer the production path. That historical content remains recoverable through Git history and must not be used as current setup instructions.
+
 Repository: `lybyerc-lab/Severe-Warning`
-Default branch: `main`
-Bootstrap status: complete
 
-The active checkout is already connected to:
+## Current startup path
 
-`https://github.com/lybyerc-lab/Severe-Warning.git`
+For a fresh Director or contributor session:
 
-The project root contains `Assets/`, `Packages/`, `ProjectSettings/`, documentation, validation tools, and the frozen Mechanics Laboratory.
+1. Read Issue #71: `DIRECTOR START HERE: current authority and fresh-chat recovery protocol`.
+2. Confirm the head of `agent/director-stage2b-game-direction`.
+3. Read `Docs/ACTIVE_HANDOFF.md` from that branch.
+4. Before changing work, read `AGENTS.md`, `Docs/GAME_DIRECTOR.md`, `Docs/WORKER_STARTUP_ORDER.md`, `Docs/ACTIVE_PRODUCTION_SLATE.md`, and `Docs/IMPLEMENTATION_TRUTH_GATE.md`.
+5. Verify the exact task branch and exact assigned base SHA before interpreting task-versioned documentation or editing.
 
-Do not commit Unity-generated folders such as `Library/`, `Temp/`, `Logs/`, `Build/`, `Builds/`, `Obj/`, or `UserSettings/`. They are excluded by `.gitignore`.
+Production renderer: **Three.js r128**.
 
-## Continuing workflow
+Current canonical gameplay/integration branch and exact accepted SHA are recorded in `Docs/ACTIVE_HANDOFF.md`; do not hard-code an older SHA from this bootstrap.
 
-1. Fetch `origin` and confirm the intended base branch.
-2. Read `CURRENT_STATUS.md` and the canonical documents it names.
-3. Confirm `ProjectSettings/ProjectVersion.txt` reports Unity `6000.3.0f1`.
-4. Confirm `Packages/manifest.json` includes URP and the Input System.
-5. Run `Tools/validate_project.py`.
-6. Open the project in the exact Unity editor and allow package restoration.
-7. Run `Tools > Severe Weather > Validate Production Starter`.
-8. Run `Tools > Severe Weather > Create Production Slice Scene`.
-9. Make scoped changes on feature branches and merge through reviewed pull requests.
-10. Update status, decisions, device evidence, inventory, and checksums with the related change.
-
-The successful Build #5.2 rollback baseline is commit `80f2f14`. Preserve its APK while later current-head changes are compiled and tested.
+Unity, Godot, Babylon.js, and PlayCanvas material in the repository is historical/research evidence unless an exact current task explicitly reactivates it.
