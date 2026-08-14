@@ -8,12 +8,15 @@ on:
       - runtime/sw-world-007-secondary-storm-forms.js
       - runtime/sw-world-007-atmospheric-correction.js
       - runtime/sw-world-007-visibility-lock.js
+      - runtime/sw-world-007-secondary-exclusive.js
       - scripts/apply-sw-world-007-secondary-storm-forms.mjs
       - scripts/apply-sw-world-007-atmospheric-correction.mjs
       - scripts/apply-sw-world-007-visibility-lock.mjs
+      - scripts/apply-sw-world-007-secondary-exclusive.mjs
       - scripts/verify-sw-world-007-secondary-storm-forms.mjs
       - scripts/verify-sw-world-007-atmospheric-correction.mjs
       - scripts/verify-sw-world-007-visibility-lock.mjs
+      - scripts/verify-sw-world-007-secondary-exclusive.mjs
       - scripts/qa-sw-world-007-secondary-storm-forms.mjs
       - package.json
       - .github/workflows/sw-world-007-secondary-storm-forms.yml
@@ -61,6 +64,7 @@ jobs:
           node scripts/verify-sw-world-007-secondary-storm-forms.mjs
           node scripts/verify-sw-world-007-atmospheric-correction.mjs
           node scripts/verify-sw-world-007-visibility-lock.mjs
+          node scripts/verify-sw-world-007-secondary-exclusive.mjs
 
       - name: Assemble canonical Stage 2B plus QUALITY-001
         shell: bash
@@ -149,11 +153,13 @@ jobs:
           node scripts/apply-sw-world-007-secondary-storm-forms.mjs
           node scripts/apply-sw-world-007-atmospheric-correction.mjs
           node scripts/apply-sw-world-007-visibility-lock.mjs
+          node scripts/apply-sw-world-007-secondary-exclusive.mjs
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
           node scripts/verify-sw-world-007-secondary-storm-forms.mjs
           node scripts/verify-sw-world-007-atmospheric-correction.mjs
           node scripts/verify-sw-world-007-visibility-lock.mjs
+          node scripts/verify-sw-world-007-secondary-exclusive.mjs
           node scripts/build-web.mjs
 
       - name: Prove corrected SW-WORLD-007 secondary storm forms QA
