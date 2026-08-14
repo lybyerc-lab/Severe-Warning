@@ -9,6 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const candidate = path.join(root, '.sw-ui-002-landscape-qa.html');
 const outputDir = process.env.SEVERE_WEATHER_QA_DIR ? path.resolve(process.env.SEVERE_WEATHER_QA_DIR) : path.join(root, 'qa-artifacts', 'sw-ui-002-landscape');
+const packagedDir = path.join(outputDir, 'www');
 const patches = [
   'apply-v431-source-patch.mjs',
   'apply-v440-source-patch.mjs',
@@ -57,34 +58,41 @@ const patches = [
   'apply-sw-ui-002-landscape-unleash.mjs',
 ];
 const apply = (script) => execFileSync(process.execPath, [path.join(root, 'scripts', script)], { cwd: root, env: { ...process.env, SEVERE_WEATHER_SOURCE_PATH: candidate }, stdio: 'pipe' });
-const media = { '.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json','.wav':'audio/wav','.woff2':'font/woff2','.svg':'image/svg+xml','.png':'image/png' };
-const report = { task:'SW-UI-002', viewport:{ width:844, height:390 }, screenshots:[], checks:{}, pageErrors:[], runtimeConsoleErrors:[], assetTransportErrors:[], passed:false };
+const media = { '.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json','.wav':'audio/wav','.woff2':'font/woff2','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png' };
+const report = { task:'SW-UI-002', fixture:'packaged-web-bundle', viewport:{ width:844, height:390 }, screenshots:[], checks:{}, pageErrors:[], runtimeConsoleErrors:[], assetTransportErrors:[], http404Paths:[], passed:false };
 
 await mkdir(outputDir, { recursive:true });
 await writeFile(candidate, await readFile(source, 'utf8'), 'utf8');
 patches.forEach(apply);
+execFileSync(process.execPath, [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'], { cwd: root, stdio:'pipe' });
+execFileSync(process.execPath, [path.join(root, 'scripts', 'build-web.mjs')], {
+  cwd: root,
+  env: { ...process.env, SEVERE_WEATHER_SOURCE_PATH:candidate, SEVERE_WEATHER_WWW_DIR:packagedDir },
+  stdio:'pipe'
+});
 
 const server = createServer(async (request, response) => {
+  const pathname = decodeURIComponent(new URL(request.url || '/', 'http://127.0.0.1').pathname);
   try {
-    const pathname = decodeURIComponent(new URL(request.url || '/', 'http://127.0.0.1').pathname);
-    const safe = path.resolve(root, `.${pathname === '/' ? '/.sw-ui-002-landscape-qa.html' : pathname}`);
-    if (!safe.startsWith(root)) throw new Error('outside root');
+    const safe = path.resolve(packagedDir, `.${pathname === '/' ? '/index.html' : pathname}`);
+    if (!safe.startsWith(packagedDir)) throw new Error('outside packaged root');
     const body = await readFile(safe);
-    response.writeHead(200, { 'content-type':media[path.extname(safe)] || 'application/octet-stream' });
+    response.writeHead(200, { 'content-type':media[path.extname(safe)] || 'application/octet-stream', 'cache-control':'no-store' });
     response.end(body);
   } catch (_) {
+    report.http404Paths.push(pathname);
     response.writeHead(404);
     response.end('not found');
   }
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
-const baseUrl = `http://127.0.0.1:${address.port}/.sw-ui-002-landscape-qa.html?intro=0`;
+const baseUrl = `http://127.0.0.1:${address.port}/?intro=0`;
 let browser;
 
 try {
   browser = await chromium.launch({ headless:true, executablePath:process.env.CHROME_BIN || undefined, args:['--no-sandbox','--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
-  const context = await browser.newContext({ viewport:{ width:844, height:390 }, screen:{ width:844, height:390 }, isMobile:true, hasTouch:true, deviceScaleFactor:1 });
+  const context = await browser.newContext({ viewport:{ width:844, height:390 }, screen:{ width:844, height:390 }, isMobile:true, hasTouch:true, deviceScaleFactor:1, serviceWorkers:'block' });
   const page = await context.newPage();
   page.on('pageerror', error => report.pageErrors.push(error.message));
   const consoleErrors = [];
@@ -137,8 +145,11 @@ try {
     menuHidden:document.getElementById('mainMenu')?.classList.contains('hidden') || getComputedStyle(document.getElementById('mainMenu')).display === 'none'
   }));
 
-  report.assetTransportErrors = consoleErrors.filter(message => /ERR_FILE_NOT_FOUND|Failed to load resource|404 \(Not Found\)/.test(message));
-  report.runtimeConsoleErrors = consoleErrors.filter(message => !report.assetTransportErrors.includes(message));
+  report.assetTransportErrors = [
+    ...consoleErrors.filter(message => /ERR_FILE_NOT_FOUND|Failed to load resource|404 \(Not Found\)/.test(message)),
+    ...report.http404Paths.map(pathname => `HTTP 404 ${pathname}`)
+  ];
+  report.runtimeConsoleErrors = consoleErrors.filter(message => !/ERR_FILE_NOT_FOUND|Failed to load resource|404 \(Not Found\)/.test(message));
   const initialCorrection = report.initial.correction;
   const after = report.afterTouchScroll;
   const cinematic = report.afterLaunch.cinematic;
@@ -164,4 +175,5 @@ try {
 }
 
 for (const [name, passed] of Object.entries(report.checks)) console.log(`${passed ? 'PASS' : 'FAIL'} ${name}`);
+if (report.assetTransportErrors.length) console.log(`ASSET_ERRORS ${JSON.stringify(report.assetTransportErrors)}`);
 if (!report.passed) process.exitCode = 1;
