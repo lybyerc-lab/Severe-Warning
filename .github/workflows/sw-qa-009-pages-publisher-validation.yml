@@ -1,0 +1,206 @@
+name: SW-QA-009 Pages Publisher Validation
+
+on:
+  push:
+    branches:
+      - agent/sw-qa-009-pages-publisher-refresh
+    paths:
+      - .github/workflows/qa-pages-playtest.yml
+      - .github/workflows/sw-qa-009-pages-publisher-validation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-qa-009-pages-publisher-validation
+  cancel-in-progress: true
+
+jobs:
+  validate-publisher:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout publisher correction
+        uses: actions/checkout@v4
+        with:
+          path: publisher
+
+      - name: Verify publisher contract statically
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow='publisher/.github/workflows/qa-pages-playtest.yml'
+          grep -F "default: 7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4" "$workflow"
+          grep -F 'apply-sw-quality-001-owner-playtest-rescue.mjs' "$workflow"
+          grep -F 'apply-sw-quality-002-visual-rescue.mjs' "$workflow"
+          grep -F 'apply-sw-quality-002-storm-frame-bridge.mjs' "$workflow"
+          grep -F 'qa-sw-quality-001-owner-playtest-rescue.mjs' "$workflow"
+          grep -F 'qa-sw-quality-002-visual-rescue.mjs' "$workflow"
+          grep -F 'playtest-info.json' "$workflow"
+          grep -F 'QA-only; not Integration or production acceptance' "$workflow"
+
+      - name: Checkout exact accepted canonical source
+        uses: actions/checkout@v4
+        with:
+          ref: 7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4
+          path: source
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.9.0 --activate
+
+      - name: Install dependencies and Chromium
+        working-directory: source
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Prepare deterministic local assets
+        working-directory: source
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+
+      - name: Verify accepted rescue sources
+        working-directory: source
+        run: |
+          node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
+          node scripts/verify-sw-quality-002-visual-rescue.mjs
+
+      - name: Assemble accepted Stage 2B through QUALITY-001
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="$RUNNER_TEMP/sw-qa-009.html"
+          cp source/MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
+          cd source
+          export SEVERE_WEATHER_SOURCE_PATH="$candidate"
+          for script in \
+            apply-v431-source-patch.mjs \
+            apply-v440-source-patch.mjs \
+            apply-v441-source-patch.mjs \
+            apply-v442-source-patch.mjs \
+            fix-v450-parser.mjs \
+            apply-v450-source-patch.mjs \
+            apply-v450-rampage-music-patch.mjs \
+            apply-qa-corrections-patch.mjs \
+            apply-audio-mix-followup-patch.mjs \
+            apply-ui-polish-followup-patch.mjs \
+            apply-score-continuity-fix.mjs \
+            apply-qa4-deterministic-lab-patch.mjs \
+            apply-qa4-mobile-input-fix.mjs \
+            apply-qa4-run-lock-fix.mjs \
+            apply-qa4-pause-forensics.mjs \
+            apply-pause-overlay-hit-test-fix.mjs \
+            apply-pause-overlay-hard-hide.mjs \
+            apply-qa4-popup-assertion-fix.mjs \
+            apply-qa4-rampage-popup-fix.mjs \
+            apply-v500-campaign-patch.mjs \
+            apply-v500-realtime-clock-fix.mjs \
+            apply-v500-world-tour-patch.mjs \
+            apply-v500-mobile-layout-fix.mjs \
+            apply-v500-cow-signature-patch.mjs \
+            apply-v510-production-slice.mjs \
+            apply-modernization-phase2-clocks.mjs \
+            apply-phase2-player-forensics-guard.mjs \
+            apply-modernization-phase3-input-abilities.mjs \
+            apply-modernization-phase4-scoring-campaign.mjs \
+            apply-modernization-phase5-presentation-world.mjs \
+            apply-modernization-phase6-performance.mjs \
+            apply-city-fabric-destruction.mjs \
+            apply-presentation-identity-moo-brew.mjs \
+            apply-threejs-asset-pipeline.mjs \
+            apply-threejs-visual-foundation.mjs \
+            apply-threejs-hero-slice4.mjs \
+            apply-threejs-hero-slice5.mjs \
+            apply-threejs-hero-slice6.mjs \
+            apply-sw-game-002-moo-level.mjs \
+            apply-sw-ui-001-newspaper-presentation.mjs \
+            apply-sw-score-001-persistent-scorekeeper.mjs \
+            apply-sw-rpg-001-moolah-storm-triangle.mjs \
+            apply-sw-rpg-002-slingshot.mjs \
+            apply-sw-level-001-storm-site-framework.mjs \
+            apply-sw-ui-002-landscape-unleash.mjs \
+            apply-sw-quality-001-owner-playtest-rescue.mjs
+          do
+            node "scripts/$script"
+          done
+          echo "SEVERE_WEATHER_SOURCE_PATH=$candidate" >> "$GITHUB_ENV"
+
+      - name: Preserve accepted static contracts
+        working-directory: source
+        run: |
+          pnpm run verify:process
+          pnpm run verify:sw-game-002
+          pnpm run verify:sw-ui-001
+          pnpm run verify:sw-score-001
+          pnpm run verify:sw-rpg-001
+          pnpm run verify:sw-rpg-002
+          pnpm run verify:sw-level-001
+
+      - name: Build QUALITY-001 package
+        working-directory: source
+        run: |
+          pnpm run modern:build
+          node scripts/build-web.mjs
+
+      - name: Prove QUALITY-001
+        working-directory: source
+        run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
+
+      - name: Apply and verify QUALITY-002
+        working-directory: source
+        run: |
+          node scripts/apply-sw-quality-002-visual-rescue.mjs
+          node scripts/apply-sw-quality-002-storm-frame-bridge.mjs
+          node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
+          node scripts/verify-sw-quality-002-visual-rescue.mjs
+          node scripts/build-web.mjs
+          node scripts/qa-sw-quality-002-visual-rescue.mjs
+          pnpm run qa:sw-ui-001
+
+      - name: Preserve Storm Site browser QA
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/sw-level-001
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-level-001/validation-server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() {
+            kill "$SERVER_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+          pnpm run qa:sw-level-001
+
+      - name: Prove validation does not deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -f publisher/.github/workflows/sw-qa-009-pages-publisher-validation.yml.tmp
+          echo 'SW-QA-009 validation completed without configure-pages, upload-pages-artifact, or deploy-pages actions.'
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-qa-009-pages-publisher-validation
+          path: |
+            source/qa-artifacts/
+          if-no-files-found: warn
