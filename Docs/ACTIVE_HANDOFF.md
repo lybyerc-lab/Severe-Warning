@@ -1,258 +1,186 @@
 # Active Handoff
 
-Last updated: 2026-08-13 21:18 America/Chicago
+Last updated: 2026-08-14 16:36 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Product title: **Severe Weather Warning**
 Production renderer: Three.js r128
 Active phase: **Stage 2B: Make It Feel Like a Game**
-Director branch: `agent/director-stage2b-game-direction`
+Director authority branch: `agent/director-stage2b-game-direction`
 
-## Director operating law
+## Start here
 
-Repository state is durable memory. Chat is temporary context. Never use `main` as product/gameplay authority.
+GitHub is durable project memory. Chat is temporary context. Do not use `main` as current gameplay/project authority.
 
-Startup law:
-`assigned worktree -> assigned branch -> exact SHA verified -> task-versioned governing docs -> intended change / protected behavior / proof plan -> edit`
+For a fresh Director session:
 
-Worker-state law:
-**Assignment is authority to start. Branch movement / returned evidence is proof that work actually happened. Director acceptance is a separate gate.**
+1. verify the head of `agent/director-stage2b-game-direction`;
+2. read this file;
+3. verify only the exact issue/branch/CI evidence needed for the next decision;
+4. before assigning, reviewing, integrating, or changing work, also read `AGENTS.md`, `Docs/GAME_DIRECTOR.md`, `Docs/WORKER_STARTUP_ORDER.md`, `Docs/ACTIVE_PRODUCTION_SLATE.md`, and `Docs/IMPLEMENTATION_TRUTH_GATE.md`.
 
-Green CI is evidence, not automatic product acceptance. Worker-reported completion is not Director acceptance. Drift is a product defect.
+Execution authority order remains:
 
-Current tooling constraint: Codex/Work usage is exhausted until August 18, 2026. Antigravity may be used only as a bounded worker harness. It does not replace Director authority or GitHub source truth.
+`exact task/issue + exact branch/commit/CI evidence > this handoff > product/operating laws > production slate > historical status/docs`
 
-## Accepted Stage 2B source inputs
+Assignment is not proof a worker ran. Branch creation is not completion. Green CI is not Director product acceptance. Browser acceptance is not physical Android acceptance.
 
-- SW-GAME-002 Hart Farm unlock + real Moo Level: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
-- SW-PWA-001 accepted PWA source: `7cda055a4773c5c9dc69c0d02018cd9454a86628`
-  - prototype parent: `73b28e07a5b05dd632226af851b06a32e99bb068`
-  - never wholesale promote prototype authority
-- SW-UI-001 newspaper: `43348db9b56ec18bca8418c8dfe13470aad4722d`
-- SW-SCORE-001 scorekeeper: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
-- SW-RPG-001 MOO-LAH + Storm Triangle: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
-- SW-RPG-002 Slingshot: `97aa6ae792ed5fb201c0fd35d748a4dfff971e61`
-- SW-WORLD-006 accepted visual stack: `1264617b49a95241024f52ba550713ba28d84888`
-- SW-LEVEL-001 Storm Sites: `1350cee7535220fb9fc5e7c1b4de284e6aae8156`
-- SW-UI-002 landscape launch correction: `271e5d3d7b438727df8b217ad59b7974ff1374b6`
+## Current canonical Stage 2B source
 
-Slingshot, WORLD-006, and LEVEL-001 remain Director accepted/frozen at their exact source heads. Do not rewrite those accepted source branches. SW-UI-002 is a bounded correction layered onto canonical Integration, not a rewrite of the accepted SW-UI-001 source branch.
+Canonical integration branch:
 
-## SW-INT-003 Integration — FULL STAGE 2B STACK + LANDSCAPE CORRECTION ACCEPTED / CANONICAL
+`agent/sw-int-003-stage2b-accepted-stack`
 
-Issue: #70
-Canonical branch: `agent/sw-int-003-stage2b-accepted-stack`
-Exact canonical head: `271e5d3d7b438727df8b217ad59b7974ff1374b6`
+Exact Director-accepted canonical head:
 
-### Integration chain
+`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-1. Accepted RPG-001 / pre-PWA base:
-   `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
-2. Recovered historical PWA candidate:
-   `6fc3d64c81b286f7743aaac46ba98e1f4a916dc3`
-   - preserved at `archive/sw-int-003-frozen-6fc3d64`
-3. Corrected and validated PWA Integration base:
-   `00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3`
-4. PWA + accepted Slingshot:
-   `e0591f68bc90a4be8b39481db9e3c3c8c7378ad0`
-5. PWA + Slingshot + accepted WORLD stack:
-   `5f9a75d9f979aff1e71df34138752b5c5cb997ea`
-6. Full Stage 2B Integration with accepted Storm Sites:
-   `4e5b4c714a56ec0dc652b6e30fcd04054143ee5b`
-7. Full Stage 2B + accepted mobile-landscape launch correction:
-   `271e5d3d7b438727df8b217ad59b7974ff1374b6`
+This is a non-force fast-forward from the previous canonical `271e5d3d7b438727df8b217ad59b7974ff1374b6` and contains the bounded owner-playtest quality rescue.
 
-All canonical movements were non-force fast-forwards. No bulk merge was used.
+### QUALITY rescue closure
 
-### PWA closure
+Issues:
+- #79 `SW-QUALITY-001: Owner-playtest quality rescue` — **closed completed**
+- #80 `SW-QUALITY-002: Owner playtest visual rescue` — **closed completed**
 
-The original recovered candidate reproduced GAME-002 red on its accepted baseline. A clean Ubuntu comparison later isolated a candidate-only console 404 caused by unconditional production probing for optional `qa-build.json`.
+Final rescue branch/head:
 
-The bounded product correction made QA identity lookup opt-in and preserved production `build-info.json` identity behavior.
+`agent/sw-quality-001-owner-playtest-rescue`
+`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-Corrected PWA candidate:
-`00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3`
+Decisive engineering closure:
+- workflow: `SW-QUALITY Owner Playtest Rescue`
+- Actions run: `31834411255`
+- exact head: `7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
+- conclusion: **success**
 
-Decisive hardened A/B closure:
-- Actions run: `31756483510`
-- exact baseline/candidate isolation
-- no masked required failures
-- deterministic state-driven GAME/Scorekeeper QA
-- production fixture font/audio parity
-- PWA static/browser PASS
-- no candidate-only page/runtime/HTTP regression
+The final commit over the independently visually reviewed candidate changed only `.github/workflows/sw-quality-001-owner-playtest-rescue.yml` to provide the inherited Storm Site QA server environment. No product/runtime visual source changed in that final CI-only step.
 
-### Slingshot append closure
+Independent QUALITY-002 visual evidence:
+- branch: `agent/sw-qa-quality-002-visual-acceptance`
+- durable evidence head: `ec723a14474e5db502b8a5fd7899807dad7db4d0`
+- visual candidate reviewed: `f493e3d51f6d772d89bdbe945529ebde9d58196f`
+- baseline: `271e5d3d7b438727df8b217ad59b7974ff1374b6`
+- verdict: **PASS** for short-landscape newspaper, Tornado presentation, County Fair, Gullwind Boardwalk, Storm Site lifecycle, Cow 17 opening, and regression sniff test.
 
-Combined candidate:
-`e0591f68bc90a4be8b39481db9e3c3c8c7378ad0`
+Accepted rescue outcomes to protect:
+- Tornado reads as a connected dirty rotating whole-column storm mass;
+- short-landscape newspaper is compact, readable, and launch-reachable;
+- pause remains reachable on short landscape;
+- quit-to-main-menu ends active-run presentation/lifecycle cleanly;
+- County Fair and Gullwind Boardwalk have distinct environment identities;
+- Storm Sites launch directly without inheriting the Heartland Cow 17 opener;
+- Cow 17 opening has improved actor/camera/material staging and no prototype/debug chrome.
 
-Decisive focused closure:
-- Actions run: `31758118990`
-- deterministic Slingshot browser QA PASS
-- packaged GAME-002 PASS
-- inherited Scorekeeper/RPG/PWA evidence remained clean
+## Post-QUALITY-002 hostile audit
 
-Slingshot integration required only CI-driver timing/collision sampling corrections. Accepted Slingshot product runtime was not rewritten.
+Audit branch:
 
-### WORLD append closure
+`agent/sw-audit-post-quality-002-gap-map`
 
-WORLD combined candidate:
-`5f9a75d9f979aff1e71df34138752b5c5cb997ea`
+Durable audit head:
 
-WORLD-owned files were unchanged by the GAME/RPG/PWA/Slingshot lineage, so the accepted WORLD visual stack was transplanted exactly, without conflict guessing.
+`ea2946912c623504e22da74a4f58463f373b3491`
 
-Initial combined WORLD run passed WORLD static/visual, Scorekeeper, RPG-001, PWA, and Slingshot, but packaged GAME-002 timed out before Hart Farm activation.
+Audit target:
 
-Focused diagnostic proved this was not a WORLD gameplay regression. Hero Slice 6's accepted Cow 17 opening cinematic intentionally owns startup with `runActive=false` until its natural handoff. Under headless SwiftShader, the 12.4-second simulated cinematic advances at only up to 0.1 simulated seconds per rendered frame and can therefore exceed normal wall-clock QA waits.
+`f493e3d51f6d772d89bdbe945529ebde9d58196f`
 
-CI-only solution:
-- let the accepted cinematic begin normally;
-- use its exposed QA/debug seek to the final accepted frame;
-- call its own frame path;
-- let its own natural `finish()` restore gameplay;
-- never write `runActive=true` from CI;
-- preserve all original GAME assertions.
+The audit added report/evidence only and changed no product source. It found **no P0 blockers**.
 
-Decisive WORLD closure:
-- Actions run: `31760681763`
-- job: `94646163855`
-- WORLD visual QA PASS, failures=0
-- GAME-002 12/12 PASS
-- page/runtime/asset errors empty
+Material P1 gaps that remain:
+1. Supercell and Derecho still read as sci-fi/UFO/laser primitives.
+2. Pause/run-shell identity and site labels need coherent presentation.
+3. Results newspaper lacks hierarchy/fanfare.
+4. MOO-LAH/Storm Triangle presentation feels administrative.
+5. Secret Moo Level environment/HUD needs bespoke legendary-stage polish.
+6. Destruction consequence relies too heavily on instant despawn, generic block debris, and floating score text.
 
-### Full WORLD + LEVEL / Storm Sites closure
+The audit explicitly found the accepted Tornado, Cow 17 opening, mobile newspaper selector, and County Fair/Gullwind environmental profiles acceptable.
 
-Full candidate:
-`4e5b4c714a56ec0dc652b6e30fcd04054143ee5b`
+## Active worker wave
 
-LEVEL append is exactly one commit over the WORLD spine and changes only accepted LEVEL runtime/apply/QA/verifier files plus three package hooks.
+All three current tasks use exact base:
 
-Decisive full Stage 2B closure:
-- Actions run: `31760709067`
-- job: `94646245609`
-- exact source `4e5b4c714a56ec0dc652b6e30fcd04054143ee5b`
-- WORLD static / visual PASS
-- LEVEL static PASS
-- County Fair launch / replay variation / signature PASS
-- Coastal Boardwalk launch / replay variation / boat-launch signal PASS
-- campaign home restoration PASS
-- cows protected PASS
-- LEVEL no page / HTTP / runtime errors PASS
-- GAME-002 all 12 checks PASS
-- GAME no page / runtime / asset transport errors
-- explicit `FULL_STAGE2B_HANDOFF_CLOSURE PASS`
+`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-Artifact:
-- `sw-int-003-full-stage2b-handoff-closure`
-- artifact ID `9204556468`
-- SHA-256 `457d79b034684d5f2bd8f272ec21724dc71607586f5d3b7445a5f77d8a823390`
+### #81 — SW-WORLD-007: Supercell and Derecho atmospheric identity overhaul
+Branch:
+`agent/sw-world-007-secondary-storm-forms`
 
-### SW-UI-002 owner-playtest blocker correction — DIRECTOR ACCEPTED
+Owned outcome:
+- replace Supercell saucer/disc read with connected rotating severe-thunderstorm mass;
+- replace Derecho cyan/wireframe wedge with advancing shelf/arcus storm wall;
+- preserve all gameplay values and accepted Tornado presentation.
 
-Issue: #77
-Correction branch: `agent/sw-ui-002-landscape-unleash`
-Accepted base: `4e5b4c714a56ec0dc652b6e30fcd04054143ee5b`
-Exact accepted/canonical head: `271e5d3d7b438727df8b217ad59b7974ff1374b6`
-Director acceptance comment: `5288657786`
+### #82 — SW-FEEL-001: Physical destruction consequence presentation
+Branch:
+`agent/sw-feel-001-destruction-consequence`
 
-Owner playtest on Android mobile landscape showed the newspaper selection surface clipped before the launch CTA. `UNLEASH STORM` was below the reachable viewport and gameplay could not start.
+Owned outcome:
+- add bounded physical failure presentation to authoritative lethal destruction events;
+- make ordinary house/commercial destruction read through anatomy, directional debris, and dust;
+- preserve health, damage, collision, scoring, targetability, and ability authority.
 
-Root cause:
-- accepted SW-UI-001 gives `.newspaper-front-page` `overflow:hidden`;
-- its small/mobile rule caps the card near `100dvh`;
-- constrained landscape/browser chrome reduced the visual viewport;
-- there was no vertical overflow path to the CTA;
-- prior newspaper browser QA covered portrait `390x844`, not short landscape.
+### #83 — SW-UI-003: Run-shell Americana identity for pause and results
+Branch:
+`agent/sw-ui-003-run-shell-identity`
 
-Bounded correction:
-- presentation-only landscape adapter;
-- uses the real `visualViewport.height` as a height guard;
-- makes the newspaper vertically touch-scrollable only on constrained landscape;
-- preserves the real existing `#btnStartMenu` and launch semantics;
-- no gameplay/progression/selection authority rewrite.
+Owned outcome:
+- make pause belong to the Severe Weather Warning visual language;
+- show correct active-site identity for Heartland, County Fair, Gullwind, and Moo Level;
+- make results score/rank hierarchy and actions feel like a front-page event;
+- preserve pause lifecycle, score/result truth, progression, and gameplay authority.
 
-Scope proof relative to `4e5b4c...`:
-- zero behind;
-- only four added files;
-- no existing product/gameplay runtime file rewritten;
-- product behavior is isolated in `runtime/sw-ui-002-landscape-unleash.js`;
-- apply/QA/CI support are the other three files.
+### Worker-state warning
 
-Decisive packaged landscape QA:
-- Actions run: `31762972802`
-- job: `94653052437`
-- exact head: `271e5d3d7b438727df8b217ad59b7974ff1374b6`
-- evidence artifact ID: `9205315513`
-- artifact SHA-256: `45ceafe79bf833bd197f75c556709c9578b117f7aac45830ee19b12953bfac89`
-- Android-like `844x390` touch viewport
-- real Chromium touch swipe moves the newspaper
-- `UNLEASH STORM` becomes fully reachable in visual viewport
-- real button click starts the accepted Cow 17 opening flow
-- menu leaves selection surface
-- zero page errors
-- zero runtime-console errors
-- zero asset transport errors
-- unchanged inherited SW-UI-001 static and portrait browser QA PASS
+These branches/issues are active assignments. Do **not** infer completion from their existence or from an Antigravity UI badge. Before review or integration, verify exact branch movement, final SHA, diff, executed QA, and returned evidence.
 
-Earlier raw-fixture asset 404 signal was classified as a fixture-packaging mismatch. The decisive proof uses the actual packaged `www` bundle and is clean.
+## Deliberately held follow-ons
 
-Status: **SW-UI-002 DIRECTOR ACCEPTED; issue #77 closed completed; canonical Integration fast-forwarded to exact `271e5d3...`.**
+Do not widen #81/#82/#83 into these areas.
 
-## QA Pages — CORRECTED FULL STAGE 2B PLAYABLE DEPLOYED
+Likely next bounded product work after current evidence returns:
+- tactile MOO-LAH + Storm Triangle presentation/reward feedback;
+- Secret Moo Level bespoke/legendary visual and HUD identity;
+- broader world density/material repetition pass;
+- additional destruction anatomy families after the first consequence slice proves its contract.
 
-Public QA URL:
-`https://lybyerc-lab.github.io/Severe-Warning/`
+Twin Tornadoes, Waterspout, satellite feat, full U.S. map, online/accounts, and other future expansion remain held unless separately assigned.
 
-Published gameplay source:
-`271e5d3d7b438727df8b217ad59b7974ff1374b6`
+## Product laws that remain binding
 
-QA Pages is owner-playtest infrastructure only. `main` is still not gameplay authority.
-
-Infrastructure history:
-- full-stack Pages publisher prepared as workflow-only commit `23d7c5e5bdf29d0ca4efcefdd277f13fdb5cd564`
-- first full-stack publish run `31761042632` failed before assembly because Pages runner lacked ffmpeg
-- infra-only ffmpeg prerequisite fix: `743e8d7df84b604edc5df69646ec2a258821807f`
-- first successful full-stack Pages run: `31761090536`
-- landscape-correction publisher update on `main`: `350690d32338bc8a51f6929be323ab9747e55fee`
-- corrected successful Pages run: `31763225553`
-- corrected deployment job: `94653743786`
-- corrected Pages artifact ID: `9205368317`
-- corrected Pages artifact SHA-256: `210cee362adc13947e02074bc7ee6d2196c869d7408c9aec7ba5c8d6d269f895`
-- deployment reported success
-
-Corrected publisher verified exact checkout of `271e5d3...`, assembled the accepted full Stage 2B patch chain, then explicitly applied `apply-sw-ui-002-landscape-unleash.mjs`, built successfully, uploaded successfully, and deployed successfully.
-
-Published bundle includes PWA shell, local generated audio, vendored VFX, fonts, runtime modules including `sw-ui-002-landscape-unleash.js`, and `playtest-info.json` identifying exact source ref `271e5d3...`.
-
-## Product laws
-
-- Genre: mobile arcade destruction with light action RPG progression.
-- Full title: **Severe Weather Warning**.
+- Genre: mobile arcade destruction + light action RPG progression.
+- Player fantasy: **YOU ARE THE STORM**.
 - Fun/destruction first; beauty is first-class.
-- Storm is the visual hero and must read as one connected dangerous mass.
-- Cows and Moo Brew are the comic backbone; cows are protected/non-disposable comic actors.
-- Newspaper presentation is recurring identity for select, `UNLEASH STORM`, and results.
-- **A constrained mobile landscape viewport must never trap the player on the newspaper; the real launch CTA must remain reachable by ordinary touch interaction.**
-- Town/county campaign remains home territory/backbone.
-- Storm Sites are authored substantial destruction fantasies, not generic tiny arenas.
-- Replay variation law: **same place, different storm day**.
-- MOO-LAH is local-first gameplay currency.
-- Exactly three equipped active abilities in the Storm Triangle. Storm forms/passives remain separate.
-- Advanced powers consume one of the three slots.
-- Physical/discoverable synergy is a replay pillar. First accepted concrete synergy: **Pull + Gust = Slingshot**.
-- Twin Tornadoes, Waterspout, satellite feat, full U.S. map, and online/accounts remain future/held-back scope unless separately assigned.
+- Art thesis: **storm-charged stylized Americana**.
+- Visual promise: **beautiful at a glance, readable at speed, cinematic up close**.
+- Storm forms must read as connected atmospheric masses, never visible effect primitives.
+- Authored world identity beats generic Blocktown repetition.
+- Newspaper is recurring identity across selection and results, but gameplay UI need not literally become newspaper everywhere.
+- Cow 17, cows, and Moo Brew remain the comic backbone; cows remain protected/non-targetable.
+- Town/county campaign remains home backbone; Storm Sites expand around it.
+- MOO-LAH is local-first earned gameplay currency, not RMT by default.
+- Exactly three equipped active abilities in the Storm Triangle.
+- Pull/Gust/Grid Zap base behavior remains protected unless an exact task reopens it.
 - No stamina/wait/grind/forced ads.
-- Controller-friendly, local-first, C++-ready not C++-dependent.
-- Phone is a platform, not the intended size of the game.
+- Phone is a platform, not an excuse to shrink the game.
 
-## Current priority order
+## Public QA / deployment warning
 
-1. Owner playtest the newly deployed corrected exact source `271e5d3...` on the real phone, especially landscape selection -> scroll -> `UNLEASH STORM` -> Cow 17 opening -> gameplay.
-2. Treat owner playtest findings as product feedback, not automatic source mutations.
-3. Preserve canonical Integration at exact `271e5d3...` unless another bounded Director-approved correction earns replacement.
-4. Do not reopen accepted Slingshot, WORLD, LEVEL, or SW-UI-001 source branches for opportunistic cleanup.
-5. After owner playtest, choose the next bounded Stage 2B game-feel/product milestone from current product laws.
+Canonical source acceptance and Pages deployment are separate gates.
+
+This handoff records `7d3e7e...` as the accepted canonical source. Do **not** claim the public QA root is serving that SHA unless the exact Pages publisher/deployment evidence is verified separately. The previously documented public QA deployment was based on `271e5d3...`.
+
+## Immediate Director sequence
+
+While #81/#82/#83 execute independently:
+
+1. keep the Director knowledge branch current without touching worker branches;
+2. when a worker returns, verify exact pushed head, diff, QA, evidence, and drift before acceptance;
+3. do not integrate one worker merely because another is still running unless conflict/sequence evidence supports it;
+4. after all relevant evidence returns, choose accepted heads and integration order;
+5. only then update canonical/Pages and record the new state.
 
 ## Chat rollover rule
 
-When context becomes heavy or uncertain, refresh this file and start a new project chat. Recover from GitHub, not owner memory.
+When context becomes heavy or uncertain, recover from Issue #71 and this file. Never ask the owner to reconstruct branch state, QA state, sequencing, or prior decisions that GitHub can prove.
