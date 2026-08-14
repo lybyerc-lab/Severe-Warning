@@ -126,3 +126,13 @@ jobs:
 
       - name: Preserve inherited newspaper browser QA
         run: pnpm run qa:sw-ui-001
+
+      - name: Capture hostile visual review frames
+        run: node scripts/capture-sw-quality-001-visual-review.mjs
+
+      - name: Upload hostile visual review frames
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-quality-001-visual-review
+          path: artifacts/sw-quality-001-visual
+          if-no-files-found: error
