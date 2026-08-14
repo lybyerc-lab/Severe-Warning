@@ -1,10 +1,16 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { cp, readFile, rm, writeFile } from 'node:fs/promises';
 
 function replaceExact(source, before, after, label) {
   const count = source.split(before).length - 1;
   if (count !== 1) throw new Error(`${label}: expected one timing anchor, found ${count}`);
   return source.replace(before, after);
 }
+
+// Raw browser fixtures serve from repository root, while production packaging
+// maps generated assets/audio to /audio. Mirror that exact build-web contract
+// here so transport assertions measure product/runtime behavior, not fixture layout.
+await rm('audio', { recursive: true, force: true });
+await cp('assets/audio', 'audio', { recursive: true });
 
 let game = await readFile('scripts/qa-sw-game-002.mjs', 'utf8');
 game = replaceExact(
@@ -96,4 +102,4 @@ score = replaceExact(
 );
 await writeFile('scripts/.ci-qa-sw-score-001-state-driven.mjs', score, 'utf8');
 
-console.log('Built state-driven CI adapters. Assertions are unchanged; fixed wall-clock waits become observable-state waits, with CI-only HTTP diagnostics for the raw Scorekeeper fixture.');
+console.log('Built state-driven CI adapters and mirrored the production audio path for raw-browser fixture parity. Assertions are unchanged; fixed wall-clock waits become observable-state waits.');
