@@ -1,0 +1,39 @@
+name: SW-UI-003 Run Shell Identity
+
+on:
+  push:
+    branches:
+      - agent/sw-ui-003-run-shell-identity
+  pull_request:
+    branches:
+      - main
+      - agent/sw-ui-003-run-shell-identity
+
+jobs:
+  verify-and-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run SW-UI-003 Static Verifier
+        run: npm run verify:sw-ui-003
+
+      - name: Run SW-UI-003 Browser QA Suite
+        run: npm run qa:sw-ui-003
+
+      - name: Upload QA Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-ui-003-qa-artifacts
+          path: qa-artifacts/sw-ui-003-run-shell/
