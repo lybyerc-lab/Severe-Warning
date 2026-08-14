@@ -6,8 +6,11 @@ on:
       - agent/sw-feel-001-destruction-consequence
     paths:
       - runtime/sw-feel-001-destruction-consequence.js
+      - runtime/sw-feel-001-structural-anatomy.js
       - scripts/apply-sw-feel-001-destruction-consequence.mjs
+      - scripts/apply-sw-feel-001-structural-anatomy.mjs
       - scripts/verify-sw-feel-001-destruction-consequence.mjs
+      - scripts/verify-sw-feel-001-structural-anatomy.mjs
       - scripts/qa-sw-feel-001-destruction-consequence.mjs
       - package.json
       - .github/workflows/sw-feel-001-destruction-consequence.yml
@@ -51,7 +54,9 @@ jobs:
           node scripts/vendor-threejs-hero-slice4-assets.mjs
 
       - name: Verify bounded FEEL-001 source
-        run: node scripts/verify-sw-feel-001-destruction-consequence.mjs
+        run: |
+          node scripts/verify-sw-feel-001-destruction-consequence.mjs
+          node scripts/verify-sw-feel-001-structural-anatomy.mjs
 
       - name: Assemble accepted Stage 2B through QUALITY-001
         shell: bash
@@ -122,6 +127,7 @@ jobs:
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
           pnpm run verify:sw-feel-001
+          node scripts/verify-sw-feel-001-structural-anatomy.mjs
 
       - name: Build QUALITY-001 packaged player bundle
         run: |
@@ -132,20 +138,22 @@ jobs:
       - name: Preserve QUALITY-001 browser rescue
         run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
 
-      - name: Apply QUALITY-002 plus FEEL-001 and rebuild
+      - name: Apply QUALITY-002 plus corrected FEEL-001 and rebuild
         run: |
           set -euo pipefail
           node scripts/apply-sw-quality-002-visual-rescue.mjs
           node scripts/apply-sw-quality-002-storm-frame-bridge.mjs
           node scripts/apply-sw-feel-001-destruction-consequence.mjs
+          node scripts/apply-sw-feel-001-structural-anatomy.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
           pnpm run verify:sw-feel-001
+          node scripts/verify-sw-feel-001-structural-anatomy.mjs
           node scripts/build-web.mjs
 
       - name: Preserve QUALITY-002 browser rescue
         run: node scripts/qa-sw-quality-002-visual-rescue.mjs
 
-      - name: Prove FEEL-001 destruction consequence
+      - name: Prove corrected FEEL-001 destruction consequence
         run: pnpm run qa:sw-feel-001
 
       - name: Upload FEEL-001 evidence
