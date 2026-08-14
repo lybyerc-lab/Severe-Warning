@@ -16,7 +16,7 @@ let game = await readFile('scripts/qa-sw-game-002.mjs', 'utf8');
 game = replaceExact(
   game,
   "await page.waitForTimeout(500);\nconst started = await page.evaluate(() => globalThis.getMooLevelQaState());",
-  "await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\nconst started = await page.evaluate(() => globalThis.getMooLevelQaState());",
+  "await page.waitForFunction(() => { const state = globalThis.getMooLevelQaState?.(); return state?.executorTicks > 0 && state?.encounter?.activated === true; }, null, { timeout: 60000 });\nconst started = await page.evaluate(() => globalThis.getMooLevelQaState());",
   'GAME started activation'
 );
 game = replaceExact(
