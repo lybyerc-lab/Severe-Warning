@@ -136,9 +136,13 @@ function swQuality001EnhanceTornadoMotion(dt, now) {
       object.rotation.y += step * direction * (0.62 + (index % 4) * 0.08);
       object.rotation.x = Math.sin(seconds * 1.15 + phase) * 0.028;
       object.rotation.z = Math.cos(seconds * 0.94 + phase) * 0.024;
+      if (!Number.isFinite(object.userData.swQuality001BaseScaleX)) {
+        object.userData.swQuality001BaseScaleX = Number(object.scale.x) || 1;
+        object.userData.swQuality001BaseScaleZ = Number(object.scale.z) || 1;
+      }
       const pulse = 1 + Math.sin(seconds * 1.8 + phase) * 0.025;
-      object.scale.x *= pulse;
-      object.scale.z *= (2 - pulse);
+      object.scale.x = object.userData.swQuality001BaseScaleX * pulse;
+      object.scale.z = object.userData.swQuality001BaseScaleZ * (2 - pulse);
       return;
     }
 
@@ -194,12 +198,27 @@ if (typeof quitToMainMenu === 'function') {
 
 swQuality001InstallStyles();
 
+function swQuality001StormSample() {
+  const root = typeof swVisualHeroSlice6StormRoot !== 'undefined' ? swVisualHeroSlice6StormRoot : null;
+  if (!root) return null;
+  return {
+    rootY: Number(root.rotation.y.toFixed(4)),
+    visibleChildren: root.children.filter(object => object.visible !== false).map(object => ({
+      name: object.name,
+      y: Number(object.rotation.y.toFixed(4)),
+      x: Number(object.rotation.x.toFixed(4)),
+      z: Number(object.rotation.z.toFixed(4)),
+    })).slice(0, 32),
+  };
+}
+
 globalThis.getSwQuality001State = function getSwQuality001State() {
   const newspaper = document.querySelector('#mainMenu .menu-card.newspaper-front-page');
   const pauseCard = document.querySelector('.pause-card');
   return Object.freeze({
     marker: SW_QUALITY_001_MARKER,
     tornadoFrames: swQuality001State.tornadoFrames,
+    tornadoSample: swQuality001StormSample(),
     quitResets: swQuality001State.quitResets,
     runActive: typeof runActive !== 'undefined' ? Boolean(runActive) : null,
     gameStarted: typeof gameStarted !== 'undefined' ? Boolean(gameStarted) : null,
