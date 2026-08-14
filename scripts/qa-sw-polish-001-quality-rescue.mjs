@@ -120,46 +120,18 @@ try {
 
   report.newspaperInitial = await page.evaluate(() => globalThis.getSwPolish001QaState().newspaper);
   await shot('01-newspaper-large-phone-landscape.png');
-
-  const card = page.locator('#mainMenu .menu-card.newspaper-front-page');
-  const cardBox = await card.boundingBox();
-  if (!cardBox) throw new Error('Newspaper card has no landscape bounding box.');
-  const cdp = await context.newCDPSession(page);
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const state = await page.evaluate(() => globalThis.getSwPolish001QaState().newspaper);
-    if (state.launchWithinVisualViewport) break;
-    const x = Math.round(cardBox.x + cardBox.width * 0.8);
-    const startY = Math.round(Math.min(cardBox.y + cardBox.height - 24, 360));
-    const endY = Math.round(Math.max(cardBox.y + 24, 24));
-    await cdp.send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:[{ x, y:startY, radiusX:8, radiusY:8, force:1 }] });
-    for (let step = 1; step <= 5; step += 1) {
-      const y = Math.round(startY + (endY - startY) * (step / 5));
-      await cdp.send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:[{ x, y, radiusX:8, radiusY:8, force:1 }] });
-      await page.waitForTimeout(25);
-    }
-    await cdp.send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] });
-    await page.waitForTimeout(100);
-  }
-  report.newspaperReached = await page.evaluate(() => globalThis.getSwPolish001QaState().newspaper);
-  await shot('02-newspaper-launch-reached.png');
-
   await page.locator('#btnStartMenu').click({ timeout:15000 });
   await page.waitForFunction(() => Boolean(globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__?.getSnapshot?.()?.active), null, { timeout:15000 });
 
   const seekShot = async (seconds, name) => {
     await page.evaluate((value) => globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.debugSeek(value), seconds);
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(100);
     await shot(name);
     return page.evaluate(() => globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.getSnapshot());
   };
-  report.cinematicEarly = await seekShot(0.65, '03-cinematic-location-slug.png');
-  report.cinematicActing = await seekShot(6.6, '04-cinematic-double-take.png');
-  report.cinematicStorm = await seekShot(10.9, '05-cinematic-storm-reveal.png');
-
-  report.stormSamples = [];
-  for (const seconds of [1.0, 1.75, 2.5]) {
-    report.stormSamples.push(await page.evaluate((value) => globalThis.__SW_POLISH_001_QA__.sampleStormAt(value), seconds));
-  }
+  report.cinematicEarly = await seekShot(0.65, '02-cinematic-location-slug.png');
+  report.cinematicActing = await seekShot(6.6, '03-cinematic-double-take.png');
+  report.cinematicStorm = await seekShot(10.9, '04-cinematic-storm-reveal.png');
 
   const preHandoff = await page.evaluate(() => globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.getSnapshot());
   await page.evaluate(() => {
@@ -173,21 +145,40 @@ try {
   }, null, { timeout:15000 });
   report.afterHandoff = await page.evaluate(() => globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.getSnapshot());
 
+  await page.evaluate(() => globalThis.__SW_POLISH_001_QA__.setStormReviewCamera());
+  report.stormSamples = [];
+  const stormTimes = [1.0, 1.75, 2.5];
+  for (let index = 0; index < stormTimes.length; index += 1) {
+    const seconds = stormTimes[index];
+    report.stormSamples.push(await page.evaluate((value) => globalThis.__SW_POLISH_001_QA__.sampleStormAt(value), seconds));
+    await page.waitForTimeout(60);
+    await shot(`0${5 + index}-tornado-whole-body-t${index + 1}.png`);
+  }
+
   const launchSiteAndCapture = async (siteId, screenshot) => {
     await page.evaluate((id) => globalThis.__SW_STORM_SITE_QA__.launch(id), siteId);
     await page.waitForFunction((id) => {
       const state = globalThis.getStormSiteQaState?.();
       const polish = globalThis.getSwPolish001QaState?.();
-      return state?.selectedSiteId === id && state?.stormSiteWorldAttached && polish?.site?.profile?.includes(id === 'county-fair' ? 'county-fair' : 'coastal-boardwalk');
+      const opening = globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__?.getSnapshot?.();
+      return state?.selectedSiteId === id
+        && state?.stormSiteWorldAttached
+        && polish?.site?.profile?.includes(id === 'county-fair' ? 'county-fair' : 'coastal-boardwalk')
+        && opening?.active === false;
     }, siteId, { timeout:15000 });
+    await page.waitForFunction(() => !document.getElementById('districtOverlay')?.classList.contains('active'), null, { timeout:7000 }).catch(() => {});
     await page.evaluate(() => {
       globalThis.productionQaPrepared = true;
       globalThis.__SW_POLISH_001_QA__.setTargetsVisible(false);
       globalThis.__SW_POLISH_001_QA__.setSiteReviewCamera();
     });
-    await page.waitForTimeout(120);
+    await page.waitForTimeout(160);
     await shot(screenshot);
-    const state = await page.evaluate(() => ({ site:globalThis.getSwPolish001QaState().site, accepted:globalThis.getStormSiteQaState() }));
+    const state = await page.evaluate(() => ({
+      site:globalThis.getSwPolish001QaState().site,
+      accepted:globalThis.getStormSiteQaState(),
+      opening:globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__.getSnapshot(),
+    }));
     await page.evaluate(() => {
       globalThis.__SW_POLISH_001_QA__.setTargetsVisible(true);
       globalThis.productionQaPrepared = false;
@@ -195,8 +186,8 @@ try {
     return state;
   };
 
-  report.fair = await launchSiteAndCapture('county-fair', '06-site-county-fair-no-targets.png');
-  report.coastal = await launchSiteAndCapture('coastal-boardwalk', '07-site-coastal-no-targets.png');
+  report.fair = await launchSiteAndCapture('county-fair', '08-site-county-fair-no-targets.png');
+  report.coastal = await launchSiteAndCapture('coastal-boardwalk', '09-site-coastal-no-targets.png');
 
   report.assetTransportErrors = [
     ...consoleErrors.filter(message => /ERR_FILE_NOT_FOUND|Failed to load resource|404 \(Not Found\)/.test(message)),
@@ -210,31 +201,40 @@ try {
   const lowerMotion = Math.max(motionDelta(s0.lower, s1.lower), motionDelta(s1.lower, s2.lower));
   const bodyMotion = Math.max(motionDelta(s0.body, s1.body), motionDelta(s1.body, s2.body));
   const upperMotion = Math.max(motionDelta(s0.upper, s1.upper), motionDelta(s1.upper, s2.upper));
+  const helixMotion = Math.max(motionDelta(s0.helix, s1.helix), motionDelta(s1.helix, s2.helix));
 
   report.checks = {
     correctionRuntimePresent: report.newspaperInitial.cardExists === true,
     newspaperFitsVisualViewport: report.newspaperInitial.cardHeight <= report.newspaperInitial.visualHeight + 1,
+    newspaperFitsWithoutInternalScroll: report.newspaperInitial.cardScrollHeight <= report.newspaperInitial.cardClientHeight + 2,
+    newspaperLaunchVisibleWithoutScroll: report.newspaperInitial.launchWithinVisualViewport === true,
     newspaperNoVisibleTinyLeafText: report.newspaperInitial.visibleTinyTextCount === 0,
     newspaperDenseStormBodyCopyRemovedOnShortLandscape: report.newspaperInitial.stormBodyDisplay === 'none',
-    launchRemainsReachableByOrdinaryTouch: report.newspaperReached.launchWithinVisualViewport === true,
     cinematicPresentationActive: report.cinematicEarly.polish001?.overlayActive === true && report.cinematicEarly.polish001?.lightCount >= 2 && report.cinematicEarly.polish001?.dustMotes >= 30,
+    cinematicFarmSetActive: report.cinematicEarly.polish001?.farmApronPresent === true,
+    cinematicActorStyleActive: report.cinematicEarly.polish001?.actorStyled === true,
     cinematicPrototypeNewspaperSuppressed: report.cinematicEarly.polish001?.originalNewspaperVisible === false,
+    cinematicDebugBadgeSuppressed: report.cinematicEarly.polish001?.productionBadgeVisible === false,
+    cinematicBroadcastBugSuppressed: report.cinematicEarly.polish001?.broadcastBugVisible === false,
     cinematicAcceptedActingStillPresent: Boolean(report.cinematicActing.actors?.cow17 && report.cinematicActing.gameStarted && report.cinematicActing.runActive === false),
     cinematicProductionStormStillUsed: report.cinematicStorm.stormRevealUsesProductionStorm === true,
     cinematicNaturalHandoffPreserved: preHandoff.active === true && report.afterHandoff.active === false && report.afterHandoff.runActive === true && report.afterHandoff.handoffCount >= 1,
     tornadoLowerCirculationMoves: lowerMotion > 0.18,
     tornadoBodyCirculationMoves: bodyMotion > 0.45,
-    tornadoUpperCirculationMoves: upperMotion > 0.18,
+    tornadoUpperCirculationMoves: upperMotion > 0.65,
+    tornadoHelixCirculationMoves: helixMotion > 0.25,
+    tornadoHelixVeilsPresent: s2.helixCount >= 5,
     tornadoHiddenStructuralShellLawPreserved: s2.hiddenStructuralShells >= 3,
     countyFairIdentityAttached: report.fair.site.fairAttached === true && report.fair.site.fairIdentityObjects >= 40,
     coastalIdentityAttached: report.coastal.site.coastalAttached === true && report.coastal.site.coastalIdentityObjects >= 30,
     siteProfilesDistinct: report.fair.site.profile !== report.coastal.site.profile,
+    stormSitesDoNotReplayHeartlandOpening: report.fair.opening.active === false && report.coastal.opening.active === false && report.coastal.site.openingBypasses >= 2,
     acceptedSiteAuthorityPreserved: report.fair.accepted.selectedSiteId === 'county-fair' && report.coastal.accepted.selectedSiteId === 'coastal-boardwalk' && report.fair.accepted.targetCount > 0 && report.coastal.accepted.targetCount > 0,
     noPageErrors: report.pageErrors.length === 0,
     noRuntimeConsoleErrors: report.runtimeConsoleErrors.length === 0,
     noAssetTransportErrors: report.assetTransportErrors.length === 0,
   };
-  report.motion = { lowerMotion, bodyMotion, upperMotion };
+  report.motion = { lowerMotion, bodyMotion, upperMotion, helixMotion };
   report.passed = Object.values(report.checks).every(Boolean);
   await context.close();
 } finally {
