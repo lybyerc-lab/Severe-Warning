@@ -6,7 +6,7 @@ on:
       source_ref:
         description: Exact commit SHA or ref to publish as the QA playtest
         required: true
-        default: 7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4
+        default: 706408e4e367782fed0ffc6e40d0cdd27a7e71bd
   push:
     branches:
       - main
@@ -32,7 +32,7 @@ jobs:
       - name: Checkout exact playtest source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4' }}
+          ref: ${{ inputs.source_ref || '706408e4e367782fed0ffc6e40d0cdd27a7e71bd' }}
           fetch-depth: 1
 
       - name: Set up Node
@@ -58,11 +58,13 @@ jobs:
           pnpm run audio:generate
           node scripts/vendor-threejs-hero-slice4-assets.mjs
 
-      - name: Verify accepted rescue sources
+      - name: Verify accepted commercial-shell sources
         run: |
           set -euo pipefail
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
+          node scripts/verify-sw-ui-003-run-shell-identity.mjs
+          node scripts/verify-sw-ui-004-gameplay-product-identity.mjs
 
       - name: Assemble accepted Stage 2B through QUALITY-001
         shell: bash
@@ -143,17 +145,27 @@ jobs:
       - name: Prove QUALITY-001 functional rescue
         run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
 
-      - name: Apply QUALITY-002 visual rescue and rebuild
+      - name: Apply QUALITY-002 plus accepted commercial shell and rebuild
         run: |
           set -euo pipefail
           node scripts/apply-sw-quality-002-visual-rescue.mjs
           node scripts/apply-sw-quality-002-storm-frame-bridge.mjs
+          node scripts/apply-sw-ui-003-run-shell-identity.mjs
+          node scripts/apply-sw-ui-004-gameplay-product-identity.mjs
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
+          node scripts/verify-sw-ui-003-run-shell-identity.mjs
+          node scripts/verify-sw-ui-004-gameplay-product-identity.mjs
           node scripts/build-web.mjs
 
       - name: Prove QUALITY-002 visual rescue
         run: node scripts/qa-sw-quality-002-visual-rescue.mjs
+
+      - name: Prove accepted run-shell UI
+        run: node scripts/qa-sw-ui-003-run-shell-identity.mjs
+
+      - name: Prove accepted commercial shell together
+        run: node scripts/qa-sw-int-004-commercial-shell.mjs
 
       - name: Preserve newspaper browser QA
         run: pnpm run qa:sw-ui-001
@@ -165,9 +177,7 @@ jobs:
           mkdir -p qa-artifacts/sw-level-001
           python3 -m http.server 4173 --directory www > qa-artifacts/sw-level-001/pages-server.log 2>&1 &
           SERVER_PID=$!
-          cleanup() {
-            kill "$SERVER_PID" 2>/dev/null || true
-          }
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
           for attempt in $(seq 1 60); do
             if curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null; then break; fi
@@ -181,8 +191,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          resolved_ref="${{ inputs.source_ref || '7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4' }}"
-          printf '%s\n' "{\"sourceRef\":\"${resolved_ref}\",\"acceptedCanonical\":\"7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4\",\"composition\":\"Stage 2B + QUALITY-001 + QUALITY-002 visual/frame bridge\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
+          resolved_ref="${{ inputs.source_ref || '706408e4e367782fed0ffc6e40d0cdd27a7e71bd' }}"
+          printf '%s\n' "{\"sourceRef\":\"${resolved_ref}\",\"acceptedCanonical\":\"706408e4e367782fed0ffc6e40d0cdd27a7e71bd\",\"composition\":\"Stage 2B + QUALITY-001/002 + SW-UI-003 + SW-UI-004\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
