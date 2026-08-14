@@ -1,0 +1,148 @@
+name: SW-QA-009 Hostile Stage 2B Playtest
+
+on:
+  push:
+    branches:
+      - agent/sw-qa-009-hostile-playtest
+    paths:
+      - '.github/workflows/sw-qa-009-hostile-playtest.yml'
+      - 'scripts/qa-stage2b-hostile-review.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-qa-009-hostile-playtest
+  cancel-in-progress: true
+
+jobs:
+  hostile-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout review harness on exact accepted product spine
+        uses: actions/checkout@v4
+
+      - name: Verify product parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD~2)" = "271e5d3d7b438727df8b217ad59b7974ff1374b6"
+          git diff --name-only 271e5d3d7b438727df8b217ad59b7974ff1374b6...HEAD
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        shell: bash
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.9.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare deterministic local assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+
+      - name: Assemble exact accepted Stage 2B product source
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="$RUNNER_TEMP/severe-weather-hostile-review.html"
+          cp MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
+          export SEVERE_WEATHER_SOURCE_PATH="$candidate"
+          for script in \
+            apply-v431-source-patch.mjs \
+            apply-v440-source-patch.mjs \
+            apply-v441-source-patch.mjs \
+            apply-v442-source-patch.mjs \
+            fix-v450-parser.mjs \
+            apply-v450-source-patch.mjs \
+            apply-v450-rampage-music-patch.mjs \
+            apply-qa-corrections-patch.mjs \
+            apply-audio-mix-followup-patch.mjs \
+            apply-ui-polish-followup-patch.mjs \
+            apply-score-continuity-fix.mjs \
+            apply-qa4-deterministic-lab-patch.mjs \
+            apply-qa4-mobile-input-fix.mjs \
+            apply-qa4-run-lock-fix.mjs \
+            apply-qa4-pause-forensics.mjs \
+            apply-pause-overlay-hit-test-fix.mjs \
+            apply-pause-overlay-hard-hide.mjs \
+            apply-qa4-popup-assertion-fix.mjs \
+            apply-qa4-rampage-popup-fix.mjs \
+            apply-v500-campaign-patch.mjs \
+            apply-v500-realtime-clock-fix.mjs \
+            apply-v500-world-tour-patch.mjs \
+            apply-v500-mobile-layout-fix.mjs \
+            apply-v500-cow-signature-patch.mjs \
+            apply-v510-production-slice.mjs \
+            apply-modernization-phase2-clocks.mjs \
+            apply-phase2-player-forensics-guard.mjs \
+            apply-modernization-phase3-input-abilities.mjs \
+            apply-modernization-phase4-scoring-campaign.mjs \
+            apply-modernization-phase5-presentation-world.mjs \
+            apply-modernization-phase6-performance.mjs \
+            apply-city-fabric-destruction.mjs \
+            apply-presentation-identity-moo-brew.mjs \
+            apply-threejs-asset-pipeline.mjs \
+            apply-threejs-visual-foundation.mjs \
+            apply-threejs-hero-slice4.mjs \
+            apply-threejs-hero-slice5.mjs \
+            apply-threejs-hero-slice6.mjs \
+            apply-sw-game-002-moo-level.mjs \
+            apply-sw-ui-001-newspaper-presentation.mjs \
+            apply-sw-score-001-persistent-scorekeeper.mjs \
+            apply-sw-rpg-001-moolah-storm-triangle.mjs \
+            apply-sw-rpg-002-slingshot.mjs \
+            apply-sw-level-001-storm-site-framework.mjs \
+            apply-sw-ui-002-landscape-unleash.mjs
+          do
+            node "scripts/$script"
+          done
+          pnpm run modern:build
+          node scripts/build-web.mjs
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start exact packaged product server
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory www > /tmp/sw-qa-009-server.log 2>&1 &
+          echo $! > /tmp/sw-qa-009-server.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/sw-qa-009-server.log
+          exit 1
+
+      - name: Play hostile multi-round review
+        env:
+          SEVERE_WEATHER_REVIEW_URL: http://127.0.0.1:4173/
+          SEVERE_WEATHER_REVIEW_DIR: qa-artifacts/stage2b-hostile-review
+          SEVERE_WEATHER_SOURCE_REF: 271e5d3d7b438727df8b217ad59b7974ff1374b6
+        run: node scripts/qa-stage2b-hostile-review.mjs
+
+      - name: Upload hostile review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-qa-009-hostile-stage2b-review
+          path: qa-artifacts/stage2b-hostile-review
+          if-no-files-found: warn
+          retention-days: 14
