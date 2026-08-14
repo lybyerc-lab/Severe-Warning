@@ -48,7 +48,7 @@ jobs:
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
 
-      - name: Assemble canonical Stage 2B plus quality rescue
+      - name: Assemble canonical Stage 2B plus QUALITY-001
         shell: bash
         run: |
           set -euo pipefail
@@ -101,8 +101,7 @@ jobs:
             apply-sw-rpg-002-slingshot.mjs \
             apply-sw-level-001-storm-site-framework.mjs \
             apply-sw-ui-002-landscape-unleash.mjs \
-            apply-sw-quality-001-owner-playtest-rescue.mjs \
-            apply-sw-quality-002-visual-rescue.mjs
+            apply-sw-quality-001-owner-playtest-rescue.mjs
           do
             node "scripts/$script"
           done
@@ -119,7 +118,7 @@ jobs:
           pnpm run verify:sw-rpg-002
           pnpm run verify:sw-level-001
 
-      - name: Build packaged player bundle
+      - name: Build QUALITY-001 packaged player bundle
         run: |
           set -euo pipefail
           pnpm run modern:build
@@ -127,6 +126,12 @@ jobs:
 
       - name: Preserve QUALITY-001 functional rescue QA
         run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
+
+      - name: Apply QUALITY-002 visual rescue and rebuild package
+        run: |
+          set -euo pipefail
+          node scripts/apply-sw-quality-002-visual-rescue.mjs
+          node scripts/build-web.mjs
 
       - name: Prove QUALITY-002 player-facing rescue
         run: node scripts/qa-sw-quality-002-visual-rescue.mjs
