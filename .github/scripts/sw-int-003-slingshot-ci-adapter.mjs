@@ -25,9 +25,9 @@ source = replaceExact(
 source = replaceExact(
   source,
   "for (let frame = 1; frame <= 6; frame++) animate(lightFrame + frame * 100);",
-  "for (let frame = 1; frame < 6; frame++) animate(lightFrame + frame * 100);",
-  'normalize light flight loop for deterministic closure'
+  "for (let frame = 1; frame < 80; frame++) animate(lightFrame + frame * 16);",
+  'drive light flight at normal frame cadence for deterministic collision sampling'
 );
 
 await writeFile('scripts/qa-sw-rpg-002-slingshot.mjs', source, 'utf8');
-console.log('SW-RPG-002 CI timing adapter applied: waits only, assertions unchanged.');
+console.log('SW-RPG-002 CI timing adapter applied: waits only, assertions unchanged; light flight uses 16ms collision sampling.');
