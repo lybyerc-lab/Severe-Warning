@@ -131,6 +131,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/apply-sw-quality-002-visual-rescue.mjs
+          node scripts/apply-sw-quality-002-storm-frame-bridge.mjs
           node scripts/build-web.mjs
 
       - name: Prove QUALITY-002 player-facing rescue
