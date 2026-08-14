@@ -1,0 +1,157 @@
+name: SW-INT-003 Slingshot Gap Closure V2
+
+on:
+  push:
+    branches:
+      - 'ci/sw-int-003-ubuntu-ab-harness'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-int-003-slingshot-gap-closure-v2
+  cancel-in-progress: true
+
+jobs:
+  close-gap-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact Slingshot integration candidate
+        uses: actions/checkout@v4
+        with:
+          ref: e0591f68bc90a4be8b39481db9e3c3c8c7378ad0
+
+      - name: Verify exact source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "e0591f68bc90a4be8b39481db9e3c3c8c7378ad0"
+          test -z "$(git status --porcelain)"
+
+      - name: Checkout CI-only helpers
+        uses: actions/checkout@v4
+        with:
+          ref: ci/sw-int-003-ubuntu-ab-harness
+          path: .ci-harness
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deterministic dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg xvfb rsync
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          npx playwright install --with-deps chromium
+
+      - name: Prepare browser fixture and deterministic QA adapters
+        run: |
+          set -euo pipefail
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+          pnpm run modern:build
+          mkdir -p fonts
+          cp node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-800-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-900-normal.woff2 fonts/
+          cp node_modules/@fontsource/outfit/files/outfit-latin-700-normal.woff2 fonts/
+          cp node_modules/@fontsource/outfit/files/outfit-latin-900-normal.woff2 fonts/
+          node .ci-harness/.github/scripts/sw-int-003-ci-adapters.mjs
+          node .ci-harness/.github/scripts/sw-int-003-slingshot-ci-adapter.mjs
+          sed -i 's/animate(/swSlingshotTick(/g' scripts/qa-sw-rpg-002-slingshot.mjs
+
+      - name: Verify accepted Slingshot static contract
+        run: node scripts/verify-sw-rpg-002-slingshot.mjs
+
+      - name: Run deterministic Slingshot browser QA
+        run: |
+          set -euo pipefail
+          rm -rf ../slingshot-gap-v2
+          mkdir -p ../slingshot-gap-v2
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../slingshot-gap-v2/
+          cd ../slingshot-gap-v2
+          xvfb-run --auto-servernum node scripts/qa-sw-rpg-002-slingshot.mjs
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-rpg-002
+          cp -a ../slingshot-gap-v2/qa-artifacts/sw-rpg-002/. qa-artifacts/sw-rpg-002/
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-rpg-002/report.json', 'utf8'));
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.pageErrors, []);
+          assert.deepEqual(report.runtimeConsoleErrors, []);
+          assert.deepEqual(report.assetTransportErrors, []);
+          for (const [name, value] of Object.entries(report.checks)) assert.equal(value, true, name);
+          console.log(JSON.stringify(report.checks, null, 2));
+          NODE
+
+      - name: Run packaged GAME-002 regression with Slingshot applied
+        run: |
+          set -euo pipefail
+          rm -rf ../game-gap-v2
+          mkdir -p ../game-gap-v2
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../game-gap-v2/
+          cd ../game-gap-v2
+          pnpm run patch:v431
+          pnpm run patch:v440
+          pnpm run patch:v441
+          pnpm run patch:v442
+          pnpm run patch:v450
+          pnpm run patch:v500
+          pnpm run patch:v510
+          pnpm run patch:phase2
+          pnpm run patch:phase3
+          pnpm run patch:phase4
+          pnpm run patch:phase5
+          pnpm run patch:phase6
+          pnpm run patch:city-fabric
+          pnpm run patch:presentation-identity
+          pnpm run patch:asset-pipeline
+          pnpm run patch:visual-foundation
+          node scripts/apply-sw-game-002-moo-level.mjs
+          pnpm run patch:sw-ui-001
+          pnpm run patch:sw-score-001
+          pnpm run patch:sw-rpg-001
+          pnpm run patch:sw-rpg-002
+          pnpm run modern:build
+          node scripts/build-web.mjs
+          node scripts/serve-www.mjs > qa-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || :' EXIT
+          sleep 3
+          xvfb-run --auto-servernum node scripts/.ci-qa-sw-game-002-state-driven.mjs
+          kill "$SERVER_PID"
+          trap - EXIT
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-game-002
+          cp -a ../game-gap-v2/qa-artifacts/sw-game-002/. qa-artifacts/sw-game-002/
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const report = JSON.parse(await readFile('qa-artifacts/sw-game-002/report.json', 'utf8'));
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.pageErrors, []);
+          assert.deepEqual(report.runtimeConsoleErrors, []);
+          assert.deepEqual(report.assetTransportErrors, []);
+          for (const [name, value] of Object.entries(report.checks)) assert.equal(value, true, name);
+          console.log(JSON.stringify(report.checks, null, 2));
+          NODE
+
+      - name: Upload focused closure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-int-003-slingshot-gap-closure-v2
+          path: qa-artifacts/
+          if-no-files-found: error
+          retention-days: 14
