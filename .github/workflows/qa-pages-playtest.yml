@@ -6,7 +6,7 @@ on:
       source_ref:
         description: Exact commit SHA or ref to publish as the QA playtest
         required: true
-        default: 97aa6ae792ed5fb201c0fd35d748a4dfff971e61
+        default: 4e5b4c714a56ec0dc652b6e30fcd04054143ee5b
   push:
     branches:
       - main
@@ -32,13 +32,13 @@ jobs:
       - name: Checkout exact playtest source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '97aa6ae792ed5fb201c0fd35d748a4dfff971e61' }}
+          ref: ${{ inputs.source_ref || '4e5b4c714a56ec0dc652b6e30fcd04054143ee5b' }}
           fetch-depth: 1
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
 
       - name: Enable pnpm
         run: |
@@ -48,13 +48,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build modern shell
-        run: pnpm run modern:build
+      - name: Prepare deterministic local assets
+        run: |
+          set -euo pipefail
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
 
-      - name: Generate deterministic storm audio
-        run: node scripts/generate-storm-audio.mjs
-
-      - name: Assemble exact RPG-002 playtest source
+      - name: Assemble exact full Stage 2B playtest source
         shell: bash
         run: |
           set -euo pipefail
@@ -80,22 +80,38 @@ jobs:
             apply-pause-overlay-hit-test-fix.mjs \
             apply-pause-overlay-hard-hide.mjs \
             apply-qa4-popup-assertion-fix.mjs \
+            apply-qa4-rampage-popup-fix.mjs \
             apply-v500-campaign-patch.mjs \
             apply-v500-realtime-clock-fix.mjs \
             apply-v500-world-tour-patch.mjs \
             apply-v500-mobile-layout-fix.mjs \
             apply-v500-cow-signature-patch.mjs \
             apply-v510-production-slice.mjs \
+            apply-modernization-phase2-clocks.mjs \
+            apply-phase2-player-forensics-guard.mjs \
+            apply-modernization-phase3-input-abilities.mjs \
+            apply-modernization-phase4-scoring-campaign.mjs \
+            apply-modernization-phase5-presentation-world.mjs \
+            apply-modernization-phase6-performance.mjs \
+            apply-city-fabric-destruction.mjs \
+            apply-presentation-identity-moo-brew.mjs \
+            apply-threejs-asset-pipeline.mjs \
+            apply-threejs-visual-foundation.mjs \
+            apply-threejs-hero-slice4.mjs \
+            apply-threejs-hero-slice5.mjs \
+            apply-threejs-hero-slice6.mjs \
             apply-sw-game-002-moo-level.mjs \
             apply-sw-ui-001-newspaper-presentation.mjs \
             apply-sw-score-001-persistent-scorekeeper.mjs \
             apply-sw-rpg-001-moolah-storm-triangle.mjs \
-            apply-sw-rpg-002-slingshot.mjs
+            apply-sw-rpg-002-slingshot.mjs \
+            apply-sw-level-001-storm-site-framework.mjs
           do
             node "scripts/$script"
           done
+          pnpm run modern:build
           node scripts/build-web.mjs
-          printf '%s\n' "{\"sourceRef\":\"${{ inputs.source_ref || '97aa6ae792ed5fb201c0fd35d748a4dfff971e61' }}\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
+          printf '%s\n' "{\"sourceRef\":\"${{ inputs.source_ref || '4e5b4c714a56ec0dc652b6e30fcd04054143ee5b' }}\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
