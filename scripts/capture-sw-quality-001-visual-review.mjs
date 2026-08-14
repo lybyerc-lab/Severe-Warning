@@ -40,6 +40,34 @@ async function freshPage() {
   return page;
 }
 
+async function captureStormSite(siteId, prefix) {
+  const page = await freshPage();
+  await page.evaluate(site => globalThis.__SW_STORM_SITE_QA__?.launch?.(site), siteId);
+  await page.waitForFunction(site => globalThis.getStormSiteQaState?.().selectedSiteId === site, siteId, { timeout: 15000 });
+
+  // First capture the current launch truth. This intentionally records whether
+  // a Heartland-only opening is obscuring the destination before correction.
+  await page.screenshot({ path: path.join(out, `${prefix}-inherited-opening.png`) });
+
+  // Then reveal the actual destination without changing site/world state.
+  // The playable cinematic exposes its own finish seam; use it rather than
+  // mutating runActive or camera ownership directly.
+  await page.evaluate(() => {
+    const opening = globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__;
+    if (opening?.getSnapshot?.().active) opening.finish('visual-review-site-reveal');
+    globalThis.__SW_PRESENTATION_IDENTITY_BRIDGE__?.hideIntro?.();
+    document.getElementById('districtOverlay')?.classList.remove('active');
+  });
+  await page.waitForTimeout(150);
+  await page.evaluate(() => {
+    camera.position.set(155, 82, 165);
+    camera.lookAt(0, 6, 0);
+    renderer.render(scene, camera);
+  });
+  await page.screenshot({ path: path.join(out, `${prefix}-world.png`) });
+  await page.close();
+}
+
 try {
   {
     const page = await freshPage();
@@ -79,19 +107,8 @@ try {
     await page.close();
   }
 
-  for (const [siteId, fileName] of [['county-fair', '08-county-fair.png'], ['coastal-boardwalk', '09-coastal-boardwalk.png']]) {
-    const page = await freshPage();
-    await page.evaluate(siteId => {
-      globalThis.__SW_STORM_SITE_QA__?.launch?.(siteId);
-      globalThis.__SW_PRESENTATION_IDENTITY_BRIDGE__?.hideIntro?.();
-      camera.position.set(155, 82, 165);
-      camera.lookAt(0, 6, 0);
-      renderer.render(scene, camera);
-    }, siteId);
-    await page.waitForTimeout(250);
-    await page.screenshot({ path: path.join(out, fileName) });
-    await page.close();
-  }
+  await captureStormSite('county-fair', '08-county-fair');
+  await captureStormSite('coastal-boardwalk', '09-coastal-boardwalk');
 
   {
     const page = await freshPage();
