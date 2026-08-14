@@ -7,8 +7,10 @@
 const SW_POLISH_001_MARKER = 'SW_POLISH_001_QUALITY_RESCUE_V1';
 const swPolish001State = {
   stormUpdates: 0,
+  stormHelixCount: 0,
   fairBuilds: 0,
   coastalBuilds: 0,
+  siteOpeningBypasses: 0,
   cinematicFrames: 0,
   cinematicActive: false,
   environmentProfile: 'heartland-home',
@@ -57,14 +59,52 @@ function swPolish001Part(parent, geometry, material, position, options = {}) {
 // ----------------------------------------------------------------------------
 // Tornado: make visible circulation legible through the entire condensation body.
 // The accepted warped silhouette stays intact and hidden structural shells stay
-// hidden. We animate the already-visible ribbons, wisps, and ground pull.
+// hidden. Visible ribbons, wisps, helix veils, and ground pull supply motion.
 // ----------------------------------------------------------------------------
+function swPolish001EnsureStormHelixVeils(root) {
+  if (!root || root.getObjectByName('SWPolish001StormHelix1')) return;
+  const colors = ['#202d31', '#4b453d', '#2f3d40', '#5b5145', '#263438'];
+  for (let index = 0; index < 5; index += 1) {
+    const direction = index % 2 === 0 ? 1 : -1;
+    const phase = index * 1.21 + 0.35;
+    const material = new THREE.MeshBasicMaterial({
+      color: colors[index],
+      transparent: true,
+      opacity: 0.14 + (index % 3) * 0.025,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      fog: true,
+    });
+    const veil = new THREE.Mesh(swVisualHeroSlice6CondensationStreakGeometry({
+      bottomY: 0.45 + (index % 2) * 0.45,
+      height: 33.5 + (index % 3) * 1.2,
+      angle: phase,
+      twist: direction * (2.75 + index * 0.27),
+      bottomRadius: 1.0 + (index % 3) * 0.38,
+      topRadius: 8.5 + (index % 3) * 1.25,
+      bottomWidth: 0.52 + (index % 2) * 0.18,
+      topWidth: 1.45 + (index % 3) * 0.32,
+      shear: 0.85 + (index % 3) * 0.22,
+      phase,
+    }), material);
+    veil.name = `SWPolish001StormHelix${index + 1}`;
+    veil.userData.phase = phase;
+    veil.userData.spin = direction * (0.48 + index * 0.055);
+    veil.userData.baseOpacity = material.opacity;
+    veil.userData.swPresentationOnly = true;
+    veil.renderOrder = 10 + index;
+    root.add(veil);
+  }
+  swPolish001State.stormHelixCount = 5;
+}
+
 const swPolish001BaseSlice6UpdateStorm = swVisualHeroSlice6UpdateStorm;
 swVisualHeroSlice6UpdateStorm = function swPolish001WholeBodyStormMotion(dt, seconds) {
   const result = swPolish001BaseSlice6UpdateStorm.apply(this, arguments);
   const root = swVisualHeroSlice6StormRoot;
   if (!root) return result;
 
+  swPolish001EnsureStormHelixVeils(root);
   const time = swPolish001Number(seconds, 0);
   const delta = Math.max(0, swPolish001Number(dt, 0));
   swPolish001State.stormUpdates += 1;
@@ -95,9 +135,35 @@ swVisualHeroSlice6UpdateStorm = function swPolish001WholeBodyStormMotion(dt, sec
 
     if (object.name?.startsWith('SWVisualSlice6EdgeWisp')) {
       const phase = swPolish001Number(object.userData.phase, childIndex * 0.5);
+      const height = swPolish001Number(object.userData.height, 12);
+      const radiusBase = swPolish001Number(object.userData.radius, 10);
+      const spin = swPolish001Number(object.userData.spin, 0.34) * 2.15;
+      const angle = swPolish001Number(object.userData.angle, 0) + time * spin;
+      const radius = radiusBase * (0.93 + Math.sin(time * 1.34 + phase) * 0.07);
       const breathe = 1 + Math.sin(time * 1.7 + phase) * 0.08;
-      object.scale.set(breathe, 0.96 + Math.cos(time * 1.15 + phase) * 0.05, breathe);
-      object.rotation.z = Math.sin(time * 1.28 + phase) * 0.055;
+      object.position.set(
+        Math.cos(angle) * radius + Math.sin(time * 0.82 + phase) * 0.65,
+        height + Math.sin(time * 1.45 + phase) * 0.85,
+        Math.sin(angle) * radius + Math.cos(time * 0.74 + phase) * 0.52,
+      );
+      object.rotation.y = angle + Math.sin(time * 0.62 + phase) * 0.13;
+      object.rotation.z = Math.sin(time * 1.28 + phase) * 0.08;
+      object.scale.set(breathe, 0.94 + Math.cos(time * 1.15 + phase) * 0.07, breathe);
+      return;
+    }
+
+    if (object.name?.startsWith('SWPolish001StormHelix')) {
+      const phase = swPolish001Number(object.userData.phase, childIndex * 0.4);
+      const spin = swPolish001Number(object.userData.spin, 0.5);
+      object.rotation.y = phase + time * spin;
+      object.rotation.z = Math.sin(time * 0.72 + phase) * 0.025;
+      object.position.x = Math.sin(time * 0.65 + phase) * 0.42;
+      object.position.z = Math.cos(time * 0.58 + phase) * 0.36;
+      object.scale.y = 0.97 + Math.sin(time * 0.84 + phase) * 0.035;
+      if (object.material) {
+        object.material.opacity = swPolish001Number(object.userData.baseOpacity, 0.16)
+          * (0.88 + Math.sin(time * 1.08 + phase) * 0.12);
+      }
       return;
     }
 
@@ -118,9 +184,8 @@ swVisualHeroSlice6UpdateStorm = function swPolish001WholeBodyStormMotion(dt, sec
     }
   });
 
-  // `delta` is intentionally consumed only as proof that this wrapper remains
-  // frame-driven. The visible motion above is absolute-time based so low FPS
-  // cannot make the funnel appear frozen or speed up through accumulated error.
+  // Motion is absolute-time driven so low frame rate cannot make the funnel
+  // freeze or accelerate from accumulated frame error.
   void delta;
   return result;
 };
@@ -253,14 +318,29 @@ restoreAcceptedCampaignWorld = function swPolish001RestoreAcceptedCampaignWorld(
   return result;
 };
 
+// Storm Sites already declare that Heartland's Cow 17 opener does not belong on
+// their first playable frame. Integration order starts that opener after the
+// Site layer's earlier dismissal hook, so finish it immediately through the
+// accepted cinematic cleanup/handoff instead of leaving Cow 17 over every Site.
+const swPolish001BaseStartStormSiteFromMenu = startStormSiteFromMenu;
+startStormSiteFromMenu = function swPolish001StormSiteStart(siteId) {
+  const started = swPolish001BaseStartStormSiteFromMenu.apply(this, arguments);
+  const opening = globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__;
+  if (started && siteId !== STORM_SITE_HOME_ID && opening?.getSnapshot?.()?.active) {
+    opening.finish('storm-site-route');
+    swPolish001State.siteOpeningBypasses += 1;
+  }
+  return started;
+};
+
 // ----------------------------------------------------------------------------
 // Opening cinematic: preserve the accepted acting timeline and natural handoff,
-// but give the primitive rig deliberate lighting, depth, framing, and a cleaner
-// location slug. The production frame API remains the timing authority.
+// but make the primitive rig feel deliberately stylized instead of unfinished.
 // ----------------------------------------------------------------------------
 let swPolish001CinematicRoot = null;
 let swPolish001CinematicOverlay = null;
 let swPolish001CinematicParticles = null;
+let swPolish001SavedExposure = null;
 
 function swPolish001InstallCinematicOverlay() {
   if (swPolish001CinematicOverlay) return swPolish001CinematicOverlay;
@@ -278,13 +358,27 @@ function swPolish001InstallStyles() {
   const style = document.createElement('style');
   style.id = 'swPolish001Styles';
   style.textContent = String.raw`
-    #swPolish001CinematicOverlay .sw-polish-cinema-bar { position:absolute; left:0; right:0; height:6.5vh; min-height:18px; background:#02060b; opacity:.92; }
+    /* Build/debug identity is useful to QA metadata, not as permanent player HUD. */
+    #productionSliceBadge { display:none !important; }
+    body.sw-polish-001-cinematic #mooBrewBroadcastBug { display:none !important; }
+
+    #swPolish001CinematicOverlay .sw-polish-cinema-bar { position:absolute; left:0; right:0; height:6.5vh; min-height:18px; background:#02060b; opacity:.94; }
     #swPolish001CinematicOverlay .sw-polish-cinema-top { top:0; }
     #swPolish001CinematicOverlay .sw-polish-cinema-bottom { bottom:0; }
-    #swPolish001CinematicOverlay .sw-polish-cinema-vignette { position:absolute; inset:0; background:radial-gradient(circle at 50% 44%, transparent 43%, rgba(1,8,14,.18) 67%, rgba(0,3,8,.55) 100%),linear-gradient(105deg,rgba(209,132,61,.08),transparent 38%,rgba(34,88,110,.12)); }
-    #swPolish001CinematicOverlay .sw-polish-cinema-slug { position:absolute; left:max(18px,env(safe-area-inset-left)); bottom:calc(7.8vh + max(10px,env(safe-area-inset-bottom))); display:flex; flex-direction:column; gap:2px; padding:7px 10px 6px; border-left:3px solid #f4bd62; background:rgba(4,12,20,.58); color:#f7efe0; font-family:Inter,sans-serif; letter-spacing:.08em; text-shadow:0 2px 8px rgba(0,0,0,.8); transition:opacity .25s ease; }
-    #swPolish001CinematicOverlay .sw-polish-cinema-slug b { font-size:11px; line-height:1; }
-    #swPolish001CinematicOverlay .sw-polish-cinema-slug span { color:#c9d8dc; font-size:8px; font-weight:800; line-height:1.1; }
+    #swPolish001CinematicOverlay .sw-polish-cinema-vignette { position:absolute; inset:0; background:radial-gradient(circle at 50% 43%, transparent 34%, rgba(1,8,14,.14) 58%, rgba(0,3,8,.66) 100%),linear-gradient(105deg,rgba(175,91,43,.12),transparent 40%,rgba(24,74,92,.16)); }
+    #swPolish001CinematicOverlay .sw-polish-cinema-slug { position:absolute; left:max(18px,env(safe-area-inset-left)); bottom:calc(7.8vh + max(10px,env(safe-area-inset-bottom))); display:flex; flex-direction:column; gap:2px; padding:7px 10px 6px; border-left:3px solid #f4bd62; background:rgba(4,12,20,.68); color:#f7efe0; font-family:Inter,sans-serif; letter-spacing:.08em; text-shadow:0 2px 8px rgba(0,0,0,.8); transition:opacity .25s ease; }
+    #swPolish001CinematicOverlay .sw-polish-cinema-slug b { font-size:12px; line-height:1; }
+    #swPolish001CinematicOverlay .sw-polish-cinema-slug span { color:#c9d8dc; font-size:10px; font-weight:800; line-height:1.1; }
+
+    /* SW-LEVEL-001's original Site card used dark text inherited from the paper
+       on a dark blue card. Keep Site identity, but make it readable as newsprint. */
+    #mainMenu .newspaper-front-page .storm-card.storm-site-card {
+      border-color:#3c5e70 !important;
+      background:linear-gradient(145deg,rgba(225,238,239,.88),rgba(202,218,220,.74)) !important;
+      color:var(--paper-ink) !important;
+    }
+    #mainMenu .newspaper-front-page .storm-card.storm-site-card h3 { color:#18354a !important; }
+    #mainMenu .newspaper-front-page .storm-card.storm-site-card .hi-score { color:var(--paper-red) !important; }
 
     @media (orientation:landscape) and (max-height:720px) {
       #mainMenu.newspaper-menu { align-items:flex-start; padding:4px max(5px,env(safe-area-inset-right)) 4px max(5px,env(safe-area-inset-left)); }
@@ -317,30 +411,100 @@ function swPolish001InstallStyles() {
       #mainMenu .newspaper-front-page .newspaper-legal { display:none; }
     }
 
+    /* On short large-phone landscape, this is a compact front page, not a poster.
+       Important choices remain readable and the launch CTA fits without scrolling. */
     @media (orientation:landscape) and (max-height:430px) {
-      #mainMenu .newspaper-front-page .menu-title { font-size:22px; }
-      #mainMenu .newspaper-front-page .menu-sub { font-size:9.5px; }
+      #mainMenu .newspaper-front-page .menu-title { margin:0; font-size:21px; }
+      #mainMenu .newspaper-front-page .menu-sub { display:none; }
+      #mainMenu .newspaper-front-page .campaign-map { margin:2px 0; padding:3px 5px; }
+      #mainMenu .newspaper-front-page .campaign-map-head { display:none; }
       #mainMenu .newspaper-front-page #campaignBrief { display:none; }
       #mainMenu .newspaper-front-page .newspaper-lead { display:none; }
-      #mainMenu .newspaper-front-page .campaign-stop { min-height:42px; }
-      #mainMenu .newspaper-front-page .storm-card { min-height:56px; }
+      #mainMenu .newspaper-front-page .campaign-map-grid { gap:3px; }
+      #mainMenu .newspaper-front-page .campaign-stop { min-height:34px; padding:3px 4px; }
+      #mainMenu .newspaper-front-page .campaign-stop strong { font-size:10px; }
+      #mainMenu .newspaper-front-page .campaign-stop .campaign-stars { margin-top:1px; font-size:9.5px; }
+      #mainMenu .newspaper-front-page .storm-select-grid { margin:3px 0; gap:4px; }
+      #mainMenu .newspaper-front-page .storm-card,
+      #mainMenu .newspaper-front-page .storm-card.selected,
+      #mainMenu .newspaper-front-page .storm-card:hover { min-height:48px; padding:3px 4px; border-width:2px; }
+      #mainMenu .newspaper-front-page .storm-card::before { margin-bottom:1px; font-size:9.5px; }
+      #mainMenu .newspaper-front-page .storm-card h3 { font-size:12px; }
+      #mainMenu .newspaper-front-page .storm-card .hi-score { margin-top:1px; font-size:9.5px; }
+      #mainMenu .newspaper-front-page .storm-site-card > div:first-child { display:none; }
+      #mainMenu .newspaper-front-page .menu-options { margin:2px 0; gap:4px; }
+      #mainMenu .newspaper-front-page .opt-btn { min-height:25px; padding:3px 6px; font-size:9.5px; }
+      #mainMenu .newspaper-front-page .start-btn.newspaper-unleash { width:min(100%,430px); margin-top:1px; padding:5px 9px 6px; font-size:17px; }
+      #mainMenu .newspaper-front-page .newspaper-unleash small { display:none; }
     }
   `;
   document.head.appendChild(style);
 }
 
+function swPolish001StyleCinematicActors() {
+  const cow = scene?.getObjectByName?.('Cow17CinematicRig');
+  if (cow && !cow.userData.swPolish001Styled) {
+    cow.userData.swPolish001Styled = true;
+    cow.traverse((node) => {
+      if (!node.isMesh || !node.name?.startsWith('cow17-') || !node.material?.color) return;
+      const name = node.name;
+      let color = '#d6cfbd';
+      if (/patch|spot|eye/.test(name)) color = '#20262a';
+      else if (/muzzle/.test(name)) color = '#c78082';
+      else if (/horn/.test(name)) color = '#c9b985';
+      else if (/hoof|contact-pad/.test(name)) color = '#27211e';
+      node.material.color.set(color);
+      if ('roughness' in node.material) node.material.roughness = 0.9;
+      if ('metalness' in node.material) node.material.metalness = 0;
+      node.material.needsUpdate = true;
+    });
+  }
+  const barn = scene?.getObjectByName?.('SWCinematicFarmBarnBody');
+  if (barn?.material?.color) barn.material.color.set('#762d2b');
+  const roof = scene?.getObjectByName?.('SWCinematicBarnRoofPeel');
+  if (roof?.material?.color) roof.material.color.set('#252a2c');
+  return Boolean(cow?.userData?.swPolish001Styled);
+}
+
 function swPolish001EnsureCinematicRoot(snapshot) {
-  if (swPolish001CinematicRoot?.parent) return swPolish001CinematicRoot;
+  if (swPolish001CinematicRoot?.parent) {
+    swPolish001StyleCinematicActors();
+    return swPolish001CinematicRoot;
+  }
   if (!snapshot?.stage || typeof scene === 'undefined') return null;
   const root = new THREE.Group();
   root.name = 'SWPolish001CinematicLighting';
   root.userData.swPolish001Cinematic = true;
   root.position.set(snapshot.stage.x, snapshot.stage.y, snapshot.stage.z);
 
-  const warmKey = new THREE.PointLight('#f1a86a', 1.05, 54, 2);
+  if (typeof renderer !== 'undefined' && swPolish001SavedExposure === null) {
+    swPolish001SavedExposure = swPolish001Number(renderer.toneMappingExposure, 1);
+    renderer.toneMappingExposure = Math.min(swPolish001SavedExposure, 0.82);
+  }
+
+  const apron = swPolish001Part(root, new THREE.PlaneGeometry(86, 70), swPolish001Material('#566248', { roughness: 0.99 }), [0, 0.08, -1], {
+    rotation: [-Math.PI / 2, 0, 0], castShadow: false, profile: 'cinematic-farm',
+  });
+  apron.name = 'SWPolish001CinematicFarmApron';
+
+  const cropMat = swPolish001Material('#3e5133', { roughness: 0.96 });
+  const stalkGeometry = new THREE.ConeGeometry(0.34, 4.2, 5);
+  for (let index = 0; index < 20; index += 1) {
+    const x = -38 + index * 4.0;
+    const z = -30 + Math.sin(index * 1.7) * 2.4;
+    swPolish001Part(root, stalkGeometry, cropMat, [x, 2.1, z], { castShadow: false, profile: 'cinematic-farm' });
+  }
+  const hayMaterial = swPolish001Material('#a8783f', { roughness: 0.94 });
+  [[24, 1.8, -18], [29, 1.8, -11], [-28, 1.8, 15]].forEach(([x, y, z], index) => {
+    swPolish001Part(root, new THREE.CylinderGeometry(1.8, 1.8, 3.6, 10), hayMaterial, [x, y, z], {
+      rotation: [0, 0, Math.PI / 2 + index * 0.08], profile: 'cinematic-farm',
+    });
+  });
+
+  const warmKey = new THREE.PointLight('#e19a61', 0.42, 50, 2);
   warmKey.name = 'SWPolish001WarmKey';
-  warmKey.position.set(-10, 12, 9);
-  const coolRim = new THREE.PointLight('#7db6cf', 0.92, 68, 2);
+  warmKey.position.set(-10, 11, 9);
+  const coolRim = new THREE.PointLight('#79a7bb', 0.34, 62, 2);
   coolRim.name = 'SWPolish001CoolRim';
   coolRim.position.set(12, 10, -12);
   root.add(warmKey, coolRim);
@@ -353,13 +517,14 @@ function swPolish001EnsureCinematicRoot(snapshot) {
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  const material = new THREE.PointsMaterial({ color:'#d8c39a', size:0.15, transparent:true, opacity:0.34, depthWrite:false });
+  const material = new THREE.PointsMaterial({ color:'#d8c39a', size:0.15, transparent:true, opacity:0.28, depthWrite:false });
   const motes = new THREE.Points(geometry, material);
   motes.name = 'SWPolish001CinematicDustMotes';
   root.add(motes);
   swPolish001CinematicParticles = motes;
   scene.add(root);
   swPolish001CinematicRoot = root;
+  swPolish001StyleCinematicActors();
   return root;
 }
 
@@ -372,8 +537,47 @@ function swPolish001CleanupCinematicPresentation() {
   swPolish001CinematicRoot = null;
   swPolish001CinematicParticles = null;
   if (swPolish001CinematicOverlay) swPolish001CinematicOverlay.style.display = 'none';
+  document.body.classList.remove('sw-polish-001-cinematic');
   swPolish001State.cinematicActive = false;
+  if (typeof renderer !== 'undefined' && swPolish001SavedExposure !== null) {
+    renderer.toneMappingExposure = swPolish001SavedExposure;
+    swPolish001SavedExposure = null;
+  }
   if (typeof camera !== 'undefined') camera.rotation.z = 0;
+}
+
+function swPolish001ReframeCinematic(snapshot) {
+  if (!snapshot?.stage || typeof camera === 'undefined') return;
+  const t = swPolish001Number(snapshot.elapsed, 0);
+  const stage = snapshot.stage;
+  let position = null;
+  let target = null;
+  let fov = null;
+  if (t < 3.2) {
+    position = [stage.x + 9.2, stage.y + 6.7, stage.z + 13.0];
+    target = [stage.x + 0.2, stage.y + 4.0, stage.z + 0.6];
+    fov = 31;
+  } else if (t >= 5.8 && t < 8.15) {
+    position = [stage.x + 7.8, stage.y + 6.25, stage.z + 10.8];
+    target = [stage.x + 0.15, stage.y + 4.25, stage.z + 0.55];
+    fov = 29;
+  } else if (t >= 8.15 && t < 10.05) {
+    position = [stage.x + 6.4, stage.y + 5.8, stage.z + 9.2];
+    target = [stage.x + 0.65, stage.y + 4.3, stage.z + 0.82];
+    fov = 27;
+  }
+  if (!position || !target) return;
+  camera.position.set(position[0], position[1], position[2]);
+  camera.fov = fov;
+  camera.lookAt(target[0], target[1], target[2]);
+  camera.updateProjectionMatrix?.();
+}
+
+function swPolish001ElementVisible(element) {
+  if (!element) return false;
+  const style = getComputedStyle(element);
+  const rect = element.getBoundingClientRect();
+  return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0.05 && rect.width > 0 && rect.height > 0;
 }
 
 function swPolish001UpdateCinematicPresentation(snapshot) {
@@ -384,11 +588,13 @@ function swPolish001UpdateCinematicPresentation(snapshot) {
   }
   swPolish001State.cinematicFrames += 1;
   swPolish001State.cinematicActive = true;
+  document.body.classList.add('sw-polish-001-cinematic');
   const overlay = swPolish001InstallCinematicOverlay();
   overlay.style.display = 'block';
   const slug = overlay.querySelector('.sw-polish-cinema-slug');
   if (slug) slug.style.opacity = snapshot.elapsed < 2.4 ? '1' : '0';
   swPolish001EnsureCinematicRoot(snapshot);
+  swPolish001StyleCinematicActors();
 
   const originalNewspaper = scene?.getObjectByName?.('SWCinematicNewspaper');
   if (originalNewspaper) originalNewspaper.visible = false;
@@ -397,9 +603,10 @@ function swPolish001UpdateCinematicPresentation(snapshot) {
     swPolish001CinematicParticles.rotation.y = snapshot.elapsed * 0.055;
     swPolish001CinematicParticles.position.x = Math.sin(snapshot.elapsed * 0.32) * 0.5;
   }
+  swPolish001ReframeCinematic(snapshot);
   if (typeof camera !== 'undefined') {
     const lateStorm = Math.max(0, Math.min(1, (snapshot.elapsed - 9.5) / 2.7));
-    camera.rotation.z = Math.sin(snapshot.elapsed * 0.72) * (0.004 + lateStorm * 0.006);
+    camera.rotation.z = Math.sin(snapshot.elapsed * 0.72) * (0.003 + lateStorm * 0.005);
   }
 }
 
@@ -431,6 +638,10 @@ if (swPolish001BaseOpeningApi?.frame && swPolish001BaseOpeningApi?.getSnapshot) 
           lightCount: swPolish001CinematicRoot?.children?.filter?.(child => child.isLight)?.length || 0,
           dustMotes: swPolish001CinematicParticles?.geometry?.getAttribute?.('position')?.count || 0,
           originalNewspaperVisible: Boolean(scene?.getObjectByName?.('SWCinematicNewspaper')?.visible),
+          actorStyled: Boolean(scene?.getObjectByName?.('Cow17CinematicRig')?.userData?.swPolish001Styled),
+          farmApronPresent: Boolean(swPolish001CinematicRoot?.getObjectByName?.('SWPolish001CinematicFarmApron')),
+          productionBadgeVisible: swPolish001ElementVisible(document.getElementById('productionSliceBadge')),
+          broadcastBugVisible: swPolish001ElementVisible(document.getElementById('mooBrewBroadcastBug')),
         }),
       });
     },
@@ -471,6 +682,8 @@ function swPolish001StormMotionSnapshot() {
     lower: vector(sample('SWVisualSlice6GroundPull')),
     body: vector(sample('SWVisualSlice6CondensationStreak')),
     upper: vector(sample('SWVisualSlice6EdgeWisp')),
+    helix: vector(sample('SWPolish001StormHelix')),
+    helixCount: root ? root.children.filter(child => child.name?.startsWith('SWPolish001StormHelix')).length : 0,
     hiddenStructuralShells: root ? root.children.filter(child => child.name?.startsWith('SWVisualSlice6StormShell') && child.visible === false).length : 0,
   };
 }
@@ -489,6 +702,8 @@ function swPolish001SiteSnapshot() {
     coastalAttached: Boolean(coastal?.parent),
     fairIdentityObjects: countTagged(fair),
     coastalIdentityObjects: countTagged(coastal),
+    openingBypasses: swPolish001State.siteOpeningBypasses,
+    openingActive: Boolean(globalThis.__SW_OPENING_CINEMATIC_PLAYABLE__?.getSnapshot?.()?.active),
   };
 }
 
@@ -496,9 +711,11 @@ function swPolish001NewspaperSnapshot() {
   const card = document.querySelector('#mainMenu .menu-card.newspaper-front-page');
   const map = card?.querySelector('.campaign-map');
   const stormBody = card?.querySelector('.storm-card p');
+  const siteTitle = card?.querySelector('.storm-site-card h3');
   const start = document.getElementById('btnStartMenu');
   const visualHeight = globalThis.visualViewport?.height || globalThis.innerHeight || 0;
   const startRect = start?.getBoundingClientRect();
+  const siteStyle = siteTitle ? getComputedStyle(siteTitle) : null;
   return {
     cardExists: Boolean(card),
     cardHeight: card?.getBoundingClientRect?.().height || 0,
@@ -506,6 +723,7 @@ function swPolish001NewspaperSnapshot() {
     cardScrollHeight: card?.scrollHeight || 0,
     campaignMapHeight: map?.getBoundingClientRect?.().height || 0,
     stormBodyDisplay: stormBody ? getComputedStyle(stormBody).display : null,
+    siteTitleColor: siteStyle?.color || null,
     visibleTinyTextCount: swPolish001VisibleTinyTextCount(card),
     launchWithinVisualViewport: Boolean(startRect && startRect.top >= 0 && startRect.bottom <= visualHeight),
     visualHeight,
@@ -527,6 +745,14 @@ globalThis.__SW_POLISH_001_QA__ = Object.freeze({
   sampleStormAt(seconds) {
     swVisualHeroSlice6UpdateStorm(0.016, Number(seconds) || 0);
     return swPolish001StormMotionSnapshot();
+  },
+  setStormReviewCamera() {
+    const ground = typeof terrainHeightAt === 'function' ? terrainHeightAt(storm.pos.x, storm.pos.z) : 0;
+    camera.position.set(storm.pos.x + 58, ground + 31, storm.pos.z + 62);
+    camera.fov = 42;
+    camera.lookAt(storm.pos.x, ground + 17, storm.pos.z);
+    camera.updateProjectionMatrix?.();
+    return true;
   },
   setSiteReviewCamera() {
     camera.position.set(205, 118, 205);
