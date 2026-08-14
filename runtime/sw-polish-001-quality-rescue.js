@@ -93,7 +93,7 @@ swVisualHeroSlice6UpdateStorm = function swPolish001WholeBodyStormMotion(dt, sec
       return;
     }
 
-    if (object.name?.startsWith('SWVisualSlice6StormEdgeWisp')) {
+    if (object.name?.startsWith('SWVisualSlice6EdgeWisp')) {
       const phase = swPolish001Number(object.userData.phase, childIndex * 0.5);
       const breathe = 1 + Math.sin(time * 1.7 + phase) * 0.08;
       object.scale.set(breathe, 0.96 + Math.cos(time * 1.15 + phase) * 0.05, breathe);
@@ -470,7 +470,7 @@ function swPolish001StormMotionSnapshot() {
   return {
     lower: vector(sample('SWVisualSlice6GroundPull')),
     body: vector(sample('SWVisualSlice6CondensationStreak')),
-    upper: vector(sample('SWVisualSlice6StormEdgeWisp')),
+    upper: vector(sample('SWVisualSlice6EdgeWisp')),
     hiddenStructuralShells: root ? root.children.filter(child => child.name?.startsWith('SWVisualSlice6StormShell') && child.visible === false).length : 0,
   };
 }
