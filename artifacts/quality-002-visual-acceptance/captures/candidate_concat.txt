@@ -1,0 +1,21 @@
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_00.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_01.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_02.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_03.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_04.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_05.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_06.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_07.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_08.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_09.png'
+duration 0.1
+file 'C:/Users/clybyer/OneDrive - AY McDonald Manufacturing/JCM Digital Co-worker/Severe-Warning/artifacts/quality-002-visual-acceptance/captures/candidate_02_motion_frame_09.png'

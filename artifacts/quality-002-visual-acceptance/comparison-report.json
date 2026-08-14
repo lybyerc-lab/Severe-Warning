@@ -1,0 +1,613 @@
+{
+  "timestamp": "2026-08-14T19:47:56.806Z",
+  "baseline": {
+    "target": "Baseline (271e5d3)",
+    "prefix": "baseline",
+    "port": 55942,
+    "captures": {
+      "baseline_01_newspaper_initial_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_01_newspaper_initial_844x390.png",
+        "sha256": "8bbf0a6573015c8fe8e71af834934bb8c8b9ff312a8696c8caae7a7b45c8ccf5",
+        "sizeBytes": 218363
+      },
+      "baseline_01_newspaper_scrolled_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_01_newspaper_scrolled_844x390.png",
+        "sha256": "acc99a8c9cd351ae85415e30664e417c4052c857812a7be1761d59b176e41d94",
+        "sizeBytes": 173431
+      },
+      "baseline_01_newspaper_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_01_newspaper_1280x720.png",
+        "sha256": "18f7f9d57ad15a1c3bd3473e0e44f2d24f6c230bda37ace404105cd5cdbed50d",
+        "sizeBytes": 529571
+      },
+      "baseline_06_opening_beat1_fence_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_06_opening_beat1_fence_844x390.png",
+        "sha256": "0614b234afc027b16832dc1f73c09ce86cca6f660d2143330da41501aa3f2992",
+        "sizeBytes": 141920
+      },
+      "baseline_06_opening_beat2_double_take_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_06_opening_beat2_double_take_844x390.png",
+        "sha256": "15e35fc33875dfa5458371fc1e98e1bf1658ab257a9481e4b5be43f6addf7e92",
+        "sizeBytes": 126135
+      },
+      "baseline_06_opening_beat3_last_sip_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_06_opening_beat3_last_sip_844x390.png",
+        "sha256": "141d2702850e767220ae805ce7ba182c2a5d1c2d35fbb87c494a239cc005fb11",
+        "sizeBytes": 128156
+      },
+      "baseline_06_opening_beat4_touchdown_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_06_opening_beat4_touchdown_844x390.png",
+        "sha256": "f65b6a21cec6f6ccace9f4696272046e33260bfb5a10bf01ca815f37945c292f",
+        "sizeBytes": 147897
+      },
+      "baseline_06_opening_beat2_double_take_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_06_opening_beat2_double_take_1280x720.png",
+        "sha256": "ab8cbd0afd829575a4ec1463da5c4ae5bc41c7b744c0bdb95229a13891f98278",
+        "sizeBytes": 532356
+      },
+      "baseline_02_tornado_gameplay_distance_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_tornado_gameplay_distance_844x390.png",
+        "sha256": "083132960298dece63fe17e70d61ed2df7820081ed4a2fe95d5d61a6cebfd6ee",
+        "sizeBytes": 241930
+      },
+      "baseline_02_tornado_gameplay_distance_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_tornado_gameplay_distance_1280x720.png",
+        "sha256": "d470e135bff8555663b9a1ad55111eb42b31d3dca0664176ff63686d24355c59",
+        "sizeBytes": 507759
+      },
+      "baseline_02_tornado_ground_contact_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_tornado_ground_contact_844x390.png",
+        "sha256": "81236ff75f596ccb81f5d9e932a5ac62af8c32f07184028ff09093cfe3140330",
+        "sizeBytes": 136763
+      },
+      "baseline_02_tornado_mid_column_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_tornado_mid_column_844x390.png",
+        "sha256": "2f741370a6ea9905a88900a8e78b20ab7447474b630c38c8eaca372d3e7c88fe",
+        "sizeBytes": 202358
+      },
+      "baseline_02_tornado_evolved_scale_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_tornado_evolved_scale_844x390.png",
+        "sha256": "e56b42900301be8dce3277359a32b92e1391684fad021a67c113ba5f48433da1",
+        "sizeBytes": 226130
+      },
+      "baseline_02_motion_frame_00.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_00.png",
+        "sha256": "081063510516a2c41a5b3bddbad8df7f1e7c440fdec66743dff2553322ea011d",
+        "sizeBytes": 221423
+      },
+      "baseline_02_motion_frame_01.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_01.png",
+        "sha256": "1d2e3957869cd30484bc7568108a03ad45d293033218d9a8f229cabb7952f274",
+        "sizeBytes": 219590
+      },
+      "baseline_02_motion_frame_02.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_02.png",
+        "sha256": "bea0d52c23c9375ea87df85fe54b15cf17b9a2c6c9267ef7ce4c24c1ff81d6d8",
+        "sizeBytes": 221259
+      },
+      "baseline_02_motion_frame_03.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_03.png",
+        "sha256": "f338e0952587522cfc0ed3997cee1a1b03e123044e38d9db3d49e5343acaf869",
+        "sizeBytes": 220468
+      },
+      "baseline_02_motion_frame_04.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_04.png",
+        "sha256": "75d5da284c91c555bc6c0afeab42d5cfa36f3fdc4d30584e7260a0fda0eed5d3",
+        "sizeBytes": 222269
+      },
+      "baseline_02_motion_frame_05.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_05.png",
+        "sha256": "56811020cfdd317dcb71ed4f1687dfaad9111054a062a130e60df462bc7e2144",
+        "sizeBytes": 222663
+      },
+      "baseline_02_motion_frame_06.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_06.png",
+        "sha256": "a97261a96f73a879646127686d2d46786d3922d362780177f3385340de145ebb",
+        "sizeBytes": 220391
+      },
+      "baseline_02_motion_frame_07.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_07.png",
+        "sha256": "2c361de83878e6e1dd533ab337b4a63df3b2f2bc0b37e1a3ca737f624a8241cf",
+        "sizeBytes": 217429
+      },
+      "baseline_02_motion_frame_08.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_08.png",
+        "sha256": "106024a6b567b268da33a952ef37acf246f13ded38ab20c05fbec693555afd4e",
+        "sizeBytes": 216720
+      },
+      "baseline_02_motion_frame_09.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_02_motion_frame_09.png",
+        "sha256": "b4d5c0725a43c9c5ac40b4ecff5d64a2d02f59311b00c157f7bfea03c1eaeed1",
+        "sizeBytes": 216616
+      },
+      "baseline_03_county_fair_initial_launch_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_03_county_fair_initial_launch_844x390.png",
+        "sha256": "760c4622d7a6242b3b6fc67db719d547ca7d4d256720299c9cf5e4ebf4a2d30e",
+        "sizeBytes": 92019
+      },
+      "baseline_03_county_fair_world_overview_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_03_county_fair_world_overview_844x390.png",
+        "sha256": "6edb6696b0f0aaf673271aa3175e33e2808d0241984ff393b2c383c6807a90fe",
+        "sizeBytes": 79800
+      },
+      "baseline_03_county_fair_world_overview_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_03_county_fair_world_overview_1280x720.png",
+        "sha256": "6a955f2ee00abf526e4fd16e51f5d0aecb19dbdbf6a681034f4790b351940342",
+        "sizeBytes": 160137
+      },
+      "baseline_03_county_fair_midway_close_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_03_county_fair_midway_close_844x390.png",
+        "sha256": "bda3d8b4142fabe5e3f12e4aba2714fa52998f87fb7255118d9440feffeaae15",
+        "sizeBytes": 116240
+      },
+      "baseline_04_coastal_initial_launch_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_04_coastal_initial_launch_844x390.png",
+        "sha256": "73643e9303ab88b619390832bd5be5d056f500eb8ab0bbac28ff86c8743f3b95",
+        "sizeBytes": 115817
+      },
+      "baseline_04_coastal_world_overview_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_04_coastal_world_overview_844x390.png",
+        "sha256": "fe0857e2c072ee798927785569669b32de216e58e343e2931b9de40b0f536f07",
+        "sizeBytes": 80357
+      },
+      "baseline_04_coastal_world_overview_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_04_coastal_world_overview_1280x720.png",
+        "sha256": "b193364134582059a21ac63f887ca85f351481031d6a671df995d048de666629",
+        "sizeBytes": 225101
+      },
+      "baseline_04_coastal_lighthouse_close_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_04_coastal_lighthouse_close_844x390.png",
+        "sha256": "9ce4abfb3052c8cb16c4dbe50588d96f1326f2265d19974229bb231e3bcf45e2",
+        "sizeBytes": 118525
+      },
+      "baseline_07_gameplay_hud_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\baseline_07_gameplay_hud_844x390.png",
+        "sha256": "acc99a8c9cd351ae85415e30664e417c4052c857812a7be1761d59b176e41d94",
+        "sizeBytes": 173431
+      }
+    },
+    "measurements": {
+      "newspaperPhone": {
+        "columns": 2,
+        "headingFontSize": "13px",
+        "cardClientHeight": 342,
+        "cardScrollHeight": 726,
+        "launchRect": {
+          "top": 674.890625,
+          "bottom": 723.359375,
+          "left": 207,
+          "right": 637
+        },
+        "viewportHeight": 390,
+        "siteCardBg": "rgba(0, 0, 0, 0)",
+        "siteCardColor": "rgb(24, 34, 51)",
+        "siteHeadingColor": "rgb(24, 34, 51)",
+        "visiblePrototype": true
+      },
+      "cinematic": {
+        "ghostPaperVisible": null,
+        "barnTrimPresent": false,
+        "cameraFov": 45
+      },
+      "storm": {
+        "stormChildrenCount": 26,
+        "childNames": [
+          "SWVisualSlice6StormShell1",
+          "SWVisualSlice6StormShell2",
+          "SWVisualSlice6StormShell3",
+          "SWVisualSlice6CondensationStreak1",
+          "SWVisualSlice6CondensationStreak2",
+          "SWVisualSlice6CondensationStreak3",
+          "SWVisualSlice6CondensationStreak4",
+          "SWVisualSlice6CondensationStreak5",
+          "SWVisualSlice6CondensationStreak6",
+          "SWVisualSlice6CondensationStreak7",
+          "SWVisualSlice6CondensationStreak8",
+          "SWVisualSlice6CondensationStreak9",
+          "SWVisualSlice6CondensationStreak10",
+          "SWVisualSlice6CondensationStreak11",
+          "SWVisualSlice6EdgeWisp1"
+        ]
+      },
+      "countyFair": {
+        "bgColor": "283646",
+        "fogDensity": 0.0022,
+        "fogColor": "566367",
+        "ambientIntensity": 0.7235287169618713,
+        "dirIntensity": 0.9636293091644124,
+        "hasFairGround": false,
+        "bulbCount": 0,
+        "tentCount": 0,
+        "hasWheel": false,
+        "openingActive": true
+      },
+      "coastal": {
+        "bgColor": "2a3949",
+        "fogDensity": 0.0021999999999999997,
+        "fogColor": "566367",
+        "ambientIntensity": 0.6288167677216585,
+        "dirIntensity": 0.8775722462038216,
+        "hasOcean": false,
+        "hasLighthouse": false,
+        "foamCount": 0,
+        "postCount": 0,
+        "openingActive": true
+      },
+      "transitions": [
+        {
+          "step": "fair_launch",
+          "openingActive": true,
+          "site": "county-fair",
+          "bg": "0f172a"
+        },
+        {
+          "step": "after_quit_fair",
+          "bg": "0f172a"
+        },
+        {
+          "step": "coastal_launch",
+          "openingActive": true,
+          "site": "coastal-boardwalk",
+          "bg": "0f172a"
+        },
+        {
+          "step": "after_quit_coastal",
+          "bg": "0f172a"
+        }
+      ]
+    },
+    "errors": {
+      "pageErrors": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "httpErrors": []
+    }
+  },
+  "candidate": {
+    "target": "Candidate (f493e3d)",
+    "prefix": "candidate",
+    "port": 55268,
+    "captures": {
+      "candidate_01_newspaper_initial_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_01_newspaper_initial_844x390.png",
+        "sha256": "d611602cd50eccff5ff456f5852433bef3d195153812e2b29d1f42a4788413fa",
+        "sizeBytes": 185298
+      },
+      "candidate_01_newspaper_scrolled_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_01_newspaper_scrolled_844x390.png",
+        "sha256": "d611602cd50eccff5ff456f5852433bef3d195153812e2b29d1f42a4788413fa",
+        "sizeBytes": 185298
+      },
+      "candidate_01_newspaper_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_01_newspaper_1280x720.png",
+        "sha256": "9226ad754f55a5317cdbd3f0f78cb8bf6de1c28ce77d7b245e96f0d4524be5e5",
+        "sizeBytes": 473069
+      },
+      "candidate_06_opening_beat1_fence_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_06_opening_beat1_fence_844x390.png",
+        "sha256": "4b599b016eea2a185968b0a5ee49f929167d150c31c89799d515f279b641ec57",
+        "sizeBytes": 132823
+      },
+      "candidate_06_opening_beat2_double_take_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_06_opening_beat2_double_take_844x390.png",
+        "sha256": "8febc5845804a3054f57b43633518e4bf02f799b1c16a08e4d449d7e2ed37797",
+        "sizeBytes": 136333
+      },
+      "candidate_06_opening_beat3_last_sip_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_06_opening_beat3_last_sip_844x390.png",
+        "sha256": "078bb826b5b902e98a5b58b0a051ed8b24380ab2ec6d2d0fa715b3a0dcf8f824",
+        "sizeBytes": 123651
+      },
+      "candidate_06_opening_beat4_touchdown_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_06_opening_beat4_touchdown_844x390.png",
+        "sha256": "35a34b8362b5c618c1437c48072ad80704b8dd5146b40419559b14c7f747e0c1",
+        "sizeBytes": 124006
+      },
+      "candidate_06_opening_beat2_double_take_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_06_opening_beat2_double_take_1280x720.png",
+        "sha256": "2a1ade3cfbd9002c6d3a765aea6682d84ad39aba7ea5973fa2b28a6689ad8ef9",
+        "sizeBytes": 539184
+      },
+      "candidate_02_tornado_gameplay_distance_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_tornado_gameplay_distance_844x390.png",
+        "sha256": "ec76d8bacc0ee0da522232d5f2bd13eb210b58d7f10ea24230c0e408f96454e5",
+        "sizeBytes": 240244
+      },
+      "candidate_02_tornado_gameplay_distance_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_tornado_gameplay_distance_1280x720.png",
+        "sha256": "0f26fd2399eb9b182d717c29a7642faac522f99cd30f0c852f0eea4fa5190a0d",
+        "sizeBytes": 512869
+      },
+      "candidate_02_tornado_ground_contact_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_tornado_ground_contact_844x390.png",
+        "sha256": "5e5d3ebccd26f73fc62176e225dc80d585cf98bc202d9e8d2057c2b2f87e8fa7",
+        "sizeBytes": 141769
+      },
+      "candidate_02_tornado_mid_column_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_tornado_mid_column_844x390.png",
+        "sha256": "528039a73f7601a427fdd269688ced31addeeafd935bc4dcc127d374da853ff1",
+        "sizeBytes": 202059
+      },
+      "candidate_02_tornado_evolved_scale_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_tornado_evolved_scale_844x390.png",
+        "sha256": "10f806ed04572294015d4ad484223f612278a9c2af8cb238cfc2e465032c5a66",
+        "sizeBytes": 225759
+      },
+      "candidate_02_motion_frame_00.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_00.png",
+        "sha256": "934e6382b2c7186739fba87b4777a427f9e3fb5aefb614c9d06bbc89343afc0a",
+        "sizeBytes": 219369
+      },
+      "candidate_02_motion_frame_01.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_01.png",
+        "sha256": "71b95f1e717fe876aa6af6eb6993212c4aae5f4b05c3fb4c52e40b48901e75da",
+        "sizeBytes": 218177
+      },
+      "candidate_02_motion_frame_02.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_02.png",
+        "sha256": "342dd7840262b0096a7bd30aab649110db140bb88e6072f0e582563fc672d428",
+        "sizeBytes": 217940
+      },
+      "candidate_02_motion_frame_03.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_03.png",
+        "sha256": "e47858ddd8c3816cb15858c28d571f61b65f9900371eb6dbab3a3ec4cbb8b671",
+        "sizeBytes": 215915
+      },
+      "candidate_02_motion_frame_04.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_04.png",
+        "sha256": "3a88b60ef38f4909cfa0eef35a72ab32d894ffa922fb53b2599110ff7144d935",
+        "sizeBytes": 223525
+      },
+      "candidate_02_motion_frame_05.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_05.png",
+        "sha256": "88e6a3c3d4a8631bbd0ba2c3ea4e60a71d0869102e5944fc5bc76c52fe57bb23",
+        "sizeBytes": 218841
+      },
+      "candidate_02_motion_frame_06.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_06.png",
+        "sha256": "f3034c1c7367291b75e7361f7d19b1ba08de25c4eec416ea74143e7af889fa80",
+        "sizeBytes": 214170
+      },
+      "candidate_02_motion_frame_07.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_07.png",
+        "sha256": "f69009c6109ba51d77e0d6aef4e387c8282aa7abdd5cb39cebbb54511d73f313",
+        "sizeBytes": 216600
+      },
+      "candidate_02_motion_frame_08.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_08.png",
+        "sha256": "69242d3ee1cfc8561522500419bbbd64ca19c3af605a3a126a40fb8a2b0abe05",
+        "sizeBytes": 221654
+      },
+      "candidate_02_motion_frame_09.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_02_motion_frame_09.png",
+        "sha256": "5f502b511db790a9c7abf5b75f99b11af7df51316f61baec64502a4ce7fca8e6",
+        "sizeBytes": 218938
+      },
+      "candidate_03_county_fair_initial_launch_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_03_county_fair_initial_launch_844x390.png",
+        "sha256": "12cc815a4fb50e2eb68693ccaf401855bf5a2995ac796c80d6b9efbfcbdeb5bb",
+        "sizeBytes": 183836
+      },
+      "candidate_03_county_fair_world_overview_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_03_county_fair_world_overview_844x390.png",
+        "sha256": "c3bfa9a3c206d4b912a921ff18b889bc38a2dd759d9a971f3b64e4e7d56c9aac",
+        "sizeBytes": 205806
+      },
+      "candidate_03_county_fair_world_overview_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_03_county_fair_world_overview_1280x720.png",
+        "sha256": "5e1dc319553e3028f7dbf6146fcf052b01bb71061e4bc3b4cded55194ba36b7d",
+        "sizeBytes": 446806
+      },
+      "candidate_03_county_fair_midway_close_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_03_county_fair_midway_close_844x390.png",
+        "sha256": "d109f0b73650d4307b4f5f457d9ae679ab4dd6b1a856285337dfd8772854f01b",
+        "sizeBytes": 194768
+      },
+      "candidate_04_coastal_initial_launch_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_04_coastal_initial_launch_844x390.png",
+        "sha256": "18d6b9ff508794857266f8f683164042c06aa5e3b91fd9e4796aeeb66e36fff8",
+        "sizeBytes": 182146
+      },
+      "candidate_04_coastal_world_overview_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_04_coastal_world_overview_844x390.png",
+        "sha256": "f604f2f10cef0f22e0fdd3180e0096926d7adffc1de2327a622d563258ae727f",
+        "sizeBytes": 214995
+      },
+      "candidate_04_coastal_world_overview_1280x720.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_04_coastal_world_overview_1280x720.png",
+        "sha256": "bd2d9f4a7e3a21d8ae9869be7a6356719f6b62e92200f17766c6b100c7cb980c",
+        "sizeBytes": 350781
+      },
+      "candidate_04_coastal_lighthouse_close_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_04_coastal_lighthouse_close_844x390.png",
+        "sha256": "35aa9e757d99803469314640e1885e1f19967c3bf871aacfeeb07fd713f14d9b",
+        "sizeBytes": 194824
+      },
+      "candidate_07_gameplay_hud_844x390.png": {
+        "path": "C:\\Users\\clybyer\\OneDrive - AY McDonald Manufacturing\\JCM Digital Co-worker\\Severe-Warning\\artifacts\\quality-002-visual-acceptance\\captures\\candidate_07_gameplay_hud_844x390.png",
+        "sha256": "7999ae10ab934234f91ad804a2b53a2e7aa328493f8b9be9a7678b033bde6a58",
+        "sizeBytes": 222698
+      }
+    },
+    "measurements": {
+      "newspaperPhone": {
+        "columns": 3,
+        "headingFontSize": "12px",
+        "cardClientHeight": 357,
+        "cardScrollHeight": 357,
+        "launchRect": {
+          "top": 333.859375,
+          "bottom": 367.40625,
+          "left": 242,
+          "right": 602
+        },
+        "viewportHeight": 390,
+        "siteCardBg": "rgba(255, 255, 255, 0.38)",
+        "siteCardColor": "rgb(24, 34, 51)",
+        "siteHeadingColor": "rgb(24, 34, 51)",
+        "visiblePrototype": false
+      },
+      "cinematic": {
+        "ghostPaperVisible": null,
+        "barnTrimPresent": false,
+        "cameraFov": 45
+      },
+      "storm": {
+        "q2State": {
+          "puffCount": 18,
+          "groundDustCount": 9,
+          "sample": [
+            {
+              "name": "SWQuality002StormOrbit1",
+              "y": 19.607
+            },
+            {
+              "name": "SWQuality002StormOrbit2",
+              "y": 23.932
+            },
+            {
+              "name": "SWQuality002StormOrbit3",
+              "y": 28.257
+            },
+            {
+              "name": "SWQuality002StormOrbit4",
+              "y": 32.581
+            },
+            {
+              "name": "SWQuality002StormOrbit5",
+              "y": 36.906
+            },
+            {
+              "name": "SWQuality002StormOrbit6",
+              "y": 41.231
+            },
+            {
+              "name": "SWQuality002StormOrbit7",
+              "y": 31.324
+            },
+            {
+              "name": "SWQuality002StormOrbit8",
+              "y": 35.649
+            }
+          ]
+        },
+        "stormChildrenCount": 27,
+        "childNames": [
+          "SWVisualSlice6StormShell1",
+          "SWVisualSlice6StormShell2",
+          "SWVisualSlice6StormShell3",
+          "SWVisualSlice6CondensationStreak1",
+          "SWVisualSlice6CondensationStreak2",
+          "SWVisualSlice6CondensationStreak3",
+          "SWVisualSlice6CondensationStreak4",
+          "SWVisualSlice6CondensationStreak5",
+          "SWVisualSlice6CondensationStreak6",
+          "SWVisualSlice6CondensationStreak7",
+          "SWVisualSlice6CondensationStreak8",
+          "SWVisualSlice6CondensationStreak9",
+          "SWVisualSlice6CondensationStreak10",
+          "SWVisualSlice6CondensationStreak11",
+          "SWVisualSlice6EdgeWisp1"
+        ]
+      },
+      "countyFair": {
+        "profile": "county-fair-after-dark",
+        "bgColor": "273443",
+        "fogDensity": 0.002551408200157814,
+        "fogColor": "566367",
+        "ambientIntensity": 0.9094900957467613,
+        "dirIntensity": 1.6289803527860611,
+        "hasFairGround": true,
+        "bulbCount": 20,
+        "tentCount": 8,
+        "hasWheel": true,
+        "openingActive": false
+      },
+      "coastal": {
+        "profile": "gullwind-storm-coast",
+        "bgColor": "354a59",
+        "fogDensity": 0.0022706432088284664,
+        "fogColor": "566367",
+        "ambientIntensity": 0.9133346949252936,
+        "dirIntensity": 1.6357237868854542,
+        "hasOcean": true,
+        "hasLighthouse": true,
+        "foamCount": 10,
+        "postCount": 30,
+        "openingActive": false
+      },
+      "transitions": [
+        {
+          "step": "fair_launch",
+          "openingActive": false,
+          "site": "county-fair",
+          "bg": "141b2a"
+        },
+        {
+          "step": "after_quit_fair",
+          "bg": "0f172a",
+          "siteProfile": "heartland-home"
+        },
+        {
+          "step": "coastal_launch",
+          "openingActive": false,
+          "site": "coastal-boardwalk",
+          "bg": "476b78"
+        },
+        {
+          "step": "after_quit_coastal",
+          "bg": "0f172a",
+          "siteProfile": "heartland-home"
+        }
+      ]
+    },
+    "errors": {
+      "pageErrors": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "httpErrors": []
+    }
+  }
+}
