@@ -1,0 +1,36 @@
+{
+  "version": "SW_FEEL_001_DESTRUCTION_CONSEQUENCE_V1",
+  "initialized": true,
+  "totalDestructionsHandled": 3,
+  "totalDamageStagesHandled": 0,
+  "activeDebrisCount": 0,
+  "activeShockwaveCount": 0,
+  "activeDustPuffCount": 0,
+  "maxConcurrentDebris": 21,
+  "materialBreakdown": {
+    "wood": 1,
+    "masonry": 0,
+    "glass": 1,
+    "metal": 0,
+    "tree": 1,
+    "carnival": 0,
+    "silo": 0,
+    "concrete": 0,
+    "other": 0
+  },
+  "lastEvent": {
+    "x": -215.93359482387388,
+    "z": -182.0048420600877,
+    "kind": "tree",
+    "materialFamily": "tree",
+    "footprint": 5.5,
+    "time": 4851.600000023842
+  },
+  "poolStats": {
+    "debrisPoolSize": 48,
+    "shockwavePoolSize": 8,
+    "dustPoolSize": 24,
+    "recycledCount": 5
+  },
+  "resetsCount": 1
+}
