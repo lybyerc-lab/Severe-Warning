@@ -1,11 +1,19 @@
 # Replay Expansion Status
 
-Status: queued product direction, not active implementation.
+> **SUPERSEDED STATUS SNAPSHOT**
+>
+> This file previously described the first Stage 2B worker batch and its follow-on sequence. That execution state is complete and must not be used as current task authority.
 
-The current Codex first batch remains SW-WORLD-003, SW-GAME-002, and SW-QA-002. Do not move those prepared branches merely because later product direction was added to the Director docs branch.
+Current execution status lives in:
 
-After the first batch returns, sequence:
-1. extensible Storm Site/level framework;
-2. light action RPG/MOO-LAH/ability progression;
-3. newspaper UI/PWA in conflict-safe order;
-4. new site content packages such as fairground and coastal boardwalk.
+- `Docs/ACTIVE_HANDOFF.md`
+- `Docs/ACTIVE_PRODUCTION_SLATE.md`
+- exact current task issues and exact branch/commit/CI evidence
+
+Long-form replay/product direction remains in:
+
+- `Docs/LEVEL_AND_RPG_EXPANSION.md`
+- `Docs/STAGE2B_REPLAY_EXPANSION_INDEX.md`
+- `Docs/GAME_DIRECTOR.md`
+
+Historical versions of this status file remain available through Git history.
