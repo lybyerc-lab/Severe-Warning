@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { createHash } from 'node:crypto';
 import { readFile, stat, mkdir, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,6 +54,7 @@ const pageErrors = [];
 const consoleErrors = [];
 const httpErrors = [];
 const screenshots = [];
+const screenshotHashes = {};
 
 let browser = null;
 
@@ -85,6 +87,9 @@ try {
     const qaPath = path.join(qaArtifactsDir, filename);
     const visualPath = path.join(visualArtifactsDir, filename);
     await page.screenshot({ path: qaPath, fullPage: false });
+    const bytes = await readFile(qaPath);
+    const hash = createHash('sha256').update(bytes).digest('hex');
+    screenshotHashes[filename] = hash;
     await copyFile(qaPath, visualPath);
     screenshots.push(filename);
   };
@@ -92,6 +97,25 @@ try {
   // 1. Initial State Check
   const initState = await page.evaluate(() => globalThis.getSwWorld007State());
   check('initialStateMarkerIsCorrect', initState.marker === 'SW_WORLD_007_SECONDARY_STORM_FORMS_V1');
+
+  // Enter the established presentation-only QA gameplay view before any visual capture.
+  // This hides the newspaper/main-menu overlay without changing gameplay authority.
+  const qaView = await page.evaluate(() => {
+    const prepared = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.prepareQaView?.('slice6-storm');
+    if (typeof renderer !== 'undefined' && renderer.render && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
+      renderer.render(scene, camera);
+    }
+    const menu = document.getElementById('mainMenu');
+    const style = menu ? getComputedStyle(menu) : null;
+    const mainMenuHidden = !menu
+      || menu.classList.contains('hidden')
+      || style?.display === 'none'
+      || style?.visibility === 'hidden'
+      || Number(style?.opacity || 1) === 0;
+    return { prepared: Boolean(prepared), mainMenuHidden };
+  });
+  check('gameplayQaViewPrepared', qaView.prepared === true, JSON.stringify(qaView));
+  check('mainMenuHiddenBeforeStormCapture', qaView.mainMenuHidden === true, JSON.stringify(qaView));
 
   // 2. Select Supercell
   await page.evaluate(() => {
@@ -103,7 +127,6 @@ try {
   await page.waitForTimeout(200);
 
   const supercellState = await page.evaluate(() => {
-    // Advance frames to simulate motion
     for (let i = 0; i < 10; i++) {
       globalThis.__SW_WORLD_007_QA__.triggerUpdate(performance.now() + i * 33);
       if (typeof renderer !== 'undefined' && renderer.render && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
@@ -124,7 +147,6 @@ try {
   check('supercellHailShaftPresent', supercellState.supercellDetails.hasHailShaft === true);
   check('supercellFramesAnimated', supercellState.supercellFrames >= 10);
 
-  // Position camera for Supercell overview
   await page.evaluate(() => {
     if (typeof camera !== 'undefined' && typeof storm !== 'undefined') {
       camera.position.set(storm.pos.x + 65, storm.pos.y + 45, storm.pos.z + 75);
@@ -134,7 +156,6 @@ try {
   });
   await captureFrame('01-supercell-overview.png');
 
-  // Position camera for Supercell ground-level action view
   await page.evaluate(() => {
     if (typeof camera !== 'undefined' && typeof storm !== 'undefined') {
       camera.position.set(storm.pos.x + 35, storm.pos.y + 8, storm.pos.z + 40);
@@ -171,7 +192,6 @@ try {
   check('derechoOutflowDustPresent', derechoState.derechoDetails.hasOutflowDust === true);
   check('derechoFramesAnimated', derechoState.derechoFrames >= 10);
 
-  // Position camera for Derecho overview
   await page.evaluate(() => {
     if (typeof camera !== 'undefined' && typeof storm !== 'undefined') {
       camera.position.set(storm.pos.x + 70, storm.pos.y + 40, storm.pos.z + 80);
@@ -181,7 +201,6 @@ try {
   });
   await captureFrame('03-derecho-overview.png');
 
-  // Position camera for Derecho front-facing microburst view
   await page.evaluate(() => {
     if (typeof camera !== 'undefined' && typeof storm !== 'undefined') {
       camera.position.set(storm.pos.x, storm.pos.y + 6, storm.pos.z + 55);
@@ -219,7 +238,28 @@ try {
 
   await captureFrame('05-storm-switch-tornado.png');
 
-  // Error assertions
+  const uniqueScreenshotHashes = new Set(Object.values(screenshotHashes));
+  check(
+    'stormEvidenceFramesAreDistinct',
+    uniqueScreenshotHashes.size === screenshots.length,
+    `${uniqueScreenshotHashes.size}/${screenshots.length} unique :: ${JSON.stringify(screenshotHashes)}`,
+  );
+
+  const captureSurface = await page.evaluate(() => {
+    const menu = document.getElementById('mainMenu');
+    if (!menu) return { visible: false };
+    const style = getComputedStyle(menu);
+    const rect = menu.getBoundingClientRect();
+    return {
+      visible: style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && Number(style.opacity || 1) > 0
+        && rect.width > 0
+        && rect.height > 0,
+    };
+  });
+  check('mainMenuNotVisibleInStormEvidence', captureSurface.visible === false, JSON.stringify(captureSurface));
+
   check('noPageErrors', pageErrors.length === 0, `found ${pageErrors.length}`);
   check('noRuntimeConsoleErrors', consoleErrors.length === 0, `found ${consoleErrors.length}`);
   check('noHttpErrors', httpErrors.length === 0, `found ${httpErrors.length}`);
@@ -239,6 +279,7 @@ const report = {
   consoleErrors,
   httpErrors,
   screenshots,
+  screenshotHashes,
 };
 
 await writeFile(path.join(qaArtifactsDir, 'report.json'), JSON.stringify(report, null, 2), 'utf8');
