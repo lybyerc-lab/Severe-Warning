@@ -1,0 +1,175 @@
+{
+  "stormMeshes": {
+    "tornado": null,
+    "supercell": {
+      "visible": false,
+      "children": [
+        {
+          "name": "Mesh",
+          "type": "Mesh",
+          "isMesh": true,
+          "isPoints": false,
+          "geometry": "CylinderGeometry",
+          "material": "MeshStandardMaterial",
+          "color": "0f172a",
+          "opacity": 0.85
+        },
+        {
+          "name": "Mesh",
+          "type": "Mesh",
+          "isMesh": true,
+          "isPoints": false,
+          "geometry": "CylinderGeometry",
+          "material": "MeshStandardMaterial",
+          "color": "0284c7",
+          "opacity": 0.65
+        },
+        {
+          "name": "Mesh",
+          "type": "Mesh",
+          "isMesh": true,
+          "isPoints": false,
+          "geometry": "CylinderGeometry",
+          "material": "MeshBasicMaterial",
+          "color": "38bdf8",
+          "opacity": 0.35
+        },
+        {
+          "name": "Points",
+          "type": "Points",
+          "isMesh": false,
+          "isPoints": true,
+          "geometry": "BufferGeometry",
+          "material": "PointsMaterial",
+          "color": "e0f2fe",
+          "opacity": 0.85
+        }
+      ]
+    },
+    "derecho": {
+      "visible": false,
+      "children": [
+        {
+          "name": "Mesh",
+          "type": "Mesh",
+          "isMesh": true,
+          "isLine": false,
+          "geometry": "CylinderGeometry",
+          "material": "MeshStandardMaterial",
+          "color": "1e293b",
+          "opacity": 0.78
+        },
+        {
+          "name": "LineSegments",
+          "type": "LineSegments",
+          "isMesh": false,
+          "isLine": true,
+          "geometry": "BufferGeometry",
+          "material": "LineBasicMaterial",
+          "color": "38bdf8",
+          "opacity": 0.75
+        }
+      ]
+    }
+  },
+  "pauseElements": {
+    "overlayHtml": "<div id=\"pauseOverlay\" hidden=\"\" inert=\"\" aria-hidden=\"true\">\n  <div class=\"pause-card\">\n    <h2>⏸️ RUN PAUSED</h2>\n    <div class=\"pause-stats\" id=\"pauseStatsBox\">\n      <div>SCORE: <b>0</b> | RATING: <b>EF-0</b></div>\n      <div>TIME REMAINING: <b>03:00</b></div>\n      <div>DISTRICT: <b>PINE RIDGE</b></div>\n    </div>\n    <div class=\"pause-btns\">\n      <button class=\"pause-btn primary\" onclick=\"togglePauseMenu()\">RESUME RUN</button>\n      <button class=\"pause-btn\" id=\"btnPauseAudio\" onclick=\"toggleAudioMute()\">AUDIO: ON 🔊</button>\n      <button class=\"pause-btn\" onclick=\"restartCurrentRun()\">RESTART RUN</button>\n      <button class=\"pause-btn\" onclick=\"quitToMainMenu()\">MAIN MENU</button>\n    </div>\n  </div>\n</div>",
+    "cardHtml": "<div class=\"pause-card\">\n    <h2>⏸️ RUN PAUSED</h2>\n    <div class=\"pause-stats\" id=\"pauseStatsBox\">\n      <div>SCORE: <b>0</b> | RATING: <b>EF-0</b></div>\n      <div>TIME REMAINING: <b>03:00</b></div>\n      <div>DISTRICT: <b>PINE RIDGE</b></div>\n    </div>\n    <div class=\"pause-btns\">\n      <button class=\"pause-btn primary\" onclick=\"togglePauseMenu()\">RESUME RUN</button>\n      <button class=\"pause-btn\" id=\"btnPauseAudio\" onclick=\"toggleAudioMute()\">AUDIO: ON 🔊</button>\n      <button class=\"pause-btn\" onclick=\"restartCurrentRun()\">RESTART RUN</button>\n      <button class=\"pause-btn\" onclick=\"quitToMainMenu()\">MAIN MENU</button>\n    </div>\n  </div>"
+  },
+  "hudElements": {
+    "abilityButtons": [],
+    "mooMeter": "<b id=\"mooMeterVal\">MOO LEVEL: FIND HART FARM</b>"
+  },
+  "destructionConfig": {
+    "totalTargets": 157,
+    "targetTypes": [
+      "cottage",
+      "tree",
+      "windbreak",
+      "rowhouse",
+      "garage",
+      "shop",
+      "apartment",
+      "office",
+      "civic"
+    ],
+    "hasWreckedGag": false,
+    "debrisParticles": null
+  },
+  "rpgStore": {
+    "schemaVersion": 1,
+    "moolah": 0,
+    "earned": 0,
+    "spent": 0,
+    "upgrades": {
+      "pull": 0,
+      "gust": 0,
+      "gridZap": 0
+    },
+    "stormTriangle": {
+      "version": "storm-triangle-v1",
+      "slots": [
+        "pull",
+        "gust",
+        "gridZap"
+      ]
+    },
+    "lastReward": null
+  },
+  "quality002State": {
+    "marker": "SW_QUALITY_002_VISUAL_RESCUE_V1",
+    "stormVolumeBuilds": 1,
+    "stormVolumeFrames": 14,
+    "stormVolume": {
+      "puffCount": 18,
+      "groundDustCount": 9,
+      "sample": [
+        {
+          "name": "SWQuality002StormOrbit1",
+          "y": 4.113
+        },
+        {
+          "name": "SWQuality002StormOrbit2",
+          "y": 6.299
+        },
+        {
+          "name": "SWQuality002StormOrbit3",
+          "y": 8.485
+        },
+        {
+          "name": "SWQuality002StormOrbit4",
+          "y": 10.671
+        },
+        {
+          "name": "SWQuality002StormOrbit5",
+          "y": 12.856
+        },
+        {
+          "name": "SWQuality002StormOrbit6",
+          "y": 15.042
+        },
+        {
+          "name": "SWQuality002StormOrbit7",
+          "y": 14.243
+        },
+        {
+          "name": "SWQuality002StormOrbit8",
+          "y": 16.428
+        }
+      ]
+    },
+    "siteIdentityBuilds": 0,
+    "siteProfile": "heartland-home",
+    "stormSiteOpeningBypasses": 0,
+    "cinematicFrames": 0,
+    "cinematicPolishedSessions": 0,
+    "cinematicActive": false,
+    "cowTorsoGeometry": null,
+    "prototypeChromeHidden": 3,
+    "newspaper": {
+      "clientHeight": 357,
+      "scrollHeight": 357,
+      "overflowY": "auto"
+    }
+  }
+}
