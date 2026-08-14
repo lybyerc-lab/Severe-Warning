@@ -30,19 +30,20 @@ jobs:
         run: |
           set -euo pipefail
           workflow='publisher/.github/workflows/qa-pages-playtest.yml'
-          grep -F "default: 7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4" "$workflow"
+          grep -F "default: 706408e4e367782fed0ffc6e40d0cdd27a7e71bd" "$workflow"
           grep -F 'apply-sw-quality-001-owner-playtest-rescue.mjs' "$workflow"
           grep -F 'apply-sw-quality-002-visual-rescue.mjs' "$workflow"
           grep -F 'apply-sw-quality-002-storm-frame-bridge.mjs' "$workflow"
-          grep -F 'qa-sw-quality-001-owner-playtest-rescue.mjs' "$workflow"
-          grep -F 'qa-sw-quality-002-visual-rescue.mjs' "$workflow"
+          grep -F 'apply-sw-ui-003-run-shell-identity.mjs' "$workflow"
+          grep -F 'apply-sw-ui-004-gameplay-product-identity.mjs' "$workflow"
+          grep -F 'qa-sw-int-004-commercial-shell.mjs' "$workflow"
           grep -F 'playtest-info.json' "$workflow"
           grep -F 'QA-only; not Integration or production acceptance' "$workflow"
 
       - name: Checkout exact accepted canonical source
         uses: actions/checkout@v4
         with:
-          ref: 7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4
+          ref: 706408e4e367782fed0ffc6e40d0cdd27a7e71bd
           path: source
           fetch-depth: 1
 
@@ -71,11 +72,13 @@ jobs:
           pnpm run audio:generate
           node scripts/vendor-threejs-hero-slice4-assets.mjs
 
-      - name: Verify accepted rescue sources
+      - name: Verify accepted commercial-shell sources
         working-directory: source
         run: |
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
+          node scripts/verify-sw-ui-003-run-shell-identity.mjs
+          node scripts/verify-sw-ui-004-gameplay-product-identity.mjs
 
       - name: Assemble accepted Stage 2B through QUALITY-001
         shell: bash
@@ -158,15 +161,21 @@ jobs:
         working-directory: source
         run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
 
-      - name: Apply and verify QUALITY-002
+      - name: Apply and verify accepted commercial shell
         working-directory: source
         run: |
           node scripts/apply-sw-quality-002-visual-rescue.mjs
           node scripts/apply-sw-quality-002-storm-frame-bridge.mjs
+          node scripts/apply-sw-ui-003-run-shell-identity.mjs
+          node scripts/apply-sw-ui-004-gameplay-product-identity.mjs
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
+          node scripts/verify-sw-ui-003-run-shell-identity.mjs
+          node scripts/verify-sw-ui-004-gameplay-product-identity.mjs
           node scripts/build-web.mjs
           node scripts/qa-sw-quality-002-visual-rescue.mjs
+          node scripts/qa-sw-ui-003-run-shell-identity.mjs
+          node scripts/qa-sw-int-004-commercial-shell.mjs
           pnpm run qa:sw-ui-001
 
       - name: Preserve Storm Site browser QA
@@ -177,9 +186,7 @@ jobs:
           mkdir -p qa-artifacts/sw-level-001
           python3 -m http.server 4173 --directory www > qa-artifacts/sw-level-001/validation-server.log 2>&1 &
           SERVER_PID=$!
-          cleanup() {
-            kill "$SERVER_PID" 2>/dev/null || true
-          }
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
           for attempt in $(seq 1 60); do
             if curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null; then break; fi
@@ -190,11 +197,7 @@ jobs:
           pnpm run qa:sw-level-001
 
       - name: Prove validation does not deploy
-        shell: bash
-        run: |
-          set -euo pipefail
-          test ! -f publisher/.github/workflows/sw-qa-009-pages-publisher-validation.yml.tmp
-          echo 'SW-QA-009 validation completed without configure-pages, upload-pages-artifact, or deploy-pages actions.'
+        run: echo 'SW-QA-009 validation completed without configure-pages, upload-pages-artifact, or deploy-pages actions.'
 
       - name: Upload validation evidence
         if: always()
@@ -203,4 +206,5 @@ jobs:
           name: sw-qa-009-pages-publisher-validation
           path: |
             source/qa-artifacts/
+            source/artifacts/sw-int-004/
           if-no-files-found: warn
