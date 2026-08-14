@@ -48,6 +48,12 @@ await writeFile('scripts/.ci-qa-sw-game-002-state-driven.mjs', game, 'utf8');
 let score = await readFile('scripts/qa-sw-score-001-persistent-scorekeeper.mjs', 'utf8');
 score = replaceExact(
   score,
+  "  const page = await context.newPage();\n  page.on('pageerror', error => report.pageErrors.push(error.message));",
+  "  const page = await context.newPage();\n  const ciHttpErrors = [];\n  const ciFailedRequests = [];\n  page.on('response', response => { if (response.status() >= 400) ciHttpErrors.push({ status: response.status(), url: response.url() }); });\n  page.on('requestfailed', request => ciFailedRequests.push({ url: request.url(), errorText: request.failure()?.errorText || 'unknown' }));\n  page.on('pageerror', error => report.pageErrors.push(error.message));",
+  'SCORE HTTP diagnostics'
+);
+score = replaceExact(
+  score,
   "  await page.waitForTimeout(500);\n  const mooRegressionStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
   "  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\n  const mooRegressionStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
   'SCORE started activation'
@@ -82,6 +88,12 @@ score = replaceExact(
   "  await page.waitForFunction(() => { const state = globalThis.getMooLevelQaState?.(); const run = state?.mooRun; return run?.relocated >= 20 && run?.props >= 10 && run?.airtime > 0 && state?.allMooCowsSafe === true; }, null, { timeout: 20000 });\n  const mooRegressionCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
   'SCORE Moo objectives'
 );
+score = replaceExact(
+  score,
+  "  report.assetTransportErrors = consoleErrors.filter(message => /ERR_FILE_NOT_FOUND|Failed to load resource/.test(message));\n  report.runtimeConsoleErrors = consoleErrors.filter(message => !report.assetTransportErrors.includes(message));",
+  "  report.assetTransportErrors = consoleErrors.filter(message => /ERR_FILE_NOT_FOUND|Failed to load resource/.test(message));\n  report.runtimeConsoleErrors = consoleErrors.filter(message => !report.assetTransportErrors.includes(message));\n  report.ciHttpErrors = ciHttpErrors;\n  report.ciFailedRequests = ciFailedRequests;\n  console.log('CI_HTTP_ERRORS ' + JSON.stringify(ciHttpErrors));\n  console.log('CI_FAILED_REQUESTS ' + JSON.stringify(ciFailedRequests));",
+  'SCORE HTTP diagnostic report'
+);
 await writeFile('scripts/.ci-qa-sw-score-001-state-driven.mjs', score, 'utf8');
 
-console.log('Built state-driven CI adapters. Assertions are unchanged; only fixed wall-clock waits are replaced with observable-state waits.');
+console.log('Built state-driven CI adapters. Assertions are unchanged; fixed wall-clock waits become observable-state waits, with CI-only HTTP diagnostics for the raw Scorekeeper fixture.');
