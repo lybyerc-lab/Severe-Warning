@@ -1,0 +1,66 @@
+name: SW-UI-002 Landscape Unleash
+
+on:
+  push:
+    branches:
+      - agent/sw-ui-002-landscape-unleash
+    paths:
+      - runtime/sw-ui-002-landscape-unleash.js
+      - scripts/apply-sw-ui-002-landscape-unleash.mjs
+      - scripts/qa-sw-ui-002-landscape-unleash.mjs
+      - .github/workflows/sw-ui-002-landscape-unleash.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-ui-002-landscape-unleash
+  cancel-in-progress: true
+
+jobs:
+  landscape-launch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout correction branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.9.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare deterministic local assets
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Preserve accepted newspaper contracts
+        run: |
+          node scripts/verify-sw-ui-001-newspaper-presentation.mjs
+          node scripts/qa-sw-ui-001-newspaper-presentation.mjs
+
+      - name: Prove landscape UNLEASH STORM reachability
+        run: node scripts/qa-sw-ui-002-landscape-unleash.mjs
+
+      - name: Upload landscape evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-ui-002-landscape-unleash
+          path: qa-artifacts/sw-ui-002-landscape
+          if-no-files-found: warn
