@@ -1,316 +1,242 @@
 # Severe Weather Warning Active Production Slate
 
-Last updated: 2026-08-10
+Last updated: 2026-08-14 16:36 America/Chicago
 Status: canonical near-term work queue
-
-This file exists so project direction survives short chat windows. Product identity lives in `Docs/GAME_DIRECTOR.md`. Detailed replay expansion direction lives in `Docs/LEVEL_AND_RPG_EXPANSION.md`. Chat is temporary working context.
+Director authority branch: `agent/director-stage2b-game-direction`
 
 ## Operating law
 
-- The game is **Severe Weather Warning**. Player-facing branding uses the full title unless a documented platform constraint requires an explicitly approved short label.
-- Severe Weather Warning is a mobile arcade destruction game with **light action RPG progression**.
-- GitHub is durable project memory.
-- Owner feedback may be qualitative. The Director translates it into game-design and implementation contracts.
-- The owner is not the branch/QA/task coordinator.
-- Green CI is engineering evidence, not game-quality acceptance.
-- Prototype gear is for answering uncertain visual/game-feel questions quickly.
-- Production gear remains exact-source, sealed, regression-gated, integration-reviewed, and owner-playtested.
-- One worker, one task, one writable branch/worktree.
+- Product title is **Severe Weather Warning**.
+- Genre is mobile arcade destruction with light action RPG progression.
+- Player fantasy is **YOU ARE THE STORM**.
+- GitHub is durable project memory; chat is working context.
+- Owner feedback is product input, not automatic source mutation.
+- Director owns decomposition, sequencing, conflict prevention, QA review, integration, and repo memory.
+- Worker agents execute bounded tasks only.
+- One task, one worker, one writable branch/worktree.
+- Green CI is evidence, not product acceptance.
+- Branch existence is not proof a worker ran or finished.
+- Current execution truth is governed by exact issue/branch/commit/CI evidence and `Docs/ACTIVE_HANDOFF.md`.
 
-## Current public QA checkpoint
+## Current accepted Stage 2B base
 
-Public QA root:
+Canonical integration branch:
 
-`https://lybyerc-lab.github.io/Severe-Warning/`
+`agent/sw-int-003-stage2b-accepted-stack`
 
-Exact deployed Stage 2A integration candidate:
+Exact accepted canonical head:
 
-- PR #59
-- Hero Slice Run #29
-- source `b501737e71e61b979901d4899d969390aa37b1f4`
-- artifact `severe-weather-threejs-hero-slice6-web-29`
-- Pages publisher Run #84
+`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-Status: technically green and publicly playable, but **not visual/product accepted**.
+This head includes the accepted Stage 2B stack plus the owner-playtest QUALITY-001/QUALITY-002 rescue. Issues #79 and #80 are closed completed.
 
-## QA #29 owner playtest truth
+The prior canonical `271e5d3d7b438727df8b217ad59b7974ff1374b6` is now the pre-rescue comparison baseline, not current gameplay authority.
 
-Positive:
+## Accepted Stage 2B inputs already in canonical lineage
 
-- a full round was fun;
-- core tornado-control/destruction gameplay remains worth protecting.
+- SW-GAME-002 Hart Farm unlock + real Moo Level: `89aeac92d032bfc6546cb8da7c52effc7a408aa1`
+- SW-PWA-001 accepted PWA source: `7cda055a4773c5c9dc69c0d02018cd9454a86628`
+- SW-UI-001 newspaper: `43348db9b56ec18bca8418c8dfe13470aad4722d`
+- SW-SCORE-001 scorekeeper: `3d1661cfdd019f0285dc8556d0e598c22f0cb489`
+- SW-RPG-001 MOO-LAH + Storm Triangle: `ce1e47c858cdbca5039fb7ad7ad2545f4537c238`
+- SW-RPG-002 Slingshot: `97aa6ae792ed5fb201c0fd35d748a4dfff971e61`
+- SW-WORLD-006 accepted visual stack: `1264617b49a95241024f52ba550713ba28d84888`
+- SW-LEVEL-001 Storm Sites: `1350cee7535220fb9fc5e7c1b4de284e6aae8156`
+- SW-UI-002 landscape launch correction: `271e5d3d7b438727df8b217ad59b7974ff1374b6`
+- QUALITY-001/002 owner-playtest rescue accepted canonical head: `7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-Blocking notes and Stage 2B direction:
+Do not reopen accepted source branches for opportunistic cleanup. New work layers from the exact assigned canonical base unless the Director explicitly specifies another base.
 
-1. Default tornado reads like **"attack bubbles"**.
-2. Graphics feel regressed in some areas.
-3. Existing Hart Farm cow-ring Easter egg has no clear gameplay purpose.
-4. Owner wants a genuine secret Cow Level. The Hart Farm encounter should unlock it.
-5. Game needs stronger replayability and commercial-mobile presentation.
-6. Quality target is a real video game that is exciting to show people, not merely a demonstration of Three.js or AI-generated code.
-7. Newspaper presentation should become a goofy recurring local-news UI language across opening, storm select, **UNLEASH STORM**, and end-of-run results.
-8. GitHub Pages PWA installability is desired to make phone playtesting and sharing feel more app-like without replacing Android device checkpoints.
-9. The current four levels are a starting set, not the intended final content count.
-10. Future destruction sites should include fairgrounds, piers/boardwalks, beaches, malls/strip malls, stadium/event grounds, grocery-store variants, and other authored locations.
-11. Replays of a site may vary in authored ways and do not need identical props/objectives every time.
-12. The original light-action-RPG intent remains active: earned currency, storm-form unlocks, and upgradeable abilities should become part of the long-term replay loop.
+## Latest product-quality evidence
 
-These notes are product truth for Stage 2B.
+### Independent QUALITY-002 visual acceptance
 
-## Active phase
+Evidence branch/head:
 
-# Stage 2B: Make It Feel Like a Game
+`agent/sw-qa-quality-002-visual-acceptance`
+`ec723a14474e5db502b8a5fd7899807dad7db4d0`
 
-Umbrella issue: #60
+Reviewed visual candidate:
 
-North star: `Docs/GAME_DIRECTOR.md`
+`f493e3d51f6d772d89bdbe945529ebde9d58196f`
 
-Director docs branch: `agent/director-stage2b-game-direction`
+Verdict: PASS across the owned QUALITY-002 areas.
 
-First-batch coordination base:
+### Post-QUALITY-002 hostile audit
 
-`82e6c6fbeffffc3ee929c00260f924e36c70de28`
+Audit branch/head:
 
-That coordination base descends directly from public QA #29 source `b501737e71e61b979901d4899d969390aa37b1f4` and adds Stage 2B direction/docs only. It does not alter gameplay/runtime behavior.
+`agent/sw-audit-post-quality-002-gap-map`
+`ea2946912c623504e22da74a4f58463f373b3491`
 
-The Director docs branch may continue accumulating later product decisions. Do not silently move already-prepared worker branches off the exact first-batch coordination base merely because Director documentation advanced afterward.
+No P0 blockers found.
 
-Acceptance question:
+Remaining P1 gaps:
+1. Supercell/Derecho storm identity.
+2. Pause/site-label identity.
+3. Results hierarchy/fanfare.
+4. MOO-LAH/Storm Triangle tactile presentation.
+5. Secret Moo Level bespoke visual/HUD identity.
+6. Physical destruction consequence/anatomy.
 
-> Does the candidate look and play materially more like a finished, replayable commercial mobile game than QA #29?
+## ACTIVE NOW: parallel commercial-quality wave
 
-If the answer requires an explanation of where to look, the change probably did not move far enough.
+All tasks below use exact base:
 
-## First parallel batch
+`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-All first-batch workers verify HEAD equals the Stage 2B coordination base above before editing.
+They are deliberately separated by ownership to minimize conflicts.
 
-### SW-WORLD-003: Storm hero recovery
+### #81 — SW-WORLD-007: Supercell and Derecho atmospheric identity overhaul
 
-Issue: #61
-Branch: `agent/sw-world-003-storm-hero-recovery`
-State: ready for WORLD Codex launch
+Branch:
+`agent/sw-world-007-secondary-storm-forms`
 
-Goal:
-
-- remove the mobile "attack bubbles" read;
-- recover the tornado as one connected atmospheric hero mass;
-- audit graphics regression against stronger earlier visual evidence;
-- preserve gameplay authority.
-
-Director visual bias: ragged condensation-column/wedge hybrid, continuous mass, streak structure, dark inner core, lower debris sheath, strong ground attachment, broken cloud-base transition, no visible effect primitives.
-
-### SW-GAME-002: Real Moo Level path
-
-Issue: #62
-Branch: `agent/sw-game-002-moo-level-unlock`
-State: ready for GAME Codex launch
+Primary question:
+**Can the two secondary storm forms look like severe weather instead of visible Three.js primitives?**
 
 Goal:
+- Supercell becomes a connected rotating mesocyclone/anvil/rain-hail mass;
+- Derecho becomes an advancing shelf/arcus cloud wall;
+- Hail and Burst remain mechanically unchanged but visually originate from the storm body;
+- accepted Tornado remains untouched.
 
-- convert Hart Farm cow ring into a clear short unlock challenge;
-- persist `mooLevelUnlocked`;
-- reveal a secret MOO LEVEL node;
-- build a dedicated roughly 90-second Moo County Fair bovine score-attack bonus stage;
-- make cow relocation/airtime and a MOO METER meaningful;
-- provide a replayable best score and clear return path.
+Protected:
+movement, steering, camera, abilities, damage, scoring, sites, UI, RPG, Cow safety.
 
-This is an intentional bounded reopening of secret-level/progression authority. Unrelated gameplay remains protected.
+### #82 — SW-FEEL-001: Physical destruction consequence presentation
 
-### SW-QA-002: Rapid prototype evidence lane
+Branch:
+`agent/sw-feel-001-destruction-consequence`
 
-Issue: #63
-Branch: `agent/sw-qa-002-rapid-prototype-lane`
-State: ready for QA Codex launch
-
-Goal:
-
-- create a fast exact-source build/smoke/screenshot/web-artifact lane for prototypes;
-- materially shorten the time from idea to visual evidence;
-- give prototype evidence zero production authority;
-- preserve all existing full sealed QA and Pages-publisher contracts.
-
-## Next queue after first batch
-
-Do not launch these until first-batch evidence teaches us what should be kept and the Director assigns exact conflict-safe bases.
-
-### SW-LEVEL-001: Extensible Storm Site framework
-
-Issue: #66
-State: queued after GAME-002 review because map/progression seams may overlap.
+Primary question:
+**Does destroying a normal building visibly feel like the storm physically wrecked it?**
 
 Goal:
+- first bounded slice for ordinary houses/common commercial buildings;
+- expose readable roof/wall/facade failure, directional debris, and dust;
+- consume existing authoritative lethal-destruction truth;
+- make floating `WRECKED`/score text secondary to physical consequence.
 
-- move beyond four fixed levels through a reusable Storm Site/level-definition system;
-- preserve authored locations while allowing bounded run-to-run variation;
-- support levels with different target families, objective pools, secrets, rewards, or pure-destruction score-attack behavior;
-- prove the framework with substantially different content packages.
+Protected:
+health, damage, collision, scoring, targetability, coordinates, abilities, storm bodies, campaign, Cow safety.
 
-Preferred first proof directions:
+### #83 — SW-UI-003: Run-shell Americana identity for pause and results
 
-1. county fair/fairground pure-destruction vertical slice;
-2. coastal boardwalk/pier vertical slice with boats and a future Waterspout unlock feat.
+Branch:
+`agent/sw-ui-003-run-shell-identity`
 
-Established future families include beaches, malls/open-air retail, strip malls, stadiums/event grounds, grocery-store variants, and regional destruction playgrounds.
-
-Product read: **same place, different storm day**, not featureless procedural generation.
-
-### SW-RPG-001: MOO-LAH economy and ability progression
-
-Issue: #67
-State: queued after GAME-002 and first Stage 2B playtest evidence.
+Primary question:
+**Do pause and results feel like the same authored game as the accepted newspaper selector?**
 
 Goal:
+- replace generic cyan/web pause presentation with restrained Severe Weather Warning Americana identity;
+- display correct active location/site identity;
+- improve results hierarchy so score/rank is the emotional payoff;
+- preserve all existing result truth and pause lifecycle behavior.
 
-- restore the intended light-action-RPG layer;
-- working earned soft currency: **MOO-LAH**;
-- cow/Cow 17 face coin motif on one side, udder emblem on the reverse;
-- currency earned through good play, objectives, secrets, ranks, challenges, and selected feats;
-- persistent bounded upgrades for Pull, Gust, Grid Zap, and later storm-core utility;
-- base abilities remain complete and fun;
-- no real-money economy by default;
-- avoid fake upgrades and grind treadmills;
-- selected storm forms remain feat unlocks rather than purchases.
+Protected:
+pause/quit authority, scoring/rank/stat calculations, progression, gameplay, storm geometry, abilities, destruction authority, Cow safety, RPG mechanics.
 
-Established feat example: **launch a boat on a coastal site -> unlock Waterspout skin/form**.
+## NEXT WAVE CANDIDATES — NOT ACTIVE YET
 
-### SW-UI-001: Newspaper presentation system
+Do not implement these inside #81/#82/#83. They require separate bounded tickets after current evidence returns.
 
-Issue: #65
-State: queued after first-batch review, especially after GAME-002 because menu/results wiring may overlap.
+### Tactile MOO-LAH + Storm Triangle presentation
 
-Product law:
+Product problem:
+The progression system exists but currently reads like an administrative HTML table rather than an arcade reward/build desk.
 
-- any newspaper shown in-game has a goofy local-paper/tabloid vibe;
-- storm-type selection uses the newspaper language;
-- **UNLEASH STORM** becomes a newspaper-native launch action rather than a generic button;
-- the end-of-run scorecard is laid out like a fresh newspaper edition reporting the run;
-- opening newspapers use the same identity family;
-- all player-facing title/branding uses **Severe Weather Warning**.
+Likely direction:
+- stronger MOO-LAH token/reward feedback;
+- tactile purchase confirmation;
+- visually meaningful Storm Triangle loadout presentation;
+- preserve prices, upgrade truth, persistence, and exactly-three-slot law.
 
-Target outcome: beginning and end of a run feel like connected editions of the same ridiculous local-news universe, with the final scorecard strong enough to be screenshot-worthy.
+### Secret Moo Level legendary identity pass
 
-### SW-PWA-001: Installable GitHub Pages app shell
+Product problem:
+The real Moo Level exists mechanically but its environment/HUD still reads too much like a primitive sandbox.
 
-Issue: #64
-State: queued after SW-QA-002 because build/deployment files may overlap.
+Likely direction:
+- authored bonus-stage environment identity;
+- bespoke MOO METER arcade treatment;
+- more environmental comedy and motion while preserving cow safety and score authority.
 
-Goal:
+### World density / material-repetition pass
 
-- make the GitHub Pages build installable as **Severe Weather Warning**;
-- home-screen icon and standalone app-like launch;
-- correct `/Severe-Warning/` scope/start path behavior;
-- update/cache strategy that cannot strand QA testers on stale builds;
-- preserve exact build identity and full production QA authority;
-- retain Android APK/device checkpoints for actual physical acceptance.
+Product problem:
+Some Heartland/common architecture remains sparse or repetitive even after the stronger site-specific environment rescue.
 
-### Destruction and game-feel pass
+Likely direction:
+- authored neighborhood/commercial material hierarchy;
+- stronger environmental story and place density;
+- preserve road/parcel/target/collision authority.
 
-Planned owner: GAME plus presentation support.
+### Destruction expansion after SW-FEEL-001
 
-Focus:
+Only after the first consequence layer proves clean:
+- additional material/structure families;
+- stronger staged failure hierarchy;
+- selective sound/camera punctuation where separately authorized.
 
-- stronger impact/readability;
-- destruction-stage anatomy;
-- directional debris and dust;
-- restrained camera impulse;
-- sound/music punctuation;
-- combo/score feedback;
-- escalating spectacle without visual clutter.
+## HELD / FUTURE DIRECTION
 
-The task should preserve ordinary-contact destruction authority unless a specific behavior is deliberately reopened.
+Not active unless separately assigned:
+- Twin Tornadoes;
+- Waterspout unlock/form;
+- satellite feat;
+- broader Weather Map / U.S. expansion;
+- online/accounts/leaderboards;
+- additional Storm Site families;
+- larger audio overhaul;
+- release/physical Android checkpoint work.
 
-### Commercial presentation pass
+## Binding product laws
 
-Focus on moments that make the game feel shippable:
+### Storm
 
-- menu/weather-map hierarchy;
-- unlock/reward moments;
-- results-screen motivation;
-- readable objective presentation;
-- sound/UI transitions;
-- visual consistency across cinematic, gameplay, newspaper presentation, progression, and results.
+The storm is the visual hero. Every storm form must read as one connected dangerous atmospheric mass. Visible effect primitives, detached bubbles, stacked discs, clean cones, UFOs, laser barriers, and debug-wireframe reads fail the art direction.
 
-SW-UI-001 (#65) owns the first concrete newspaper identity slice of this broader pass.
+### Destruction
 
-## Level-library product law
+Fun and destruction come first. Destruction should expose believable/readable anatomy and consequence. Presentation may amplify authoritative destruction but may not silently become damage/scoring/collision authority.
 
-The current four levels are the beginning of the content library.
+### World
 
-Future sites do not all need the same things. A fairground may be almost pure destruction. A pier can be built around rides, arcades, boats, and beach objects. A stadium can focus on grandstands, scoreboards, lights, concessions, and tailgate lots. A retail site can use malls, strip malls, grocery anchors, parking lots, signs, carts, and loading areas.
+Art thesis: **storm-charged stylized Americana**.
+Visual promise: **beautiful at a glance, readable at speed, cinematic up close**.
+Authored places beat generic Blocktown repetition.
+Town/county campaign remains the home backbone. Storm Sites expand around it.
+Replay target remains **same place, different storm day**.
 
-Strongly themed locations matter more than forcing every site through one campaign template.
+### Newspaper / UI
 
-## Light-RPG product law
+Newspaper is recurring Severe Weather Warning identity across storm selection and results. Humor supports comprehension. Gameplay HUD/pause should belong to the same world without turning every surface into literal newspaper.
 
-The progression loop should make players care about what happens after the score screen without making the arcade game feel stingy.
+### RPG / replay
 
-Preferred loop:
+MOO-LAH remains local-first earned gameplay currency. Base abilities remain complete and fun. Exactly three equipped active abilities live in the Storm Triangle. Slingshot remains the first accepted Pull + Gust physical synergy.
 
-`play -> earn MOO-LAH/progress -> make a meaningful upgrade or unlock choice -> revisit favorite site or open a new one -> play differently`
+### Cows / comedy
 
-Not every unlock is purchased. Secrets and feats remain important.
+Cow 17, cows, and Moo Brew remain the comic backbone. Cows remain protected/non-targetable. Hart Farm is the unlock encounter; the dedicated Moo Level is the actual secret bonus level.
 
-## Existing accepted/protected features
+### Monetization / platform
 
-Preserve unless a specific Stage 2B issue reopens them:
+No stamina, wait timers, grind treadmill, or forced ads. Phone is a platform, not an excuse to make the game tiny. Android physical acceptance remains a separate deliberate device gate.
 
-- direct steering/input/general gameplay-camera feel;
-- ordinary tornado movement authority;
-- current base Pull and Gust behavior outside declared future upgrade layers;
-- integrated Grid Zap values/topology from SW-GAME-001 outside declared future upgrade layers;
-- road-safe utilities;
-- normal campaign scoring/timing/objectives;
-- Neon unlock/selection/persistence;
-- Cow 17 safety/targetability;
-- opening Moo Brew cinematic lifecycle and warning-clock handoff;
-- browser-first rapid iteration and opt-in Android checkpoints.
+## Integration sequence for current wave
 
-## Moo Level product law
+1. Each worker must push an exact final head and evidence.
+2. Director reviews each diff against its issue contract and protected territory.
+3. Visual/game-feel work requires actual evidence review, not marker-only QA.
+4. Accepted worker heads are integrated in a conflict-aware order chosen after evidence returns.
+5. Combined exact-source regression/visual QA must pass.
+6. Canonical moves only after Director acceptance.
+7. Pages promotion is separately verified; accepted canonical source does not automatically equal deployed public QA.
+8. Owner playtest remains a separate product gate.
 
-The Hart Farm ring is an unlock encounter, not the final secret level.
+## Historical-note rule
 
-The actual Moo Level must be a dedicated authored playable bonus stage with its own objective/score identity and replay reason.
-
-The desired folklore is:
-
-> "Wait, you haven't unlocked the cow level yet?"
-
-## Newspaper product law
-
-Newspaper presentation is part of the game's recurring identity.
-
-Any newspaper should feel goofy, local, authored, and unmistakably part of the Severe Weather Warning universe. Storm selection, **UNLEASH STORM**, and results should become connected newspaper-style presentation surfaces rather than isolated generic UI panels.
-
-Humor may use Moo Brew ads, fake civic seriousness, weather bureaucracy, bovine/legal notices, local headlines, and absurd statistics, but readability and primary actions always win.
-
-## Director autonomy decision
-
-The owner has explicitly asked the Director to take the reins on game-development translation.
-
-The owner should be able to say things like:
-
-- "attack bubbles";
-- "Blocktown";
-- "it feels regressed";
-- "I want an actual cow level";
-- "I want to run the tornado around a beach";
-- "this was supposed to be a light action RPG";
-- "this isn't satisfying enough";
-- "this is fun";
-
-and have the Director turn that into concrete design, worker scope, sequencing, evidence, and acceptance criteria.
-
-Do not make the owner pre-specify technical implementation merely because the feedback is qualitative.
-
-## Android and PWA
-
-Android remains opt-in for deliberate physical-device checkpoints. Browser approval never silently becomes device acceptance.
-
-PWA installability is a browser-first convenience and product-feel improvement, not a declaration of Android acceptance.
-
-## Integration law
-
-Workers do not merge themselves. The Director reviews exact heads and evidence first.
-
-A Stage 2B integrated candidate may auto-promote to the QA root only after it passes the normal exact-source integration workflow. Public QA is still a playtest gate, not production/release approval.
+Older Stage 2A/QA #29 and first-batch Stage 2B descriptions remain useful history, but they are no longer the active production queue. Use repository history/issues for archaeology instead of keeping obsolete execution state in this live slate.
