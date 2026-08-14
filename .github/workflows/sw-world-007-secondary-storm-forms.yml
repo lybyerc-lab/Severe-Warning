@@ -6,8 +6,11 @@ on:
       - agent/sw-world-007-secondary-storm-forms
     paths:
       - runtime/sw-world-007-secondary-storm-forms.js
+      - runtime/sw-world-007-atmospheric-correction.js
       - scripts/apply-sw-world-007-secondary-storm-forms.mjs
+      - scripts/apply-sw-world-007-atmospheric-correction.mjs
       - scripts/verify-sw-world-007-secondary-storm-forms.mjs
+      - scripts/verify-sw-world-007-atmospheric-correction.mjs
       - scripts/qa-sw-world-007-secondary-storm-forms.mjs
       - package.json
       - .github/workflows/sw-world-007-secondary-storm-forms.yml
@@ -53,6 +56,7 @@ jobs:
       - name: Verify bounded quality correction sources
         run: |
           node scripts/verify-sw-world-007-secondary-storm-forms.mjs
+          node scripts/verify-sw-world-007-atmospheric-correction.mjs
 
       - name: Assemble canonical Stage 2B plus QUALITY-001
         shell: bash
@@ -133,28 +137,27 @@ jobs:
       - name: Preserve QUALITY-001 functional rescue QA
         run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
 
-      - name: Apply QUALITY-002 and SW-WORLD-007 candidate
+      - name: Apply QUALITY-002 and corrected SW-WORLD-007 candidate
         run: |
           set -euo pipefail
           node scripts/apply-sw-quality-002-visual-rescue.mjs
           node scripts/apply-sw-quality-002-storm-frame-bridge.mjs
           node scripts/apply-sw-world-007-secondary-storm-forms.mjs
+          node scripts/apply-sw-world-007-atmospheric-correction.mjs
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
           node scripts/verify-sw-world-007-secondary-storm-forms.mjs
+          node scripts/verify-sw-world-007-atmospheric-correction.mjs
           node scripts/build-web.mjs
 
-      - name: Prove SW-WORLD-007 secondary storm forms QA
-        run: |
-          node scripts/qa-sw-world-007-secondary-storm-forms.mjs
+      - name: Prove corrected SW-WORLD-007 secondary storm forms QA
+        run: node scripts/qa-sw-world-007-secondary-storm-forms.mjs
 
       - name: Preserve QUALITY-002 visual rescue QA
-        run: |
-          node scripts/qa-sw-quality-002-visual-rescue.mjs
+        run: node scripts/qa-sw-quality-002-visual-rescue.mjs
 
       - name: Preserve inherited newspaper browser QA
-        run: |
-          node scripts/qa-sw-ui-001-newspaper-presentation.mjs
+        run: node scripts/qa-sw-ui-001-newspaper-presentation.mjs
 
       - name: Preserve inherited Storm Site browser QA
         shell: bash
