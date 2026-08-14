@@ -6,7 +6,7 @@ on:
       source_ref:
         description: Exact commit SHA or ref to publish as the QA playtest
         required: true
-        default: 4e5b4c714a56ec0dc652b6e30fcd04054143ee5b
+        default: 271e5d3d7b438727df8b217ad59b7974ff1374b6
   push:
     branches:
       - main
@@ -32,7 +32,7 @@ jobs:
       - name: Checkout exact playtest source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '4e5b4c714a56ec0dc652b6e30fcd04054143ee5b' }}
+          ref: ${{ inputs.source_ref || '271e5d3d7b438727df8b217ad59b7974ff1374b6' }}
           fetch-depth: 1
 
       - name: Set up Node
@@ -56,7 +56,7 @@ jobs:
           pnpm run audio:generate
           node scripts/vendor-threejs-hero-slice4-assets.mjs
 
-      - name: Assemble exact full Stage 2B playtest source
+      - name: Assemble exact full Stage 2B playtest source + landscape correction
         shell: bash
         run: |
           set -euo pipefail
@@ -107,13 +107,14 @@ jobs:
             apply-sw-score-001-persistent-scorekeeper.mjs \
             apply-sw-rpg-001-moolah-storm-triangle.mjs \
             apply-sw-rpg-002-slingshot.mjs \
-            apply-sw-level-001-storm-site-framework.mjs
+            apply-sw-level-001-storm-site-framework.mjs \
+            apply-sw-ui-002-landscape-unleash.mjs
           do
             node "scripts/$script"
           done
           pnpm run modern:build
           node scripts/build-web.mjs
-          printf '%s\n' "{\"sourceRef\":\"${{ inputs.source_ref || '4e5b4c714a56ec0dc652b6e30fcd04054143ee5b' }}\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
+          printf '%s\n' "{\"sourceRef\":\"${{ inputs.source_ref || '271e5d3d7b438727df8b217ad59b7974ff1374b6' }}\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
