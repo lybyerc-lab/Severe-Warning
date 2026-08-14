@@ -17,7 +17,7 @@ jobs:
   verify-source:
     name: Source ${{ matrix.label }} deterministic isolation
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -40,7 +40,15 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${{ matrix.sha }}"
           test -z "$(git status --porcelain)"
-          printf 'source=%s\nsha=%s\n' '${{ matrix.label }}' '${{ matrix.sha }}'
+
+      - name: Checkout CI-only harness helpers
+        uses: actions/checkout@v4
+        with:
+          ref: ci/sw-int-003-ubuntu-ab-harness
+          path: .ci-harness
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -59,12 +67,19 @@ jobs:
           pnpm --version
           ffmpeg -version | head -n 1
 
-      - name: Prepare approved generated assets
+      - name: Prepare approved generated assets and raw-browser font fixture
         run: |
           set -euo pipefail
           pnpm run audio:generate
           node scripts/vendor-threejs-hero-slice4-assets.mjs
           pnpm run modern:build
+          mkdir -p fonts
+          cp node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-800-normal.woff2 fonts/
+          cp node_modules/@fontsource/inter/files/inter-latin-900-normal.woff2 fonts/
+          cp node_modules/@fontsource/outfit/files/outfit-latin-700-normal.woff2 fonts/
+          cp node_modules/@fontsource/outfit/files/outfit-latin-900-normal.woff2 fonts/
 
       - name: Raw-source static verification
         run: |
@@ -83,137 +98,49 @@ jobs:
       - name: Build state-driven CI QA adapters
         run: |
           set -euo pipefail
-          node --input-type=module <<'NODE'
-          import { readFile, writeFile } from 'node:fs/promises';
-
-          function replaceExact(source, before, after, label) {
-            const count = source.split(before).length - 1;
-            if (count !== 1) throw new Error(`${label}: expected one timing anchor, found ${count}`);
-            return source.replace(before, after);
-          }
-
-          let game = await readFile('scripts/qa-sw-game-002.mjs', 'utf8');
-          game = replaceExact(
-            game,
-            "await page.waitForTimeout(500);\nconst started = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\nconst started = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'GAME started activation'
-          );
-          game = replaceExact(
-            game,
-            "await page.waitForTimeout(500);\nconst failedEncounter = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.state === 'failed', null, { timeout: 15000 });\nconst failedEncounter = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'GAME failure state'
-          );
-          game = replaceExact(
-            game,
-            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());\nawait page.waitForTimeout(500);\nawait page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());",
-            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());\nawait page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\nawait page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());",
-            'GAME second activation'
-          );
-          game = replaceExact(
-            game,
-            "await page.waitForTimeout(3000);\nconst unlocked = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "await page.waitForFunction(() => { const state = globalThis.getMooLevelQaState?.(); return state?.progress?.mooLevelUnlocked === true && state?.encounter?.state === 'complete'; }, null, { timeout: 30000 });\nconst unlocked = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'GAME unlock completion'
-          );
-          game = replaceExact(
-            game,
-            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());\nawait page.waitForTimeout(750);\nconst mooStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());\nawait page.waitForFunction(() => globalThis.getMooLevelQaState?.().mode === 'moo', null, { timeout: 15000 });\nconst mooStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'GAME Moo mode start'
-          );
-          game = replaceExact(
-            game,
-            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeMooObjectives());\nawait page.waitForTimeout(1800);\nconst mooCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeMooObjectives());\nawait page.waitForFunction(() => { const run = globalThis.getMooLevelQaState?.().mooRun; return run?.relocated >= 20 && run?.props >= 10 && run?.airtime > 0; }, null, { timeout: 20000 });\nconst mooCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'GAME Moo objectives'
-          );
-          await writeFile('scripts/.ci-qa-sw-game-002-state-driven.mjs', game, 'utf8');
-
-          let score = await readFile('scripts/qa-sw-score-001-persistent-scorekeeper.mjs', 'utf8');
-          score = replaceExact(
-            score,
-            "  await page.waitForTimeout(500);\n  const mooRegressionStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\n  const mooRegressionStarted = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'SCORE started activation'
-          );
-          score = replaceExact(
-            score,
-            "  await page.waitForTimeout(500);\n  const mooRegressionFailed = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.state === 'failed', null, { timeout: 15000 });\n  const mooRegressionFailed = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'SCORE failure state'
-          );
-          score = replaceExact(
-            score,
-            "  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());\n  await page.waitForTimeout(500);\n  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());",
-            "  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginEncounter());\n  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().encounter?.activated === true, null, { timeout: 15000 });\n  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeEncounterSuccess());",
-            'SCORE second activation'
-          );
-          score = replaceExact(
-            score,
-            "  await page.waitForTimeout(3000);\n  const mooRegressionUnlocked = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "  await page.waitForFunction(() => { const state = globalThis.getMooLevelQaState?.(); return state?.progress?.mooLevelUnlocked === true && state?.encounter?.state === 'complete'; }, null, { timeout: 30000 });\n  const mooRegressionUnlocked = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'SCORE unlock completion'
-          );
-          score = replaceExact(
-            score,
-            "  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());\n  await page.waitForTimeout(650);\n  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeMooObjectives());",
-            "  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.beginMooLevel());\n  await page.waitForFunction(() => globalThis.getMooLevelQaState?.().mode === 'moo', null, { timeout: 15000 });\n  await page.evaluate(() => globalThis.__SW_MOO_LEVEL_QA__.primeMooObjectives());",
-            'SCORE Moo mode start'
-          );
-          score = replaceExact(
-            score,
-            "  await page.waitForTimeout(1800);\n  const mooRegressionCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            "  await page.waitForFunction(() => { const state = globalThis.getMooLevelQaState?.(); const run = state?.mooRun; return run?.relocated >= 20 && run?.props >= 10 && run?.airtime > 0 && state?.allMooCowsSafe === true; }, null, { timeout: 20000 });\n  const mooRegressionCompleted = await page.evaluate(() => globalThis.getMooLevelQaState());",
-            'SCORE Moo objectives'
-          );
-          await writeFile('scripts/.ci-qa-sw-score-001-state-driven.mjs', score, 'utf8');
-
-          console.log('Built state-driven CI adapters. Product and repository QA files remain unchanged.');
-          NODE
+          node .ci-harness/.github/scripts/sw-int-003-ci-adapters.mjs
 
       - name: Isolated state-driven Scorekeeper browser QA
         run: |
           set -euo pipefail
           rm -rf ../scorekeeper-worktree
           mkdir -p ../scorekeeper-worktree
-          rsync -a --exclude='.git' --exclude='qa-artifacts' ./ ../scorekeeper-worktree/
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../scorekeeper-worktree/
           cd ../scorekeeper-worktree
           xvfb-run --auto-servernum node scripts/.ci-qa-sw-score-001-state-driven.mjs
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-score-001
+          cp -a ../scorekeeper-worktree/qa-artifacts/sw-score-001/. qa-artifacts/sw-score-001/
           node --input-type=module <<'NODE'
           import { readFile } from 'node:fs/promises';
           import assert from 'node:assert/strict';
           const report = JSON.parse(await readFile('qa-artifacts/sw-score-001/report.json', 'utf8'));
-          assert.equal(report.passed, true, 'Scorekeeper state-driven report must pass every check');
-          assert.deepEqual(report.pageErrors, [], 'Scorekeeper page errors');
-          assert.deepEqual(report.runtimeConsoleErrors, [], 'Scorekeeper runtime console errors');
-          assert.deepEqual(report.assetTransportErrors, [], 'Scorekeeper asset transport errors');
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.pageErrors, []);
+          assert.deepEqual(report.runtimeConsoleErrors, []);
+          assert.deepEqual(report.assetTransportErrors, []);
           NODE
-          cd - >/dev/null
-          mkdir -p qa-artifacts/sw-score-001
-          cp -a ../scorekeeper-worktree/qa-artifacts/sw-score-001/. qa-artifacts/sw-score-001/
 
       - name: Isolated RPG-001 browser QA
         run: |
           set -euo pipefail
           rm -rf ../rpg-worktree
           mkdir -p ../rpg-worktree
-          rsync -a --exclude='.git' --exclude='qa-artifacts' ./ ../rpg-worktree/
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../rpg-worktree/
           cd ../rpg-worktree
           xvfb-run --auto-servernum node scripts/qa-sw-rpg-001-moolah-storm-triangle.mjs
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-rpg-001
+          cp -a ../rpg-worktree/qa-artifacts/sw-rpg-001/. qa-artifacts/sw-rpg-001/
           node --input-type=module <<'NODE'
           import { readFile } from 'node:fs/promises';
           import assert from 'node:assert/strict';
           const report = JSON.parse(await readFile('qa-artifacts/sw-rpg-001/report.json', 'utf8'));
-          assert.equal(report.passed, true, 'RPG-001 report must pass every check');
-          assert.deepEqual(report.pageErrors, [], 'RPG-001 page errors');
-          assert.deepEqual(report.runtimeConsoleErrors, [], 'RPG-001 runtime console errors');
-          assert.deepEqual(report.assetTransportErrors, [], 'RPG-001 asset transport errors');
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.pageErrors, []);
+          assert.deepEqual(report.runtimeConsoleErrors, []);
+          assert.deepEqual(report.assetTransportErrors, []);
           NODE
-          cd - >/dev/null
-          mkdir -p qa-artifacts/sw-rpg-001
-          cp -a ../rpg-worktree/qa-artifacts/sw-rpg-001/. qa-artifacts/sw-rpg-001/
 
       - name: Source B isolated PWA browser QA
         if: matrix.pwa == 'true'
@@ -221,29 +148,29 @@ jobs:
           set -euo pipefail
           rm -rf ../pwa-worktree
           mkdir -p ../pwa-worktree
-          rsync -a --exclude='.git' --exclude='qa-artifacts' ./ ../pwa-worktree/
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../pwa-worktree/
           cd ../pwa-worktree
           xvfb-run --auto-servernum node scripts/qa-pwa-shell.mjs
+          cd - >/dev/null
+          mkdir -p qa-artifacts/sw-pwa-001
+          cp -a ../pwa-worktree/qa-artifacts/sw-pwa-001/. qa-artifacts/sw-pwa-001/
           node --input-type=module <<'NODE'
           import { readFile } from 'node:fs/promises';
           import assert from 'node:assert/strict';
           const report = JSON.parse(await readFile('qa-artifacts/sw-pwa-001/pwa-browser-qa-report.json', 'utf8'));
-          assert.equal(report.passed, true, 'PWA browser QA must pass every check');
-          assert.deepEqual(report.errors, [], 'PWA browser errors');
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.errors, []);
           assert.equal(report.checks.productionStyleLoadsBuildInfoWithoutQaProbe, true);
           assert.equal(report.checks.noQaBuildProbingHttp404, true);
           assert.equal(report.checks.noPageErrors, true);
           NODE
-          cd - >/dev/null
-          mkdir -p qa-artifacts/sw-pwa-001
-          cp -a ../pwa-worktree/qa-artifacts/sw-pwa-001/. qa-artifacts/sw-pwa-001/
 
       - name: Isolated state-driven GAME-002 packaged browser QA
         run: |
           set -euo pipefail
           rm -rf ../game002-worktree
           mkdir -p ../game002-worktree
-          rsync -a --exclude='.git' --exclude='qa-artifacts' ./ ../game002-worktree/
+          rsync -a --exclude='.git' --exclude='.ci-harness' --exclude='qa-artifacts' ./ ../game002-worktree/
           cd ../game002-worktree
           pnpm run patch:v431
           pnpm run patch:v440
@@ -276,10 +203,10 @@ jobs:
           import { readFile } from 'node:fs/promises';
           import assert from 'node:assert/strict';
           const report = JSON.parse(await readFile('qa-artifacts/sw-game-002/report.json', 'utf8'));
-          assert.equal(report.passed, true, 'GAME-002 state-driven report must pass every existing check');
-          assert.deepEqual(report.pageErrors, [], 'GAME-002 page errors');
-          assert.deepEqual(report.runtimeConsoleErrors, [], 'GAME-002 runtime console errors');
-          assert.deepEqual(report.assetTransportErrors, [], 'GAME-002 asset transport errors');
+          assert.equal(report.passed, true);
+          assert.deepEqual(report.pageErrors, []);
+          assert.deepEqual(report.runtimeConsoleErrors, []);
+          assert.deepEqual(report.assetTransportErrors, []);
           NODE
           kill "$SERVER_PID"
           trap - EXIT
@@ -319,6 +246,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout CI-only closure evaluator
+        uses: actions/checkout@v4
+        with:
+          ref: ci/sw-int-003-ubuntu-ab-harness
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
+
       - name: Download Source A evidence
         uses: actions/download-artifact@v4
         with:
@@ -332,76 +267,7 @@ jobs:
           path: comparison/b
 
       - name: Enforce exact A/B closure contract
-        run: |
-          set -euo pipefail
-          node --input-type=module <<'NODE'
-          import { readFile, writeFile } from 'node:fs/promises';
-          import assert from 'node:assert/strict';
-
-          const load = async (path) => JSON.parse(await readFile(path, 'utf8'));
-          const aMeta = await load('comparison/a/source-meta.json');
-          const bMeta = await load('comparison/b/source-meta.json');
-          assert.equal(aMeta.sha, 'ce1e47c858cdbca5039fb7ad7ad2545f4537c238');
-          assert.equal(bMeta.sha, '00e57966ba70f69dcf6d65de7ef9c40d1e67bbf3');
-          assert.equal(aMeta.adapterLaw, 'same assertions, state-driven waits only');
-          assert.equal(bMeta.adapterLaw, 'same assertions, state-driven waits only');
-
-          const aGame = await load('comparison/a/sw-game-002/report.json');
-          const bGame = await load('comparison/b/sw-game-002/report.json');
-          assert.equal(aGame.passed, true, 'Source A GAME-002');
-          assert.equal(bGame.passed, true, 'Source B GAME-002');
-          assert.deepEqual(bGame.checks, aGame.checks, 'GAME-002 check matrix must match A/B');
-          for (const [label, report] of [['A', aGame], ['B', bGame]]) {
-            assert.deepEqual(report.pageErrors, [], `${label} GAME page errors`);
-            assert.deepEqual(report.runtimeConsoleErrors, [], `${label} GAME runtime errors`);
-            assert.deepEqual(report.assetTransportErrors, [], `${label} GAME asset errors`);
-          }
-
-          const aScore = await load('comparison/a/sw-score-001/report.json');
-          const bScore = await load('comparison/b/sw-score-001/report.json');
-          assert.equal(aScore.passed, true, 'Source A Scorekeeper');
-          assert.equal(bScore.passed, true, 'Source B Scorekeeper');
-          assert.deepEqual(bScore.checks, aScore.checks, 'Scorekeeper check matrix must match A/B');
-          for (const [label, report] of [['A', aScore], ['B', bScore]]) {
-            assert.deepEqual(report.pageErrors, [], `${label} Scorekeeper page errors`);
-            assert.deepEqual(report.runtimeConsoleErrors, [], `${label} Scorekeeper runtime errors`);
-            assert.deepEqual(report.assetTransportErrors, [], `${label} Scorekeeper asset errors`);
-          }
-
-          const aRpg = await load('comparison/a/sw-rpg-001/report.json');
-          const bRpg = await load('comparison/b/sw-rpg-001/report.json');
-          assert.equal(aRpg.passed, true, 'Source A RPG-001');
-          assert.equal(bRpg.passed, true, 'Source B RPG-001');
-          assert.deepEqual(bRpg.checks, aRpg.checks, 'RPG-001 check matrix must match A/B');
-          for (const [label, report] of [['A', aRpg], ['B', bRpg]]) {
-            assert.deepEqual(report.pageErrors, [], `${label} RPG page errors`);
-            assert.deepEqual(report.runtimeConsoleErrors, [], `${label} RPG runtime errors`);
-            assert.deepEqual(report.assetTransportErrors, [], `${label} RPG asset errors`);
-          }
-
-          const pwa = await load('comparison/b/sw-pwa-001/pwa-browser-qa-report.json');
-          assert.equal(pwa.passed, true, 'Source B PWA browser');
-          assert.deepEqual(pwa.errors, [], 'Source B PWA errors');
-          assert.equal(pwa.checks.productionStyleLoadsBuildInfoWithoutQaProbe, true);
-          assert.equal(pwa.checks.noQaBuildProbingHttp404, true);
-          assert.equal(pwa.checks.noPageErrors, true);
-
-          const summary = {
-            verdict: 'PASS',
-            sourceA: aMeta.sha,
-            sourceB: bMeta.sha,
-            game002: bGame.checks,
-            scorekeeper: bScore.checks,
-            rpg001: bRpg.checks,
-            pwa: pwa.checks,
-            pageErrors: { a: aGame.pageErrors, b: bGame.pageErrors },
-            runtimeConsoleErrors: { a: aGame.runtimeConsoleErrors, b: bGame.runtimeConsoleErrors },
-            assetTransportErrors: { a: aGame.assetTransportErrors, b: bGame.assetTransportErrors },
-            harnessLaw: 'No required acceptance command is masked. Timing adapters change waits only; assertions remain the repository assertions.'
-          };
-          await writeFile('sw-int-003-closure-summary.json', JSON.stringify(summary, null, 2) + '\n');
-          console.log(JSON.stringify(summary, null, 2));
-          NODE
+        run: node .github/scripts/sw-int-003-compare.mjs
 
       - name: Upload closure summary
         uses: actions/upload-artifact@v4
