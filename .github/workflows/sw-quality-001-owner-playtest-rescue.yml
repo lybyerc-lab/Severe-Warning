@@ -1,4 +1,4 @@
-name: SW-QUALITY-001 Owner Playtest Rescue
+name: SW-QUALITY Owner Playtest Rescue
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 jobs:
   quality-rescue:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Checkout candidate
         uses: actions/checkout@v4
@@ -42,14 +42,17 @@ jobs:
           pnpm run audio:generate
           node scripts/vendor-threejs-hero-slice4-assets.mjs
 
-      - name: Verify bounded quality correction source
-        run: node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
+      - name: Verify bounded quality correction sources
+        run: |
+          set -euo pipefail
+          node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
+          node scripts/verify-sw-quality-002-visual-rescue.mjs
 
-      - name: Assemble canonical Stage 2B plus SW-QUALITY-001
+      - name: Assemble canonical Stage 2B plus quality rescue
         shell: bash
         run: |
           set -euo pipefail
-          candidate="$RUNNER_TEMP/sw-quality-001.html"
+          candidate="$RUNNER_TEMP/sw-quality-rescue.html"
           cp MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
           export SEVERE_WEATHER_SOURCE_PATH="$candidate"
           for script in \
@@ -98,7 +101,8 @@ jobs:
             apply-sw-rpg-002-slingshot.mjs \
             apply-sw-level-001-storm-site-framework.mjs \
             apply-sw-ui-002-landscape-unleash.mjs \
-            apply-sw-quality-001-owner-playtest-rescue.mjs
+            apply-sw-quality-001-owner-playtest-rescue.mjs \
+            apply-sw-quality-002-visual-rescue.mjs
           do
             node "scripts/$script"
           done
@@ -121,11 +125,17 @@ jobs:
           pnpm run modern:build
           node scripts/build-web.mjs
 
-      - name: Focused owner-playtest rescue browser QA
+      - name: Preserve QUALITY-001 functional rescue QA
         run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
+
+      - name: Prove QUALITY-002 player-facing rescue
+        run: node scripts/qa-sw-quality-002-visual-rescue.mjs
 
       - name: Preserve inherited newspaper browser QA
         run: pnpm run qa:sw-ui-001
+
+      - name: Preserve inherited Storm Site browser QA
+        run: pnpm run qa:sw-level-001
 
       - name: Capture hostile visual review frames
         run: node scripts/capture-sw-quality-001-visual-review.mjs
@@ -133,6 +143,6 @@ jobs:
       - name: Upload hostile visual review frames
         uses: actions/upload-artifact@v4
         with:
-          name: sw-quality-001-visual-review
+          name: sw-quality-002-visual-review
           path: artifacts/sw-quality-001-visual
           if-no-files-found: error
