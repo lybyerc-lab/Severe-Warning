@@ -494,61 +494,10 @@ function swVisualHeroSlice6TownPolishRetaperStorm() {
 
   swVisualHeroSlice6TownPolishState.stormRetaperedShellCount = shellCount;
   swVisualHeroSlice6TownPolishState.stormRetaperedWispCount = wispCount;
-  const smoke = swVisualHeroSlice4Textures?.smoke || null;
-  let debrisRoot = swVisualHeroSlice6StormRoot.getObjectByName?.('SWVisualSlice6StormDebrisColumn') || null;
-  if (!debrisRoot && smoke) {
-    debrisRoot = new THREE.Group();
-    debrisRoot.name = 'SWVisualSlice6StormDebrisColumn';
-    debrisRoot.userData.swPresentationOnly = true;
-    debrisRoot.userData.swTownPolish = true;
-    const clusterSpecs = [
-      { x: 2.6, z: -1.3, y: 4.5, w: 12, h: 5.8, opacity: 0.24, color: '#625c4f' },
-      { x: -3.1, z: 1.6, y: 8.8, w: 15, h: 7.4, opacity: 0.21, color: '#4e5856' },
-      { x: 3.8, z: 0.8, y: 13.3, w: 18, h: 8.3, opacity: 0.18, color: '#3e5154' },
-      { x: -4.7, z: -1.8, y: 18.0, w: 20, h: 9.8, opacity: 0.17, color: '#354a4e' },
-      { x: 5.9, z: 1.3, y: 22.8, w: 22, h: 10.2, opacity: 0.15, color: '#2b4046' },
-      { x: -3.8, z: 2.7, y: 27.2, w: 19, h: 9.0, opacity: 0.14, color: '#31454a' },
-    ];
-    clusterSpecs.forEach((spec, index) => {
-      const sprite = swVisualHeroSlice6Sprite(smoke, spec.color, spec.opacity, `SWVisualSlice6StormDebris${index + 1}`);
-      sprite.position.set(spec.x, spec.y, spec.z);
-      sprite.scale.set(spec.w, spec.h, 1);
-      sprite.userData.swTownPolish = true;
-      debrisRoot.add(sprite);
-    });
-    const turbulence = new THREE.Group();
-    turbulence.name = 'SWVisualSlice6StormTurbulence';
-    turbulence.userData.swPresentationOnly = true;
-    turbulence.userData.swTownPolish = true;
-    const turbulenceSpecs = [
-      { x: 1.8, z: -1.4, y: 5.0, sx: 5.8, sy: 2.8, sz: 4.8, opacity: 0.34, color: '#4e5048' },
-      { x: -2.4, z: 1.6, y: 9.1, sx: 5.2, sy: 3.4, sz: 4.2, opacity: 0.31, color: '#364b4d' },
-      { x: 3.3, z: 0.4, y: 13.2, sx: 7.2, sy: 3.8, sz: 5.5, opacity: 0.28, color: '#2d464b' },
-      { x: -3.7, z: -1.5, y: 17.6, sx: 6.4, sy: 4.5, sz: 5.8, opacity: 0.25, color: '#273e45' },
-      { x: 4.9, z: 1.2, y: 22.7, sx: 8.8, sy: 4.8, sz: 7.0, opacity: 0.22, color: '#21373f' },
-      { x: -3.1, z: 2.5, y: 28.1, sx: 8.0, sy: 4.1, sz: 6.5, opacity: 0.19, color: '#263b42' },
-    ];
-    turbulenceSpecs.forEach((spec, index) => {
-      const material = new THREE.MeshBasicMaterial({
-        color: spec.color,
-        transparent: true,
-        opacity: spec.opacity,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      });
-      const fragment = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 1), material);
-      fragment.name = `SWVisualSlice6StormTurbulence${index + 1}`;
-      fragment.position.set(spec.x, spec.y, spec.z);
-      fragment.scale.set(spec.sx, spec.sy, spec.sz);
-      fragment.rotation.set(index * 0.28, index * 0.63, index * -0.19);
-      fragment.userData.swPresentationOnly = true;
-      fragment.userData.swTownPolish = true;
-      turbulence.add(fragment);
-    });
-    debrisRoot.add(turbulence);
-    swVisualHeroSlice6StormRoot.add(debrisRoot);
-  }
-  swVisualHeroSlice6TownPolishState.stormDebrisClusterCount = debrisRoot?.children?.length || 0;
+  // The default storm now owns its lower circulation with stretched, directional
+  // ground-pull sprites.  Do not reintroduce town-polish bubble fragments here:
+  // that makes the shared storm read as a stack of separate attack effects.
+  swVisualHeroSlice6TownPolishState.stormDebrisClusterCount = 0;
   return shellCount > 0;
 }
 
