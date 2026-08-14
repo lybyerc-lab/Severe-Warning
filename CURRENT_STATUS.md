@@ -1,176 +1,98 @@
 # Severe Weather Warning Current Status
 
-**Last updated:** 2026-08-14 16:36 America/Chicago  
+**Last updated:** 2026-08-14  
 **Repository:** `lybyerc-lab/Severe-Warning`  
 **Primary target:** mobile landscape / browser-first QA  
 **Production renderer:** Three.js r128  
 **Active phase:** Stage 2B — Make It Feel Like a Game  
 **Director authority branch:** `agent/director-stage2b-game-direction`
 
-> **Status-document role:** This file is a concise human-readable snapshot. For fresh-chat recovery and current execution authority, read `Docs/ACTIVE_HANDOFF.md` first. Exact issue/branch/commit/CI evidence outranks this summary if anything has moved since its timestamp.
+> This is a concise snapshot. `Docs/ACTIVE_HANDOFF.md` plus exact issue/branch/commit/CI evidence are the recovery authority.
 
-## Current canonical gameplay source
+## Current canonical
 
-Canonical integration branch:
-
+Canonical branch:
 `agent/sw-int-003-stage2b-accepted-stack`
 
 Exact Director-accepted head:
-
-`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
+`706408e4e367782fed0ffc6e40d0cdd27a7e71bd`
 
 Previous canonical:
-
-`271e5d3d7b438727df8b217ad59b7974ff1374b6`
-
-The previous SHA is now the pre-quality-rescue comparison baseline, not current gameplay authority.
-
-## What just closed
-
-The owner-playtest quality rescue is complete.
-
-Closed issues:
-- #79 `SW-QUALITY-001: Owner-playtest quality rescue`
-- #80 `SW-QUALITY-002: Owner playtest visual rescue`
-
-Decisive engineering evidence:
-- branch/head: `agent/sw-quality-001-owner-playtest-rescue` @ `7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
-- workflow: `SW-QUALITY Owner Playtest Rescue`
-- Actions run: `31834411255`
-- conclusion: success
-
-Independent visual acceptance evidence:
-- branch/head: `agent/sw-qa-quality-002-visual-acceptance` @ `ec723a14474e5db502b8a5fd7899807dad7db4d0`
-- reviewed candidate: `f493e3d51f6d772d89bdbe945529ebde9d58196f`
-- verdict: PASS across QUALITY-002-owned visual areas
-
-Hostile post-rescue audit:
-- branch/head: `agent/sw-audit-post-quality-002-gap-map` @ `ea2946912c623504e22da74a4f58463f373b3491`
-- no P0 blockers
-- remaining material quality gaps converted into the next bounded work wave
-
-## Accepted quality-rescue outcomes
-
-Protect these unless an exact later task deliberately reopens them:
-
-- Tornado reads as a connected dirty volumetric rotating storm through the whole column.
-- Short-landscape newspaper is compact, legible, scroll-safe, and launch-reachable.
-- Pause remains reachable in short landscape.
-- Quit-to-main-menu actually ends active-run presentation/lifecycle state.
-- County Fair and Gullwind Boardwalk have materially distinct environmental identities.
-- Storm Sites do not inherit the Heartland Cow 17 opening.
-- Cow 17 opening uses improved Three.js actor/camera/material staging without prototype/debug chrome.
-- Core movement, abilities, score/progression authority, Cow safety, and accepted site framework remain protected.
-
-## Active work
-
-All current workers start from exact accepted base:
-
 `7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
 
-### #81 — SW-WORLD-007
-**Supercell and Derecho atmospheric identity overhaul**  
-Branch: `agent/sw-world-007-secondary-storm-forms`
+The new canonical adds the accepted commercial-shell layer without reopening gameplay authority.
 
-Purpose:
-replace the remaining UFO/saucer and cyan/wireframe storm reads with connected severe-weather silhouettes while preserving gameplay mechanics and the accepted Tornado.
+## What just became real product
 
-### #82 — SW-FEEL-001
-**Physical destruction consequence presentation**  
-Branch: `agent/sw-feel-001-destruction-consequence`
+### SW-UI-003 — accepted
+Head: `76042f632398d4bef917a08436dc2338034fb3e6`
 
-Purpose:
-make ordinary structural destruction visibly read through anatomy, direction, debris, and dust while leaving damage, health, collision, score, and targetability authority unchanged.
+- authored Severe Weather Warning pause treatment;
+- correct Heartland / County Fair / Gullwind / Moo Level identity;
+- results with clear score/rank hierarchy, grade stamp, grouped stats, and large actions.
 
-### #83 — SW-UI-003
-**Run-shell Americana identity for pause and results**  
-Branch: `agent/sw-ui-003-run-shell-identity`
+### SW-UI-004 — accepted
+Head: `8becea1133864057050d6cd48ad033dc9992c445`
 
-Purpose:
-make pause/results belong to the same Severe Weather Warning universe, show correct active-site identity, and turn end-of-run score/rank into a stronger emotional payoff without changing result truth or lifecycle authority.
+- gameplay now says **Severe Weather Warning**;
+- visible `SEVERE WEATHER 3D`, `3D LAB`, and `PRODUCTION SLICE` chrome removed;
+- legitimate controls, score, timer, radar, and gameplay truth preserved.
 
-**Worker-state caution:** branch preparation/assignment is not proof of completion. Verify branch movement, exact returned SHA, diff, QA, and evidence before acceptance.
+### SW-INT-004 — accepted and promoted to canonical
+Head: `706408e4e367782fed0ffc6e40d0cdd27a7e71bd`
+Workflow run: `31851282218` — **SUCCESS**
 
-## Near-term work held behind the active wave
+Combined gameplay/pause/results evidence passed Director pixel review and all inherited blocking gates.
 
-Not currently authorized inside #81/#82/#83:
+## Still active quality debt
 
-- tactile MOO-LAH and Storm Triangle reward/loadout presentation;
-- Secret Moo Level bespoke environment/HUD identity;
-- broader Heartland/world density and material-repetition improvement;
-- later destruction-anatomy expansion after the first bounded FEEL slice proves safe.
+### #81 SW-WORLD-007 — secondary storms
+Not accepted.
+Supercell/Derecho truthful evidence exposed remaining hard geometric/legacy presentation.
+A bounded atmospheric-mass + visibility-lock correction is currently under QA.
+Latest handoff head: `4caeae17d5c7949f1ef110e9ef9df3d209c375b6`.
 
-Longer-term ideas such as Twin Tornadoes, Waterspout, broader map expansion, satellite feats, online/accounts, and additional Storm Sites remain future scope unless separately assigned.
+### #82 SW-FEEL-001 — destruction consequence
+Not accepted.
+Engineering event/pooling architecture is safe, but truthful screenshots still showed generic fragment dominance.
+Latest correction prioritizes roof/wall/facade anatomy over generic chunks.
+Latest handoff head: `d84e5bd66fcb46518324efa8a7c23a1598702658`.
 
-## Product identity
+## QA Pages
 
-The game is **Severe Weather Warning**.
+Issue #84 / draft PR #85 is the publisher correction lane.
+It was no-deploy validated against prior canonical `7d3e7e...`, but canonical is now `706408e4...`.
 
-Genre:
-**mobile arcade destruction game with light action RPG progression**.
+Before publishing:
+- refresh the publisher to exact `706408e4...`;
+- include accepted UI-003 + UI-004;
+- rerun no-deploy validation;
+- intentionally merge/deploy only after review.
 
-Player fantasy:
-**YOU ARE THE STORM**.
+Do not claim public Pages serves the new canonical yet.
 
-Art thesis:
-**storm-charged stylized Americana**.
+## Product direction
 
-Visual promise:
-**beautiful at a glance, readable at speed, cinematic up close**.
+**Severe Weather Warning** is a mobile arcade destruction game with light action RPG progression.
 
-The quality bar is a polished commercial-feeling mobile game, not a Three.js technology demonstration.
+Player fantasy: **YOU ARE THE STORM**.
 
-## Gameplay / protection law
+Art thesis: **storm-charged stylized Americana**.
 
-Unless an exact task explicitly reopens a system, protect:
+Current priority is reducing prototype tells and increasing commercial coherence, not widening systems.
 
-- steering/input/general gameplay-camera feel;
-- storm movement/speed authority;
-- Pull, Gust, Grid Zap and accepted advanced-ability behavior;
-- scoring/combo/timer/objectives/rank/campaign truth;
-- target health, damage, collision, targetability, and gameplay coordinates;
-- Cow 17/cow safety;
-- pause/reset/lifecycle behavior;
-- local-first progression and score persistence.
+Next high-value areas after #81/#82/#84:
+- tactile MOO-LAH + Storm Triangle reward/purchase presentation;
+- Secret Moo Level legendary-stage identity;
+- broader world density/material repetition;
+- bounded cleanup of the remaining technical desktop control legend.
 
-Presentation may read gameplay truth. It may not silently become gameplay authority.
+## Protection law
 
-## World / replay law
+Unless an exact task reopens it, protect steering/input/camera, storm movement, Pull/Gust/Grid Zap, scoring/campaign truth, target health/damage/collision/coordinates, Cow safety, pause/reset lifecycle, and local-first progression.
 
-- Town/county campaign remains the home backbone.
-- Storm Sites are authored substantial destruction playgrounds.
-- Desired replay read: **same place, different storm day**.
-- Avoid generic Blocktown repetition and featureless procedural generation.
-- Hart Farm is the Moo Level unlock encounter; the dedicated Moo Level is the actual secret bonus stage.
+Presentation may amplify gameplay truth. It may not become gameplay authority.
 
-## RPG / economy law
+## Physical acceptance
 
-- MOO-LAH is earned local-first gameplay currency, not real-money currency by default.
-- Base abilities remain fun and complete.
-- Exactly three equipped active abilities live in the Storm Triangle.
-- Slingshot is the first accepted Pull + Gust physical synergy.
-- Avoid both fake upgrades and grind treadmills.
-
-## Public QA status
-
-Canonical source acceptance and public QA deployment are separate gates.
-
-The exact accepted canonical source is now `7d3e7e...`.
-
-Do **not** claim the public GitHub Pages QA root is serving that SHA without separately verifying the Pages publisher/deployment evidence. The previously documented deployed source was `271e5d3...`.
-
-## Android status
-
-Browser-first QA remains the normal iteration path.
-
-Physical Android acceptance is a separate deliberate checkpoint requiring the exact artifact to be installed and played on the target device. Browser green status never silently becomes physical acceptance.
-
-## Recovery pointers
-
-Fresh session:
-1. Issue #71 `DIRECTOR START HERE`;
-2. `Docs/ACTIVE_HANDOFF.md`;
-3. exact issue/branch/CI evidence needed for the current decision;
-4. deeper law/docs only when planning, assigning, reviewing, integrating, or changing work.
-
-Do not use old PR descriptions, `main`, or pre-rescue status prose as current execution authority.
+Browser/CI acceptance is not Android physical acceptance. Deployment is also a separate gate.
