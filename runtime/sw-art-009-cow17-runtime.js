@@ -13,7 +13,7 @@ const SW_COW17_RUNTIME_ASSET = Object.freeze({
   expectedTriangles: 198050,
   expectedJoints: 24,
   expectedAnimation: 'Armature|walking_man|baselayer',
-  targetHeight: 3.6,
+  targetHeight: 3.0,
 });
 
 const swCow17RuntimeState = {
@@ -39,6 +39,7 @@ const swCow17RuntimeState = {
   fallbackRootMaterial: null,
   hiddenRootMaterial: null,
 };
+let swCow17AssetBufferPromise = null;
 
 function swCow17Fail(message) {
   throw new Error(`Cow 17 runtime asset: ${message}`);
@@ -85,6 +86,22 @@ function swCow17ReadGlb(buffer) {
   const triangles = Math.floor(Number(indexAccessor?.count || 0) / 3);
   if (triangles !== SW_COW17_RUNTIME_ASSET.expectedTriangles) swCow17Fail(`triangle count mismatch ${triangles}`);
   return { json, bin, triangles };
+}
+
+async function swCow17GetAssetBuffer() {
+  if (!swCow17AssetBufferPromise) {
+    swCow17AssetBufferPromise = (async () => {
+      const response = await fetch(SW_COW17_RUNTIME_ASSET.url, { cache: 'force-cache' });
+      if (!response.ok) swCow17Fail(`HTTP ${response.status} for ${SW_COW17_RUNTIME_ASSET.url}`);
+      const bytes = await response.arrayBuffer();
+      swCow17ReadGlb(bytes);
+      return bytes;
+    })().catch((error) => {
+      swCow17AssetBufferPromise = null;
+      throw error;
+    });
+  }
+  return swCow17AssetBufferPromise;
 }
 
 const SW_COW17_COMPONENTS = Object.freeze({
@@ -291,6 +308,7 @@ function swCow17RestoreFallback() {
 
 function swCow17Cleanup() {
   swCow17RuntimeState.mixer?.stopAllAction?.();
+  if (swCow17RuntimeState.cow?.mesh?.userData) delete swCow17RuntimeState.cow.mesh.userData.swCow17AuthoredAssetId;
   if (swCow17RuntimeState.visual?.parent) swCow17RuntimeState.visual.parent.remove(swCow17RuntimeState.visual);
   swCow17DisposeVisual(swCow17RuntimeState.visual);
   swCow17RestoreFallback();
@@ -346,9 +364,7 @@ function swCow17PrepareVisual(cow, parsed) {
 async function swCow17LoadForCow(cow, generation) {
   swCow17RuntimeState.loadAttempts += 1;
   try {
-    const response = await fetch(SW_COW17_RUNTIME_ASSET.url, { cache: 'force-cache' });
-    if (!response.ok) swCow17Fail(`HTTP ${response.status} for ${SW_COW17_RUNTIME_ASSET.url}`);
-    const bytes = await response.arrayBuffer();
+    const bytes = await swCow17GetAssetBuffer();
     const parsed = await swCow17BuildScene(bytes);
     if (generation !== swCow17RuntimeState.generation || swCow17RuntimeState.cow !== cow) {
       swCow17DisposeVisual(parsed.scene);
@@ -379,7 +395,6 @@ function swCow17Register(cow) {
   if (!cow || cow.id !== 17 || !cow.mesh) return;
   swCow17RuntimeState.registrations += 1;
   swCow17RuntimeState.cow = cow;
-  swCow17RuntimeState.activeCowId = cow.id;
   const generation = swCow17RuntimeState.generation;
   Promise.resolve().then(() => swCow17LoadForCow(cow, generation));
 }
