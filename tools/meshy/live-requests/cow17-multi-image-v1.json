@@ -1,0 +1,73 @@
+{
+  "version": "SW_MESHY_MULTI_LIVE_REQUEST_V1",
+  "id": "cow17-multi-image-v1",
+  "productionAuthority": "candidate only",
+  "source": {
+    "runId": 31895535943,
+    "artifactId": 9249708267,
+    "artifactName": "sw-art-002-cow17-reference-v1",
+    "path": "art-source/generated/google-ai/cow17/cow17-reference-v1.jpg",
+    "expectedSourceSha256": "f8352f3817db96ff5cd4faf19f03452dd2666e624278e1c63d135518421d6aef",
+    "viewOrder": ["three-quarter", "front", "side", "back"],
+    "views": {
+      "front": {
+        "filename": "cow17-front.png",
+        "left": 70,
+        "top": 150,
+        "right": 670,
+        "bottom": 1340,
+        "expectedWidth": 600,
+        "expectedHeight": 1190,
+        "expectedPixelSha256": "7966304e984db7146f8146638aa5a2269b12c04e516182697ea88ba2f55ad2c8"
+      },
+      "three-quarter": {
+        "filename": "cow17-three-quarter.png",
+        "left": 690,
+        "top": 150,
+        "right": 1320,
+        "bottom": 1340,
+        "expectedWidth": 630,
+        "expectedHeight": 1190,
+        "expectedPixelSha256": "388babd28cc459d32c126511cf61212af7f39a8012b24a288b2fe2c37d209e5c"
+      },
+      "side": {
+        "filename": "cow17-side.png",
+        "left": 1305,
+        "top": 150,
+        "right": 1825,
+        "bottom": 1340,
+        "expectedWidth": 520,
+        "expectedHeight": 1190,
+        "expectedPixelSha256": "21c470a058ac902fcef87eb4321ff56547e814f3b3aab61397ecc7e60a5c0213"
+      },
+      "back": {
+        "filename": "cow17-back.png",
+        "left": 1845,
+        "top": 150,
+        "right": 2355,
+        "bottom": 1340,
+        "expectedWidth": 510,
+        "expectedHeight": 1190,
+        "expectedPixelSha256": "4bf8fdf3645fdbfff86ce79f1d9566b496ea7de4c14f7f5ec60f7d173eb0b72e"
+      }
+    }
+  },
+  "meshy": {
+    "endpoint": "multi-image-to-3d",
+    "aiModel": "meshy-6",
+    "shouldTexture": false,
+    "imageEnhancement": false,
+    "poseMode": "",
+    "symmetryMode": "auto",
+    "targetFormats": ["glb"]
+  },
+  "output": {
+    "dir": "art-source/generated/meshy/cow17-multi-image-v1",
+    "glb": "cow17-multi-image-v1.glb",
+    "preview": "cow17-multi-image-v1-preview.png"
+  },
+  "costGuard": {
+    "maxCredits": 20,
+    "authorizedTasks": 1
+  }
+}
