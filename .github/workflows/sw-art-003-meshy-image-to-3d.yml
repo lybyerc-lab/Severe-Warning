@@ -119,6 +119,7 @@ jobs:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: ${{ steps.request.outputs.source_run_id }}
+          merge-multiple: true
 
       - name: Reproduce exact Meshy-ready crop
         shell: bash

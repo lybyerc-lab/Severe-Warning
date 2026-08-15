@@ -3,10 +3,10 @@
   "id": "cow17-meshy-v1",
   "productionAuthority": "candidate only",
   "execution": {
-    "preflightRetry": 1,
-    "priorRunId": 31904118276,
+    "preflightRetry": 2,
+    "priorRunId": 31904170412,
     "priorSpendCredits": 0,
-    "reason": "Initial workflow stopped before secret/live API use because checkout depth did not include the exact task base commit."
+    "reason": "Second workflow stopped before dry-run/live API use because actions/download-artifact nested the exact source artifact under its artifact-name directory."
   },
   "source": {
     "runId": 31895535943,
