@@ -1,0 +1,197 @@
+name: SW-ART-006 Meshy Cow 17 Refined Face
+
+on:
+  push:
+    branches:
+      - agent/sw-art-006-cow17-refined-face-meshy
+    paths:
+      - tools/meshy/live-requests/cow17-refined-face-meshy6-v1.json
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sw-art-006-cow17-refined-face-meshy
+  cancel-in-progress: false
+
+jobs:
+  generate-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact task source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prove exact base and bounded changed-file territory
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='407d892ce169465f4bb712cffe26302bddca0555'
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          git diff --name-only "$base"...HEAD | tee sw-art-006-changed-files.txt
+          bad="$(grep -Ev '^(tools/meshy/sw-meshy-standard-image-to-3d\.mjs|tools/meshy/live-requests/cow17-refined-face-meshy6-v1\.json|scripts/verify-sw-art-006-refined-face-meshy\.mjs|\.github/workflows/sw-art-006-cow17-refined-face-meshy\.yml)$' sw-art-006-changed-files.txt || true)"
+          if [ -n "$bad" ]; then
+            echo 'SW-ART-006 changed files outside allowed tooling territory:' >&2
+            echo "$bad" >&2
+            exit 1
+          fi
+
+      - name: Block rerun credit spend
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_RUN_ATTEMPT}" != '1' ]; then
+            echo 'SW-ART-006 live generation must not be rerun; create a new reviewed request commit instead.' >&2
+            exit 1
+          fi
+
+      - name: Resolve exactly one reviewed refined-face request
+        id: request
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+        run: |
+          set -euo pipefail
+          test -n "$MESHY_API_KEY" || { echo 'GitHub Actions secret Meshy_API is missing or empty.' >&2; exit 1; }
+          request_file='tools/meshy/live-requests/cow17-refined-face-meshy6-v1.json'
+          test -f "$request_file"
+          changed="$(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- "$request_file")"
+          test "$changed" = "$request_file" || { echo 'Launch commit must change exactly the reviewed SW-ART-006 request file.' >&2; exit 1; }
+          REQUEST_FILE="$request_file" node - <<'NODE'
+          const fs = require('fs');
+          const request = JSON.parse(fs.readFileSync(process.env.REQUEST_FILE, 'utf8'));
+          const fail = (message) => { throw new Error(message); };
+          if (request.version !== 'SW_MESHY_REFINED_LIVE_REQUEST_V1') fail(`Unexpected version: ${request.version}`);
+          if (request.productionAuthority !== 'candidate only') fail('Output must remain candidate only.');
+          if (request.source?.runId !== 31906670874 || request.source?.artifactId !== 9252535475) fail('Source must be exact SW-ART-005 Gemini artifact.');
+          if (request.source?.path !== 'art-source/generated/google-ai/cow17/cow17-face-refine-v1.jpg') fail('Unexpected refined source path.');
+          if (request.source?.expectedSourceSha256 !== '58384a916ba6ca0b4ea18c4a434c57bc64e8a8c956a3ab065208ecc066df47fb') fail('Unexpected refined source SHA.');
+          if (request.meshy?.modelType !== 'standard' || request.meshy?.aiModel !== 'meshy-6') fail('SW-ART-006 requires Meshy 6 Standard.');
+          if (request.meshy?.shouldTexture !== false || request.meshy?.shouldRemesh !== false || request.meshy?.imageEnhancement !== false) fail('SW-ART-006 geometry/input-preservation guard violated.');
+          if (request.costGuard?.authorizedTasks !== 1 || request.costGuard?.maxCredits !== 20) fail('SW-ART-006 cost guard violated.');
+          const values = {
+            request_file: process.env.REQUEST_FILE,
+            request_id: request.id,
+            source_run_id: request.source.runId,
+            source_artifact_id: request.source.artifactId,
+            source_path: request.source.path,
+            output_dir: request.output.dir,
+          };
+          for (const [key, value] of Object.entries(values)) {
+            if (String(value).includes('\n')) fail(`Multiline workflow output rejected: ${key}`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+          }
+          console.log(`SW-ART-006 request contract PASS: ${request.id}`);
+          NODE
+
+      - name: Verify refined-face Meshy tooling before spend
+        run: node scripts/verify-sw-art-006-refined-face-meshy.mjs
+
+      - name: Preserve existing Google, Meshy, and authored-asset contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-sw-art-001-google-ai-pipeline.mjs
+          node scripts/verify-sw-art-003-meshy-pipeline.mjs
+          node scripts/verify-threejs-asset-pipeline.mjs
+
+      - name: Download exact Gemini-refined Cow 17 artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.request.outputs.source_artifact_id }}
+          path: sw-art-006-source
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.request.outputs.source_run_id }}
+          merge-multiple: true
+
+      - name: Prove exact refined Cow 17 source
+        id: source
+        shell: bash
+        env:
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+          SOURCE_PATH: ${{ steps.request.outputs.source_path }}
+        run: |
+          set -euo pipefail
+          full_path="sw-art-006-source/$SOURCE_PATH"
+          test -s "$full_path"
+          ACTUAL_PATH="$full_path" REQUEST_FILE="$REQUEST_FILE" node - <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const request = JSON.parse(fs.readFileSync(process.env.REQUEST_FILE, 'utf8'));
+          const bytes = fs.readFileSync(process.env.ACTUAL_PATH);
+          const sha = crypto.createHash('sha256').update(bytes).digest('hex');
+          if (sha !== request.source.expectedSourceSha256) throw new Error(`Refined source SHA mismatch: ${sha}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `full_path=${process.env.ACTUAL_PATH}\n`);
+          console.log(`Exact refined source PASS: ${sha}`);
+          NODE
+
+      - name: Exercise no-credit Meshy 6 dry run
+        shell: bash
+        env:
+          MESHY_API_KEY: ''
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+          SOURCE_IMAGE: ${{ steps.source.outputs.full_path }}
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-standard-image-to-3d.mjs \
+            --request "$REQUEST_FILE" \
+            --image "$SOURCE_IMAGE" \
+            --output-dir "${{ steps.request.outputs.output_dir }}" \
+            --dry-run > sw-art-006-meshy-dry-run.json
+          test -s sw-art-006-meshy-dry-run.json
+
+      - name: Generate one refined-face Meshy 6 candidate
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+          SOURCE_IMAGE: ${{ steps.source.outputs.full_path }}
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-standard-image-to-3d.mjs \
+            --request "$REQUEST_FILE" \
+            --image "$SOURCE_IMAGE" \
+            --output-dir "${{ steps.request.outputs.output_dir }}"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-refined-face-meshy6-v1.glb"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-refined-face-meshy6-v1-preview.png"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-006-receipt.json"
+
+      - name: Record exact input and output hashes
+        shell: bash
+        env:
+          SOURCE_IMAGE: ${{ steps.source.outputs.full_path }}
+        run: |
+          set -euo pipefail
+          sha256sum \
+            "$SOURCE_IMAGE" \
+            "${{ steps.request.outputs.output_dir }}/cow17-refined-face-meshy6-v1.glb" \
+            "${{ steps.request.outputs.output_dir }}/cow17-refined-face-meshy6-v1-preview.png" \
+            | tee sw-art-006-sha256.txt
+
+      - name: Upload refined-face Cow 17 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-006-${{ steps.request.outputs.request_id }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            sw-art-006-static-report.json
+            sw-art-006-changed-files.txt
+            sw-art-006-meshy-dry-run.json
+            sw-art-006-sha256.txt
+            ${{ steps.source.outputs.full_path }}
+            ${{ steps.request.outputs.output_dir }}/cow17-refined-face-meshy6-v1.glb
+            ${{ steps.request.outputs.output_dir }}/cow17-refined-face-meshy6-v1-preview.png
+            ${{ steps.request.outputs.output_dir }}/sw-art-006-task-created.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-006-task-final.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-006-receipt.json
+            threejs-asset-pipeline-static-report.json
