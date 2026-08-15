@@ -46,3 +46,11 @@ android/**/build/
 *.key
 qa-signing/
 android/signing/
+
+# [SW:ART:GENERATED_SOURCE]
+# AI-generated source/reference media is reviewed and archived separately before
+# any explicitly approved production asset is promoted into tracked game assets.
+art-source/generated/google-ai/
+.env
+.env.*
+!.env.example
