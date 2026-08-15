@@ -16,9 +16,13 @@ const swUi006State = {
   portraitGameplay: false,
   rotateGateVisible: false,
   hiddenKeyboardHints: 0,
+  suppressedPortraitNodes: 0,
   lastViewport: '',
   lastGameplayActive: false,
 };
+
+const swUi006InlineRestore = new WeakMap();
+const swUi006PortraitSelectors = ['canvas', '.footer', '.telemetry', '.touch-controls', '#joystickZone'];
 
 function swUi006IsTouchMode() {
   const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
@@ -56,6 +60,7 @@ function swUi006EnsureStyles() {
     body.sw-ui-006-portrait-gameplay #swUi006RotateGate {
       display: flex;
       visibility: visible !important;
+      opacity: 1 !important;
     }
 
     body.sw-ui-006-portrait-gameplay > *:not(#swUi006RotateGate):not(script):not(style),
@@ -65,6 +70,8 @@ function swUi006EnsureStyles() {
     body.sw-ui-006-portrait-gameplay .touch-controls,
     body.sw-ui-006-portrait-gameplay #joystickZone {
       visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
 
     #swUi006RotateGate .sw-ui-006-card {
@@ -194,6 +201,55 @@ function swUi006MarkKeyboardHints() {
   swUi006State.hiddenKeyboardHints = count;
 }
 
+function swUi006RememberInlineStyle(element) {
+  if (swUi006InlineRestore.has(element)) return;
+  const snapshot = {};
+  ['visibility', 'opacity', 'pointer-events'].forEach((property) => {
+    snapshot[property] = {
+      value: element.style.getPropertyValue(property),
+      priority: element.style.getPropertyPriority(property),
+    };
+  });
+  swUi006InlineRestore.set(element, snapshot);
+}
+
+function swUi006RestoreInlineStyle(element) {
+  const snapshot = swUi006InlineRestore.get(element);
+  if (!snapshot) return;
+  for (const [property, entry] of Object.entries(snapshot)) {
+    if (entry.value) element.style.setProperty(property, entry.value, entry.priority || '');
+    else element.style.removeProperty(property);
+  }
+  swUi006InlineRestore.delete(element);
+}
+
+function swUi006SetPortraitSuppression(gate, active) {
+  const nodes = new Set();
+  for (const selector of swUi006PortraitSelectors) {
+    document.querySelectorAll(selector).forEach((element) => nodes.add(element));
+  }
+
+  if (active) {
+    gate.style.setProperty('display', 'flex', 'important');
+    gate.style.setProperty('visibility', 'visible', 'important');
+    gate.style.setProperty('opacity', '1', 'important');
+    gate.style.setProperty('pointer-events', 'auto', 'important');
+    nodes.forEach((element) => {
+      swUi006RememberInlineStyle(element);
+      element.style.setProperty('visibility', 'hidden', 'important');
+      element.style.setProperty('opacity', '0', 'important');
+      element.style.setProperty('pointer-events', 'none', 'important');
+    });
+  } else {
+    gate.style.removeProperty('display');
+    gate.style.removeProperty('visibility');
+    gate.style.removeProperty('opacity');
+    gate.style.removeProperty('pointer-events');
+    nodes.forEach(swUi006RestoreInlineStyle);
+  }
+  swUi006State.suppressedPortraitNodes = active ? nodes.size : 0;
+}
+
 function swUi006Apply() {
   if (typeof document === 'undefined' || !document.body) return false;
   swUi006EnsureStyles();
@@ -208,6 +264,7 @@ function swUi006Apply() {
   document.body.classList.toggle('sw-ui-006-touch', touchMode);
   document.body.classList.toggle('sw-ui-006-portrait-gameplay', portraitGameplay);
   gate.setAttribute('aria-hidden', portraitGameplay ? 'false' : 'true');
+  swUi006SetPortraitSuppression(gate, portraitGameplay);
 
   swUi006State.touchMode = touchMode;
   swUi006State.portraitGameplay = portraitGameplay;
