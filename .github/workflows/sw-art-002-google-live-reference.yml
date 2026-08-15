@@ -21,80 +21,113 @@ jobs:
       - name: Checkout exact request source
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Verify request and secret contract
+      - name: Resolve one reviewed request and verify secret contract
+        id: request
         shell: bash
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -euo pipefail
           test -n "$GEMINI_API_KEY" || { echo 'GEMINI_API_KEY repository secret is missing or empty.' >&2; exit 1; }
-          request='tools/google-ai/live-requests/cow17-reference-v1.json'
-          test -f "$request"
-          node - <<'NODE'
+          mapfile -t requests < <(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- 'tools/google-ai/live-requests/*.json')
+          if [ "${#requests[@]}" -ne 1 ]; then
+            printf 'Expected exactly one reviewed live request in this commit; found %s\n' "${#requests[@]}" >&2
+            printf '%s\n' "${requests[@]}" >&2
+            exit 1
+          fi
+          request_file="${requests[0]}"
+          REQUEST_FILE="$request_file" node - <<'NODE'
           const fs = require('fs');
-          const request = JSON.parse(fs.readFileSync('tools/google-ai/live-requests/cow17-reference-v1.json', 'utf8'));
-          const expected = {
-            version: 'SW_ART_LIVE_REQUEST_V1',
-            id: 'cow17-reference-v1',
-            command: 'image',
-            brief: 'cow17',
-            model: 'gemini-3.1-flash-image',
-            output: 'art-source/generated/google-ai/cow17/cow17-reference-v1.jpg'
+          const path = require('path');
+          const requestFile = process.env.REQUEST_FILE;
+          const request = JSON.parse(fs.readFileSync(requestFile, 'utf8'));
+          const fail = (message) => { throw new Error(message); };
+          if (request.version !== 'SW_ART_LIVE_REQUEST_V1') fail(`Unexpected version: ${request.version}`);
+          if (request.command !== 'image') fail(`Only image requests are authorized in SW-ART-002: ${request.command}`);
+          if (request.productionAuthority !== 'reference only') fail('Live request must remain reference only.');
+          if (request.model !== 'gemini-3.1-flash-image') fail(`SW-ART-002 cost guard requires gemini-3.1-flash-image: ${request.model}`);
+          if (!/^[a-z0-9][a-z0-9-]*$/.test(request.id || '')) fail(`Unsafe request id: ${request.id}`);
+          if (!/^[a-z0-9][a-z0-9-]*$/.test(request.brief || '')) fail(`Unsafe brief id: ${request.brief}`);
+          if (typeof request.output !== 'string' || !request.output.startsWith('art-source/generated/google-ai/') || !request.output.endsWith('.jpg') || request.output.includes('..')) fail(`Unsafe output path: ${request.output}`);
+          const briefPath = path.join('tools', 'google-ai', 'briefs', `${request.brief}.json`);
+          if (!fs.existsSync(briefPath)) fail(`Missing brief: ${briefPath}`);
+          const brief = JSON.parse(fs.readFileSync(briefPath, 'utf8'));
+          if (brief.productionAuthority !== 'reference only') fail(`Brief authority must be reference only: ${brief.productionAuthority}`);
+          if (brief.model !== 'gemini-3.1-flash-image') fail(`Brief model violates cost guard: ${brief.model}`);
+          const values = {
+            request_file: requestFile,
+            request_id: request.id,
+            brief: request.brief,
+            model: request.model,
+            output: request.output,
+            drive_archive: brief.googleDriveArchive || '',
           };
-          for (const [key, value] of Object.entries(expected)) {
-            if (request[key] !== value) throw new Error(`Unexpected ${key}: ${request[key]}`);
+          for (const [key, value] of Object.entries(values)) {
+            if (String(value).includes('\n')) fail(`Multiline workflow output rejected: ${key}`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
           }
-          if (request.productionAuthority !== 'reference only') throw new Error('Live request must remain reference only.');
-          console.log('SW-ART-002 request contract PASS');
+          console.log(`SW-ART-002 request contract PASS: ${request.id}`);
           NODE
 
       - name: Preserve Google art tooling contract
         run: node scripts/verify-sw-art-001-google-ai-pipeline.mjs
 
-      - name: Generate Cow 17 reference sheet
+      - name: Generate reviewed reference
         shell: bash
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SW_ART_BRIEF: ${{ steps.request.outputs.brief }}
+          SW_ART_MODEL: ${{ steps.request.outputs.model }}
+          SW_ART_OUTPUT: ${{ steps.request.outputs.output }}
         run: |
           set -euo pipefail
-          mkdir -p art-source/generated/google-ai/cow17
+          mkdir -p "$(dirname "$SW_ART_OUTPUT")"
           node tools/google-ai/sw-google-art.mjs image \
-            --brief cow17 \
-            --model gemini-3.1-flash-image \
-            --output art-source/generated/google-ai/cow17/cow17-reference-v1.jpg
-          test -s art-source/generated/google-ai/cow17/cow17-reference-v1.jpg
-          test -s art-source/generated/google-ai/cow17/cow17-reference-v1.jpg.json
+            --brief "$SW_ART_BRIEF" \
+            --model "$SW_ART_MODEL" \
+            --output "$SW_ART_OUTPUT"
+          test -s "$SW_ART_OUTPUT"
+          test -s "$SW_ART_OUTPUT.json"
 
       - name: Record non-secret generation receipt
         shell: bash
+        env:
+          SW_ART_REQUEST_ID: ${{ steps.request.outputs.request_id }}
+          SW_ART_BRIEF: ${{ steps.request.outputs.brief }}
+          SW_ART_MODEL: ${{ steps.request.outputs.model }}
+          SW_ART_OUTPUT: ${{ steps.request.outputs.output }}
+          SW_ART_DRIVE_ARCHIVE: ${{ steps.request.outputs.drive_archive }}
         run: |
           set -euo pipefail
-          cat > sw-art-002-receipt.json <<EOF
-          {
-            "version": "SW_ART_002_RECEIPT_V1",
-            "source_sha": "${GITHUB_SHA}",
-            "request": "cow17-reference-v1",
-            "brief": "cow17",
-            "model": "gemini-3.1-flash-image",
-            "productionAuthority": "reference only",
-            "googleDriveTarget": "Severe Weather Warning/02_AI Art Source/Google Generations/01_Character References"
-          }
-          EOF
+          node - <<'NODE'
+          const fs = require('fs');
+          const receipt = {
+            version: 'SW_ART_002_RECEIPT_V1',
+            source_sha: process.env.GITHUB_SHA,
+            request: process.env.SW_ART_REQUEST_ID,
+            brief: process.env.SW_ART_BRIEF,
+            model: process.env.SW_ART_MODEL,
+            output: process.env.SW_ART_OUTPUT,
+            productionAuthority: 'reference only',
+            googleDriveArchive: process.env.SW_ART_DRIVE_ARCHIVE || null,
+          };
+          fs.writeFileSync('sw-art-002-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
 
       - name: Upload generated reference evidence
         uses: actions/upload-artifact@v4
         with:
-          name: sw-art-002-cow17-reference-v1
+          name: sw-art-002-${{ steps.request.outputs.request_id }}
           retention-days: 30
           if-no-files-found: error
           path: |
-            art-source/generated/google-ai/cow17/cow17-reference-v1.jpg
-            art-source/generated/google-ai/cow17/cow17-reference-v1.jpg.json
+            ${{ steps.request.outputs.output }}
+            ${{ steps.request.outputs.output }}.json
             sw-art-002-receipt.json
