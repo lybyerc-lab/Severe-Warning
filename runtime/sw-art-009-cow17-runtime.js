@@ -210,6 +210,7 @@ async function swCow17BuildScene(buffer) {
     roughness: 0.68,
     metalness: 0.02,
     side: THREE.DoubleSide,
+    skinning: true,
   });
 
   const skinDefinition = parsed.json.skins[0];
