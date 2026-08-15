@@ -1,0 +1,228 @@
+name: SW-ART-005 Gemini Cow 17 Face Refine
+
+on:
+  push:
+    branches:
+      - agent/sw-art-005-cow17-face-refine
+    paths:
+      - tools/google-ai/live-requests/cow17-face-refine-v1.json
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sw-art-005-cow17-face-refine
+  cancel-in-progress: false
+
+jobs:
+  generate-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact task source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prove exact base and bounded art-source scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='67fcd1729c0fc96f53143860eb46c94f4532917e'
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          git diff --name-only "$base"...HEAD | tee sw-art-005-changed-files.txt
+          bad="$(grep -Ev '^(tools/google-ai/briefs/cow17-face-refine-v1\.json|tools/google-ai/live-requests/cow17-face-refine-v1\.json|\.github/workflows/sw-art-005-cow17-face-refine\.yml)$' sw-art-005-changed-files.txt || true)"
+          if [ -n "$bad" ]; then
+            echo 'SW-ART-005 changed files outside allowed art-source territory:' >&2
+            echo "$bad" >&2
+            exit 1
+          fi
+
+      - name: Block rerun spend
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_RUN_ATTEMPT}" != '1' ]; then
+            echo 'SW-ART-005 live Gemini generation must not be rerun; create a new reviewed request commit instead.' >&2
+            exit 1
+          fi
+
+      - name: Resolve reviewed Cow 17 refinement request
+        id: request
+        shell: bash
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$GEMINI_API_KEY" || { echo 'GEMINI_API_KEY repository secret is missing or empty.' >&2; exit 1; }
+          request_file='tools/google-ai/live-requests/cow17-face-refine-v1.json'
+          test -f "$request_file"
+          REQUEST_FILE="$request_file" node - <<'NODE'
+          const fs = require('fs');
+          const request = JSON.parse(fs.readFileSync(process.env.REQUEST_FILE, 'utf8'));
+          const fail = (message) => { throw new Error(message); };
+          if (request.version !== 'SW_ART_LIVE_REQUEST_V1') fail(`Unexpected version: ${request.version}`);
+          if (request.command !== 'image') fail(`Only image generation is authorized: ${request.command}`);
+          if (request.productionAuthority !== 'reference only') fail('Output must remain reference only.');
+          if (request.model !== 'gemini-3.1-flash-image') fail(`Cost guard requires gemini-3.1-flash-image: ${request.model}`);
+          if (request.brief !== 'cow17-face-refine-v1') fail(`Unexpected brief: ${request.brief}`);
+          if (request.output !== 'art-source/generated/google-ai/cow17/cow17-face-refine-v1.jpg') fail(`Unexpected output: ${request.output}`);
+          if (request.source?.runId !== 31895535943 || request.source?.artifactId !== 9249708267) fail('Wrong Cow 17 source artifact.');
+          if (request.source?.path !== 'art-source/generated/google-ai/cow17/cow17-reference-v1.jpg') fail('Wrong Cow 17 source path.');
+          if (request.source?.expectedSourceSha256 !== 'f8352f3817db96ff5cd4faf19f03452dd2666e624278e1c63d135518421d6aef') fail('Wrong source SHA contract.');
+          const crop = request.source?.crop || {};
+          const expectedCrop = [690, 150, 1320, 1340, 630, 1190, '388babd28cc459d32c126511cf61212af7f39a8012b24a288b2fe2c37d209e5c'];
+          const actualCrop = [crop.left, crop.top, crop.right, crop.bottom, crop.expectedWidth, crop.expectedHeight, crop.expectedPixelSha256];
+          if (JSON.stringify(actualCrop) !== JSON.stringify(expectedCrop)) fail(`Wrong crop contract: ${JSON.stringify(actualCrop)}`);
+          const values = {
+            request_file: process.env.REQUEST_FILE,
+            request_id: request.id,
+            brief: request.brief,
+            model: request.model,
+            output: request.output,
+            source_run_id: request.source.runId,
+            source_artifact_id: request.source.artifactId,
+            source_path: request.source.path,
+          };
+          for (const [key, value] of Object.entries(values)) fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+          console.log(`SW-ART-005 request contract PASS: ${request.id}`);
+          NODE
+
+      - name: Preserve Google art tooling contract
+        run: node scripts/verify-sw-art-001-google-ai-pipeline.mjs
+
+      - name: Install bounded crop dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends python3-pil
+
+      - name: Download exact Cow 17 source artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.request.outputs.source_artifact_id }}
+          path: sw-art-005-source
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.request.outputs.source_run_id }}
+          merge-multiple: true
+
+      - name: Reproduce exact three-quarter reference crop
+        shell: bash
+        env:
+          SOURCE_PATH: ${{ steps.request.outputs.source_path }}
+        run: |
+          set -euo pipefail
+          mkdir -p sw-art-005-input
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          import hashlib, json, os
+
+          source = Path('sw-art-005-source') / os.environ['SOURCE_PATH']
+          if not source.is_file():
+              raise SystemExit(f'Missing source image: {source}')
+          source_sha = hashlib.sha256(source.read_bytes()).hexdigest()
+          expected_source = 'f8352f3817db96ff5cd4faf19f03452dd2666e624278e1c63d135518421d6aef'
+          if source_sha != expected_source:
+              raise SystemExit(f'Source SHA mismatch: {source_sha}')
+          with Image.open(source) as image:
+              crop = image.convert('RGB').crop((690, 150, 1320, 1340))
+          if crop.size != (630, 1190):
+              raise SystemExit(f'Crop size mismatch: {crop.size}')
+          pixel_sha = hashlib.sha256(crop.tobytes()).hexdigest()
+          expected_pixel = '388babd28cc459d32c126511cf61212af7f39a8012b24a288b2fe2c37d209e5c'
+          if pixel_sha != expected_pixel:
+              raise SystemExit(f'Crop pixel SHA mismatch: {pixel_sha}')
+          output = Path('sw-art-005-input/cow17-three-quarter-original.png')
+          crop.save(output, format='PNG', optimize=True)
+          receipt = {
+              'version': 'SW_ART_005_INPUT_V1',
+              'sourceSha256': source_sha,
+              'cropBox': [690, 150, 1320, 1340],
+              'cropDimensions': [630, 1190],
+              'cropPixelSha256': pixel_sha,
+              'outputSha256': hashlib.sha256(output.read_bytes()).hexdigest(),
+          }
+          Path('sw-art-005-input.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - name: Exercise no-credit Gemini reference edit dry run
+        shell: bash
+        env:
+          GEMINI_API_KEY: ''
+          SW_ART_BRIEF: ${{ steps.request.outputs.brief }}
+          SW_ART_MODEL: ${{ steps.request.outputs.model }}
+          SW_ART_OUTPUT: ${{ steps.request.outputs.output }}
+        run: |
+          set -euo pipefail
+          node tools/google-ai/sw-google-art.mjs image \
+            --brief "$SW_ART_BRIEF" \
+            --reference sw-art-005-input/cow17-three-quarter-original.png \
+            --model "$SW_ART_MODEL" \
+            --output "$SW_ART_OUTPUT" \
+            --dry-run > sw-art-005-dry-run.json
+          test -s sw-art-005-dry-run.json
+
+      - name: Generate one Gemini Cow 17 face-refined reference
+        shell: bash
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SW_ART_BRIEF: ${{ steps.request.outputs.brief }}
+          SW_ART_MODEL: ${{ steps.request.outputs.model }}
+          SW_ART_OUTPUT: ${{ steps.request.outputs.output }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$SW_ART_OUTPUT")"
+          node tools/google-ai/sw-google-art.mjs image \
+            --brief "$SW_ART_BRIEF" \
+            --reference sw-art-005-input/cow17-three-quarter-original.png \
+            --model "$SW_ART_MODEL" \
+            --output "$SW_ART_OUTPUT"
+          test -s "$SW_ART_OUTPUT"
+          test -s "$SW_ART_OUTPUT.json"
+
+      - name: Record non-secret generation receipt
+        shell: bash
+        env:
+          SW_ART_REQUEST_ID: ${{ steps.request.outputs.request_id }}
+          SW_ART_OUTPUT: ${{ steps.request.outputs.output }}
+        run: |
+          set -euo pipefail
+          sha256sum sw-art-005-input/cow17-three-quarter-original.png "$SW_ART_OUTPUT" | tee sw-art-005-sha256.txt
+          node - <<'NODE'
+          const fs = require('fs');
+          const receipt = {
+            version: 'SW_ART_005_RECEIPT_V1',
+            source_sha: process.env.GITHUB_SHA,
+            request: process.env.SW_ART_REQUEST_ID,
+            output: process.env.SW_ART_OUTPUT,
+            productionAuthority: 'reference only',
+            meshyCalled: false,
+          };
+          fs.writeFileSync('sw-art-005-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+
+      - name: Upload Cow 17 face-refinement evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-005-${{ steps.request.outputs.request_id }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            sw-art-005-changed-files.txt
+            sw-art-005-input.json
+            sw-art-005-input/cow17-three-quarter-original.png
+            sw-art-005-dry-run.json
+            sw-art-005-sha256.txt
+            sw-art-005-receipt.json
+            ${{ steps.request.outputs.output }}
+            ${{ steps.request.outputs.output }}.json
