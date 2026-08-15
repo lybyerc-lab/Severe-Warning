@@ -1,0 +1,32 @@
+{
+  "version": "SW_MESHY_RIG_LIVE_REQUEST_V1",
+  "id": "cow17-rig-motion-v1",
+  "productionAuthority": "candidate only",
+  "source": {
+    "issue": 103,
+    "runId": 31908595053,
+    "artifactId": 9253031593,
+    "recoveryHead": "963a8a3a037bc738c22ae575cfc475e91061086c",
+    "retextureTaskId": "01a0073a-779e-768e-9f0f-46f4e27347a5",
+    "glbSha256": "7e5bdc2ecf0799c7759ed2d4bc1f6dd3b49ecaf21b4ba4a5308e3a8a9e03bd90",
+    "vertices": 109775,
+    "triangles": 199162,
+    "materials": 1,
+    "textures": 4
+  },
+  "meshy": {
+    "endpoint": "rigging",
+    "heightMeters": 1.7,
+    "requireBasicAnimations": true
+  },
+  "output": {
+    "dir": "art-source/generated/meshy/cow17-rigged-v1",
+    "riggedGlb": "cow17-rigged-v1.glb",
+    "walkingGlb": "cow17-walk-v1.glb",
+    "runningGlb": "cow17-run-v1.glb"
+  },
+  "costGuard": {
+    "maxCredits": 5,
+    "authorizedTasks": 1
+  }
+}
