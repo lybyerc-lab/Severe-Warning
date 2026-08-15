@@ -11,6 +11,7 @@ const swFeel001StructuralPriorityState = {
   structuralEvents: 0,
   genericFragmentsAllowed: 0,
   genericFragmentsSuppressed: 0,
+  inheritedCubeFragmentsHidden: 0,
   lastFamily: null,
 };
 
@@ -33,6 +34,38 @@ function swFeel001StructuralPriorityIsStructuralFamily(family) {
     || family === 'silo'
     || family === 'concrete'
     || family === 'other';
+}
+
+function swFeel001StructuralPriorityIsLegacyCube(mesh) {
+  const geometry = mesh?.geometry;
+  if (!geometry || geometry.type !== 'BoxGeometry') return false;
+  const params = geometry.parameters || {};
+  const width = Number(params.width || 0);
+  const height = Number(params.height || 0);
+  const depth = Number(params.depth || 0);
+  return Math.abs(width - 0.75) < 0.001
+    && Math.abs(height - 0.75) < 0.001
+    && Math.abs(depth - 0.75) < 0.001;
+}
+
+function swFeel001StructuralPriorityHideInheritedCubeBurst(target) {
+  if (!target || typeof activeExplosionFragments === 'undefined' || !Array.isArray(activeExplosionFragments)) return 0;
+  let hidden = 0;
+  const tx = Number(target.x || 0);
+  const tz = Number(target.z || 0);
+  for (const entry of activeExplosionFragments) {
+    const mesh = entry?.mesh;
+    if (!mesh || mesh.visible === false || mesh.userData?.swFeel001LegacyCubeHidden) continue;
+    if (!swFeel001StructuralPriorityIsLegacyCube(mesh)) continue;
+    const dx = Number(mesh.position?.x || 0) - tx;
+    const dz = Number(mesh.position?.z || 0) - tz;
+    if (Math.hypot(dx, dz) > 12) continue;
+    mesh.visible = false;
+    mesh.userData.swFeel001LegacyCubeHidden = true;
+    hidden += 1;
+  }
+  swFeel001StructuralPriorityState.inheritedCubeFragmentsHidden += hidden;
+  return hidden;
 }
 
 const swFeel001StructuralPriorityPrevSpawn = swFeel001SpawnDebrisFragment;
@@ -66,6 +99,11 @@ swFeel001PresentDestruction = function swFeel001PresentDestructionStructuralPrio
   try {
     return swFeel001StructuralPriorityPrevPresentation(target, source);
   } finally {
+    // The accepted legacy destruction path emits four uniform 0.75-unit cubes
+    // before FEEL-001 runs. Keep their lifecycle bookkeeping intact, but hide
+    // those presentation-only cubes for this structural kill so the authored
+    // roof/wall/facade anatomy carries the visual read instead.
+    swFeel001StructuralPriorityHideInheritedCubeBurst(target);
     swFeel001StructuralPriorityActive = false;
     swFeel001StructuralPriorityBudget = 0;
     swFeel001StructuralPriorityUsed = 0;
