@@ -1,0 +1,161 @@
+name: SW-ART-008 Cow 17 Rig Motion
+
+on:
+  push:
+    branches:
+      - agent/sw-art-008-cow17-rig-motion
+    paths:
+      - tools/meshy/live-requests/cow17-rig-motion-v1.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-art-008-cow17-rig-motion
+  cancel-in-progress: false
+
+jobs:
+  rig-motion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact task source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prove exact base and bounded changed-file territory
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='963a8a3a037bc738c22ae575cfc475e91061086c'
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          git diff --name-only "$base"...HEAD | tee sw-art-008-changed-files.txt
+          bad="$(grep -Ev '^(tools/meshy/sw-meshy-rig\.mjs|tools/meshy/live-requests/cow17-rig-motion-v1\.json|scripts/verify-sw-art-008-cow17-rig-motion\.mjs|\.github/workflows/sw-art-008-cow17-rig-motion\.yml)$' sw-art-008-changed-files.txt || true)"
+          if [ -n "$bad" ]; then
+            echo 'SW-ART-008 changed files outside allowed tooling territory:' >&2
+            echo "$bad" >&2
+            exit 1
+          fi
+
+      - name: Block rerun credit spend
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_RUN_ATTEMPT}" != '1' ]; then
+            echo 'SW-ART-008 rigging must not be rerun; create a new reviewed request commit instead.' >&2
+            exit 1
+          fi
+
+      - name: Resolve exactly one reviewed rigging request
+        id: request
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+        run: |
+          set -euo pipefail
+          test -n "$MESHY_API_KEY" || { echo 'GitHub Actions secret Meshy_API is missing or empty.' >&2; exit 1; }
+          request_file='tools/meshy/live-requests/cow17-rig-motion-v1.json'
+          test -f "$request_file"
+          changed="$(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- "$request_file")"
+          test "$changed" = "$request_file" || { echo 'Launch commit must change exactly the reviewed SW-ART-008 request file.' >&2; exit 1; }
+          REQUEST_FILE="$request_file" node - <<'NODE'
+          const fs = require('fs');
+          const request = JSON.parse(fs.readFileSync(process.env.REQUEST_FILE, 'utf8'));
+          const fail = (message) => { throw new Error(message); };
+          if (request.version !== 'SW_MESHY_RIG_LIVE_REQUEST_V1') fail(`Unexpected version: ${request.version}`);
+          if (request.productionAuthority !== 'candidate only') fail('Output must remain candidate only.');
+          if (request.source?.retextureTaskId !== '01a0073a-779e-768e-9f0f-46f4e27347a5') fail('Rigging must use exact textured SW-ART-007 task.');
+          if (request.source?.runId !== 31908595053 || request.source?.artifactId !== 9253031593) fail('Unexpected SW-ART-007 evidence source.');
+          if (request.source?.glbSha256 !== '7e5bdc2ecf0799c7759ed2d4bc1f6dd3b49ecaf21b4ba4a5308e3a8a9e03bd90') fail('Unexpected textured GLB hash evidence.');
+          if (request.source?.triangles !== 199162 || request.source.triangles >= 300000) fail('Textured source is outside rigging face gate.');
+          if (request.meshy?.endpoint !== 'rigging' || request.meshy?.heightMeters !== 1.7) fail('SW-ART-008 rigging contract violated.');
+          if (request.meshy?.requireBasicAnimations !== true) fail('SW-ART-008 must require baseline walk/run movement.');
+          if (request.costGuard?.authorizedTasks !== 1 || request.costGuard?.maxCredits !== 5) fail('SW-ART-008 cost guard violated.');
+          const values = {
+            request_file: process.env.REQUEST_FILE,
+            request_id: request.id,
+            output_dir: request.output.dir,
+          };
+          for (const [key, value] of Object.entries(values)) {
+            if (String(value).includes('\n')) fail(`Multiline workflow output rejected: ${key}`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+          }
+          console.log(`SW-ART-008 request contract PASS: ${request.id}`);
+          NODE
+
+      - name: Verify Cow 17 rigging tooling before spend
+        run: node scripts/verify-sw-art-008-cow17-rig-motion.mjs
+
+      - name: Preserve texture and authored-asset contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-sw-art-007-cow17-texture-recovery.mjs
+          node scripts/verify-sw-art-007-cow17-texture.mjs
+          node scripts/verify-threejs-asset-pipeline.mjs
+
+      - name: Exercise no-credit rigging dry run
+        shell: bash
+        env:
+          MESHY_API_KEY: ''
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-rig.mjs \
+            --request "${{ steps.request.outputs.request_file }}" \
+            --output-dir "${{ steps.request.outputs.output_dir }}" \
+            --dry-run > sw-art-008-meshy-dry-run.json
+          test -s sw-art-008-meshy-dry-run.json
+          grep -q '"input_task_id": "01a0073a-779e-768e-9f0f-46f4e27347a5"' sw-art-008-meshy-dry-run.json
+
+      - name: Rig Cow 17 and obtain baseline movement
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-rig.mjs \
+            --request "${{ steps.request.outputs.request_file }}" \
+            --output-dir "${{ steps.request.outputs.output_dir }}"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-rigged-v1.glb"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-walk-v1.glb"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-run-v1.glb"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-008-task-created.json"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-008-task-final.json"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-008-glb-inspection.json"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-008-receipt.json"
+
+      - name: Record rig and movement hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum \
+            "${{ steps.request.outputs.output_dir }}/cow17-rigged-v1.glb" \
+            "${{ steps.request.outputs.output_dir }}/cow17-walk-v1.glb" \
+            "${{ steps.request.outputs.output_dir }}/cow17-run-v1.glb" \
+            | tee sw-art-008-sha256.txt
+
+      - name: Upload Cow 17 rig and movement evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-008-${{ steps.request.outputs.request_id }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            sw-art-008-static-report.json
+            sw-art-008-changed-files.txt
+            sw-art-008-meshy-dry-run.json
+            sw-art-008-sha256.txt
+            ${{ steps.request.outputs.output_dir }}/cow17-rigged-v1.glb
+            ${{ steps.request.outputs.output_dir }}/cow17-walk-v1.glb
+            ${{ steps.request.outputs.output_dir }}/cow17-run-v1.glb
+            ${{ steps.request.outputs.output_dir }}/sw-art-008-task-created.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-008-task-final.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-008-glb-inspection.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-008-receipt.json
+            threejs-asset-pipeline-static-report.json
