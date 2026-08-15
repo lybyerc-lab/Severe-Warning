@@ -74,6 +74,7 @@ function swUi005InstallStyles() {
     @media (min-width: 900px) {
       .panel.key-guide.sw-field-controls {
         min-width: 0 !important;
+        width: min(430px, 50vw) !important;
         max-width: min(590px, 50vw) !important;
         padding: 7px 10px !important;
         border-color: rgba(216, 199, 159, 0.68) !important;
