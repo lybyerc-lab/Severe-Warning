@@ -134,7 +134,7 @@ function publicRequestSummary({ command, model, brief, references, responseForma
       bytes: entry.byteLength,
     })),
     outputPath: path.relative(projectRoot, outputPath),
-    productionAuthority: 'none; generated source/reference only',
+    productionAuthority: brief.productionAuthority || 'none; generated source/reference only',
   };
 }
 
