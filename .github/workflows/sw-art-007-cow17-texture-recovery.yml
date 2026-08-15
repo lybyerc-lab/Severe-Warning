@@ -1,0 +1,164 @@
+name: SW-ART-007 Cow 17 Texture Recovery
+
+on:
+  push:
+    branches:
+      - agent/sw-art-007-cow17-texture
+    paths:
+      - tools/meshy/recovery-requests/cow17-texture-v1.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-art-007-cow17-texture-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover-texture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact recovery source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prove exact recovery base and bounded scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='c9b49bc3d06e0a8851d422033708fc026b320229'
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          git diff --name-only "$base"...HEAD | tee sw-art-007-recovery-changed-files.txt
+          bad="$(grep -Ev '^(tools/meshy/sw-meshy-retexture-recover\.mjs|tools/meshy/recovery-requests/cow17-texture-v1\.json|scripts/verify-sw-art-007-cow17-texture-recovery\.mjs|\.github/workflows/sw-art-007-cow17-texture-recovery\.yml)$' sw-art-007-recovery-changed-files.txt || true)"
+          if [ -n "$bad" ]; then
+            echo 'SW-ART-007 recovery changed files outside authorized recovery territory:' >&2
+            echo "$bad" >&2
+            exit 1
+          fi
+
+      - name: Block recovery reruns
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_RUN_ATTEMPT}" != '1' ]; then
+            echo 'Use a new reviewed recovery request commit instead of rerunning this evidence job.' >&2
+            exit 1
+          fi
+
+      - name: Resolve exact already-paid task
+        id: request
+        shell: bash
+        run: |
+          set -euo pipefail
+          request_file='tools/meshy/recovery-requests/cow17-texture-v1.json'
+          test -f "$request_file"
+          changed="$(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- "$request_file")"
+          test "$changed" = "$request_file" || { echo 'Launch commit must add exactly the reviewed recovery request file.' >&2; exit 1; }
+          REQUEST_FILE="$request_file" node - <<'NODE'
+          const fs = require('fs');
+          const request = JSON.parse(fs.readFileSync(process.env.REQUEST_FILE, 'utf8'));
+          const fail = (message) => { throw new Error(message); };
+          if (request.version !== 'SW_MESHY_RETEXTURE_RECOVERY_REQUEST_V1') fail(`Unexpected version: ${request.version}`);
+          if (request.productionAuthority !== 'candidate only') fail('Recovered output must remain candidate only.');
+          if (request.retextureTaskId !== '01a0073a-779e-768e-9f0f-46f4e27347a5') fail('Recovery must use exact already-paid Retexture task.');
+          if (request.expectedConsumedCredits !== 10) fail('Recovery must prove the already-spent 10 credits, not create new spend.');
+          if (request.riggingGate?.maxTriangles !== 300000) fail('Rigging face ceiling must remain 300000.');
+          const values = {
+            request_file: process.env.REQUEST_FILE,
+            request_id: request.id,
+            output_dir: request.output.dir,
+          };
+          for (const [key, value] of Object.entries(values)) {
+            if (String(value).includes('\n')) fail(`Multiline workflow output rejected: ${key}`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+          }
+          console.log(`Exact recovery request PASS: ${request.retextureTaskId}`);
+          NODE
+
+      - name: Verify GET-only recovery tooling
+        run: node scripts/verify-sw-art-007-cow17-texture-recovery.mjs
+
+      - name: Preserve existing texture and asset contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-sw-art-007-cow17-texture.mjs
+          node scripts/verify-sw-art-006-refined-face-meshy.mjs
+          node scripts/verify-threejs-asset-pipeline.mjs
+
+      - name: Prove GET-only recovery plan
+        shell: bash
+        env:
+          MESHY_API_KEY: ''
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-retexture-recover.mjs \
+            --request "${{ steps.request.outputs.request_file }}" \
+            --output-dir "${{ steps.request.outputs.output_dir }}" \
+            --dry-run > sw-art-007-recovery-plan.json
+          test -s sw-art-007-recovery-plan.json
+          grep -q '"createsMeshyTask": false' sw-art-007-recovery-plan.json
+          grep -q '"method": "GET-only"' sw-art-007-recovery-plan.json
+
+      - name: Recover already-paid Cow 17 texture task
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+        run: |
+          set -euo pipefail
+          test -n "$MESHY_API_KEY" || { echo 'GitHub Actions secret Meshy_API is missing or empty.' >&2; exit 1; }
+          node tools/meshy/sw-meshy-retexture-recover.mjs \
+            --request "${{ steps.request.outputs.request_file }}" \
+            --output-dir "${{ steps.request.outputs.output_dir }}"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-textured-v1.glb"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-preview.png"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-base-color.png"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-metallic.png"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-roughness.png"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-normal.png"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-007-recovered-task.json"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-007-recovered-glb-inspection.json"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-007-recovery-receipt.json"
+
+      - name: Record recovered texture hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum \
+            "${{ steps.request.outputs.output_dir }}/cow17-textured-v1.glb" \
+            "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-preview.png" \
+            "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-base-color.png" \
+            "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-metallic.png" \
+            "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-roughness.png" \
+            "${{ steps.request.outputs.output_dir }}/cow17-textured-v1-normal.png" \
+            | tee sw-art-007-recovery-sha256.txt
+
+      - name: Upload recovered Cow 17 texture evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-007-${{ steps.request.outputs.request_id }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            sw-art-007-recovery-static-report.json
+            sw-art-007-static-report.json
+            sw-art-007-recovery-changed-files.txt
+            sw-art-007-recovery-plan.json
+            sw-art-007-recovery-sha256.txt
+            ${{ steps.request.outputs.output_dir }}/cow17-textured-v1.glb
+            ${{ steps.request.outputs.output_dir }}/cow17-textured-v1-preview.png
+            ${{ steps.request.outputs.output_dir }}/cow17-textured-v1-base-color.png
+            ${{ steps.request.outputs.output_dir }}/cow17-textured-v1-metallic.png
+            ${{ steps.request.outputs.output_dir }}/cow17-textured-v1-roughness.png
+            ${{ steps.request.outputs.output_dir }}/cow17-textured-v1-normal.png
+            ${{ steps.request.outputs.output_dir }}/sw-art-007-recovered-task.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-007-recovered-glb-inspection.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-007-recovery-receipt.json
+            threejs-asset-pipeline-static-report.json
