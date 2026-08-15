@@ -1,0 +1,27 @@
+{
+  "version": "SW_MESHY_RETEXTURE_RECOVERY_REQUEST_V1",
+  "id": "cow17-texture-v1-recovered",
+  "productionAuthority": "candidate only",
+  "retextureTaskId": "01a0073a-779e-768e-9f0f-46f4e27347a5",
+  "precedingWorkflowRunId": 31908262397,
+  "expectedConsumedCredits": 10,
+  "recoveryReason": "The paid Retexture task succeeded, but the first workflow incorrectly treated UV preservation as byte-identical topology preservation and rejected the completed output after Meshy returned it.",
+  "baseline": {
+    "sourceMeshyTaskId": "01a0072a-a5bc-767d-aace-5ec692250b13",
+    "vertices": 99575,
+    "triangles": 199162
+  },
+  "output": {
+    "dir": "art-source/generated/meshy/cow17-textured-v1-recovered",
+    "glb": "cow17-textured-v1.glb",
+    "preview": "cow17-textured-v1-preview.png",
+    "texturePrefix": "cow17-textured-v1"
+  },
+  "riggingGate": {
+    "maxTriangles": 300000
+  },
+  "spendGuard": {
+    "createsMeshyTask": false,
+    "additionalCreditsAuthorized": 0
+  }
+}
