@@ -1,0 +1,25 @@
+{
+  "version": "SW_ART_LIVE_REQUEST_V1",
+  "id": "cow17-face-refine-v1",
+  "command": "image",
+  "brief": "cow17-face-refine-v1",
+  "model": "gemini-3.1-flash-image",
+  "output": "art-source/generated/google-ai/cow17/cow17-face-refine-v1.jpg",
+  "productionAuthority": "reference only",
+  "source": {
+    "runId": 31895535943,
+    "artifactId": 9249708267,
+    "artifactName": "sw-art-002-cow17-reference-v1",
+    "path": "art-source/generated/google-ai/cow17/cow17-reference-v1.jpg",
+    "expectedSourceSha256": "f8352f3817db96ff5cd4faf19f03452dd2666e624278e1c63d135518421d6aef",
+    "crop": {
+      "left": 690,
+      "top": 150,
+      "right": 1320,
+      "bottom": 1340,
+      "expectedWidth": 630,
+      "expectedHeight": 1190,
+      "expectedPixelSha256": "388babd28cc459d32c126511cf61212af7f39a8012b24a288b2fe2c37d209e5c"
+    }
+  }
+}
