@@ -1,6 +1,6 @@
 {
   "version": "SW_ASSET_PROVENANCE_V1",
-  "updated": "2026-08-08T15:20:00-05:00",
+  "updated": "2026-08-15T17:01:00-05:00",
   "policy": {
     "runtimeNetworkAssetsAllowed": false,
     "preferredAssetLicense": "CC0-1.0",
@@ -101,5 +101,56 @@
       "productionRule": "Before any asset import, record its exact upstream path and verify it belongs to the README-declared CC0 asset set; do not confuse the MIT code license with the asset license."
     }
   ],
-  "productionImports": []
+  "productionImports": [
+    {
+      "id": "character.cow17.walking.v1",
+      "status": "candidate",
+      "sourceType": "project-generated",
+      "rightsBasis": "Project-generated from the owner-directed Gemini and Meshy pipeline; no third-party source asset was imported into this Cow 17 asset chain.",
+      "sourceChain": [
+        {
+          "task": "SW-ART-005",
+          "role": "Gemini-refined Cow 17 image reference",
+          "runId": 31906670874,
+          "artifactId": 9252535475,
+          "head": "44ed9bd4f64870bedf79c9fcecad4229e072d59f"
+        },
+        {
+          "task": "SW-ART-006",
+          "role": "Meshy 6 accepted Cow 17 geometry",
+          "runId": 31907468508,
+          "artifactId": 9252746412,
+          "meshyTaskId": "01a0072a-a5bc-767d-aace-5ec692250b13",
+          "head": "4329f5ce1f30947cb4160af66b7774f09adb0299"
+        },
+        {
+          "task": "SW-ART-007",
+          "role": "Meshy 6 textured Cow 17",
+          "runId": 31908595053,
+          "artifactId": 9253031593,
+          "meshyTaskId": "01a0073a-779e-768e-9f0f-46f4e27347a5",
+          "head": "963a8a3a037bc738c22ae575cfc475e91061086c"
+        },
+        {
+          "task": "SW-ART-008",
+          "role": "Meshy rigging and walking animation",
+          "runId": 31910662893,
+          "artifactId": 9253571210,
+          "meshyTaskId": "01a0076a-7550-7ff0-8d46-8f2c4e646a57",
+          "head": "29d6d6195a8777459d99c446596bab176544af9e"
+        }
+      ],
+      "sourceArtifactId": 9253571210,
+      "sourceRunId": 31910662893,
+      "sourcePath": "art-source/generated/meshy/cow17-rigged-v1/cow17-walking-v1.glb",
+      "intendedUse": "Cow 17 hero character visual with basic walking animation in the Three.js gameplay runtime.",
+      "localDestination": "assets/production/characters/cow17-walking-v1.glb",
+      "modifications": "No geometry, texture, rig, or animation regeneration during runtime intake. Runtime may apply local scale, orientation, material interpretation, and animation playback only.",
+      "finalSha256": "d5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93",
+      "bytes": 14412828,
+      "attributionRequiredBySourceAsset": false,
+      "voluntaryCredit": "Google Gemini and Meshy pipeline retained in internal production provenance.",
+      "reviewStatus": "candidate"
+    }
+  ]
 }
