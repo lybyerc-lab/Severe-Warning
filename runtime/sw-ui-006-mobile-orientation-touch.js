@@ -58,7 +58,12 @@ function swUi006EnsureStyles() {
       visibility: visible !important;
     }
 
-    body.sw-ui-006-portrait-gameplay > *:not(#swUi006RotateGate):not(script):not(style) {
+    body.sw-ui-006-portrait-gameplay > *:not(#swUi006RotateGate):not(script):not(style),
+    body.sw-ui-006-portrait-gameplay canvas,
+    body.sw-ui-006-portrait-gameplay .footer,
+    body.sw-ui-006-portrait-gameplay .telemetry,
+    body.sw-ui-006-portrait-gameplay .touch-controls,
+    body.sw-ui-006-portrait-gameplay #joystickZone {
       visibility: hidden !important;
     }
 
