@@ -1,0 +1,10 @@
+{
+  "version": "SW_ART_LIVE_REQUEST_V1",
+  "id": "tornado-visual-dev-reference-v1",
+  "command": "image",
+  "brief": "tornado-visual-dev",
+  "model": "gemini-3.1-flash-image",
+  "output": "art-source/generated/google-ai/tornado-visual-dev/tornado-visual-dev-reference-v1.jpg",
+  "productionAuthority": "reference only",
+  "reason": "Controlled 2K Tornado gameplay visual-development target after exact WORLD-008 engineering green but Director pixel rejection. One reviewed Flash Image call under SW-ART-002 cost guard."
+}
