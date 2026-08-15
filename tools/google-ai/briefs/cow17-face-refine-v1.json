@@ -1,0 +1,11 @@
+{
+  "version": "SW_ART_BRIEF_V1",
+  "id": "cow17-face-refine-v1",
+  "purpose": "Cow 17 three-quarter reference with stronger geometry-readable facial personality for 3D generation",
+  "model": "gemini-3.1-flash-image",
+  "aspectRatio": "3:4",
+  "imageSize": "2K",
+  "productionAuthority": "reference only",
+  "googleDriveArchive": "https://drive.google.com/drive/folders/15tedofSOCS71mCHi_bdDJa-2xhqsWSWX",
+  "prompt": "EDIT THE ATTACHED COW 17 REFERENCE IMAGE. Treat the attached full-body three-quarter Cow 17 image as authoritative for the character. Preserve the existing body proportions, black-and-white markings, horns, ears, blue collar, stance, limbs, hooves, tail, Moo Brew takeaway cup, stylized-Americana material language, and overall character identity as closely as possible. Do not redesign the body or wardrobe. The ONLY intentional design change is the FACE, and it must be materially stronger and easier for an image-to-3D system to read. Replace the sleepy, blank facial read with an alert, dryly skeptical, comedic Cow 17 expression: eyes clearly more open and forward-readable; stronger sculptural upper and lower eyelid shapes; visible brow/forehead form with slight asymmetry, one brow modestly raised; clear cheek and muzzle volume; readable nostrils; a distinct mouth line with a restrained off-center knowing smirk. The facial personality should read through 3D-friendly form and silhouette, not only painted texture. Keep the expression confident, unimpressed, and funny rather than angry, heroic, cute-baby, or exaggerated. Keep the head silhouette recognizably the same Cow 17. Maintain one single full-body character in a clean three-quarter modeling-reference composition on a neutral light studio background with soft even lighting. No environment scene. No extra props. No new clothing. No hat, badge, radio, rescue uniform, cape, sunglasses, or action pose. Do not remove or redesign the Moo Brew cup. Do not turn Cow 17 into a different mascot. No photorealism, mascot-suit realism, or generic clip-art. If text appears at all, only MOO BREW may appear on the cup. This output is specifically a cleaner 3D-generation reference image, not a poster or character sheet."
+}
