@@ -249,14 +249,89 @@ jobs:
         shell: bash
         run: npx playwright install chromium
 
-      - name: Run Cow 17 behavioral and inherited browser QA
+      - name: Run Cow 17 behavioral browser QA
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p qa-artifacts/sw-art-009
-          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/candidate-server.log 2>&1 &
+          mkdir -p qa-artifacts/sw-art-009/cow17
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/cow17-server.log 2>&1 &
           SERVER_PID=$!
-          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          cleanup() {
+            kill "$SERVER_PID" 2>/dev/null || true
+            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 80); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+          env \
+            SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/' \
+            SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/cow17' \
+            node scripts/qa-sw-art-009-cow17-runtime.mjs
+
+      - name: Run inherited Three.js asset-pipeline browser QA in clean Chromium lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          sleep 1
+          mkdir -p qa-artifacts/sw-art-009/asset-pipeline
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/asset-pipeline-server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() {
+            kill "$SERVER_PID" 2>/dev/null || true
+            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 80); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+          env \
+            SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/' \
+            SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/asset-pipeline' \
+            pnpm run qa:asset-pipeline
+
+      - name: Run inherited Moo Level browser QA in clean Chromium lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          sleep 1
+          mkdir -p qa-artifacts/sw-art-009/moo-level
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/moo-level-server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() {
+            kill "$SERVER_PID" 2>/dev/null || true
+            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 80); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+          env \
+            SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/' \
+            SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/moo-level' \
+            pnpm run qa:sw-game-002
+
+      - name: Run inherited destruction-feel browser QA in clean Chromium lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          sleep 1
+          mkdir -p qa-artifacts/sw-art-009
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/feel-server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() {
+            kill "$SERVER_PID" 2>/dev/null || true
+            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          }
           trap cleanup EXIT
           for attempt in $(seq 1 80); do
             if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
@@ -264,20 +339,22 @@ jobs:
           done
           curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
           export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
-          env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/cow17' node scripts/qa-sw-art-009-cow17-runtime.mjs
-          env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/asset-pipeline' pnpm run qa:asset-pipeline
-          env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/moo-level' pnpm run qa:sw-game-002
           pnpm run qa:sw-feel-001
 
       - name: Capture same-runner accepted-base versus Cow 17 candidate performance evidence
         shell: bash
         run: |
           set -euo pipefail
+          pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          sleep 1
           python3 -m http.server 4180 --directory accepted-base/www > qa-artifacts/sw-art-009/perf-base-server.log 2>&1 &
           BASE_PID=$!
           python3 -m http.server 4181 --directory www > qa-artifacts/sw-art-009/perf-candidate-server.log 2>&1 &
           CANDIDATE_PID=$!
-          cleanup() { kill "$BASE_PID" "$CANDIDATE_PID" 2>/dev/null || true; }
+          cleanup() {
+            kill "$BASE_PID" "$CANDIDATE_PID" 2>/dev/null || true
+            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          }
           trap cleanup EXIT
           for port in 4180 4181; do
             for attempt in $(seq 1 80); do
