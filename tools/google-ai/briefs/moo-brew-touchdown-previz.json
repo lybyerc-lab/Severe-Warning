@@ -1,0 +1,10 @@
+{
+  "version": "SW_ART_BRIEF_V1",
+  "id": "moo-brew-touchdown-previz",
+  "purpose": "Non-production opening cinematic previsualization",
+  "videoModel": "gemini-omni-flash-preview",
+  "aspectRatio": "16:9",
+  "productionAuthority": "previsualization only; final opening remains Three.js unless separately reopened",
+  "googleDriveArchive": "https://drive.google.com/drive/folders/1p0Yprt5uoNtbkpmTiG11tvHiRJhj-H3F",
+  "prompt": "Create an 8-10 second previsualization clip for the opening beat of an original mobile arcade game, Severe Weather Warning. This is a timing and composition reference for a later real-time Three.js cinematic, not final production footage. Art direction: storm-charged stylized Americana, premium stylized 3D mobile game, same visual world as gameplay. At a small Midwestern dairy farm, Cow 17, an upright black-and-white dairy cow with a deadpan blue-collar personality, casually leans at a fence holding a fictional Moo Brew takeaway cup while a few chickens peck nearby. The weather suddenly shifts: wind picks up, distant siren/radio urgency rises, Cow 17 and the chickens slowly notice the sky, Cow 17 takes one last sip, drops the cup, the chickens panic, Cow 17 bolts, loose barn-roof material begins to lift, and the distant tornado touchdown becomes the final visual beat. Use strong readable staging, restrained comedy through timing/body language, no spoken dialogue required, no flat 2D cartoon universe, no newspaper overlay, no UI, no loading screen, no photoreal live action. The tornado should be atmospheric and connected, with an organic funnel and ground dust, never a geometric cone or giant disk. End on a composition that could hand seamlessly into gameplay."
+}
