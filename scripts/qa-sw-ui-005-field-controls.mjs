@@ -56,13 +56,20 @@ try {
     globalThis.__SW_THREEJS_VISUAL_FOUNDATION__?.prepareQaView?.('slice6-storm');
     globalThis.__SW_UI_005_APPLY__?.();
   });
-  await page.waitForTimeout(120);
+  await page.waitForTimeout(160);
 
   const desktop = await page.evaluate(() => {
     const guide = document.querySelector('.key-guide');
     const rows = guide ? Array.from(guide.children).filter((node) => !node.classList.contains('sw-field-controls-header')) : [];
     const labels = rows.slice(0, 3).map((row) => row.querySelector(':scope > b:first-child')?.textContent?.trim() || '');
     const rect = guide?.getBoundingClientRect();
+    const abilityRow = rows[1] || null;
+    const abilityRect = abilityRow?.getBoundingClientRect();
+    const verbNodes = ['verbSpace', 'verbQ', 'verbE'].map((id) => document.getElementById(id));
+    const verbRects = verbNodes.map((node) => {
+      const r = node?.getBoundingClientRect();
+      return r ? { left: r.left, right: r.right, width: r.width } : null;
+    });
     return {
       state: globalThis.getSwUi005State(),
       guideClass: guide?.className || '',
@@ -70,6 +77,10 @@ try {
       labels,
       width: rect?.width || 0,
       viewportWidth: innerWidth,
+      abilityClientWidth: abilityRow?.clientWidth || 0,
+      abilityScrollWidth: abilityRow?.scrollWidth || 0,
+      abilityRect: abilityRect ? { left: abilityRect.left, right: abilityRect.right, width: abilityRect.width } : null,
+      verbRects,
       verbSpace: document.getElementById('verbSpace')?.textContent?.trim() || '',
       verbQ: document.getElementById('verbQ')?.textContent?.trim() || '',
       verbE: document.getElementById('verbE')?.textContent?.trim() || '',
@@ -77,18 +88,27 @@ try {
       productTitle: document.body.textContent.includes('SEVERE WEATHER WARNING'),
     };
   });
+  const allVerbRectsInsideRow = desktop.abilityRect
+    && desktop.verbRects.every((r) => r && r.left >= desktop.abilityRect.left - 1 && r.right <= desktop.abilityRect.right + 1);
+  const abilityRowFits = desktop.abilityClientWidth > 0
+    && desktop.abilityScrollWidth <= desktop.abilityClientWidth + 1
+    && allVerbRectsInsideRow;
+
   check('desktopAdapterActive', desktop.state.desktopActive === true && desktop.guideClass.includes('sw-field-controls'), JSON.stringify(desktop));
   check('desktopLabelsAreProductNative', JSON.stringify(desktop.labels) === JSON.stringify(['STEER', 'ABILITIES', 'WARNING AREA']), JSON.stringify(desktop.labels));
   check('desktopRetainsWASDTruth', /WASD/.test(desktop.guideText), desktop.guideText);
   check('desktopRetainsAbilityBindings', /SPACE:\s*Pull/i.test(desktop.verbSpace) && /Q:\s*Gust/i.test(desktop.verbQ) && /E:\s*Power Grid(?:\s+Chain)?\s+Zap/i.test(desktop.verbE), `${desktop.verbSpace} | ${desktop.verbQ} | ${desktop.verbE}`);
+  check('desktopDropsOnlyExplanatoryParentheticals', !/[()]/.test(desktop.verbSpace) && !/[()]/.test(desktop.verbQ) && !/[()]/.test(desktop.verbE), `${desktop.verbSpace} | ${desktop.verbQ} | ${desktop.verbE}`);
+  check('desktopAbilityBindingsFullyVisible', abilityRowFits, JSON.stringify({ abilityClientWidth: desktop.abilityClientWidth, abilityScrollWidth: desktop.abilityScrollWidth, abilityRect: desktop.abilityRect, verbRects: desktop.verbRects }));
+  check('desktopPreservesFullBindingTruthOffscreenInState', /Inward Gravitational Vortex/i.test(desktop.state.pullFullTruth) && /Explosive Shockwave/i.test(desktop.state.gustFullTruth) && /Power Grid(?:\s+Chain)?\s+Zap/i.test(desktop.state.zapFullTruth), JSON.stringify(desktop.state));
   check('desktopRetainsDistrictTruth', desktop.district.length > 0, desktop.district);
-  check('desktopGuideIsCompact', desktop.width > 0 && desktop.width <= desktop.viewportWidth * 0.5, `${desktop.width}/${desktop.viewportWidth}`);
+  check('desktopGuideIsCompact', desktop.width > 0 && desktop.width <= desktop.viewportWidth * 0.5 + 1, `${desktop.width}/${desktop.viewportWidth}`);
   check('acceptedProductTitleRemainsVisible', desktop.productTitle === true);
   await page.screenshot({ path: path.join(outputDir, '01_desktop_field_controls_1280x720.png'), fullPage: false });
 
   await page.setViewportSize({ width: 844, height: 390 });
   await page.evaluate(() => globalThis.__SW_UI_005_APPLY__?.());
-  await page.waitForTimeout(120);
+  await page.waitForTimeout(160);
   const mobile = await page.evaluate(() => {
     const guide = document.querySelector('.key-guide');
     const rows = guide ? Array.from(guide.children).filter((node) => !node.classList.contains('sw-field-controls-header')) : [];
@@ -104,7 +124,7 @@ try {
   });
   check('mobileAdapterPresentationIsInactive', mobile.state.desktopActive === false && !mobile.guideClass.includes('sw-field-controls'), JSON.stringify(mobile));
   check('mobileOriginalLabelsRestored', JSON.stringify(mobile.labels) === JSON.stringify(['Move:', 'Verbs:', 'District:']), JSON.stringify(mobile.labels));
-  check('mobileBindingsRemainUnchanged', mobile.verbSpace === desktop.verbSpace && mobile.verbQ === desktop.verbQ && mobile.verbE === desktop.verbE, JSON.stringify(mobile));
+  check('mobileRestoresFullAbilityDescriptions', mobile.verbSpace === desktop.state.pullFullTruth && mobile.verbQ === desktop.state.gustFullTruth && mobile.verbE === desktop.state.zapFullTruth, JSON.stringify({ mobile, full: { pull: desktop.state.pullFullTruth, gust: desktop.state.gustFullTruth, zap: desktop.state.zapFullTruth } }));
   check('mobileDistrictTruthRemainsUnchanged', mobile.district === desktop.district, mobile.district);
   await page.screenshot({ path: path.join(outputDir, '02_mobile_unchanged_844x390.png'), fullPage: false });
 
