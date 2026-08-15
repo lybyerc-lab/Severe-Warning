@@ -253,12 +253,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cleanup_browser_processes() {
+            for name in headless_shell chrome chromium; do
+              pkill -TERM -x "$name" 2>/dev/null || true
+            done
+          }
+          cleanup_browser_processes
           mkdir -p qa-artifacts/sw-art-009/cow17
           python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/cow17-server.log 2>&1 &
           SERVER_PID=$!
           cleanup() {
             kill "$SERVER_PID" 2>/dev/null || true
-            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+            cleanup_browser_processes
           }
           trap cleanup EXIT
           for attempt in $(seq 1 80); do
@@ -275,14 +281,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          cleanup_browser_processes() {
+            for name in headless_shell chrome chromium; do
+              pkill -TERM -x "$name" 2>/dev/null || true
+            done
+          }
+          cleanup_browser_processes
           sleep 1
           mkdir -p qa-artifacts/sw-art-009/asset-pipeline
           python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/asset-pipeline-server.log 2>&1 &
           SERVER_PID=$!
           cleanup() {
             kill "$SERVER_PID" 2>/dev/null || true
-            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+            cleanup_browser_processes
           }
           trap cleanup EXIT
           for attempt in $(seq 1 80); do
@@ -299,14 +310,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          cleanup_browser_processes() {
+            for name in headless_shell chrome chromium; do
+              pkill -TERM -x "$name" 2>/dev/null || true
+            done
+          }
+          cleanup_browser_processes
           sleep 1
           mkdir -p qa-artifacts/sw-art-009/moo-level
           python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/moo-level-server.log 2>&1 &
           SERVER_PID=$!
           cleanup() {
             kill "$SERVER_PID" 2>/dev/null || true
-            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+            cleanup_browser_processes
           }
           trap cleanup EXIT
           for attempt in $(seq 1 80); do
@@ -323,14 +339,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          cleanup_browser_processes() {
+            for name in headless_shell chrome chromium; do
+              pkill -TERM -x "$name" 2>/dev/null || true
+            done
+          }
+          cleanup_browser_processes
           sleep 1
           mkdir -p qa-artifacts/sw-art-009
           python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/feel-server.log 2>&1 &
           SERVER_PID=$!
           cleanup() {
             kill "$SERVER_PID" 2>/dev/null || true
-            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+            cleanup_browser_processes
           }
           trap cleanup EXIT
           for attempt in $(seq 1 80); do
@@ -345,7 +366,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+          cleanup_browser_processes() {
+            for name in headless_shell chrome chromium; do
+              pkill -TERM -x "$name" 2>/dev/null || true
+            done
+          }
+          cleanup_browser_processes
           sleep 1
           python3 -m http.server 4180 --directory accepted-base/www > qa-artifacts/sw-art-009/perf-base-server.log 2>&1 &
           BASE_PID=$!
@@ -353,7 +379,7 @@ jobs:
           CANDIDATE_PID=$!
           cleanup() {
             kill "$BASE_PID" "$CANDIDATE_PID" 2>/dev/null || true
-            pkill -TERM -f 'headless_shell|chrome-linux|chromium' 2>/dev/null || true
+            cleanup_browser_processes
           }
           trap cleanup EXIT
           for port in 4180 4181; do
