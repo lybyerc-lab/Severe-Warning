@@ -82,13 +82,13 @@ try {
   const ribbon = tornado.heritage?.ribbon || {};
   check('tornadoSelected', tornado.active === 'tornado', JSON.stringify(tornado));
   check('heritageFramesAdvanced', (tornado.heritage?.tornadoFrames || 0) > 0, JSON.stringify(tornado.heritage));
-  check('serpentineCoreAuthoritative', legacy.funnelVisible === true && legacy.funnelOpacity >= 0.60 && legacy.funnelOpacity <= 0.72 && legacy.funnelDepthWrite === true, JSON.stringify(legacy));
-  check('outerVaporVisibleButSubordinate', legacy.outerVisible === true && legacy.outerOpacity >= 0.08 && legacy.outerOpacity <= 0.16, JSON.stringify(legacy));
-  check('helicalDebrisVisible', legacy.debrisVisible === true && legacy.debrisOpacity >= 0.4, JSON.stringify(legacy));
+  check('serpentineCoreAuthoritative', legacy.funnelVisible === true && legacy.funnelOpacity >= 0.78 && legacy.funnelOpacity <= 0.86 && legacy.funnelDepthWrite === true, JSON.stringify(legacy));
+  check('outerVaporVisibleButSubordinate', legacy.outerVisible === true && legacy.outerOpacity >= 0.26 && legacy.outerOpacity <= 0.36, JSON.stringify(legacy));
+  check('helicalDebrisVisible', legacy.debrisVisible === true && legacy.debrisOpacity >= 0.70, JSON.stringify(legacy));
   check('touchdownDustVisible', legacy.dustVisible === true, JSON.stringify(legacy));
   check('canopySubordinate', legacy.canopyVisible === true && legacy.canopyScaleX <= 0.65, JSON.stringify(legacy));
   check('polygonStreakSilhouetteRemoved', ribbon.streaks >= 8 && ribbon.visibleStreaks === 0, JSON.stringify(ribbon));
-  check('remainingRibbonAccentsSubordinate', ribbon.maxOpacity <= 0.065, JSON.stringify(ribbon));
+  check('remainingVisibleAccentsSubordinate', ribbon.maxVisibleOpacity <= 0.055, JSON.stringify(ribbon));
   check('tornadoPresentationRootsVisible', tornado.slice6Visible === true && tornado.tornadoGroupVisible === true, JSON.stringify(tornado));
   await page.screenshot({ path: path.join(artifactDir, '01_tornado_heritage_844x390.png'), fullPage: true });
 
@@ -117,7 +117,7 @@ try {
 
 const failed = checks.filter(item => !item.pass);
 const report = {
-  version: 'SW_WORLD_008_BROWSER_V2',
+  version: 'SW_WORLD_008_BROWSER_V3',
   passed: failed.length === 0,
   checks,
   errors,
