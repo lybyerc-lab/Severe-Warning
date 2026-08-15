@@ -8,12 +8,13 @@ const apply = await readFile(path.join(root, 'scripts', 'apply-sw-feel-001-struc
 
 const checks = [];
 const check = (name, pass) => { checks.push({ name, pass: Boolean(pass) }); console.log(`${pass ? 'PASS' : 'FAIL'} ${name}`); };
+const replacesExplosionArray = /\bactiveExplosionFragments\s*=(?!=)/.test(runtime);
 check('structural-priority marker is stable', runtime.includes('SW_FEEL_001_STRUCTURAL_PRIORITY_V1'));
 check('generic fragment budget is exactly two for structural events', runtime.includes('swFeel001StructuralPriorityBudget = 2'));
 check('anatomy geometries bypass suppression', runtime.includes('swFeel001StructuralPriorityIsAnatomyGeometry'));
 check('trees and cows are excluded from structural throttling', runtime.includes('!target.isTree') && runtime.includes('!target.isCow'));
 check('original destruction presentation remains authoritative event source', runtime.includes('swFeel001StructuralPriorityPrevPresentation'));
-check('legacy explosion bookkeeping is observed but not replaced', runtime.includes('activeExplosionFragments') && !runtime.includes('activeExplosionFragments ='));
+check('legacy explosion bookkeeping is observed but not replaced', runtime.includes('activeExplosionFragments') && !replacesExplosionArray);
 check('legacy cube signature is bounded to exact 0.75 box geometry', runtime.includes("geometry.type !== 'BoxGeometry'") && runtime.includes('Math.abs(width - 0.75)') && runtime.includes('Math.abs(height - 0.75)') && runtime.includes('Math.abs(depth - 0.75)'));
 check('legacy structural cubes are hidden rather than deleted', runtime.includes('mesh.visible = false') && runtime.includes('swFeel001LegacyCubeHidden') && !runtime.includes('activeExplosionFragments.splice'));
 check('cube suppression is spatially bounded around destroyed target', runtime.includes('Math.hypot(dx, dz) > 12'));
