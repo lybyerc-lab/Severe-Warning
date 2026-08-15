@@ -1,54 +1,68 @@
-name: QA Pages Playtest
+name: SW-QA-009 Pages Publisher Validation
 
 on:
-  workflow_dispatch:
-    inputs:
-      source_ref:
-        description: Exact accepted canonical SHA to publish as the QA playtest
-        required: true
-        default: de2e62835e79567b4bbfc079a372ce2af4ee0879
   push:
     branches:
-      - main
+      - agent/sw-qa-009-pages-publisher-refresh
     paths:
       - .github/workflows/qa-pages-playtest.yml
+      - .github/workflows/sw-qa-009-pages-publisher-validation.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: qa-pages-playtest
+  group: sw-qa-009-pages-publisher-validation
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  validate-publisher:
     runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout exact playtest source
+      - name: Checkout publisher correction
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || 'de2e62835e79567b4bbfc079a372ce2af4ee0879' }}
-          fetch-depth: 1
+          path: publisher
 
-      - name: Lock publisher to accepted canonical
-        id: source
+      - name: Verify publisher contract statically
         shell: bash
         run: |
           set -euo pipefail
-          accepted='de2e62835e79567b4bbfc079a372ce2af4ee0879'
-          actual="$(git rev-parse HEAD)"
-          requested="${{ inputs.source_ref || 'de2e62835e79567b4bbfc079a372ce2af4ee0879' }}"
-          if [ "$actual" != "$accepted" ]; then
-            echo "Refusing QA Pages deploy: resolved source $actual is not accepted canonical $accepted" >&2
-            exit 1
-          fi
-          echo "source_sha=$actual" >> "$GITHUB_OUTPUT"
-          echo "source_ref=$requested" >> "$GITHUB_OUTPUT"
+          workflow='publisher/.github/workflows/qa-pages-playtest.yml'
+          grep -F 'default: de2e62835e79567b4bbfc079a372ce2af4ee0879' "$workflow"
+          grep -F "accepted='de2e62835e79567b4bbfc079a372ce2af4ee0879'" "$workflow"
+          grep -F 'apply-sw-quality-001-owner-playtest-rescue.mjs' "$workflow"
+          grep -F 'apply-sw-quality-002-visual-rescue.mjs' "$workflow"
+          grep -F 'apply-sw-quality-002-storm-frame-bridge.mjs' "$workflow"
+          grep -F 'apply-sw-ui-003-run-shell-identity.mjs' "$workflow"
+          grep -F 'apply-sw-ui-004-gameplay-product-identity.mjs' "$workflow"
+          grep -F 'apply-sw-world-007-secondary-storm-forms.mjs' "$workflow"
+          grep -F 'apply-sw-world-007-atmospheric-correction.mjs' "$workflow"
+          grep -F 'apply-sw-world-007-visibility-lock.mjs' "$workflow"
+          grep -F 'apply-sw-world-007-secondary-exclusive.mjs' "$workflow"
+          grep -F 'apply-sw-feel-001-destruction-consequence.mjs' "$workflow"
+          grep -F 'apply-sw-feel-001-structural-anatomy.mjs' "$workflow"
+          grep -F 'apply-sw-feel-001-structural-priority.mjs' "$workflow"
+          grep -F 'apply-sw-ui-005-field-controls.mjs' "$workflow"
+          grep -F 'qa-sw-int-005-score-continuity.mjs' "$workflow"
+          grep -F '"source_sha"' "$workflow"
+          grep -F 'QA-only; owner physical acceptance remains separate' "$workflow"
+          grep -F 'actions/deploy-pages@v4' "$workflow"
+
+      - name: Checkout exact accepted canonical source
+        uses: actions/checkout@v4
+        with:
+          ref: de2e62835e79567b4bbfc079a372ce2af4ee0879
+          path: source
+          fetch-depth: 1
+
+      - name: Verify exact source identity
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'de2e62835e79567b4bbfc079a372ce2af4ee0879'
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -61,11 +75,13 @@ jobs:
           corepack prepare pnpm@11.9.0 --activate
 
       - name: Install dependencies and Chromium
+        working-directory: source
         run: |
           pnpm install --frozen-lockfile
           pnpm exec playwright install --with-deps chromium
 
       - name: Prepare deterministic local assets
+        working-directory: source
         run: |
           set -euo pipefail
           sudo apt-get update
@@ -74,6 +90,7 @@ jobs:
           node scripts/vendor-threejs-hero-slice4-assets.mjs
 
       - name: Verify accepted maintained sources
+        working-directory: source
         run: |
           set -euo pipefail
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
@@ -93,8 +110,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          candidate="$RUNNER_TEMP/severe-weather-qa-playtest.html"
-          cp MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
+          candidate="$RUNNER_TEMP/sw-qa-009.html"
+          cp source/MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
+          cd source
           export SEVERE_WEATHER_SOURCE_PATH="$candidate"
           for script in \
             apply-v431-source-patch.mjs \
@@ -149,6 +167,7 @@ jobs:
           echo "SEVERE_WEATHER_SOURCE_PATH=$candidate" >> "$GITHUB_ENV"
 
       - name: Preserve accepted static authority contracts
+        working-directory: source
         run: |
           set -euo pipefail
           pnpm run verify:process
@@ -160,15 +179,18 @@ jobs:
           pnpm run verify:sw-level-001
 
       - name: Build QUALITY-001 package
+        working-directory: source
         run: |
           set -euo pipefail
           pnpm run modern:build
           node scripts/build-web.mjs
 
-      - name: Prove QUALITY-001 functional rescue
+      - name: Prove QUALITY-001
+        working-directory: source
         run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
 
-      - name: Apply accepted canonical presentation stack and rebuild
+      - name: Apply and verify accepted canonical presentation stack
+        working-directory: source
         run: |
           set -euo pipefail
           node scripts/apply-sw-quality-002-visual-rescue.mjs
@@ -196,7 +218,8 @@ jobs:
           node scripts/verify-sw-feel-001-structural-priority.mjs
           node scripts/build-web.mjs
 
-      - name: Prove accepted canonical browser stack
+      - name: Prove publisher-built canonical bundle
+        working-directory: source
         run: |
           set -euo pipefail
           node scripts/qa-sw-quality-002-visual-rescue.mjs
@@ -211,11 +234,12 @@ jobs:
           pnpm run qa:sw-ui-001
 
       - name: Preserve Storm Site browser QA
+        working-directory: source
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p qa-artifacts/sw-level-001
-          python3 -m http.server 4173 --directory www > qa-artifacts/sw-level-001/pages-server.log 2>&1 &
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-level-001/validation-server.log 2>&1 &
           SERVER_PID=$!
           cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
           trap cleanup EXIT
@@ -227,29 +251,19 @@ jobs:
           export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
           pnpm run qa:sw-level-001
 
-      - name: Stamp exact playtest identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat > www/playtest-info.json <<EOF
-          {
-            "source_sha": "${{ steps.source.outputs.source_sha }}",
-            "source_ref": "${{ steps.source.outputs.source_ref }}",
-            "accepted_canonical": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
-            "composition": "Stage 2B + QUALITY-001/002 + UI-003/004/005 + WORLD-007 + FEEL-001",
-            "purpose": "owner-playtest",
-            "authority": "QA-only; owner physical acceptance remains separate"
-          }
-          EOF
+      - name: Prove validation does not deploy
+        run: echo 'SW-QA-009 validation completed without configure-pages, upload-pages-artifact, or deploy-pages actions.'
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          path: www
-
-      - name: Deploy QA Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: sw-qa-009-pages-publisher-validation
+          path: |
+            source/qa-artifacts/
+            source/artifacts/sw-int-004/
+            source/artifacts/sw-ui-005/
+            source/artifacts/sw-world-007-visual/
+            source/artifacts/feel-001-evidence/
+            source/artifacts/sw-int-005-score/
+          if-no-files-found: warn
