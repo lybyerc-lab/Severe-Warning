@@ -46,7 +46,7 @@ jobs:
             command: 'image',
             brief: 'cow17',
             model: 'gemini-3.1-flash-image',
-            output: 'art-source/generated/google-ai/cow17/cow17-reference-v1.png'
+            output: 'art-source/generated/google-ai/cow17/cow17-reference-v1.jpg'
           };
           for (const [key, value] of Object.entries(expected)) {
             if (request[key] !== value) throw new Error(`Unexpected ${key}: ${request[key]}`);
@@ -68,9 +68,9 @@ jobs:
           node tools/google-ai/sw-google-art.mjs image \
             --brief cow17 \
             --model gemini-3.1-flash-image \
-            --output art-source/generated/google-ai/cow17/cow17-reference-v1.png
-          test -s art-source/generated/google-ai/cow17/cow17-reference-v1.png
-          test -s art-source/generated/google-ai/cow17/cow17-reference-v1.png.json
+            --output art-source/generated/google-ai/cow17/cow17-reference-v1.jpg
+          test -s art-source/generated/google-ai/cow17/cow17-reference-v1.jpg
+          test -s art-source/generated/google-ai/cow17/cow17-reference-v1.jpg.json
 
       - name: Record non-secret generation receipt
         shell: bash
@@ -95,6 +95,6 @@ jobs:
           retention-days: 30
           if-no-files-found: error
           path: |
-            art-source/generated/google-ai/cow17/cow17-reference-v1.png
-            art-source/generated/google-ai/cow17/cow17-reference-v1.png.json
+            art-source/generated/google-ai/cow17/cow17-reference-v1.jpg
+            art-source/generated/google-ai/cow17/cow17-reference-v1.jpg.json
             sw-art-002-receipt.json
