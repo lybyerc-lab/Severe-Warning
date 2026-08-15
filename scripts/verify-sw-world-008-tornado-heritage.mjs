@@ -10,13 +10,14 @@ const checks = [];
 const check = (name, pass, detail = '') => checks.push({ name, pass: Boolean(pass), detail });
 
 check('marker', runtime.includes('SW_WORLD_008_TORNADO_HERITAGE_V1'));
-check('historical-core-authoritative', runtime.includes('funnelMesh.visible = true') && runtime.includes('funnelMat, 0.66') && runtime.includes('funnelMat.depthWrite = true'));
-check('historical-sheath-restored', runtime.includes('outerFunnelMesh.visible = true') && runtime.includes('outerFunnelMat, 0.12'));
-check('historical-debris-restored', runtime.includes('particleSystem.visible = true') && runtime.includes("particleMat.color?.set?.('#806e5b')"));
-check('historical-dust-softened', runtime.includes('dustBowlGroup.visible = true') && runtime.includes('dustBowlGroup.scale.set(0.58, 0.36, 0.58)') && runtime.includes('dustMat, 0.12'));
-check('canopy-subordinate', runtime.includes('mesoCloudGroup.scale.set(0.62, 0.45, 0.62)') && runtime.includes('mesoCloudMat, 0.25'));
+check('historical-core-authoritative', runtime.includes("funnelMat.color?.set?.('#090d16')") && runtime.includes('funnelMat.roughness = 0.15') && runtime.includes('funnelMat, 0.82') && runtime.includes('funnelMat.depthWrite = true'));
+check('historical-sheath-restored', runtime.includes('outerFunnelMesh.visible = true') && runtime.includes("outerFunnelMat.color?.set?.('#334155')") && runtime.includes('outerFunnelMat, 0.32'));
+check('historical-debris-restored', runtime.includes('particleSystem.visible = true') && runtime.includes('particleMat.vertexColors = true') && runtime.includes('particleMat, 0.78'));
+check('historical-dust-softened', runtime.includes('dustBowlGroup.visible = true') && runtime.includes('dustBowlGroup.scale.set(0.60, 0.22, 0.60)') && runtime.includes('dustMat, 0.16'));
+check('canopy-subordinate', runtime.includes('mesoCloudGroup.scale.set(0.62, 0.45, 0.62)') && runtime.includes('mesoCloudMat, 0.42'));
 check('ribbon-replacement-removed-from-silhouette', runtime.includes("SWVisualSlice6CondensationStreak") && runtime.includes('object.visible = false') && runtime.includes('object.material, 0.03'));
-check('edge-wisps-subordinate', runtime.includes('object.material, 0.045') && runtime.includes('object.material, 0.06'));
+check('edge-wisps-subordinate', runtime.includes('object.material, 0.035') && runtime.includes('object.material, 0.045'));
+check('visible-ribbon-opacity-only', runtime.includes('maxVisibleOpacity') && runtime.includes('if (object.visible && object.material'));
 check('secondary-exclusivity-preserved', runtime.includes('swWorld008SuppressForSecondary') && runtime.includes("activeStorm === 'tornado'"));
 check('final-visual-bridge-wrapper', runtime.includes('swWorld008VisualBridgeBase') && runtime.includes('update: swWorld008VisualUpdate'));
 check('presentation-state-export', runtime.includes('getSwWorld008TornadoHeritageState') && runtime.includes('presentationOnly: true'));
@@ -36,7 +37,7 @@ check('no-gameplay-camera-write', !/\bcamera\.(?:position|rotation)|\bcamera\.lo
 check('no-ability-write', !/\b(?:triggerAbility|usePull|useGust|useZap)\s*=/.test(runtime));
 
 const report = {
-  version: 'SW_WORLD_008_STATIC_V2',
+  version: 'SW_WORLD_008_STATIC_V3',
   passed: checks.every((entry) => entry.pass),
   checks,
   failedChecks: checks.filter((entry) => !entry.pass),
