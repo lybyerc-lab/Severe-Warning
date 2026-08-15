@@ -1,9 +1,8 @@
 // ============================================================================
 // [SW:WORLD:008_TORNADO_HERITAGE]
-// Recover the strongest July Tornado motion while replacing the faceted outer
-// presentation with a bounded soft-atmosphere layer inspired by the approved
-// tornado visual-development target. Presentation only. No gameplay/camera/
-// ability authority.
+// Recover the strongest July Tornado motion while giving the player-facing
+// storm an authored irregular condensation body instead of a visible cylinder.
+// The accepted gameplay solver remains untouched. Presentation only.
 // ============================================================================
 const SW_WORLD_008_TORNADO_HERITAGE_MARKER = 'SW_WORLD_008_TORNADO_HERITAGE_V1';
 const SW_WORLD_008_VISUAL_TARGET = 'tornado-visual-dev-reference-v1';
@@ -14,16 +13,24 @@ const swWorld008TornadoHeritageState = {
   frames: 0,
   tornadoFrames: 0,
   secondaryFrames: 0,
-  restoredCoreFrames: 0,
+  condensationFrames: 0,
   restoredDebrisFrames: 0,
   atmosphereFrames: 0,
-  radialBreakupFrames: 0,
   ribbonFramesDemoted: 0,
   lastActiveStorm: null,
   lastError: null,
 };
 
-let swWorld008AtmosphereRoot = null;
+const SW_WORLD_008_RING_LEVELS = 27;
+const SW_WORLD_008_RING_SEGMENTS = 40;
+
+let swWorld008PresentationRoot = null;
+let swWorld008CondensationMesh = null;
+let swWorld008CondensationSheath = null;
+let swWorld008CondensationMaterial = null;
+let swWorld008SheathMaterial = null;
+let swWorld008CondensationAlpha = null;
+let swWorld008SheathAlpha = null;
 let swWorld008MistFine = null;
 let swWorld008MistBroad = null;
 let swWorld008CanopyMist = null;
@@ -38,6 +45,15 @@ function swWorld008ActiveStorm() {
   return '';
 }
 
+function swWorld008Clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function swWorld008Hash(index, salt = 0) {
+  const value = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return value - Math.floor(value);
+}
+
 function swWorld008SetMaterialOpacity(material, opacity) {
   if (!material) return;
   material.transparent = true;
@@ -46,13 +62,76 @@ function swWorld008SetMaterialOpacity(material, opacity) {
   material.needsUpdate = true;
 }
 
-function swWorld008Clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+function swWorld008Gaussian(value, center, width) {
+  const x = (value - center) / width;
+  return Math.exp(-(x * x));
 }
 
-function swWorld008Hash(index, salt = 0) {
-  const value = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
-  return value - Math.floor(value);
+function swWorld008Centerline(y, now) {
+  const factor = swWorld008Clamp(y / 34, 0, 1);
+  const middle = Math.sin(Math.PI * factor);
+  const t = now * 0.001;
+  return {
+    x: Math.sin(t * 0.82 + y * 0.122) * (0.8 + factor * 3.8)
+      + Math.sin(t * 0.47 - y * 0.255) * middle * 2.25,
+    z: Math.cos(t * 0.69 + y * 0.106) * (0.65 + factor * 3.15)
+      + Math.sin(t * 0.41 + y * 0.218) * middle * 1.95,
+  };
+}
+
+function swWorld008ProfileRadius(factor, now) {
+  const t = now * 0.001;
+  const base = 1.25 + Math.pow(factor, 1.32) * 10.2;
+  const lowerBulge = swWorld008Gaussian(factor, 0.23, 0.15) * 1.05;
+  const midPinch = swWorld008Gaussian(factor, 0.49, 0.14) * 1.15;
+  const upperShoulder = swWorld008Gaussian(factor, 0.79, 0.18) * 2.25;
+  const verticalBreath = Math.sin(factor * 15.0 - t * 0.92) * (0.22 + factor * 0.58)
+    + Math.sin(factor * 29.0 + t * 0.57) * 0.24;
+  return Math.max(1.05, base + lowerBulge - midPinch + upperShoulder + verticalBreath);
+}
+
+function swWorld008CreateCondensationAlphaTexture(seedSalt = 0) {
+  if (typeof document === 'undefined' || typeof THREE === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.fillStyle = 'rgb(174,174,174)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = 0; i < 46; i += 1) {
+    const x = swWorld008Hash(i, seedSalt + 1) * canvas.width;
+    const y = swWorld008Hash(i, seedSalt + 2) * canvas.height;
+    const radius = 10 + swWorld008Hash(i, seedSalt + 3) * 32;
+    const dark = 20 + Math.floor(swWorld008Hash(i, seedSalt + 4) * 55);
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, `rgb(${dark},${dark},${dark})`);
+    gradient.addColorStop(0.48, `rgba(${dark},${dark},${dark},0.72)`);
+    gradient.addColorStop(1, `rgba(${dark},${dark},${dark},0)`);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+
+  for (let i = 0; i < 58; i += 1) {
+    const x = swWorld008Hash(i, seedSalt + 21) * canvas.width;
+    const y = swWorld008Hash(i, seedSalt + 22) * canvas.height;
+    const radius = 8 + swWorld008Hash(i, seedSalt + 23) * 25;
+    const light = 205 + Math.floor(swWorld008Hash(i, seedSalt + 24) * 50);
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, `rgba(${light},${light},${light},0.82)`);
+    gradient.addColorStop(0.5, `rgba(${light},${light},${light},0.44)`);
+    gradient.addColorStop(1, `rgba(${light},${light},${light},0)`);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1.25, 1.1);
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function swWorld008CreateMistTexture(kind = 'storm') {
@@ -63,11 +142,9 @@ function swWorld008CreateMistTexture(kind = 'storm') {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
   ctx.clearRect(0, 0, 64, 64);
-
   const lobes = kind === 'dust'
-    ? [[32, 35, 25, 0.78], [22, 34, 17, 0.52], [44, 37, 16, 0.44], [35, 27, 13, 0.30]]
-    : [[31, 32, 25, 0.72], [21, 31, 17, 0.46], [43, 29, 18, 0.42], [36, 42, 15, 0.34], [29, 21, 13, 0.28]];
-
+    ? [[32, 35, 25, 0.82], [22, 34, 17, 0.56], [44, 37, 16, 0.46], [35, 27, 13, 0.34]]
+    : [[31, 32, 25, 0.76], [21, 31, 17, 0.50], [43, 29, 18, 0.46], [36, 42, 15, 0.38], [29, 21, 13, 0.32]];
   for (const [x, y, radius, alpha] of lobes) {
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
     gradient.addColorStop(0, `rgba(255,255,255,${alpha})`);
@@ -76,10 +153,44 @@ function swWorld008CreateMistTexture(kind = 'storm') {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 64, 64);
   }
-
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
+}
+
+function swWorld008CreateRingGeometry() {
+  const vertexCount = SW_WORLD_008_RING_LEVELS * SW_WORLD_008_RING_SEGMENTS;
+  const positions = new Float32Array(vertexCount * 3);
+  const uvs = new Float32Array(vertexCount * 2);
+  const indices = [];
+
+  for (let level = 0; level < SW_WORLD_008_RING_LEVELS; level += 1) {
+    const v = level / (SW_WORLD_008_RING_LEVELS - 1);
+    for (let segment = 0; segment < SW_WORLD_008_RING_SEGMENTS; segment += 1) {
+      const index = level * SW_WORLD_008_RING_SEGMENTS + segment;
+      uvs[index * 2] = segment / SW_WORLD_008_RING_SEGMENTS;
+      uvs[index * 2 + 1] = v;
+    }
+  }
+
+  for (let level = 0; level < SW_WORLD_008_RING_LEVELS - 1; level += 1) {
+    for (let segment = 0; segment < SW_WORLD_008_RING_SEGMENTS; segment += 1) {
+      const nextSegment = (segment + 1) % SW_WORLD_008_RING_SEGMENTS;
+      const a = level * SW_WORLD_008_RING_SEGMENTS + segment;
+      const b = level * SW_WORLD_008_RING_SEGMENTS + nextSegment;
+      const c = (level + 1) * SW_WORLD_008_RING_SEGMENTS + segment;
+      const d = (level + 1) * SW_WORLD_008_RING_SEGMENTS + nextSegment;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
 function swWorld008CreatePointField(name, count, size, opacity, color, texture, seedSalt) {
@@ -91,7 +202,7 @@ function swWorld008CreatePointField(name, count, size, opacity, color, texture, 
     map: texture,
     transparent: true,
     opacity,
-    alphaTest: 0.015,
+    alphaTest: 0.02,
     depthWrite: false,
     sizeAttenuation: true,
   });
@@ -111,69 +222,122 @@ function swWorld008CreatePointField(name, count, size, opacity, color, texture, 
   return points;
 }
 
-function swWorld008EnsureAtmosphere() {
-  if (swWorld008AtmosphereRoot || typeof THREE === 'undefined' || typeof tornadoGroup === 'undefined' || !tornadoGroup) return;
+function swWorld008EnsurePresentation() {
+  if (swWorld008PresentationRoot || typeof THREE === 'undefined' || typeof tornadoGroup === 'undefined' || !tornadoGroup) return;
+
   swWorld008StormMistTexture = swWorld008CreateMistTexture('storm');
   swWorld008DustMistTexture = swWorld008CreateMistTexture('dust');
+  swWorld008CondensationAlpha = swWorld008CreateCondensationAlphaTexture(71);
+  swWorld008SheathAlpha = swWorld008CreateCondensationAlphaTexture(97);
+
+  swWorld008PresentationRoot = new THREE.Group();
+  swWorld008PresentationRoot.name = 'SWWorld008PresentationRoot';
+
+  const condensationGeometry = swWorld008CreateRingGeometry();
+  swWorld008CondensationMaterial = new THREE.MeshStandardMaterial({
+    color: '#34474e',
+    roughness: 0.94,
+    metalness: 0.0,
+    transparent: true,
+    opacity: 0.78,
+    alphaMap: swWorld008CondensationAlpha,
+    alphaTest: 0.075,
+    depthWrite: true,
+    side: THREE.FrontSide,
+  });
+  swWorld008CondensationMesh = new THREE.Mesh(condensationGeometry, swWorld008CondensationMaterial);
+  swWorld008CondensationMesh.name = 'SWWorld008IrregularCondensationCore';
+  swWorld008CondensationMesh.frustumCulled = false;
+
+  swWorld008SheathMaterial = new THREE.MeshStandardMaterial({
+    color: '#86969a',
+    roughness: 1.0,
+    metalness: 0.0,
+    transparent: true,
+    opacity: 0.16,
+    alphaMap: swWorld008SheathAlpha,
+    alphaTest: 0.04,
+    depthWrite: false,
+    side: THREE.FrontSide,
+  });
+  swWorld008CondensationSheath = new THREE.Mesh(condensationGeometry, swWorld008SheathMaterial);
+  swWorld008CondensationSheath.name = 'SWWorld008IrregularCondensationSheath';
+  swWorld008CondensationSheath.scale.set(1.10, 1.015, 1.10);
+  swWorld008CondensationSheath.frustumCulled = false;
 
   const mobile = typeof isMobileDevice !== 'undefined' && isMobileDevice;
-  swWorld008AtmosphereRoot = new THREE.Group();
-  swWorld008AtmosphereRoot.name = 'SWWorld008AtmosphereRoot';
-
   swWorld008MistFine = swWorld008CreatePointField(
-    'SWWorld008MistFine', mobile ? 120 : 170, mobile ? 5.0 : 6.2, 0.20, '#8b9da3', swWorld008StormMistTexture, 11,
+    'SWWorld008MistFine', mobile ? 90 : 130, mobile ? 4.8 : 5.8, 0.14, '#96a5a9', swWorld008StormMistTexture, 11,
   );
   swWorld008MistBroad = swWorld008CreatePointField(
-    'SWWorld008MistBroad', mobile ? 70 : 100, mobile ? 8.5 : 10.0, 0.10, '#a6b2b5', swWorld008StormMistTexture, 23,
+    'SWWorld008MistBroad', mobile ? 42 : 62, mobile ? 7.4 : 8.8, 0.075, '#b4bec0', swWorld008StormMistTexture, 23,
   );
   swWorld008CanopyMist = swWorld008CreatePointField(
-    'SWWorld008CanopyMist', mobile ? 85 : 125, mobile ? 10.5 : 12.0, 0.12, '#53636a', swWorld008StormMistTexture, 37,
+    'SWWorld008CanopyMist', mobile ? 46 : 68, mobile ? 8.4 : 10.0, 0.105, '#5b6a70', swWorld008StormMistTexture, 37,
   );
   swWorld008GroundDust = swWorld008CreatePointField(
-    'SWWorld008GroundDust', mobile ? 65 : 95, mobile ? 7.0 : 8.4, 0.24, '#8a6f50', swWorld008DustMistTexture, 51,
+    'SWWorld008GroundDust', mobile ? 56 : 82, mobile ? 6.6 : 7.8, 0.25, '#8b7154', swWorld008DustMistTexture, 51,
   );
 
-  swWorld008AtmosphereRoot.add(swWorld008MistFine, swWorld008MistBroad, swWorld008CanopyMist, swWorld008GroundDust);
-  tornadoGroup.add(swWorld008AtmosphereRoot);
+  swWorld008PresentationRoot.add(
+    swWorld008CondensationSheath,
+    swWorld008CondensationMesh,
+    swWorld008MistFine,
+    swWorld008MistBroad,
+    swWorld008CanopyMist,
+    swWorld008GroundDust,
+  );
+  tornadoGroup.add(swWorld008PresentationRoot);
 }
 
-function swWorld008Centerline(y, now) {
-  const factor = swWorld008Clamp(y / 34, 0, 1);
-  const t = now * 0.001;
-  const middleWeight = 0.35 + Math.sin(factor * Math.PI) * 0.65;
-  return {
-    x: Math.sin(t * 1.45 + y * 0.165) * factor * 3.2
-      + Math.sin(t * 0.73 - y * 0.082) * middleWeight * 1.8,
-    z: Math.cos(t * 1.17 + y * 0.142) * factor * 2.8
-      + Math.sin(t * 0.61 + y * 0.095) * middleWeight * 1.6,
-  };
-}
-
-function swWorld008BreakUpCore(now) {
-  if (typeof funnelMesh === 'undefined' || !funnelMesh || typeof baseFunnelPos === 'undefined') return;
-  const positions = funnelMesh.geometry?.attributes?.position;
+function swWorld008UpdateCondensation(now) {
+  if (!swWorld008CondensationMesh) return;
+  const positions = swWorld008CondensationMesh.geometry?.attributes?.position;
   if (!positions) return;
   const t = now * 0.001;
-  for (let i = 0; i < positions.count; i += 1) {
-    const bx = baseFunnelPos[i * 3];
-    const y = baseFunnelPos[i * 3 + 1];
-    const bz = baseFunnelPos[i * 3 + 2];
-    const angle = Math.atan2(bz, bx);
-    const baseRadius = Math.max(0.001, Math.hypot(bx, bz));
-    const factor = swWorld008Clamp(y / 34, 0, 1);
-    const center = swWorld008Centerline(y, now);
-    const verticalPulse = Math.sin(y * 0.53 - t * 1.35) * 0.10
-      + Math.sin(y * 0.91 + t * 0.82) * 0.055;
-    const angularBreakup = Math.sin(angle * 3 + y * 0.24 + t * 1.10) * 0.09
-      + Math.sin(angle * 5 - y * 0.17 - t * 0.72) * 0.045;
-    const taperBias = 0.93 + factor * 0.03;
-    const radius = baseRadius * swWorld008Clamp(taperBias + verticalPulse + angularBreakup, 0.72, 1.18);
-    positions.setX(i, Math.cos(angle) * radius + center.x);
-    positions.setZ(i, Math.sin(angle) * radius + center.z);
+
+  for (let level = 0; level < SW_WORLD_008_RING_LEVELS; level += 1) {
+    const factor = level / (SW_WORLD_008_RING_LEVELS - 1);
+    const yBase = factor * 34.0;
+    const center = swWorld008Centerline(yBase, now);
+    const profile = swWorld008ProfileRadius(factor, now);
+    const middle = Math.sin(Math.PI * factor);
+    const ringTwist = t * (0.32 + factor * 0.42) + factor * 1.55;
+
+    for (let segment = 0; segment < SW_WORLD_008_RING_SEGMENTS; segment += 1) {
+      const index = level * SW_WORLD_008_RING_SEGMENTS + segment;
+      const angleBase = (segment / SW_WORLD_008_RING_SEGMENTS) * Math.PI * 2;
+      const angle = angleBase + ringTwist;
+      const asymmetry = 1
+        + Math.sin(angle * 3.0 + factor * 7.0 + t * 0.88) * 0.105
+        + Math.sin(angle * 5.0 - factor * 11.0 - t * 0.57) * 0.055
+        + Math.sin(angle * 2.0 + factor * 18.0 + t * 0.36) * 0.035;
+      const localLobe = Math.sin(angle - factor * 5.2 + t * 0.29) * middle * 0.52;
+      const radius = Math.max(0.95, profile * asymmetry + localLobe);
+      const yRipple = Math.sin(angle * 2.0 + factor * 21.0 - t * 1.15) * middle * 0.27;
+      positions.setXYZ(
+        index,
+        center.x + Math.cos(angle) * radius,
+        yBase + yRipple,
+        center.z + Math.sin(angle) * radius,
+      );
+    }
   }
+
   positions.needsUpdate = true;
-  if (funnelMesh.geometry?.computeVertexNormals) funnelMesh.geometry.computeVertexNormals();
-  swWorld008TornadoHeritageState.radialBreakupFrames += 1;
+  swWorld008CondensationMesh.geometry.computeVertexNormals();
+  swWorld008CondensationMesh.geometry.computeBoundingSphere();
+
+  if (swWorld008CondensationAlpha) {
+    swWorld008CondensationAlpha.offset.x = (t * 0.015) % 1;
+    swWorld008CondensationAlpha.offset.y = (t * -0.022) % 1;
+  }
+  if (swWorld008SheathAlpha) {
+    swWorld008SheathAlpha.offset.x = (0.37 + t * -0.011) % 1;
+    swWorld008SheathAlpha.offset.y = (0.19 + t * 0.017) % 1;
+  }
+
+  swWorld008TornadoHeritageState.condensationFrames += 1;
 }
 
 function swWorld008UpdateFunnelMist(points, now, broad = false) {
@@ -184,18 +348,17 @@ function swWorld008UpdateFunnelMist(points, now, broad = false) {
   const t = now * 0.001;
   for (let i = 0; i < positions.count; i += 1) {
     const seed = seeds[i];
-    const y = 2.0 + seed.a * 32.0;
+    const y = 1.8 + seed.a * 32.2;
     const factor = y / 34.0;
     const center = swWorld008Centerline(y, now);
-    const coreRadius = 1.5 + factor * 13.2;
-    const radialJitter = (seed.b - 0.5) * (broad ? 7.2 : 4.0);
-    const radius = Math.max(1.4, coreRadius + radialJitter + Math.sin(t * (0.7 + seed.c) + seed.d * 8) * 1.2);
-    const angle = seed.b * Math.PI * 2 + t * (0.20 + seed.c * 0.32) + y * (broad ? 0.105 : 0.145);
-    const verticalJitter = (seed.d - 0.5) * (broad ? 2.8 : 1.6);
+    const coreRadius = swWorld008ProfileRadius(factor, now);
+    const jitter = (seed.b - 0.5) * (broad ? 5.8 : 3.0);
+    const radius = Math.max(1.15, coreRadius + jitter + Math.sin(t * (0.6 + seed.c) + seed.d * 9) * 0.9);
+    const angle = seed.b * Math.PI * 2 + t * (0.18 + seed.c * 0.29) + y * (broad ? 0.105 : 0.138);
     positions.setXYZ(
       i,
       center.x + Math.cos(angle) * radius,
-      y + verticalJitter,
+      y + (seed.d - 0.5) * (broad ? 2.4 : 1.4),
       center.z + Math.sin(angle) * radius,
     );
   }
@@ -208,17 +371,18 @@ function swWorld008UpdateCanopy(now) {
   const seeds = swWorld008PointSeeds.get(swWorld008CanopyMist) || [];
   if (!positions) return;
   const t = now * 0.001;
+  const center = swWorld008Centerline(33.0, now);
   for (let i = 0; i < positions.count; i += 1) {
     const seed = seeds[i];
-    const radius = 7 + seed.a * 18;
-    const angle = seed.b * Math.PI * 2 + t * (0.07 + seed.c * 0.08);
-    const y = 31.2 + (seed.d - 0.5) * 8.5 - (radius / 25) * 1.8;
-    const center = swWorld008Centerline(33, now);
+    const radius = 4.5 + seed.a * 11.5;
+    const angle = seed.b * Math.PI * 2 + t * (0.05 + seed.c * 0.07);
+    const lobe = Math.sin(angle * 3.0 + seed.d * 5.0) * 1.4;
+    const y = 29.0 + seed.c * 8.2 + lobe - radius * 0.08;
     positions.setXYZ(
       i,
-      center.x + Math.cos(angle) * radius * (1.08 + seed.c * 0.38),
+      center.x + Math.cos(angle) * radius * (0.88 + seed.d * 0.35),
       y,
-      center.z + Math.sin(angle) * radius * (0.72 + seed.a * 0.28),
+      center.z + Math.sin(angle) * radius * (0.64 + seed.a * 0.32),
     );
   }
   positions.needsUpdate = true;
@@ -230,76 +394,64 @@ function swWorld008UpdateGroundDust(now) {
   const seeds = swWorld008PointSeeds.get(swWorld008GroundDust) || [];
   if (!positions) return;
   const t = now * 0.001;
-  const center = swWorld008Centerline(1.5, now);
+  const center = swWorld008Centerline(1.2, now);
   for (let i = 0; i < positions.count; i += 1) {
     const seed = seeds[i];
-    const radius = 2.4 + seed.a * 8.8 + Math.sin(t * 0.75 + seed.c * 9) * 0.8;
-    const angle = seed.b * Math.PI * 2 + t * (0.32 + seed.c * 0.36);
+    const radius = 2.0 + seed.a * 7.2 + Math.sin(t * 0.68 + seed.c * 9) * 0.65;
+    const angle = seed.b * Math.PI * 2 + t * (0.28 + seed.c * 0.34);
     positions.setXYZ(
       i,
       center.x + Math.cos(angle) * radius,
-      0.55 + seed.d * 2.8 + Math.sin(t * 1.2 + seed.a * 8) * 0.35,
+      0.4 + seed.d * 2.5 + Math.sin(t * 1.05 + seed.a * 8) * 0.28,
       center.z + Math.sin(angle) * radius,
     );
   }
   positions.needsUpdate = true;
 }
 
-function swWorld008UpdateAtmosphere(now) {
-  swWorld008EnsureAtmosphere();
-  if (!swWorld008AtmosphereRoot) return;
-  swWorld008AtmosphereRoot.visible = true;
-  const neon = typeof neonFunnelUnlocked !== 'undefined' && Boolean(neonFunnelUnlocked);
-  if (swWorld008MistFine?.material) swWorld008MistFine.material.color.set(neon ? '#69dbea' : '#87999f');
-  if (swWorld008MistBroad?.material) swWorld008MistBroad.material.color.set(neon ? '#9cebf2' : '#a9b4b7');
+function swWorld008StyleLegacySurfaces() {
+  if (typeof funnelMesh !== 'undefined' && funnelMesh) funnelMesh.visible = false;
+  if (typeof outerFunnelMesh !== 'undefined' && outerFunnelMesh) outerFunnelMesh.visible = false;
+  if (typeof mesoCloudGroup !== 'undefined' && mesoCloudGroup) mesoCloudGroup.visible = false;
+  if (typeof dustBowlGroup !== 'undefined' && dustBowlGroup) dustBowlGroup.visible = false;
+
+  if (typeof particleSystem !== 'undefined' && particleSystem) {
+    particleSystem.visible = true;
+    particleSystem.scale.set(0.72, 1.0, 0.72);
+    if (typeof particleMat !== 'undefined' && particleMat) {
+      particleMat.vertexColors = true;
+      particleMat.map = swWorld008DustMistTexture || particleMat.map;
+      particleMat.alphaTest = 0.035;
+      particleMat.sizeAttenuation = true;
+      particleMat.size = (typeof isMobileDevice !== 'undefined' && isMobileDevice) ? 0.52 : 0.68;
+      swWorld008SetMaterialOpacity(particleMat, 0.30);
+      particleMat.needsUpdate = true;
+    }
+    swWorld008TornadoHeritageState.restoredDebrisFrames += 1;
+  }
+}
+
+function swWorld008UpdatePresentation(now) {
+  swWorld008EnsurePresentation();
+  if (!swWorld008PresentationRoot) return;
+  swWorld008PresentationRoot.visible = true;
+  swWorld008StyleLegacySurfaces();
+  swWorld008UpdateCondensation(now);
   swWorld008UpdateFunnelMist(swWorld008MistFine, now, false);
   swWorld008UpdateFunnelMist(swWorld008MistBroad, now, true);
   swWorld008UpdateCanopy(now);
   swWorld008UpdateGroundDust(now);
+
+  const neon = typeof neonFunnelUnlocked !== 'undefined' && Boolean(neonFunnelUnlocked);
+  if (swWorld008CondensationMaterial) {
+    swWorld008CondensationMaterial.color.set(neon ? '#256a75' : '#34474e');
+    swWorld008CondensationMaterial.emissive?.set?.(neon ? '#0c3540' : '#000000');
+    if ('emissiveIntensity' in swWorld008CondensationMaterial) swWorld008CondensationMaterial.emissiveIntensity = neon ? 0.34 : 0.0;
+  }
+  if (swWorld008SheathMaterial) swWorld008SheathMaterial.color.set(neon ? '#7ce2ee' : '#86969a');
+  if (swWorld008MistFine?.material) swWorld008MistFine.material.color.set(neon ? '#69dbea' : '#96a5a9');
+  if (swWorld008MistBroad?.material) swWorld008MistBroad.material.color.set(neon ? '#a5eef4' : '#b4bec0');
   swWorld008TornadoHeritageState.atmosphereFrames += 1;
-}
-
-function swWorld008StyleLegacyTornado() {
-  if (typeof funnelMesh !== 'undefined' && funnelMesh) {
-    funnelMesh.visible = true;
-    funnelMesh.scale.set(0.70, 1.0, 0.70);
-    if (typeof funnelMat !== 'undefined' && funnelMat) {
-      funnelMat.color?.set?.('#18252c');
-      funnelMat.roughness = 0.86;
-      funnelMat.metalness = 0.0;
-      funnelMat.emissive?.set?.('#000000');
-      if ('emissiveIntensity' in funnelMat) funnelMat.emissiveIntensity = 0.0;
-      swWorld008SetMaterialOpacity(funnelMat, 0.72);
-      funnelMat.depthWrite = true;
-      if (typeof THREE !== 'undefined') funnelMat.side = THREE.FrontSide;
-      funnelMat.needsUpdate = true;
-    }
-    swWorld008TornadoHeritageState.restoredCoreFrames += 1;
-  }
-
-  // The visible outer cylinder is the main source of the planar triangular
-  // sheath seen in owner review. Keep the inherited object alive for legacy
-  // state/cosmetic compatibility, but remove it from the player-facing image.
-  if (typeof outerFunnelMesh !== 'undefined' && outerFunnelMesh) outerFunnelMesh.visible = false;
-
-  // Likewise, the legacy cylinder-lobe canopy and dodecahedral dust anchors are
-  // replaced visually by bounded soft point fields below. Their simulations may
-  // continue underneath, but the faceted surfaces are not rendered.
-  if (typeof mesoCloudGroup !== 'undefined' && mesoCloudGroup) mesoCloudGroup.visible = false;
-  if (typeof dustBowlGroup !== 'undefined' && dustBowlGroup) dustBowlGroup.visible = false;
-
-  // Keep the historical 1,000-point debris helix. It is already simulated by
-  // the accepted executor, so restoring it adds no second debris solver.
-  if (typeof particleSystem !== 'undefined' && particleSystem) {
-    particleSystem.visible = true;
-    particleSystem.scale.set(0.70, 1.0, 0.70);
-    if (typeof particleMat !== 'undefined' && particleMat) {
-      particleMat.vertexColors = true;
-      particleMat.size = (typeof isMobileDevice !== 'undefined' && isMobileDevice) ? 0.78 : 1.0;
-      swWorld008SetMaterialOpacity(particleMat, 0.68);
-    }
-    swWorld008TornadoHeritageState.restoredDebrisFrames += 1;
-  }
 }
 
 function swWorld008DemoteRibbonReplacement() {
@@ -308,23 +460,14 @@ function swWorld008DemoteRibbonReplacement() {
   let demoted = false;
   swVisualHeroSlice6StormRoot.children.forEach((object) => {
     if (!object?.material) return;
-    if (object.name?.startsWith('SWVisualSlice6StormShell')) {
+    if (
+      object.name?.startsWith('SWVisualSlice6StormShell')
+      || object.name?.startsWith('SWVisualSlice6CondensationStreak')
+      || object.name?.startsWith('SWVisualSlice6EdgeWisp')
+      || object.name?.startsWith('SWVisualSlice6GroundPull')
+    ) {
       object.visible = false;
-      return;
-    }
-    if (object.name?.startsWith('SWVisualSlice6CondensationStreak')) {
-      object.visible = false;
-      swWorld008SetMaterialOpacity(object.material, 0.02);
-      demoted = true;
-      return;
-    }
-    if (object.name?.startsWith('SWVisualSlice6EdgeWisp')) {
-      object.visible = false;
-      demoted = true;
-      return;
-    }
-    if (object.name?.startsWith('SWVisualSlice6GroundPull')) {
-      object.visible = false;
+      if (object.material) swWorld008SetMaterialOpacity(object.material, 0.01);
       demoted = true;
     }
   });
@@ -337,7 +480,7 @@ function swWorld008SuppressForSecondary() {
   if (typeof outerFunnelMesh !== 'undefined' && outerFunnelMesh) outerFunnelMesh.visible = false;
   if (typeof particleSystem !== 'undefined' && particleSystem) particleSystem.visible = false;
   if (typeof dustBowlGroup !== 'undefined' && dustBowlGroup) dustBowlGroup.visible = false;
-  if (swWorld008AtmosphereRoot) swWorld008AtmosphereRoot.visible = false;
+  if (swWorld008PresentationRoot) swWorld008PresentationRoot.visible = false;
   if (typeof swVisualHeroSlice6StormRoot !== 'undefined' && swVisualHeroSlice6StormRoot) swVisualHeroSlice6StormRoot.visible = false;
 }
 
@@ -355,9 +498,7 @@ function swWorld008SyncTornadoHeritage(now = (typeof performance !== 'undefined'
 
     swWorld008TornadoHeritageState.tornadoFrames += 1;
     if (typeof tornadoGroup !== 'undefined' && tornadoGroup) tornadoGroup.visible = true;
-    swWorld008StyleLegacyTornado();
-    swWorld008BreakUpCore(now);
-    swWorld008UpdateAtmosphere(now);
+    swWorld008UpdatePresentation(now);
     swWorld008DemoteRibbonReplacement();
     return true;
   } catch (error) {
@@ -366,9 +507,6 @@ function swWorld008SyncTornadoHeritage(now = (typeof performance !== 'undefined'
   }
 }
 
-// The foundation frame hook reads this bridge every frame. WORLD-008 wraps the
-// accepted update and then applies its presentation correction last, after the
-// accepted executor has advanced gameplay and the historical particle motion.
 const swWorld008VisualBridgeBase = globalThis.__SW_THREEJS_VISUAL_FOUNDATION__;
 const swWorld008VisualUpdateBase = swWorld008VisualBridgeBase?.update;
 const swWorld008PrepareQaBase = swWorld008VisualBridgeBase?.prepareQaView;
@@ -417,21 +555,29 @@ globalThis.getSwWorld008TornadoHeritageState = function getSwWorld008TornadoHeri
       }
     });
   }
+  const condensationGeometry = swWorld008CondensationMesh?.geometry;
   return Object.freeze({
     ...swWorld008TornadoHeritageState,
     legacy: Object.freeze({
       tornadoGroupVisible: typeof tornadoGroup !== 'undefined' && Boolean(tornadoGroup?.visible),
       funnelVisible: typeof funnelMesh !== 'undefined' && Boolean(funnelMesh?.visible),
-      funnelOpacity: typeof funnelMat !== 'undefined' ? Number(funnelMat?.opacity || 0) : null,
-      funnelDepthWrite: typeof funnelMat !== 'undefined' ? Boolean(funnelMat?.depthWrite) : null,
       outerVisible: typeof outerFunnelMesh !== 'undefined' && Boolean(outerFunnelMesh?.visible),
       debrisVisible: typeof particleSystem !== 'undefined' && Boolean(particleSystem?.visible),
       debrisOpacity: typeof particleMat !== 'undefined' ? Number(particleMat?.opacity || 0) : null,
       dustVisible: typeof dustBowlGroup !== 'undefined' && Boolean(dustBowlGroup?.visible),
       canopyVisible: typeof mesoCloudGroup !== 'undefined' && Boolean(mesoCloudGroup?.visible),
     }),
+    condensation: Object.freeze({
+      rootVisible: Boolean(swWorld008PresentationRoot?.visible),
+      coreVisible: Boolean(swWorld008CondensationMesh?.visible),
+      sheathVisible: Boolean(swWorld008CondensationSheath?.visible),
+      vertexCount: Number(condensationGeometry?.attributes?.position?.count || 0),
+      triangleCount: Number((condensationGeometry?.index?.count || 0) / 3),
+      coreOpacity: Number(swWorld008CondensationMaterial?.opacity || 0),
+      sheathOpacity: Number(swWorld008SheathMaterial?.opacity || 0),
+      alphaTest: Number(swWorld008CondensationMaterial?.alphaTest || 0),
+    }),
     atmosphere: Object.freeze({
-      rootVisible: Boolean(swWorld008AtmosphereRoot?.visible),
       finePoints: Number(swWorld008MistFine?.geometry?.attributes?.position?.count || 0),
       broadPoints: Number(swWorld008MistBroad?.geometry?.attributes?.position?.count || 0),
       canopyPoints: Number(swWorld008CanopyMist?.geometry?.attributes?.position?.count || 0),
