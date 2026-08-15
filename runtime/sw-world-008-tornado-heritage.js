@@ -38,15 +38,16 @@ function swWorld008StyleLegacyTornado() {
     funnelMesh.visible = true;
     funnelMesh.scale.set(0.68, 1.0, 0.68);
     if (typeof funnelMat !== 'undefined' && funnelMat) {
-      funnelMat.color?.set?.('#304348');
-      funnelMat.roughness = 0.82;
+      // July heritage recipe: the inner condensation mesh is dark and visually
+      // authoritative. The newer Slice-6 ribbon replacement is suppressed below.
+      funnelMat.color?.set?.('#090d16');
+      funnelMat.roughness = 0.15;
       funnelMat.metalness = 0.0;
-      funnelMat.emissive?.set?.('#071012');
-      if ('emissiveIntensity' in funnelMat) funnelMat.emissiveIntensity = 0.015;
-      swWorld008SetMaterialOpacity(funnelMat, 0.66);
-      // The historical serpentine mesh is the Tornado body again. Let its near
-      // surface occlude its far surface so it reads as dense condensation rather
-      // than another stack of transparent planes.
+      funnelMat.emissive?.set?.('#000000');
+      if ('emissiveIntensity' in funnelMat) funnelMat.emissiveIntensity = 0.0;
+      swWorld008SetMaterialOpacity(funnelMat, 0.82);
+      // Preserve the historical serpentine geometry while giving it proper
+      // near-surface occlusion so the body reads as dense condensation.
       funnelMat.depthWrite = true;
       if (typeof THREE !== 'undefined') funnelMat.side = THREE.FrontSide;
       funnelMat.needsUpdate = true;
@@ -58,44 +59,49 @@ function swWorld008StyleLegacyTornado() {
     outerFunnelMesh.visible = true;
     outerFunnelMesh.scale.set(0.65, 1.0, 0.65);
     if (typeof outerFunnelMat !== 'undefined' && outerFunnelMat) {
-      outerFunnelMat.color?.set?.('#718184');
-      swWorld008SetMaterialOpacity(outerFunnelMat, 0.12);
+      // Historical outer vapor sheath, kept slightly below its original 0.38
+      // so the current mobile camera can still read the dense inner serpentine.
+      outerFunnelMat.color?.set?.('#334155');
+      swWorld008SetMaterialOpacity(outerFunnelMat, 0.32);
     }
   }
 
-  // The old canopy was useful as a parent-cloud connection but too dominant in
-  // the current phone view. Keep it compact and subordinate to the funnel.
+  // The old mesocyclone canopy connected funnel to parent cloud convincingly,
+  // but its full July size is too dominant in the current phone composition.
+  // Preserve the historical dark material while keeping the group compact.
   if (typeof mesoCloudGroup !== 'undefined' && mesoCloudGroup) {
     mesoCloudGroup.visible = true;
     mesoCloudGroup.scale.set(0.62, 0.45, 0.62);
     if (typeof mesoCloudMat !== 'undefined' && mesoCloudMat) {
-      mesoCloudMat.color?.set?.('#1c2b30');
-      mesoCloudMat.roughness = 0.92;
-      swWorld008SetMaterialOpacity(mesoCloudMat, 0.25);
+      mesoCloudMat.color?.set?.('#090d16');
+      mesoCloudMat.roughness = 0.3;
+      swWorld008SetMaterialOpacity(mesoCloudMat, 0.42);
     }
   }
 
   // The 1,000-point helix is already simulated by the accepted legacy loop even
-  // while invisible. Showing it adds one draw call, not another particle solver.
+  // while invisible. Restore its original vertex-color identity and most of its
+  // July density without adding a second particle solver.
   if (typeof particleSystem !== 'undefined' && particleSystem) {
     particleSystem.visible = true;
     particleSystem.scale.set(0.68, 1.0, 0.68);
     if (typeof particleMat !== 'undefined' && particleMat) {
-      particleMat.vertexColors = false;
-      particleMat.color?.set?.('#806e5b');
-      particleMat.size = (typeof isMobileDevice !== 'undefined' && isMobileDevice) ? 0.48 : 0.64;
-      swWorld008SetMaterialOpacity(particleMat, 0.50);
+      particleMat.vertexColors = true;
+      particleMat.size = (typeof isMobileDevice !== 'undefined' && isMobileDevice) ? 0.88 : 1.2;
+      swWorld008SetMaterialOpacity(particleMat, 0.78);
     }
     swWorld008TornadoHeritageState.restoredDebrisFrames += 1;
   }
 
   if (typeof dustBowlGroup !== 'undefined' && dustBowlGroup) {
     dustBowlGroup.visible = true;
-    dustBowlGroup.scale.set(0.58, 0.36, 0.58);
+    // The inherited dodecahedral puffs are useful motion anchors but read as
+    // rocks if they stand upright. Flatten and soften them into ground churn.
+    dustBowlGroup.scale.set(0.60, 0.22, 0.60);
     if (typeof dustMat !== 'undefined' && dustMat) {
-      dustMat.color?.set?.('#51463a');
+      dustMat.color?.set?.('#3f3b36');
       dustMat.roughness = 1.0;
-      swWorld008SetMaterialOpacity(dustMat, 0.12);
+      swWorld008SetMaterialOpacity(dustMat, 0.16);
     }
     swWorld008TornadoHeritageState.restoredDustFrames += 1;
   }
@@ -122,13 +128,13 @@ function swWorld008DemoteRibbonReplacement() {
     }
     if (object.name?.startsWith('SWVisualSlice6EdgeWisp')) {
       object.visible = true;
-      swWorld008SetMaterialOpacity(object.material, 0.045);
+      swWorld008SetMaterialOpacity(object.material, 0.035);
       demoted = true;
       return;
     }
     if (object.name?.startsWith('SWVisualSlice6GroundPull')) {
       object.visible = true;
-      swWorld008SetMaterialOpacity(object.material, 0.06);
+      swWorld008SetMaterialOpacity(object.material, 0.045);
       demoted = true;
     }
   });
@@ -202,7 +208,7 @@ if (swWorld008VisualBridgeBase) {
 }
 
 globalThis.getSwWorld008TornadoHeritageState = function getSwWorld008TornadoHeritageState() {
-  const ribbon = { streaks: 0, visibleStreaks: 0, wisps: 0, groundPulls: 0, maxOpacity: 0 };
+  const ribbon = { streaks: 0, visibleStreaks: 0, wisps: 0, groundPulls: 0, maxVisibleOpacity: 0 };
   if (typeof swVisualHeroSlice6StormRoot !== 'undefined' && swVisualHeroSlice6StormRoot) {
     swVisualHeroSlice6StormRoot.children.forEach((object) => {
       if (object.name?.startsWith('SWVisualSlice6CondensationStreak')) {
@@ -211,7 +217,11 @@ globalThis.getSwWorld008TornadoHeritageState = function getSwWorld008TornadoHeri
       }
       if (object.name?.startsWith('SWVisualSlice6EdgeWisp')) ribbon.wisps += 1;
       if (object.name?.startsWith('SWVisualSlice6GroundPull')) ribbon.groundPulls += 1;
-      if (object.material && Number.isFinite(object.material.opacity)) ribbon.maxOpacity = Math.max(ribbon.maxOpacity, object.material.opacity);
+      // Hidden compatibility objects must not contaminate the player-visible
+      // opacity metric. The previous V2 proof measured invisible materials.
+      if (object.visible && object.material && Number.isFinite(object.material.opacity)) {
+        ribbon.maxVisibleOpacity = Math.max(ribbon.maxVisibleOpacity, object.material.opacity);
+      }
     });
   }
   return Object.freeze({
