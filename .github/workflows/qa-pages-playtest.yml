@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       source_ref:
-        description: Exact commit SHA or ref to publish as the QA playtest
+        description: Exact accepted canonical SHA to publish as the QA playtest
         required: true
-        default: 706408e4e367782fed0ffc6e40d0cdd27a7e71bd
+        default: de2e62835e79567b4bbfc079a372ce2af4ee0879
   push:
     branches:
       - main
@@ -32,8 +32,23 @@ jobs:
       - name: Checkout exact playtest source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '706408e4e367782fed0ffc6e40d0cdd27a7e71bd' }}
+          ref: ${{ inputs.source_ref || 'de2e62835e79567b4bbfc079a372ce2af4ee0879' }}
           fetch-depth: 1
+
+      - name: Lock publisher to accepted canonical
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          accepted='de2e62835e79567b4bbfc079a372ce2af4ee0879'
+          actual="$(git rev-parse HEAD)"
+          requested="${{ inputs.source_ref || 'de2e62835e79567b4bbfc079a372ce2af4ee0879' }}"
+          if [ "$actual" != "$accepted" ]; then
+            echo "Refusing QA Pages deploy: resolved source $actual is not accepted canonical $accepted" >&2
+            exit 1
+          fi
+          echo "source_sha=$actual" >> "$GITHUB_OUTPUT"
+          echo "source_ref=$requested" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -58,13 +73,21 @@ jobs:
           pnpm run audio:generate
           node scripts/vendor-threejs-hero-slice4-assets.mjs
 
-      - name: Verify accepted commercial-shell sources
+      - name: Verify accepted maintained sources
         run: |
           set -euo pipefail
           node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
           node scripts/verify-sw-ui-003-run-shell-identity.mjs
           node scripts/verify-sw-ui-004-gameplay-product-identity.mjs
+          node scripts/verify-sw-ui-005-field-controls.mjs
+          node scripts/verify-sw-world-007-secondary-storm-forms.mjs
+          node scripts/verify-sw-world-007-atmospheric-correction.mjs
+          node scripts/verify-sw-world-007-visibility-lock.mjs
+          node scripts/verify-sw-world-007-secondary-exclusive.mjs
+          node scripts/verify-sw-feel-001-destruction-consequence.mjs
+          node scripts/verify-sw-feel-001-structural-anatomy.mjs
+          node scripts/verify-sw-feel-001-structural-priority.mjs
 
       - name: Assemble accepted Stage 2B through QUALITY-001
         shell: bash
@@ -125,7 +148,7 @@ jobs:
           done
           echo "SEVERE_WEATHER_SOURCE_PATH=$candidate" >> "$GITHUB_ENV"
 
-      - name: Preserve accepted static contracts
+      - name: Preserve accepted static authority contracts
         run: |
           set -euo pipefail
           pnpm run verify:process
@@ -145,30 +168,47 @@ jobs:
       - name: Prove QUALITY-001 functional rescue
         run: node scripts/qa-sw-quality-001-owner-playtest-rescue.mjs
 
-      - name: Apply QUALITY-002 plus accepted commercial shell and rebuild
+      - name: Apply accepted canonical presentation stack and rebuild
         run: |
           set -euo pipefail
           node scripts/apply-sw-quality-002-visual-rescue.mjs
           node scripts/apply-sw-quality-002-storm-frame-bridge.mjs
           node scripts/apply-sw-ui-003-run-shell-identity.mjs
           node scripts/apply-sw-ui-004-gameplay-product-identity.mjs
-          node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
+          node scripts/apply-sw-world-007-secondary-storm-forms.mjs
+          node scripts/apply-sw-world-007-atmospheric-correction.mjs
+          node scripts/apply-sw-world-007-visibility-lock.mjs
+          node scripts/apply-sw-world-007-secondary-exclusive.mjs
+          node scripts/apply-sw-feel-001-destruction-consequence.mjs
+          node scripts/apply-sw-feel-001-structural-anatomy.mjs
+          node scripts/apply-sw-feel-001-structural-priority.mjs
+          node scripts/apply-sw-ui-005-field-controls.mjs
           node scripts/verify-sw-quality-002-visual-rescue.mjs
           node scripts/verify-sw-ui-003-run-shell-identity.mjs
           node scripts/verify-sw-ui-004-gameplay-product-identity.mjs
+          node scripts/verify-sw-ui-005-field-controls.mjs
+          node scripts/verify-sw-world-007-secondary-storm-forms.mjs
+          node scripts/verify-sw-world-007-atmospheric-correction.mjs
+          node scripts/verify-sw-world-007-visibility-lock.mjs
+          node scripts/verify-sw-world-007-secondary-exclusive.mjs
+          node scripts/verify-sw-feel-001-destruction-consequence.mjs
+          node scripts/verify-sw-feel-001-structural-anatomy.mjs
+          node scripts/verify-sw-feel-001-structural-priority.mjs
           node scripts/build-web.mjs
 
-      - name: Prove QUALITY-002 visual rescue
-        run: node scripts/qa-sw-quality-002-visual-rescue.mjs
-
-      - name: Prove accepted run-shell UI
-        run: node scripts/qa-sw-ui-003-run-shell-identity.mjs
-
-      - name: Prove accepted commercial shell together
-        run: node scripts/qa-sw-int-004-commercial-shell.mjs
-
-      - name: Preserve newspaper browser QA
-        run: pnpm run qa:sw-ui-001
+      - name: Prove accepted canonical browser stack
+        run: |
+          set -euo pipefail
+          node scripts/qa-sw-quality-002-visual-rescue.mjs
+          node scripts/qa-sw-ui-003-run-shell-identity.mjs
+          node scripts/qa-sw-int-004-commercial-shell.mjs
+          node scripts/qa-sw-world-007-secondary-storm-forms.mjs
+          node scripts/qa-sw-world-007-secondary-exclusive.mjs
+          node scripts/qa-sw-feel-001-destruction-consequence.mjs
+          node scripts/qa-sw-feel-001-single-structure.mjs
+          node scripts/qa-sw-ui-005-field-controls.mjs
+          node scripts/qa-sw-int-005-score-continuity.mjs
+          pnpm run qa:sw-ui-001
 
       - name: Preserve Storm Site browser QA
         shell: bash
@@ -191,8 +231,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          resolved_ref="${{ inputs.source_ref || '706408e4e367782fed0ffc6e40d0cdd27a7e71bd' }}"
-          printf '%s\n' "{\"sourceRef\":\"${resolved_ref}\",\"acceptedCanonical\":\"706408e4e367782fed0ffc6e40d0cdd27a7e71bd\",\"composition\":\"Stage 2B + QUALITY-001/002 + SW-UI-003 + SW-UI-004\",\"purpose\":\"owner-playtest\",\"authority\":\"QA-only; not Integration or production acceptance\"}" > www/playtest-info.json
+          cat > www/playtest-info.json <<EOF
+          {
+            "source_sha": "${{ steps.source.outputs.source_sha }}",
+            "source_ref": "${{ steps.source.outputs.source_ref }}",
+            "accepted_canonical": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
+            "composition": "Stage 2B + QUALITY-001/002 + UI-003/004/005 + WORLD-007 + FEEL-001",
+            "purpose": "owner-playtest",
+            "authority": "QA-only; owner physical acceptance remains separate"
+          }
+          EOF
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
