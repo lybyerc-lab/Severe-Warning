@@ -1,0 +1,204 @@
+name: SW-ART-004 Meshy Multi-Image Cow 17
+
+on:
+  push:
+    branches:
+      - agent/sw-art-004-meshy-multi-image-cow17
+    paths:
+      - tools/meshy/live-requests/cow17-multi-image-v1.json
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sw-art-004-meshy-multi-image-cow17
+  cancel-in-progress: false
+
+jobs:
+  generate-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact task source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prove exact base and bounded changed-file territory
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='407d892ce169465f4bb712cffe26302bddca0555'
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          git diff --name-only "$base"...HEAD | tee sw-art-004-changed-files.txt
+          bad="$(grep -Ev '^(tools/meshy/.*|scripts/verify-sw-art-004-meshy-multi-image\.mjs|\.github/workflows/sw-art-004-meshy-multi-image\.yml)$' sw-art-004-changed-files.txt || true)"
+          if [ -n "$bad" ]; then
+            echo 'SW-ART-004 changed files outside allowed tooling territory:' >&2
+            echo "$bad" >&2
+            exit 1
+          fi
+
+      - name: Block rerun credit spend
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_RUN_ATTEMPT}" != '1' ]; then
+            echo 'SW-ART-004 live generation must not be rerun; create a new reviewed request commit instead.' >&2
+            exit 1
+          fi
+
+      - name: Resolve exactly one reviewed multi-image request
+        id: request
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+        run: |
+          set -euo pipefail
+          test -n "$MESHY_API_KEY" || { echo 'GitHub Actions secret Meshy_API is missing or empty.' >&2; exit 1; }
+          mapfile -t requests < <(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- 'tools/meshy/live-requests/*.json')
+          if [ "${#requests[@]}" -ne 1 ]; then
+            printf 'Expected exactly one reviewed Meshy multi-image request in this commit; found %s\n' "${#requests[@]}" >&2
+            printf '%s\n' "${requests[@]}" >&2
+            exit 1
+          fi
+          REQUEST_FILE="${requests[0]}" node - <<'NODE'
+          const fs = require('fs');
+          const request = JSON.parse(fs.readFileSync(process.env.REQUEST_FILE, 'utf8'));
+          const fail = (message) => { throw new Error(message); };
+          if (request.version !== 'SW_MESHY_MULTI_LIVE_REQUEST_V1') fail(`Unexpected request version: ${request.version}`);
+          if (request.productionAuthority !== 'candidate only') fail('Meshy output must remain candidate only.');
+          if (request.source?.runId !== 31895535943 || request.source?.artifactId !== 9249708267) fail('SW-ART-004 must use the exact archived Cow 17 source.');
+          if (request.meshy?.endpoint !== 'multi-image-to-3d' || request.meshy?.aiModel !== 'meshy-6') fail('SW-ART-004 requires Meshy 6 Multi-Image to 3D.');
+          if (request.meshy?.shouldTexture !== false || request.meshy?.imageEnhancement !== false) fail('SW-ART-004 must remain geometry-only with image enhancement off.');
+          if (request.costGuard?.authorizedTasks !== 1 || request.costGuard?.maxCredits > 20) fail('Meshy credit guard violated.');
+          if (JSON.stringify(request.source?.viewOrder) !== JSON.stringify(['three-quarter','front','side','back'])) fail('Unexpected four-view order.');
+          const values = {
+            request_file: process.env.REQUEST_FILE,
+            request_id: request.id,
+            source_run_id: request.source.runId,
+            source_artifact_id: request.source.artifactId,
+            output_dir: request.output.dir,
+          };
+          for (const [key, value] of Object.entries(values)) {
+            if (String(value).includes('\n')) fail(`Multiline workflow output rejected: ${key}`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+          }
+          console.log(`SW-ART-004 request contract PASS: ${request.id}`);
+          NODE
+
+      - name: Verify multi-image tooling before spend
+        run: node scripts/verify-sw-art-004-meshy-multi-image.mjs
+
+      - name: Preserve proven Meshy and authored-asset contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-sw-art-003-meshy-pipeline.mjs
+          node scripts/verify-threejs-asset-pipeline.mjs
+
+      - name: Install bounded image crop dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends python3-pil
+
+      - name: Download exact Cow 17 Google source artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.request.outputs.source_artifact_id }}
+          path: sw-art-004-source
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.request.outputs.source_run_id }}
+          merge-multiple: true
+
+      - name: Reproduce four exact Cow 17 views
+        shell: bash
+        env:
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+        run: |
+          set -euo pipefail
+          mkdir -p sw-art-004-input
+          python3 tools/meshy/prepare-meshy-multiview.py \
+            --request "$REQUEST_FILE" \
+            --source-root sw-art-004-source \
+            --output-dir sw-art-004-input \
+            > sw-art-004-reference-prep.json
+          for image in cow17-three-quarter.png cow17-front.png cow17-side.png cow17-back.png; do
+            test -s "sw-art-004-input/$image"
+          done
+          test -s sw-art-004-input/sw-art-004-multiview-prep.json
+          test -s sw-art-004-reference-prep.json
+
+      - name: Exercise no-credit four-image payload dry run
+        shell: bash
+        env:
+          MESHY_API_KEY: ''
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-multi-image-to-3d.mjs \
+            --request "$REQUEST_FILE" \
+            --input-dir sw-art-004-input \
+            --output-dir "${{ steps.request.outputs.output_dir }}" \
+            --dry-run > sw-art-004-meshy-dry-run.json
+          test -s sw-art-004-meshy-dry-run.json
+
+      - name: Generate one Meshy 6 multi-image Cow 17 candidate
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-multi-image-to-3d.mjs \
+            --request "$REQUEST_FILE" \
+            --input-dir sw-art-004-input \
+            --output-dir "${{ steps.request.outputs.output_dir }}"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-multi-image-v1.glb"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-multi-image-v1-preview.png"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-004-receipt.json"
+
+      - name: Record exact input and output hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum \
+            sw-art-004-input/cow17-three-quarter.png \
+            sw-art-004-input/cow17-front.png \
+            sw-art-004-input/cow17-side.png \
+            sw-art-004-input/cow17-back.png \
+            "${{ steps.request.outputs.output_dir }}/cow17-multi-image-v1.glb" \
+            "${{ steps.request.outputs.output_dir }}/cow17-multi-image-v1-preview.png" \
+            | tee sw-art-004-sha256.txt
+
+      - name: Upload multi-image Cow 17 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-004-${{ steps.request.outputs.request_id }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            sw-art-004-static-report.json
+            sw-art-004-changed-files.txt
+            sw-art-004-reference-prep.json
+            sw-art-004-meshy-dry-run.json
+            sw-art-004-sha256.txt
+            sw-art-004-input/cow17-three-quarter.png
+            sw-art-004-input/cow17-front.png
+            sw-art-004-input/cow17-side.png
+            sw-art-004-input/cow17-back.png
+            sw-art-004-input/sw-art-004-multiview-prep.json
+            ${{ steps.request.outputs.output_dir }}/cow17-multi-image-v1.glb
+            ${{ steps.request.outputs.output_dir }}/cow17-multi-image-v1-preview.png
+            ${{ steps.request.outputs.output_dir }}/sw-art-004-task-created.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-004-task-final.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-004-receipt.json
+            threejs-asset-pipeline-static-report.json
