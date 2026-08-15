@@ -1,0 +1,12 @@
+{
+  "version": "SW_ART_BRIEF_V1",
+  "id": "heartland-farm",
+  "purpose": "Heartland hero farm and barn 3D-asset reference",
+  "model": "gemini-3.1-flash-image",
+  "recommendedFinalModel": "gemini-3-pro-image",
+  "aspectRatio": "16:9",
+  "imageSize": "2K",
+  "productionAuthority": "reference only",
+  "googleDriveArchive": "https://drive.google.com/drive/folders/1Q6ti32Q16KBwVmhMlLphac8Vmi8izJ7m",
+  "prompt": "Create a premium mobile-game environment model-reference board for the Hart Farm hero location in Severe Weather Warning. Art direction: storm-charged stylized Americana, believable rural Midwest architecture simplified into bold readable forms, high-quality low-poly/PBR-friendly design rather than primitive boxes. The hero is a weathered red dairy barn with a strong gambrel roof, readable roof panels that could peel away during destruction, timber trim, large sliding doors, small side windows, a concrete or stone lower foundation, attached practical farm details, nearby silo and fencing used only as secondary scale cues. Show one large clean 3/4 exterior view plus smaller front and side elevations with consistent proportions. Use warm faded reds, cream trim, galvanized metal, dusty earth and restrained weathering. Surfaces should have material identity and edge variation without tiny texture noise. Avoid generic voxel/block-town geometry, photorealism, excessive clutter, miniature-diorama look, toy plastic, floating labels, people, vehicles, or storm effects. Design the structure so roof, walls, doors, trim, and foundation read as separate physical anatomy that could later fail in stages. Neutral studio-like background so the structure can be used as a 3D-generation reference."
+}
