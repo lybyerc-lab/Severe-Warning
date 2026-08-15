@@ -1,0 +1,91 @@
+name: SW-ART-001 Google AI Art Pipeline
+
+on:
+  push:
+    branches:
+      - agent/sw-art-001-google-ai-art-pipeline
+    paths:
+      - tools/google-ai/**
+      - scripts/verify-sw-art-001-google-ai-pipeline.mjs
+      - .gitignore
+      - .github/workflows/sw-art-001-google-ai-art-pipeline.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-art-001-google-ai-art-pipeline
+  cancel-in-progress: true
+
+jobs:
+  validate-tooling:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact branch source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Prove bounded changed-file territory
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='de2e62835e79567b4bbfc079a372ce2af4ee0879'
+          git diff --name-only "$base"...HEAD | tee sw-art-001-changed-files.txt
+          bad="$(grep -Ev '^(\.gitignore|tools/google-ai/|scripts/verify-sw-art-001-google-ai-pipeline\.mjs|\.github/workflows/sw-art-001-google-ai-art-pipeline\.yml)$' sw-art-001-changed-files.txt || true)"
+          if [ -n "$bad" ]; then
+            echo 'SW-ART-001 changed files outside allowed tooling territory:' >&2
+            echo "$bad" >&2
+            exit 1
+          fi
+
+      - name: Reject committed API keys or generated media
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -n -E 'AIza[0-9A-Za-z_-]{25,}' -- .; then
+            echo 'Possible Google API key committed to source.' >&2
+            exit 1
+          fi
+          if git ls-files 'art-source/generated/google-ai/**' | grep -q .; then
+            echo 'Generated Google AI media must not be tracked by Git.' >&2
+            exit 1
+          fi
+
+      - name: Verify Google AI tooling contract
+        run: node scripts/verify-sw-art-001-google-ai-pipeline.mjs
+
+      - name: Exercise no-credit CLI dry runs
+        shell: bash
+        env:
+          GEMINI_API_KEY: ''
+        run: |
+          set -euo pipefail
+          node tools/google-ai/sw-google-art.mjs list
+          node tools/google-ai/sw-google-art.mjs image --brief cow17 --dry-run > sw-art-001-image-dry-run.json
+          node tools/google-ai/sw-google-art.mjs image --brief tornado-visual-dev --model gemini-3-pro-image --dry-run > sw-art-001-pro-image-dry-run.json
+          node tools/google-ai/sw-google-art.mjs video --brief moo-brew-touchdown-previz --dry-run > sw-art-001-video-dry-run.json
+          test -s sw-art-001-image-dry-run.json
+          test -s sw-art-001-pro-image-dry-run.json
+          test -s sw-art-001-video-dry-run.json
+
+      - name: Preserve existing authored-asset pipeline contract
+        run: node scripts/verify-threejs-asset-pipeline.mjs
+
+      - name: Upload tooling evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-001-google-ai-tooling
+          if-no-files-found: error
+          path: |
+            sw-art-001-static-report.json
+            sw-art-001-changed-files.txt
+            sw-art-001-image-dry-run.json
+            sw-art-001-pro-image-dry-run.json
+            sw-art-001-video-dry-run.json
+            threejs-asset-pipeline-static-report.json
