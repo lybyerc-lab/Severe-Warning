@@ -15,9 +15,10 @@ check('anatomy geometries bypass suppression', runtime.includes('swFeel001Struct
 check('trees and cows are excluded from structural throttling', runtime.includes('!target.isTree') && runtime.includes('!target.isCow'));
 check('original destruction presentation remains authoritative event source', runtime.includes('swFeel001StructuralPriorityPrevPresentation'));
 check('legacy explosion bookkeeping is observed but not replaced', runtime.includes('activeExplosionFragments') && !replacesExplosionArray);
-check('legacy cube signature is bounded to exact 0.75 box geometry', runtime.includes("geometry.type !== 'BoxGeometry'") && runtime.includes('Math.abs(width - 0.75)') && runtime.includes('Math.abs(height - 0.75)') && runtime.includes('Math.abs(depth - 0.75)'));
+check('legacy fragment predicate is limited to small uniform BoxGeometry', runtime.includes("geometry.type !== 'BoxGeometry'") && runtime.includes('uniformCube') && runtime.includes('minDimension >= 0.7') && runtime.includes('maxDimension <= 2.1'));
 check('legacy structural cubes are hidden rather than deleted', runtime.includes('mesh.visible = false') && runtime.includes('swFeel001LegacyCubeHidden') && !runtime.includes('activeExplosionFragments.splice'));
 check('cube suppression is spatially bounded around destroyed target', runtime.includes('Math.hypot(dx, dz) > 12'));
+check('larger inherited roof/wall/part fragments are preserved by dimension bound', runtime.includes('maxDimension <= 2.1'));
 check('cube suppression telemetry is exported', runtime.includes('inheritedCubeFragmentsHidden'));
 check('priority telemetry is exported', runtime.includes('getSwFeel001StructuralPriorityState'));
 check('apply requires structural anatomy', apply.includes('SW_FEEL_001_STRUCTURAL_ANATOMY_V1'));
