@@ -51,6 +51,7 @@ android/signing/
 # AI-generated source/reference media is reviewed and archived separately before
 # any explicitly approved production asset is promoted into tracked game assets.
 art-source/generated/google-ai/
+art-source/generated/meshy/
 .env
 .env.*
 !.env.example

@@ -1,0 +1,41 @@
+{
+  "version": "SW_MESHY_LIVE_REQUEST_V1",
+  "id": "cow17-meshy-v1",
+  "productionAuthority": "candidate only",
+  "source": {
+    "runId": 31895535943,
+    "artifactId": 9249708267,
+    "artifactName": "sw-art-002-cow17-reference-v1",
+    "path": "art-source/generated/google-ai/cow17/cow17-reference-v1.jpg",
+    "expectedSourceSha256": "f8352f3817db96ff5cd4faf19f03452dd2666e624278e1c63d135518421d6aef",
+    "crop": {
+      "left": 690,
+      "top": 180,
+      "right": 1270,
+      "bottom": 1335,
+      "expectedWidth": 580,
+      "expectedHeight": 1155,
+      "expectedPixelSha256": "e9439cd683da0a1e22cf11987d86cf0749aa139705efebba1caa9ecac6c723e8"
+    }
+  },
+  "meshy": {
+    "endpoint": "image-to-3d",
+    "modelType": "smart-topology",
+    "aiModel": "meshy-t2",
+    "targetPolycount": 12000,
+    "shouldTexture": true,
+    "textureResolution": "2k",
+    "enablePbr": false,
+    "poseMode": "",
+    "targetFormats": ["glb"]
+  },
+  "output": {
+    "dir": "art-source/generated/meshy/cow17-meshy-v1",
+    "glb": "cow17-meshy-v1.glb",
+    "preview": "cow17-meshy-v1-preview.png"
+  },
+  "costGuard": {
+    "maxCredits": 15,
+    "authorizedTasks": 1
+  }
+}

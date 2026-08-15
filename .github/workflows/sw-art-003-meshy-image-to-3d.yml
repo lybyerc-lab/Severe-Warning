@@ -1,0 +1,197 @@
+name: SW-ART-003 Meshy Image to 3D
+
+on:
+  push:
+    branches:
+      - agent/sw-art-003-meshy-3d-pipeline
+    paths:
+      - tools/meshy/**
+      - scripts/verify-sw-art-003-meshy-pipeline.mjs
+      - .gitignore
+      - .github/workflows/sw-art-003-meshy-image-to-3d.yml
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sw-art-003-meshy-3d-pipeline
+  cancel-in-progress: false
+
+jobs:
+  generate-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact task source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prove exact base and bounded changed-file territory
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='67fcd1729c0fc96f53143860eb46c94f4532917e'
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          git diff --name-only "$base"...HEAD | tee sw-art-003-changed-files.txt
+          bad="$(grep -Ev '^(\.gitignore|tools/meshy/.*|scripts/verify-sw-art-003-meshy-pipeline\.mjs|\.github/workflows/sw-art-003-meshy-image-to-3d\.yml)$' sw-art-003-changed-files.txt || true)"
+          if [ -n "$bad" ]; then
+            echo 'SW-ART-003 changed files outside allowed tooling territory:' >&2
+            echo "$bad" >&2
+            exit 1
+          fi
+
+      - name: Block rerun credit spend
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_RUN_ATTEMPT}" != '1' ]; then
+            echo 'SW-ART-003 live generation must not be rerun; create a new reviewed request commit instead.' >&2
+            exit 1
+          fi
+
+      - name: Resolve exactly one reviewed live request
+        id: request
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+        run: |
+          set -euo pipefail
+          test -n "$MESHY_API_KEY" || { echo 'GitHub Actions secret Meshy_API is missing or empty.' >&2; exit 1; }
+          mapfile -t requests < <(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- 'tools/meshy/live-requests/*.json')
+          if [ "${#requests[@]}" -ne 1 ]; then
+            printf 'Expected exactly one reviewed Meshy request in this commit; found %s\n' "${#requests[@]}" >&2
+            printf '%s\n' "${requests[@]}" >&2
+            exit 1
+          fi
+          REQUEST_FILE="${requests[0]}" node - <<'NODE'
+          const fs = require('fs');
+          const request = JSON.parse(fs.readFileSync(process.env.REQUEST_FILE, 'utf8'));
+          const fail = (message) => { throw new Error(message); };
+          if (request.version !== 'SW_MESHY_LIVE_REQUEST_V1') fail(`Unexpected request version: ${request.version}`);
+          if (request.productionAuthority !== 'candidate only') fail('Meshy output must remain candidate only.');
+          if (request.source?.runId !== 31895535943 || request.source?.artifactId !== 9249708267) fail('First proof must use the exact archived Cow 17 Actions source.');
+          if (request.meshy?.modelType !== 'smart-topology' || request.meshy?.aiModel !== 'meshy-t2') fail('First proof requires Smart Topology meshy-t2.');
+          if (request.costGuard?.authorizedTasks !== 1 || request.costGuard?.maxCredits > 15) fail('Meshy credit guard violated.');
+          const values = {
+            request_file: process.env.REQUEST_FILE,
+            request_id: request.id,
+            source_run_id: request.source.runId,
+            source_artifact_id: request.source.artifactId,
+            source_path: request.source.path,
+            output_dir: request.output.dir,
+          };
+          for (const [key, value] of Object.entries(values)) {
+            if (String(value).includes('\n')) fail(`Multiline workflow output rejected: ${key}`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+          }
+          console.log(`SW-ART-003 request contract PASS: ${request.id}`);
+          NODE
+
+      - name: Verify Meshy tooling before spend
+        run: node scripts/verify-sw-art-003-meshy-pipeline.mjs
+
+      - name: Preserve existing Google art and authored-asset contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-sw-art-001-google-ai-pipeline.mjs
+          node scripts/verify-threejs-asset-pipeline.mjs
+
+      - name: Install bounded image crop dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends python3-pil
+
+      - name: Download exact Cow 17 Google source artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.request.outputs.source_artifact_id }}
+          path: sw-art-003-source
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.request.outputs.source_run_id }}
+
+      - name: Reproduce exact Meshy-ready crop
+        shell: bash
+        env:
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+        run: |
+          set -euo pipefail
+          mkdir -p sw-art-003-input
+          python3 tools/meshy/prepare-meshy-reference.py \
+            --request "$REQUEST_FILE" \
+            --source-root sw-art-003-source \
+            --output sw-art-003-input/cow17-meshy-ready.png \
+            > sw-art-003-reference-prep.json
+          test -s sw-art-003-input/cow17-meshy-ready.png
+          test -s sw-art-003-input/cow17-meshy-ready.png.json
+          test -s sw-art-003-reference-prep.json
+
+      - name: Exercise no-credit Meshy payload dry run
+        shell: bash
+        env:
+          MESHY_API_KEY: ''
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-image-to-3d.mjs \
+            --request "$REQUEST_FILE" \
+            --image sw-art-003-input/cow17-meshy-ready.png \
+            --output-dir "${{ steps.request.outputs.output_dir }}" \
+            --dry-run > sw-art-003-meshy-dry-run.json
+          test -s sw-art-003-meshy-dry-run.json
+
+      - name: Generate one Cow 17 Meshy candidate
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.Meshy_API }}
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
+        run: |
+          set -euo pipefail
+          node tools/meshy/sw-meshy-image-to-3d.mjs \
+            --request "$REQUEST_FILE" \
+            --image sw-art-003-input/cow17-meshy-ready.png \
+            --output-dir "${{ steps.request.outputs.output_dir }}"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-meshy-v1.glb"
+          test -s "${{ steps.request.outputs.output_dir }}/cow17-meshy-v1-preview.png"
+          test -s "${{ steps.request.outputs.output_dir }}/sw-art-003-receipt.json"
+
+      - name: Record exact output hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum \
+            sw-art-003-input/cow17-meshy-ready.png \
+            "${{ steps.request.outputs.output_dir }}/cow17-meshy-v1.glb" \
+            "${{ steps.request.outputs.output_dir }}/cow17-meshy-v1-preview.png" \
+            | tee sw-art-003-sha256.txt
+
+      - name: Upload Meshy candidate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-003-${{ steps.request.outputs.request_id }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            sw-art-003-static-report.json
+            sw-art-003-changed-files.txt
+            sw-art-003-reference-prep.json
+            sw-art-003-meshy-dry-run.json
+            sw-art-003-sha256.txt
+            sw-art-003-input/cow17-meshy-ready.png
+            sw-art-003-input/cow17-meshy-ready.png.json
+            ${{ steps.request.outputs.output_dir }}/cow17-meshy-v1.glb
+            ${{ steps.request.outputs.output_dir }}/cow17-meshy-v1-preview.png
+            ${{ steps.request.outputs.output_dir }}/sw-art-003-task-created.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-003-task-final.json
+            ${{ steps.request.outputs.output_dir }}/sw-art-003-receipt.json
+            threejs-asset-pipeline-static-report.json
