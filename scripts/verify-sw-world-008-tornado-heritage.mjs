@@ -10,18 +10,25 @@ const checks = [];
 const check = (name, pass, detail = '') => checks.push({ name, pass: Boolean(pass), detail });
 
 check('marker', runtime.includes('SW_WORLD_008_TORNADO_HERITAGE_V1'));
-check('historical-core-authoritative', runtime.includes("funnelMat.color?.set?.('#090d16')") && runtime.includes('funnelMat.roughness = 0.15') && runtime.includes('funnelMat, 0.82') && runtime.includes('funnelMat.depthWrite = true'));
-check('historical-sheath-restored', runtime.includes('outerFunnelMesh.visible = true') && runtime.includes("outerFunnelMat.color?.set?.('#334155')") && runtime.includes('outerFunnelMat, 0.32'));
-check('historical-debris-restored', runtime.includes('particleSystem.visible = true') && runtime.includes('particleMat.vertexColors = true') && runtime.includes('particleMat, 0.78'));
-check('historical-dust-softened', runtime.includes('dustBowlGroup.visible = true') && runtime.includes('dustBowlGroup.scale.set(0.60, 0.22, 0.60)') && runtime.includes('dustMat, 0.16'));
-check('canopy-subordinate', runtime.includes('mesoCloudGroup.scale.set(0.62, 0.45, 0.62)') && runtime.includes('mesoCloudMat, 0.42'));
-check('ribbon-replacement-removed-from-silhouette', runtime.includes("SWVisualSlice6CondensationStreak") && runtime.includes('object.visible = false') && runtime.includes('object.material, 0.03'));
-check('edge-wisps-subordinate', runtime.includes('object.material, 0.035') && runtime.includes('object.material, 0.045'));
-check('visible-ribbon-opacity-only', runtime.includes('maxVisibleOpacity') && runtime.includes('if (object.visible && object.material'));
-check('secondary-exclusivity-preserved', runtime.includes('swWorld008SuppressForSecondary') && runtime.includes("activeStorm === 'tornado'"));
+check('visual-target-recorded', runtime.includes("SW_WORLD_008_VISUAL_TARGET = 'tornado-visual-dev-reference-v1'"));
+check('core-dense-but-atmospheric', runtime.includes("funnelMat.color?.set?.('#18252c')") && runtime.includes('funnelMat.roughness = 0.86') && runtime.includes('funnelMat, 0.72') && runtime.includes('funnelMat.depthWrite = true'));
+check('core-radial-breakup', runtime.includes('swWorld008BreakUpCore') && runtime.includes('angularBreakup') && runtime.includes('verticalPulse') && runtime.includes('computeVertexNormals'));
+check('outer-cylinder-suppressed', runtime.includes('outerFunnelMesh.visible = false'));
+check('faceted-canopy-suppressed', runtime.includes('mesoCloudGroup.visible = false'));
+check('faceted-dust-suppressed', runtime.includes('dustBowlGroup.visible = false'));
+check('historical-debris-preserved', runtime.includes('particleSystem.visible = true') && runtime.includes('particleMat.vertexColors = true') && runtime.includes('particleMat, 0.68'));
+check('soft-mist-texture', runtime.includes('new THREE.CanvasTexture') && runtime.includes('createRadialGradient'));
+check('bounded-point-fields', runtime.includes('SWWorld008MistFine') && runtime.includes('SWWorld008MistBroad') && runtime.includes('SWWorld008CanopyMist') && runtime.includes('SWWorld008GroundDust'));
+check('points-not-second-gameplay-solver', runtime.includes('new THREE.PointsMaterial') && runtime.includes('new THREE.Points') && !runtime.includes('requestAnimationFrame('));
+check('soft-funnel-motion', runtime.includes('swWorld008UpdateFunnelMist') && runtime.includes('swWorld008Centerline'));
+check('soft-canopy-motion', runtime.includes('swWorld008UpdateCanopy'));
+check('soft-ground-contact', runtime.includes('swWorld008UpdateGroundDust'));
+check('neon-cosmetic-preserved', runtime.includes("neon ? '#69dbea'") && runtime.includes("neon ? '#9cebf2'"));
+check('slice6-geometry-fully-suppressed', runtime.includes("SWVisualSlice6CondensationStreak") && runtime.includes("SWVisualSlice6EdgeWisp") && runtime.includes("SWVisualSlice6GroundPull") && runtime.includes('object.visible = false'));
+check('secondary-exclusivity-preserved', runtime.includes('swWorld008SuppressForSecondary') && runtime.includes("activeStorm === 'tornado'") && runtime.includes('swWorld008AtmosphereRoot.visible = false'));
 check('final-visual-bridge-wrapper', runtime.includes('swWorld008VisualBridgeBase') && runtime.includes('update: swWorld008VisualUpdate'));
 check('presentation-state-export', runtime.includes('getSwWorld008TornadoHeritageState') && runtime.includes('presentationOnly: true'));
-check('ribbon-visibility-telemetry', runtime.includes('visibleStreaks'));
+check('atmosphere-telemetry', runtime.includes('drawFields:') && runtime.includes('finePoints:') && runtime.includes('dustPoints:'));
 check('apply-requires-world007', apply.includes('SW_WORLD_007_SECONDARY_EXCLUSIVE_V1'));
 check('apply-requires-feel', apply.includes('SW_FEEL_001_STRUCTURAL_PRIORITY_V1'));
 check('apply-requires-ui005', apply.includes('SW_UI_005_FIELD_CONTROLS_V1'));
@@ -35,9 +42,10 @@ const protectedMutations = [...runtime.matchAll(protectedMutationPattern)].map((
 check('no-protected-gameplay-mutations', protectedMutations.length === 0, protectedMutations.join(', '));
 check('no-gameplay-camera-write', !/\bcamera\.(?:position|rotation)|\bcamera\.lookAt\s*\(/.test(runtime));
 check('no-ability-write', !/\b(?:triggerAbility|usePull|useGust|useZap)\s*=/.test(runtime));
+check('bounded-atmosphere-fields', !/SWWorld008Mist(?:Fine|Broad).*?[5-9][0-9]{2}/s.test(runtime));
 
 const report = {
-  version: 'SW_WORLD_008_STATIC_V3',
+  version: 'SW_WORLD_008_STATIC_V4',
   passed: checks.every((entry) => entry.pass),
   checks,
   failedChecks: checks.filter((entry) => !entry.pass),
@@ -47,6 +55,7 @@ const report = {
       '667888bb3e15d912c71873951e58d456597219e9',
       '326e60895c2f861e02532021b32fd63181cd8fb3'
     ],
+    visualTarget: 'tornado-visual-dev-reference-v1',
     base: 'de2e62835e79567b4bbfc079a372ce2af4ee0879',
   },
 };
