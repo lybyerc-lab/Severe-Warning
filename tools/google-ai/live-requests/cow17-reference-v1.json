@@ -4,7 +4,7 @@
   "command": "image",
   "brief": "cow17",
   "model": "gemini-3.1-flash-image",
-  "output": "art-source/generated/google-ai/cow17/cow17-reference-v1.png",
+  "output": "art-source/generated/google-ai/cow17/cow17-reference-v1.jpg",
   "productionAuthority": "reference only",
   "reason": "First controlled live Google art call for Cow 17 character/model reference. Generated media is review source only and must not enter production automatically."
 }
