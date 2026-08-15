@@ -57,6 +57,15 @@ async function enterGameplay(page) {
 
 async function snapshotState(page) {
   return page.evaluate(() => {
+    const effectiveHidden = (element) => {
+      let node = element;
+      while (node && node.nodeType === Node.ELEMENT_NODE) {
+        const style = getComputedStyle(node);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || 1) === 0) return true;
+        node = node.parentElement;
+      }
+      return false;
+    };
     const rect = (selector) => {
       const element = document.querySelector(selector);
       if (!element) return null;
@@ -66,6 +75,7 @@ async function snapshotState(page) {
         left: r.left, top: r.top, right: r.right, bottom: r.bottom,
         width: r.width, height: r.height,
         display: style.display, visibility: style.visibility, opacity: Number(style.opacity || 0),
+        effectivelyHidden: effectiveHidden(element),
       };
     };
     return {
@@ -92,7 +102,7 @@ async function snapshotState(page) {
 }
 
 function hiddenUnderGate(entry) {
-  return entry && (entry.visibility === 'hidden' || entry.opacity === 0);
+  return entry && entry.effectivelyHidden === true;
 }
 
 async function createMobileContext(browser, width, height) {
@@ -128,9 +138,6 @@ try {
   await landscapePage.screenshot({ path: path.join(artifactDir, '01_landscape_touch_844x390.png'), fullPage: false });
   await landscapeContext.close();
 
-  // A fresh portrait context is intentional. Resizing an already-landscape
-  // mobile emulation can retain the old layout viewport and produce a misleading
-  // full-page capture that does not match a phone opened in portrait.
   const portraitContext = await createMobileContext(browser, 390, 844);
   const portraitPage = await portraitContext.newPage();
   portraitPage.on('pageerror', error => errors.push(String(error.message || error)));
@@ -140,9 +147,9 @@ try {
   await enterGameplay(portraitPage);
   const portrait = await snapshotState(portraitPage);
   check('portraitViewportIsNative', portrait.viewport.width === 390 && portrait.viewport.height === 844, JSON.stringify(portrait.viewport));
-  check('portraitRotateGateActive', portrait.ui006?.portraitGameplay === true && portrait.gate?.display === 'flex' && portrait.gate?.visibility === 'visible' && portrait.gate?.opacity === 1, JSON.stringify(portrait.ui006));
+  check('portraitRotateGateActive', portrait.ui006?.portraitGameplay === true && portrait.gate?.display === 'flex' && portrait.gate?.visibility === 'visible' && portrait.gate?.opacity === 1 && portrait.gate?.effectivelyHidden === false, JSON.stringify(portrait.ui006));
   check('portraitGateCoversViewport', Boolean(portrait.gate) && portrait.gate.left <= 0.5 && portrait.gate.top <= 0.5 && portrait.gate.right >= portrait.viewport.width - 0.5 && portrait.gate.bottom >= portrait.viewport.height - 0.5, JSON.stringify(portrait.gate));
-  check('portraitGameplayUnderlayHidden', hiddenUnderGate(portrait.canvas) && hiddenUnderGate(portrait.controls) && hiddenUnderGate(portrait.telemetry) && hiddenUnderGate(portrait.joystick), JSON.stringify({ canvas: portrait.canvas, controls: portrait.controls, telemetry: portrait.telemetry, joystick: portrait.joystick }));
+  check('portraitGameplayUnderlayHidden', hiddenUnderGate(portrait.canvas) && hiddenUnderGate(portrait.footer) && hiddenUnderGate(portrait.controls) && hiddenUnderGate(portrait.telemetry) && hiddenUnderGate(portrait.joystick), JSON.stringify({ canvas: portrait.canvas, footer: portrait.footer, controls: portrait.controls, telemetry: portrait.telemetry, joystick: portrait.joystick }));
   check('portraitSuppressionApplied', (portrait.ui006?.suppressedPortraitNodes || 0) >= 4, JSON.stringify(portrait.ui006));
   await portraitPage.screenshot({ path: path.join(artifactDir, '02_portrait_rotate_gate_390x844.png'), fullPage: false });
   await portraitContext.close();
@@ -169,7 +176,7 @@ try {
 
 const failed = checks.filter((entry) => !entry.pass);
 const report = {
-  version: 'SW_UI_006_BROWSER_V2',
+  version: 'SW_UI_006_BROWSER_V3',
   passed: failed.length === 0,
   checks,
   errors,
@@ -180,6 +187,7 @@ const report = {
       'artifacts/sw-ui-006/02_portrait_rotate_gate_390x844.png',
       'artifacts/sw-ui-006/03_desktop_keyboard_truth_1440x900.png',
     ],
+    visualReviewNote: 'Portrait artifact from prior V2 proof was visually clean; V3 measures effective ancestor suppression instead of child computed visibility alone.'
   },
 };
 await writeFile(path.join(artifactDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
