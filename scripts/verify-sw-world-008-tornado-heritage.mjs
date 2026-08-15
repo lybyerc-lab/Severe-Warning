@@ -42,15 +42,31 @@ const protectedMutations = [...runtime.matchAll(protectedMutationPattern)].map((
 check('no-protected-gameplay-mutations', protectedMutations.length === 0, protectedMutations.join(', '));
 check('no-gameplay-camera-write', !/\bcamera\.(?:position|rotation)|\bcamera\.lookAt\s*\(/.test(runtime));
 check('no-ability-write', !/\b(?:triggerAbility|usePull|useGust|useZap)\s*=/.test(runtime));
-check('bounded-atmosphere-fields', !/SWWorld008Mist(?:Fine|Broad).*?[5-9][0-9]{2}/s.test(runtime));
+
+const expectedPointBudgets = [
+  "mobile ? 120 : 170",
+  "mobile ? 70 : 100",
+  "mobile ? 85 : 125",
+  "mobile ? 65 : 95",
+];
+const oversizedPointBudgets = [...runtime.matchAll(/mobile\s*\?\s*(\d+)\s*:\s*(\d+)/g)]
+  .map((match) => ({ mobile: Number(match[1]), desktop: Number(match[2]), source: match[0] }))
+  .filter((entry) => entry.mobile > 200 || entry.desktop > 220);
+check(
+  'bounded-atmosphere-fields',
+  expectedPointBudgets.every((snippet) => runtime.includes(snippet)) && oversizedPointBudgets.length === 0,
+  oversizedPointBudgets.map((entry) => entry.source).join(', '),
+);
 
 const report = {
-  version: 'SW_WORLD_008_STATIC_V4',
+  version: 'SW_WORLD_008_STATIC_V5',
   passed: checks.every((entry) => entry.pass),
   checks,
   failedChecks: checks.filter((entry) => !entry.pass),
   evidence: {
     protectedMutations,
+    expectedPointBudgets,
+    oversizedPointBudgets,
     historicalReference: [
       '667888bb3e15d912c71873951e58d456597219e9',
       '326e60895c2f861e02532021b32fd63181cd8fb3'
