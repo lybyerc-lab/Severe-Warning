@@ -2,10 +2,10 @@
   "version": "SW_ART_009_COW17_RUNTIME_QA_V1",
   "task": "SW-ART-009",
   "issue": 106,
-  "attempt": 6,
-  "supersedesRunId": 31913851397,
+  "attempt": 7,
+  "supersedesRunId": 31914195906,
   "exactBaseSha": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
-  "expectedImplementationHead": "374b0e4e7082cda621a228fbd9a19f105551c22b",
+  "expectedImplementationHead": "d07f6a35ef1da2a7fc94e78fc379fcf6a3cefb7b",
   "asset": {
     "path": "assets/production/characters/cow17-walking-v1.glb",
     "sha256": "d5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93",
@@ -13,5 +13,5 @@
   },
   "generationAllowed": false,
   "productionPromotionAllowed": false,
-  "purpose": "Run exact canonical Stage 2B static, Cow 17 behavioral/fallback, inherited-regression, visual, and same-runner performance evidence with isolated Chromium lifecycles between browser suites."
+  "purpose": "Run final canonical Stage 2B static, Cow 17 behavioral/fallback, inherited-regression, visual, and same-runner performance evidence with safe exact-name Chromium lifecycle cleanup."
 }
