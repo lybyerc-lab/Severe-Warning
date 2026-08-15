@@ -82,12 +82,13 @@ try {
   const ribbon = tornado.heritage?.ribbon || {};
   check('tornadoSelected', tornado.active === 'tornado', JSON.stringify(tornado));
   check('heritageFramesAdvanced', (tornado.heritage?.tornadoFrames || 0) > 0, JSON.stringify(tornado.heritage));
-  check('serpentineCoreVisible', legacy.funnelVisible === true && legacy.funnelOpacity >= 0.35 && legacy.funnelOpacity <= 0.55, JSON.stringify(legacy));
-  check('outerVaporVisibleButSubordinate', legacy.outerVisible === true && legacy.outerOpacity >= 0.08 && legacy.outerOpacity <= 0.2, JSON.stringify(legacy));
-  check('helicalDebrisVisible', legacy.debrisVisible === true && legacy.debrisOpacity >= 0.3, JSON.stringify(legacy));
+  check('serpentineCoreAuthoritative', legacy.funnelVisible === true && legacy.funnelOpacity >= 0.60 && legacy.funnelOpacity <= 0.72 && legacy.funnelDepthWrite === true, JSON.stringify(legacy));
+  check('outerVaporVisibleButSubordinate', legacy.outerVisible === true && legacy.outerOpacity >= 0.08 && legacy.outerOpacity <= 0.16, JSON.stringify(legacy));
+  check('helicalDebrisVisible', legacy.debrisVisible === true && legacy.debrisOpacity >= 0.4, JSON.stringify(legacy));
   check('touchdownDustVisible', legacy.dustVisible === true, JSON.stringify(legacy));
-  check('canopyDemoted', legacy.canopyVisible === true && legacy.canopyScaleX <= 0.75, JSON.stringify(legacy));
-  check('ribbonLayerDemoted', ribbon.streaks >= 8 && ribbon.maxOpacity <= 0.20, JSON.stringify(ribbon));
+  check('canopySubordinate', legacy.canopyVisible === true && legacy.canopyScaleX <= 0.65, JSON.stringify(legacy));
+  check('polygonStreakSilhouetteRemoved', ribbon.streaks >= 8 && ribbon.visibleStreaks === 0, JSON.stringify(ribbon));
+  check('remainingRibbonAccentsSubordinate', ribbon.maxOpacity <= 0.065, JSON.stringify(ribbon));
   check('tornadoPresentationRootsVisible', tornado.slice6Visible === true && tornado.tornadoGroupVisible === true, JSON.stringify(tornado));
   await page.screenshot({ path: path.join(artifactDir, '01_tornado_heritage_844x390.png'), fullPage: true });
 
@@ -116,7 +117,7 @@ try {
 
 const failed = checks.filter(item => !item.pass);
 const report = {
-  version: 'SW_WORLD_008_BROWSER_V1',
+  version: 'SW_WORLD_008_BROWSER_V2',
   passed: failed.length === 0,
   checks,
   errors,
