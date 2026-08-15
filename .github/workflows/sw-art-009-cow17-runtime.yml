@@ -18,7 +18,7 @@ jobs:
   verify-runtime:
     name: Verify Cow 17 runtime integration
     runs-on: ubuntu-24.04
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
@@ -64,6 +64,113 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm --dir accepted-base install --frozen-lockfile
 
+      - name: Prepare deterministic local assets on base and candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          pnpm run audio:generate
+          node scripts/vendor-threejs-hero-slice4-assets.mjs
+          (
+            cd accepted-base
+            pnpm run audio:generate
+            node scripts/vendor-threejs-hero-slice4-assets.mjs
+          )
+
+      - name: Assemble exact accepted Stage 2B source on base and candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          initial_scripts=(
+            apply-v431-source-patch.mjs
+            apply-v440-source-patch.mjs
+            apply-v441-source-patch.mjs
+            apply-v442-source-patch.mjs
+            fix-v450-parser.mjs
+            apply-v450-source-patch.mjs
+            apply-v450-rampage-music-patch.mjs
+            apply-qa-corrections-patch.mjs
+            apply-audio-mix-followup-patch.mjs
+            apply-ui-polish-followup-patch.mjs
+            apply-score-continuity-fix.mjs
+            apply-qa4-deterministic-lab-patch.mjs
+            apply-qa4-mobile-input-fix.mjs
+            apply-qa4-run-lock-fix.mjs
+            apply-qa4-pause-forensics.mjs
+            apply-pause-overlay-hit-test-fix.mjs
+            apply-pause-overlay-hard-hide.mjs
+            apply-qa4-popup-assertion-fix.mjs
+            apply-qa4-rampage-popup-fix.mjs
+            apply-v500-campaign-patch.mjs
+            apply-v500-realtime-clock-fix.mjs
+            apply-v500-world-tour-patch.mjs
+            apply-v500-mobile-layout-fix.mjs
+            apply-v500-cow-signature-patch.mjs
+            apply-v510-production-slice.mjs
+            apply-modernization-phase2-clocks.mjs
+            apply-phase2-player-forensics-guard.mjs
+            apply-modernization-phase3-input-abilities.mjs
+            apply-modernization-phase4-scoring-campaign.mjs
+            apply-modernization-phase5-presentation-world.mjs
+            apply-modernization-phase6-performance.mjs
+            apply-city-fabric-destruction.mjs
+            apply-presentation-identity-moo-brew.mjs
+            apply-threejs-asset-pipeline.mjs
+            apply-threejs-visual-foundation.mjs
+            apply-threejs-hero-slice4.mjs
+            apply-threejs-hero-slice5.mjs
+            apply-threejs-hero-slice6.mjs
+            apply-sw-game-002-moo-level.mjs
+            apply-sw-ui-001-newspaper-presentation.mjs
+            apply-sw-score-001-persistent-scorekeeper.mjs
+            apply-sw-rpg-001-moolah-storm-triangle.mjs
+            apply-sw-rpg-002-slingshot.mjs
+            apply-sw-level-001-storm-site-framework.mjs
+            apply-sw-ui-002-landscape-unleash.mjs
+            apply-sw-quality-001-owner-playtest-rescue.mjs
+          )
+          overlay_scripts=(
+            apply-sw-quality-002-visual-rescue.mjs
+            apply-sw-quality-002-storm-frame-bridge.mjs
+            apply-sw-ui-003-run-shell-identity.mjs
+            apply-sw-ui-004-gameplay-product-identity.mjs
+            apply-sw-world-007-secondary-storm-forms.mjs
+            apply-sw-world-007-atmospheric-correction.mjs
+            apply-sw-world-007-visibility-lock.mjs
+            apply-sw-world-007-secondary-exclusive.mjs
+            apply-sw-feel-001-destruction-consequence.mjs
+            apply-sw-feel-001-structural-anatomy.mjs
+            apply-sw-feel-001-structural-priority.mjs
+            apply-sw-ui-005-field-controls.mjs
+          )
+
+          assemble_stack() {
+            local root="$1"
+            local output="$2"
+            cp "$root/MechanicsLab/SevereWeather_3D_Lab.html" "$output"
+            (
+              cd "$root"
+              export SEVERE_WEATHER_SOURCE_PATH="$output"
+              for script in "${initial_scripts[@]}"; do node "scripts/$script"; done
+              for script in "${overlay_scripts[@]}"; do node "scripts/$script"; done
+            )
+          }
+
+          candidate_source="$RUNNER_TEMP/sw-art-009-candidate.html"
+          base_source="$RUNNER_TEMP/sw-art-009-base.html"
+          assemble_stack '.' "$candidate_source"
+          assemble_stack 'accepted-base' "$base_source"
+          test -s "$candidate_source"
+          test -s "$base_source"
+          grep -F 'V500_BOVINE_SIGNATURE_V1' "$candidate_source"
+          grep -F 'V500_BOVINE_SIGNATURE_V1' "$base_source"
+          grep -F 'SW_FEEL_001_DESTRUCTION_CONSEQUENCE_V1' "$candidate_source"
+          grep -F 'SW_FEEL_001_DESTRUCTION_CONSEQUENCE_V1' "$base_source"
+          echo "SEVERE_WEATHER_SOURCE_PATH=$candidate_source" >> "$GITHUB_ENV"
+          echo "SW_ART_009_BASE_SOURCE_PATH=$base_source" >> "$GITHUB_ENV"
+
       - name: Verify Cow 17 static contract and inherited process laws
         shell: bash
         run: |
@@ -82,6 +189,8 @@ jobs:
       - name: Build accepted canonical on same runner
         shell: bash
         working-directory: accepted-base
+        env:
+          SEVERE_WEATHER_SOURCE_PATH: ${{ env.SW_ART_009_BASE_SOURCE_PATH }}
         run: |
           set -euo pipefail
           pnpm run build
