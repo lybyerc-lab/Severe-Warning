@@ -139,7 +139,7 @@ jobs:
           env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/cow17' node scripts/qa-sw-art-009-cow17-runtime.mjs
           env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/asset-pipeline' pnpm run qa:asset-pipeline
           env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/moo-level' pnpm run qa:sw-game-002
-          env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/destruction-feel' pnpm run qa:sw-feel-001
+          pnpm run qa:sw-feel-001
 
       - name: Capture same-runner accepted-base versus Cow 17 candidate performance evidence
         shell: bash
@@ -175,8 +175,8 @@ jobs:
             qa-artifacts/sw-art-009/cow17/cow17-authored-focused.png \
             qa-artifacts/sw-art-009/cow17/cow17-fallback-gameplay.png \
             qa-artifacts/sw-art-009/asset-pipeline/threejs-asset-pipeline-report.json \
-            qa-artifacts/sw-art-009/moo-level/sw-game-002-report.json \
-            qa-artifacts/sw-art-009/destruction-feel/sw-feel-001-report.json \
+            qa-artifacts/sw-art-009/moo-level/report.json \
+            artifacts/feel-001-evidence/qa-report.json \
             qa-artifacts/sw-art-009/performance/baseline-report.json \
             qa-artifacts/sw-art-009/performance/candidate-report.json \
             qa-artifacts/sw-art-009/performance/comparison-report.json \
@@ -186,7 +186,22 @@ jobs:
           sha256sum assets/production/characters/cow17-walking-v1.glb www/assets/production/characters/cow17-walking-v1.glb | tee sw-art-009-cow17-sha256.txt
           stat -c '%n %s bytes' assets/production/characters/cow17-walking-v1.glb www/assets/production/characters/cow17-walking-v1.glb | tee sw-art-009-cow17-size.txt
 
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-009-cow17-runtime-diagnostics-${{ github.run_number }}
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            sw-art-009-static-report.json
+            sw-art-009-changed-files.txt
+            www/build-info.json
+            qa-artifacts/sw-art-009
+            artifacts/feel-001-evidence
+
       - name: Upload Cow 17 runtime integration evidence
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: sw-art-009-cow17-runtime-${{ github.run_number }}
@@ -199,3 +214,4 @@ jobs:
             sw-art-009-cow17-size.txt
             www/build-info.json
             qa-artifacts/sw-art-009
+            artifacts/feel-001-evidence
