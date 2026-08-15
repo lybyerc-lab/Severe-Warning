@@ -2,10 +2,10 @@
   "version": "SW_ART_009_COW17_RUNTIME_QA_V1",
   "task": "SW-ART-009",
   "issue": 106,
-  "attempt": 8,
-  "supersedesRunId": 31914480005,
+  "attempt": 9,
+  "supersedesRunId": 31914847070,
   "exactBaseSha": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
-  "expectedImplementationHead": "b70b8aa0090c18007756389390e79c6a7164bf85",
+  "expectedImplementationHead": "e115b5aa55d5da74b149edefeb5557aeecdb24d3",
   "asset": {
     "path": "assets/production/characters/cow17-walking-v1.glb",
     "sha256": "d5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93",
@@ -13,5 +13,5 @@
   },
   "generationAllowed": false,
   "productionPromotionAllowed": false,
-  "purpose": "Run final canonical Stage 2B static, Cow 17 behavioral/fallback, accepted-base asset-pipeline parity, Moo, destruction-feel, visual, and same-runner performance evidence."
+  "purpose": "Run canonical Stage 2B Cow 17 runtime, accepted-base asset parity, Moo, destruction-feel, visual, and same-runner performance evidence after presentation-only skinned-render cost reduction."
 }
