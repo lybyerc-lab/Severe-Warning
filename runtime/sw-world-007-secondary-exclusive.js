@@ -1,7 +1,7 @@
 // ============================================================================
 // [SW:WORLD:007_SECONDARY_EXCLUSIVE]
-// Secondary-storm presentation exclusivity. Prevents the accepted Tornado
-// funnel/body from leaking underneath Supercell or Derecho presentation.
+// Secondary-storm presentation exclusivity. Prevents accepted Tornado visual
+// layers from leaking underneath Supercell or Derecho presentation.
 // Presentation only; storm selection/mechanics remain authoritative elsewhere.
 // ============================================================================
 const SW_WORLD_007_SECONDARY_EXCLUSIVE_MARKER = 'SW_WORLD_007_SECONDARY_EXCLUSIVE_V1';
@@ -10,15 +10,33 @@ const swWorld007SecondaryExclusiveState = {
   marker: SW_WORLD_007_SECONDARY_EXCLUSIVE_MARKER,
   frames: 0,
   tornadoLeakFramesSuppressed: 0,
+  slice6RootFramesSuppressed: 0,
   qaCaptureMode: false,
   qaOverlaysHidden: 0,
 };
 
-function swWorld007SecondaryExclusiveHideTornadoLeak() {
-  const activeType = typeof swWorld007ResolveStormType === 'function' ? swWorld007ResolveStormType() : null;
-  if (activeType !== 'supercell' && activeType !== 'derecho') return;
+function swWorld007SecondaryExclusiveActiveType() {
+  return typeof swWorld007ResolveStormType === 'function' ? swWorld007ResolveStormType() : null;
+}
 
+function swWorld007SecondaryExclusiveSyncTornadoPresentation() {
+  const activeType = swWorld007SecondaryExclusiveActiveType();
+  const secondaryActive = activeType === 'supercell' || activeType === 'derecho';
   let suppressed = false;
+
+  if (typeof swVisualHeroSlice6StormRoot !== 'undefined' && swVisualHeroSlice6StormRoot) {
+    const desiredVisible = !secondaryActive;
+    if (swVisualHeroSlice6StormRoot.visible !== desiredVisible) {
+      swVisualHeroSlice6StormRoot.visible = desiredVisible;
+      if (secondaryActive) {
+        swWorld007SecondaryExclusiveState.slice6RootFramesSuppressed += 1;
+        suppressed = true;
+      }
+    }
+  }
+
+  if (!secondaryActive) return;
+
   if (typeof tornadoGroup !== 'undefined' && tornadoGroup?.visible) {
     tornadoGroup.visible = false;
     suppressed = true;
@@ -53,7 +71,7 @@ const swWorld007SecondaryExclusivePrevUpdate = swWorld007UpdateSecondaryStormVis
 swWorld007UpdateSecondaryStormVisuals = function swWorld007UpdateSecondaryStormVisualsExclusive(timeNow) {
   swWorld007SecondaryExclusivePrevUpdate(timeNow);
   swWorld007SecondaryExclusiveState.frames += 1;
-  swWorld007SecondaryExclusiveHideTornadoLeak();
+  swWorld007SecondaryExclusiveSyncTornadoPresentation();
   swWorld007SecondaryExclusiveHideQaOverlays();
 };
 
@@ -62,12 +80,12 @@ if (globalThis.__SW_WORLD_007_QA__?.selectStorm) {
   globalThis.__SW_WORLD_007_QA__.selectStorm = function swWorld007QaSelectStormExclusive(type) {
     swWorld007SecondaryExclusiveState.qaCaptureMode = true;
     swWorld007SecondaryExclusivePrevQaSelect(type);
-    swWorld007SecondaryExclusiveHideTornadoLeak();
+    swWorld007SecondaryExclusiveSyncTornadoPresentation();
     swWorld007SecondaryExclusiveHideQaOverlays();
   };
 }
 
-swWorld007SecondaryExclusiveHideTornadoLeak();
+swWorld007SecondaryExclusiveSyncTornadoPresentation();
 
 globalThis.getSwWorld007SecondaryExclusiveState = function getSwWorld007SecondaryExclusiveState() {
   return Object.freeze({ ...swWorld007SecondaryExclusiveState });
