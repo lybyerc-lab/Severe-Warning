@@ -18,6 +18,7 @@ on:
       - scripts/verify-sw-world-007-visibility-lock.mjs
       - scripts/verify-sw-world-007-secondary-exclusive.mjs
       - scripts/qa-sw-world-007-secondary-storm-forms.mjs
+      - scripts/qa-sw-world-007-secondary-exclusive.mjs
       - package.json
       - .github/workflows/sw-world-007-secondary-storm-forms.yml
   workflow_dispatch:
@@ -164,6 +165,9 @@ jobs:
 
       - name: Prove corrected SW-WORLD-007 secondary storm forms QA
         run: node scripts/qa-sw-world-007-secondary-storm-forms.mjs
+
+      - name: Prove Tornado presentation is exclusive to Tornado mode
+        run: node scripts/qa-sw-world-007-secondary-exclusive.mjs
 
       - name: Preserve QUALITY-002 visual rescue QA
         run: node scripts/qa-sw-quality-002-visual-rescue.mjs
