@@ -46,7 +46,7 @@ const check = (name, pass, detail = '') => {
 
 try {
   await page.goto(`${origin}/index.html?intro=0`, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => typeof globalThis.getSwFeel001State === 'function' && typeof globalThis.getSwFeel001StructuralAnatomyState === 'function', null, { timeout: 20000 });
+  await page.waitForFunction(() => typeof globalThis.getSwFeel001State === 'function' && typeof globalThis.getSwFeel001StructuralAnatomyState === 'function' && typeof globalThis.getSwFeel001StructuralPriorityState === 'function', null, { timeout: 20000 });
   await page.click('#btnStartMenu');
   await page.waitForTimeout(300);
 
@@ -89,21 +89,37 @@ try {
     await page.evaluate(() => renderer.render(scene, camera));
   }
 
-  const active = await page.evaluate(() => ({
-    feel: globalThis.getSwFeel001State(),
-    anatomy: globalThis.getSwFeel001StructuralAnatomyState(),
-    priority: globalThis.getSwFeel001StructuralPriorityState?.() || null,
-    menuVisible: (() => {
-      const menu = document.getElementById('mainMenu');
-      if (!menu) return false;
-      const style = getComputedStyle(menu); const rect = menu.getBoundingClientRect();
-      return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0 && rect.width > 0 && rect.height > 0;
-    })(),
-  }));
+  const active = await page.evaluate(({ x, z }) => {
+    const visibleLegacyCubes = typeof activeExplosionFragments === 'undefined' ? [] : activeExplosionFragments.filter((entry) => {
+      const mesh = entry?.mesh;
+      const geometry = mesh?.geometry;
+      if (!mesh || mesh.visible === false || geometry?.type !== 'BoxGeometry') return false;
+      const params = geometry.parameters || {};
+      const exactLegacyCube = Math.abs(Number(params.width || 0) - 0.75) < 0.001
+        && Math.abs(Number(params.height || 0) - 0.75) < 0.001
+        && Math.abs(Number(params.depth || 0) - 0.75) < 0.001;
+      if (!exactLegacyCube) return false;
+      return Math.hypot(Number(mesh.position?.x || 0) - x, Number(mesh.position?.z || 0) - z) <= 12;
+    });
+    return {
+      feel: globalThis.getSwFeel001State(),
+      anatomy: globalThis.getSwFeel001StructuralAnatomyState(),
+      priority: globalThis.getSwFeel001StructuralPriorityState(),
+      visibleLegacyCubeCount: visibleLegacyCubes.length,
+      menuVisible: (() => {
+        const menu = document.getElementById('mainMenu');
+        if (!menu) return false;
+        const style = getComputedStyle(menu); const rect = menu.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0 && rect.width > 0 && rect.height > 0;
+      })(),
+    };
+  }, { x: target.x, z: target.z });
   check('authoritativeDestructionHandledOnce', active.feel.totalDestructionsHandled === before.totalDestructionsHandled + 1, `${before.totalDestructionsHandled} -> ${active.feel.totalDestructionsHandled}`);
   check('structuralAnatomyEventRecorded', active.anatomy.events >= 1, JSON.stringify(active.anatomy));
-  check('structuralPriorityApplied', active.priority?.structuralEvents >= 1, JSON.stringify(active.priority));
-  check('genericFragmentsSuppressed', active.priority?.genericFragmentsSuppressed > 0, JSON.stringify(active.priority));
+  check('structuralPriorityApplied', active.priority.structuralEvents >= 1, JSON.stringify(active.priority));
+  check('genericFragmentsSuppressed', active.priority.genericFragmentsSuppressed > 0, JSON.stringify(active.priority));
+  check('inheritedLegacyCubesWereHidden', active.priority.inheritedCubeFragmentsHidden > 0, JSON.stringify(active.priority));
+  check('noVisibleLegacyCubeBurstNearDestroyedStructure', active.visibleLegacyCubeCount === 0, `visible=${active.visibleLegacyCubeCount}`);
   check('menuHiddenForVisualProof', active.menuVisible === false);
   await page.screenshot({ path: path.join(outputDir, '01_single_structure_active_844x390.png'), fullPage: false });
 
@@ -111,6 +127,21 @@ try {
     await page.waitForTimeout(90);
     await page.evaluate(() => renderer.render(scene, camera));
   }
+
+  const settled = await page.evaluate(({ x, z }) => {
+    const visibleLegacyCubeCount = typeof activeExplosionFragments === 'undefined' ? 0 : activeExplosionFragments.filter((entry) => {
+      const mesh = entry?.mesh;
+      const geometry = mesh?.geometry;
+      if (!mesh || mesh.visible === false || geometry?.type !== 'BoxGeometry') return false;
+      const params = geometry.parameters || {};
+      const exactLegacyCube = Math.abs(Number(params.width || 0) - 0.75) < 0.001
+        && Math.abs(Number(params.height || 0) - 0.75) < 0.001
+        && Math.abs(Number(params.depth || 0) - 0.75) < 0.001;
+      return exactLegacyCube && Math.hypot(Number(mesh.position?.x || 0) - x, Number(mesh.position?.z || 0) - z) <= 12;
+    }).length;
+    return { visibleLegacyCubeCount };
+  }, { x: target.x, z: target.z });
+  check('legacyCubeBurstRemainsInvisibleWhenSettled', settled.visibleLegacyCubeCount === 0, `visible=${settled.visibleLegacyCubeCount}`);
   await page.screenshot({ path: path.join(outputDir, '02_single_structure_settled_844x390.png'), fullPage: false });
 } finally {
   await browser.close();
