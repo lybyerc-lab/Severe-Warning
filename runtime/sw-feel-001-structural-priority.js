@@ -43,9 +43,10 @@ function swFeel001StructuralPriorityIsLegacyCube(mesh) {
   const width = Number(params.width || 0);
   const height = Number(params.height || 0);
   const depth = Number(params.depth || 0);
-  return Math.abs(width - 0.75) < 0.001
-    && Math.abs(height - 0.75) < 0.001
-    && Math.abs(depth - 0.75) < 0.001;
+  const maxDimension = Math.max(width, height, depth);
+  const minDimension = Math.min(width, height, depth);
+  const uniformCube = maxDimension > 0 && Math.abs(maxDimension - minDimension) < 0.02;
+  return uniformCube && minDimension >= 0.7 && maxDimension <= 2.1;
 }
 
 function swFeel001StructuralPriorityHideInheritedCubeBurst(target) {
@@ -99,10 +100,11 @@ swFeel001PresentDestruction = function swFeel001PresentDestructionStructuralPrio
   try {
     return swFeel001StructuralPriorityPrevPresentation(target, source);
   } finally {
-    // The accepted legacy destruction path emits four uniform 0.75-unit cubes
-    // before FEEL-001 runs. Keep their lifecycle bookkeeping intact, but hide
-    // those presentation-only cubes for this structural kill so the authored
-    // roof/wall/facade anatomy carries the visual read instead.
+    // The inherited lethal presentation emits a 15-fragment swarm of uniform
+    // target-colored cubes, with size clamped between 0.9 and 2.0 units. Damage
+    // puffs use smaller 0.75 cubes. Keep their lifecycle bookkeeping intact but
+    // hide those small uniform cubes around this structural kill, preserving any
+    // larger roof/wall/part fragments and FEEL-001 authored anatomy.
     swFeel001StructuralPriorityHideInheritedCubeBurst(target);
     swFeel001StructuralPriorityActive = false;
     swFeel001StructuralPriorityBudget = 0;
