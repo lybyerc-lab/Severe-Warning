@@ -15,6 +15,14 @@ const sourceRuntimeDir = path.join(projectRoot, 'runtime');
 const sourcePwaDir = path.join(projectRoot, 'pwa');
 const modernDistDir = path.join(projectRoot, 'modern-dist');
 const modernEntryPath = path.join(modernDistDir, 'modern-shell.js');
+const cow17RuntimeFile = 'sw-art-009-cow17-runtime.js';
+const cow17RuntimePath = path.join(sourceRuntimeDir, cow17RuntimeFile);
+const cow17AssetRelativePath = path.join('characters', 'cow17-walking-v1.glb');
+const cow17ProductionAssetPath = path.join(sourceProductionAssetsDir, cow17AssetRelativePath);
+const cow17ExpectedSha256 = 'd5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93';
+const cow17ExpectedBytes = 14412828;
+const cow17InjectionMarker = '[SW:SOURCE:sw-art-009-cow17-runtime.js]';
+const gameplayLoopMarker = '// --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---';
 const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
   ? path.resolve(process.env.SEVERE_WEATHER_WWW_DIR)
   : path.join(projectRoot, 'www');
@@ -45,7 +53,8 @@ const runtimeFiles = [
   'v510-foundation.js',
   'v510-tornado.js',
   'v510-world.js',
-  'v510-runtime.js'
+  'v510-runtime.js',
+  cow17RuntimeFile,
 ];
 
 let html = await readFile(sourceHtml, 'utf8');
@@ -82,6 +91,7 @@ for (const runtimeFile of runtimeFiles) {
 }
 await access(sourceProductionAssetsDir);
 await access(path.join(sourceProductionAssetsDir, 'structures', 'storefront-v1.json'));
+await access(cow17ProductionAssetPath);
 await access(modernEntryPath);
 for (const pwaFile of [
   'manifest.webmanifest',
@@ -92,6 +102,42 @@ for (const pwaFile of [
   'icons/severe-weather-warning.svg'
 ]) {
   await access(path.join(sourcePwaDir, pwaFile));
+}
+
+const cow17Bytes = await readFile(cow17ProductionAssetPath);
+const cow17Sha256 = createHash('sha256').update(cow17Bytes).digest('hex');
+if (cow17Sha256 !== cow17ExpectedSha256) {
+  throw new Error(`Cow 17 production GLB SHA-256 mismatch: ${cow17Sha256}`);
+}
+if (cow17Bytes.length !== cow17ExpectedBytes) {
+  throw new Error(`Cow 17 production GLB byte count mismatch: ${cow17Bytes.length}`);
+}
+if (cow17Bytes.length > 15000000) {
+  throw new Error(`Cow 17 production GLB exceeds 15 MB mobile guard: ${cow17Bytes.length}`);
+}
+
+const cow17Runtime = (await readFile(cow17RuntimePath, 'utf8')).trim();
+for (const prerequisite of [
+  'V500_BOVINE_SIGNATURE_V1',
+  'function configureBovineAnimal',
+  'function updateBovineSignature',
+  'function resetBovineSignature',
+  gameplayLoopMarker,
+]) {
+  if (!html.includes(prerequisite)) {
+    throw new Error(`Cow 17 runtime integration requires accepted bovine seam: missing ${prerequisite}`);
+  }
+}
+if (cow17Runtime.includes('</script>')) {
+  throw new Error('Cow 17 runtime source contains a closing script tag.');
+}
+if (html.includes(cow17InjectionMarker)) {
+  throw new Error('Source gameplay HTML must not contain the generated Cow 17 runtime injection.');
+}
+const cow17RuntimeBundle = `\n// ${cow17InjectionMarker}\n${cow17Runtime}\n\n`;
+html = html.replace(gameplayLoopMarker, `${cow17RuntimeBundle}${gameplayLoopMarker}`);
+if (!html.includes(cow17InjectionMarker) || html.indexOf(cow17InjectionMarker) > html.indexOf(gameplayLoopMarker)) {
+  throw new Error('Cow 17 runtime must be injected before the first gameplay animation loop.');
 }
 
 const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';
@@ -140,6 +186,7 @@ const sourceSha256 = createHash('sha256').update(html).digest('hex');
 const audioSha256 = createHash('sha256').update(await readFile(path.join(sourceAudioDir, 'storm-feel-sprite.wav'))).digest('hex');
 const modernShellSha256 = createHash('sha256').update(await readFile(modernEntryPath)).digest('hex');
 const storefrontSha256 = createHash('sha256').update(await readFile(path.join(sourceProductionAssetsDir, 'structures', 'storefront-v1.json'))).digest('hex');
+const cow17RuntimeSha256 = createHash('sha256').update(cow17Runtime).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
   `${JSON.stringify({
@@ -153,13 +200,17 @@ await writeFile(
     audioSha256,
     modernShellSha256,
     runtimeFiles,
+    cow17RuntimeSha256,
     productionAssets: {
       root: 'assets/production',
       storefront: 'assets/production/structures/storefront-v1.json',
       storefrontSha256,
+      cow17: 'assets/production/characters/cow17-walking-v1.glb',
+      cow17Sha256,
+      cow17Bytes: cow17Bytes.length,
     }
   }, null, 2)}\n`,
   'utf8'
 );
 
-console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), PWA shell (manifest + root-scoped service worker), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files), authored storefront (${storefrontSha256})`);
+console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), PWA shell (manifest + root-scoped service worker), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files), authored storefront (${storefrontSha256}), Cow 17 (${cow17Sha256}, ${cow17Bytes.length} bytes)`);
