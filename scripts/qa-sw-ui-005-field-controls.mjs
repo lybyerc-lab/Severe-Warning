@@ -80,7 +80,7 @@ try {
   check('desktopAdapterActive', desktop.state.desktopActive === true && desktop.guideClass.includes('sw-field-controls'), JSON.stringify(desktop));
   check('desktopLabelsAreProductNative', JSON.stringify(desktop.labels) === JSON.stringify(['STEER', 'ABILITIES', 'WARNING AREA']), JSON.stringify(desktop.labels));
   check('desktopRetainsWASDTruth', /WASD/.test(desktop.guideText), desktop.guideText);
-  check('desktopRetainsAbilityBindings', /SPACE:\s*Pull/i.test(desktop.verbSpace) && /Q:\s*Gust/i.test(desktop.verbQ) && /E:\s*Power Grid Zap/i.test(desktop.verbE), `${desktop.verbSpace} | ${desktop.verbQ} | ${desktop.verbE}`);
+  check('desktopRetainsAbilityBindings', /SPACE:\s*Pull/i.test(desktop.verbSpace) && /Q:\s*Gust/i.test(desktop.verbQ) && /E:\s*Power Grid(?:\s+Chain)?\s+Zap/i.test(desktop.verbE), `${desktop.verbSpace} | ${desktop.verbQ} | ${desktop.verbE}`);
   check('desktopRetainsDistrictTruth', desktop.district.length > 0, desktop.district);
   check('desktopGuideIsCompact', desktop.width > 0 && desktop.width <= desktop.viewportWidth * 0.5, `${desktop.width}/${desktop.viewportWidth}`);
   check('acceptedProductTitleRemainsVisible', desktop.productTitle === true);
