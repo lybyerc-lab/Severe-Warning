@@ -2,9 +2,12 @@
   "version": "SW_ART_009_COW17_RUNTIME_PROBE_V1",
   "task": "SW-ART-009",
   "issue": 106,
+  "attempt": 2,
+  "supersedesRunId": 31913296366,
   "exactBaseSha": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
   "expectedProbeSetupHead": "384300652d75043070a85917f8e6ebf0eb612edd",
+  "expectedImplementationHead": "0eaacff54422e4cc487de41df52893702206704b",
   "generationAllowed": false,
   "productionPromotionAllowed": false,
-  "purpose": "Debug-only bounded browser proof of the post-reset Cow 17 runtime attachment, skinning, gameplay scale, animation, and primitive fallback while the full evidence runner is stalled in package preparation."
+  "purpose": "Debug-only bounded browser proof of the post-reset Cow 17 runtime attachment, skinning, gameplay scale, animation, primitive fallback, and isolated unparented proof-camera framing."
 }
