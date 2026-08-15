@@ -2,6 +2,12 @@
   "version": "SW_MESHY_LIVE_REQUEST_V1",
   "id": "cow17-meshy-v1",
   "productionAuthority": "candidate only",
+  "execution": {
+    "preflightRetry": 1,
+    "priorRunId": 31904118276,
+    "priorSpendCredits": 0,
+    "reason": "Initial workflow stopped before secret/live API use because checkout depth did not include the exact task base commit."
+  },
   "source": {
     "runId": 31895535943,
     "artifactId": 9249708267,
