@@ -36,36 +36,42 @@ function swWorld008SetMaterialOpacity(material, opacity) {
 function swWorld008StyleLegacyTornado() {
   if (typeof funnelMesh !== 'undefined' && funnelMesh) {
     funnelMesh.visible = true;
-    funnelMesh.scale.set(0.72, 1.0, 0.72);
+    funnelMesh.scale.set(0.68, 1.0, 0.68);
     if (typeof funnelMat !== 'undefined' && funnelMat) {
-      funnelMat.color?.set?.('#26383c');
-      funnelMat.roughness = 0.72;
+      funnelMat.color?.set?.('#304348');
+      funnelMat.roughness = 0.82;
       funnelMat.metalness = 0.0;
-      funnelMat.emissive?.set?.('#081012');
-      if ('emissiveIntensity' in funnelMat) funnelMat.emissiveIntensity = 0.025;
-      swWorld008SetMaterialOpacity(funnelMat, 0.46);
+      funnelMat.emissive?.set?.('#071012');
+      if ('emissiveIntensity' in funnelMat) funnelMat.emissiveIntensity = 0.015;
+      swWorld008SetMaterialOpacity(funnelMat, 0.66);
+      // The historical serpentine mesh is the Tornado body again. Let its near
+      // surface occlude its far surface so it reads as dense condensation rather
+      // than another stack of transparent planes.
+      funnelMat.depthWrite = true;
+      if (typeof THREE !== 'undefined') funnelMat.side = THREE.FrontSide;
+      funnelMat.needsUpdate = true;
     }
     swWorld008TornadoHeritageState.restoredCoreFrames += 1;
   }
 
   if (typeof outerFunnelMesh !== 'undefined' && outerFunnelMesh) {
     outerFunnelMesh.visible = true;
-    outerFunnelMesh.scale.set(0.68, 1.0, 0.68);
+    outerFunnelMesh.scale.set(0.65, 1.0, 0.65);
     if (typeof outerFunnelMat !== 'undefined' && outerFunnelMat) {
-      outerFunnelMat.color?.set?.('#677779');
-      swWorld008SetMaterialOpacity(outerFunnelMat, 0.13);
+      outerFunnelMat.color?.set?.('#718184');
+      swWorld008SetMaterialOpacity(outerFunnelMat, 0.12);
     }
   }
 
   // The old canopy was useful as a parent-cloud connection but too dominant in
-  // the current phone view. Keep it, shrink it, and stop it reading as a disk.
+  // the current phone view. Keep it compact and subordinate to the funnel.
   if (typeof mesoCloudGroup !== 'undefined' && mesoCloudGroup) {
     mesoCloudGroup.visible = true;
-    mesoCloudGroup.scale.set(0.72, 0.58, 0.72);
+    mesoCloudGroup.scale.set(0.62, 0.45, 0.62);
     if (typeof mesoCloudMat !== 'undefined' && mesoCloudMat) {
-      mesoCloudMat.color?.set?.('#17252b');
-      mesoCloudMat.roughness = 0.88;
-      swWorld008SetMaterialOpacity(mesoCloudMat, 0.36);
+      mesoCloudMat.color?.set?.('#1c2b30');
+      mesoCloudMat.roughness = 0.92;
+      swWorld008SetMaterialOpacity(mesoCloudMat, 0.25);
     }
   }
 
@@ -73,23 +79,23 @@ function swWorld008StyleLegacyTornado() {
   // while invisible. Showing it adds one draw call, not another particle solver.
   if (typeof particleSystem !== 'undefined' && particleSystem) {
     particleSystem.visible = true;
-    particleSystem.scale.set(0.72, 1.0, 0.72);
+    particleSystem.scale.set(0.68, 1.0, 0.68);
     if (typeof particleMat !== 'undefined' && particleMat) {
       particleMat.vertexColors = false;
-      particleMat.color?.set?.('#887663');
-      particleMat.size = (typeof isMobileDevice !== 'undefined' && isMobileDevice) ? 0.52 : 0.68;
-      swWorld008SetMaterialOpacity(particleMat, 0.46);
+      particleMat.color?.set?.('#806e5b');
+      particleMat.size = (typeof isMobileDevice !== 'undefined' && isMobileDevice) ? 0.48 : 0.64;
+      swWorld008SetMaterialOpacity(particleMat, 0.50);
     }
     swWorld008TornadoHeritageState.restoredDebrisFrames += 1;
   }
 
   if (typeof dustBowlGroup !== 'undefined' && dustBowlGroup) {
     dustBowlGroup.visible = true;
-    dustBowlGroup.scale.set(0.68, 0.48, 0.68);
+    dustBowlGroup.scale.set(0.58, 0.36, 0.58);
     if (typeof dustMat !== 'undefined' && dustMat) {
-      dustMat.color?.set?.('#55483a');
+      dustMat.color?.set?.('#51463a');
       dustMat.roughness = 1.0;
-      swWorld008SetMaterialOpacity(dustMat, 0.20);
+      swWorld008SetMaterialOpacity(dustMat, 0.12);
     }
     swWorld008TornadoHeritageState.restoredDustFrames += 1;
   }
@@ -102,26 +108,27 @@ function swWorld008DemoteRibbonReplacement() {
   swVisualHeroSlice6StormRoot.children.forEach((object) => {
     if (!object?.material) return;
     if (object.name?.startsWith('SWVisualSlice6StormShell')) {
-      // Keep the hidden structural shells hidden. The heritage core now carries
-      // the connected body rather than exposing overlapping transparent skins.
       object.visible = false;
       return;
     }
     if (object.name?.startsWith('SWVisualSlice6CondensationStreak')) {
-      object.visible = true;
-      swWorld008SetMaterialOpacity(object.material, 0.18);
+      // These triangular sheets caused the owner-visible polygon/ribbon read.
+      // Keep their objects intact for accepted hierarchy/QA compatibility but
+      // remove them from the player-facing silhouette.
+      object.visible = false;
+      swWorld008SetMaterialOpacity(object.material, 0.03);
       demoted = true;
       return;
     }
     if (object.name?.startsWith('SWVisualSlice6EdgeWisp')) {
       object.visible = true;
-      swWorld008SetMaterialOpacity(object.material, 0.105);
+      swWorld008SetMaterialOpacity(object.material, 0.045);
       demoted = true;
       return;
     }
     if (object.name?.startsWith('SWVisualSlice6GroundPull')) {
       object.visible = true;
-      swWorld008SetMaterialOpacity(object.material, 0.16);
+      swWorld008SetMaterialOpacity(object.material, 0.06);
       demoted = true;
     }
   });
@@ -195,10 +202,13 @@ if (swWorld008VisualBridgeBase) {
 }
 
 globalThis.getSwWorld008TornadoHeritageState = function getSwWorld008TornadoHeritageState() {
-  const ribbon = { streaks: 0, wisps: 0, groundPulls: 0, maxOpacity: 0 };
+  const ribbon = { streaks: 0, visibleStreaks: 0, wisps: 0, groundPulls: 0, maxOpacity: 0 };
   if (typeof swVisualHeroSlice6StormRoot !== 'undefined' && swVisualHeroSlice6StormRoot) {
     swVisualHeroSlice6StormRoot.children.forEach((object) => {
-      if (object.name?.startsWith('SWVisualSlice6CondensationStreak')) ribbon.streaks += 1;
+      if (object.name?.startsWith('SWVisualSlice6CondensationStreak')) {
+        ribbon.streaks += 1;
+        if (object.visible) ribbon.visibleStreaks += 1;
+      }
       if (object.name?.startsWith('SWVisualSlice6EdgeWisp')) ribbon.wisps += 1;
       if (object.name?.startsWith('SWVisualSlice6GroundPull')) ribbon.groundPulls += 1;
       if (object.material && Number.isFinite(object.material.opacity)) ribbon.maxOpacity = Math.max(ribbon.maxOpacity, object.material.opacity);
@@ -210,6 +220,7 @@ globalThis.getSwWorld008TornadoHeritageState = function getSwWorld008TornadoHeri
       tornadoGroupVisible: typeof tornadoGroup !== 'undefined' && Boolean(tornadoGroup?.visible),
       funnelVisible: typeof funnelMesh !== 'undefined' && Boolean(funnelMesh?.visible),
       funnelOpacity: typeof funnelMat !== 'undefined' ? Number(funnelMat?.opacity || 0) : null,
+      funnelDepthWrite: typeof funnelMat !== 'undefined' ? Boolean(funnelMat?.depthWrite) : null,
       outerVisible: typeof outerFunnelMesh !== 'undefined' && Boolean(outerFunnelMesh?.visible),
       outerOpacity: typeof outerFunnelMat !== 'undefined' ? Number(outerFunnelMat?.opacity || 0) : null,
       debrisVisible: typeof particleSystem !== 'undefined' && Boolean(particleSystem?.visible),
