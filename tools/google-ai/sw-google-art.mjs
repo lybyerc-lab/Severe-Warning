@@ -16,7 +16,7 @@ const defaultOutputRoot = path.join(projectRoot, 'art-source', 'generated', 'goo
 const interactionsUrl = 'https://generativelanguage.googleapis.com/v1beta/interactions';
 
 function usage() {
-  console.log(`Severe Weather Warning Google AI art CLI\n\nUsage:\n  node tools/google-ai/sw-google-art.mjs list\n  node tools/google-ai/sw-google-art.mjs image --brief <id|path> [--reference file.png] [--model model] [--output file] [--dry-run]\n  node tools/google-ai/sw-google-art.mjs video --brief <id|path> [--reference frame.png] [--model model] [--output file] [--dry-run]\n\nEnvironment:\n  GEMINI_API_KEY  Required only for non-dry-run generation. Never commit it.\n`);
+  console.log(`Severe Weather Warning Google AI art CLI\n\nUsage:\n  node tools/google-ai/sw-google-art.mjs list\n  node tools/google-ai/sw-google-art.mjs image --brief <id|path> [--reference file.png] [--model model] [--output file.jpg] [--dry-run]\n  node tools/google-ai/sw-google-art.mjs video --brief <id|path> [--reference frame.png] [--model model] [--output file] [--dry-run]\n\nEnvironment:\n  GEMINI_API_KEY  Required only for non-dry-run generation. Never commit it.\n`);
 }
 
 function parseArgs(argv) {
@@ -112,7 +112,7 @@ function extensionForMime(mimeType, command) {
   if (mimeType === 'image/jpeg') return '.jpg';
   if (mimeType === 'image/webp') return '.webp';
   if (mimeType === 'video/mp4') return '.mp4';
-  return command === 'video' ? '.mp4' : '.png';
+  return command === 'video' ? '.mp4' : '.jpg';
 }
 
 function timestampSlug() {
@@ -173,7 +173,7 @@ async function runGeneration(command, options) {
   const imageSize = options.size || brief.imageSize || '2K';
   const responseFormat = command === 'video'
     ? { type: 'video', aspect_ratio: aspectRatio }
-    : { type: 'image', mime_type: 'image/png', aspect_ratio: aspectRatio, image_size: imageSize };
+    : { type: 'image', mime_type: 'image/jpeg', aspect_ratio: aspectRatio, image_size: imageSize };
 
   const input = [
     ...references.map((entry) => entry.input),
@@ -185,7 +185,13 @@ async function runGeneration(command, options) {
   }
 
   const requestedOutput = options.output ? path.resolve(process.cwd(), options.output) : null;
-  const provisionalExt = command === 'video' ? '.mp4' : '.png';
+  if (command === 'image' && requestedOutput) {
+    const outputExt = path.extname(requestedOutput).toLowerCase();
+    if (outputExt !== '.jpg' && outputExt !== '.jpeg') {
+      throw new Error('Gemini image output must use a .jpg or .jpeg path because the current Interactions image response contract is image/jpeg.');
+    }
+  }
+  const provisionalExt = command === 'video' ? '.mp4' : '.jpg';
   const provisionalOutput = requestedOutput || path.join(defaultOutputRoot, brief.id, `${timestampSlug()}${provisionalExt}`);
   const summary = publicRequestSummary({ command, model, brief, references, responseFormat, outputPath: provisionalOutput });
 
