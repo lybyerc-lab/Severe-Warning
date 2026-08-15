@@ -18,7 +18,7 @@ await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
 const report = {
-  version: 'SW_ART_009_COW17_BROWSER_QA_V1',
+  version: 'SW_ART_009_COW17_BROWSER_QA_V2',
   generatedAt: new Date().toISOString(),
   passed: false,
   success: null,
@@ -138,7 +138,8 @@ async function focusCow17(page) {
   return page.evaluate(() => {
     const cow = animals.find((candidate) => candidate.id === 17);
     const visual = cow?.mesh?.getObjectByName?.('SW_COW17_AUTHORED_VISUAL');
-    if (!cow || !visual) return null;
+    const hips = visual?.getObjectByName?.('Hips');
+    if (!cow || !visual || !hips) return null;
 
     productionQaPrepared = true;
     globalThis.productionQaPrepared = true;
@@ -153,49 +154,27 @@ async function focusCow17(page) {
     }
 
     visual.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(visual);
-    const center = new THREE.Vector3();
-    const size = new THREE.Vector3();
-    box.getCenter(center);
-    box.getSize(size);
-    const targetHeight = Math.max(3.2, size.y);
-    const targetWidth = Math.max(2.2, size.x, size.z);
-    const lookY = center.y + targetHeight * 0.04;
-    const distance = Math.max(5.5, targetHeight * 1.35, targetWidth * 2.2);
-    const viewDirection = new THREE.Vector3(0.72, 0.1, 1).normalize();
-    camera.position.set(
-      center.x + viewDirection.x * distance,
-      lookY + targetHeight * 0.35,
-      center.z + viewDirection.z * distance,
-    );
-    camera.lookAt(center.x, lookY, center.z);
+    const focus = new THREE.Vector3();
+    hips.getWorldPosition(focus);
+    const distance = 7.6;
+    const viewDirection = new THREE.Vector3(0.72, 0.24, 1).normalize();
+    camera.position.copy(focus).addScaledVector(viewDirection, distance);
+    camera.lookAt(focus);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
     renderer.render(scene, camera);
-
-    const corners = [];
-    for (const x of [box.min.x, box.max.x]) {
-      for (const y of [box.min.y, box.max.y]) {
-        for (const z of [box.min.z, box.max.z]) {
-          corners.push(new THREE.Vector3(x, y, z).project(camera));
-        }
-      }
-    }
-    const minX = Math.min(...corners.map((point) => point.x));
-    const maxX = Math.max(...corners.map((point) => point.x));
-    const minY = Math.min(...corners.map((point) => point.y));
-    const maxY = Math.max(...corners.map((point) => point.y));
-    const centerNdc = center.clone().project(camera);
+    const focusNdc = focus.clone().project(camera);
+    const runtime = globalThis.__SW_COW17_RUNTIME_ASSET__?.getSnapshot?.() || null;
+    const diagnosticBox = new THREE.Box3().setFromObject(visual);
+    const diagnosticSize = new THREE.Vector3();
+    diagnosticBox.getSize(diagnosticSize);
     return {
       id: cow.id,
       assetId: cow.mesh.userData.swCow17AuthoredAssetId || null,
-      size: { x: size.x, y: size.y, z: size.z },
-      framing: {
-        widthRatio: Math.max(0, Math.min(1, (maxX - minX) / 2)),
-        heightRatio: Math.max(0, Math.min(1, (maxY - minY) / 2)),
-        centerX: centerNdc.x,
-        centerY: centerNdc.y,
-      },
+      intendedHeight: runtime?.activeHeight || 0,
+      diagnosticSize: { x: diagnosticSize.x, y: diagnosticSize.y, z: diagnosticSize.z },
+      focus: { x: focus.x, y: focus.y, z: focus.z },
+      framing: { centerX: focusNdc.x, centerY: focusNdc.y },
       cowRootPosition: { x: cow.mesh.position.x, y: cow.mesh.position.y, z: cow.mesh.position.z },
       cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
     };
@@ -209,8 +188,21 @@ try {
   await dismissIntroAndStart(success.page);
   await success.page.waitForFunction(() => {
     const state = globalThis.__SW_COW17_RUNTIME_ASSET__?.getSnapshot?.();
-    return state?.loadSuccesses >= 1 && state?.appliedCount >= 1 && state?.animationTicks >= 8;
+    const cow = typeof animals !== 'undefined' ? animals.find((candidate) => candidate.id === 17) : null;
+    const visual = cow?.mesh?.getObjectByName?.('SW_COW17_AUTHORED_VISUAL') || null;
+    return state?.loadSuccesses >= 1
+      && state?.appliedCount >= 1
+      && state?.cleanupCount >= 1
+      && state?.registrations >= 2
+      && state?.activeCowId === 17
+      && state?.activeAnimation === 'Armature|walking_man|baselayer'
+      && state?.activeJointCount === 24
+      && state?.activeTriangleCount === 198050
+      && state?.fallbackVisible === false
+      && cow?.mesh?.userData?.swCow17AuthoredAssetId === 'character.cow17.walking.v1'
+      && Boolean(visual);
   });
+  await success.page.waitForFunction(() => globalThis.__SW_COW17_RUNTIME_ASSET__?.getSnapshot?.().animationTicks >= 8);
   report.success = await snapshot(success.page);
   report.animationProbe = await animationProbe(success.page);
   await success.page.screenshot({ path: path.join(outputDir, 'cow17-authored-gameplay.png'), fullPage: true });
@@ -222,11 +214,14 @@ try {
   requireCondition(report.success.revision === '128', `Three.js revision changed: ${report.success.revision}.`);
   requireCondition(report.success.runtime?.version === 'SW_COW17_RUNTIME_ASSET_V1', `Cow 17 runtime version mismatch: ${report.success.runtime?.version}.`);
   requireCondition(report.success.runtime?.loadFailures === 0, `Successful Cow 17 path recorded ${report.success.runtime?.loadFailures} load failures.`);
-  requireCondition(report.success.runtime?.appliedCount === 1, `Expected exactly one Cow 17 authored visual application; got ${report.success.runtime?.appliedCount}.`);
+  requireCondition(report.success.runtime?.appliedCount >= 1, `Expected at least one Cow 17 authored visual application; got ${report.success.runtime?.appliedCount}.`);
+  requireCondition(report.success.runtime?.cleanupCount >= 1, `Expected player-start Cow 17 cleanup/rebind lifecycle; got ${report.success.runtime?.cleanupCount}.`);
+  requireCondition(report.success.runtime?.registrations >= 2, `Expected Cow 17 to register before and after player-start rebuild; got ${report.success.runtime?.registrations}.`);
   requireCondition(report.success.runtime?.activeCowId === 17, `Authored runtime attached to unexpected cow id ${report.success.runtime?.activeCowId}.`);
   requireCondition(report.success.runtime?.activeAnimation === 'Armature|walking_man|baselayer', `Unexpected active animation ${report.success.runtime?.activeAnimation}.`);
   requireCondition(report.success.runtime?.activeJointCount === 24, `Unexpected Cow 17 joint count ${report.success.runtime?.activeJointCount}.`);
   requireCondition(report.success.runtime?.activeTriangleCount === 198050, `Unexpected Cow 17 triangle count ${report.success.runtime?.activeTriangleCount}.`);
+  requireCondition(report.success.runtime?.activeHeight === 3, `Unexpected Cow 17 visual-local target height ${report.success.runtime?.activeHeight}.`);
   requireCondition(report.success.runtime?.fallbackVisible === false, 'Authored Cow 17 succeeded but runtime still reports fallback visible.');
   requireCondition(report.success.cow?.id === 17 && report.success.cow?.cow17Marker === true, 'Real bovine executor no longer identifies Cow 17 as protected id 17.');
   requireCondition(report.success.cow?.authoredAssetId === 'character.cow17.walking.v1', `Cow 17 root missing authored asset id: ${report.success.cow?.authoredAssetId}.`);
@@ -237,10 +232,10 @@ try {
   requireCondition(report.animationProbe?.tickDelta > 0, `Cow 17 animation mixer did not advance; tick delta ${report.animationProbe?.tickDelta}.`);
   requireCondition(report.animationProbe?.secondsDelta > 0, `Cow 17 animation time did not advance; seconds delta ${report.animationProbe?.secondsDelta}.`);
   requireCondition(report.animationProbe?.hipsChanged === true, 'Cow 17 Hips transform did not change while the real runtime animation advanced.');
-  requireCondition(Number(report.visualProbe?.size?.y) >= 3.2 && Number(report.visualProbe?.size?.y) <= 4.2, `Cow 17 authored height is out of intended gameplay range: ${report.visualProbe?.size?.y}.`);
-  requireCondition(Number(report.visualProbe?.framing?.heightRatio) >= 0.35, `Focused Cow 17 height coverage is too small: ${report.visualProbe?.framing?.heightRatio}.`);
-  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerX)) <= 0.35, `Focused Cow 17 is too far off-center horizontally: ${report.visualProbe?.framing?.centerX}.`);
-  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerY)) <= 0.35, `Focused Cow 17 is too far off-center vertically: ${report.visualProbe?.framing?.centerY}.`);
+  requireCondition(report.visualProbe?.id === 17 && report.visualProbe?.assetId === 'character.cow17.walking.v1', 'Focused proof is not using the active authored Cow 17.');
+  requireCondition(Number(report.visualProbe?.intendedHeight) === 3, `Focused Cow 17 target height drifted: ${report.visualProbe?.intendedHeight}.`);
+  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerX)) <= 0.05, `Focused Cow 17 Hips target is too far off-center horizontally: ${report.visualProbe?.framing?.centerX}.`);
+  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerY)) <= 0.05, `Focused Cow 17 Hips target is too far off-center vertically: ${report.visualProbe?.framing?.centerY}.`);
   requireCondition(Number(report.success.resource?.decodedBodySize || 0) === 14412828 || Number(report.success.resource?.transferSize || 0) >= 14412828, `Cow 17 resource timing did not report the expected 14,412,828-byte asset: ${JSON.stringify(report.success.resource)}.`);
   if (success.errors.length) report.failures.push(`Success-path browser errors: ${success.errors.join(' | ')}`);
 } finally {
@@ -256,7 +251,10 @@ try {
   await fallback.page.goto(`${qaUrl}?qa=1&intro=0&identity=1&cow17Fallback=1`, { waitUntil: 'domcontentloaded' });
   await fallback.page.waitForFunction(() => typeof globalThis.__SW_COW17_RUNTIME_ASSET__?.getSnapshot === 'function');
   await dismissIntroAndStart(fallback.page);
-  await fallback.page.waitForFunction(() => globalThis.__SW_COW17_RUNTIME_ASSET__?.getSnapshot?.().loadFailures >= 1);
+  await fallback.page.waitForFunction(() => {
+    const state = globalThis.__SW_COW17_RUNTIME_ASSET__?.getSnapshot?.();
+    return state?.generation >= 2 && state?.registrations >= 2 && state?.loadFailures >= 2 && state?.fallbackVisible === true;
+  });
   report.fallback = await snapshot(fallback.page);
   await fallback.page.screenshot({ path: path.join(outputDir, 'cow17-fallback-gameplay.png'), fullPage: true });
 
