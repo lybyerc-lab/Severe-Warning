@@ -1,0 +1,11 @@
+{
+  "version": "SW_ART_009_COW17_INTAKE_V1",
+  "task": "SW-ART-009",
+  "sourceRunId": 31910662893,
+  "sourceArtifactId": 9253571210,
+  "sourcePath": "art-source/generated/meshy/cow17-rigged-v1/cow17-walking-v1.glb",
+  "expectedSha256": "d5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93",
+  "destination": "assets/production/characters/cow17-walking-v1.glb",
+  "maxBytes": 15000000,
+  "generationAllowed": false
+}
