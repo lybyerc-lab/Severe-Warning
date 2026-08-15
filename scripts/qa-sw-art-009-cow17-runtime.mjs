@@ -138,8 +138,7 @@ async function focusCow17(page) {
   return page.evaluate(() => {
     const cow = animals.find((candidate) => candidate.id === 17);
     const visual = cow?.mesh?.getObjectByName?.('SW_COW17_AUTHORED_VISUAL');
-    const hips = visual?.getObjectByName?.('Hips');
-    if (!cow || !visual || !hips) return null;
+    if (!cow || !visual) return null;
 
     productionQaPrepared = true;
     globalThis.productionQaPrepared = true;
@@ -154,20 +153,28 @@ async function focusCow17(page) {
     }
 
     visual.updateMatrixWorld(true);
-    const focus = new THREE.Vector3();
-    hips.getWorldPosition(focus);
-    const distance = 7.6;
-    const viewDirection = new THREE.Vector3(0.72, 0.24, 1).normalize();
-    camera.position.copy(focus).addScaledVector(viewDirection, distance);
-    camera.lookAt(focus);
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld(true);
-    renderer.render(scene, camera);
-    const focusNdc = focus.clone().project(camera);
-    const runtime = globalThis.__SW_COW17_RUNTIME_ASSET__?.getSnapshot?.() || null;
     const diagnosticBox = new THREE.Box3().setFromObject(visual);
     const diagnosticSize = new THREE.Vector3();
+    const focus = new THREE.Vector3();
     diagnosticBox.getSize(diagnosticSize);
+    diagnosticBox.getCenter(focus);
+
+    const proofCamera = new THREE.PerspectiveCamera(
+      camera.fov,
+      Number.isFinite(camera.aspect) && camera.aspect > 0 ? camera.aspect : (932 / 430),
+      camera.near,
+      camera.far,
+    );
+    const distance = 7.6;
+    const viewDirection = new THREE.Vector3(0.72, 0.24, 1).normalize();
+    proofCamera.position.copy(focus).addScaledVector(viewDirection, distance);
+    proofCamera.lookAt(focus);
+    proofCamera.updateProjectionMatrix();
+    proofCamera.updateMatrixWorld(true);
+    globalThis.__SW_COW17_QA_CAMERA__ = proofCamera;
+    renderer.render(scene, proofCamera);
+    const focusNdc = focus.clone().project(proofCamera);
+    const runtime = globalThis.__SW_COW17_RUNTIME_ASSET__?.getSnapshot?.() || null;
     return {
       id: cow.id,
       assetId: cow.mesh.userData.swCow17AuthoredAssetId || null,
@@ -176,7 +183,7 @@ async function focusCow17(page) {
       focus: { x: focus.x, y: focus.y, z: focus.z },
       framing: { centerX: focusNdc.x, centerY: focusNdc.y },
       cowRootPosition: { x: cow.mesh.position.x, y: cow.mesh.position.y, z: cow.mesh.position.z },
-      cameraPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+      cameraPosition: { x: proofCamera.position.x, y: proofCamera.position.y, z: proofCamera.position.z },
     };
   });
 }
@@ -208,7 +215,7 @@ try {
   await success.page.screenshot({ path: path.join(outputDir, 'cow17-authored-gameplay.png'), fullPage: true });
   report.visualProbe = await focusCow17(success.page);
   await success.page.waitForTimeout(80);
-  await success.page.evaluate(() => renderer.render(scene, camera));
+  await success.page.evaluate(() => renderer.render(scene, globalThis.__SW_COW17_QA_CAMERA__ || camera));
   await success.page.screenshot({ path: path.join(outputDir, 'cow17-authored-focused.png'), fullPage: true });
 
   requireCondition(report.success.revision === '128', `Three.js revision changed: ${report.success.revision}.`);
@@ -234,8 +241,8 @@ try {
   requireCondition(report.animationProbe?.hipsChanged === true, 'Cow 17 Hips transform did not change while the real runtime animation advanced.');
   requireCondition(report.visualProbe?.id === 17 && report.visualProbe?.assetId === 'character.cow17.walking.v1', 'Focused proof is not using the active authored Cow 17.');
   requireCondition(Number(report.visualProbe?.intendedHeight) === 3, `Focused Cow 17 target height drifted: ${report.visualProbe?.intendedHeight}.`);
-  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerX)) <= 0.05, `Focused Cow 17 Hips target is too far off-center horizontally: ${report.visualProbe?.framing?.centerX}.`);
-  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerY)) <= 0.05, `Focused Cow 17 Hips target is too far off-center vertically: ${report.visualProbe?.framing?.centerY}.`);
+  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerX)) <= 0.05, `Focused Cow 17 proof target is too far off-center horizontally: ${report.visualProbe?.framing?.centerX}.`);
+  requireCondition(Math.abs(Number(report.visualProbe?.framing?.centerY)) <= 0.05, `Focused Cow 17 proof target is too far off-center vertically: ${report.visualProbe?.framing?.centerY}.`);
   requireCondition(Number(report.success.resource?.decodedBodySize || 0) === 14412828 || Number(report.success.resource?.transferSize || 0) >= 14412828, `Cow 17 resource timing did not report the expected 14,412,828-byte asset: ${JSON.stringify(report.success.resource)}.`);
   if (success.errors.length) report.failures.push(`Success-path browser errors: ${success.errors.join(' | ')}`);
 } finally {
