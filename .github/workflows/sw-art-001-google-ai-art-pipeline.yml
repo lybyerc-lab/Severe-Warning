@@ -37,7 +37,7 @@ jobs:
           set -euo pipefail
           base='de2e62835e79567b4bbfc079a372ce2af4ee0879'
           git diff --name-only "$base"...HEAD | tee sw-art-001-changed-files.txt
-          bad="$(grep -Ev '^(\.gitignore|tools/google-ai/|scripts/verify-sw-art-001-google-ai-pipeline\.mjs|\.github/workflows/sw-art-001-google-ai-art-pipeline\.yml)$' sw-art-001-changed-files.txt || true)"
+          bad="$(grep -Ev '^(\.gitignore|tools/google-ai/.*|scripts/verify-sw-art-001-google-ai-pipeline\.mjs|\.github/workflows/sw-art-001-google-ai-art-pipeline\.yml)$' sw-art-001-changed-files.txt || true)"
           if [ -n "$bad" ]; then
             echo 'SW-ART-001 changed files outside allowed tooling territory:' >&2
             echo "$bad" >&2
