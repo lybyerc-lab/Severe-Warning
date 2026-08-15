@@ -7,7 +7,7 @@
 **Active phase:** Stage 2B — Make It Feel Like a Game  
 **Director authority branch:** `agent/director-stage2b-game-direction`
 
-> This is a concise snapshot. `Docs/ACTIVE_HANDOFF.md` plus exact issue/branch/commit/CI evidence are the recovery authority.
+> This is a concise snapshot. `Docs/ACTIVE_HANDOFF.md` plus exact issue/branch/commit/CI/deployment evidence are the recovery authority.
 
 ## Current canonical
 
@@ -15,61 +15,77 @@ Canonical branch:
 `agent/sw-int-003-stage2b-accepted-stack`
 
 Exact Director-accepted head:
-`706408e4e367782fed0ffc6e40d0cdd27a7e71bd`
+`de2e62835e79567b4bbfc079a372ce2af4ee0879`
 
 Previous canonical:
-`7d3e7e747b5a55ebaecf8ec313e66f8ac39b10f4`
+`706408e4e367782fed0ffc6e40d0cdd27a7e71bd`
 
-The new canonical adds the accepted commercial-shell layer without reopening gameplay authority.
+SW-INT-005 combined acceptance run:
+`31856905543` — **SUCCESS**
 
-## What just became real product
+## What is now accepted product
 
-### SW-UI-003 — accepted
-Head: `76042f632398d4bef917a08436dc2338034fb3e6`
+The current canonical includes:
+- QUALITY-001/002 owner-playtest rescue;
+- authored pause/results identity;
+- gameplay product identity with prototype/lab chrome removed;
+- readable desktop field controls with mobile restoration;
+- accepted Supercell/Derecho atmospheric identity with Tornado exclusivity;
+- first-slice physical structural destruction consequence;
+- preserved Storm Sites, score/results/campaign continuity, protected abilities, and Cow safety.
 
-- authored Severe Weather Warning pause treatment;
-- correct Heartland / County Fair / Gullwind / Moo Level identity;
-- results with clear score/rank hierarchy, grade stamp, grouped stats, and large actions.
+Key accepted inputs:
+- #81 WORLD-007: `1ccae11a381b61f0e15138888dbccf9f97fb48ef`
+- #82 FEEL-001: `a1d98d2150683f4151bdd0fec08b7ff3c5ff9033`
+- #90 UI-005: `c6007883bbdecd65a22186510f13dd4b40778198`
 
-### SW-UI-004 — accepted
-Head: `8becea1133864057050d6cd48ad033dc9992c445`
+Issues #81, #82, #90, and #91 are closed completed.
 
-- gameplay now says **Severe Weather Warning**;
-- visible `SEVERE WEATHER 3D`, `3D LAB`, and `PRODUCTION SLICE` chrome removed;
-- legitimate controls, score, timer, radar, and gameplay truth preserved.
+## QA Pages is deployed for owner playtest
 
-### SW-INT-004 — accepted and promoted to canonical
-Head: `706408e4e367782fed0ffc6e40d0cdd27a7e71bd`
-Workflow run: `31851282218` — **SUCCESS**
+Issue #84 is closed completed.
+PR #85 merged to `main` at:
+`f0e80daaca03f702cc71440c7b00c315337e443b`
 
-Combined gameplay/pause/results evidence passed Director pixel review and all inherited blocking gates.
+No-deploy publisher validation:
+`31857344504` — **SUCCESS**
 
-## Still active quality debt
+Live QA Pages deployment:
+`31857742807` — **SUCCESS**
 
-### #81 SW-WORLD-007 — secondary storms
-Not accepted.
-Supercell/Derecho truthful evidence exposed remaining hard geometric/legacy presentation.
-A bounded atmospheric-mass + visibility-lock correction is currently under QA.
-Latest handoff head: `4caeae17d5c7949f1ef110e9ef9df3d209c375b6`.
+Public QA URL:
+`https://lybyerc-lab.github.io/Severe-Warning/`
 
-### #82 SW-FEEL-001 — destruction consequence
-Not accepted.
-Engineering event/pooling architecture is safe, but truthful screenshots still showed generic fragment dominance.
-Latest correction prioritizes roof/wall/facade anatomy over generic chunks.
-Latest handoff head: `d84e5bd66fcb46518324efa8a7c23a1598702658`.
+Pages artifact:
+- ID `9239659287`
+- digest `sha256:f13439efca9816151180c4a57c4b5eb87c1667787d238fb1145cbfb18cbc40c3`
 
-## QA Pages
+The deployed `playtest-info.json` stamp was created from exact canonical:
+`de2e62835e79567b4bbfc079a372ce2af4ee0879`
 
-Issue #84 / draft PR #85 is the publisher correction lane.
-It was no-deploy validated against prior canonical `7d3e7e...`, but canonical is now `706408e4...`.
+The deployed build is QA-only. Deployment does not imply owner physical acceptance or Android acceptance.
 
-Before publishing:
-- refresh the publisher to exact `706408e4...`;
-- include accepted UI-003 + UI-004;
-- rerun no-deploy validation;
-- intentionally merge/deploy only after review.
+## Current product gate
 
-Do not claim public Pages serves the new canonical yet.
+**Owner playtest is now the highest-value next evidence.**
+
+Recommended lightweight pass:
+- one normal Heartland run;
+- County Fair or Gullwind Boardwalk if convenient;
+- Supercell/Derecho if convenient;
+- notice storm readability, destruction payoff, controls, pause/results, and anything that feels cheap, confusing, frustrating, or especially fun.
+
+Feedback should become bounded product hypotheses/tasks, not automatic code mutation.
+
+## Likely next quality work after owner feedback
+
+Current candidates:
+- tactile MOO-LAH + Storm Triangle reward/purchase presentation;
+- Secret Moo Level legendary-stage identity;
+- broader world density/material repetition;
+- bounded Tornado material-richness and small results-typography polish where the playtest supports it.
+
+Large new systems remain held.
 
 ## Product direction
 
@@ -81,12 +97,6 @@ Art thesis: **storm-charged stylized Americana**.
 
 Current priority is reducing prototype tells and increasing commercial coherence, not widening systems.
 
-Next high-value areas after #81/#82/#84:
-- tactile MOO-LAH + Storm Triangle reward/purchase presentation;
-- Secret Moo Level legendary-stage identity;
-- broader world density/material repetition;
-- bounded cleanup of the remaining technical desktop control legend.
-
 ## Protection law
 
 Unless an exact task reopens it, protect steering/input/camera, storm movement, Pull/Gust/Grid Zap, scoring/campaign truth, target health/damage/collision/coordinates, Cow safety, pause/reset lifecycle, and local-first progression.
@@ -95,4 +105,4 @@ Presentation may amplify gameplay truth. It may not become gameplay authority.
 
 ## Physical acceptance
 
-Browser/CI acceptance is not Android physical acceptance. Deployment is also a separate gate.
+Browser/CI acceptance is not Android physical acceptance. Owner playtest/physical acceptance remains the next separate gate.
