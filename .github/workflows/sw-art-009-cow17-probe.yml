@@ -1,0 +1,177 @@
+name: SW-ART-009 Cow 17 Runtime Probe
+
+on:
+  push:
+    branches:
+      - agent/sw-art-009-cow17-runtime-integration
+    paths:
+      - tools/art/live-requests/cow17-runtime-probe-v1.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-art-009-cow17-runtime-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: Probe Cow 17 active runtime attachment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prove bounded probe scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='de2e62835e79567b4bbfc079a372ce2af4ee0879'
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          request='tools/art/live-requests/cow17-runtime-probe-v1.json'
+          test -s "$request"
+          changed_launch="$(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- "$request")"
+          test "$changed_launch" = "$request" || { echo 'Probe launch commit must change only its reviewed request.' >&2; exit 1; }
+
+      - name: Set up Node and frozen dependencies
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+
+      - name: Prepare deterministic local assets with bounded ffmpeg setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo timeout 120s apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
+            sudo timeout 120s apt-get install --yes --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          timeout 180s pnpm run audio:generate
+          timeout 60s node scripts/vendor-threejs-hero-slice4-assets.mjs
+
+      - name: Assemble exact accepted Stage 2B source
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="$RUNNER_TEMP/sw-art-009-probe.html"
+          cp MechanicsLab/SevereWeather_3D_Lab.html "$candidate"
+          export SEVERE_WEATHER_SOURCE_PATH="$candidate"
+          for script in \
+            apply-v431-source-patch.mjs \
+            apply-v440-source-patch.mjs \
+            apply-v441-source-patch.mjs \
+            apply-v442-source-patch.mjs \
+            fix-v450-parser.mjs \
+            apply-v450-source-patch.mjs \
+            apply-v450-rampage-music-patch.mjs \
+            apply-qa-corrections-patch.mjs \
+            apply-audio-mix-followup-patch.mjs \
+            apply-ui-polish-followup-patch.mjs \
+            apply-score-continuity-fix.mjs \
+            apply-qa4-deterministic-lab-patch.mjs \
+            apply-qa4-mobile-input-fix.mjs \
+            apply-qa4-run-lock-fix.mjs \
+            apply-qa4-pause-forensics.mjs \
+            apply-pause-overlay-hit-test-fix.mjs \
+            apply-pause-overlay-hard-hide.mjs \
+            apply-qa4-popup-assertion-fix.mjs \
+            apply-qa4-rampage-popup-fix.mjs \
+            apply-v500-campaign-patch.mjs \
+            apply-v500-realtime-clock-fix.mjs \
+            apply-v500-world-tour-patch.mjs \
+            apply-v500-mobile-layout-fix.mjs \
+            apply-v500-cow-signature-patch.mjs \
+            apply-v510-production-slice.mjs \
+            apply-modernization-phase2-clocks.mjs \
+            apply-phase2-player-forensics-guard.mjs \
+            apply-modernization-phase3-input-abilities.mjs \
+            apply-modernization-phase4-scoring-campaign.mjs \
+            apply-modernization-phase5-presentation-world.mjs \
+            apply-modernization-phase6-performance.mjs \
+            apply-city-fabric-destruction.mjs \
+            apply-presentation-identity-moo-brew.mjs \
+            apply-threejs-asset-pipeline.mjs \
+            apply-threejs-visual-foundation.mjs \
+            apply-threejs-hero-slice4.mjs \
+            apply-threejs-hero-slice5.mjs \
+            apply-threejs-hero-slice6.mjs \
+            apply-sw-game-002-moo-level.mjs \
+            apply-sw-ui-001-newspaper-presentation.mjs \
+            apply-sw-score-001-persistent-scorekeeper.mjs \
+            apply-sw-rpg-001-moolah-storm-triangle.mjs \
+            apply-sw-rpg-002-slingshot.mjs \
+            apply-sw-level-001-storm-site-framework.mjs \
+            apply-sw-ui-002-landscape-unleash.mjs \
+            apply-sw-quality-001-owner-playtest-rescue.mjs \
+            apply-sw-quality-002-visual-rescue.mjs \
+            apply-sw-quality-002-storm-frame-bridge.mjs \
+            apply-sw-ui-003-run-shell-identity.mjs \
+            apply-sw-ui-004-gameplay-product-identity.mjs \
+            apply-sw-world-007-secondary-storm-forms.mjs \
+            apply-sw-world-007-atmospheric-correction.mjs \
+            apply-sw-world-007-visibility-lock.mjs \
+            apply-sw-world-007-secondary-exclusive.mjs \
+            apply-sw-feel-001-destruction-consequence.mjs \
+            apply-sw-feel-001-structural-anatomy.mjs \
+            apply-sw-feel-001-structural-priority.mjs \
+            apply-sw-ui-005-field-controls.mjs
+          do
+            node "scripts/$script"
+          done
+          grep -F 'V500_BOVINE_SIGNATURE_V1' "$candidate"
+          grep -F 'SW_FEEL_001_DESTRUCTION_CONSEQUENCE_V1' "$candidate"
+          echo "SEVERE_WEATHER_SOURCE_PATH=$candidate" >> "$GITHUB_ENV"
+
+      - name: Verify and build Cow 17 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check runtime/sw-art-009-cow17-runtime.js
+          node --check scripts/qa-sw-art-009-cow17-runtime.mjs
+          node scripts/verify-sw-art-009-cow17-runtime.mjs
+          pnpm run build
+          test -s www/assets/production/characters/cow17-walking-v1.glb
+          grep -F 'SW_COW17_RUNTIME_ASSET_V1' www/index.html
+
+      - name: Install Chromium without system package mutation
+        shell: bash
+        run: npx playwright install chromium
+
+      - name: Prove post-reset Cow 17 attachment animation and fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/sw-art-009-probe
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009-probe/server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 80); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null
+          env \
+            SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/' \
+            SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009-probe' \
+            node scripts/qa-sw-art-009-cow17-runtime.mjs
+
+      - name: Upload probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-009-cow17-runtime-probe
+          path: qa-artifacts/sw-art-009-probe/
+          if-no-files-found: warn
+          retention-days: 7
