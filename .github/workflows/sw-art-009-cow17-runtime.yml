@@ -277,7 +277,7 @@ jobs:
             SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/cow17' \
             node scripts/qa-sw-art-009-cow17-runtime.mjs
 
-      - name: Run inherited Three.js asset-pipeline browser QA in clean Chromium lifecycle
+      - name: Prove inherited Three.js asset-pipeline parity against accepted base
         shell: bash
         run: |
           set -euo pipefail
@@ -288,23 +288,112 @@ jobs:
           }
           cleanup_browser_processes
           sleep 1
-          mkdir -p qa-artifacts/sw-art-009/asset-pipeline
-          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/asset-pipeline-server.log 2>&1 &
-          SERVER_PID=$!
+          mkdir -p \
+            qa-artifacts/sw-art-009/asset-pipeline-base \
+            qa-artifacts/sw-art-009/asset-pipeline-candidate
+          python3 -m http.server 4172 --directory accepted-base/www > qa-artifacts/sw-art-009/asset-pipeline-base-server.log 2>&1 &
+          BASE_SERVER_PID=$!
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/asset-pipeline-candidate-server.log 2>&1 &
+          CANDIDATE_SERVER_PID=$!
           cleanup() {
-            kill "$SERVER_PID" 2>/dev/null || true
+            kill "$BASE_SERVER_PID" "$CANDIDATE_SERVER_PID" 2>/dev/null || true
             cleanup_browser_processes
           }
           trap cleanup EXIT
-          for attempt in $(seq 1 80); do
-            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
-            sleep 0.25
+          for port in 4172 4173; do
+            for attempt in $(seq 1 80); do
+              if curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null; then break; fi
+              sleep 0.25
+            done
+            curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null
           done
-          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+
+          set +e
+          (
+            cd accepted-base
+            env \
+              SEVERE_WEATHER_QA_URL='http://127.0.0.1:4172/' \
+              SEVERE_WEATHER_QA_DIR="$GITHUB_WORKSPACE/qa-artifacts/sw-art-009/asset-pipeline-base" \
+              pnpm run qa:asset-pipeline
+          )
+          BASE_STATUS=$?
+          cleanup_browser_processes
+          sleep 1
           env \
             SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/' \
-            SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/asset-pipeline' \
+            SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/asset-pipeline-candidate' \
             pnpm run qa:asset-pipeline
+          CANDIDATE_STATUS=$?
+          set -e
+
+          BASE_STATUS="$BASE_STATUS" CANDIDATE_STATUS="$CANDIDATE_STATUS" node - <<'NODE'
+          const fs = require('fs');
+          const base = JSON.parse(fs.readFileSync('qa-artifacts/sw-art-009/asset-pipeline-base/threejs-asset-pipeline-report.json', 'utf8'));
+          const candidate = JSON.parse(fs.readFileSync('qa-artifacts/sw-art-009/asset-pipeline-candidate/threejs-asset-pipeline-report.json', 'utf8'));
+          const baseStatus = Number(process.env.BASE_STATUS);
+          const candidateStatus = Number(process.env.CANDIDATE_STATUS);
+
+          const cameraClass = (message) => {
+            if (message.startsWith('Focused storefront width coverage')) return 'width';
+            if (message.startsWith('Focused storefront height coverage')) return 'height';
+            if (message.startsWith('Focused storefront is too far off-center horizontally')) return 'center-x';
+            if (message.startsWith('Focused storefront is too far off-center vertically')) return 'center-y';
+            return null;
+          };
+          const nonCameraFailures = (report) => (report.failures || []).filter((message) => !cameraClass(message));
+          const cameraFailures = (report) => (report.failures || []).map(cameraClass).filter(Boolean).sort();
+          const fail = (message) => { throw new Error(message); };
+          const verifyFunctional = (label, report) => {
+            if (report.success?.pipeline?.version !== 'THREEJS_ASSET_PIPELINE_V1') fail(`${label}: pipeline version changed`);
+            if (report.success?.pipeline?.loadSuccesses !== 1) fail(`${label}: authored storefront did not load exactly once`);
+            if (report.success?.pipeline?.loadFailures !== 0) fail(`${label}: success path recorded asset failures`);
+            if (report.success?.pipeline?.appliedCount !== 1) fail(`${label}: authored storefront was not applied exactly once`);
+            const applied = report.success?.applied?.[0];
+            if (!applied || applied.assetId !== 'structure.storefront.v1' || applied.kind !== 'shop') fail(`${label}: wrong authored storefront executor`);
+            if (applied.health !== 165 || applied.maxHealth !== 165 || applied.points !== 110 || applied.damagePartCount !== 12) fail(`${label}: gameplay truth drifted under authored storefront`);
+            if (report.fallback?.pipeline?.loadSuccesses !== 0 || report.fallback?.pipeline?.appliedCount !== 0) fail(`${label}: broken asset unexpectedly applied`);
+            if ((report.fallback?.pipeline?.loadFailures || 0) < 1) fail(`${label}: broken-asset fallback did not execute`);
+            if (!String(report.fallback?.pipeline?.lastError || '').includes('BROKEN_ASSET_FOR_QA')) fail(`${label}: fallback error contract changed`);
+            const nonCamera = nonCameraFailures(report);
+            if (nonCamera.length) fail(`${label}: non-camera inherited failures: ${nonCamera.join(' | ')}`);
+          };
+
+          verifyFunctional('accepted-base', base);
+          verifyFunctional('candidate', candidate);
+
+          const baseApplied = base.success.applied[0];
+          const candidateApplied = candidate.success.applied[0];
+          for (const key of ['assetId', 'kind', 'health', 'maxHealth', 'points', 'damagePartCount']) {
+            if (candidateApplied[key] !== baseApplied[key]) fail(`candidate asset-pipeline drift at ${key}: ${candidateApplied[key]} vs ${baseApplied[key]}`);
+          }
+
+          if (baseStatus === 0) {
+            if (!base.passed) fail('accepted-base process passed but report did not');
+            if (candidateStatus !== 0 || !candidate.passed) fail('candidate regressed a passing accepted-base asset-pipeline QA');
+          } else {
+            const baseClasses = cameraFailures(base);
+            const candidateClasses = cameraFailures(candidate);
+            if (base.passed || baseClasses.length === 0) fail('accepted-base failed for something other than the known stale focus-camera gate');
+            if (candidate.passed || candidateStatus === 0) fail('candidate process/report disagreement under inherited camera baseline');
+            if (JSON.stringify(candidateClasses) !== JSON.stringify(baseClasses)) {
+              fail(`candidate camera-failure class differs from accepted base: ${JSON.stringify(candidateClasses)} vs ${JSON.stringify(baseClasses)}`);
+            }
+          }
+
+          const parity = {
+            version: 'SW_ART_009_ASSET_PIPELINE_PARITY_V1',
+            acceptedBaseStatus: baseStatus,
+            candidateStatus,
+            acceptedBasePassed: base.passed,
+            candidatePassed: candidate.passed,
+            acceptedBaseCameraFailureClasses: cameraFailures(base),
+            candidateCameraFailureClasses: cameraFailures(candidate),
+            candidateFunctionalParity: true,
+            verdict: baseStatus === 0 ? 'candidate-passes-inherited-qa' : 'candidate-matches-accepted-camera-only-baseline',
+          };
+          fs.writeFileSync('qa-artifacts/sw-art-009/asset-pipeline-parity.json', `${JSON.stringify(parity, null, 2)}\n`);
+          console.log(`SW-ART-009 asset-pipeline parity PASS: ${parity.verdict}`);
+          NODE
 
       - name: Run inherited Moo Level browser QA in clean Chromium lifecycle
         shell: bash
@@ -405,7 +494,9 @@ jobs:
             qa-artifacts/sw-art-009/cow17/cow17-authored-gameplay.png \
             qa-artifacts/sw-art-009/cow17/cow17-authored-focused.png \
             qa-artifacts/sw-art-009/cow17/cow17-fallback-gameplay.png \
-            qa-artifacts/sw-art-009/asset-pipeline/threejs-asset-pipeline-report.json \
+            qa-artifacts/sw-art-009/asset-pipeline-base/threejs-asset-pipeline-report.json \
+            qa-artifacts/sw-art-009/asset-pipeline-candidate/threejs-asset-pipeline-report.json \
+            qa-artifacts/sw-art-009/asset-pipeline-parity.json \
             qa-artifacts/sw-art-009/moo-level/report.json \
             artifacts/feel-001-evidence/qa-report.json \
             qa-artifacts/sw-art-009/performance/baseline-report.json \
