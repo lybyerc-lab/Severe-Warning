@@ -1,0 +1,41 @@
+{
+  "version": "SW_MESHY_RETEXTURE_LIVE_REQUEST_V1",
+  "id": "cow17-texture-v1",
+  "productionAuthority": "candidate only",
+  "geometrySource": {
+    "issue": 102,
+    "runId": 31907468508,
+    "artifactId": 9252746412,
+    "workflowHead": "4329f5ce1f30947cb4160af66b7774f09adb0299",
+    "meshyTaskId": "01a0072a-a5bc-767d-aace-5ec692250b13",
+    "expectedVertices": 99575,
+    "expectedTriangles": 199162
+  },
+  "styleSource": {
+    "issue": 101,
+    "runId": 31906670874,
+    "artifactId": 9252535475,
+    "artifactName": "sw-art-005-cow17-face-refine-v1",
+    "path": "art-source/generated/google-ai/cow17/cow17-face-refine-v1.jpg",
+    "expectedSha256": "58384a916ba6ca0b4ea18c4a434c57bc64e8a8c956a3ab065208ecc066df47fb"
+  },
+  "meshy": {
+    "endpoint": "retexture",
+    "aiModel": "meshy-6",
+    "enableOriginalUv": true,
+    "enablePbr": true,
+    "textureResolution": "2k",
+    "removeLighting": true,
+    "targetFormats": ["glb"]
+  },
+  "output": {
+    "dir": "art-source/generated/meshy/cow17-textured-v1",
+    "glb": "cow17-textured-v1.glb",
+    "preview": "cow17-textured-v1-preview.png",
+    "texturePrefix": "cow17-textured-v1"
+  },
+  "costGuard": {
+    "maxCredits": 10,
+    "authorizedTasks": 1
+  }
+}
