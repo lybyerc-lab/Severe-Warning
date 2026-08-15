@@ -218,8 +218,8 @@ jobs:
       - name: Prove desktop field controls without mobile drift
         run: node scripts/qa-sw-ui-005-field-controls.mjs
 
-      - name: Preserve score and result continuity
-        run: node scripts/qa-sw-score-001-persistent-scorekeeper.mjs
+      - name: Prove score and campaign continuity on the combined bundle
+        run: node scripts/qa-sw-int-005-score-continuity.mjs
 
       - name: Upload combined INT-005 evidence
         if: always()
@@ -232,4 +232,5 @@ jobs:
             artifacts/sw-ui-005/
             artifacts/sw-world-007-visual/
             artifacts/feel-001-evidence/
+            artifacts/sw-int-005-score/
           if-no-files-found: error
