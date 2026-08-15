@@ -2,10 +2,10 @@
   "version": "SW_ART_009_COW17_RUNTIME_QA_V1",
   "task": "SW-ART-009",
   "issue": 106,
-  "attempt": 5,
-  "supersedesRunId": 31912570478,
+  "attempt": 6,
+  "supersedesRunId": 31913851397,
   "exactBaseSha": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
-  "expectedImplementationHead": "933d952b3f46c46706a759152933fa429f12f24c",
+  "expectedImplementationHead": "374b0e4e7082cda621a228fbd9a19f105551c22b",
   "asset": {
     "path": "assets/production/characters/cow17-walking-v1.glb",
     "sha256": "d5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93",
@@ -13,5 +13,5 @@
   },
   "generationAllowed": false,
   "productionPromotionAllowed": false,
-  "purpose": "Run exact canonical Stage 2B static, behavioral, fallback, inherited-regression, visual, and same-runner performance evidence for Cow 17 runtime integration after lifecycle, skinning, gameplay-scale, proof-camera, and bounded-runner fixes."
+  "purpose": "Run exact canonical Stage 2B static, Cow 17 behavioral/fallback, inherited-regression, visual, and same-runner performance evidence with isolated Chromium lifecycles between browser suites."
 }
