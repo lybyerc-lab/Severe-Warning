@@ -153,8 +153,15 @@ try {
     first.ui003?.marker === 'SW_UI_003_RUN_SHELL_IDENTITY_V1' &&
     first.ui004?.marker === 'SW_UI_004_GAMEPLAY_PRODUCT_IDENTITY_V1' &&
     first.ui005?.marker === 'SW_UI_005_FIELD_CONTROLS_V1' &&
-    Boolean(first.world?.marker) && Boolean(first.feel?.marker),
-    JSON.stringify({ ui003: first.ui003?.marker, ui004: first.ui004?.marker, ui005: first.ui005?.marker, world: first.world?.marker, feel: first.feel?.marker }));
+    Boolean(first.world?.marker) &&
+    first.feel?.version === 'SW_FEEL_001_DESTRUCTION_CONSEQUENCE_V1',
+    JSON.stringify({
+      ui003: first.ui003?.marker,
+      ui004: first.ui004?.marker,
+      ui005: first.ui005?.marker,
+      world: first.world?.marker,
+      feel: first.feel?.version,
+    }));
   check('firstRunCreatesCampaignTornadoRecord', Boolean(firstRecord), JSON.stringify(first.state));
   check('firstRunPersonalBest1200',
     first.state?.lastResult?.isPersonalBest === true &&
