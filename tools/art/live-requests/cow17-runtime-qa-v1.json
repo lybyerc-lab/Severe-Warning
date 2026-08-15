@@ -2,10 +2,10 @@
   "version": "SW_ART_009_COW17_RUNTIME_QA_V1",
   "task": "SW-ART-009",
   "issue": 106,
-  "attempt": 2,
-  "supersedesRunId": 31911746338,
+  "attempt": 3,
+  "supersedesRunId": 31911884547,
   "exactBaseSha": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
-  "expectedImplementationHead": "3e6b36e540e62e1483d23cbf2f6dcc5cdf4a0ed8",
+  "expectedImplementationHead": "14884468759d2cfd21f2fb0f52e86c50b3545f10",
   "asset": {
     "path": "assets/production/characters/cow17-walking-v1.glb",
     "sha256": "d5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93",
@@ -13,5 +13,5 @@
   },
   "generationAllowed": false,
   "productionPromotionAllowed": false,
-  "purpose": "Run corrected canonical-source static, behavioral, fallback, inherited-regression, visual, and same-runner performance evidence for Cow 17 runtime integration."
+  "purpose": "Run exact canonical Stage 2B static, behavioral, fallback, inherited-regression, visual, and same-runner performance evidence for Cow 17 runtime integration."
 }
