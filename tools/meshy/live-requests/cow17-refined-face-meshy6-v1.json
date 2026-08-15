@@ -1,0 +1,31 @@
+{
+  "version": "SW_MESHY_REFINED_LIVE_REQUEST_V1",
+  "id": "cow17-refined-face-meshy6-v1",
+  "productionAuthority": "candidate only",
+  "source": {
+    "runId": 31906670874,
+    "artifactId": 9252535475,
+    "artifactName": "sw-art-005-cow17-face-refine-v1",
+    "path": "art-source/generated/google-ai/cow17/cow17-face-refine-v1.jpg",
+    "expectedSourceSha256": "58384a916ba6ca0b4ea18c4a434c57bc64e8a8c956a3ab065208ecc066df47fb"
+  },
+  "meshy": {
+    "endpoint": "image-to-3d",
+    "modelType": "standard",
+    "aiModel": "meshy-6",
+    "shouldTexture": false,
+    "shouldRemesh": false,
+    "imageEnhancement": false,
+    "poseMode": "",
+    "targetFormats": ["glb"]
+  },
+  "output": {
+    "dir": "art-source/generated/meshy/cow17-refined-face-meshy6-v1",
+    "glb": "cow17-refined-face-meshy6-v1.glb",
+    "preview": "cow17-refined-face-meshy6-v1-preview.png"
+  },
+  "costGuard": {
+    "maxCredits": 20,
+    "authorizedTasks": 1
+  }
+}
