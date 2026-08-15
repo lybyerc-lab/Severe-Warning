@@ -16,7 +16,9 @@ const swWorld007SecondaryExclusiveState = {
 };
 
 function swWorld007SecondaryExclusiveActiveType() {
-  return typeof swWorld007ResolveStormType === 'function' ? swWorld007ResolveStormType() : null;
+  if (typeof currentStorm !== 'undefined' && currentStorm) return currentStorm;
+  if (typeof globalThis.getSwWorld007State === 'function') return globalThis.getSwWorld007State()?.activeStorm || null;
+  return null;
 }
 
 function swWorld007SecondaryExclusiveSyncTornadoPresentation() {
