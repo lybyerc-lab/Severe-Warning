@@ -90,15 +90,18 @@ try {
   }
 
   const active = await page.evaluate(({ x, z }) => {
-    const visibleLegacyCubes = typeof activeExplosionFragments === 'undefined' ? [] : activeExplosionFragments.filter((entry) => {
-      const mesh = entry?.mesh;
+    const isInheritedUniformCube = (mesh) => {
       const geometry = mesh?.geometry;
       if (!mesh || mesh.visible === false || geometry?.type !== 'BoxGeometry') return false;
       const params = geometry.parameters || {};
-      const exactLegacyCube = Math.abs(Number(params.width || 0) - 0.75) < 0.001
-        && Math.abs(Number(params.height || 0) - 0.75) < 0.001
-        && Math.abs(Number(params.depth || 0) - 0.75) < 0.001;
-      if (!exactLegacyCube) return false;
+      const dimensions = [Number(params.width || 0), Number(params.height || 0), Number(params.depth || 0)];
+      const maxDimension = Math.max(...dimensions);
+      const minDimension = Math.min(...dimensions);
+      return maxDimension > 0 && Math.abs(maxDimension - minDimension) < 0.02 && minDimension >= 0.7 && maxDimension <= 2.1;
+    };
+    const visibleLegacyCubes = typeof activeExplosionFragments === 'undefined' ? [] : activeExplosionFragments.filter((entry) => {
+      const mesh = entry?.mesh;
+      if (!isInheritedUniformCube(mesh)) return false;
       return Math.hypot(Number(mesh.position?.x || 0) - x, Number(mesh.position?.z || 0) - z) <= 12;
     });
     return {
@@ -134,10 +137,11 @@ try {
       const geometry = mesh?.geometry;
       if (!mesh || mesh.visible === false || geometry?.type !== 'BoxGeometry') return false;
       const params = geometry.parameters || {};
-      const exactLegacyCube = Math.abs(Number(params.width || 0) - 0.75) < 0.001
-        && Math.abs(Number(params.height || 0) - 0.75) < 0.001
-        && Math.abs(Number(params.depth || 0) - 0.75) < 0.001;
-      return exactLegacyCube && Math.hypot(Number(mesh.position?.x || 0) - x, Number(mesh.position?.z || 0) - z) <= 12;
+      const dimensions = [Number(params.width || 0), Number(params.height || 0), Number(params.depth || 0)];
+      const maxDimension = Math.max(...dimensions);
+      const minDimension = Math.min(...dimensions);
+      const uniformCube = maxDimension > 0 && Math.abs(maxDimension - minDimension) < 0.02 && minDimension >= 0.7 && maxDimension <= 2.1;
+      return uniformCube && Math.hypot(Number(mesh.position?.x || 0) - x, Number(mesh.position?.z || 0) - z) <= 12;
     }).length;
     return { visibleLegacyCubeCount };
   }, { x: target.x, z: target.z });
