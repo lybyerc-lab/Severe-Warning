@@ -1,0 +1,10 @@
+{
+  "version": "SW_ART_LIVE_REQUEST_V1",
+  "id": "heartland-farm-reference-v1",
+  "command": "image",
+  "brief": "heartland-farm",
+  "model": "gemini-3.1-flash-image",
+  "output": "art-source/generated/google-ai/heartland-farm/heartland-farm-reference-v1.jpg",
+  "productionAuthority": "reference only",
+  "reason": "Controlled 2K Heartland hero farm/barn model-reference board for later authored or AI-assisted 3D asset production. One reviewed Flash Image call under SW-ART-002 cost guard."
+}
