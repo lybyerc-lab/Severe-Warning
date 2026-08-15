@@ -171,7 +171,7 @@ jobs:
           echo "SEVERE_WEATHER_SOURCE_PATH=$candidate_source" >> "$GITHUB_ENV"
           echo "SW_ART_009_BASE_SOURCE_PATH=$base_source" >> "$GITHUB_ENV"
 
-      - name: Verify Cow 17 static contract and inherited process laws
+      - name: Verify Cow 17 static contract and exact canonical Stage 2B laws
         shell: bash
         run: |
           set -euo pipefail
@@ -179,11 +179,27 @@ jobs:
           node --check scripts/verify-sw-art-009-cow17-runtime.mjs
           node --check scripts/qa-sw-art-009-cow17-runtime.mjs
           node scripts/verify-sw-art-009-cow17-runtime.mjs
-          pnpm run verify:v500
+          pnpm run verify:process
+          pnpm run verify:city-fabric
           pnpm run verify:asset-pipeline
           pnpm run verify:sw-game-002
-          pnpm run verify:sw-feel-001
-          pnpm run verify:process
+          pnpm run verify:sw-ui-001
+          pnpm run verify:sw-score-001
+          pnpm run verify:sw-rpg-001
+          pnpm run verify:sw-rpg-002
+          pnpm run verify:sw-level-001
+          node scripts/verify-sw-quality-001-owner-playtest-rescue.mjs
+          node scripts/verify-sw-quality-002-visual-rescue.mjs
+          node scripts/verify-sw-ui-003-run-shell-identity.mjs
+          node scripts/verify-sw-ui-004-gameplay-product-identity.mjs
+          node scripts/verify-sw-ui-005-field-controls.mjs
+          node scripts/verify-sw-world-007-secondary-storm-forms.mjs
+          node scripts/verify-sw-world-007-atmospheric-correction.mjs
+          node scripts/verify-sw-world-007-visibility-lock.mjs
+          node scripts/verify-sw-world-007-secondary-exclusive.mjs
+          node scripts/verify-sw-feel-001-destruction-consequence.mjs
+          node scripts/verify-sw-feel-001-structural-anatomy.mjs
+          node scripts/verify-sw-feel-001-structural-priority.mjs
           pnpm run modern:typecheck
 
       - name: Build accepted canonical on same runner
