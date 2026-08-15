@@ -79,35 +79,36 @@ try {
   await page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('slice6-storm'));
   const tornado = await select(page, 'tornado');
   const legacy = tornado.heritage?.legacy || {};
+  const condensation = tornado.heritage?.condensation || {};
   const atmosphere = tornado.heritage?.atmosphere || {};
   const ribbon = tornado.heritage?.ribbon || {};
   check('tornadoSelected', tornado.active === 'tornado', JSON.stringify(tornado));
   check('heritageFramesAdvanced', (tornado.heritage?.tornadoFrames || 0) > 0, JSON.stringify(tornado.heritage));
   check('referenceTargetRecorded', tornado.heritage?.visualTarget === 'tornado-visual-dev-reference-v1', String(tornado.heritage?.visualTarget || ''));
-  check('radialBreakupAdvanced', (tornado.heritage?.radialBreakupFrames || 0) > 0, String(tornado.heritage?.radialBreakupFrames || 0));
-  check('atmosphereAdvanced', (tornado.heritage?.atmosphereFrames || 0) > 0, String(tornado.heritage?.atmosphereFrames || 0));
-  check('serpentineCoreAuthoritative', legacy.funnelVisible === true && legacy.funnelOpacity >= 0.68 && legacy.funnelOpacity <= 0.76 && legacy.funnelDepthWrite === true, JSON.stringify(legacy));
-  check('facetedOuterGeometrySuppressed', legacy.outerVisible === false && legacy.dustVisible === false && legacy.canopyVisible === false, JSON.stringify(legacy));
-  check('helicalDebrisVisible', legacy.debrisVisible === true && legacy.debrisOpacity >= 0.60, JSON.stringify(legacy));
-  check('softAtmosphereRootVisible', atmosphere.rootVisible === true && atmosphere.drawFields === 4, JSON.stringify(atmosphere));
-  check('softAtmosphereBounded', atmosphere.finePoints >= 100 && atmosphere.finePoints <= 180 && atmosphere.broadPoints >= 60 && atmosphere.broadPoints <= 110 && atmosphere.canopyPoints >= 80 && atmosphere.canopyPoints <= 130 && atmosphere.dustPoints >= 60 && atmosphere.dustPoints <= 100, JSON.stringify(atmosphere));
+  check('condensationAdvanced', (tornado.heritage?.condensationFrames || 0) > 0, String(tornado.heritage?.condensationFrames || 0));
+  check('legacyVisibleSurfacesSuppressed', legacy.funnelVisible === false && legacy.outerVisible === false && legacy.dustVisible === false && legacy.canopyVisible === false, JSON.stringify(legacy));
+  check('historicalDebrisSubordinate', legacy.debrisVisible === true && legacy.debrisOpacity >= 0.26 && legacy.debrisOpacity <= 0.34, JSON.stringify(legacy));
+  check('irregularCondensationVisible', condensation.rootVisible === true && condensation.coreVisible === true && condensation.sheathVisible === true, JSON.stringify(condensation));
+  check('irregularCondensationBudget', condensation.vertexCount === 1080 && condensation.triangleCount === 2080, JSON.stringify(condensation));
+  check('condensationMaterialsBounded', condensation.coreOpacity >= 0.74 && condensation.coreOpacity <= 0.82 && condensation.sheathOpacity >= 0.12 && condensation.sheathOpacity <= 0.20 && condensation.alphaTest >= 0.07, JSON.stringify(condensation));
+  check('softAtmosphereBounded', atmosphere.drawFields === 4 && atmosphere.finePoints >= 85 && atmosphere.finePoints <= 135 && atmosphere.broadPoints >= 40 && atmosphere.broadPoints <= 65 && atmosphere.canopyPoints >= 44 && atmosphere.canopyPoints <= 70 && atmosphere.dustPoints >= 54 && atmosphere.dustPoints <= 85, JSON.stringify(atmosphere));
   check('slice6VisibleGeometryRemoved', ribbon.streaks >= 8 && ribbon.visibleStreaks === 0 && ribbon.visibleWisps === 0 && ribbon.visibleGroundPulls === 0, JSON.stringify(ribbon));
   check('tornadoPresentationRootsVisible', tornado.slice6Visible === true && tornado.tornadoGroupVisible === true, JSON.stringify(tornado));
-  await page.screenshot({ path: path.join(artifactDir, '01_tornado_atmosphere_844x390.png'), fullPage: true });
+  await page.screenshot({ path: path.join(artifactDir, '01_tornado_irregular_844x390.png'), fullPage: false });
 
   await page.evaluate(() => globalThis.__SW_THREEJS_VISUAL_FOUNDATION__.prepareQaView('slice6-ground-contact'));
   await settle(page, 14);
-  await page.screenshot({ path: path.join(artifactDir, '02_touchdown_atmosphere_844x390.png'), fullPage: true });
+  await page.screenshot({ path: path.join(artifactDir, '02_touchdown_irregular_844x390.png'), fullPage: false });
 
   await settle(page, 36);
-  await page.screenshot({ path: path.join(artifactDir, '03_tornado_motion_sample_844x390.png'), fullPage: true });
+  await page.screenshot({ path: path.join(artifactDir, '03_tornado_motion_sample_844x390.png'), fullPage: false });
 
   const supercell = await select(page, 'supercell');
-  check('supercellStillExclusive', supercell.active === 'supercell' && supercell.tornadoGroupVisible === false && supercell.slice6Visible === false && supercell.heritage?.atmosphere?.rootVisible === false, JSON.stringify(supercell));
+  check('supercellStillExclusive', supercell.active === 'supercell' && supercell.tornadoGroupVisible === false && supercell.slice6Visible === false && supercell.heritage?.condensation?.rootVisible === false, JSON.stringify(supercell));
   const derecho = await select(page, 'derecho');
-  check('derechoStillExclusive', derecho.active === 'derecho' && derecho.tornadoGroupVisible === false && derecho.slice6Visible === false && derecho.heritage?.atmosphere?.rootVisible === false, JSON.stringify(derecho));
+  check('derechoStillExclusive', derecho.active === 'derecho' && derecho.tornadoGroupVisible === false && derecho.slice6Visible === false && derecho.heritage?.condensation?.rootVisible === false, JSON.stringify(derecho));
   const tornadoReturn = await select(page, 'tornado');
-  check('tornadoRestoresAfterSecondary', tornadoReturn.tornadoGroupVisible === true && tornadoReturn.heritage?.legacy?.debrisVisible === true && tornadoReturn.heritage?.atmosphere?.rootVisible === true, JSON.stringify(tornadoReturn));
+  check('tornadoRestoresAfterSecondary', tornadoReturn.tornadoGroupVisible === true && tornadoReturn.heritage?.legacy?.debrisVisible === true && tornadoReturn.heritage?.condensation?.rootVisible === true, JSON.stringify(tornadoReturn));
 
   check('noRuntimeErrors', errors.length === 0, errors.join(' | '));
   await context.close();
@@ -118,15 +119,15 @@ try {
 
 const failed = checks.filter(item => !item.pass);
 const report = {
-  version: 'SW_WORLD_008_BROWSER_V4',
+  version: 'SW_WORLD_008_BROWSER_V6',
   passed: failed.length === 0,
   checks,
   errors,
   evidence: {
     visualTarget: 'tornado-visual-dev-reference-v1',
     screenshots: [
-      'artifacts/sw-world-008/01_tornado_atmosphere_844x390.png',
-      'artifacts/sw-world-008/02_touchdown_atmosphere_844x390.png',
+      'artifacts/sw-world-008/01_tornado_irregular_844x390.png',
+      'artifacts/sw-world-008/02_touchdown_irregular_844x390.png',
       'artifacts/sw-world-008/03_tornado_motion_sample_844x390.png'
     ]
   },
