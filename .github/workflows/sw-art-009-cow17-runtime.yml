@@ -1,0 +1,201 @@
+name: SW-ART-009 Cow 17 Runtime Integration
+
+on:
+  push:
+    branches:
+      - agent/sw-art-009-cow17-runtime-integration
+    paths:
+      - tools/art/live-requests/cow17-runtime-qa-v1.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sw-art-009-cow17-runtime
+  cancel-in-progress: false
+
+jobs:
+  verify-runtime:
+    name: Verify Cow 17 runtime integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prove exact task base scope and one-shot launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='de2e62835e79567b4bbfc079a372ce2af4ee0879'
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          test "${GITHUB_RUN_ATTEMPT}" = '1' || { echo 'SW-ART-009 evidence reruns are forbidden; create a new reviewed source/request commit.' >&2; exit 1; }
+          request='tools/art/live-requests/cow17-runtime-qa-v1.json'
+          test -s "$request"
+          changed_launch="$(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- "$request")"
+          test "$changed_launch" = "$request" || { echo 'Launch commit must change exactly the reviewed SW-ART-009 QA request.' >&2; exit 1; }
+          git diff --name-only "$base"...HEAD | tee sw-art-009-changed-files.txt
+          bad="$(grep -Ev '^(\.gitattributes|\.github/workflows/sw-art-009-cow17-asset-intake\.yml|\.github/workflows/sw-art-009-cow17-runtime\.yml|assets/production/asset-provenance\.json|assets/production/characters/cow17-walking-v1\.glb|runtime/sw-art-009-cow17-runtime\.js|scripts/build-web\.mjs|scripts/verify-sw-art-009-cow17-runtime\.mjs|scripts/qa-sw-art-009-cow17-runtime\.mjs|tools/art/live-requests/cow17-runtime-intake-v1\.json|tools/art/live-requests/cow17-runtime-qa-v1\.json)$' sw-art-009-changed-files.txt || true)"
+          if [ -n "$bad" ]; then
+            echo 'SW-ART-009 changed files outside the exact task territory:' >&2
+            echo "$bad" >&2
+            exit 1
+          fi
+
+      - name: Checkout accepted canonical for same-runner comparison
+        uses: actions/checkout@v4
+        with:
+          ref: de2e62835e79567b4bbfc079a372ce2af4ee0879
+          path: accepted-base
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global pnpm@11.9.0
+          pnpm install --frozen-lockfile
+          pnpm --dir accepted-base install --frozen-lockfile
+
+      - name: Verify Cow 17 static contract and inherited process laws
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check runtime/sw-art-009-cow17-runtime.js
+          node --check scripts/verify-sw-art-009-cow17-runtime.mjs
+          node --check scripts/qa-sw-art-009-cow17-runtime.mjs
+          node scripts/verify-sw-art-009-cow17-runtime.mjs
+          pnpm run verify:v500
+          pnpm run verify:asset-pipeline
+          pnpm run verify:sw-game-002
+          pnpm run verify:sw-feel-001
+          pnpm run verify:process
+          pnpm run modern:typecheck
+
+      - name: Build accepted canonical on same runner
+        shell: bash
+        working-directory: accepted-base
+        run: |
+          set -euo pipefail
+          pnpm run build
+          test -s www/index.html
+          test -s www/build-info.json
+          if test -e www/assets/production/characters/cow17-walking-v1.glb; then
+            echo 'Accepted canonical unexpectedly contains the SW-ART-009 Cow 17 GLB.' >&2
+            exit 1
+          fi
+
+      - name: Build Cow 17 candidate and prove offline package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run build
+          test -s www/index.html
+          test -s www/assets/production/characters/cow17-walking-v1.glb
+          cmp -s assets/production/characters/cow17-walking-v1.glb www/assets/production/characters/cow17-walking-v1.glb
+          grep -F '[SW:SOURCE:sw-art-009-cow17-runtime.js]' www/index.html
+          grep -F 'SW_COW17_RUNTIME_ASSET_V1' www/index.html
+          node - <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const expected = 'd5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93';
+          const bytes = fs.readFileSync('www/assets/production/characters/cow17-walking-v1.glb');
+          const sha = crypto.createHash('sha256').update(bytes).digest('hex');
+          if (sha !== expected) throw new Error(`Packaged Cow 17 SHA mismatch: ${sha}`);
+          if (bytes.length !== 14412828) throw new Error(`Packaged Cow 17 size mismatch: ${bytes.length}`);
+          const info = JSON.parse(fs.readFileSync('www/build-info.json', 'utf8'));
+          if (info.renderer !== 'Three.js r128') throw new Error(`Renderer changed: ${info.renderer}`);
+          if (info.productionAssets?.cow17 !== 'assets/production/characters/cow17-walking-v1.glb') throw new Error('Cow 17 path missing from build-info.json.');
+          if (info.productionAssets?.cow17Sha256 !== expected) throw new Error('Cow 17 SHA missing from build-info.json.');
+          if (info.productionAssets?.cow17Bytes !== 14412828) throw new Error('Cow 17 byte cost missing from build-info.json.');
+          NODE
+
+      - name: Install Playwright Chromium
+        shell: bash
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Cow 17 behavioral and inherited browser QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/sw-art-009
+          python3 -m http.server 4173 --directory www > qa-artifacts/sw-art-009/candidate-server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 80); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' > /dev/null
+          export SEVERE_WEATHER_QA_URL='http://127.0.0.1:4173/'
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/cow17' node scripts/qa-sw-art-009-cow17-runtime.mjs
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/asset-pipeline' pnpm run qa:asset-pipeline
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/moo-level' pnpm run qa:sw-game-002
+          env SEVERE_WEATHER_QA_DIR='qa-artifacts/sw-art-009/destruction-feel' pnpm run qa:sw-feel-001
+
+      - name: Capture same-runner accepted-base versus Cow 17 candidate performance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4180 --directory accepted-base/www > qa-artifacts/sw-art-009/perf-base-server.log 2>&1 &
+          BASE_PID=$!
+          python3 -m http.server 4181 --directory www > qa-artifacts/sw-art-009/perf-candidate-server.log 2>&1 &
+          CANDIDATE_PID=$!
+          cleanup() { kill "$BASE_PID" "$CANDIDATE_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for port in 4180 4181; do
+            for attempt in $(seq 1 80); do
+              if curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null; then break; fi
+              sleep 0.25
+            done
+            curl --silent --fail "http://127.0.0.1:${port}/" > /dev/null
+          done
+          env \
+            SEVERE_WEATHER_BASE_URL='http://127.0.0.1:4180/' \
+            SEVERE_WEATHER_CANDIDATE_URL='http://127.0.0.1:4181/' \
+            SEVERE_WEATHER_PERF_DIR='qa-artifacts/sw-art-009/performance' \
+            pnpm run perf:phase6
+
+      - name: Validate required evidence contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            sw-art-009-static-report.json \
+            qa-artifacts/sw-art-009/cow17/sw-art-009-cow17-runtime-report.json \
+            qa-artifacts/sw-art-009/cow17/cow17-authored-gameplay.png \
+            qa-artifacts/sw-art-009/cow17/cow17-authored-focused.png \
+            qa-artifacts/sw-art-009/cow17/cow17-fallback-gameplay.png \
+            qa-artifacts/sw-art-009/asset-pipeline/threejs-asset-pipeline-report.json \
+            qa-artifacts/sw-art-009/moo-level/sw-game-002-report.json \
+            qa-artifacts/sw-art-009/destruction-feel/sw-feel-001-report.json \
+            qa-artifacts/sw-art-009/performance/baseline-report.json \
+            qa-artifacts/sw-art-009/performance/candidate-report.json \
+            qa-artifacts/sw-art-009/performance/comparison-report.json \
+            www/build-info.json; do
+            test -s "$file" || { echo "Missing required evidence: $file" >&2; exit 1; }
+          done
+          sha256sum assets/production/characters/cow17-walking-v1.glb www/assets/production/characters/cow17-walking-v1.glb | tee sw-art-009-cow17-sha256.txt
+          stat -c '%n %s bytes' assets/production/characters/cow17-walking-v1.glb www/assets/production/characters/cow17-walking-v1.glb | tee sw-art-009-cow17-size.txt
+
+      - name: Upload Cow 17 runtime integration evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-art-009-cow17-runtime-${{ github.run_number }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            sw-art-009-static-report.json
+            sw-art-009-changed-files.txt
+            sw-art-009-cow17-sha256.txt
+            sw-art-009-cow17-size.txt
+            www/build-info.json
+            qa-artifacts/sw-art-009
