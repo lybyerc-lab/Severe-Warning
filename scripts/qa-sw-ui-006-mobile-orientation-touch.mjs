@@ -52,7 +52,7 @@ async function enterGameplay(page) {
     if (typeof resetWarningRun === 'function') resetWarningRun();
     globalThis.__SW_UI_006_APPLY__?.();
   });
-  await page.waitForTimeout(320);
+  await page.waitForTimeout(360);
 }
 
 async function snapshotState(page) {
@@ -65,7 +65,7 @@ async function snapshotState(page) {
       return {
         left: r.left, top: r.top, right: r.right, bottom: r.bottom,
         width: r.width, height: r.height,
-        display: style.display, visibility: style.visibility, opacity: Number(style.opacity || 1),
+        display: style.display, visibility: style.visibility, opacity: Number(style.opacity || 0),
       };
     };
     return {
@@ -91,25 +91,33 @@ async function snapshotState(page) {
   });
 }
 
-let browser;
-try {
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+function hiddenUnderGate(entry) {
+  return entry && (entry.visibility === 'hidden' || entry.opacity === 0);
+}
 
-  const mobile = await browser.newContext({
-    viewport: { width: 844, height: 390 },
+async function createMobileContext(browser, width, height) {
+  return browser.newContext({
+    viewport: { width, height },
     isMobile: true,
     hasTouch: true,
     deviceScaleFactor: 1,
     serviceWorkers: 'block',
   });
-  const page = await mobile.newPage();
-  page.on('pageerror', error => errors.push(String(error.message || error)));
-  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-  await page.goto(`${origin}/index.html?intro=0`, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => typeof globalThis.getSwUi006State === 'function' && typeof globalThis.__SW_UI_006_APPLY__ === 'function', null, { timeout: 25000 });
-  await enterGameplay(page);
+}
 
-  const landscape = await snapshotState(page);
+let browser;
+try {
+  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+
+  const landscapeContext = await createMobileContext(browser, 844, 390);
+  const landscapePage = await landscapeContext.newPage();
+  landscapePage.on('pageerror', error => errors.push(String(error.message || error)));
+  landscapePage.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  await landscapePage.goto(`${origin}/index.html?intro=0`, { waitUntil: 'domcontentloaded' });
+  await landscapePage.waitForFunction(() => typeof globalThis.getSwUi006State === 'function' && typeof globalThis.__SW_UI_006_APPLY__ === 'function', null, { timeout: 25000 });
+  await enterGameplay(landscapePage);
+
+  const landscape = await snapshotState(landscapePage);
   check('landscapeTouchDetected', landscape.ui006?.touchMode === true, JSON.stringify(landscape.ui006));
   check('landscapeRotateGateHidden', landscape.ui006?.portraitGameplay === false && landscape.gate?.display === 'none', JSON.stringify(landscape.gate));
   check('touchKeyboardHintsHidden', landscape.labels.every((entry) => entry.hintDisplay === 'none'), JSON.stringify(landscape.labels));
@@ -117,17 +125,27 @@ try {
   check('landscapeControlsInsideViewport', Boolean(landscape.controls) && landscape.controls.left >= -0.5 && landscape.controls.right <= landscape.viewport.width + 0.5 && landscape.controls.bottom <= landscape.viewport.height + 0.5, JSON.stringify(landscape.controls));
   check('landscapeTelemetryInsideViewport', Boolean(landscape.telemetry) && landscape.telemetry.left >= -0.5 && landscape.telemetry.right <= landscape.viewport.width + 0.5 && landscape.telemetry.bottom <= landscape.viewport.height + 0.5, JSON.stringify(landscape.telemetry));
   check('landscapeFooterNoControlOverlap', Boolean(landscape.telemetry && landscape.controls) && landscape.telemetry.right <= landscape.controls.left + 0.5, JSON.stringify({ telemetry: landscape.telemetry, controls: landscape.controls }));
-  await page.screenshot({ path: path.join(artifactDir, '01_landscape_touch_844x390.png'), fullPage: true });
+  await landscapePage.screenshot({ path: path.join(artifactDir, '01_landscape_touch_844x390.png'), fullPage: false });
+  await landscapeContext.close();
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.evaluate(() => globalThis.__SW_UI_006_APPLY__?.());
-  await page.waitForTimeout(320);
-  const portrait = await snapshotState(page);
-  check('portraitRotateGateActive', portrait.ui006?.portraitGameplay === true && portrait.gate?.display === 'flex', JSON.stringify(portrait.ui006));
+  // A fresh portrait context is intentional. Resizing an already-landscape
+  // mobile emulation can retain the old layout viewport and produce a misleading
+  // full-page capture that does not match a phone opened in portrait.
+  const portraitContext = await createMobileContext(browser, 390, 844);
+  const portraitPage = await portraitContext.newPage();
+  portraitPage.on('pageerror', error => errors.push(String(error.message || error)));
+  portraitPage.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  await portraitPage.goto(`${origin}/index.html?intro=0`, { waitUntil: 'domcontentloaded' });
+  await portraitPage.waitForFunction(() => typeof globalThis.getSwUi006State === 'function' && typeof globalThis.__SW_UI_006_APPLY__ === 'function', null, { timeout: 25000 });
+  await enterGameplay(portraitPage);
+  const portrait = await snapshotState(portraitPage);
+  check('portraitViewportIsNative', portrait.viewport.width === 390 && portrait.viewport.height === 844, JSON.stringify(portrait.viewport));
+  check('portraitRotateGateActive', portrait.ui006?.portraitGameplay === true && portrait.gate?.display === 'flex' && portrait.gate?.visibility === 'visible' && portrait.gate?.opacity === 1, JSON.stringify(portrait.ui006));
   check('portraitGateCoversViewport', Boolean(portrait.gate) && portrait.gate.left <= 0.5 && portrait.gate.top <= 0.5 && portrait.gate.right >= portrait.viewport.width - 0.5 && portrait.gate.bottom >= portrait.viewport.height - 0.5, JSON.stringify(portrait.gate));
-  check('portraitGameplayUnderlayHidden', portrait.canvas?.visibility === 'hidden' && portrait.controls?.visibility === 'hidden' && portrait.telemetry?.visibility === 'hidden', JSON.stringify({ canvas: portrait.canvas, controls: portrait.controls, telemetry: portrait.telemetry }));
-  await page.screenshot({ path: path.join(artifactDir, '02_portrait_rotate_gate_390x844.png'), fullPage: true });
-  await mobile.close();
+  check('portraitGameplayUnderlayHidden', hiddenUnderGate(portrait.canvas) && hiddenUnderGate(portrait.controls) && hiddenUnderGate(portrait.telemetry) && hiddenUnderGate(portrait.joystick), JSON.stringify({ canvas: portrait.canvas, controls: portrait.controls, telemetry: portrait.telemetry, joystick: portrait.joystick }));
+  check('portraitSuppressionApplied', (portrait.ui006?.suppressedPortraitNodes || 0) >= 4, JSON.stringify(portrait.ui006));
+  await portraitPage.screenshot({ path: path.join(artifactDir, '02_portrait_rotate_gate_390x844.png'), fullPage: false });
+  await portraitContext.close();
 
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 }, hasTouch: false, isMobile: false, serviceWorkers: 'block' });
   const desktopPage = await desktop.newPage();
@@ -140,7 +158,7 @@ try {
   check('desktopTouchModeOff', desktopState.ui006?.touchMode === false, JSON.stringify(desktopState.ui006));
   check('desktopKeyboardHintsRemainVisible', desktopState.labels.every((entry) => entry.hintDisplay !== 'none') && desktopState.labels.map((entry) => entry.hint).join('|') === 'SPACE|Q|E', JSON.stringify(desktopState.labels));
   check('desktopRotateGateHidden', desktopState.gate?.display === 'none', JSON.stringify(desktopState.gate));
-  await desktopPage.screenshot({ path: path.join(artifactDir, '03_desktop_keyboard_truth_1440x900.png'), fullPage: true });
+  await desktopPage.screenshot({ path: path.join(artifactDir, '03_desktop_keyboard_truth_1440x900.png'), fullPage: false });
   await desktop.close();
 
   check('noRuntimeErrors', errors.length === 0, errors.join(' | '));
@@ -151,7 +169,7 @@ try {
 
 const failed = checks.filter((entry) => !entry.pass);
 const report = {
-  version: 'SW_UI_006_BROWSER_V1',
+  version: 'SW_UI_006_BROWSER_V2',
   passed: failed.length === 0,
   checks,
   errors,
