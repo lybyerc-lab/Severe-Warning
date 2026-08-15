@@ -1,0 +1,27 @@
+{
+  "version": "SW_MESHY_RIGGING_LIVE_REQUEST_V1",
+  "id": "cow17-rigging-v1",
+  "productionAuthority": "candidate only",
+  "source": {
+    "recoveryRunId": 31908595053,
+    "recoveryArtifactId": 9253031593,
+    "glbPath": "art-source/generated/meshy/cow17-textured-v1-recovered/cow17-textured-v1.glb",
+    "expectedGlbSha256": "7e5bdc2ecf0799c7759ed2d4bc1f6dd3b49ecaf21b4ba4a5308e3a8a9e03bd90",
+    "expectedTriangles": 199162,
+    "expectedVertices": 109775
+  },
+  "meshy": {
+    "endpoint": "rigging",
+    "inputTaskId": "01a0073a-779e-768e-9f0f-46f4e27347a5"
+  },
+  "costGuard": {
+    "authorizedTasks": 1,
+    "maxCredits": 5
+  },
+  "output": {
+    "dir": "art-source/generated/meshy/cow17-rigged-v1",
+    "riggedGlb": "cow17-rigged-v1.glb",
+    "walkingGlb": "cow17-walking-v1.glb",
+    "runningGlb": "cow17-running-v1.glb"
+  }
+}
