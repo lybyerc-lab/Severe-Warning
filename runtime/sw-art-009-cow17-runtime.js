@@ -226,7 +226,7 @@ async function swCow17BuildScene(buffer) {
     map: texture,
     roughness: 0.68,
     metalness: 0.02,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
     skinning: true,
   });
 
@@ -236,9 +236,9 @@ async function swCow17BuildScene(buffer) {
     let object;
     if (definition.mesh !== undefined) {
       object = new THREE.SkinnedMesh(geometry, material);
-      object.castShadow = true;
-      object.receiveShadow = true;
-      object.frustumCulled = false;
+      object.castShadow = false;
+      object.receiveShadow = false;
+      object.frustumCulled = true;
     } else if (jointSet.has(index)) {
       object = new THREE.Bone();
     } else {
