@@ -2,6 +2,7 @@
   "version": "SW_MESHY_MULTI_LIVE_REQUEST_V1",
   "id": "cow17-multi-image-v1",
   "productionAuthority": "candidate only",
+  "launchNonce": 1,
   "source": {
     "runId": 31895535943,
     "artifactId": 9249708267,
