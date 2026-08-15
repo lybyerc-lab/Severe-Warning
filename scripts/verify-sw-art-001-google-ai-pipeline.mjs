@@ -35,6 +35,8 @@ check('asset-pipeline-remains-presentation-only', files.assetPipelineMap.include
 check('image-default-current', files.cli.includes("'gemini-3.1-flash-image'"));
 check('video-default-current', files.cli.includes("'gemini-omni-flash-preview'"));
 check('model-override-supported', files.cli.includes('options.model ||'));
+check('image-response-format-jpeg', files.cli.includes("mime_type: 'image/jpeg'"));
+check('image-output-extension-guard', files.cli.includes("outputExt !== '.jpg' && outputExt !== '.jpeg'"));
 check('dry-run-does-not-require-key', files.cli.indexOf('if (options.dryRun)') < files.cli.indexOf('const apiKey = process.env.GEMINI_API_KEY'));
 check('manifest-does-not-record-key', !/manifest\s*=\s*\{[\s\S]{0,2000}apiKey/i.test(files.cli));
 
@@ -64,6 +66,7 @@ let videoDry = null;
 try {
   imageDry = runDry('image', 'cow17');
   check('image-dry-run-executes', imageDry.dryRun === true && imageDry.command === 'image' && imageDry.briefId === 'cow17');
+  check('image-dry-run-jpeg-contract', imageDry.responseFormat?.mime_type === 'image/jpeg' && imageDry.outputPath.endsWith('.jpg'), JSON.stringify(imageDry.responseFormat));
   check('image-dry-run-no-secret', !JSON.stringify(imageDry).includes('GEMINI_API_KEY') && !/AIza/.test(JSON.stringify(imageDry)));
 } catch (error) {
   check('image-dry-run-executes', false, error.message);
@@ -79,7 +82,7 @@ try {
 
 const failedChecks = checks.filter((entry) => !entry.passed);
 const report = {
-  version: 'SW_ART_001_STATIC_V1',
+  version: 'SW_ART_001_STATIC_V2',
   passed: failedChecks.length === 0,
   checks,
   failedChecks,
