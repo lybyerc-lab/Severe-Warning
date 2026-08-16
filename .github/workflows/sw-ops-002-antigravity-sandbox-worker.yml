@@ -69,9 +69,10 @@ jobs:
           if (request.allowedPaths.length !== 1 || request.allowedPaths[0] !== 'tools/antigravity/fixtures/sw-ops-002-smoke.txt') throw new Error('allowed territory widened');
           if (request.tokenBudget > 16000) throw new Error('token budget widened');
           if (request.maxPatchBytes > 10000) throw new Error('patch limit widened');
-          if (request.executionMode !== 'custom-environment-unary-with-adaptive-poll') throw new Error('wrong execution mode');
+          if (request.executionMode !== 'custom-environment-function-handoff') throw new Error('wrong execution mode');
           if (request.continuationStateMode !== 'same-environment-fresh-conversation') throw new Error('wrong continuation state mode');
-          if (request.returnChannel !== 'validated inline JSON patch') throw new Error('wrong return channel');
+          if (request.returnChannel !== 'function_call:submit_worker_bundle') throw new Error('wrong return channel');
+          if (!request.tools.includes('submit_worker_bundle')) throw new Error('submit function missing');
           if (continuation.mode !== 'continue') throw new Error('continuation mode missing');
           if (continuation.auditPreviousInteractionId !== 'test_interaction_id') throw new Error('continuation lost audit interaction ID');
           if (continuation.environmentId !== 'test_environment_id') throw new Error('continuation lost environment ID');
@@ -135,7 +136,8 @@ jobs:
           const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
           if (!envelope.interactionId) throw new Error('missing interactionId');
           if (!envelope.environmentId) throw new Error('missing environmentId');
-          if (envelope.returnChannel !== 'model-output') throw new Error('wrong return channel');
+          if (!envelope.functionCallId) throw new Error('missing functionCallId');
+          if (envelope.returnChannel !== 'function_call:submit_worker_bundle') throw new Error('wrong return channel');
           if (envelope.exactBaseSha !== expectedBase) throw new Error('wrong envelope base');
           if (JSON.stringify(envelope.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('wrong patch paths');
           if (envelope.patchBytes <= 0 || envelope.patchBytes > 10000) throw new Error('invalid patch size');
@@ -165,7 +167,7 @@ jobs:
             --task tools/antigravity/tasks/sw-ops-002-smoke.json \
             --interaction "$INTERACTION_ID" \
             --environment "$ENVIRONMENT_ID" \
-            --input "Director correction: keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other repository change. Regenerate the complete patch from the same exact base and refresh the structured result." \
+            --input "Director correction: keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other repository change. Regenerate the complete patch from the same exact base and submit the revised worker bundle." \
             --output-dir evidence/sw-ops-002-continued
 
       - name: Validate revised patch from same environment
@@ -182,7 +184,8 @@ jobs:
           const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
           if (!revised.interactionId || revised.interactionId === initial.interactionId) throw new Error('continuation did not create a new interaction');
           if (revised.environmentId !== initial.environmentId) throw new Error('continuation did not reuse the same environment');
-          if (revised.returnChannel !== 'model-output') throw new Error('wrong revised return channel');
+          if (!revised.functionCallId) throw new Error('revised function call missing');
+          if (revised.returnChannel !== 'function_call:submit_worker_bundle') throw new Error('wrong revised return channel');
           if (revised.exactBaseSha !== expectedBase) throw new Error('wrong revised base');
           if (JSON.stringify(revised.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('revised patch escaped scope');
           if (result.status !== 'completed') throw new Error(`revised worker did not complete: ${result.status}`);
