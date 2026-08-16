@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // [SW:OPS:ANTIGRAVITY_SIMPLE_WORKER_V1]
-// Tooling only. Antigravity proposes sandbox edits; the host decides what can cross into Git.
+// Tooling only. One task in, one untrusted patch out. GitHub remains Director-controlled.
 
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -20,7 +20,7 @@ const SNAPSHOT_RETRIES = 4;
 const SNAPSHOT_RETRY_MS = 4000;
 
 function usage() {
-  console.log(`Severe Weather Warning Antigravity worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue --task <task.json> --interaction <audit-id> --environment <id> --input <text> --output-dir <dir> [--dry-run]\n\nEnvironment:\n  GEMINI_API_KEY  Required for live calls only. Never commit or print it.\n`);
+  console.log(`Severe Weather Warning Antigravity worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n\nEnvironment:\n  GEMINI_API_KEY  Required for live calls only. Never commit or print it.\n`);
 }
 
 function parseArgs(argv) {
@@ -54,13 +54,7 @@ function stringList(value, label) {
 
 function safeExactFile(value, label) {
   const normalized = requiredString(value, label).replaceAll('\\', '/').replace(/^\.\//, '');
-  if (
-    normalized.startsWith('/') ||
-    normalized === '..' ||
-    normalized.includes('../') ||
-    normalized.startsWith('.git/') ||
-    normalized.endsWith('/')
-  ) {
+  if (normalized.startsWith('/') || normalized === '..' || normalized.includes('../') || normalized.startsWith('.git/') || normalized.endsWith('/')) {
     throw new Error(`${label} must be a safe exact repository file path`);
   }
   return normalized;
@@ -71,12 +65,9 @@ async function loadTask(inputPath) {
   const raw = JSON.parse(await readFile(absolute, 'utf8'));
   const tokenBudget = Number(raw.tokenBudget ?? 8000);
   const maxPatchBytes = Number(raw.maxPatchBytes ?? 100000);
-  if (!Number.isInteger(tokenBudget) || tokenBudget < 2000 || tokenBudget > 20000) {
-    throw new Error('tokenBudget must be an integer between 2000 and 20000');
-  }
-  if (!Number.isInteger(maxPatchBytes) || maxPatchBytes < 1 || maxPatchBytes > 100000) {
-    throw new Error('maxPatchBytes must be an integer between 1 and 100000');
-  }
+  if (!Number.isInteger(tokenBudget) || tokenBudget < 2000 || tokenBudget > 20000) throw new Error('tokenBudget must be an integer between 2000 and 20000');
+  if (!Number.isInteger(maxPatchBytes) || maxPatchBytes < 1 || maxPatchBytes > 100000) throw new Error('maxPatchBytes must be an integer between 1 and 100000');
+
   const task = {
     version: requiredString(raw.version, 'version'),
     taskId: requiredString(raw.taskId, 'taskId'),
@@ -86,14 +77,13 @@ async function loadTask(inputPath) {
     goal: requiredString(raw.goal, 'goal'),
     nonGoals: stringList(raw.nonGoals, 'nonGoals'),
     allowedPaths: stringList(raw.allowedPaths, 'allowedPaths').map((item, index) => safeExactFile(item, `allowedPaths[${index}]`)),
-    protectedPaths: stringList(raw.protectedPaths, 'protectedPaths'),
-    proofPlan: stringList(raw.proofPlan, 'proofPlan'),
     requestedTests: stringList(raw.requestedTests, 'requestedTests'),
     tokenBudget,
     maxPatchBytes,
     requirePatch: raw.requirePatch !== false,
     agent: raw.agent ? requiredString(raw.agent, 'agent') : DEFAULT_AGENT,
   };
+
   if (!task.allowedPaths.length) throw new Error('allowedPaths must contain at least one exact file path');
   if (!/^[0-9a-f]{40}$/i.test(task.exactBaseSha)) throw new Error('exactBaseSha must be a full 40-character Git SHA');
   if (!/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(?:\.git)?$/.test(task.repositoryUrl)) {
@@ -107,18 +97,18 @@ function policyText(task) {
     '# Severe Weather Warning bounded Antigravity worker',
     '',
     'This sandbox is disposable and is NOT repository authority.',
-    'Do not checkout branches, rewrite history, commit, push, merge, publish, release, deploy, or request credentials.',
+    'Do not change branches or Git history. Do not commit, push, merge, publish, release, deploy, or request credentials.',
     'Edit only the exact file paths listed below. Do not create handoff files.',
     ...task.allowedPaths.map((item) => `- ${item}`),
     '',
-    'The host extracts only those allowlisted files from the sandbox and builds a candidate patch against the frozen base SHA.',
+    'The host extracts only those allowlisted files and builds a candidate patch against the frozen base SHA.',
     'Anything else in the sandbox is ignored and cannot cross into GitHub.',
   ].join('\n');
 }
 
 function taskPrompt(task) {
   return [
-    'Execute this bounded Severe Weather Warning task in the mounted sandbox.',
+    'Execute this bounded Severe Weather Warning task now.',
     `Task ID: ${task.taskId}`,
     '',
     'Goal:', task.goal,
@@ -130,63 +120,32 @@ function taskPrompt(task) {
     'Requested checks:', ...task.requestedTests.map((item) => `- ${item}`),
     '',
     'Do not spend time changing Git branches or matching the host base SHA. The sandbox checkout is untrusted by design.',
-    'Make the bounded file edit, run the lightweight checks, and stop. The host will derive and validate the patch.',
+    'Make the bounded file edit, run the lightweight checks, and stop. The host derives and validates the patch.',
   ].join('\n');
 }
 
-function continuationPrompt(task, input, auditInteractionId) {
-  return [
-    'Reuse the existing Severe Weather Warning sandbox filesystem.',
-    `Prior audited interaction ID: ${auditInteractionId}.`,
-    `Task ID: ${task.taskId}.`,
-    'Keep the same exact file scope and do not broaden authority.',
-    '',
-    'Director correction:', requiredString(input, '--input'),
-    '',
-    'Apply only that correction to the allowlisted file(s), run the lightweight checks, and stop.',
-  ].join('\n');
-}
-
-function environmentConfig(task) {
-  return {
-    type: 'remote',
-    sources: [
-      { type: 'repository', source: task.repositoryUrl, target: REPO_TARGET },
-      { type: 'inline', target: '.agents/AGENTS.md', content: policyText(task) },
-    ],
-    network: { allowlist: [{ domain: 'github.com' }] },
-  };
-}
-
-function initialBody(task) {
+function requestBody(task) {
   return {
     agent: task.agent,
     input: taskPrompt(task),
-    environment: environmentConfig(task),
+    environment: {
+      type: 'remote',
+      sources: [
+        { type: 'repository', source: task.repositoryUrl, target: REPO_TARGET },
+        { type: 'inline', target: '.agents/AGENTS.md', content: policyText(task) },
+      ],
+      network: { allowlist: [{ domain: 'github.com' }] },
+    },
     store: true,
     tools: [{ type: 'code_execution' }],
     agent_config: { type: 'antigravity', max_total_tokens: task.tokenBudget },
   };
 }
 
-function continuationBody(task, options) {
-  const auditInteractionId = requiredString(options.interaction, '--interaction');
-  return {
-    agent: task.agent,
-    input: continuationPrompt(task, options.input, auditInteractionId),
-    environment: requiredString(options.environment, '--environment'),
-    store: true,
-    tools: [{ type: 'code_execution' }],
-    agent_config: { type: 'antigravity', max_total_tokens: task.tokenBudget },
-    auditInteractionId,
-  };
-}
-
-function drySummary(task, taskFile, mode, extras = {}) {
+function drySummary(task, taskFile) {
   return {
     version: 'SW_OPS_002_SIMPLE_WORKER_REQUEST_V1',
     dryRun: true,
-    mode,
     taskFile,
     taskId: task.taskId,
     patchBaseSha: task.exactBaseSha,
@@ -198,7 +157,6 @@ function drySummary(task, taskFile, mode, extras = {}) {
     sandboxTrust: 'untrusted',
     returnChannel: 'allowlisted-files-to-host-derived-patch',
     githubWriteAuthority: false,
-    ...extras,
   };
 }
 
@@ -229,9 +187,7 @@ async function apiJson(method, url, body) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function runInteraction(body) {
-  const request = { ...body };
-  delete request.auditInteractionId;
-  let interaction = await apiJson('POST', INTERACTIONS_URL, request);
+  let interaction = await apiJson('POST', INTERACTIONS_URL, body);
   const id = requiredString(interaction.id, 'interaction.id');
   const started = Date.now();
   while (interaction.status === 'in_progress') {
@@ -284,7 +240,6 @@ import json, os, shutil, sys, tarfile
 archive, output_dir, allowed_json = sys.argv[1:4]
 allowed = set(json.loads(allowed_json))
 found = {}
-
 os.makedirs(output_dir, exist_ok=True)
 
 def norm(name):
@@ -350,12 +305,11 @@ async function derivePatch(task, interaction, outputDir) {
   const candidateDir = path.join(scratch, 'candidate');
   const baseWorktree = path.join(scratch, 'base');
   let worktreeAdded = false;
+
   try {
     const snapshotAttempts = await downloadSnapshot(environmentId, tarPath);
     await mkdir(candidateDir, { recursive: true });
-    const extraction = JSON.parse(run('python3', [
-      '-c', EXTRACT_ALLOWED_SCRIPT, tarPath, candidateDir, JSON.stringify(task.allowedPaths),
-    ]) || '{}');
+    const extraction = JSON.parse(run('python3', ['-c', EXTRACT_ALLOWED_SCRIPT, tarPath, candidateDir, JSON.stringify(task.allowedPaths)]) || '{}');
 
     run('git', ['worktree', 'add', '--detach', baseWorktree, task.exactBaseSha]);
     worktreeAdded = true;
@@ -373,14 +327,11 @@ async function derivePatch(task, interaction, outputDir) {
 
     for (const relative of task.allowedPaths) {
       const tracked = spawnSync('git', ['-C', baseWorktree, 'ls-files', '--error-unmatch', '--', relative], { encoding: 'utf8' });
-      const exists = extraction.present.includes(relative);
-      if (exists && tracked.status !== 0) run('git', ['-C', baseWorktree, 'add', '-N', '--', relative]);
+      if (extraction.present.includes(relative) && tracked.status !== 0) run('git', ['-C', baseWorktree, 'add', '-N', '--', relative]);
     }
 
     run('git', ['-C', baseWorktree, 'diff', '--check']);
-    const patch = run('git', [
-      '-C', baseWorktree, 'diff', '--binary', '--no-ext-diff', '--full-index', 'HEAD', '--', ...task.allowedPaths,
-    ]);
+    const patch = run('git', ['-C', baseWorktree, 'diff', '--binary', '--no-ext-diff', '--full-index', 'HEAD', '--', ...task.allowedPaths]);
     const checked = validatePatch(task, patch);
 
     const result = {
@@ -395,8 +346,6 @@ async function derivePatch(task, interaction, outputDir) {
       patchBytes: checked.bytes,
       snapshotAttempts,
       sandboxTrust: 'untrusted',
-      extractedPresentPaths: extraction.present,
-      extractedAbsentPaths: extraction.absent,
       githubWriteAuthority: false,
       nextAction: 'Host must independently apply-check this patch against patchBaseSha before any GitHub write.',
     };
@@ -404,40 +353,23 @@ async function derivePatch(task, interaction, outputDir) {
     await writeFile(path.join(dir, 'worker.patch'), patch, 'utf8');
     await writeFile(path.join(dir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
     console.log(`SW-OPS-002 candidate patch: ${checked.paths.length} path(s), ${checked.bytes} bytes`);
-    return result;
   } finally {
-    if (worktreeAdded) {
-      spawnSync('git', ['worktree', 'remove', '--force', baseWorktree], { cwd: process.cwd(), encoding: 'utf8' });
-    }
+    if (worktreeAdded) spawnSync('git', ['worktree', 'remove', '--force', baseWorktree], { cwd: process.cwd(), encoding: 'utf8' });
     await rm(scratch, { recursive: true, force: true });
   }
 }
 
-async function writeDry(summary, outputDir) {
-  if (!outputDir) return console.log(JSON.stringify(summary, null, 2));
-  const dir = path.resolve(process.cwd(), outputDir);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, 'request.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
-  console.log(`Wrote ${path.join(dir, 'request.json')}`);
-}
-
 async function execute(options) {
   const { task, absolute } = await loadTask(options.task);
-  if (options.dryRun) return writeDry(drySummary(task, path.relative(process.cwd(), absolute), 'execute'), options['output-dir']);
-  const interaction = await runInteraction(initialBody(task));
-  await derivePatch(task, interaction, options['output-dir']);
-}
-
-async function continueTask(options) {
-  const { task, absolute } = await loadTask(options.task);
-  const body = continuationBody(task, options);
   if (options.dryRun) {
-    return writeDry(drySummary(task, path.relative(process.cwd(), absolute), 'continue', {
-      auditPreviousInteractionId: body.auditInteractionId,
-      environmentId: body.environment,
-    }), options['output-dir']);
+    const dir = options['output-dir'];
+    const summary = drySummary(task, path.relative(process.cwd(), absolute));
+    if (!dir) return console.log(JSON.stringify(summary, null, 2));
+    await mkdir(path.resolve(process.cwd(), dir), { recursive: true });
+    await writeFile(path.join(path.resolve(process.cwd(), dir), 'request.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
+    return;
   }
-  const interaction = await runInteraction(body);
+  const interaction = await runInteraction(requestBody(task));
   await derivePatch(task, interaction, options['output-dir']);
 }
 
@@ -445,7 +377,6 @@ async function main() {
   const { command, options } = parseArgs(process.argv.slice(2));
   if (!command || command === 'help') return usage();
   if (command === 'execute') return execute(options);
-  if (command === 'continue') return continueTask(options);
   throw new Error(`Unknown command: ${command}`);
 }
 
