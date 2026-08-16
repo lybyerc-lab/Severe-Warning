@@ -339,43 +339,121 @@ function run(command, args, options = {}) {
     maxBuffer: 32 * 1024 * 1024,
   });
   if (result.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} failed: ${String(result.stderr || result.stdout || '').trim()}`);
+    const detail = String(result.stderr || result.stdout || '').trim().slice(0, 500);
+    throw new Error(`${command} ${args.join(' ')} failed${detail ? `: ${detail}` : ''}`);
   }
   return String(result.stdout || '');
 }
 
-function tarEntries(tarPath) {
-  return run('tar', ['-tf', tarPath]).split(/\r?\n/).filter(Boolean);
+const TAR_MANIFEST_SCRIPT = String.raw`
+import json, sys, tarfile
+
+def norm(name):
+    while name.startswith('./'):
+        name = name[2:]
+    return name
+
+out = []
+with tarfile.open(sys.argv[1], 'r:*') as tf:
+    for m in tf.getmembers():
+        name = norm(m.name)
+        if m.isreg(): kind = 'file'
+        elif m.isdir(): kind = 'dir'
+        elif m.issym(): kind = 'symlink'
+        elif m.islnk(): kind = 'hardlink'
+        else: kind = 'other'
+        out.append({'name': name, 'kind': kind, 'linkname': m.linkname if kind in ('symlink','hardlink') else ''})
+print(json.dumps(out, separators=(',', ':')))
+`;
+
+function tarManifest(tarPath) {
+  return JSON.parse(run('python3', ['-c', TAR_MANIFEST_SCRIPT, tarPath]));
 }
 
-function normalizeTarEntry(entry) {
-  return entry.replace(/^\.\//, '');
-}
-
-function validateTar(entries, tarPath) {
-  for (const raw of entries) {
-    const entry = normalizeTarEntry(raw);
-    const parts = entry.split('/');
-    if (raw.startsWith('/') || parts.includes('..')) throw new Error(`Unsafe environment snapshot entry: ${raw}`);
+function validateMemberName(name) {
+  if (!name || name.startsWith('/') || name.split('/').includes('..')) {
+    throw new Error(`Unsafe environment snapshot entry: ${String(name).slice(0, 180)}`);
   }
-  const verbose = run('tar', ['-tvf', tarPath]);
-  for (const line of verbose.split(/\r?\n/)) {
-    if (!line) continue;
-    if ('lhcbp'.includes(line[0])) throw new Error(`Environment snapshot contains unsupported link/device entry: ${line.slice(0, 160)}`);
-  }
 }
 
-function findRepoPrefix(entries) {
+function findRepoPrefix(manifest) {
   const candidates = new Set();
-  for (const raw of entries) {
-    const entry = normalizeTarEntry(raw);
+  for (const member of manifest) {
+    validateMemberName(member.name);
     const marker = 'workspace/repo/';
-    const index = entry.indexOf(marker);
-    if (index >= 0) candidates.add(entry.slice(0, index) + marker);
-    if (entry === 'workspace/repo') candidates.add('workspace/repo/');
+    const index = member.name.indexOf(marker);
+    if (index >= 0) candidates.add(member.name.slice(0, index) + marker);
+    if (member.name === 'workspace/repo') candidates.add('workspace/repo/');
   }
   if (candidates.size !== 1) throw new Error(`Expected exactly one workspace/repo prefix in snapshot; found ${candidates.size}`);
   return [...candidates][0];
+}
+
+const MATERIALIZE_REPO_SCRIPT = String.raw`
+import json, os, shutil, sys, tarfile
+
+archive, prefix, dest = sys.argv[1:4]
+if not prefix.endswith('/'):
+    prefix += '/'
+
+skipped_git_links = []
+
+def norm(name):
+    while name.startswith('./'):
+        name = name[2:]
+    return name
+
+def safe_rel(name):
+    if name.startswith('/'):
+        raise RuntimeError('absolute archive member')
+    rel = name[len(prefix):] if name.startswith(prefix) else ''
+    rel = rel.lstrip('/')
+    parts = [p for p in rel.split('/') if p not in ('', '.')]
+    if '..' in parts:
+        raise RuntimeError('archive traversal member')
+    return '/'.join(parts)
+
+with tarfile.open(archive, 'r:*') as tf:
+    for m in tf.getmembers():
+        name = norm(m.name)
+        if name == prefix.rstrip('/'):
+            continue
+        if not name.startswith(prefix):
+            continue
+        rel = safe_rel(name)
+        if not rel:
+            continue
+        inside_git = rel == '.git' or rel.startswith('.git/')
+        if m.issym() or m.islnk() or m.isdev():
+            if inside_git:
+                skipped_git_links.append(rel)
+                continue
+            raise RuntimeError('non-regular repository member outside .git: ' + rel[:180])
+        target = os.path.abspath(os.path.join(dest, *rel.split('/')))
+        root = os.path.abspath(dest) + os.sep
+        if not (target + os.sep).startswith(root):
+            raise RuntimeError('repository extraction escaped destination')
+        if m.isdir():
+            os.makedirs(target, exist_ok=True)
+            continue
+        if not m.isreg():
+            if inside_git:
+                continue
+            raise RuntimeError('unsupported repository member outside .git: ' + rel[:180])
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        src = tf.extractfile(m)
+        if src is None:
+            raise RuntimeError('regular archive member had no payload')
+        with src, open(target, 'wb') as out:
+            shutil.copyfileobj(src, out)
+        os.chmod(target, m.mode & 0o777)
+
+print(json.dumps({'skippedGitLinkCount': len(skipped_git_links), 'skippedGitLinks': skipped_git_links[:12]}, separators=(',', ':')))
+`;
+
+function materializeRepo(tarPath, repoPrefix, snapshotRepo) {
+  const raw = run('python3', ['-c', MATERIALIZE_REPO_SCRIPT, tarPath, repoPrefix, snapshotRepo]);
+  return JSON.parse(raw || '{}');
 }
 
 function patchPaths(patch) {
@@ -422,17 +500,20 @@ async function deriveSnapshotPatch(task, interaction, outputDir) {
   await mkdir(dir, { recursive: true });
   const scratch = await mkdtemp(path.join(os.tmpdir(), 'sw-ops-002-'));
   const tarPath = path.join(scratch, 'environment.tar');
-  const snapshotRoot = path.join(scratch, 'snapshot');
+  const snapshotRepo = path.join(scratch, 'snapshot-repo');
   const baseWorktree = path.join(scratch, 'base');
   let worktreeAdded = false;
   try {
     const attempts = await downloadSnapshot(environmentId, tarPath);
-    const entries = tarEntries(tarPath);
-    validateTar(entries, tarPath);
-    const repoPrefix = findRepoPrefix(entries);
-    await mkdir(snapshotRoot, { recursive: true });
-    run('tar', ['--no-same-owner', '--no-same-permissions', '-xf', tarPath, '-C', snapshotRoot]);
-    const snapshotRepo = path.join(snapshotRoot, repoPrefix.replace(/\/$/, ''));
+    const manifest = tarManifest(tarPath);
+    const repoPrefix = findRepoPrefix(manifest);
+    await mkdir(snapshotRepo, { recursive: true });
+    const materialized = materializeRepo(tarPath, repoPrefix, snapshotRepo);
+    console.log(`[SW-OPS-002] materialized regular repo entries; skippedGitLinkCount=${materialized.skippedGitLinkCount || 0}`);
+    if (Array.isArray(materialized.skippedGitLinks) && materialized.skippedGitLinks.length) {
+      console.log(`[SW-OPS-002] skipped .git link paths=${JSON.stringify(materialized.skippedGitLinks)}`);
+    }
+
     const snapshotHead = run('git', ['-C', snapshotRepo, 'rev-parse', 'HEAD']).trim();
     if (snapshotHead !== task.exactBaseSha) {
       throw new Error(`Sandbox checkout mismatch: expected ${task.exactBaseSha}, got ${snapshotHead}`);
@@ -456,7 +537,8 @@ async function deriveSnapshotPatch(task, interaction, outputDir) {
       interactionStatus: interaction.status,
       changedFiles: checked.paths,
       untrackedFiles: untracked,
-      hostChecks: ['snapshot environment verified', 'sandbox HEAD verified', 'git diff --check PASS', 'path allowlist PASS'],
+      skippedGitLinkCount: materialized.skippedGitLinkCount || 0,
+      hostChecks: ['snapshot environment verified', 'archive links not followed', 'sandbox HEAD verified', 'git diff --check PASS', 'path allowlist PASS'],
       sandboxStatus: status.trim().split(/\r?\n/).filter(Boolean),
       risks: interaction.status === 'incomplete'
         ? ['Antigravity interaction ended incomplete; candidate patch was derived from filesystem state and still requires independent apply/content proof.']
