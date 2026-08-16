@@ -4,7 +4,7 @@
   "repository": "lybyerc-lab/Severe-Warning",
   "repositoryUrl": "https://github.com/lybyerc-lab/Severe-Warning",
   "exactBaseSha": "10ccd2723b8fa6b925f47629491a9e51e6388500",
-  "goal": "Create exactly one file at tools/antigravity/fixtures/sw-ops-002-smoke.txt with exactly two lines: first line 'SW-OPS-002 sandbox worker reached' and second line 'GitHub writes remain Director-controlled'. Make no other intentional repository edit. Do not change branches or Git history. Run the requested lightweight checks, then stop.",
+  "goal": "Create exactly one file at tools/antigravity/fixtures/sw-ops-002-smoke.txt with exactly two lines: first line 'SW-OPS-002 sandbox worker reached' and second line 'GitHub writes remain Director-controlled'. Make no other intentional repository edit. Do not change branches or Git history. The sandbox checkout is not authoritative; the host will extract only this allowlisted file and build the candidate patch against exactBaseSha. Run the requested lightweight checks, then stop.",
   "nonGoals": [
     "No changes outside the single allowed fixture file",
     "No dependency installation",
