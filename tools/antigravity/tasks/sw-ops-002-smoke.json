@@ -35,7 +35,7 @@
     "git status --short",
     "git diff --check"
   ],
-  "tokenBudget": 8000,
+  "tokenBudget": 16000,
   "maxPatchBytes": 10000,
   "requirePatch": true,
   "agent": "antigravity-preview-05-2026"
