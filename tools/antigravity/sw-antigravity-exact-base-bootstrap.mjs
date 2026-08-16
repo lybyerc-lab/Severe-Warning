@@ -70,8 +70,13 @@ function hookConfig() {
           hooks: [
             {
               type: 'command',
-              command: 'python3 /.agents/hooks-scripts/exact_base_gate.py',
+              command: 'python3 /.agents/hooks-scripts/exact_base_normalize.py',
               timeout: 25,
+            },
+            {
+              type: 'command',
+              command: 'python3 /.agents/hooks-scripts/command_gate.py',
+              timeout: 10,
             },
           ],
         },
@@ -105,12 +110,10 @@ function correctionEditScript(task) {
   ].join('\n');
 }
 
-function hookScript(task) {
+function normalizerScript(task) {
   const repositoryUrl = JSON.stringify(task.repositoryUrl);
   const exactBaseRef = JSON.stringify(task.exactBaseRef);
   const exactBaseSha = JSON.stringify(task.exactBaseSha);
-  const initialScript = JSON.stringify(initialEditScript(task));
-  const correctionScript = JSON.stringify(correctionEditScript(task));
   return `#!/usr/bin/env python3
 import json
 import subprocess
@@ -120,6 +123,60 @@ REPO = ${JSON.stringify(REPO_TARGET)}
 EXPECTED_REPO = ${repositoryUrl}
 EXPECTED_REF = ${exactBaseRef}
 EXPECTED_SHA = ${exactBaseSha}
+
+def respond(decision, reason=None):
+    payload = {"decision": decision}
+    if reason:
+        payload["reason"] = reason
+    print(json.dumps(payload))
+    sys.exit(0)
+
+def git(*args):
+    p = subprocess.run(
+        ["git", "-C", REPO, *args],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=20,
+    )
+    if p.returncode != 0:
+        raise RuntimeError("git command failed")
+    return p.stdout.strip()
+
+try:
+    json.load(sys.stdin)
+    remote = git("remote", "get-url", "origin")
+    if remote.endswith(".git"):
+        remote = remote[:-4]
+    if remote != EXPECTED_REPO:
+        respond("deny", "Exact-base normalizer rejected unexpected repository origin.")
+
+    head = git("rev-parse", "HEAD")
+    if head != EXPECTED_SHA:
+        if git("status", "--porcelain"):
+            respond("deny", "Exact-base normalizer found a dirty repository before normalization.")
+        git("fetch", "--no-tags", "--depth=1", "origin", EXPECTED_REF)
+        fetched = git("rev-parse", "FETCH_HEAD")
+        if fetched != EXPECTED_SHA:
+            respond("deny", "Exact-base ref no longer resolves to the frozen SHA.")
+        git("checkout", "--detach", EXPECTED_SHA)
+        head = git("rev-parse", "HEAD")
+
+    if head != EXPECTED_SHA:
+        respond("deny", "Exact-base normalizer could not establish the frozen SHA.")
+    respond("allow")
+except Exception:
+    respond("deny", "Exact-base normalizer failed closed before tool execution.")
+`;
+}
+
+function commandGateScript(task) {
+  const initialScript = JSON.stringify(initialEditScript(task));
+  const correctionScript = JSON.stringify(correctionEditScript(task));
+  return `#!/usr/bin/env python3
+import json
+import sys
+
 INITIAL_SCRIPT = ${initialScript}
 CORRECTION_SCRIPT = ${correctionScript}
 READ_ONLY_LINES = {
@@ -142,18 +199,6 @@ def respond(decision, reason=None):
     print(json.dumps(payload))
     sys.exit(0)
 
-def git(*args):
-    p = subprocess.run(
-        ["git", "-C", REPO, *args],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=20,
-    )
-    if p.returncode != 0:
-        raise RuntimeError("git command failed")
-    return p.stdout.strip()
-
 def normalize(code):
     return "\\n".join(line.strip() for line in str(code).splitlines() if line.strip())
 
@@ -163,26 +208,6 @@ def is_read_only(code):
 
 try:
     data = json.load(sys.stdin)
-    remote = git("remote", "get-url", "origin")
-    if remote.endswith(".git"):
-        remote = remote[:-4]
-    if remote != EXPECTED_REPO:
-        respond("deny", "Exact-base airlock rejected unexpected repository origin.")
-
-    head = git("rev-parse", "HEAD")
-    if head != EXPECTED_SHA:
-        if git("status", "--porcelain"):
-            respond("deny", "Exact-base airlock found a dirty repository before normalization.")
-        git("fetch", "--no-tags", "--depth=1", "origin", EXPECTED_REF)
-        fetched = git("rev-parse", "FETCH_HEAD")
-        if fetched != EXPECTED_SHA:
-            respond("deny", "Exact-base ref no longer resolves to the frozen SHA.")
-        git("checkout", "--detach", EXPECTED_SHA)
-        head = git("rev-parse", "HEAD")
-
-    if head != EXPECTED_SHA:
-        respond("deny", "Exact-base airlock could not establish the frozen SHA.")
-
     tool_call = data.get("tool_call", {})
     if tool_call.get("name") != "code_execution":
         respond("deny", "SW-OPS-002 permits code_execution only.")
@@ -192,7 +217,7 @@ try:
         respond("allow")
     respond("deny", "SW-OPS-002 command gate blocked exploration or an unapproved command. Run exactly the Director-authorized bash script from the current prompt, or one of the tiny read-only Git checks.")
 except Exception:
-    respond("deny", "Exact-base airlock failed closed before tool execution.")
+    respond("deny", "SW-OPS-002 command gate failed closed before tool execution.")
 `;
 }
 
@@ -241,7 +266,8 @@ async function runInteraction(task) {
       sources: [
         { type: 'repository', source: task.repositoryUrl, target: REPO_TARGET },
         { type: 'inline', target: '.agents/hooks.json', content: JSON.stringify(hookConfig(), null, 2) },
-        { type: 'inline', target: '.agents/hooks-scripts/exact_base_gate.py', content: hookScript(task) },
+        { type: 'inline', target: '.agents/hooks-scripts/exact_base_normalize.py', content: normalizerScript(task) },
+        { type: 'inline', target: '.agents/hooks-scripts/command_gate.py', content: commandGateScript(task) },
         {
           type: 'inline',
           target: '.agents/AGENTS.md',
@@ -462,7 +488,7 @@ async function main() {
       untrackedFiles: [],
       sandboxStatus: [],
       skippedGitLinkCount: materialized.skippedGitLinkCount || 0,
-      hostChecks: ['environment verified', 'exact-base hook mounted', 'command gate mounted', 'archive links not followed', 'sandbox HEAD verified', 'clean working tree verified'],
+      hostChecks: ['environment verified', 'exact-base normalizer mounted', 'separate command gate mounted', 'archive links not followed', 'sandbox HEAD verified', 'clean working tree verified'],
       nextAction: 'Reuse this environment for the bounded edit turn; no GitHub write is authorized.',
     }, null, 2)}\n`, 'utf8');
     await writeFile(path.join(outputDir, 'envelope.json'), `${JSON.stringify({
