@@ -66,7 +66,7 @@ function hookConfig() {
       enabled: true,
       pre_tool_execution: [
         {
-          matcher: 'code_execution',
+          matcher: '.*',
           hooks: [
             {
               type: 'command',
