@@ -70,9 +70,10 @@ jobs:
           if (request.tokenBudget > 16000) throw new Error('token budget widened');
           if (request.maxPatchBytes > 10000) throw new Error('patch limit widened');
           if (request.executionMode !== 'custom-environment-unary-with-adaptive-poll') throw new Error('wrong execution mode');
+          if (request.continuationStateMode !== 'same-environment-fresh-conversation') throw new Error('wrong continuation state mode');
           if (request.returnChannel !== 'validated inline JSON patch') throw new Error('wrong return channel');
           if (continuation.mode !== 'continue') throw new Error('continuation mode missing');
-          if (continuation.previousInteractionId !== 'test_interaction_id') throw new Error('continuation lost interaction ID');
+          if (continuation.auditPreviousInteractionId !== 'test_interaction_id') throw new Error('continuation lost audit interaction ID');
           if (continuation.environmentId !== 'test_environment_id') throw new Error('continuation lost environment ID');
           NODE
 
