@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-// [SW:OPS:ANTIGRAVITY_SANDBOX_WORKER_V2]
-// SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V2
+// [SW:OPS:ANTIGRAVITY_SANDBOX_WORKER_V3]
+// SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V3
 // Tooling only. Never import from browser, Android, gameplay, or production runtime source.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -11,10 +11,10 @@ import process from 'node:process';
 const API_ROOT = 'https://generativelanguage.googleapis.com/v1beta/interactions';
 const DEFAULT_AGENT = 'antigravity-preview-05-2026';
 const REPO_TARGET = '/workspace/repo';
-const OUTPUT_ROOT = '/workspace/antigravity-output';
 const POLL_MS = 5000;
 const POLL_CEILING_MS = 12 * 60 * 1000;
-const FINISH_RETURN_TOKEN_BUDGET = 8000;
+const RECOVERY_TOKEN_BUDGET = 8000;
+const SUBMIT_TOOL_NAME = 'submit_worker_bundle';
 
 function usage() {
   console.log(`Severe Weather Warning Antigravity sandbox worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue --task <task.json> --interaction <id> --environment <id> --input <text> --output-dir <dir> [--dry-run]\n\nEnvironment:\n  GEMINI_API_KEY  Required for live calls only. Never commit or print it.\n`);
@@ -114,19 +114,44 @@ function agentsMd(task) {
     '- Do not alter .git configuration, hooks, remotes, credentials, or history.',
     '- Use git add -N only when needed to make a brand-new file visible to git diff. Do not stage contents.',
     '',
-    `Write the complete patch to ${OUTPUT_ROOT}/worker.patch.`,
-    `Write the structured result to ${OUTPUT_ROOT}/result.json.`,
-    'Your final response must also contain the same complete patch in the patch field of the requested JSON object.',
+    `Terminal handoff law: after the work and requested tests are done, call ${SUBMIT_TOOL_NAME} exactly once.`,
+    `Do not use final prose as the handoff. The ${SUBMIT_TOOL_NAME} function arguments are the authoritative return bundle.`,
   ].join('\n');
 }
 
-function resultContract() {
-  return '{"version":"SW_ANTIGRAVITY_WORKER_RESULT_V1","status":"completed|blocked|incomplete","taskId":"...","exactBaseSha":"...","verifiedBaseSha":"...","summary":"...","changedFiles":["..."],"tests":["..."],"evidence":["..."],"risks":["..."],"nextAction":"...","patch":"complete unified git patch string"}';
+function submitTool() {
+  const stringArray = { type: 'array', items: { type: 'string' } };
+  return {
+    type: 'function',
+    name: SUBMIT_TOOL_NAME,
+    description: 'Terminal Severe Weather Warning worker handoff. Call exactly once after the bounded sandbox task is complete, blocked, or incomplete. The host validates these arguments and does not execute a GitHub write.',
+    parameters: {
+      type: 'object',
+      properties: {
+        version: { type: 'string', enum: ['SW_ANTIGRAVITY_WORKER_RESULT_V1'] },
+        status: { type: 'string', enum: ['completed', 'blocked', 'incomplete'] },
+        taskId: { type: 'string' },
+        exactBaseSha: { type: 'string' },
+        verifiedBaseSha: { type: 'string' },
+        summary: { type: 'string' },
+        changedFiles: stringArray,
+        tests: stringArray,
+        evidence: stringArray,
+        risks: stringArray,
+        nextAction: { type: 'string' },
+        patch: { type: 'string', description: 'Complete unified git patch from the exact base. Include every task change and no protected or out-of-scope path.' },
+      },
+      required: [
+        'version', 'status', 'taskId', 'exactBaseSha', 'verifiedBaseSha', 'summary',
+        'changedFiles', 'tests', 'evidence', 'risks', 'nextAction', 'patch',
+      ],
+    },
+  };
 }
 
-function firstPrompt(task) {
+function taskPrompt(task) {
   return [
-    'Execute this bounded Severe Weather Warning worker task.',
+    'Execute this bounded Severe Weather Warning worker task in the mounted sandbox.',
     `Task ID: ${task.taskId}`,
     `Exact base SHA: ${task.exactBaseSha}`,
     '',
@@ -142,38 +167,33 @@ function firstPrompt(task) {
     '',
     'Requested tests:', ...task.requestedTests.map((item) => `- ${item}`),
     '',
-    `Before finishing, write ${OUTPUT_ROOT}/worker.patch and ${OUTPUT_ROOT}/result.json.`,
-    'Return ONLY valid JSON matching this exact top-level shape:', resultContract(),
-    'The patch field must exactly equal worker.patch. Do not wrap the JSON in markdown.',
+    `When finished, do not write a normal final answer. Call ${SUBMIT_TOOL_NAME} exactly once with the complete patch and evidence.`,
+    `If you cannot finish safely, call ${SUBMIT_TOOL_NAME} with status blocked or incomplete and explain the blocker in summary and risks.`,
   ].join('\n');
 }
 
 function correctionPrompt(task, input, priorInteractionId) {
   return [
-    'This is a fresh stateless agent turn reusing the same Severe Weather Warning sandbox filesystem.',
-    `Prior audited interaction ID: ${priorInteractionId}. Do not rely on its conversation history; inspect the current filesystem state directly.`,
+    'This is a fresh agent turn reusing the same Severe Weather Warning sandbox filesystem.',
+    `Prior audited interaction ID: ${priorInteractionId}. Inspect current filesystem state directly rather than reconstructing its reasoning.`,
     `Task ID remains ${task.taskId}. Exact base remains ${task.exactBaseSha}.`,
     'Do not widen allowed paths, network access, or authority.',
     '',
     'Director correction:', requiredString(input, '--input'),
     '',
-    `Inspect the current diff against ${task.exactBaseSha}, apply only the requested correction, rerun the requested lightweight checks, and regenerate ${OUTPUT_ROOT}/worker.patch plus ${OUTPUT_ROOT}/result.json.`,
-    'Return ONLY valid JSON matching this exact top-level shape:', resultContract(),
-    'The patch field must exactly equal worker.patch. Do not wrap the JSON in markdown.',
+    `Inspect the complete current diff against ${task.exactBaseSha}, apply only this correction, rerun the requested lightweight checks, then call ${SUBMIT_TOOL_NAME} exactly once.`,
+    'Do not use final prose as the handoff.',
   ].join('\n');
 }
 
-function finishReturnPrompt(task, priorInteractionId) {
+function recoveryPrompt(task, priorInteractionId) {
   return [
-    'Finish return contract only using the existing sandbox filesystem. Start with a clean conversation context.',
-    `Prior audited interaction ID: ${priorInteractionId}. That turn hit its token ceiling; do not inherit or reconstruct its reasoning.`,
-    `Task ID remains ${task.taskId}. Exact base remains ${task.exactBaseSha}.`,
-    'Do not broaden scope. Do not create new repository changes unless strictly required to correct the already-requested allowed-path edit.',
-    `Inspect the current sandbox diff against ${task.exactBaseSha}.`,
-    'Verify the exact base, run the already-requested lightweight checks, and finish the return payload.',
-    `Regenerate ${OUTPUT_ROOT}/worker.patch from the exact base and refresh ${OUTPUT_ROOT}/result.json.`,
-    'Return ONLY valid JSON matching this exact top-level shape:', resultContract(),
-    'The patch field must exactly equal worker.patch. Do not wrap the JSON in markdown or add progress prose.',
+    'Finish the worker handoff only. Reuse the existing sandbox filesystem with a fresh conversation.',
+    `Prior audited interaction ID: ${priorInteractionId}. That turn ended before submitting a bundle.`,
+    `Task ID: ${task.taskId}. Exact base: ${task.exactBaseSha}.`,
+    'Do not broaden scope and do not invent unrelated changes.',
+    `Inspect the current diff against ${task.exactBaseSha}, verify the exact base, run only the already-requested lightweight checks if needed, then call ${SUBMIT_TOOL_NAME} exactly once.`,
+    'Do not provide progress prose or a normal final answer. The function call is the only required handoff.',
   ].join('\n');
 }
 
@@ -193,46 +213,52 @@ function agentConfig(task, budget = task.tokenBudget) {
   return { type: 'antigravity', max_total_tokens: budget };
 }
 
-function initialBody(task) {
+function baseRequest(task, input, environment, budget = task.tokenBudget) {
   return {
     agent: task.agent,
-    input: firstPrompt(task),
-    environment: environmentConfig(task),
-    tools: [{ type: 'code_execution' }],
-    agent_config: agentConfig(task),
+    input,
+    environment,
+    store: true,
+    tools: [{ type: 'code_execution' }, submitTool()],
+    agent_config: agentConfig(task, budget),
   };
+}
+
+function initialBody(task) {
+  return baseRequest(task, taskPrompt(task), environmentConfig(task));
 }
 
 function continuationBody(task, options) {
   const auditInteractionId = requiredString(options.interaction, '--interaction');
   return {
-    agent: task.agent,
-    input: correctionPrompt(task, options.input, auditInteractionId),
-    environment: requiredString(options.environment, '--environment'),
-    tools: [{ type: 'code_execution' }],
-    agent_config: agentConfig(task),
+    ...baseRequest(
+      task,
+      correctionPrompt(task, options.input, auditInteractionId),
+      requiredString(options.environment, '--environment'),
+    ),
     auditInteractionId,
   };
 }
 
-function finishReturnBody(task, interaction) {
+function recoveryBody(task, interaction) {
   const auditInteractionId = requiredString(interaction.id, 'interaction.id');
   return {
-    agent: task.agent,
-    input: finishReturnPrompt(task, auditInteractionId),
-    environment: requiredString(interaction.environment_id, 'interaction.environment_id'),
-    tools: [{ type: 'code_execution' }],
-    agent_config: agentConfig(task, Math.min(task.tokenBudget, FINISH_RETURN_TOKEN_BUDGET)),
+    ...baseRequest(
+      task,
+      recoveryPrompt(task, auditInteractionId),
+      requiredString(interaction.environment_id, 'interaction.environment_id'),
+      Math.min(task.tokenBudget, RECOVERY_TOKEN_BUDGET),
+    ),
     auditInteractionId,
   };
 }
 
 function drySummary(task, taskFile, mode, extras = {}) {
   return {
-    version: 'SW_OPS_002_ANTIGRAVITY_WORKER_REQUEST_V2',
+    version: 'SW_OPS_002_ANTIGRAVITY_WORKER_REQUEST_V3',
     dryRun: true,
     mode,
-    executionMode: 'custom-environment-unary-with-adaptive-poll',
+    executionMode: 'custom-environment-function-handoff',
     continuationStateMode: 'same-environment-fresh-conversation',
     taskFile,
     taskId: task.taskId,
@@ -240,13 +266,13 @@ function drySummary(task, taskFile, mode, extras = {}) {
     repositoryUrl: task.repositoryUrl,
     repositoryTarget: REPO_TARGET,
     networkAllowlist: ['github.com (no injected credentials)'],
-    tools: ['code_execution', 'filesystem via environment'],
+    tools: ['code_execution', SUBMIT_TOOL_NAME, 'filesystem via environment'],
     tokenBudget: task.tokenBudget,
-    finishReturnTokenBudget: Math.min(task.tokenBudget, FINISH_RETURN_TOKEN_BUDGET),
+    recoveryTokenBudget: Math.min(task.tokenBudget, RECOVERY_TOKEN_BUDGET),
     maxPatchBytes: task.maxPatchBytes,
     allowedPaths: task.allowedPaths,
     protectedPaths: task.protectedPaths,
-    returnChannel: 'validated inline JSON patch',
+    returnChannel: `function_call:${SUBMIT_TOOL_NAME}`,
     incompleteRecovery: 'one fresh-conversation turn in the same environment only',
     ...extras,
   };
@@ -286,7 +312,17 @@ function diagnostics(interaction) {
   };
 }
 
-async function completeInteraction(body) {
+function findSubmission(interaction) {
+  const steps = Array.isArray(interaction?.steps) ? interaction.steps : [];
+  const calls = steps.filter((step) => step?.type === 'function_call' && step.name === SUBMIT_TOOL_NAME);
+  if (!calls.length) return null;
+  if (calls.length !== 1) throw new Error(`Expected exactly one ${SUBMIT_TOOL_NAME} call; found ${calls.length}`);
+  const args = calls[0].arguments;
+  if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error(`${SUBMIT_TOOL_NAME} arguments are missing or invalid`);
+  return { callId: calls[0].id || null, args };
+}
+
+async function runInteraction(body) {
   const requestBody = { ...body };
   delete requestBody.auditInteractionId;
   let interaction = await apiJson('POST', API_ROOT, requestBody);
@@ -297,71 +333,21 @@ async function completeInteraction(body) {
     await sleep(POLL_MS);
     interaction = await apiJson('GET', `${API_ROOT}/${encodeURIComponent(id)}`);
   }
-  if (!['completed', 'incomplete'].includes(interaction.status)) {
-    throw new Error(`Antigravity interaction ended in unusable state: ${JSON.stringify(diagnostics(interaction))}`);
-  }
   return interaction;
 }
 
-function collectTextNodes(value, out = []) {
-  if (!value || typeof value !== 'object') return out;
-  if (value.type === 'text' && typeof value.text === 'string' && value.text.trim()) out.push(value.text.trim());
-  if (Array.isArray(value)) {
-    for (const child of value) collectTextNodes(child, out);
-  } else {
-    for (const child of Object.values(value)) collectTextNodes(child, out);
+async function interactionWithOneRecovery(task, body) {
+  let interaction = await runInteraction(body);
+  if (findSubmission(interaction)) return interaction;
+  if (!['completed', 'incomplete'].includes(interaction.status)) {
+    throw new Error(`Antigravity ended without a submission: ${JSON.stringify(diagnostics(interaction))}`);
   }
-  return out;
-}
-
-function outputText(interaction) {
-  if (typeof interaction?.output_text === 'string' && interaction.output_text.trim()) return interaction.output_text.trim();
-  const steps = Array.isArray(interaction?.steps) ? interaction.steps : [];
-  for (let i = steps.length - 1; i >= 0; i -= 1) {
-    if (steps[i]?.type !== 'model_output') continue;
-    const texts = collectTextNodes(steps[i]);
-    if (texts.length) return texts.join('\n');
+  console.log(`[SW-OPS-002] No ${SUBMIT_TOOL_NAME} call in ${interaction.status} interaction; reusing environment ${interaction.environment_id} for one clean recovery turn.`);
+  interaction = await runInteraction(recoveryBody(task, interaction));
+  if (!findSubmission(interaction)) {
+    throw new Error(`Recovery ended without ${SUBMIT_TOOL_NAME}: ${JSON.stringify(diagnostics(interaction))}`);
   }
-  const fallback = collectTextNodes(interaction);
-  return fallback.length ? fallback[fallback.length - 1] : '';
-}
-
-function parseWorkerReturn(interaction) {
-  const text = outputText(interaction);
-  if (!text) throw new Error(`Terminal Antigravity response has no text output: ${JSON.stringify(diagnostics(interaction))}`);
-  const stripped = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-  let parsed;
-  try {
-    parsed = JSON.parse(stripped);
-  } catch {
-    const start = stripped.indexOf('{');
-    const end = stripped.lastIndexOf('}');
-    if (start < 0 || end <= start) throw new Error(`Antigravity output is not JSON: ${text.slice(0, 300)}`);
-    try {
-      parsed = JSON.parse(stripped.slice(start, end + 1));
-    } catch {
-      throw new Error(`Antigravity output is not parseable JSON: ${text.slice(0, 300)}`);
-    }
-  }
-  const patch = typeof parsed.patch === 'string' ? parsed.patch : '';
-  const result = { ...parsed };
-  delete result.patch;
-  return { result, patch };
-}
-
-function hasCompletedReturn(interaction) {
-  try {
-    const parsed = parseWorkerReturn(interaction);
-    return parsed.result?.status === 'completed';
-  } catch {
-    return false;
-  }
-}
-
-async function finishIncompleteReturn(task, interaction) {
-  if (interaction.status !== 'incomplete' || hasCompletedReturn(interaction)) return interaction;
-  console.log(`[SW-OPS-002] Antigravity API status incomplete; reusing environment ${interaction.environment_id} with a fresh conversation for one finish-return pass.`);
-  return completeInteraction(finishReturnBody(task, interaction));
+  return interaction;
 }
 
 function matchesPath(candidate, rule) {
@@ -386,42 +372,44 @@ function sameSet(left, right) {
   return a.length === b.length && a.every((item, index) => item === b[index]);
 }
 
-function validate(task, result, patch) {
-  if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('worker result must be an object');
-  if (result.version !== 'SW_ANTIGRAVITY_WORKER_RESULT_V1') throw new Error('worker result version mismatch');
-  if (result.taskId !== task.taskId) throw new Error('worker result taskId mismatch');
-  if (result.exactBaseSha !== task.exactBaseSha || result.verifiedBaseSha !== task.exactBaseSha) {
+function validateSubmission(task, args) {
+  if (args.version !== 'SW_ANTIGRAVITY_WORKER_RESULT_V1') throw new Error('worker result version mismatch');
+  if (args.taskId !== task.taskId) throw new Error('worker result taskId mismatch');
+  if (args.exactBaseSha !== task.exactBaseSha || args.verifiedBaseSha !== task.exactBaseSha) {
     throw new Error('worker did not prove the exact base SHA');
   }
-  if (!['completed', 'blocked', 'incomplete'].includes(result.status)) throw new Error('worker result status is invalid');
-  requiredString(result.summary, 'result.summary');
-  requiredString(result.nextAction, 'result.nextAction');
-  const changedFiles = stringList(result.changedFiles, 'result.changedFiles').map((item, index) => safeRepoPath(item, `result.changedFiles[${index}]`));
-  stringList(result.tests, 'result.tests');
-  stringList(result.evidence, 'result.evidence');
-  stringList(result.risks, 'result.risks');
-
+  if (!['completed', 'blocked', 'incomplete'].includes(args.status)) throw new Error('worker result status is invalid');
+  requiredString(args.summary, 'result.summary');
+  requiredString(args.nextAction, 'result.nextAction');
+  const changedFiles = stringList(args.changedFiles, 'result.changedFiles').map((item, index) => safeRepoPath(item, `result.changedFiles[${index}]`));
+  stringList(args.tests, 'result.tests');
+  stringList(args.evidence, 'result.evidence');
+  stringList(args.risks, 'result.risks');
+  const patch = typeof args.patch === 'string' ? args.patch : '';
   const bytes = Buffer.byteLength(patch, 'utf8');
   if (bytes > task.maxPatchBytes) throw new Error(`Patch exceeds ${task.maxPatchBytes} byte limit`);
   const paths = patchPaths(patch);
-  if (task.requirePatch && result.status === 'completed' && !paths.length) throw new Error('completed task returned no patch');
+  if (task.requirePatch && args.status === 'completed' && !paths.length) throw new Error('completed task returned no patch');
   if (!sameSet(paths, changedFiles)) throw new Error('result.changedFiles does not match patch paths');
   for (const candidate of paths) {
     if (!task.allowedPaths.some((rule) => matchesPath(candidate, rule))) throw new Error(`Patch path outside allowed territory: ${candidate}`);
     if (task.protectedPaths.some((rule) => matchesPath(candidate, rule))) throw new Error(`Patch path enters protected territory: ${candidate}`);
   }
-  return { bytes, paths };
+  return { args, patch, bytes, paths };
 }
 
 async function saveBundle(task, interaction, outputDir) {
-  const { result, patch } = parseWorkerReturn(interaction);
-  const checked = validate(task, result, patch);
+  const submission = findSubmission(interaction);
+  if (!submission) throw new Error(`No ${SUBMIT_TOOL_NAME} call found`);
+  const checked = validateSubmission(task, submission.args);
+  const result = { ...checked.args };
+  delete result.patch;
   const dir = path.resolve(process.cwd(), requiredString(outputDir, '--output-dir'));
   await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, 'worker.patch'), patch, 'utf8');
+  await writeFile(path.join(dir, 'worker.patch'), checked.patch, 'utf8');
   await writeFile(path.join(dir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
   await writeFile(path.join(dir, 'envelope.json'), `${JSON.stringify({
-    version: 'SW_OPS_002_ANTIGRAVITY_WORKER_ENVELOPE_V2',
+    version: 'SW_OPS_002_ANTIGRAVITY_WORKER_ENVELOPE_V3',
     capturedAt: new Date().toISOString(),
     taskId: task.taskId,
     exactBaseSha: task.exactBaseSha,
@@ -429,16 +417,18 @@ async function saveBundle(task, interaction, outputDir) {
     environmentId: interaction.environment_id,
     apiStatus: interaction.status,
     usage: interaction.usage || null,
+    functionCallId: submission.callId,
     patchBytes: checked.bytes,
     patchPaths: checked.paths,
     workerStatus: result.status,
     workerSummary: result.summary,
-    returnChannel: 'model-output',
+    returnChannel: `function_call:${SUBMIT_TOOL_NAME}`,
   }, null, 2)}\n`, 'utf8');
   console.log(`Antigravity API status: ${interaction.status}`);
   console.log(`Antigravity worker ${task.taskId}: ${result.status}`);
   console.log(`Interaction: ${interaction.id}`);
   console.log(`Environment: ${interaction.environment_id}`);
+  console.log(`Return: ${SUBMIT_TOOL_NAME}(${submission.callId || 'no-call-id'})`);
 }
 
 async function writeDry(summary, outputDir) {
@@ -454,8 +444,7 @@ async function execute(options) {
   if (options.dryRun) {
     return writeDry(drySummary(task, path.relative(process.cwd(), absolute), 'execute'), options['output-dir']);
   }
-  let interaction = await completeInteraction(initialBody(task));
-  interaction = await finishIncompleteReturn(task, interaction);
+  const interaction = await interactionWithOneRecovery(task, initialBody(task));
   await saveBundle(task, interaction, options['output-dir']);
 }
 
@@ -469,8 +458,7 @@ async function continueTask(options) {
       directorFeedback: body.input,
     }), options['output-dir']);
   }
-  let interaction = await completeInteraction(body);
-  interaction = await finishIncompleteReturn(task, interaction);
+  const interaction = await interactionWithOneRecovery(task, body);
   await saveBundle(task, interaction, options['output-dir']);
 }
 
