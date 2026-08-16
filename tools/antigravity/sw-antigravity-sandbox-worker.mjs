@@ -56,25 +56,17 @@ function safeRepoPath(value, label) {
   return normalized;
 }
 
-function tokenBudget(value) {
-  const parsed = Number(value ?? 8000);
-  if (!Number.isInteger(parsed) || parsed < 4000 || parsed > 50000) {
-    throw new Error('tokenBudget must be an integer between 4000 and 50000');
-  }
-  return parsed;
-}
-
-function patchLimit(value) {
-  const parsed = Number(value ?? 100000);
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1000000) {
-    throw new Error('maxPatchBytes must be an integer between 1 and 1000000');
-  }
-  return parsed;
-}
-
 async function loadTask(inputPath) {
   const absolute = path.resolve(process.cwd(), requiredString(inputPath, '--task'));
   const raw = JSON.parse(await readFile(absolute, 'utf8'));
+  const tokenBudget = Number(raw.tokenBudget ?? 8000);
+  const maxPatchBytes = Number(raw.maxPatchBytes ?? 100000);
+  if (!Number.isInteger(tokenBudget) || tokenBudget < 4000 || tokenBudget > 50000) {
+    throw new Error('tokenBudget must be an integer between 4000 and 50000');
+  }
+  if (!Number.isInteger(maxPatchBytes) || maxPatchBytes < 1 || maxPatchBytes > 1000000) {
+    throw new Error('maxPatchBytes must be an integer between 1 and 1000000');
+  }
   const task = {
     version: requiredString(raw.version, 'version'),
     taskId: requiredString(raw.taskId, 'taskId'),
@@ -87,8 +79,8 @@ async function loadTask(inputPath) {
     protectedPaths: stringList(raw.protectedPaths, 'protectedPaths').map((item, index) => safeRepoPath(item, `protectedPaths[${index}]`)),
     proofPlan: stringList(raw.proofPlan, 'proofPlan'),
     requestedTests: stringList(raw.requestedTests, 'requestedTests'),
-    tokenBudget: tokenBudget(raw.tokenBudget),
-    maxPatchBytes: patchLimit(raw.maxPatchBytes),
+    tokenBudget,
+    maxPatchBytes,
     requirePatch: raw.requirePatch !== false,
     agent: raw.agent ? requiredString(raw.agent, 'agent') : DEFAULT_AGENT,
   };
@@ -177,9 +169,7 @@ function environmentConfig(task) {
       { type: 'inline', target: '.agents/AGENTS.md', content: agentsMd(task) },
       { type: 'inline', target: '/workspace/sw-antigravity-task.json', content: `${JSON.stringify(task, null, 2)}\n` },
     ],
-    network: {
-      allowlist: [{ domain: 'github.com' }],
-    },
+    network: { allowlist: [{ domain: 'github.com' }] },
   };
 }
 
@@ -269,8 +259,8 @@ async function completeInteraction(body) {
     await sleep(POLL_MS);
     interaction = await apiJson('GET', `${API_ROOT}/${encodeURIComponent(id)}`);
   }
-  if (interaction.status !== 'completed') {
-    throw new Error(`Antigravity interaction ended without completion: ${JSON.stringify(diagnostics(interaction))}`);
+  if (!['completed', 'incomplete'].includes(interaction.status)) {
+    throw new Error(`Antigravity interaction ended in unusable state: ${JSON.stringify(diagnostics(interaction))}`);
   }
   return interaction;
 }
@@ -300,7 +290,7 @@ function outputText(interaction) {
 
 function parseWorkerReturn(interaction) {
   const text = outputText(interaction);
-  if (!text) throw new Error(`Completed Antigravity response has no text output: ${JSON.stringify(diagnostics(interaction))}`);
+  if (!text) throw new Error(`Terminal Antigravity response has no text output: ${JSON.stringify(diagnostics(interaction))}`);
   const stripped = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
   let parsed;
   try {
@@ -392,6 +382,7 @@ async function saveBundle(task, interaction, outputDir) {
     workerSummary: result.summary,
     returnChannel: 'model-output',
   }, null, 2)}\n`, 'utf8');
+  console.log(`Antigravity API status: ${interaction.status}`);
   console.log(`Antigravity worker ${task.taskId}: ${result.status}`);
   console.log(`Interaction: ${interaction.id}`);
   console.log(`Environment: ${interaction.environment_id}`);
