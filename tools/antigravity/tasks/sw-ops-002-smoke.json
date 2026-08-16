@@ -4,7 +4,7 @@
   "repository": "lybyerc-lab/Severe-Warning",
   "repositoryUrl": "https://github.com/lybyerc-lab/Severe-Warning",
   "exactBaseSha": "10ccd2723b8fa6b925f47629491a9e51e6388500",
-  "goal": "After verifying the exact base checkout, create exactly one new file at tools/antigravity/fixtures/sw-ops-002-smoke.txt with exactly two lines: first line 'SW-OPS-002 sandbox worker reached' and second line 'GitHub writes remain Director-controlled'. Make no other repository edits. Then produce the required patch and structured result files.",
+  "goal": "After verifying the exact base checkout, create exactly one new file at tools/antigravity/fixtures/sw-ops-002-smoke.txt with exactly two lines: first line 'SW-OPS-002 sandbox worker reached' and second line 'GitHub writes remain Director-controlled'. Make no other repository edits. Because this is a brand-new untracked file, run git add -N -- tools/antigravity/fixtures/sw-ops-002-smoke.txt before generating the patch so git diff includes it. Do not stage file contents or commit. Then produce the required patch and structured result files.",
   "nonGoals": [
     "No changes outside the single allowed fixture file",
     "No dependency installation",
@@ -25,6 +25,7 @@
   "proofPlan": [
     "Record git rev-parse HEAD after checkout and require it to equal the exact base SHA",
     "Create only the single allowed fixture file with the exact requested two-line content",
+    "Use git add -N -- tools/antigravity/fixtures/sw-ops-002-smoke.txt so the untracked file is visible to git diff without staging contents",
     "Run git status --short and prove no other repository path changed",
     "Run git diff --check and require success",
     "Create worker.patch from git diff --binary --no-ext-diff against the exact base",
