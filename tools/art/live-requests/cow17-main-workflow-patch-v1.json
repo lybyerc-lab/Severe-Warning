@@ -1,9 +1,0 @@
-{
-  "task": "SW-ART-009",
-  "purpose": "replace stale single-candidate Moo QA gate with accepted-base parity and remove temporary probe files",
-  "acceptedBase": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
-  "probeRun": 31915889747,
-  "probeArtifact": 9254906785,
-  "paidServicesAuthorized": false,
-  "launchNonce": 2
-}
