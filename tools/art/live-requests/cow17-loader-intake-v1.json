@@ -1,0 +1,9 @@
+{
+  "task": "SW-ART-009",
+  "action": "vendor-official-gltfloader-r128",
+  "upstreamCommit": "d4aa9e00ea29808534a3e082f602c544e5f2419c",
+  "loaderBlob": "cfa518ede1b0893f1da14347d78fcd19355f3686",
+  "licenseBlob": "5303437e406ed22d8cb0b4c12398870792a25878",
+  "paidPostAuthorized": false,
+  "ownerAuthorized": true
+}
