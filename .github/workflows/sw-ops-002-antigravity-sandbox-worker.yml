@@ -178,11 +178,26 @@ jobs:
         run: |
           INTERACTION_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/envelope.json','utf8'));process.stdout.write(x.interactionId)")
           ENVIRONMENT_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/envelope.json','utf8'));process.stdout.write(x.environmentId)")
+          DIRECTOR_INPUT=$(cat <<'EOF'
+          Do not inspect or explore the repository. Use code_execution now and run exactly this bash script, with no additions or substitutions:
+
+          set -eu
+          cd /workspace/repo
+          test "$(git rev-parse HEAD)" = "10ccd2723b8fa6b925f47629491a9e51e6388500"
+          test ! -e 'tools/antigravity/fixtures/sw-ops-002-smoke.txt'
+          mkdir -p 'tools/antigravity/fixtures'
+          printf '%s\n' 'SW-OPS-002 sandbox worker reached' 'GitHub writes remain Director-controlled' > 'tools/antigravity/fixtures/sw-ops-002-smoke.txt'
+          git status --short
+          git diff --check
+
+          After that single code_execution call, stop. Do not create a report or handoff file.
+          EOF
+          )
           node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue \
             --task tools/antigravity/tasks/sw-ops-002-smoke.json \
             --interaction "$INTERACTION_ID" \
             --environment "$ENVIRONMENT_ID" \
-            --input "Initial edit turn after host-verified bootstrap: verify HEAD is still the exact base, create only tools/antigravity/fixtures/sw-ops-002-smoke.txt with first line 'SW-OPS-002 sandbox worker reached' and second line 'GitHub writes remain Director-controlled', run git status --short and git diff --check, then stop. Do not create handoff files." \
+            --input "$DIRECTOR_INPUT" \
             --output-dir evidence/sw-ops-002-live
 
       - name: Validate initial quarantined patch
@@ -227,11 +242,25 @@ jobs:
         run: |
           INTERACTION_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json','utf8'));process.stdout.write(x.interactionId)")
           ENVIRONMENT_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json','utf8'));process.stdout.write(x.environmentId)")
+          DIRECTOR_INPUT=$(cat <<'EOF'
+          Do not inspect or explore the repository. Use code_execution now and run exactly this bash script, with no additions or substitutions:
+
+          set -eu
+          cd /workspace/repo
+          test "$(git rev-parse HEAD)" = "10ccd2723b8fa6b925f47629491a9e51e6388500"
+          test "$(sed -n '1p' 'tools/antigravity/fixtures/sw-ops-002-smoke.txt')" = 'SW-OPS-002 sandbox worker reached'
+          printf '%s\n' 'SW-OPS-002 sandbox worker reached' 'Director controls every GitHub write' > 'tools/antigravity/fixtures/sw-ops-002-smoke.txt'
+          git status --short
+          git diff --check
+
+          After that single code_execution call, stop. Do not create a report or handoff file.
+          EOF
+          )
           node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue \
             --task tools/antigravity/tasks/sw-ops-002-smoke.json \
             --interaction "$INTERACTION_ID" \
             --environment "$ENVIRONMENT_ID" \
-            --input "Director correction: keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other repository change." \
+            --input "$DIRECTOR_INPUT" \
             --output-dir evidence/sw-ops-002-continued
 
       - name: Validate revised quarantined patch from same sandbox
