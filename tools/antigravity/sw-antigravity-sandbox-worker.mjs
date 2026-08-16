@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
-// [SW:OPS:ANTIGRAVITY_SANDBOX_WORKER_V4]
-// SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V4
+// [SW:OPS:ANTIGRAVITY_SANDBOX_WORKER_V5]
+// SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V5
 // Tooling only. Never import from browser, Android, gameplay, or production runtime source.
 
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { spawnSync } from 'node:child_process';
 
 const API_ROOT = 'https://generativelanguage.googleapis.com/v1beta';
 const INTERACTIONS_URL = `${API_ROOT}/interactions`;
@@ -15,16 +16,13 @@ const ENVIRONMENTS_URL = `${API_ROOT}/environments`;
 const FILES_URL = `${API_ROOT}/files`;
 const DEFAULT_AGENT = 'antigravity-preview-05-2026';
 const REPO_TARGET = '/workspace/repo';
-const OUTPUT_ROOT = '/workspace/antigravity-output';
-const PATCH_NAME = 'worker.patch';
-const RESULT_NAME = 'result.json';
 const POLL_MS = 5000;
 const POLL_CEILING_MS = 12 * 60 * 1000;
 const RECOVERY_TOKEN_BUDGET = 8000;
 const SNAPSHOT_RETRIES = 6;
 const SNAPSHOT_RETRY_MS = 5000;
 
-class MissingWorkerArtifactsError extends Error {}
+class MissingWorkerPatchError extends Error {}
 
 function usage() {
   console.log(`Severe Weather Warning Antigravity sandbox worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue --task <task.json> --interaction <audit-id> --environment <id> --input <text> --output-dir <dir> [--dry-run]\n\nEnvironment:\n  GEMINI_API_KEY  Required for live calls only. Never commit or print it.\n`);
@@ -110,7 +108,7 @@ function agentsMd(task) {
     `Task ID: ${task.taskId}`,
     `Required exact base SHA: ${task.exactBaseSha}`,
     '',
-    'This exact tooling task contract is sufficient authority for the bounded smoke. Do not spend tokens reading unrelated product/game documents.',
+    'This exact tooling task contract is sufficient authority for this bounded smoke. Do not spend tokens reading unrelated product/game documents.',
     '',
     'Mandatory checkout law:',
     `1. cd ${REPO_TARGET}`,
@@ -124,15 +122,10 @@ function agentsMd(task) {
     '- Never push, commit, open a PR, merge, release, publish, deploy, or claim acceptance.',
     '- Edit only task-allowed repository paths.',
     '- Do not alter .git configuration, hooks, remotes, credentials, or history.',
-    '- Use git add -N only when needed to make a brand-new file visible to git diff. Do not stage contents.',
+    '- Local working-tree edits are the only deliverable. The host derives and validates the patch from the sandbox filesystem snapshot.',
     '',
-    `The filesystem artifacts are the handoff. As soon as the edit and requested checks are done, write ${OUTPUT_ROOT}/${PATCH_NAME} and ${OUTPUT_ROOT}/${RESULT_NAME}.`,
-    'Do not spend additional tokens composing a polished final response. A short acknowledgement is enough after the files exist.',
+    'After the requested edit and lightweight checks, stop. Do not spend tokens composing a patch, manifest, report, or polished final response.',
   ].join('\n');
-}
-
-function resultShape() {
-  return '{"version":"SW_ANTIGRAVITY_WORKER_RESULT_V1","status":"completed|blocked|incomplete","taskId":"...","exactBaseSha":"...","verifiedBaseSha":"...","summary":"...","changedFiles":["..."],"tests":["..."],"evidence":["..."],"risks":["..."],"nextAction":"..."}';
 }
 
 function taskPrompt(task) {
@@ -153,10 +146,7 @@ function taskPrompt(task) {
     '',
     'Requested tests:', ...task.requestedTests.map((item) => `- ${item}`),
     '',
-    `Immediately after the requested tests, write the complete unified patch to ${OUTPUT_ROOT}/${PATCH_NAME}.`,
-    `Write structured evidence to ${OUTPUT_ROOT}/${RESULT_NAME} with exactly this top-level shape:`,
-    resultShape(),
-    'Those two files are the authoritative handoff. Do not do extra investigation after they are written.',
+    'The host will derive the patch from your sandbox filesystem. Do not create handoff files. After the bounded edit and requested checks, stop.',
   ].join('\n');
 }
 
@@ -169,22 +159,18 @@ function correctionPrompt(task, input, auditInteractionId) {
     '',
     'Director correction:', requiredString(input, '--input'),
     '',
-    `Apply only that correction, run the already-requested lightweight checks, then immediately regenerate ${OUTPUT_ROOT}/${PATCH_NAME} and ${OUTPUT_ROOT}/${RESULT_NAME}.`,
-    `The result file must use this shape: ${resultShape()}`,
-    'The filesystem files are the only required handoff.',
+    'Apply only that correction, rerun the already-requested lightweight checks, then stop. The host derives the revised patch from the sandbox filesystem.',
   ].join('\n');
 }
 
 function recoveryPrompt(task, auditInteractionId) {
   return [
-    'Finish filesystem handoff only. Reuse the existing sandbox with a fresh conversation.',
+    'Finish the bounded filesystem edit only. Reuse the existing sandbox with a fresh conversation.',
     `Prior audited interaction ID: ${auditInteractionId}.`,
     `Task ID: ${task.taskId}. Exact base: ${task.exactBaseSha}.`,
-    'Do not broaden scope or add unrelated changes.',
-    `Inspect the current diff against ${task.exactBaseSha}. Verify the exact base and run only the already-requested lightweight checks if needed.`,
-    `Then immediately write ${OUTPUT_ROOT}/${PATCH_NAME} and ${OUTPUT_ROOT}/${RESULT_NAME}.`,
-    `The result file must use this shape: ${resultShape()}`,
-    'Do not do additional investigation after those files are written.',
+    'The previous turn produced no host-visible patch. Do not broaden scope or add unrelated changes.',
+    `Inspect the current working tree against ${task.exactBaseSha}. Complete only the already-requested allowed-path edit if it is missing, run the lightweight checks, then stop.`,
+    'Do not create reports or handoff files. The host derives the patch from the filesystem.',
   ].join('\n');
 }
 
@@ -243,10 +229,10 @@ function recoveryBody(task, interaction) {
 
 function drySummary(task, taskFile, mode, extras = {}) {
   return {
-    version: 'SW_OPS_002_ANTIGRAVITY_WORKER_REQUEST_V4',
+    version: 'SW_OPS_002_ANTIGRAVITY_WORKER_REQUEST_V5',
     dryRun: true,
     mode,
-    executionMode: 'custom-environment-snapshot-handoff',
+    executionMode: 'custom-environment-host-derived-snapshot-diff',
     continuationStateMode: 'same-environment-fresh-conversation',
     taskFile,
     taskId: task.taskId,
@@ -260,10 +246,10 @@ function drySummary(task, taskFile, mode, extras = {}) {
     maxPatchBytes: task.maxPatchBytes,
     allowedPaths: task.allowedPaths,
     protectedPaths: task.protectedPaths,
-    returnChannel: 'environment-snapshot',
+    returnChannel: 'host-derived-snapshot-diff',
     snapshotRetries: SNAPSHOT_RETRIES,
     snapshotRetryMs: SNAPSHOT_RETRY_MS,
-    outputFiles: [`${OUTPUT_ROOT}/${PATCH_NAME}`, `${OUTPUT_ROOT}/${RESULT_NAME}`],
+    workerHandoffFilesRequired: false,
     ...extras,
   };
 }
@@ -346,23 +332,50 @@ async function downloadSnapshot(environmentId, tarPath) {
   throw lastError || new Error('Environment snapshot download failed');
 }
 
-function tar(args) {
-  const result = spawnSync('tar', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
-  if (result.status !== 0) throw new Error(`tar ${args[0]} failed: ${String(result.stderr || '').trim()}`);
-  return result.stdout;
+function run(command, args, options = {}) {
+  const result = spawnSync(command, args, {
+    cwd: options.cwd || process.cwd(),
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    throw new Error(`${command} ${args.join(' ')} failed: ${String(result.stderr || result.stdout || '').trim()}`);
+  }
+  return String(result.stdout || '');
 }
 
-function findArtifact(entries, filename) {
-  const suffix = `antigravity-output/${filename}`;
-  const matches = entries.filter((entry) => entry === suffix || entry.endsWith(`/${suffix}`));
-  if (matches.length !== 1) throw new MissingWorkerArtifactsError(`Expected one ${suffix} in snapshot; found ${matches.length}`);
-  const entry = matches[0];
-  if (entry.startsWith('/') || entry.includes('../')) throw new Error(`Unsafe tar entry: ${entry}`);
-  return entry;
+function tarEntries(tarPath) {
+  return run('tar', ['-tf', tarPath]).split(/\r?\n/).filter(Boolean);
 }
 
-function matchesPath(candidate, rule) {
-  return rule.endsWith('/') ? candidate.startsWith(rule) : candidate === rule || candidate.startsWith(`${rule}/`);
+function normalizeTarEntry(entry) {
+  return entry.replace(/^\.\//, '');
+}
+
+function validateTar(entries, tarPath) {
+  for (const raw of entries) {
+    const entry = normalizeTarEntry(raw);
+    const parts = entry.split('/');
+    if (raw.startsWith('/') || parts.includes('..')) throw new Error(`Unsafe environment snapshot entry: ${raw}`);
+  }
+  const verbose = run('tar', ['-tvf', tarPath]);
+  for (const line of verbose.split(/\r?\n/)) {
+    if (!line) continue;
+    if ('lhcbp'.includes(line[0])) throw new Error(`Environment snapshot contains unsupported link/device entry: ${line.slice(0, 160)}`);
+  }
+}
+
+function findRepoPrefix(entries) {
+  const candidates = new Set();
+  for (const raw of entries) {
+    const entry = normalizeTarEntry(raw);
+    const marker = 'workspace/repo/';
+    const index = entry.indexOf(marker);
+    if (index >= 0) candidates.add(entry.slice(0, index) + marker);
+    if (entry === 'workspace/repo') candidates.add('workspace/repo/');
+  }
+  if (candidates.size !== 1) throw new Error(`Expected exactly one workspace/repo prefix in snapshot; found ${candidates.size}`);
+  return [...candidates][0];
 }
 
 function patchPaths(patch) {
@@ -377,31 +390,15 @@ function patchPaths(patch) {
   return paths;
 }
 
-function sameSet(left, right) {
-  const a = [...left].sort();
-  const b = [...right].sort();
-  return a.length === b.length && a.every((item, index) => item === b[index]);
+function matchesPath(candidate, rule) {
+  return rule.endsWith('/') ? candidate.startsWith(rule) : candidate === rule || candidate.startsWith(`${rule}/`);
 }
 
-function validateResult(task, result, patch) {
-  if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('worker result must be an object');
-  if (result.version !== 'SW_ANTIGRAVITY_WORKER_RESULT_V1') throw new Error('worker result version mismatch');
-  if (result.taskId !== task.taskId) throw new Error('worker result taskId mismatch');
-  if (result.exactBaseSha !== task.exactBaseSha || result.verifiedBaseSha !== task.exactBaseSha) {
-    throw new Error('worker did not prove the exact base SHA');
-  }
-  if (!['completed', 'blocked', 'incomplete'].includes(result.status)) throw new Error('worker result status is invalid');
-  requiredString(result.summary, 'result.summary');
-  requiredString(result.nextAction, 'result.nextAction');
-  const changedFiles = stringList(result.changedFiles, 'result.changedFiles').map((item, index) => safeRepoPath(item, `result.changedFiles[${index}]`));
-  stringList(result.tests, 'result.tests');
-  stringList(result.evidence, 'result.evidence');
-  stringList(result.risks, 'result.risks');
+function validatePatch(task, patch) {
   const bytes = Buffer.byteLength(patch, 'utf8');
   if (bytes > task.maxPatchBytes) throw new Error(`Patch exceeds ${task.maxPatchBytes} byte limit`);
   const paths = patchPaths(patch);
-  if (task.requirePatch && result.status === 'completed' && !paths.length) throw new Error('completed task returned no patch');
-  if (!sameSet(paths, changedFiles)) throw new Error('result.changedFiles does not match patch paths');
+  if (task.requirePatch && !paths.length) throw new MissingWorkerPatchError('Sandbox snapshot produced no repository patch');
   for (const candidate of paths) {
     if (!task.allowedPaths.some((rule) => matchesPath(candidate, rule))) throw new Error(`Patch path outside allowed territory: ${candidate}`);
     if (task.protectedPaths.some((rule) => matchesPath(candidate, rule))) throw new Error(`Patch path enters protected territory: ${candidate}`);
@@ -409,30 +406,68 @@ function validateResult(task, result, patch) {
   return { bytes, paths };
 }
 
-async function collectSnapshot(task, interaction, outputDir) {
+function addIntentToAdd(worktreeDir) {
+  const output = run('git', ['-C', worktreeDir, 'ls-files', '--others', '--exclude-standard', '-z']);
+  const files = output.split('\0').filter(Boolean);
+  for (let index = 0; index < files.length; index += 100) {
+    run('git', ['-C', worktreeDir, 'add', '-N', '--', ...files.slice(index, index + 100)]);
+  }
+  return files;
+}
+
+async function deriveSnapshotPatch(task, interaction, outputDir) {
   const environmentId = requiredString(interaction.environment_id, 'interaction.environment_id');
   await verifyEnvironment(environmentId);
   const dir = path.resolve(process.cwd(), requiredString(outputDir, '--output-dir'));
   await mkdir(dir, { recursive: true });
-  const tarPath = path.join(dir, 'environment-snapshot.tar');
-  const attempts = await downloadSnapshot(environmentId, tarPath);
+  const scratch = await mkdtemp(path.join(os.tmpdir(), 'sw-ops-002-'));
+  const tarPath = path.join(scratch, 'environment.tar');
+  const snapshotRoot = path.join(scratch, 'snapshot');
+  const baseWorktree = path.join(scratch, 'base');
+  let worktreeAdded = false;
   try {
-    const entries = String(tar(['-tf', tarPath])).split(/\r?\n/).filter(Boolean);
-    const patchEntry = findArtifact(entries, PATCH_NAME);
-    const resultEntry = findArtifact(entries, RESULT_NAME);
-    const patch = String(tar(['-xOf', tarPath, patchEntry]));
-    const resultText = String(tar(['-xOf', tarPath, resultEntry]));
-    let result;
-    try {
-      result = JSON.parse(resultText);
-    } catch {
-      throw new Error('Antigravity result.json is not valid JSON');
+    const attempts = await downloadSnapshot(environmentId, tarPath);
+    const entries = tarEntries(tarPath);
+    validateTar(entries, tarPath);
+    const repoPrefix = findRepoPrefix(entries);
+    await mkdir(snapshotRoot, { recursive: true });
+    run('tar', ['--no-same-owner', '--no-same-permissions', '-xf', tarPath, '-C', snapshotRoot]);
+    const snapshotRepo = path.join(snapshotRoot, repoPrefix.replace(/\/$/, ''));
+    const snapshotHead = run('git', ['-C', snapshotRepo, 'rev-parse', 'HEAD']).trim();
+    if (snapshotHead !== task.exactBaseSha) {
+      throw new Error(`Sandbox checkout mismatch: expected ${task.exactBaseSha}, got ${snapshotHead}`);
     }
-    const checked = validateResult(task, result, patch);
-    await writeFile(path.join(dir, PATCH_NAME), patch, 'utf8');
-    await writeFile(path.join(dir, RESULT_NAME), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+
+    run('git', ['worktree', 'add', '--detach', baseWorktree, task.exactBaseSha]);
+    worktreeAdded = true;
+    run('rsync', ['-a', '--delete', '--exclude=.git', '--exclude=.git/', '--', `${snapshotRepo}/`, `${baseWorktree}/`]);
+    const untracked = addIntentToAdd(baseWorktree);
+    run('git', ['-C', baseWorktree, 'diff', '--check']);
+    const patch = run('git', ['-C', baseWorktree, 'diff', '--binary', '--no-ext-diff', '--full-index', 'HEAD']);
+    const checked = validatePatch(task, patch);
+    const status = run('git', ['-C', baseWorktree, 'status', '--short']);
+
+    const result = {
+      version: 'SW_ANTIGRAVITY_SANDBOX_RESULT_V1',
+      status: 'quarantined-patch-ready',
+      taskId: task.taskId,
+      exactBaseSha: task.exactBaseSha,
+      verifiedBaseSha: snapshotHead,
+      interactionStatus: interaction.status,
+      changedFiles: checked.paths,
+      untrackedFiles: untracked,
+      hostChecks: ['snapshot environment verified', 'sandbox HEAD verified', 'git diff --check PASS', 'path allowlist PASS'],
+      sandboxStatus: status.trim().split(/\r?\n/).filter(Boolean),
+      risks: interaction.status === 'incomplete'
+        ? ['Antigravity interaction ended incomplete; candidate patch was derived from filesystem state and still requires independent apply/content proof.']
+        : [],
+      nextAction: 'Independent CI must git apply --check the quarantined patch on the exact frozen base before any repository write is considered.',
+    };
+
+    await writeFile(path.join(dir, 'worker.patch'), patch, 'utf8');
+    await writeFile(path.join(dir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
     await writeFile(path.join(dir, 'envelope.json'), `${JSON.stringify({
-      version: 'SW_OPS_002_ANTIGRAVITY_WORKER_ENVELOPE_V4',
+      version: 'SW_OPS_002_ANTIGRAVITY_WORKER_ENVELOPE_V5',
       capturedAt: new Date().toISOString(),
       taskId: task.taskId,
       exactBaseSha: task.exactBaseSha,
@@ -441,29 +476,32 @@ async function collectSnapshot(task, interaction, outputDir) {
       apiStatus: interaction.status,
       usage: interaction.usage || null,
       snapshotAttempts: attempts,
+      snapshotHead,
       patchBytes: checked.bytes,
       patchPaths: checked.paths,
-      workerStatus: result.status,
-      workerSummary: result.summary,
-      returnChannel: 'environment-snapshot',
+      returnChannel: 'host-derived-snapshot-diff',
+      quarantineStatus: 'patch-ready-not-applied',
     }, null, 2)}\n`, 'utf8');
     console.log(`Antigravity API status: ${interaction.status}`);
-    console.log(`Antigravity worker ${task.taskId}: ${result.status}`);
-    console.log(`Environment snapshot: ${environmentId} in ${attempts} attempt(s)`);
+    console.log(`Sandbox HEAD: ${snapshotHead}`);
+    console.log(`Derived ${checked.paths.length} patch path(s) from environment ${environmentId}`);
     return { result, environmentId };
   } finally {
-    await rm(tarPath, { force: true });
+    if (worktreeAdded) {
+      spawnSync('git', ['worktree', 'remove', '--force', baseWorktree], { cwd: process.cwd(), encoding: 'utf8' });
+    }
+    await rm(scratch, { recursive: true, force: true });
   }
 }
 
-async function collectWithOneRecovery(task, interaction, outputDir) {
+async function deriveWithOneRecovery(task, interaction, outputDir) {
   try {
-    return await collectSnapshot(task, interaction, outputDir);
+    return await deriveSnapshotPatch(task, interaction, outputDir);
   } catch (error) {
-    if (!(error instanceof MissingWorkerArtifactsError)) throw error;
-    console.log(`[SW-OPS-002] Worker artifacts missing after ${interaction.status}; one same-environment recovery turn is allowed.`);
+    if (!(error instanceof MissingWorkerPatchError)) throw error;
+    console.log(`[SW-OPS-002] No repository patch after ${interaction.status}; one same-environment recovery turn is allowed.`);
     const recovered = await runInteraction(recoveryBody(task, interaction));
-    return collectSnapshot(task, recovered, outputDir);
+    return deriveSnapshotPatch(task, recovered, outputDir);
   }
 }
 
@@ -481,7 +519,7 @@ async function execute(options) {
     return writeDry(drySummary(task, path.relative(process.cwd(), absolute), 'execute'), options['output-dir']);
   }
   const interaction = await runInteraction(initialBody(task));
-  await collectWithOneRecovery(task, interaction, options['output-dir']);
+  await deriveWithOneRecovery(task, interaction, options['output-dir']);
 }
 
 async function continueTask(options) {
@@ -495,7 +533,7 @@ async function continueTask(options) {
     }), options['output-dir']);
   }
   const interaction = await runInteraction(body);
-  await collectWithOneRecovery(task, interaction, options['output-dir']);
+  await deriveWithOneRecovery(task, interaction, options['output-dir']);
 }
 
 async function main() {
