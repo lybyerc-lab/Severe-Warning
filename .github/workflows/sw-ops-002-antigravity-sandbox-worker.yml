@@ -1,0 +1,145 @@
+name: SW-OPS-002 Antigravity Sandboxed Worker
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - agent/sw-ops-001-antigravity-bridge
+    paths:
+      - 'tools/antigravity/sw-antigravity-worker.mjs'
+      - 'tools/antigravity/tasks/sw-ops-002-smoke.json'
+      - 'scripts/verify-sw-ops-002-antigravity-worker.mjs'
+      - '.github/workflows/sw-ops-002-antigravity-sandbox-worker.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-and-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify sandbox worker isolation
+        run: node scripts/verify-sw-ops-002-antigravity-worker.mjs
+
+      - name: Prove request dry-run without API key
+        env:
+          GEMINI_API_KEY: ''
+        run: >-
+          node tools/antigravity/sw-antigravity-worker.mjs execute
+          --task tools/antigravity/tasks/sw-ops-002-smoke.json
+          --output-dir evidence/sw-ops-002-dry
+          --dry-run
+
+      - name: Validate dry-run evidence
+        run: |
+          test -s evidence/sw-ops-002-dry/request.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const request = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry/request.json', 'utf8'));
+          if (request.taskId !== 'SW-OPS-002-SMOKE') throw new Error('wrong taskId');
+          if (request.exactBaseSha !== '10ccd2723b8fa6b925f47629491a9e51e6388500') throw new Error('wrong exact base');
+          if (request.repositoryTarget !== '/workspace/repo') throw new Error('wrong repository target');
+          if (request.networkAllowlist.length !== 1 || !request.networkAllowlist[0].includes('github.com')) throw new Error('network widened');
+          if (request.allowedPaths.length !== 1 || request.allowedPaths[0] !== 'tools/antigravity/fixtures/sw-ops-002-smoke.txt') throw new Error('allowed territory widened');
+          if (request.tokenBudget > 8000) throw new Error('token budget widened');
+          if (request.maxPatchBytes > 10000) throw new Error('patch limit widened');
+          if (!request.outputFiles.some((item) => item.endsWith('/worker.patch'))) throw new Error('missing patch output');
+          if (!request.outputFiles.some((item) => item.endsWith('/result.json'))) throw new Error('missing result output');
+          NODE
+
+      - name: Upload dry-run evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-ops-002-dry-run-evidence
+          path: evidence/sw-ops-002-dry/request.json
+          if-no-files-found: error
+
+  live-sandbox-smoke:
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'antigravity-sandbox-smoke') &&
+      github.run_attempt == 1 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/sw-ops-002-antigravity-sandbox-worker'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Refuse rerun or missing secret
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          test "$RUN_ATTEMPT" = "1"
+          test -n "$GEMINI_API_KEY"
+
+      - name: Execute one bounded sandbox edit
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: >-
+          node tools/antigravity/sw-antigravity-worker.mjs execute
+          --task tools/antigravity/tasks/sw-ops-002-smoke.json
+          --output-dir evidence/sw-ops-002-live
+
+      - name: Validate returned envelope and patch scope
+        run: |
+          test -s evidence/sw-ops-002-live/envelope.json
+          test -s evidence/sw-ops-002-live/result.json
+          test -s evidence/sw-ops-002-live/worker.patch
+          node - <<'NODE'
+          const fs = require('fs');
+          const envelope = JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json', 'utf8'));
+          const result = JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/result.json', 'utf8'));
+          const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
+          const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+          if (!envelope.interactionId) throw new Error('missing interactionId');
+          if (!envelope.environmentId) throw new Error('missing environmentId');
+          if (envelope.exactBaseSha !== expectedBase) throw new Error('wrong envelope base');
+          if (JSON.stringify(envelope.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('wrong patch paths');
+          if (envelope.patchBytes <= 0 || envelope.patchBytes > 10000) throw new Error('invalid patch size');
+          if (result.status !== 'completed') throw new Error(`worker did not complete: ${result.status}`);
+          if (result.verifiedBaseSha !== expectedBase) throw new Error('worker did not verify exact base');
+          if (JSON.stringify(result.changedFiles) !== JSON.stringify([expectedPath])) throw new Error('wrong changedFiles');
+          NODE
+
+      - name: Prove patch applies to exact frozen base
+        run: |
+          BASE_SHA='10ccd2723b8fa6b925f47629491a9e51e6388500'
+          VALIDATE_DIR="$RUNNER_TEMP/sw-ops-002-base"
+          git worktree add --detach "$VALIDATE_DIR" "$BASE_SHA"
+          git -C "$VALIDATE_DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
+          git -C "$VALIDATE_DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
+          git -C "$VALIDATE_DIR" diff --check
+          test "$(git -C "$VALIDATE_DIR" status --short)" = '?? tools/antigravity/fixtures/sw-ops-002-smoke.txt'
+          test "$(cat "$VALIDATE_DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nGitHub writes remain Director-controlled'
+
+      - name: Upload sandbox worker evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-ops-002-live-sandbox-evidence
+          path: |
+            evidence/sw-ops-002-live/envelope.json
+            evidence/sw-ops-002-live/result.json
+            evidence/sw-ops-002-live/worker.patch
+          if-no-files-found: error
