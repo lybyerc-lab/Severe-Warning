@@ -1,0 +1,11 @@
+{
+  "task": "SW-ART-009",
+  "purpose": "finish destruction-feel and same-runner performance evidence after Cow and inherited parity proof",
+  "acceptedBase": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
+  "candidateParentHead": "072dba109bd13101e408b2aca03c872ce6338036",
+  "cowProofRun": 31916316881,
+  "mooCandidateReportRun": 31916702974,
+  "acceptedMooReportRun": 31916316881,
+  "paidServicesAuthorized": false,
+  "launchNonce": 1
+}
