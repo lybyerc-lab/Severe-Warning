@@ -2,14 +2,15 @@
 // [SW:ART:009:COW17_RUNTIME]
 // Cow 17 authored visual adapter. Presentation only: bovine gameplay authority,
 // safety, physics, scoring, coordinates, and flight telemetry remain untouched.
+// The GLB itself is loaded by the official Three.js r128 GLTFLoader.
 // ============================================================================
-const SW_COW17_RUNTIME_ASSET_VERSION = 'SW_COW17_RUNTIME_ASSET_V1';
+const SW_COW17_RUNTIME_ASSET_VERSION = 'SW_COW17_RUNTIME_ASSET_V2';
+const SW_COW17_RUNTIME_LOADER = 'THREE.GLTFLoader r128';
 const SW_COW17_RUNTIME_ASSET = Object.freeze({
   id: 'character.cow17.walking.v1',
   url: './assets/production/characters/cow17-walking-v1.glb',
   sha256: 'd5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93',
   expectedBytes: 14412828,
-  maxBytes: 15000000,
   expectedTriangles: 198050,
   expectedJoints: 24,
   expectedAnimation: 'Armature|walking_man|baselayer',
@@ -30,268 +31,137 @@ const swCow17RuntimeState = {
   activeAnimation: null,
   activeJointCount: 0,
   activeTriangleCount: 0,
+  activeTexturedMaterialCount: 0,
+  activeSkinnedMeshCount: 0,
   activeHeight: 0,
   lastError: null,
   cow: null,
-  visual: null,
-  mixer: null,
   fallbackChildren: null,
   fallbackRootMaterial: null,
   hiddenRootMaterial: null,
 };
-let swCow17AssetBufferPromise = null;
+
+let swCow17AssetPromise = null;
+let swCow17CachedAsset = null;
 
 function swCow17Fail(message) {
   throw new Error(`Cow 17 runtime asset: ${message}`);
 }
 
-function swCow17ReadGlb(buffer) {
-  if (!(buffer instanceof ArrayBuffer)) swCow17Fail('expected ArrayBuffer payload');
-  if (buffer.byteLength !== SW_COW17_RUNTIME_ASSET.expectedBytes) {
-    swCow17Fail(`byte length mismatch ${buffer.byteLength}`);
+function swCow17InspectGltf(gltf) {
+  if (!gltf?.scene) swCow17Fail('GLTFLoader returned no scene');
+  const clip = gltf.animations?.[0];
+  if (!clip) swCow17Fail('GLTFLoader returned no animation');
+  if (clip.name !== SW_COW17_RUNTIME_ASSET.expectedAnimation) {
+    swCow17Fail(`unexpected animation ${clip.name}`);
   }
-  if (buffer.byteLength > SW_COW17_RUNTIME_ASSET.maxBytes) swCow17Fail('asset exceeds mobile byte guard');
-  const view = new DataView(buffer);
-  if (view.getUint32(0, true) !== 0x46546c67) swCow17Fail('missing glTF magic');
-  if (view.getUint32(4, true) !== 2) swCow17Fail(`unsupported GLB version ${view.getUint32(4, true)}`);
-  if (view.getUint32(8, true) !== buffer.byteLength) swCow17Fail('GLB declared length mismatch');
 
-  let offset = 12;
-  let json = null;
-  let bin = null;
-  while (offset + 8 <= buffer.byteLength) {
-    const chunkLength = view.getUint32(offset, true);
-    const chunkType = view.getUint32(offset + 4, true);
-    offset += 8;
-    if (offset + chunkLength > buffer.byteLength) swCow17Fail('chunk exceeds GLB length');
-    if (chunkType === 0x4e4f534a) {
-      const text = new TextDecoder().decode(new Uint8Array(buffer, offset, chunkLength)).replace(/\u0000+$/g, '').trim();
-      json = JSON.parse(text);
-    } else if (chunkType === 0x004e4942) {
-      bin = new Uint8Array(buffer, offset, chunkLength);
+  let jointCount = 0;
+  let triangleCount = 0;
+  let texturedMaterialCount = 0;
+  let skinnedMeshCount = 0;
+  const seenMaterials = new Set();
+
+  gltf.scene.traverse((object) => {
+    if (object?.isSkinnedMesh) {
+      skinnedMeshCount += 1;
+      jointCount = Math.max(jointCount, object.skeleton?.bones?.length || 0);
     }
-    offset += chunkLength;
-  }
-  if (!json || !bin) swCow17Fail('GLB requires JSON and BIN chunks');
-  if (String(json.asset?.version || '') !== '2.0') swCow17Fail(`unexpected glTF asset version ${json.asset?.version}`);
-  if (!Array.isArray(json.buffers) || json.buffers.length !== 1 || json.buffers[0]?.uri) swCow17Fail('asset must use one embedded buffer');
-  if (!Array.isArray(json.meshes) || json.meshes.length !== 1) swCow17Fail('asset must contain exactly one mesh');
-  if (!Array.isArray(json.skins) || json.skins.length !== 1) swCow17Fail('asset must contain exactly one skin');
-  if (!Array.isArray(json.animations) || json.animations.length !== 1) swCow17Fail('asset must contain exactly one animation');
-  if ((json.skins[0]?.joints || []).length !== SW_COW17_RUNTIME_ASSET.expectedJoints) swCow17Fail('unexpected joint count');
-  if (json.animations[0]?.name !== SW_COW17_RUNTIME_ASSET.expectedAnimation) swCow17Fail(`unexpected animation ${json.animations[0]?.name}`);
-  const primitive = json.meshes[0]?.primitives?.[0];
-  if (!primitive || json.meshes[0].primitives.length !== 1) swCow17Fail('asset must contain one mesh primitive');
-  const indexAccessor = json.accessors?.[primitive.indices];
-  const triangles = Math.floor(Number(indexAccessor?.count || 0) / 3);
-  if (triangles !== SW_COW17_RUNTIME_ASSET.expectedTriangles) swCow17Fail(`triangle count mismatch ${triangles}`);
-  return { json, bin, triangles };
+    if (!object?.isMesh) return;
+
+    object.castShadow = false;
+    object.receiveShadow = false;
+    object.frustumCulled = true;
+
+    const geometry = object.geometry;
+    if (geometry?.index) triangleCount += Math.floor(geometry.index.count / 3);
+    else triangleCount += Math.floor((geometry?.attributes?.position?.count || 0) / 3);
+
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!material || seenMaterials.has(material)) continue;
+      seenMaterials.add(material);
+      if (material.map?.isTexture) texturedMaterialCount += 1;
+    }
+  });
+
+  if (skinnedMeshCount < 1) swCow17Fail('expected at least one skinned mesh');
+  if (jointCount !== SW_COW17_RUNTIME_ASSET.expectedJoints) swCow17Fail(`joint count mismatch ${jointCount}`);
+  if (triangleCount !== SW_COW17_RUNTIME_ASSET.expectedTriangles) swCow17Fail(`triangle count mismatch ${triangleCount}`);
+  if (texturedMaterialCount < 1) swCow17Fail('authored base-color texture is missing');
+
+  return { clip, jointCount, triangleCount, texturedMaterialCount, skinnedMeshCount };
 }
 
-async function swCow17GetAssetBuffer() {
-  if (!swCow17AssetBufferPromise) {
-    swCow17AssetBufferPromise = (async () => {
-      const response = await fetch(SW_COW17_RUNTIME_ASSET.url, { cache: 'force-cache' });
-      if (!response.ok) swCow17Fail(`HTTP ${response.status} for ${SW_COW17_RUNTIME_ASSET.url}`);
-      const bytes = await response.arrayBuffer();
-      swCow17ReadGlb(bytes);
-      return bytes;
-    })().catch((error) => {
-      swCow17AssetBufferPromise = null;
+function swCow17PrepareAsset(gltf) {
+  const inspected = swCow17InspectGltf(gltf);
+  const visual = new THREE.Group();
+  visual.name = 'SW_COW17_AUTHORED_VISUAL';
+  visual.add(gltf.scene);
+  visual.rotation.y = Math.PI;
+  visual.updateMatrixWorld(true);
+
+  let box = new THREE.Box3().setFromObject(visual);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  if (!Number.isFinite(size.y) || size.y <= 0) swCow17Fail(`invalid authored height ${size.y}`);
+
+  visual.scale.multiplyScalar(SW_COW17_RUNTIME_ASSET.targetHeight / size.y);
+  visual.updateMatrixWorld(true);
+  box = new THREE.Box3().setFromObject(visual);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  visual.position.x -= center.x;
+  visual.position.z -= center.z;
+  visual.position.y += -0.8 - box.min.y;
+  visual.updateMatrixWorld(true);
+
+  const mixer = new THREE.AnimationMixer(gltf.scene);
+  const action = mixer.clipAction(inspected.clip);
+  action.setLoop(THREE.LoopRepeat, Infinity);
+  action.enabled = true;
+
+  return Object.freeze({
+    visual,
+    mixer,
+    action,
+    clip: inspected.clip,
+    joints: inspected.jointCount,
+    triangles: inspected.triangleCount,
+    texturedMaterialCount: inspected.texturedMaterialCount,
+    skinnedMeshCount: inspected.skinnedMeshCount,
+  });
+}
+
+function swCow17LoadAssetOnce() {
+  if (swCow17CachedAsset) return Promise.resolve(swCow17CachedAsset);
+  if (!swCow17AssetPromise) {
+    if (typeof THREE?.GLTFLoader !== 'function') swCow17Fail('official Three.js r128 GLTFLoader is missing');
+    swCow17RuntimeState.loadAttempts += 1;
+    swCow17AssetPromise = new Promise((resolve, reject) => {
+      new THREE.GLTFLoader().load(
+        SW_COW17_RUNTIME_ASSET.url,
+        (gltf) => {
+          try {
+            swCow17CachedAsset = swCow17PrepareAsset(gltf);
+            swCow17RuntimeState.loadSuccesses += 1;
+            swCow17RuntimeState.lastError = null;
+            resolve(swCow17CachedAsset);
+          } catch (error) {
+            reject(error);
+          }
+        },
+        undefined,
+        reject,
+      );
+    }).catch((error) => {
+      swCow17AssetPromise = null;
+      swCow17RuntimeState.loadFailures += 1;
+      swCow17RuntimeState.lastError = String(error?.message || error);
       throw error;
     });
   }
-  return swCow17AssetBufferPromise;
-}
-
-const SW_COW17_COMPONENTS = Object.freeze({
-  5120: Int8Array,
-  5121: Uint8Array,
-  5122: Int16Array,
-  5123: Uint16Array,
-  5125: Uint32Array,
-  5126: Float32Array,
-});
-const SW_COW17_COMPONENT_COUNTS = Object.freeze({ SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 });
-
-function swCow17Accessor(parsed, accessorIndex) {
-  const accessor = parsed.json.accessors?.[accessorIndex];
-  if (!accessor) swCow17Fail(`missing accessor ${accessorIndex}`);
-  if (accessor.sparse) swCow17Fail('sparse accessors are unsupported for the bounded Cow 17 asset');
-  const bufferView = parsed.json.bufferViews?.[accessor.bufferView];
-  if (!bufferView) swCow17Fail(`missing bufferView for accessor ${accessorIndex}`);
-  if (bufferView.byteStride) swCow17Fail('interleaved bufferViews are unsupported for the bounded Cow 17 asset');
-  const ArrayType = SW_COW17_COMPONENTS[accessor.componentType];
-  const itemSize = SW_COW17_COMPONENT_COUNTS[accessor.type];
-  if (!ArrayType || !itemSize) swCow17Fail(`unsupported accessor format ${accessor.componentType}/${accessor.type}`);
-  const elementCount = Number(accessor.count) * itemSize;
-  const byteOffset = parsed.bin.byteOffset + Number(bufferView.byteOffset || 0) + Number(accessor.byteOffset || 0);
-  const source = new ArrayType(parsed.bin.buffer, byteOffset, elementCount);
-  return {
-    array: source.slice(),
-    itemSize,
-    normalized: accessor.normalized === true,
-    count: Number(accessor.count),
-    min: accessor.min || null,
-    max: accessor.max || null,
-  };
-}
-
-async function swCow17Texture(parsed) {
-  const image = parsed.json.images?.[0];
-  if (!image || image.uri || image.mimeType !== 'image/png') swCow17Fail('expected one embedded PNG texture');
-  const bufferView = parsed.json.bufferViews?.[image.bufferView];
-  if (!bufferView) swCow17Fail('embedded texture bufferView missing');
-  const start = Number(bufferView.byteOffset || 0);
-  const end = start + Number(bufferView.byteLength || 0);
-  const bytes = parsed.bin.slice(start, end);
-  const objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
-  try {
-    const texture = await new Promise((resolve, reject) => {
-      new THREE.TextureLoader().load(objectUrl, resolve, undefined, reject);
-    });
-    texture.flipY = false;
-    if (THREE.sRGBEncoding !== undefined) texture.encoding = THREE.sRGBEncoding;
-    texture.needsUpdate = true;
-    return texture;
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
-
-function swCow17ApplyNodeTransform(object, definition) {
-  if (Array.isArray(definition.matrix) && definition.matrix.length === 16) {
-    const matrix = new THREE.Matrix4().fromArray(definition.matrix);
-    matrix.decompose(object.position, object.quaternion, object.scale);
-    return;
-  }
-  if (Array.isArray(definition.translation)) object.position.fromArray(definition.translation);
-  if (Array.isArray(definition.rotation)) object.quaternion.fromArray(definition.rotation);
-  if (Array.isArray(definition.scale)) object.scale.fromArray(definition.scale);
-}
-
-function swCow17BuildAnimation(parsed, objects) {
-  const animation = parsed.json.animations[0];
-  const tracks = [];
-  for (const channel of animation.channels || []) {
-    const sampler = animation.samplers?.[channel.sampler];
-    const target = objects[channel.target?.node];
-    if (!sampler || !target) swCow17Fail('animation channel references missing sampler/node');
-    if (!['LINEAR', 'STEP'].includes(sampler.interpolation || 'LINEAR')) swCow17Fail(`unsupported interpolation ${sampler.interpolation}`);
-    const input = swCow17Accessor(parsed, sampler.input);
-    const output = swCow17Accessor(parsed, sampler.output);
-    const path = channel.target.path;
-    let track;
-    if (path === 'rotation') {
-      track = new THREE.QuaternionKeyframeTrack(`${target.name}.quaternion`, input.array, output.array);
-    } else if (path === 'translation') {
-      track = new THREE.VectorKeyframeTrack(`${target.name}.position`, input.array, output.array);
-    } else if (path === 'scale') {
-      track = new THREE.VectorKeyframeTrack(`${target.name}.scale`, input.array, output.array);
-    } else {
-      swCow17Fail(`unsupported animation path ${path}`);
-    }
-    track.setInterpolation((sampler.interpolation || 'LINEAR') === 'STEP' ? THREE.InterpolateDiscrete : THREE.InterpolateLinear);
-    tracks.push(track);
-  }
-  if (tracks.length < 1) swCow17Fail('animation contains no usable tracks');
-  return new THREE.AnimationClip(animation.name, -1, tracks);
-}
-
-async function swCow17BuildScene(buffer) {
-  const parsed = swCow17ReadGlb(buffer);
-  const texture = await swCow17Texture(parsed);
-  const primitive = parsed.json.meshes[0].primitives[0];
-  const geometry = new THREE.BufferGeometry();
-  const attributeMap = [
-    ['POSITION', 'position'],
-    ['NORMAL', 'normal'],
-    ['TEXCOORD_0', 'uv'],
-    ['JOINTS_0', 'skinIndex'],
-    ['WEIGHTS_0', 'skinWeight'],
-  ];
-  for (const [gltfName, threeName] of attributeMap) {
-    const accessorIndex = primitive.attributes?.[gltfName];
-    if (accessorIndex === undefined) swCow17Fail(`missing ${gltfName} attribute`);
-    const accessor = swCow17Accessor(parsed, accessorIndex);
-    geometry.setAttribute(threeName, new THREE.BufferAttribute(accessor.array, accessor.itemSize, accessor.normalized));
-  }
-  const indices = swCow17Accessor(parsed, primitive.indices);
-  geometry.setIndex(new THREE.BufferAttribute(indices.array, 1));
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-
-  const material = new THREE.MeshStandardMaterial({
-    color: '#ffffff',
-    map: texture,
-    roughness: 0.68,
-    metalness: 0.02,
-    side: THREE.FrontSide,
-    skinning: true,
-  });
-
-  const skinDefinition = parsed.json.skins[0];
-  const jointSet = new Set(skinDefinition.joints || []);
-  const objects = (parsed.json.nodes || []).map((definition, index) => {
-    let object;
-    if (definition.mesh !== undefined) {
-      object = new THREE.SkinnedMesh(geometry, material);
-      object.castShadow = false;
-      object.receiveShadow = false;
-      object.frustumCulled = true;
-    } else if (jointSet.has(index)) {
-      object = new THREE.Bone();
-    } else {
-      object = new THREE.Object3D();
-    }
-    object.name = definition.name || `cow17_node_${index}`;
-    swCow17ApplyNodeTransform(object, definition);
-    return object;
-  });
-
-  (parsed.json.nodes || []).forEach((definition, index) => {
-    for (const childIndex of definition.children || []) {
-      if (!objects[childIndex]) swCow17Fail(`missing child node ${childIndex}`);
-      objects[index].add(objects[childIndex]);
-    }
-  });
-
-  const sceneRoot = new THREE.Group();
-  sceneRoot.name = 'SW_COW17_AUTHORED_VISUAL';
-  for (const rootIndex of parsed.json.scenes?.[parsed.json.scene || 0]?.nodes || []) sceneRoot.add(objects[rootIndex]);
-  if (sceneRoot.children.length < 1) swCow17Fail('scene contains no root node');
-  sceneRoot.updateMatrixWorld(true);
-
-  const inverseBind = swCow17Accessor(parsed, skinDefinition.inverseBindMatrices);
-  if (inverseBind.count !== SW_COW17_RUNTIME_ASSET.expectedJoints || inverseBind.itemSize !== 16) swCow17Fail('invalid inverse bind matrix accessor');
-  const bones = skinDefinition.joints.map((index) => objects[index]);
-  if (bones.some((bone) => !bone?.isBone)) swCow17Fail('skin contains non-bone joints');
-  const boneInverses = bones.map((_, index) => new THREE.Matrix4().fromArray(inverseBind.array, index * 16));
-  const skeleton = new THREE.Skeleton(bones, boneInverses);
-  const skinnedMeshes = objects.filter((object) => object?.isSkinnedMesh);
-  if (skinnedMeshes.length !== 1) swCow17Fail(`expected one skinned mesh, found ${skinnedMeshes.length}`);
-  skinnedMeshes[0].bind(skeleton, skinnedMeshes[0].matrixWorld);
-
-  const clip = swCow17BuildAnimation(parsed, objects);
-  return { scene: sceneRoot, clip, triangles: parsed.triangles, joints: bones.length };
-}
-
-function swCow17DisposeVisual(visual) {
-  if (!visual) return;
-  const textures = new Set();
-  const materials = new Set();
-  visual.traverse((object) => {
-    if (!object?.isMesh) return;
-    object.geometry?.dispose?.();
-    const list = Array.isArray(object.material) ? object.material : [object.material];
-    for (const material of list) {
-      if (!material || materials.has(material)) continue;
-      materials.add(material);
-      for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
-      material.dispose?.();
-    }
-  });
-  textures.forEach((texture) => texture.dispose?.());
+  return swCow17AssetPromise;
 }
 
 function swCow17RestoreFallback() {
@@ -306,42 +176,7 @@ function swCow17RestoreFallback() {
   swCow17RuntimeState.fallbackChildren = null;
 }
 
-function swCow17Cleanup() {
-  swCow17RuntimeState.mixer?.stopAllAction?.();
-  if (swCow17RuntimeState.cow?.mesh?.userData) delete swCow17RuntimeState.cow.mesh.userData.swCow17AuthoredAssetId;
-  if (swCow17RuntimeState.visual?.parent) swCow17RuntimeState.visual.parent.remove(swCow17RuntimeState.visual);
-  swCow17DisposeVisual(swCow17RuntimeState.visual);
-  swCow17RestoreFallback();
-  if (swCow17RuntimeState.cow || swCow17RuntimeState.visual || swCow17RuntimeState.mixer) swCow17RuntimeState.cleanupCount += 1;
-  swCow17RuntimeState.cow = null;
-  swCow17RuntimeState.visual = null;
-  swCow17RuntimeState.mixer = null;
-  swCow17RuntimeState.activeCowId = null;
-  swCow17RuntimeState.activeAnimation = null;
-  swCow17RuntimeState.activeJointCount = 0;
-  swCow17RuntimeState.activeTriangleCount = 0;
-  swCow17RuntimeState.activeHeight = 0;
-}
-
-function swCow17PrepareVisual(cow, parsed) {
-  const visual = parsed.scene;
-  visual.rotation.y = Math.PI;
-  visual.updateMatrixWorld(true);
-  let box = new THREE.Box3().setFromObject(visual);
-  const size = new THREE.Vector3();
-  box.getSize(size);
-  if (!Number.isFinite(size.y) || size.y <= 0) swCow17Fail(`invalid authored height ${size.y}`);
-  const scale = SW_COW17_RUNTIME_ASSET.targetHeight / size.y;
-  visual.scale.multiplyScalar(scale);
-  visual.updateMatrixWorld(true);
-  box = new THREE.Box3().setFromObject(visual);
-  const center = new THREE.Vector3();
-  box.getCenter(center);
-  visual.position.x -= center.x;
-  visual.position.z -= center.z;
-  visual.position.y += -0.8 - box.min.y;
-  visual.updateMatrixWorld(true);
-
+function swCow17HideFallback(cow) {
   swCow17RuntimeState.fallbackChildren = [...cow.mesh.children];
   swCow17RuntimeState.fallbackRootMaterial = cow.mesh.material;
   const hiddenMaterial = cow.mesh.material?.clone?.();
@@ -351,40 +186,56 @@ function swCow17PrepareVisual(cow, parsed) {
     swCow17RuntimeState.hiddenRootMaterial = hiddenMaterial;
   }
   for (const child of swCow17RuntimeState.fallbackChildren) child.visible = false;
-  cow.mesh.add(visual);
+}
 
-  const mixer = new THREE.AnimationMixer(visual);
-  const action = mixer.clipAction(parsed.clip);
-  action.setLoop(THREE.LoopRepeat, Infinity);
-  action.enabled = true;
-  action.play();
-  return { visual, mixer, height: SW_COW17_RUNTIME_ASSET.targetHeight };
+function swCow17ClearActiveState() {
+  swCow17RuntimeState.activeCowId = null;
+  swCow17RuntimeState.activeAnimation = null;
+  swCow17RuntimeState.activeJointCount = 0;
+  swCow17RuntimeState.activeTriangleCount = 0;
+  swCow17RuntimeState.activeTexturedMaterialCount = 0;
+  swCow17RuntimeState.activeSkinnedMeshCount = 0;
+  swCow17RuntimeState.activeHeight = 0;
+}
+
+function swCow17Cleanup() {
+  const asset = swCow17CachedAsset;
+  asset?.mixer?.stopAllAction?.();
+  if (swCow17RuntimeState.cow?.mesh?.userData) delete swCow17RuntimeState.cow.mesh.userData.swCow17AuthoredAssetId;
+  if (asset?.visual?.parent) asset.visual.parent.remove(asset.visual);
+  swCow17RestoreFallback();
+  if (swCow17RuntimeState.cow || asset?.visual?.parent) swCow17RuntimeState.cleanupCount += 1;
+  swCow17RuntimeState.cow = null;
+  swCow17ClearActiveState();
+}
+
+function swCow17Attach(cow, asset) {
+  if (asset.visual.parent) asset.visual.parent.remove(asset.visual);
+  swCow17HideFallback(cow);
+  cow.mesh.add(asset.visual);
+  asset.action.reset();
+  asset.action.enabled = true;
+  asset.action.play();
+
+  swCow17RuntimeState.appliedCount += 1;
+  swCow17RuntimeState.activeCowId = cow.id;
+  swCow17RuntimeState.activeAnimation = asset.clip.name;
+  swCow17RuntimeState.activeJointCount = asset.joints;
+  swCow17RuntimeState.activeTriangleCount = asset.triangles;
+  swCow17RuntimeState.activeTexturedMaterialCount = asset.texturedMaterialCount;
+  swCow17RuntimeState.activeSkinnedMeshCount = asset.skinnedMeshCount;
+  swCow17RuntimeState.activeHeight = SW_COW17_RUNTIME_ASSET.targetHeight;
+  swCow17RuntimeState.lastError = null;
+  cow.mesh.userData.swCow17AuthoredAssetId = SW_COW17_RUNTIME_ASSET.id;
 }
 
 async function swCow17LoadForCow(cow, generation) {
-  swCow17RuntimeState.loadAttempts += 1;
   try {
-    const bytes = await swCow17GetAssetBuffer();
-    const parsed = await swCow17BuildScene(bytes);
-    if (generation !== swCow17RuntimeState.generation || swCow17RuntimeState.cow !== cow) {
-      swCow17DisposeVisual(parsed.scene);
-      return false;
-    }
-    const prepared = swCow17PrepareVisual(cow, parsed);
-    swCow17RuntimeState.visual = prepared.visual;
-    swCow17RuntimeState.mixer = prepared.mixer;
-    swCow17RuntimeState.loadSuccesses += 1;
-    swCow17RuntimeState.appliedCount += 1;
-    swCow17RuntimeState.activeCowId = cow.id;
-    swCow17RuntimeState.activeAnimation = parsed.clip.name;
-    swCow17RuntimeState.activeJointCount = parsed.joints;
-    swCow17RuntimeState.activeTriangleCount = parsed.triangles;
-    swCow17RuntimeState.activeHeight = prepared.height;
-    swCow17RuntimeState.lastError = null;
-    cow.mesh.userData.swCow17AuthoredAssetId = SW_COW17_RUNTIME_ASSET.id;
+    const asset = await swCow17LoadAssetOnce();
+    if (generation !== swCow17RuntimeState.generation || swCow17RuntimeState.cow !== cow) return false;
+    swCow17Attach(cow, asset);
     return true;
   } catch (error) {
-    swCow17RuntimeState.loadFailures += 1;
     swCow17RuntimeState.lastError = String(error?.message || error);
     console.warn('[Severe Weather Warning] Cow 17 authored visual fallback retained.', error);
     return false;
@@ -400,11 +251,11 @@ function swCow17Register(cow) {
 }
 
 function swCow17Advance(dt) {
-  const mixer = swCow17RuntimeState.mixer;
+  const asset = swCow17CachedAsset;
   const cow = swCow17RuntimeState.cow;
-  if (!mixer || !cow || !Number.isFinite(dt) || dt <= 0) return;
+  if (!asset?.mixer || !swCow17RuntimeState.activeCowId || !cow || !Number.isFinite(dt) || dt <= 0) return;
   const motionScale = cow.airborne ? 0.18 : 1;
-  mixer.update(dt * motionScale);
+  asset.mixer.update(dt * motionScale);
   swCow17RuntimeState.animationTicks += 1;
   swCow17RuntimeState.animationSeconds += dt * motionScale;
 }
@@ -412,6 +263,7 @@ function swCow17Advance(dt) {
 function swCow17Snapshot() {
   return Object.freeze({
     version: SW_COW17_RUNTIME_ASSET_VERSION,
+    loader: SW_COW17_RUNTIME_LOADER,
     assetId: SW_COW17_RUNTIME_ASSET.id,
     assetUrl: SW_COW17_RUNTIME_ASSET.url,
     expectedSha256: SW_COW17_RUNTIME_ASSET.sha256,
@@ -429,8 +281,10 @@ function swCow17Snapshot() {
     activeAnimation: swCow17RuntimeState.activeAnimation,
     activeJointCount: swCow17RuntimeState.activeJointCount,
     activeTriangleCount: swCow17RuntimeState.activeTriangleCount,
+    activeTexturedMaterialCount: swCow17RuntimeState.activeTexturedMaterialCount,
+    activeSkinnedMeshCount: swCow17RuntimeState.activeSkinnedMeshCount,
     activeHeight: swCow17RuntimeState.activeHeight,
-    fallbackVisible: swCow17RuntimeState.visual === null,
+    fallbackVisible: swCow17RuntimeState.activeCowId === null,
     lastError: swCow17RuntimeState.lastError,
   });
 }
@@ -462,6 +316,7 @@ resetBovineSignature = function resetBovineSignatureWithAuthoredCow17(...args) {
 
 globalThis.__SW_COW17_RUNTIME_ASSET__ = Object.freeze({
   version: SW_COW17_RUNTIME_ASSET_VERSION,
+  loader: SW_COW17_RUNTIME_LOADER,
   asset: SW_COW17_RUNTIME_ASSET,
   getSnapshot: swCow17Snapshot,
 });
