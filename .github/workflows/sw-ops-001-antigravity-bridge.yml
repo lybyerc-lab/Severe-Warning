@@ -1,0 +1,121 @@
+name: SW-OPS-001 Antigravity Bridge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - 'tools/antigravity/**'
+      - 'scripts/verify-sw-ops-001-antigravity.mjs'
+      - '.github/workflows/sw-ops-001-antigravity-bridge.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-and-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify bridge isolation and contract
+        run: node scripts/verify-sw-ops-001-antigravity.mjs
+
+      - name: Prove send dry-run without API key
+        env:
+          GEMINI_API_KEY: ''
+        run: >-
+          node tools/antigravity/sw-antigravity-dispatch.mjs send
+          --task tools/antigravity/tasks/sw-ops-001-smoke.json
+          --output evidence/sw-ops-001-send-dry-run.json
+          --dry-run
+
+      - name: Prove continuation dry-run without API key
+        env:
+          GEMINI_API_KEY: ''
+        run: >-
+          node tools/antigravity/sw-antigravity-dispatch.mjs continue
+          --interaction dry-run-interaction
+          --environment dry-run-environment
+          --input continue
+          --budget 6000
+          --output evidence/sw-ops-001-continue-dry-run.json
+          --dry-run
+
+      - name: Validate evidence files
+        run: |
+          test -s evidence/sw-ops-001-send-dry-run.json
+          test -s evidence/sw-ops-001-continue-dry-run.json
+          node -e "const fs=require('fs'); for (const f of ['evidence/sw-ops-001-send-dry-run.json','evidence/sw-ops-001-continue-dry-run.json']) { const j=JSON.parse(fs.readFileSync(f)); if (j.dryRun !== true) process.exit(1); }"
+
+      - name: Upload dry-run evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-ops-001-dry-run-evidence
+          path: evidence/*.json
+          if-no-files-found: error
+
+  live-smoke:
+    if: >-
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'antigravity-live-smoke' &&
+      github.run_attempt == 1 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/sw-ops-001-antigravity-bridge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Refuse rerun or missing secret
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          test "$RUN_ATTEMPT" = "1"
+          test -n "$GEMINI_API_KEY"
+
+      - name: Run one bounded live Antigravity interaction
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: >-
+          node tools/antigravity/sw-antigravity-dispatch.mjs send
+          --task tools/antigravity/tasks/sw-ops-001-smoke.json
+          --output evidence/sw-ops-001-live-smoke.json
+
+      - name: Validate live result envelope
+        run: |
+          test -s evidence/sw-ops-001-live-smoke.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const result = JSON.parse(fs.readFileSync('evidence/sw-ops-001-live-smoke.json', 'utf8'));
+          if (!result.interactionId) throw new Error('missing interactionId');
+          if (!result.environmentId) throw new Error('missing environmentId');
+          if (!result.apiStatus) throw new Error('missing apiStatus');
+          if (!result.workerResult) throw new Error('missing workerResult');
+          if (result.taskId !== 'SW-OPS-001-SMOKE') throw new Error('wrong taskId');
+          console.log(`Antigravity interaction ${result.interactionId} status ${result.apiStatus}`);
+          NODE
+
+      - name: Upload live smoke evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-ops-001-live-smoke-evidence
+          path: evidence/sw-ops-001-live-smoke.json
+          if-no-files-found: error
