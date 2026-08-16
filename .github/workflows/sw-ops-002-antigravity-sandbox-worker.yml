@@ -33,7 +33,7 @@ jobs:
       - name: Verify sandbox worker isolation
         run: node scripts/verify-sw-ops-002-antigravity-worker.mjs
 
-      - name: Prove request dry-run without API key
+      - name: Prove initial request dry-run without API key
         env:
           GEMINI_API_KEY: ''
         run: >-
@@ -42,12 +42,26 @@ jobs:
           --output-dir evidence/sw-ops-002-dry
           --dry-run
 
+      - name: Prove continuation dry-run without API key
+        env:
+          GEMINI_API_KEY: ''
+        run: >-
+          node tools/antigravity/sw-antigravity-worker.mjs continue
+          --task tools/antigravity/tasks/sw-ops-002-smoke.json
+          --interaction test_interaction_id
+          --environment test_environment_id
+          --input "Dry-run Director correction"
+          --output-dir evidence/sw-ops-002-dry-continue
+          --dry-run
+
       - name: Validate dry-run evidence
         run: |
           test -s evidence/sw-ops-002-dry/request.json
+          test -s evidence/sw-ops-002-dry-continue/request.json
           node - <<'NODE'
           const fs = require('fs');
           const request = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry/request.json', 'utf8'));
+          const continuation = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry-continue/request.json', 'utf8'));
           if (request.taskId !== 'SW-OPS-002-SMOKE') throw new Error('wrong taskId');
           if (request.exactBaseSha !== '10ccd2723b8fa6b925f47629491a9e51e6388500') throw new Error('wrong exact base');
           if (request.repositoryTarget !== '/workspace/repo') throw new Error('wrong repository target');
@@ -55,15 +69,21 @@ jobs:
           if (request.allowedPaths.length !== 1 || request.allowedPaths[0] !== 'tools/antigravity/fixtures/sw-ops-002-smoke.txt') throw new Error('allowed territory widened');
           if (request.tokenBudget > 8000) throw new Error('token budget widened');
           if (request.maxPatchBytes > 10000) throw new Error('patch limit widened');
+          if (request.primaryReturnChannel !== 'validated inline patch in structured model output') throw new Error('wrong primary return channel');
           if (!request.outputFiles.some((item) => item.endsWith('/worker.patch'))) throw new Error('missing patch output');
           if (!request.outputFiles.some((item) => item.endsWith('/result.json'))) throw new Error('missing result output');
+          if (continuation.mode !== 'continue') throw new Error('continuation mode missing');
+          if (continuation.previousInteractionId !== 'test_interaction_id') throw new Error('continuation lost interaction ID');
+          if (continuation.environmentId !== 'test_environment_id') throw new Error('continuation lost environment ID');
           NODE
 
       - name: Upload dry-run evidence
         uses: actions/upload-artifact@v4
         with:
           name: sw-ops-002-dry-run-evidence
-          path: evidence/sw-ops-002-dry/request.json
+          path: |
+            evidence/sw-ops-002-dry/request.json
+            evidence/sw-ops-002-dry-continue/request.json
           if-no-files-found: error
 
   live-sandbox-smoke:
@@ -73,7 +93,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'agent/sw-ops-002-antigravity-sandbox-worker'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
@@ -102,7 +122,7 @@ jobs:
           --task tools/antigravity/tasks/sw-ops-002-smoke.json
           --output-dir evidence/sw-ops-002-live
 
-      - name: Validate returned envelope and patch scope
+      - name: Validate initial returned envelope and patch scope
         run: |
           test -s evidence/sw-ops-002-live/envelope.json
           test -s evidence/sw-ops-002-live/result.json
@@ -115,6 +135,7 @@ jobs:
           const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
           if (!envelope.interactionId) throw new Error('missing interactionId');
           if (!envelope.environmentId) throw new Error('missing environmentId');
+          if (envelope.returnChannel !== 'model-output') throw new Error('wrong return channel');
           if (envelope.exactBaseSha !== expectedBase) throw new Error('wrong envelope base');
           if (JSON.stringify(envelope.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('wrong patch paths');
           if (envelope.patchBytes <= 0 || envelope.patchBytes > 10000) throw new Error('invalid patch size');
@@ -123,16 +144,61 @@ jobs:
           if (JSON.stringify(result.changedFiles) !== JSON.stringify([expectedPath])) throw new Error('wrong changedFiles');
           NODE
 
-      - name: Prove patch applies to exact frozen base
+      - name: Prove initial patch applies to exact frozen base
         run: |
           BASE_SHA='10ccd2723b8fa6b925f47629491a9e51e6388500'
-          VALIDATE_DIR="$RUNNER_TEMP/sw-ops-002-base"
+          VALIDATE_DIR="$RUNNER_TEMP/sw-ops-002-initial"
           git worktree add --detach "$VALIDATE_DIR" "$BASE_SHA"
           git -C "$VALIDATE_DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
           git -C "$VALIDATE_DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
           git -C "$VALIDATE_DIR" diff --check
           test "$(git -C "$VALIDATE_DIR" status --short)" = '?? tools/antigravity/fixtures/sw-ops-002-smoke.txt'
           test "$(cat "$VALIDATE_DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nGitHub writes remain Director-controlled'
+
+      - name: Send Director correction to same Antigravity environment
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          INTERACTION_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json','utf8'));process.stdout.write(x.interactionId)")
+          ENVIRONMENT_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json','utf8'));process.stdout.write(x.environmentId)")
+          node tools/antigravity/sw-antigravity-worker.mjs continue \
+            --task tools/antigravity/tasks/sw-ops-002-smoke.json \
+            --interaction "$INTERACTION_ID" \
+            --environment "$ENVIRONMENT_ID" \
+            --input "Director correction: keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other repository change. Regenerate the complete patch from the same exact base and refresh the structured result." \
+            --output-dir evidence/sw-ops-002-continued
+
+      - name: Validate revised patch from same environment
+        run: |
+          test -s evidence/sw-ops-002-continued/envelope.json
+          test -s evidence/sw-ops-002-continued/result.json
+          test -s evidence/sw-ops-002-continued/worker.patch
+          node - <<'NODE'
+          const fs = require('fs');
+          const initial = JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json', 'utf8'));
+          const revised = JSON.parse(fs.readFileSync('evidence/sw-ops-002-continued/envelope.json', 'utf8'));
+          const result = JSON.parse(fs.readFileSync('evidence/sw-ops-002-continued/result.json', 'utf8'));
+          const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
+          const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+          if (!revised.interactionId || revised.interactionId === initial.interactionId) throw new Error('continuation did not create a new interaction');
+          if (revised.environmentId !== initial.environmentId) throw new Error('continuation did not reuse the same environment');
+          if (revised.returnChannel !== 'model-output') throw new Error('wrong revised return channel');
+          if (revised.exactBaseSha !== expectedBase) throw new Error('wrong revised base');
+          if (JSON.stringify(revised.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('revised patch escaped scope');
+          if (result.status !== 'completed') throw new Error(`revised worker did not complete: ${result.status}`);
+          if (result.verifiedBaseSha !== expectedBase) throw new Error('revised worker lost exact base');
+          NODE
+
+      - name: Prove revised patch applies to exact frozen base
+        run: |
+          BASE_SHA='10ccd2723b8fa6b925f47629491a9e51e6388500'
+          VALIDATE_DIR="$RUNNER_TEMP/sw-ops-002-revised"
+          git worktree add --detach "$VALIDATE_DIR" "$BASE_SHA"
+          git -C "$VALIDATE_DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-continued/worker.patch"
+          git -C "$VALIDATE_DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-continued/worker.patch"
+          git -C "$VALIDATE_DIR" diff --check
+          test "$(git -C "$VALIDATE_DIR" status --short)" = '?? tools/antigravity/fixtures/sw-ops-002-smoke.txt'
+          test "$(cat "$VALIDATE_DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nDirector controls every GitHub write'
 
       - name: Upload sandbox worker evidence
         uses: actions/upload-artifact@v4
@@ -142,4 +208,7 @@ jobs:
             evidence/sw-ops-002-live/envelope.json
             evidence/sw-ops-002-live/result.json
             evidence/sw-ops-002-live/worker.patch
+            evidence/sw-ops-002-continued/envelope.json
+            evidence/sw-ops-002-continued/result.json
+            evidence/sw-ops-002-continued/worker.patch
           if-no-files-found: error
