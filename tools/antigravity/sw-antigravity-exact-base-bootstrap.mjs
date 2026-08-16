@@ -18,6 +18,10 @@ const POLL_MS = 3000;
 const POLL_CEILING_MS = 4 * 60 * 1000;
 const SNAPSHOT_RETRIES = 6;
 const SNAPSHOT_RETRY_MS = 3000;
+const SMOKE_FIXTURE = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+const INITIAL_LINE_1 = 'SW-OPS-002 sandbox worker reached';
+const INITIAL_LINE_2 = 'GitHub writes remain Director-controlled';
+const CORRECTED_LINE_2 = 'Director controls every GitHub write';
 
 function requiredString(value, label) {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} must be a non-empty string`);
@@ -62,7 +66,7 @@ function hookConfig() {
       enabled: true,
       pre_tool_execution: [
         {
-          matcher: '.*',
+          matcher: 'code_execution',
           hooks: [
             {
               type: 'command',
@@ -76,10 +80,37 @@ function hookConfig() {
   };
 }
 
+function initialEditScript(task) {
+  return [
+    'set -eu',
+    `cd ${REPO_TARGET}`,
+    `test "$(git rev-parse HEAD)" = "${task.exactBaseSha}"`,
+    `test ! -e '${SMOKE_FIXTURE}'`,
+    `mkdir -p '${path.posix.dirname(SMOKE_FIXTURE)}'`,
+    `printf '%s\\n' '${INITIAL_LINE_1}' '${INITIAL_LINE_2}' > '${SMOKE_FIXTURE}'`,
+    'git status --short',
+    'git diff --check',
+  ].join('\n');
+}
+
+function correctionEditScript(task) {
+  return [
+    'set -eu',
+    `cd ${REPO_TARGET}`,
+    `test "$(git rev-parse HEAD)" = "${task.exactBaseSha}"`,
+    `test "$(sed -n '1p' '${SMOKE_FIXTURE}')" = '${INITIAL_LINE_1}'`,
+    `printf '%s\\n' '${INITIAL_LINE_1}' '${CORRECTED_LINE_2}' > '${SMOKE_FIXTURE}'`,
+    'git status --short',
+    'git diff --check',
+  ].join('\n');
+}
+
 function hookScript(task) {
   const repositoryUrl = JSON.stringify(task.repositoryUrl);
   const exactBaseRef = JSON.stringify(task.exactBaseRef);
   const exactBaseSha = JSON.stringify(task.exactBaseSha);
+  const initialScript = JSON.stringify(initialEditScript(task));
+  const correctionScript = JSON.stringify(correctionEditScript(task));
   return `#!/usr/bin/env python3
 import json
 import subprocess
@@ -89,6 +120,20 @@ REPO = ${JSON.stringify(REPO_TARGET)}
 EXPECTED_REPO = ${repositoryUrl}
 EXPECTED_REF = ${exactBaseRef}
 EXPECTED_SHA = ${exactBaseSha}
+INITIAL_SCRIPT = ${initialScript}
+CORRECTION_SCRIPT = ${correctionScript}
+READ_ONLY_LINES = {
+    "set -e",
+    "set -eu",
+    "set -euo pipefail",
+    "cd /workspace/repo",
+    "git rev-parse HEAD",
+    "git status --short",
+    "git diff --check",
+    "git -C /workspace/repo rev-parse HEAD",
+    "git -C /workspace/repo status --short",
+    "git -C /workspace/repo diff --check",
+}
 
 def respond(decision, reason=None):
     payload = {"decision": decision}
@@ -109,8 +154,15 @@ def git(*args):
         raise RuntimeError("git command failed")
     return p.stdout.strip()
 
+def normalize(code):
+    return "\\n".join(line.strip() for line in str(code).splitlines() if line.strip())
+
+def is_read_only(code):
+    lines = [line.strip() for line in str(code).splitlines() if line.strip()]
+    return bool(lines) and all(line in READ_ONLY_LINES for line in lines)
+
 try:
-    json.load(sys.stdin)
+    data = json.load(sys.stdin)
     remote = git("remote", "get-url", "origin")
     if remote.endswith(".git"):
         remote = remote[:-4]
@@ -130,7 +182,15 @@ try:
 
     if head != EXPECTED_SHA:
         respond("deny", "Exact-base airlock could not establish the frozen SHA.")
-    respond("allow")
+
+    tool_call = data.get("tool_call", {})
+    if tool_call.get("name") != "code_execution":
+        respond("deny", "SW-OPS-002 permits code_execution only.")
+    code = str(tool_call.get("args", {}).get("code", ""))
+    normalized = normalize(code)
+    if is_read_only(code) or normalized == normalize(INITIAL_SCRIPT) or normalized == normalize(CORRECTION_SCRIPT):
+        respond("allow")
+    respond("deny", "SW-OPS-002 command gate blocked exploration or an unapproved command. Run exactly the Director-authorized bash script from the current prompt, or one of the tiny read-only Git checks.")
 except Exception:
     respond("deny", "Exact-base airlock failed closed before tool execution.")
 `;
@@ -175,7 +235,7 @@ function interactionStepTypes(interaction) {
 async function runInteraction(task) {
   const body = {
     agent: task.agent,
-    input: `Bootstrap only. Run exactly these read-only checks, then stop:\ngit -C ${REPO_TARGET} rev-parse HEAD\ngit -C ${REPO_TARGET} status --short\nDo not edit repository files during this bootstrap turn.`,
+    input: `Bootstrap only. Run exactly these read-only checks using code_execution, then stop:\ngit -C ${REPO_TARGET} rev-parse HEAD\ngit -C ${REPO_TARGET} status --short\nDo not edit repository files during this bootstrap turn.`,
     environment: {
       type: 'remote',
       sources: [
@@ -185,7 +245,7 @@ async function runInteraction(task) {
         {
           type: 'inline',
           target: '.agents/AGENTS.md',
-          content: `# SW-OPS-002 sandbox policy\nBootstrap turn: perform only the requested read-only Git checks and do not edit repository files.\nLater Director-authorized turn: only tools/antigravity/fixtures/sw-ops-002-smoke.txt may be edited when the Director prompt explicitly requests it.\nNever edit any other repository path. Never alter .git configuration/history. Never commit, push, open a PR, merge, publish, release, deploy, or request/use GitHub credentials.\nThe host independently derives and validates every patch before any GitHub write is considered.\n`,
+          content: `# SW-OPS-002 sandbox policy\nBootstrap turn: perform only the requested read-only Git checks and do not edit repository files.\nLater Director-authorized turns: the command gate permits only one exact initial smoke edit script, one exact correction script, or tiny read-only Git checks.\nOnly ${SMOKE_FIXTURE} may ever be edited by those scripts. Never edit any other repository path.\nNever alter .git configuration/history. Never commit, push, open a PR, merge, publish, release, deploy, or request/use GitHub credentials.\nThe host independently derives and validates every patch before any GitHub write is considered.\n`,
         },
       ],
       network: { allowlist: [{ domain: 'github.com' }] },
@@ -402,7 +462,7 @@ async function main() {
       untrackedFiles: [],
       sandboxStatus: [],
       skippedGitLinkCount: materialized.skippedGitLinkCount || 0,
-      hostChecks: ['environment verified', 'exact-base hook mounted', 'archive links not followed', 'sandbox HEAD verified', 'clean working tree verified'],
+      hostChecks: ['environment verified', 'exact-base hook mounted', 'command gate mounted', 'archive links not followed', 'sandbox HEAD verified', 'clean working tree verified'],
       nextAction: 'Reuse this environment for the bounded edit turn; no GitHub write is authorized.',
     }, null, 2)}\n`, 'utf8');
     await writeFile(path.join(outputDir, 'envelope.json'), `${JSON.stringify({
