@@ -10,6 +10,7 @@ const root = process.cwd();
 const workerPath = path.join(root, 'tools', 'antigravity', 'sw-antigravity-sandbox-worker.mjs');
 const legacyWorkerPath = path.join(root, 'tools', 'antigravity', 'sw-antigravity-worker.mjs');
 const taskPath = path.join(root, 'tools', 'antigravity', 'tasks', 'sw-ops-002-smoke.json');
+const bootstrapPath = path.join(root, 'tools', 'antigravity', 'tasks', 'sw-ops-002-bootstrap.json');
 const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
 const expectedFixture = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
 const errors = [];
@@ -35,7 +36,9 @@ async function walk(dir) {
 const worker = await readFile(workerPath, 'utf8');
 const legacyWorker = await readFile(legacyWorkerPath, 'utf8').catch(() => null);
 const taskText = await readFile(taskPath, 'utf8');
+const bootstrapText = await readFile(bootstrapPath, 'utf8');
 const task = JSON.parse(taskText);
+const bootstrap = JSON.parse(bootstrapText);
 
 if (legacyWorker !== null) errors.push('superseded tools/antigravity/sw-antigravity-worker.mjs must remain absent');
 if (task.version !== 'SW_ANTIGRAVITY_WORKER_TASK_V1') errors.push('smoke task version mismatch');
@@ -46,6 +49,22 @@ if (JSON.stringify(task.allowedPaths) !== JSON.stringify([expectedFixture])) err
 if (task.tokenBudget > 16000) errors.push('smoke token budget widened above 16000');
 if (task.maxPatchBytes > 10000) errors.push('smoke patch limit widened above 10000 bytes');
 if (task.requirePatch !== true) errors.push('smoke must require a patch');
+requireText(task.goal, 'the host derives all evidence from the sandbox filesystem', 'smoke goal');
+rejectText(taskText, 'Then produce the required patch and structured result files', 'smoke task');
+rejectText(taskText, 'Create worker.patch', 'smoke task');
+rejectText(taskText, 'Create result.json', 'smoke task');
+
+if (bootstrap.version !== 'SW_ANTIGRAVITY_WORKER_TASK_V1') errors.push('bootstrap task version mismatch');
+if (bootstrap.taskId !== 'SW-OPS-002-SMOKE') errors.push('bootstrap task ID mismatch');
+if (bootstrap.exactBaseSha !== expectedBase) errors.push('bootstrap exact base SHA mismatch');
+if (bootstrap.repositoryUrl !== 'https://github.com/lybyerc-lab/Severe-Warning') errors.push('bootstrap repository URL mismatch');
+if (JSON.stringify(bootstrap.allowedPaths) !== JSON.stringify([expectedFixture])) errors.push('bootstrap allowed path widened');
+if (bootstrap.tokenBudget > 4000) errors.push('bootstrap token budget widened above 4000');
+if (bootstrap.maxPatchBytes > 10000) errors.push('bootstrap patch limit widened above 10000 bytes');
+if (bootstrap.requirePatch !== false) errors.push('bootstrap must not require a patch');
+requireText(bootstrap.goal, 'Bootstrap only. Do not edit any repository file.', 'bootstrap goal');
+requireText(bootstrap.goal, expectedBase, 'bootstrap goal');
+requireText(bootstrap.goal, 'git status --short is empty', 'bootstrap goal');
 
 requireText(worker, 'SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V5', 'worker');
 requireText(worker, "target: REPO_TARGET", 'worker');
@@ -77,6 +96,7 @@ rejectText(worker, 'worker.patch and result.json', 'worker');
 for (const forbidden of ['ghp_', 'github_pat_', 'x-oauth-basic:', 'Authorization: Bearer', 'Authorization: Basic']) {
   rejectText(worker, forbidden, 'worker');
   rejectText(taskText, forbidden, 'smoke task');
+  rejectText(bootstrapText, forbidden, 'bootstrap task');
 }
 
 for (const relativeRoot of ['runtime', 'modern', 'MechanicsLab', 'android']) {
@@ -98,6 +118,7 @@ if (errors.length) {
 console.log('SW-OPS-002 verifier PASS');
 console.log(`- exact base: ${expectedBase}`);
 console.log(`- allowed smoke path: ${expectedFixture}`);
+console.log('- bootstrap: checkout-only, 4000 tokens max, clean-tree proof required before edit turn');
 console.log('- return: host derives patch from complete sandbox filesystem snapshot');
 console.log('- snapshot repo HEAD must equal exact task base');
 console.log('- untracked files are included by host intent-to-add before diff');
