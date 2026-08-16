@@ -22,7 +22,7 @@ const PATCH_NAME = 'worker.patch';
 const RESULT_NAME = 'result.json';
 
 function usage() {
-  console.log(`Severe Weather Warning sandboxed Antigravity worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-worker.mjs collect --task <task.json> --environment <id> --output-dir <dir>\n\nEnvironment:\n  GEMINI_API_KEY  Required only for live API/download calls. Never commit or print it.\n`);
+  console.log(`Severe Weather Warning sandboxed Antigravity worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-worker.mjs continue --task <task.json> --interaction <id> --environment <id> --input <text> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-worker.mjs collect --task <task.json> --environment <id> --output-dir <dir>\n\nEnvironment:\n  GEMINI_API_KEY  Required only for live API/download calls. Never commit or print it.\n`);
 }
 
 function parseArgs(argv) {
@@ -127,11 +127,20 @@ function workerAgentsMd(task) {
     '- Never request, discover, store, or use GitHub credentials.',
     '- Do not broaden scope outside the task allowed paths.',
     '- Do not modify .git configuration, hooks, remotes, credentials, or repository history.',
-    '- Local working-tree edits are allowed only to produce the requested patch.',
+    '- Local working-tree/index edits are allowed only as needed to produce the requested patch. Do not commit.',
     '',
-    `Before finishing, create ${OUTPUT_ROOT}/${PATCH_NAME} using git diff --binary --no-ext-diff against the exact base.`,
+    `Before finishing, create ${OUTPUT_ROOT}/${PATCH_NAME} containing the complete git diff --binary --no-ext-diff against the exact base.`,
     `Also create ${OUTPUT_ROOT}/${RESULT_NAME} as valid JSON matching the task result contract.`,
+    'Your final response must duplicate that exact patch inline in the required JSON return object so the Director can validate it without relying on environment snapshot download.',
     'Do not omit out-of-scope changes from the patch to hide them. If scope cannot be respected, return blocked instead.',
+  ].join('\n');
+}
+
+function returnShapeInstruction() {
+  return [
+    'Return ONLY valid JSON with this exact top-level shape:',
+    '{"version":"SW_ANTIGRAVITY_WORKER_RESULT_V1","status":"completed|blocked|incomplete","taskId":"...","exactBaseSha":"...","verifiedBaseSha":"...","summary":"...","changedFiles":["..."],"tests":["..."],"evidence":["..."],"risks":["..."],"nextAction":"...","patch":"complete unified git patch string"}',
+    'The patch field must exactly match the contents of /workspace/antigravity-output/worker.patch.',
   ].join('\n');
 }
 
@@ -162,10 +171,22 @@ function taskPrompt(task) {
     '',
     `Write the final patch to ${OUTPUT_ROOT}/${PATCH_NAME}.`,
     `Write structured evidence to ${OUTPUT_ROOT}/${RESULT_NAME}.`,
-    'The result JSON must have this exact top-level shape:',
-    '{"version":"SW_ANTIGRAVITY_WORKER_RESULT_V1","status":"completed|blocked|incomplete","taskId":"...","exactBaseSha":"...","verifiedBaseSha":"...","summary":"...","changedFiles":["..."],"tests":["..."],"evidence":["..."],"risks":["..."],"nextAction":"..."}',
+    returnShapeInstruction(),
+  ].join('\n');
+}
+
+function continuationPrompt(task, input) {
+  return [
+    'Continue the same bounded Severe Weather Warning worker task in the existing sandbox.',
+    `Task ID: ${task.taskId}`,
+    `Exact base SHA remains: ${task.exactBaseSha}`,
+    'Do not widen allowed paths or authority.',
     '',
-    'Your final conversational response must be a terse JSON summary only. The files above are the authoritative return payload.',
+    'Director feedback:',
+    assertString(input, '--input'),
+    '',
+    `After any correction, regenerate ${OUTPUT_ROOT}/${PATCH_NAME} from the exact base and refresh ${OUTPUT_ROOT}/${RESULT_NAME}.`,
+    returnShapeInstruction(),
   ].join('\n');
 }
 
@@ -212,10 +233,27 @@ function buildInteraction(task) {
   };
 }
 
-function safeRequestSummary(task, taskFile) {
+function buildContinuation(task, options) {
+  return {
+    agent: task.agent,
+    input: continuationPrompt(task, options.input),
+    previous_interaction_id: assertString(options.interaction, '--interaction'),
+    environment: assertString(options.environment, '--environment'),
+    tools: [
+      { type: 'code_execution' },
+    ],
+    agent_config: {
+      type: 'antigravity',
+      max_total_tokens: task.tokenBudget,
+    },
+  };
+}
+
+function safeRequestSummary(task, taskFile, mode = 'execute', extras = {}) {
   return {
     version: 'SW_OPS_002_ANTIGRAVITY_WORKER_REQUEST_V1',
     dryRun: true,
+    mode,
     taskFile,
     taskId: task.taskId,
     repository: task.repository,
@@ -231,6 +269,9 @@ function safeRequestSummary(task, taskFile) {
     networkAllowlist: ['github.com (no injected credentials)'],
     repositoryTarget: REPO_TARGET,
     outputFiles: [`${OUTPUT_ROOT}/${PATCH_NAME}`, `${OUTPUT_ROOT}/${RESULT_NAME}`],
+    primaryReturnChannel: 'validated inline patch in structured model output',
+    snapshotCollection: 'optional secondary channel',
+    ...extras,
   };
 }
 
@@ -257,12 +298,47 @@ async function apiJson(method, url, body) {
   return payload;
 }
 
+function extractOutputText(payload) {
+  if (typeof payload?.output_text === 'string' && payload.output_text.trim()) return payload.output_text.trim();
+  const steps = Array.isArray(payload?.steps) ? payload.steps : [];
+  for (let i = steps.length - 1; i >= 0; i -= 1) {
+    const step = steps[i];
+    if (step?.type !== 'model_output' || !Array.isArray(step.content)) continue;
+    const text = step.content
+      .filter((item) => item?.type === 'text' && typeof item.text === 'string')
+      .map((item) => item.text)
+      .join('\n')
+      .trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+function parseInlineReturn(payload) {
+  const outputText = extractOutputText(payload);
+  if (!outputText) throw new Error('Antigravity response contained no model output text');
+  const stripped = outputText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+  let parsed;
+  try {
+    parsed = JSON.parse(stripped);
+  } catch {
+    throw new Error(`Antigravity final output was not valid JSON: ${outputText.slice(0, 300)}`);
+  }
+  const patchText = typeof parsed.patch === 'string' ? parsed.patch : '';
+  const result = { ...parsed };
+  delete result.patch;
+  return { result, patchText };
+}
+
 async function downloadEnvironment(environmentId, tarPath) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
   const url = `${FILES_ROOT}/environment-${encodeURIComponent(environmentId)}:download?alt=media`;
   const response = await fetch(url, {
-    headers: { 'x-goog-api-key': apiKey },
+    headers: {
+      'x-goog-api-key': apiKey,
+      'Api-Revision': '2026-05-20',
+    },
     redirect: 'follow',
   });
   if (!response.ok) throw new Error(`Environment snapshot download failed HTTP ${response.status}: ${response.statusText}`);
@@ -271,15 +347,12 @@ async function downloadEnvironment(environmentId, tarPath) {
   await writeFile(tarPath, bytes);
 }
 
-function runTar(args, options = {}) {
+function runTar(args) {
   const result = spawnSync('tar', args, {
-    encoding: options.binary ? null : 'utf8',
+    encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,
   });
-  if (result.status !== 0) {
-    const stderr = Buffer.isBuffer(result.stderr) ? result.stderr.toString('utf8') : String(result.stderr || '');
-    throw new Error(`tar ${args[0]} failed: ${stderr.trim()}`);
-  }
+  if (result.status !== 0) throw new Error(`tar ${args[0]} failed: ${String(result.stderr || '').trim()}`);
   return result.stdout;
 }
 
@@ -315,12 +388,12 @@ function sameStringSet(a, b) {
 }
 
 function validateResult(task, result, patchText) {
-  if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('result.json must contain an object');
-  if (result.version !== 'SW_ANTIGRAVITY_WORKER_RESULT_V1') throw new Error('result.json has wrong version');
-  if (result.taskId !== task.taskId) throw new Error('result.json taskId mismatch');
-  if (result.exactBaseSha !== task.exactBaseSha) throw new Error('result.json exactBaseSha mismatch');
+  if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('worker result must contain an object');
+  if (result.version !== 'SW_ANTIGRAVITY_WORKER_RESULT_V1') throw new Error('worker result has wrong version');
+  if (result.taskId !== task.taskId) throw new Error('worker result taskId mismatch');
+  if (result.exactBaseSha !== task.exactBaseSha) throw new Error('worker result exactBaseSha mismatch');
   if (result.verifiedBaseSha !== task.exactBaseSha) throw new Error('worker did not prove the exact base SHA');
-  if (!['completed', 'blocked', 'incomplete'].includes(result.status)) throw new Error('result.json has invalid status');
+  if (!['completed', 'blocked', 'incomplete'].includes(result.status)) throw new Error('worker result has invalid status');
   for (const field of ['summary', 'nextAction']) assertString(result[field], `result.${field}`);
   for (const field of ['changedFiles', 'tests', 'evidence', 'risks']) normalizeList(result[field], `result.${field}`);
 
@@ -338,47 +411,72 @@ function validateResult(task, result, patchText) {
   return { patchBytes, patchPaths };
 }
 
-async function collectSnapshot(task, environmentId, outputDir, interactionId = null, usage = null) {
+async function writeBundle(task, outputDir, result, patchText, metadata = {}) {
+  const validation = validateResult(task, result, patchText);
+  const absoluteOutputDir = path.resolve(process.cwd(), assertString(outputDir, '--output-dir'));
+  await mkdir(absoluteOutputDir, { recursive: true });
+  const patchPath = path.join(absoluteOutputDir, PATCH_NAME);
+  const resultPath = path.join(absoluteOutputDir, RESULT_NAME);
+  const envelopePath = path.join(absoluteOutputDir, 'envelope.json');
+  await writeFile(patchPath, patchText, 'utf8');
+  await writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+  await writeFile(envelopePath, `${JSON.stringify({
+    version: 'SW_OPS_002_ANTIGRAVITY_WORKER_ENVELOPE_V1',
+    capturedAt: new Date().toISOString(),
+    taskId: task.taskId,
+    exactBaseSha: task.exactBaseSha,
+    patchBytes: validation.patchBytes,
+    patchPaths: validation.patchPaths,
+    workerStatus: result.status,
+    workerSummary: result.summary,
+    returnChannel: metadata.returnChannel || null,
+    interactionId: metadata.interactionId || null,
+    environmentId: metadata.environmentId || null,
+    usage: metadata.usage || null,
+  }, null, 2)}\n`, 'utf8');
+  return { patchPath, resultPath, envelopePath, ...validation, workerResult: result };
+}
+
+async function collectSnapshot(task, environmentId, outputDir) {
   const absoluteOutputDir = path.resolve(process.cwd(), assertString(outputDir, '--output-dir'));
   await mkdir(absoluteOutputDir, { recursive: true });
   const tarPath = path.join(absoluteOutputDir, 'environment-snapshot.tar');
   await downloadEnvironment(environmentId, tarPath);
   try {
-    const listing = runTar(['-tf', tarPath]);
-    const entries = String(listing).split(/\r?\n/).filter(Boolean);
+    const entries = String(runTar(['-tf', tarPath])).split(/\r?\n/).filter(Boolean);
     const patchEntry = findSnapshotEntry(entries, PATCH_NAME);
     const resultEntry = findSnapshotEntry(entries, RESULT_NAME);
     const patchText = String(runTar(['-xOf', tarPath, patchEntry]));
     const resultText = String(runTar(['-xOf', tarPath, resultEntry]));
-    let workerResult;
+    let result;
     try {
-      workerResult = JSON.parse(resultText);
+      result = JSON.parse(resultText);
     } catch {
       throw new Error('Antigravity result.json is not valid JSON');
     }
-    const validation = validateResult(task, workerResult, patchText);
-    const patchPath = path.join(absoluteOutputDir, PATCH_NAME);
-    const resultPath = path.join(absoluteOutputDir, RESULT_NAME);
-    const envelopePath = path.join(absoluteOutputDir, 'envelope.json');
-    await writeFile(patchPath, patchText, 'utf8');
-    await writeFile(resultPath, `${JSON.stringify(workerResult, null, 2)}\n`, 'utf8');
-    await writeFile(envelopePath, `${JSON.stringify({
-      version: 'SW_OPS_002_ANTIGRAVITY_WORKER_ENVELOPE_V1',
-      capturedAt: new Date().toISOString(),
-      taskId: task.taskId,
-      exactBaseSha: task.exactBaseSha,
-      interactionId,
+    return writeBundle(task, outputDir, result, patchText, {
+      returnChannel: 'environment-snapshot',
       environmentId,
-      usage,
-      patchBytes: validation.patchBytes,
-      patchPaths: validation.patchPaths,
-      workerStatus: workerResult.status,
-      workerSummary: workerResult.summary,
-    }, null, 2)}\n`, 'utf8');
-    return { patchPath, resultPath, envelopePath, ...validation, workerResult };
+    });
   } finally {
     await rm(tarPath, { force: true });
   }
+}
+
+async function handleInteraction(task, interaction, outputDir) {
+  const interactionId = assertString(interaction.id, 'interaction.id');
+  const environmentId = assertString(interaction.environment_id, 'interaction.environment_id');
+  const inline = parseInlineReturn(interaction);
+  const bundle = await writeBundle(task, outputDir, inline.result, inline.patchText, {
+    returnChannel: 'model-output',
+    interactionId,
+    environmentId,
+    usage: interaction.usage || null,
+  });
+  console.log(`Antigravity worker ${task.taskId}: ${bundle.workerResult.status}`);
+  console.log(`Interaction: ${interactionId}`);
+  console.log(`Environment: ${environmentId}`);
+  console.log(`Patch: ${bundle.patchPath}`);
 }
 
 async function runExecute(options) {
@@ -396,13 +494,30 @@ async function runExecute(options) {
     return;
   }
   const interaction = await apiJson('POST', INTERACTIONS_URL, buildInteraction(task));
-  const interactionId = assertString(interaction.id, 'interaction.id');
-  const environmentId = assertString(interaction.environment_id, 'interaction.environment_id');
-  const collected = await collectSnapshot(task, environmentId, options['output-dir'], interactionId, interaction.usage || null);
-  console.log(`Antigravity worker ${task.taskId}: ${collected.workerResult.status}`);
-  console.log(`Interaction: ${interactionId}`);
-  console.log(`Environment: ${environmentId}`);
-  console.log(`Patch: ${collected.patchPath}`);
+  await handleInteraction(task, interaction, options['output-dir']);
+}
+
+async function runContinue(options) {
+  const { task, absolute } = await loadTask(options.task);
+  const body = buildContinuation(task, options);
+  if (options.dryRun) {
+    const summary = safeRequestSummary(task, path.relative(process.cwd(), absolute), 'continue', {
+      previousInteractionId: body.previous_interaction_id,
+      environmentId: body.environment,
+      directorFeedback: body.input,
+    });
+    if (options['output-dir']) {
+      const dir = path.resolve(process.cwd(), options['output-dir']);
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, 'request.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
+      console.log(`Wrote ${path.join(dir, 'request.json')}`);
+    } else {
+      console.log(JSON.stringify(summary, null, 2));
+    }
+    return;
+  }
+  const interaction = await apiJson('POST', INTERACTIONS_URL, body);
+  await handleInteraction(task, interaction, options['output-dir']);
 }
 
 async function runCollect(options) {
@@ -416,6 +531,7 @@ async function main() {
   const { command, options } = parseArgs(process.argv.slice(2));
   if (!command || command === 'help') return usage();
   if (command === 'execute') return runExecute(options);
+  if (command === 'continue') return runContinue(options);
   if (command === 'collect') return runCollect(options);
   throw new Error(`Unknown command: ${command}`);
 }
