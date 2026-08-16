@@ -14,6 +14,7 @@ const REPO_TARGET = '/workspace/repo';
 const OUTPUT_ROOT = '/workspace/antigravity-output';
 const POLL_MS = 5000;
 const POLL_CEILING_MS = 12 * 60 * 1000;
+const FINISH_RETURN_TOKEN_BUDGET = 8000;
 
 function usage() {
   console.log(`Severe Weather Warning Antigravity sandbox worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue --task <task.json> --interaction <id> --environment <id> --input <text> --output-dir <dir> [--dry-run]\n\nEnvironment:\n  GEMINI_API_KEY  Required for live calls only. Never commit or print it.\n`);
@@ -161,6 +162,19 @@ function correctionPrompt(task, input) {
   ].join('\n');
 }
 
+function finishReturnPrompt(task) {
+  return [
+    'Finish return contract only. The previous interaction hit its token ceiling.',
+    `Task ID remains ${task.taskId}. Exact base remains ${task.exactBaseSha}.`,
+    'Do not broaden scope. Do not create new repository changes unless strictly required to correct the already-requested allowed-path edit.',
+    `Inspect the current sandbox diff against ${task.exactBaseSha}.`,
+    'Verify the exact base, run the already-requested lightweight checks, and finish the return payload.',
+    `Regenerate ${OUTPUT_ROOT}/worker.patch from the exact base and refresh ${OUTPUT_ROOT}/result.json.`,
+    'Return ONLY valid JSON matching this exact top-level shape:', resultContract(),
+    'The patch field must exactly equal worker.patch. Do not wrap the JSON in markdown or add progress prose.',
+  ].join('\n');
+}
+
 function environmentConfig(task) {
   return {
     type: 'remote',
@@ -173,13 +187,17 @@ function environmentConfig(task) {
   };
 }
 
+function agentConfig(task, budget = task.tokenBudget) {
+  return { type: 'antigravity', max_total_tokens: budget };
+}
+
 function initialBody(task) {
   return {
     agent: task.agent,
     input: firstPrompt(task),
     environment: environmentConfig(task),
     tools: [{ type: 'code_execution' }],
-    agent_config: { type: 'antigravity', max_total_tokens: task.tokenBudget },
+    agent_config: agentConfig(task),
   };
 }
 
@@ -190,7 +208,18 @@ function continuationBody(task, options) {
     previous_interaction_id: requiredString(options.interaction, '--interaction'),
     environment: requiredString(options.environment, '--environment'),
     tools: [{ type: 'code_execution' }],
-    agent_config: { type: 'antigravity', max_total_tokens: task.tokenBudget },
+    agent_config: agentConfig(task),
+  };
+}
+
+function finishReturnBody(task, interaction) {
+  return {
+    agent: task.agent,
+    input: finishReturnPrompt(task),
+    previous_interaction_id: requiredString(interaction.id, 'interaction.id'),
+    environment: requiredString(interaction.environment_id, 'interaction.environment_id'),
+    tools: [{ type: 'code_execution' }],
+    agent_config: agentConfig(task, Math.min(task.tokenBudget, FINISH_RETURN_TOKEN_BUDGET)),
   };
 }
 
@@ -208,10 +237,12 @@ function drySummary(task, taskFile, mode, extras = {}) {
     networkAllowlist: ['github.com (no injected credentials)'],
     tools: ['code_execution', 'filesystem via environment'],
     tokenBudget: task.tokenBudget,
+    finishReturnTokenBudget: Math.min(task.tokenBudget, FINISH_RETURN_TOKEN_BUDGET),
     maxPatchBytes: task.maxPatchBytes,
     allowedPaths: task.allowedPaths,
     protectedPaths: task.protectedPaths,
     returnChannel: 'validated inline JSON patch',
+    incompleteRecovery: 'one same-environment finish-return continuation only',
     ...extras,
   };
 }
@@ -311,6 +342,21 @@ function parseWorkerReturn(interaction) {
   return { result, patch };
 }
 
+function hasCompletedReturn(interaction) {
+  try {
+    const parsed = parseWorkerReturn(interaction);
+    return parsed.result?.status === 'completed';
+  } catch {
+    return false;
+  }
+}
+
+async function finishIncompleteReturn(task, interaction) {
+  if (interaction.status !== 'incomplete' || hasCompletedReturn(interaction)) return interaction;
+  console.log(`[SW-OPS-002] Antigravity API status incomplete; reusing environment ${interaction.environment_id} for one finish-return pass.`);
+  return completeInteraction(finishReturnBody(task, interaction));
+}
+
 function matchesPath(candidate, rule) {
   return rule.endsWith('/') ? candidate.startsWith(rule) : candidate === rule || candidate.startsWith(`${rule}/`);
 }
@@ -401,7 +447,8 @@ async function execute(options) {
   if (options.dryRun) {
     return writeDry(drySummary(task, path.relative(process.cwd(), absolute), 'execute'), options['output-dir']);
   }
-  const interaction = await completeInteraction(initialBody(task));
+  let interaction = await completeInteraction(initialBody(task));
+  interaction = await finishIncompleteReturn(task, interaction);
   await saveBundle(task, interaction, options['output-dir']);
 }
 
@@ -415,7 +462,8 @@ async function continueTask(options) {
       directorFeedback: body.input,
     }), options['output-dir']);
   }
-  const interaction = await completeInteraction(body);
+  let interaction = await completeInteraction(body);
+  interaction = await finishIncompleteReturn(task, interaction);
   await saveBundle(task, interaction, options['output-dir']);
 }
 
