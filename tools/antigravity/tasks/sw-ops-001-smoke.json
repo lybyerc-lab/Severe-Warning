@@ -1,0 +1,31 @@
+{
+  "version": "SW_ANTIGRAVITY_TASK_V1",
+  "taskId": "SW-OPS-001-SMOKE",
+  "repository": "lybyerc-lab/Severe-Warning",
+  "exactBaseSha": "787750a13d143f95620d9580ba5d2189bd31bc28",
+  "goal": "Review the supplied task contract only. Explain how you would verify checkout identity and scope before editing. Do not clone, modify, publish, or deploy anything.",
+  "nonGoals": [
+    "No repository edits",
+    "No gameplay or presentation changes",
+    "No GitHub writes",
+    "No deployment or package publication"
+  ],
+  "allowedTerritory": [
+    "Reasoning about the task contract",
+    "Return structured JSON only"
+  ],
+  "protectedTerritory": [
+    "All repository files",
+    "All gameplay/runtime/Android source",
+    "All branches, pull requests, releases, and deployments"
+  ],
+  "proofPlan": [
+    "State the exact base SHA supplied by the task",
+    "State that checkout identity must be verified before repository interpretation",
+    "State that no files were changed",
+    "Return the requested JSON schema"
+  ],
+  "tokenBudget": 6000,
+  "agent": "antigravity-preview-05-2026",
+  "network": "disabled"
+}
