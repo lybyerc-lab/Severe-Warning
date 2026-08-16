@@ -162,6 +162,16 @@ async function apiJson(method, url, body) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function interactionStepTypes(interaction) {
+  return Array.isArray(interaction.steps)
+    ? interaction.steps.map((step) => {
+        if (typeof step?.type === 'string') return step.type;
+        const key = Object.keys(step || {}).find((candidate) => candidate !== 'id' && candidate !== 'signature');
+        return key || 'unknown';
+      })
+    : [];
+}
+
 async function runInteraction(task) {
   const body = {
     agent: task.agent,
@@ -197,6 +207,7 @@ async function runInteraction(task) {
     throw new Error(`bootstrap interaction ended in unusable status ${interaction.status || '(missing)'}`);
   }
   requiredString(interaction.environment_id, 'interaction.environment_id');
+  console.log(`[SW-OPS-002 bootstrap] interaction status=${interaction.status}; stepTypes=${JSON.stringify(interactionStepTypes(interaction))}`);
   return interaction;
 }
 
@@ -242,17 +253,6 @@ function normalizeTarEntry(entry) {
   return entry.replace(/^\.\//, '');
 }
 
-function validateTar(entries, tarPath) {
-  for (const raw of entries) {
-    const entry = normalizeTarEntry(raw);
-    if (raw.startsWith('/') || entry.split('/').includes('..')) throw new Error(`unsafe environment snapshot entry: ${raw}`);
-  }
-  const verbose = run('tar', ['-tvf', tarPath]);
-  for (const line of verbose.split(/\r?\n/)) {
-    if (line && 'lhcbp'.includes(line[0])) throw new Error('environment snapshot contains unsupported link/device entry');
-  }
-}
-
 function findRepoPrefix(entries) {
   const candidates = new Set();
   for (const raw of entries) {
@@ -264,6 +264,19 @@ function findRepoPrefix(entries) {
   }
   if (candidates.size !== 1) throw new Error(`expected exactly one workspace/repo prefix; found ${candidates.size}`);
   return [...candidates][0];
+}
+
+function validateRepoArchive(entries, tarPath, repoPrefix) {
+  for (const raw of entries) {
+    const entry = normalizeTarEntry(raw);
+    if (raw.startsWith('/') || entry.split('/').includes('..')) throw new Error(`unsafe environment snapshot entry: ${raw}`);
+  }
+  const repoNeedle = repoPrefix.replace(/\/$/, '');
+  const verbose = run('tar', ['-tvf', tarPath]);
+  for (const line of verbose.split(/\r?\n/)) {
+    if (!line || !line.includes(repoNeedle)) continue;
+    if ('lhcbp'.includes(line[0])) throw new Error('repository snapshot contains unsupported link/device entry');
+  }
 }
 
 async function main() {
@@ -282,10 +295,10 @@ async function main() {
     const snapshotRoot = path.join(scratch, 'snapshot');
     const attempts = await downloadSnapshot(environmentId, tarPath);
     const entries = tarEntries(tarPath);
-    validateTar(entries, tarPath);
     const repoPrefix = findRepoPrefix(entries);
+    validateRepoArchive(entries, tarPath, repoPrefix);
     await mkdir(snapshotRoot, { recursive: true });
-    run('tar', ['--no-same-owner', '--no-same-permissions', '-xf', tarPath, '-C', snapshotRoot]);
+    run('tar', ['--no-same-owner', '--no-same-permissions', '-xf', tarPath, '-C', snapshotRoot, repoPrefix]);
     const snapshotRepo = path.join(snapshotRoot, repoPrefix.replace(/\/$/, ''));
     const snapshotHead = run('git', ['-C', snapshotRepo, 'rev-parse', 'HEAD']).trim();
     const status = run('git', ['-C', snapshotRepo, 'status', '--short']);
@@ -301,6 +314,7 @@ async function main() {
       exactBaseRef: task.exactBaseRef,
       verifiedBaseSha: snapshotHead,
       interactionStatus: interaction.status,
+      interactionStepTypes: interactionStepTypes(interaction),
       changedFiles: [],
       untrackedFiles: [],
       sandboxStatus: [],
