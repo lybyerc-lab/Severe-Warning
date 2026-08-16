@@ -1,4 +1,4 @@
-name: SW-OPS-002 Antigravity Sandboxed Worker
+name: SW-OPS-002 Antigravity Simple Worker
 
 on:
   pull_request:
@@ -7,8 +7,6 @@ on:
       - agent/sw-ops-001-antigravity-bridge
     paths:
       - 'tools/antigravity/sw-antigravity-sandbox-worker.mjs'
-      - 'tools/antigravity/sw-antigravity-exact-base-bootstrap.mjs'
-      - 'tools/antigravity/tasks/sw-ops-002-bootstrap.json'
       - 'tools/antigravity/tasks/sw-ops-002-smoke.json'
       - 'scripts/verify-sw-ops-002-antigravity-worker.mjs'
       - '.github/workflows/sw-ops-002-antigravity-sandbox-worker.yml'
@@ -21,33 +19,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout exact candidate
+      - name: Checkout candidate without persisted credentials
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Syntax-check exact-base bootstrap
-        run: node --check tools/antigravity/sw-antigravity-exact-base-bootstrap.mjs
+      - name: Syntax-check worker
+        run: node --check tools/antigravity/sw-antigravity-sandbox-worker.mjs
 
-      - name: Verify sandbox worker isolation
+      - name: Verify simple worker contract
         run: node scripts/verify-sw-ops-002-antigravity-worker.mjs
 
-      - name: Prove bootstrap request dry-run without API key
-        env:
-          GEMINI_API_KEY: ''
-        run: >-
-          node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute
-          --task tools/antigravity/tasks/sw-ops-002-bootstrap.json
-          --output-dir evidence/sw-ops-002-dry-bootstrap
-          --dry-run
-
-      - name: Prove initial request dry-run without API key
+      - name: Dry-run initial request without API key
         env:
           GEMINI_API_KEY: ''
         run: >-
@@ -56,7 +46,7 @@ jobs:
           --output-dir evidence/sw-ops-002-dry
           --dry-run
 
-      - name: Prove continuation dry-run without API key
+      - name: Dry-run continuation without API key
         env:
           GEMINI_API_KEY: ''
         run: >-
@@ -64,52 +54,26 @@ jobs:
           --task tools/antigravity/tasks/sw-ops-002-smoke.json
           --interaction test_interaction_id
           --environment test_environment_id
-          --input "Dry-run Director correction"
+          --input "Change only the allowlisted fixture"
           --output-dir evidence/sw-ops-002-dry-continue
           --dry-run
 
-      - name: Validate dry-run evidence
+      - name: Validate dry-run contract
         run: |
-          test -s evidence/sw-ops-002-dry-bootstrap/request.json
-          test -s evidence/sw-ops-002-dry/request.json
-          test -s evidence/sw-ops-002-dry-continue/request.json
           node - <<'NODE'
           const fs = require('fs');
-          const bootstrap = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry-bootstrap/request.json', 'utf8'));
-          const request = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry/request.json', 'utf8'));
-          const continuation = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry-continue/request.json', 'utf8'));
-          const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
-          const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
-          if (bootstrap.taskId !== 'SW-OPS-002-SMOKE') throw new Error('wrong bootstrap taskId');
-          if (bootstrap.exactBaseSha !== expectedBase) throw new Error('wrong bootstrap exact base');
-          if (bootstrap.tokenBudget > 4000) throw new Error('bootstrap token budget widened');
-          if (bootstrap.allowedPaths.length !== 1 || bootstrap.allowedPaths[0] !== expectedPath) throw new Error('bootstrap allowed territory widened');
-          if (request.taskId !== 'SW-OPS-002-SMOKE') throw new Error('wrong taskId');
-          if (request.exactBaseSha !== expectedBase) throw new Error('wrong exact base');
-          if (request.repositoryTarget !== '/workspace/repo') throw new Error('wrong repository target');
-          if (request.networkAllowlist.length !== 1 || !request.networkAllowlist[0].includes('github.com')) throw new Error('network widened');
-          if (request.allowedPaths.length !== 1 || request.allowedPaths[0] !== expectedPath) throw new Error('allowed territory widened');
-          if (request.tokenBudget > 16000) throw new Error('token budget widened');
-          if (request.maxPatchBytes > 10000) throw new Error('patch limit widened');
-          if (request.executionMode !== 'custom-environment-host-derived-snapshot-diff') throw new Error('wrong execution mode');
-          if (request.continuationStateMode !== 'same-environment-fresh-conversation') throw new Error('wrong continuation state mode');
-          if (request.returnChannel !== 'host-derived-snapshot-diff') throw new Error('wrong return channel');
-          if (request.snapshotRetries !== 6) throw new Error('snapshot retries changed');
-          if (request.workerHandoffFilesRequired !== false) throw new Error('worker handoff files became required');
-          if (continuation.mode !== 'continue') throw new Error('continuation mode missing');
-          if (continuation.auditPreviousInteractionId !== 'test_interaction_id') throw new Error('continuation lost audit interaction ID');
-          if (continuation.environmentId !== 'test_environment_id') throw new Error('continuation lost environment ID');
+          const first = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry/request.json', 'utf8'));
+          const next = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry-continue/request.json', 'utf8'));
+          const base = '10ccd2723b8fa6b925f47629491a9e51e6388500';
+          const file = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+          if (first.patchBaseSha !== base) throw new Error('wrong patch base');
+          if (JSON.stringify(first.allowedPaths) !== JSON.stringify([file])) throw new Error('allowlist widened');
+          if (first.tokenBudget > 8000 || first.maxPatchBytes > 10000) throw new Error('budget widened');
+          if (first.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
+          if (first.returnChannel !== 'allowlisted-files-to-host-derived-patch') throw new Error('wrong return channel');
+          if (first.githubWriteAuthority !== false) throw new Error('GitHub write authority widened');
+          if (next.mode !== 'continue' || next.environmentId !== 'test_environment_id') throw new Error('continuation contract broken');
           NODE
-
-      - name: Upload dry-run evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: sw-ops-002-dry-run-evidence
-          path: |
-            evidence/sw-ops-002-dry-bootstrap/request.json
-            evidence/sw-ops-002-dry/request.json
-            evidence/sw-ops-002-dry-continue/request.json
-          if-no-files-found: error
 
   live-sandbox-smoke:
     if: >-
@@ -120,18 +84,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
-      - name: Checkout exact candidate
+      - name: Checkout candidate without persisted credentials
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Refuse rerun or missing secret
+      - name: Require one-shot Gemini secret
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
@@ -139,175 +104,82 @@ jobs:
           test "$RUN_ATTEMPT" = "1"
           test -n "$GEMINI_API_KEY"
 
-      - name: Bootstrap sandbox through exact-base airlock
+      - name: Ask Antigravity for bounded edit
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: >-
-          node tools/antigravity/sw-antigravity-exact-base-bootstrap.mjs
-          --task tools/antigravity/tasks/sw-ops-002-bootstrap.json
-          --output-dir evidence/sw-ops-002-bootstrap
+          node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute
+          --task tools/antigravity/tasks/sw-ops-002-smoke.json
+          --output-dir evidence/sw-ops-002-live
 
-      - name: Validate bootstrap exact-base gate
+      - name: Validate candidate patch envelope
         run: |
-          test -s evidence/sw-ops-002-bootstrap/envelope.json
-          test -s evidence/sw-ops-002-bootstrap/result.json
-          test -f evidence/sw-ops-002-bootstrap/worker.patch
-          node - <<'NODE'
-          const fs = require('fs');
-          const envelope = JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/envelope.json', 'utf8'));
-          const result = JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/result.json', 'utf8'));
-          const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
-          const expectedRef = 'agent/sw-ops-001-antigravity-bridge';
-          if (!envelope.interactionId || !envelope.environmentId) throw new Error('bootstrap IDs missing');
-          if (envelope.exactBaseRef !== expectedRef) throw new Error('bootstrap ref changed');
-          if (envelope.exactBaseSha !== expectedBase || envelope.snapshotHead !== expectedBase) throw new Error('bootstrap did not reach exact base');
-          if (envelope.returnChannel !== 'host-verified-hooked-snapshot') throw new Error('wrong bootstrap return channel');
-          if (envelope.quarantineStatus !== 'exact-base-ready-no-patch') throw new Error('wrong bootstrap quarantine state');
-          if (envelope.patchBytes !== 0 || JSON.stringify(envelope.patchPaths) !== '[]') throw new Error('bootstrap changed repository files');
-          if (result.status !== 'exact-base-sandbox-ready') throw new Error('bootstrap host result not ready');
-          if (result.verifiedBaseSha !== expectedBase) throw new Error('bootstrap base not independently verified');
-          if (JSON.stringify(result.changedFiles) !== '[]') throw new Error('bootstrap changed files');
-          if (JSON.stringify(result.untrackedFiles) !== '[]') throw new Error('bootstrap left untracked files');
-          if (JSON.stringify(result.sandboxStatus) !== '[]') throw new Error('bootstrap working tree is not clean');
-          if (fs.readFileSync('evidence/sw-ops-002-bootstrap/worker.patch', 'utf8') !== '') throw new Error('bootstrap patch is not empty');
-          NODE
-
-      - name: Execute bounded sandbox edit and derive host patch
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          INTERACTION_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/envelope.json','utf8'));process.stdout.write(x.interactionId)")
-          ENVIRONMENT_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/envelope.json','utf8'));process.stdout.write(x.environmentId)")
-          DIRECTOR_INPUT=$(cat <<'EOF'
-          Do not inspect or explore the repository. Use code_execution now and run exactly this bash script, with no additions or substitutions:
-
-          set -eu
-          cd /workspace/repo
-          test "$(git rev-parse HEAD)" = "10ccd2723b8fa6b925f47629491a9e51e6388500"
-          test ! -e 'tools/antigravity/fixtures/sw-ops-002-smoke.txt'
-          mkdir -p 'tools/antigravity/fixtures'
-          printf '%s\n' 'SW-OPS-002 sandbox worker reached' 'GitHub writes remain Director-controlled' > 'tools/antigravity/fixtures/sw-ops-002-smoke.txt'
-          git status --short
-          git diff --check
-
-          After that single code_execution call, stop. Do not create a report or handoff file.
-          EOF
-          )
-          node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue \
-            --task tools/antigravity/tasks/sw-ops-002-smoke.json \
-            --interaction "$INTERACTION_ID" \
-            --environment "$ENVIRONMENT_ID" \
-            --input "$DIRECTOR_INPUT" \
-            --output-dir evidence/sw-ops-002-live
-
-      - name: Validate initial quarantined patch
-        run: |
-          test -s evidence/sw-ops-002-live/envelope.json
           test -s evidence/sw-ops-002-live/result.json
           test -s evidence/sw-ops-002-live/worker.patch
           node - <<'NODE'
           const fs = require('fs');
-          const bootstrap = JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/envelope.json', 'utf8'));
-          const envelope = JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json', 'utf8'));
           const result = JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/result.json', 'utf8'));
-          const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
-          const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
-          if (!envelope.interactionId || envelope.interactionId === bootstrap.interactionId) throw new Error('initial edit did not create a new interaction');
-          if (!envelope.environmentId || envelope.environmentId !== bootstrap.environmentId) throw new Error('initial edit did not reuse bootstrap environment');
-          if (envelope.returnChannel !== 'host-derived-snapshot-diff') throw new Error('wrong return channel');
-          if (envelope.quarantineStatus !== 'patch-ready-not-applied') throw new Error('wrong quarantine state');
-          if (envelope.exactBaseSha !== expectedBase || envelope.snapshotHead !== expectedBase) throw new Error('wrong snapshot base');
-          if (!Number.isInteger(envelope.snapshotAttempts) || envelope.snapshotAttempts < 1 || envelope.snapshotAttempts > 6) throw new Error('invalid snapshot attempts');
-          if (JSON.stringify(envelope.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('wrong patch paths');
-          if (envelope.patchBytes <= 0 || envelope.patchBytes > 10000) throw new Error('invalid patch size');
-          if (result.status !== 'quarantined-patch-ready') throw new Error(`wrong host result status: ${result.status}`);
-          if (result.verifiedBaseSha !== expectedBase) throw new Error('host did not verify sandbox base');
-          if (JSON.stringify(result.changedFiles) !== JSON.stringify([expectedPath])) throw new Error('wrong changedFiles');
+          const base = '10ccd2723b8fa6b925f47629491a9e51e6388500';
+          const file = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+          if (result.status !== 'quarantined-patch-ready') throw new Error('patch not ready');
+          if (result.patchBaseSha !== base) throw new Error('wrong patch base');
+          if (!result.interactionId || !result.environmentId) throw new Error('missing continuation IDs');
+          if (result.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
+          if (JSON.stringify(result.changedFiles) !== JSON.stringify([file])) throw new Error('patch escaped allowlist');
+          if (result.patchBytes <= 0 || result.patchBytes > 10000) throw new Error('patch size invalid');
+          if (result.githubWriteAuthority !== false) throw new Error('GitHub write authority widened');
           NODE
 
-      - name: Prove initial patch applies to exact frozen base
+      - name: Prove candidate on frozen base
         run: |
           BASE_SHA='10ccd2723b8fa6b925f47629491a9e51e6388500'
-          VALIDATE_DIR="$RUNNER_TEMP/sw-ops-002-initial"
-          git worktree add --detach "$VALIDATE_DIR" "$BASE_SHA"
-          git -C "$VALIDATE_DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
-          git -C "$VALIDATE_DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
-          git -C "$VALIDATE_DIR" diff --check
-          test "$(git -C "$VALIDATE_DIR" status --short)" = '?? tools/antigravity/fixtures/sw-ops-002-smoke.txt'
-          test "$(cat "$VALIDATE_DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nGitHub writes remain Director-controlled'
+          DIR="$RUNNER_TEMP/sw-ops-002-initial"
+          git worktree add --detach "$DIR" "$BASE_SHA"
+          git -C "$DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
+          git -C "$DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
+          git -C "$DIR" diff --check
+          test "$(cat "$DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nGitHub writes remain Director-controlled'
 
-      - name: Send Director correction to same Antigravity sandbox
+      - name: Send one Director correction
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          INTERACTION_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json','utf8'));process.stdout.write(x.interactionId)")
-          ENVIRONMENT_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json','utf8'));process.stdout.write(x.environmentId)")
-          DIRECTOR_INPUT=$(cat <<'EOF'
-          Do not inspect or explore the repository. Use code_execution now and run exactly this bash script, with no additions or substitutions:
-
-          set -eu
-          cd /workspace/repo
-          test "$(git rev-parse HEAD)" = "10ccd2723b8fa6b925f47629491a9e51e6388500"
-          test "$(sed -n '1p' 'tools/antigravity/fixtures/sw-ops-002-smoke.txt')" = 'SW-OPS-002 sandbox worker reached'
-          printf '%s\n' 'SW-OPS-002 sandbox worker reached' 'Director controls every GitHub write' > 'tools/antigravity/fixtures/sw-ops-002-smoke.txt'
-          git status --short
-          git diff --check
-
-          After that single code_execution call, stop. Do not create a report or handoff file.
-          EOF
-          )
+          INTERACTION_ID=$(node -e "const x=require('./evidence/sw-ops-002-live/result.json');process.stdout.write(x.interactionId)")
+          ENVIRONMENT_ID=$(node -e "const x=require('./evidence/sw-ops-002-live/result.json');process.stdout.write(x.environmentId)")
           node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue \
             --task tools/antigravity/tasks/sw-ops-002-smoke.json \
             --interaction "$INTERACTION_ID" \
             --environment "$ENVIRONMENT_ID" \
-            --input "$DIRECTOR_INPUT" \
-            --output-dir evidence/sw-ops-002-continued
+            --input "Keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other intentional edit, run the lightweight checks, and stop." \
+            --output-dir evidence/sw-ops-002-revised
 
-      - name: Validate revised quarantined patch from same sandbox
+      - name: Validate revised patch
         run: |
-          test -s evidence/sw-ops-002-continued/envelope.json
-          test -s evidence/sw-ops-002-continued/result.json
-          test -s evidence/sw-ops-002-continued/worker.patch
           node - <<'NODE'
-          const fs = require('fs');
-          const initial = JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json', 'utf8'));
-          const revised = JSON.parse(fs.readFileSync('evidence/sw-ops-002-continued/envelope.json', 'utf8'));
-          const result = JSON.parse(fs.readFileSync('evidence/sw-ops-002-continued/result.json', 'utf8'));
-          const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
-          const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
-          if (!revised.interactionId || revised.interactionId === initial.interactionId) throw new Error('correction did not create a new interaction');
-          if (revised.environmentId !== initial.environmentId) throw new Error('correction did not reuse the same environment');
-          if (revised.returnChannel !== 'host-derived-snapshot-diff') throw new Error('wrong revised return channel');
-          if (revised.quarantineStatus !== 'patch-ready-not-applied') throw new Error('wrong revised quarantine state');
-          if (revised.exactBaseSha !== expectedBase || revised.snapshotHead !== expectedBase) throw new Error('wrong revised base');
-          if (JSON.stringify(revised.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('revised patch escaped scope');
-          if (result.status !== 'quarantined-patch-ready') throw new Error(`wrong revised host status: ${result.status}`);
-          if (result.verifiedBaseSha !== expectedBase) throw new Error('revised sandbox base mismatch');
+          const first = require('./evidence/sw-ops-002-live/result.json');
+          const next = require('./evidence/sw-ops-002-revised/result.json');
+          const file = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+          if (next.environmentId !== first.environmentId) throw new Error('correction did not reuse sandbox');
+          if (!next.interactionId || next.interactionId === first.interactionId) throw new Error('correction interaction missing');
+          if (JSON.stringify(next.changedFiles) !== JSON.stringify([file])) throw new Error('revised patch escaped allowlist');
           NODE
 
-      - name: Prove revised patch applies to exact frozen base
+      - name: Prove revised patch on frozen base
         run: |
           BASE_SHA='10ccd2723b8fa6b925f47629491a9e51e6388500'
-          VALIDATE_DIR="$RUNNER_TEMP/sw-ops-002-revised"
-          git worktree add --detach "$VALIDATE_DIR" "$BASE_SHA"
-          git -C "$VALIDATE_DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-continued/worker.patch"
-          git -C "$VALIDATE_DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-continued/worker.patch"
-          git -C "$VALIDATE_DIR" diff --check
-          test "$(git -C "$VALIDATE_DIR" status --short)" = '?? tools/antigravity/fixtures/sw-ops-002-smoke.txt'
-          test "$(cat "$VALIDATE_DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nDirector controls every GitHub write'
+          DIR="$RUNNER_TEMP/sw-ops-002-revised"
+          git worktree add --detach "$DIR" "$BASE_SHA"
+          git -C "$DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-revised/worker.patch"
+          git -C "$DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-revised/worker.patch"
+          git -C "$DIR" diff --check
+          test "$(cat "$DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nDirector controls every GitHub write'
 
-      - name: Upload sandbox worker evidence
+      - name: Upload evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sw-ops-002-live-sandbox-evidence
+          name: sw-ops-002-simple-worker-evidence
           path: |
-            evidence/sw-ops-002-bootstrap/envelope.json
-            evidence/sw-ops-002-bootstrap/result.json
-            evidence/sw-ops-002-bootstrap/worker.patch
-            evidence/sw-ops-002-live/envelope.json
-            evidence/sw-ops-002-live/result.json
-            evidence/sw-ops-002-live/worker.patch
-            evidence/sw-ops-002-continued/envelope.json
-            evidence/sw-ops-002-continued/result.json
-            evidence/sw-ops-002-continued/worker.patch
-          if-no-files-found: error
+            evidence/sw-ops-002-live/
+            evidence/sw-ops-002-revised/
+          if-no-files-found: warn
