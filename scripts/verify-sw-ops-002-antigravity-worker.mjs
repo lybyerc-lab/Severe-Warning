@@ -8,6 +8,7 @@ import process from 'node:process';
 
 const root = process.cwd();
 const workerPath = path.join(root, 'tools', 'antigravity', 'sw-antigravity-sandbox-worker.mjs');
+const legacyWorkerPath = path.join(root, 'tools', 'antigravity', 'sw-antigravity-worker.mjs');
 const taskPath = path.join(root, 'tools', 'antigravity', 'tasks', 'sw-ops-002-smoke.json');
 const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
 const expectedFixture = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
@@ -38,9 +39,11 @@ async function walk(dir) {
 }
 
 const worker = await readFile(workerPath, 'utf8');
+const legacyWorker = await readFile(legacyWorkerPath, 'utf8').catch(() => null);
 const taskText = await readFile(taskPath, 'utf8');
 const task = JSON.parse(taskText);
 
+if (legacyWorker !== null) errors.push('superseded tools/antigravity/sw-antigravity-worker.mjs must remain absent');
 if (task.version !== 'SW_ANTIGRAVITY_WORKER_TASK_V1') errors.push('smoke task version mismatch');
 if (task.taskId !== 'SW-OPS-002-SMOKE') errors.push('smoke task ID mismatch');
 if (task.exactBaseSha !== expectedBase) errors.push('smoke exact base SHA mismatch');
@@ -58,14 +61,15 @@ requireText(worker, "{ domain: 'github.com' }", 'worker');
 requireText(worker, "tools: [{ type: 'code_execution' }]", 'worker');
 requireText(worker, "executionMode: 'custom-environment-unary-with-adaptive-poll'", 'worker');
 requireText(worker, "while (interaction.status === 'in_progress')", 'worker');
-requireText(worker, "worker.patch", 'worker');
-requireText(worker, "result.json", 'worker');
-requireText(worker, "Patch path outside allowed territory", 'worker');
-requireText(worker, "worker did not prove the exact base SHA", 'worker');
-requireText(worker, "Renames are not accepted", 'worker');
+requireText(worker, 'worker.patch', 'worker');
+requireText(worker, 'result.json', 'worker');
+requireText(worker, 'Patch path outside allowed territory', 'worker');
+requireText(worker, 'worker did not prove the exact base SHA', 'worker');
+requireText(worker, 'Renames are not accepted', 'worker');
 requireText(worker, 'GEMINI_API_KEY', 'worker');
 rejectText(worker, 'background: true', 'worker');
 rejectText(worker, 'environment-snapshot', 'worker');
+rejectText(worker, '/v1beta/files', 'worker');
 
 for (const forbidden of ['ghp_', 'github_pat_', 'x-oauth-basic:', 'Authorization: Bearer', 'Authorization: Basic']) {
   rejectText(worker, forbidden, 'worker');
@@ -94,4 +98,5 @@ console.log(`- exact base: ${expectedBase}`);
 console.log(`- allowed smoke path: ${expectedFixture}`);
 console.log('- execution: custom environment, unary create, adaptive poll only if in_progress');
 console.log('- network: github.com only, no injected GitHub credentials');
+console.log('- superseded background/snapshot worker: absent');
 console.log('- runtime imports: none detected');
