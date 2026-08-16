@@ -3,8 +3,9 @@
   "taskId": "SW-OPS-002-SMOKE",
   "repository": "lybyerc-lab/Severe-Warning",
   "repositoryUrl": "https://github.com/lybyerc-lab/Severe-Warning",
+  "exactBaseRef": "agent/sw-ops-001-antigravity-bridge",
   "exactBaseSha": "10ccd2723b8fa6b925f47629491a9e51e6388500",
-  "goal": "Bootstrap only. Do not edit any repository file. In /workspace/repo, ensure commit 10ccd2723b8fa6b925f47629491a9e51e6388500 exists locally, fetching that exact public commit from origin only if needed. Checkout that commit detached, verify git rev-parse HEAD equals it exactly, verify git status --short is empty, then stop. A later Director turn may request the single allowlisted fixture edit after the host independently verifies this snapshot.",
+  "goal": "Bootstrap only. Do not edit any repository file. The sandbox infrastructure hook must normalize /workspace/repo from public ref agent/sw-ops-001-antigravity-bridge to exact commit 10ccd2723b8fa6b925f47629491a9e51e6388500 before the agent's first tool executes. Run only git rev-parse HEAD and git status --short so the hook fires, then stop. A later Director turn may request the single allowlisted fixture edit only after the host independently verifies this snapshot.",
   "nonGoals": [
     "No repository file edits during bootstrap",
     "No dependency installation",
@@ -24,7 +25,8 @@
     "patches/"
   ],
   "proofPlan": [
-    "Checkout the exact base SHA detached",
+    "Pre-tool hook fetches only the public exact-base ref when HEAD is not already exact",
+    "Pre-tool hook rejects the requested tool if the ref does not resolve to the exact base SHA or checkout fails",
     "Verify git rev-parse HEAD equals the exact base SHA",
     "Verify git status --short is empty",
     "Stop without repository edits; the host independently snapshots and verifies the sandbox before the edit turn"
