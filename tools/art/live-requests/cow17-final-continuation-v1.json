@@ -1,0 +1,10 @@
+{
+  "task": "SW-ART-009",
+  "purpose": "finish Moo parity candidate-first, destruction-feel, and same-runner performance evidence",
+  "acceptedBase": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
+  "candidateParentHead": "594b692e172220a3097793cd117ba3870a34aac0",
+  "priorFinalRun": 31916316881,
+  "priorMooParityProbeRun": 31915889747,
+  "paidServicesAuthorized": false,
+  "launchNonce": 1
+}
