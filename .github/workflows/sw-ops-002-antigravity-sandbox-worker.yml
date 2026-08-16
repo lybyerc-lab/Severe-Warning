@@ -1,6 +1,7 @@
 name: SW-OPS-002 Antigravity Simple Worker
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
@@ -8,6 +9,7 @@ on:
     paths:
       - 'tools/antigravity/sw-antigravity-sandbox-worker.mjs'
       - 'tools/antigravity/tasks/sw-ops-002-smoke.json'
+      - 'tools/antigravity/tasks/task-slot.json'
       - 'scripts/verify-sw-ops-002-antigravity-worker.mjs'
       - '.github/workflows/sw-ops-002-antigravity-sandbox-worker.yml'
 
@@ -22,7 +24,7 @@ jobs:
       - name: Checkout candidate without persisted credentials
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -37,7 +39,7 @@ jobs:
       - name: Verify simple worker contract
         run: node scripts/verify-sw-ops-002-antigravity-worker.mjs
 
-      - name: Dry-run request without API key
+      - name: Dry-run fixed smoke without API key
         env:
           GEMINI_API_KEY: ''
         run: >-
@@ -46,34 +48,49 @@ jobs:
           --output-dir evidence/sw-ops-002-dry
           --dry-run
 
-      - name: Validate dry-run contract
+      - name: Dry-run current task slot without API key
+        env:
+          GEMINI_API_KEY: ''
+        run: >-
+          node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute
+          --task tools/antigravity/tasks/task-slot.json
+          --output-dir evidence/sw-ag-task-slot-dry
+          --dry-run
+
+      - name: Validate dry-run contracts
         run: |
           node - <<'NODE'
           const fs = require('fs');
-          const request = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry/request.json', 'utf8'));
+          const smoke = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry/request.json', 'utf8'));
+          const slot = JSON.parse(fs.readFileSync('evidence/sw-ag-task-slot-dry/request.json', 'utf8'));
           const base = '10ccd2723b8fa6b925f47629491a9e51e6388500';
           const file = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
-          if (request.patchBaseSha !== base) throw new Error('wrong patch base');
-          if (JSON.stringify(request.allowedPaths) !== JSON.stringify([file])) throw new Error('allowlist widened');
-          if (request.tokenBudget > 8000 || request.maxPatchBytes > 10000) throw new Error('budget widened');
-          if (request.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
-          if (request.returnChannel !== 'allowlisted-files-to-host-derived-patch') throw new Error('wrong return channel');
-          if (request.githubWriteAuthority !== false) throw new Error('GitHub write authority widened');
+          if (smoke.patchBaseSha !== base) throw new Error('wrong smoke patch base');
+          if (JSON.stringify(smoke.allowedPaths) !== JSON.stringify([file])) throw new Error('smoke allowlist widened');
+          if (smoke.tokenBudget > 8000 || smoke.maxPatchBytes > 10000) throw new Error('smoke budget widened');
+          if (smoke.sandboxTrust !== 'untrusted') throw new Error('smoke sandbox became authoritative');
+          if (slot.sandboxTrust !== 'untrusted') throw new Error('task slot sandbox became authoritative');
+          if (slot.returnChannel !== 'allowlisted-files-to-host-derived-patch') throw new Error('wrong task slot return channel');
+          if (slot.githubWriteAuthority !== false) throw new Error('task slot GitHub write authority widened');
+          if (!Array.isArray(slot.allowedPaths) || !slot.allowedPaths.length) throw new Error('task slot allowlist missing');
           NODE
 
-  live-sandbox-smoke:
+  live-task-slot:
     if: >-
-      contains(github.event.pull_request.labels.*.name, 'antigravity-sandbox-smoke') &&
       github.run_attempt == 1 &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'agent/sw-ops-002-antigravity-sandbox-worker'
+      ((github.event_name == 'pull_request' &&
+        contains(github.event.pull_request.labels.*.name, 'antigravity-sandbox-smoke') &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.head.ref == 'agent/sw-ops-002-antigravity-sandbox-worker') ||
+       (github.event_name == 'workflow_dispatch' &&
+        github.ref_name == 'agent/sw-ops-002-antigravity-sandbox-worker'))
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - name: Checkout candidate without persisted credentials
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -90,46 +107,60 @@ jobs:
           test "$RUN_ATTEMPT" = "1"
           test -n "$GEMINI_API_KEY"
 
-      - name: Ask Antigravity for bounded edit
+      - name: Ask Antigravity to run current task slot
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: >-
           node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute
-          --task tools/antigravity/tasks/sw-ops-002-smoke.json
-          --output-dir evidence/sw-ops-002-live
+          --task tools/antigravity/tasks/task-slot.json
+          --output-dir evidence/sw-ag-task-slot
 
       - name: Validate candidate patch envelope
         run: |
-          test -s evidence/sw-ops-002-live/result.json
-          test -s evidence/sw-ops-002-live/worker.patch
+          test -s evidence/sw-ag-task-slot/result.json
+          test -s evidence/sw-ag-task-slot/worker.patch
           node - <<'NODE'
           const fs = require('fs');
-          const result = JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/result.json', 'utf8'));
-          const base = '10ccd2723b8fa6b925f47629491a9e51e6388500';
-          const file = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+          const task = JSON.parse(fs.readFileSync('tools/antigravity/tasks/task-slot.json', 'utf8'));
+          const result = JSON.parse(fs.readFileSync('evidence/sw-ag-task-slot/result.json', 'utf8'));
           if (result.status !== 'quarantined-patch-ready') throw new Error('patch not ready');
-          if (result.patchBaseSha !== base) throw new Error('wrong patch base');
+          if (result.taskId !== task.taskId) throw new Error('wrong task result');
+          if (result.patchBaseSha !== task.exactBaseSha) throw new Error('wrong patch base');
           if (!result.interactionId || !result.environmentId) throw new Error('missing interaction evidence');
           if (result.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
-          if (JSON.stringify(result.changedFiles) !== JSON.stringify([file])) throw new Error('patch escaped allowlist');
-          if (result.patchBytes <= 0 || result.patchBytes > 10000) throw new Error('patch size invalid');
+          if (!Array.isArray(result.changedFiles) || !result.changedFiles.length) throw new Error('task returned no changed files');
+          for (const file of result.changedFiles) {
+            if (!task.allowedPaths.includes(file)) throw new Error(`patch escaped allowlist: ${file}`);
+          }
+          if (result.patchBytes <= 0 || result.patchBytes > task.maxPatchBytes) throw new Error('patch size invalid');
           if (result.githubWriteAuthority !== false) throw new Error('GitHub write authority widened');
           NODE
 
-      - name: Prove candidate on frozen base
+      - name: Prove candidate on task base
         run: |
-          BASE_SHA='10ccd2723b8fa6b925f47629491a9e51e6388500'
-          DIR="$RUNNER_TEMP/sw-ops-002-candidate"
+          BASE_SHA=$(node -e "const x=require('./tools/antigravity/tasks/task-slot.json');process.stdout.write(x.exactBaseSha)")
+          DIR="$RUNNER_TEMP/sw-ag-task-slot-candidate"
           git worktree add --detach "$DIR" "$BASE_SHA"
-          git -C "$DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
-          git -C "$DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
+          git -C "$DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ag-task-slot/worker.patch"
+          git -C "$DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ag-task-slot/worker.patch"
           git -C "$DIR" diff --check
-          test "$(cat "$DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nGitHub writes remain Director-controlled'
+          DIR="$DIR" node - <<'NODE'
+          const { execFileSync } = require('child_process');
+          const task = require('./tools/antigravity/tasks/task-slot.json');
+          const changed = execFileSync('git', ['-C', process.env.DIR, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' })
+            .trim().split(/\r?\n/).filter(Boolean);
+          if (!changed.length) throw new Error('applied patch produced no changed files');
+          for (const file of changed) {
+            if (!task.allowedPaths.includes(file)) throw new Error(`applied patch escaped allowlist: ${file}`);
+          }
+          NODE
 
-      - name: Upload evidence
+      - name: Upload task evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sw-ops-002-simple-worker-evidence
-          path: evidence/sw-ops-002-live/
+          name: sw-antigravity-task-slot-evidence
+          path: |
+            evidence/sw-ag-task-slot/
+            tools/antigravity/tasks/task-slot.json
           if-no-files-found: warn
