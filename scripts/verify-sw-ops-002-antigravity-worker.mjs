@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// SW_OPS_002_ANTIGRAVITY_WORKER_VERIFIER_V3
+// SW_OPS_002_ANTIGRAVITY_WORKER_VERIFIER_V4
 
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -17,19 +17,13 @@ const errors = [];
 function requireText(text, needle, label) {
   if (!text.includes(needle)) errors.push(`${label} is missing required marker: ${needle}`);
 }
-
 function rejectText(text, needle, label) {
   if (text.includes(needle)) errors.push(`${label} contains forbidden marker: ${needle}`);
 }
-
 async function walk(dir) {
   const out = [];
   let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return out;
-  }
+  try { entries = await readdir(dir, { withFileTypes: true }); } catch { return out; }
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...await walk(full));
@@ -53,36 +47,35 @@ if (task.tokenBudget > 16000) errors.push('smoke token budget widened above 1600
 if (task.maxPatchBytes > 10000) errors.push('smoke patch limit widened above 10000 bytes');
 if (task.requirePatch !== true) errors.push('smoke must require a patch');
 
-requireText(worker, 'SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V3', 'worker');
+requireText(worker, 'SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V4', 'worker');
 requireText(worker, "target: REPO_TARGET", 'worker');
 requireText(worker, "target: '.agents/AGENTS.md'", 'worker');
 requireText(worker, "target: '/workspace/sw-antigravity-task.json'", 'worker');
 requireText(worker, "{ domain: 'github.com' }", 'worker');
-requireText(worker, "const SUBMIT_TOOL_NAME = 'submit_worker_bundle'", 'worker');
-requireText(worker, "type: 'function'", 'worker');
-requireText(worker, "tools: [{ type: 'code_execution' }, submitTool()]", 'worker');
-requireText(worker, 'store: true', 'worker');
-requireText(worker, "executionMode: 'custom-environment-function-handoff'", 'worker');
-requireText(worker, "returnChannel: `function_call:${SUBMIT_TOOL_NAME}`", 'worker');
-requireText(worker, "step?.type === 'function_call'", 'worker');
-requireText(worker, "while (interaction.status === 'in_progress')", 'worker');
-requireText(worker, 'worker.patch', 'worker');
+requireText(worker, "tools: [{ type: 'code_execution' }]", 'worker');
+requireText(worker, "executionMode: 'custom-environment-snapshot-handoff'", 'worker');
+requireText(worker, "returnChannel: 'environment-snapshot'", 'worker');
+requireText(worker, "const SNAPSHOT_RETRIES = 6", 'worker');
+requireText(worker, "const ENVIRONMENTS_URL = `${API_ROOT}/environments`", 'worker');
+requireText(worker, "const FILES_URL = `${API_ROOT}/files`", 'worker');
+requireText(worker, "environment-${encodeURIComponent(environmentId)}:download?alt=media", 'worker');
+requireText(worker, "worker.patch", 'worker');
+requireText(worker, "result.json", 'worker');
 requireText(worker, 'Patch path outside allowed territory', 'worker');
 requireText(worker, 'worker did not prove the exact base SHA', 'worker');
 requireText(worker, 'Renames are not accepted', 'worker');
 requireText(worker, 'GEMINI_API_KEY', 'worker');
-rejectText(worker, 'response_format', 'worker');
+requireText(worker, 'MissingWorkerArtifactsError', 'worker');
+rejectText(worker, 'submit_worker_bundle', 'worker');
 rejectText(worker, 'background: true', 'worker');
-rejectText(worker, 'environment-snapshot', 'worker');
-rejectText(worker, '/v1beta/files', 'worker');
+rejectText(worker, 'response_format', 'worker');
 
 for (const forbidden of ['ghp_', 'github_pat_', 'x-oauth-basic:', 'Authorization: Bearer', 'Authorization: Basic']) {
   rejectText(worker, forbidden, 'worker');
   rejectText(taskText, forbidden, 'smoke task');
 }
 
-const runtimeRoots = ['runtime', 'modern', 'MechanicsLab', 'android'];
-for (const relativeRoot of runtimeRoots) {
+for (const relativeRoot of ['runtime', 'modern', 'MechanicsLab', 'android']) {
   for (const file of await walk(path.join(root, relativeRoot))) {
     if (!/\.(?:js|mjs|cjs|ts|tsx|html|json|java|kt|gradle)$/i.test(file)) continue;
     const text = await readFile(file, 'utf8').catch(() => '');
@@ -101,9 +94,9 @@ if (errors.length) {
 console.log('SW-OPS-002 verifier PASS');
 console.log(`- exact base: ${expectedBase}`);
 console.log(`- allowed smoke path: ${expectedFixture}`);
-console.log('- execution: custom environment + terminal submit_worker_bundle function call');
+console.log('- return: environment snapshot -> worker.patch + result.json');
+console.log('- snapshot: environment metadata verified, bounded retry');
 console.log('- continuation: same environment, fresh conversation');
 console.log('- network: github.com only, no injected GitHub credentials');
-console.log('- smoke token ceiling: 16000');
-console.log('- superseded background/snapshot worker: absent');
+console.log('- superseded function/background workers: absent');
 console.log('- runtime imports: none detected');
