@@ -20,6 +20,8 @@ const REPO_TARGET = '/workspace/repo';
 const OUTPUT_ROOT = '/workspace/antigravity-output';
 const PATCH_NAME = 'worker.patch';
 const RESULT_NAME = 'result.json';
+const POLL_MS = 5000;
+const MAX_POLL_MS = 12 * 60 * 1000;
 
 function usage() {
   console.log(`Severe Weather Warning sandboxed Antigravity worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-worker.mjs continue --task <task.json> --interaction <id> --environment <id> --input <text> --output-dir <dir> [--dry-run]\n  node tools/antigravity/sw-antigravity-worker.mjs collect --task <task.json> --environment <id> --output-dir <dir>\n\nEnvironment:\n  GEMINI_API_KEY  Required only for live API/download calls. Never commit or print it.\n`);
@@ -223,6 +225,7 @@ function buildInteraction(task) {
     agent: task.agent,
     input: taskPrompt(task),
     environment: buildEnvironment(task),
+    background: true,
     tools: [
       { type: 'code_execution' },
     ],
@@ -239,6 +242,7 @@ function buildContinuation(task, options) {
     input: continuationPrompt(task, options.input),
     previous_interaction_id: assertString(options.interaction, '--interaction'),
     environment: assertString(options.environment, '--environment'),
+    background: true,
     tools: [
       { type: 'code_execution' },
     ],
@@ -260,6 +264,8 @@ function safeRequestSummary(task, taskFile, mode = 'execute', extras = {}) {
     repositoryUrl: task.repositoryUrl,
     exactBaseSha: task.exactBaseSha,
     agent: task.agent,
+    background: true,
+    pollMs: POLL_MS,
     tokenBudget: task.tokenBudget,
     maxPatchBytes: task.maxPatchBytes,
     requirePatch: task.requirePatch,
@@ -298,6 +304,34 @@ async function apiJson(method, url, body) {
   return payload;
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function interactionDiagnostics(interaction) {
+  return {
+    id: interaction?.id || null,
+    status: interaction?.status || null,
+    environmentId: interaction?.environment_id || null,
+    stepTypes: Array.isArray(interaction?.steps) ? interaction.steps.map((step) => step?.type || 'unknown') : [],
+  };
+}
+
+async function runAgentInteraction(body) {
+  let interaction = await apiJson('POST', INTERACTIONS_URL, body);
+  const interactionId = assertString(interaction.id, 'interaction.id');
+  const startedAt = Date.now();
+  while (interaction.status === 'in_progress') {
+    if (Date.now() - startedAt > MAX_POLL_MS) throw new Error(`Antigravity interaction ${interactionId} exceeded local poll ceiling`);
+    await delay(POLL_MS);
+    interaction = await apiJson('GET', `${INTERACTIONS_URL}/${encodeURIComponent(interactionId)}`);
+  }
+  if (interaction.status !== 'completed') {
+    throw new Error(`Antigravity interaction ended with status ${interaction.status || '(missing)'}: ${JSON.stringify(interactionDiagnostics(interaction))}`);
+  }
+  return interaction;
+}
+
 function extractOutputText(payload) {
   if (typeof payload?.output_text === 'string' && payload.output_text.trim()) return payload.output_text.trim();
   const steps = Array.isArray(payload?.steps) ? payload.steps : [];
@@ -316,7 +350,7 @@ function extractOutputText(payload) {
 
 function parseInlineReturn(payload) {
   const outputText = extractOutputText(payload);
-  if (!outputText) throw new Error('Antigravity response contained no model output text');
+  if (!outputText) throw new Error(`Antigravity completed without model output text: ${JSON.stringify(interactionDiagnostics(payload))}`);
   const stripped = outputText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
   let parsed;
   try {
@@ -493,7 +527,7 @@ async function runExecute(options) {
     }
     return;
   }
-  const interaction = await apiJson('POST', INTERACTIONS_URL, buildInteraction(task));
+  const interaction = await runAgentInteraction(buildInteraction(task));
   await handleInteraction(task, interaction, options['output-dir']);
 }
 
@@ -516,7 +550,7 @@ async function runContinue(options) {
     }
     return;
   }
-  const interaction = await apiJson('POST', INTERACTIONS_URL, body);
+  const interaction = await runAgentInteraction(body);
   await handleInteraction(task, interaction, options['output-dir']);
 }
 
