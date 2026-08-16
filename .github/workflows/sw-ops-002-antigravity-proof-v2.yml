@@ -1,0 +1,139 @@
+name: SW-OPS-002 Antigravity Proof V2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - agent/sw-ops-001-antigravity-bridge
+    paths:
+      - 'tools/antigravity/sw-ops-002-proof-v2.mjs'
+      - 'scripts/verify-sw-ops-002-proof-v2.mjs'
+      - '.github/workflows/sw-ops-002-antigravity-proof-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax-check V2 proof runner
+        run: node --check tools/antigravity/sw-ops-002-proof-v2.mjs
+
+      - name: Verify V2 host-update proof architecture
+        run: node scripts/verify-sw-ops-002-proof-v2.mjs
+
+      - name: Prove V2 dry-run without API key
+        env:
+          GEMINI_API_KEY: ''
+        run: >-
+          node tools/antigravity/sw-ops-002-proof-v2.mjs
+          --dry-run
+          --output-dir evidence/sw-ops-002-v2-dry
+
+      - name: Validate V2 dry-run evidence
+        run: |
+          test -s evidence/sw-ops-002-v2-dry/request.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const request = JSON.parse(fs.readFileSync('evidence/sw-ops-002-v2-dry/request.json', 'utf8'));
+          const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
+          const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+          if (request.version !== 'SW_OPS_002_PROOF_V2_DRY_RUN') throw new Error('wrong V2 dry-run version');
+          if (request.exactBaseSha !== expectedBase) throw new Error('wrong frozen base');
+          if (JSON.stringify(request.allowedPatchPaths) !== JSON.stringify([expectedPath])) throw new Error('scope widened');
+          if (request.bootstrap.tokenBudget !== 4000) throw new Error('bootstrap token budget changed');
+          if (request.editLane.tokenBudget !== 8000) throw new Error('edit token budget changed');
+          if (request.editLane.environmentUpdate !== true || request.editLane.sameEnvironment !== true) throw new Error('same-environment host update missing');
+          if (request.editLane.commandGateHasSubprocess !== false) throw new Error('command gate mutation authority widened');
+          if (request.githubWriteAuthority !== false) throw new Error('GitHub write authority changed');
+          NODE
+
+      - name: Upload V2 dry-run evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-ops-002-v2-dry-run-evidence
+          path: evidence/sw-ops-002-v2-dry/request.json
+          if-no-files-found: error
+
+  live-v2:
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'antigravity-sandbox-smoke-v2') &&
+      github.run_attempt == 1 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/sw-ops-002-antigravity-sandbox-worker'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Refuse rerun or missing Gemini secret
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          test "$RUN_ATTEMPT" = "1"
+          test -n "$GEMINI_API_KEY"
+
+      - name: Execute V2 exact-base edit correction proof
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: >-
+          node tools/antigravity/sw-ops-002-proof-v2.mjs
+          --output-dir evidence/sw-ops-002-v2-live
+
+      - name: Validate V2 final proof
+        run: |
+          test -s evidence/sw-ops-002-v2-live/proof.json
+          test -s evidence/sw-ops-002-v2-live/initial.patch
+          test -s evidence/sw-ops-002-v2-live/corrected.patch
+          node - <<'NODE'
+          const fs = require('fs');
+          const proof = JSON.parse(fs.readFileSync('evidence/sw-ops-002-v2-live/proof.json', 'utf8'));
+          const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
+          const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
+          if (proof.status !== 'PASS') throw new Error('V2 proof did not pass');
+          if (proof.exactBaseSha !== expectedBase) throw new Error('V2 proof base mismatch');
+          if (proof.sameEnvironmentForAllStages !== true) throw new Error('V2 did not reuse same environment');
+          if (JSON.stringify(proof.initialPatchPaths) !== JSON.stringify([expectedPath])) throw new Error('initial path mismatch');
+          if (JSON.stringify(proof.correctedPatchPaths) !== JSON.stringify([expectedPath])) throw new Error('corrected path mismatch');
+          if (proof.initialReplayContentSha256 !== proof.initialExpectedContentSha256) throw new Error('initial replay content mismatch');
+          if (proof.correctedReplayContentSha256 !== proof.correctedExpectedContentSha256) throw new Error('corrected replay content mismatch');
+          if (proof.githubWriteAuthority !== false) throw new Error('GitHub write authority changed');
+          NODE
+
+      - name: Upload V2 sandbox proof evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sw-ops-002-v2-live-evidence
+          path: |
+            evidence/sw-ops-002-v2-live/bootstrap.json
+            evidence/sw-ops-002-v2-live/initial.json
+            evidence/sw-ops-002-v2-live/initial.patch
+            evidence/sw-ops-002-v2-live/corrected.json
+            evidence/sw-ops-002-v2-live/corrected.patch
+            evidence/sw-ops-002-v2-live/proof.json
+          if-no-files-found: error
