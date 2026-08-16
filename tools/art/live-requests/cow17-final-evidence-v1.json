@@ -1,9 +1,0 @@
-{
-  "task": "SW-ART-009",
-  "purpose": "final Cow 17 runtime integration evidence with accepted-base parity gates",
-  "acceptedBase": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
-  "candidateParentHead": "cbe5f59cbc80b0ab5ab508e3da423beb49276b4d",
-  "mooParityProbeRun": 31915889747,
-  "paidServicesAuthorized": false,
-  "launchNonce": 1
-}
