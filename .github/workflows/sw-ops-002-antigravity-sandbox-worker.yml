@@ -69,10 +69,12 @@ jobs:
           if (request.allowedPaths.length !== 1 || request.allowedPaths[0] !== 'tools/antigravity/fixtures/sw-ops-002-smoke.txt') throw new Error('allowed territory widened');
           if (request.tokenBudget > 16000) throw new Error('token budget widened');
           if (request.maxPatchBytes > 10000) throw new Error('patch limit widened');
-          if (request.executionMode !== 'custom-environment-function-handoff') throw new Error('wrong execution mode');
+          if (request.executionMode !== 'custom-environment-snapshot-handoff') throw new Error('wrong execution mode');
           if (request.continuationStateMode !== 'same-environment-fresh-conversation') throw new Error('wrong continuation state mode');
-          if (request.returnChannel !== 'function_call:submit_worker_bundle') throw new Error('wrong return channel');
-          if (!request.tools.includes('submit_worker_bundle')) throw new Error('submit function missing');
+          if (request.returnChannel !== 'environment-snapshot') throw new Error('wrong return channel');
+          if (request.snapshotRetries !== 6) throw new Error('snapshot retries changed');
+          if (!request.outputFiles.some((item) => item.endsWith('/worker.patch'))) throw new Error('missing worker.patch contract');
+          if (!request.outputFiles.some((item) => item.endsWith('/result.json'))) throw new Error('missing result.json contract');
           if (continuation.mode !== 'continue') throw new Error('continuation mode missing');
           if (continuation.auditPreviousInteractionId !== 'test_interaction_id') throw new Error('continuation lost audit interaction ID');
           if (continuation.environmentId !== 'test_environment_id') throw new Error('continuation lost environment ID');
@@ -94,7 +96,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'agent/sw-ops-002-antigravity-sandbox-worker'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
@@ -115,7 +117,7 @@ jobs:
           test "$RUN_ATTEMPT" = "1"
           test -n "$GEMINI_API_KEY"
 
-      - name: Execute one bounded sandbox edit
+      - name: Execute one bounded sandbox edit and collect snapshot
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: >-
@@ -123,7 +125,7 @@ jobs:
           --task tools/antigravity/tasks/sw-ops-002-smoke.json
           --output-dir evidence/sw-ops-002-live
 
-      - name: Validate initial returned envelope and patch scope
+      - name: Validate initial snapshot bundle and patch scope
         run: |
           test -s evidence/sw-ops-002-live/envelope.json
           test -s evidence/sw-ops-002-live/result.json
@@ -136,9 +138,9 @@ jobs:
           const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
           if (!envelope.interactionId) throw new Error('missing interactionId');
           if (!envelope.environmentId) throw new Error('missing environmentId');
-          if (!envelope.functionCallId) throw new Error('missing functionCallId');
-          if (envelope.returnChannel !== 'function_call:submit_worker_bundle') throw new Error('wrong return channel');
+          if (envelope.returnChannel !== 'environment-snapshot') throw new Error('wrong return channel');
           if (envelope.exactBaseSha !== expectedBase) throw new Error('wrong envelope base');
+          if (!Number.isInteger(envelope.snapshotAttempts) || envelope.snapshotAttempts < 1 || envelope.snapshotAttempts > 6) throw new Error('invalid snapshot attempts');
           if (JSON.stringify(envelope.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('wrong patch paths');
           if (envelope.patchBytes <= 0 || envelope.patchBytes > 10000) throw new Error('invalid patch size');
           if (result.status !== 'completed') throw new Error(`worker did not complete: ${result.status}`);
@@ -167,10 +169,10 @@ jobs:
             --task tools/antigravity/tasks/sw-ops-002-smoke.json \
             --interaction "$INTERACTION_ID" \
             --environment "$ENVIRONMENT_ID" \
-            --input "Director correction: keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other repository change. Regenerate the complete patch from the same exact base and submit the revised worker bundle." \
+            --input "Director correction: keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other repository change. Regenerate the complete patch from the same exact base and refresh result.json." \
             --output-dir evidence/sw-ops-002-continued
 
-      - name: Validate revised patch from same environment
+      - name: Validate revised snapshot bundle from same environment
         run: |
           test -s evidence/sw-ops-002-continued/envelope.json
           test -s evidence/sw-ops-002-continued/result.json
@@ -182,10 +184,9 @@ jobs:
           const result = JSON.parse(fs.readFileSync('evidence/sw-ops-002-continued/result.json', 'utf8'));
           const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
           const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
-          if (!revised.interactionId || revised.interactionId === initial.interactionId) throw new Error('continuation did not create a new interaction');
-          if (revised.environmentId !== initial.environmentId) throw new Error('continuation did not reuse the same environment');
-          if (!revised.functionCallId) throw new Error('revised function call missing');
-          if (revised.returnChannel !== 'function_call:submit_worker_bundle') throw new Error('wrong revised return channel');
+          if (!revised.interactionId || revised.interactionId === initial.interactionId) throw new Error('correction did not create a new interaction');
+          if (revised.environmentId !== initial.environmentId) throw new Error('correction did not reuse the same environment');
+          if (revised.returnChannel !== 'environment-snapshot') throw new Error('wrong revised return channel');
           if (revised.exactBaseSha !== expectedBase) throw new Error('wrong revised base');
           if (JSON.stringify(revised.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('revised patch escaped scope');
           if (result.status !== 'completed') throw new Error(`revised worker did not complete: ${result.status}`);
