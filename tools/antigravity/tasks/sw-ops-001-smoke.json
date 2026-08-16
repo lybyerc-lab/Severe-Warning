@@ -25,7 +25,7 @@
     "State that no files were changed",
     "Return the requested JSON schema"
   ],
-  "tokenBudget": 6000,
+  "tokenBudget": 3000,
   "agent": "antigravity-preview-05-2026",
   "network": "disabled"
 }
