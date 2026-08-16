@@ -1,0 +1,39 @@
+{
+  "version": "SW_ANTIGRAVITY_WORKER_TASK_V1",
+  "taskId": "SW-AG-TASK-SLOT",
+  "repository": "lybyerc-lab/Severe-Warning",
+  "repositoryUrl": "https://github.com/lybyerc-lab/Severe-Warning",
+  "exactBaseSha": "10ccd2723b8fa6b925f47629491a9e51e6388500",
+  "goal": "Use code_execution immediately. Work in /workspace/repo. Create exactly one file at tools/antigravity/fixtures/sw-ag-task-slot.txt containing exactly two lines: first line 'Antigravity task slot reached' and second line 'Patch remains Director-controlled'. Do not inspect unrelated files. Do not change branches or Git history. Do not create any other file. Then run git status --short and git diff --check and stop.",
+  "nonGoals": [
+    "No changes outside the declared allowed paths",
+    "No GitHub credentials or writes",
+    "No commit, push, PR, merge, release, deployment, or publication",
+    "No gameplay/runtime/Android/art/presentation changes in this slot proof"
+  ],
+  "allowedPaths": [
+    "tools/antigravity/fixtures/sw-ag-task-slot.txt"
+  ],
+  "protectedPaths": [
+    "runtime/",
+    "modern/",
+    "MechanicsLab/",
+    "android/",
+    "patches/"
+  ],
+  "proofPlan": [
+    "Make only the bounded task edit",
+    "Run git status --short",
+    "Run git diff --check",
+    "Host extracts only allowlisted files",
+    "Host builds and validates the patch against exactBaseSha"
+  ],
+  "requestedTests": [
+    "git status --short",
+    "git diff --check"
+  ],
+  "tokenBudget": 8000,
+  "maxPatchBytes": 10000,
+  "requirePatch": true,
+  "agent": "antigravity-preview-05-2026"
+}
