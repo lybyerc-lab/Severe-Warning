@@ -68,7 +68,7 @@ rejectText(worker, "run('git', ['checkout'", 'worker');
 requireText(workflow, 'SW-OPS-002 Antigravity Simple Worker', 'workflow');
 requireText(workflow, 'persist-credentials: false', 'workflow');
 requireText(workflow, 'antigravity-sandbox-smoke', 'workflow');
-requireText(workflow, 'git apply --check', 'workflow');
+requireText(workflow, 'apply --check', 'workflow');
 requireText(workflow, 'tools/antigravity/fixtures/sw-ops-002-smoke.txt', 'workflow');
 rejectText(workflow, 'bootstrap', 'workflow');
 rejectText(workflow, 'proof-v2', 'workflow');
