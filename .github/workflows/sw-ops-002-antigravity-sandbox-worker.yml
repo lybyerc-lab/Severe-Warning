@@ -69,12 +69,11 @@ jobs:
           if (request.allowedPaths.length !== 1 || request.allowedPaths[0] !== 'tools/antigravity/fixtures/sw-ops-002-smoke.txt') throw new Error('allowed territory widened');
           if (request.tokenBudget > 16000) throw new Error('token budget widened');
           if (request.maxPatchBytes > 10000) throw new Error('patch limit widened');
-          if (request.executionMode !== 'custom-environment-snapshot-handoff') throw new Error('wrong execution mode');
+          if (request.executionMode !== 'custom-environment-host-derived-snapshot-diff') throw new Error('wrong execution mode');
           if (request.continuationStateMode !== 'same-environment-fresh-conversation') throw new Error('wrong continuation state mode');
-          if (request.returnChannel !== 'environment-snapshot') throw new Error('wrong return channel');
+          if (request.returnChannel !== 'host-derived-snapshot-diff') throw new Error('wrong return channel');
           if (request.snapshotRetries !== 6) throw new Error('snapshot retries changed');
-          if (!request.outputFiles.some((item) => item.endsWith('/worker.patch'))) throw new Error('missing worker.patch contract');
-          if (!request.outputFiles.some((item) => item.endsWith('/result.json'))) throw new Error('missing result.json contract');
+          if (request.workerHandoffFilesRequired !== false) throw new Error('worker handoff files became required');
           if (continuation.mode !== 'continue') throw new Error('continuation mode missing');
           if (continuation.auditPreviousInteractionId !== 'test_interaction_id') throw new Error('continuation lost audit interaction ID');
           if (continuation.environmentId !== 'test_environment_id') throw new Error('continuation lost environment ID');
@@ -117,7 +116,7 @@ jobs:
           test "$RUN_ATTEMPT" = "1"
           test -n "$GEMINI_API_KEY"
 
-      - name: Execute one bounded sandbox edit and collect snapshot
+      - name: Execute bounded sandbox edit and derive host patch
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: >-
@@ -125,7 +124,7 @@ jobs:
           --task tools/antigravity/tasks/sw-ops-002-smoke.json
           --output-dir evidence/sw-ops-002-live
 
-      - name: Validate initial snapshot bundle and patch scope
+      - name: Validate initial quarantined patch
         run: |
           test -s evidence/sw-ops-002-live/envelope.json
           test -s evidence/sw-ops-002-live/result.json
@@ -138,13 +137,14 @@ jobs:
           const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
           if (!envelope.interactionId) throw new Error('missing interactionId');
           if (!envelope.environmentId) throw new Error('missing environmentId');
-          if (envelope.returnChannel !== 'environment-snapshot') throw new Error('wrong return channel');
-          if (envelope.exactBaseSha !== expectedBase) throw new Error('wrong envelope base');
+          if (envelope.returnChannel !== 'host-derived-snapshot-diff') throw new Error('wrong return channel');
+          if (envelope.quarantineStatus !== 'patch-ready-not-applied') throw new Error('wrong quarantine state');
+          if (envelope.exactBaseSha !== expectedBase || envelope.snapshotHead !== expectedBase) throw new Error('wrong snapshot base');
           if (!Number.isInteger(envelope.snapshotAttempts) || envelope.snapshotAttempts < 1 || envelope.snapshotAttempts > 6) throw new Error('invalid snapshot attempts');
           if (JSON.stringify(envelope.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('wrong patch paths');
           if (envelope.patchBytes <= 0 || envelope.patchBytes > 10000) throw new Error('invalid patch size');
-          if (result.status !== 'completed') throw new Error(`worker did not complete: ${result.status}`);
-          if (result.verifiedBaseSha !== expectedBase) throw new Error('worker did not verify exact base');
+          if (result.status !== 'quarantined-patch-ready') throw new Error(`wrong host result status: ${result.status}`);
+          if (result.verifiedBaseSha !== expectedBase) throw new Error('host did not verify sandbox base');
           if (JSON.stringify(result.changedFiles) !== JSON.stringify([expectedPath])) throw new Error('wrong changedFiles');
           NODE
 
@@ -159,7 +159,7 @@ jobs:
           test "$(git -C "$VALIDATE_DIR" status --short)" = '?? tools/antigravity/fixtures/sw-ops-002-smoke.txt'
           test "$(cat "$VALIDATE_DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nGitHub writes remain Director-controlled'
 
-      - name: Send Director correction to same Antigravity environment
+      - name: Send Director correction to same Antigravity sandbox
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -169,10 +169,10 @@ jobs:
             --task tools/antigravity/tasks/sw-ops-002-smoke.json \
             --interaction "$INTERACTION_ID" \
             --environment "$ENVIRONMENT_ID" \
-            --input "Director correction: keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other repository change. Regenerate the complete patch from the same exact base and refresh result.json." \
+            --input "Director correction: keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other repository change." \
             --output-dir evidence/sw-ops-002-continued
 
-      - name: Validate revised snapshot bundle from same environment
+      - name: Validate revised quarantined patch from same sandbox
         run: |
           test -s evidence/sw-ops-002-continued/envelope.json
           test -s evidence/sw-ops-002-continued/result.json
@@ -186,11 +186,12 @@ jobs:
           const expectedPath = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
           if (!revised.interactionId || revised.interactionId === initial.interactionId) throw new Error('correction did not create a new interaction');
           if (revised.environmentId !== initial.environmentId) throw new Error('correction did not reuse the same environment');
-          if (revised.returnChannel !== 'environment-snapshot') throw new Error('wrong revised return channel');
-          if (revised.exactBaseSha !== expectedBase) throw new Error('wrong revised base');
+          if (revised.returnChannel !== 'host-derived-snapshot-diff') throw new Error('wrong revised return channel');
+          if (revised.quarantineStatus !== 'patch-ready-not-applied') throw new Error('wrong revised quarantine state');
+          if (revised.exactBaseSha !== expectedBase || revised.snapshotHead !== expectedBase) throw new Error('wrong revised base');
           if (JSON.stringify(revised.patchPaths) !== JSON.stringify([expectedPath])) throw new Error('revised patch escaped scope');
-          if (result.status !== 'completed') throw new Error(`revised worker did not complete: ${result.status}`);
-          if (result.verifiedBaseSha !== expectedBase) throw new Error('revised worker lost exact base');
+          if (result.status !== 'quarantined-patch-ready') throw new Error(`wrong revised host status: ${result.status}`);
+          if (result.verifiedBaseSha !== expectedBase) throw new Error('revised sandbox base mismatch');
           NODE
 
       - name: Prove revised patch applies to exact frozen base
