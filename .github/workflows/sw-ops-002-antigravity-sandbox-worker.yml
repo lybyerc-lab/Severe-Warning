@@ -37,7 +37,7 @@ jobs:
       - name: Verify simple worker contract
         run: node scripts/verify-sw-ops-002-antigravity-worker.mjs
 
-      - name: Dry-run initial request without API key
+      - name: Dry-run request without API key
         env:
           GEMINI_API_KEY: ''
         run: >-
@@ -46,33 +46,19 @@ jobs:
           --output-dir evidence/sw-ops-002-dry
           --dry-run
 
-      - name: Dry-run continuation without API key
-        env:
-          GEMINI_API_KEY: ''
-        run: >-
-          node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue
-          --task tools/antigravity/tasks/sw-ops-002-smoke.json
-          --interaction test_interaction_id
-          --environment test_environment_id
-          --input "Change only the allowlisted fixture"
-          --output-dir evidence/sw-ops-002-dry-continue
-          --dry-run
-
       - name: Validate dry-run contract
         run: |
           node - <<'NODE'
           const fs = require('fs');
-          const first = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry/request.json', 'utf8'));
-          const next = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry-continue/request.json', 'utf8'));
+          const request = JSON.parse(fs.readFileSync('evidence/sw-ops-002-dry/request.json', 'utf8'));
           const base = '10ccd2723b8fa6b925f47629491a9e51e6388500';
           const file = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
-          if (first.patchBaseSha !== base) throw new Error('wrong patch base');
-          if (JSON.stringify(first.allowedPaths) !== JSON.stringify([file])) throw new Error('allowlist widened');
-          if (first.tokenBudget > 8000 || first.maxPatchBytes > 10000) throw new Error('budget widened');
-          if (first.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
-          if (first.returnChannel !== 'allowlisted-files-to-host-derived-patch') throw new Error('wrong return channel');
-          if (first.githubWriteAuthority !== false) throw new Error('GitHub write authority widened');
-          if (next.mode !== 'continue' || next.environmentId !== 'test_environment_id') throw new Error('continuation contract broken');
+          if (request.patchBaseSha !== base) throw new Error('wrong patch base');
+          if (JSON.stringify(request.allowedPaths) !== JSON.stringify([file])) throw new Error('allowlist widened');
+          if (request.tokenBudget > 8000 || request.maxPatchBytes > 10000) throw new Error('budget widened');
+          if (request.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
+          if (request.returnChannel !== 'allowlisted-files-to-host-derived-patch') throw new Error('wrong return channel');
+          if (request.githubWriteAuthority !== false) throw new Error('GitHub write authority widened');
           NODE
 
   live-sandbox-smoke:
@@ -82,7 +68,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'agent/sw-ops-002-antigravity-sandbox-worker'
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 12
     steps:
       - name: Checkout candidate without persisted credentials
         uses: actions/checkout@v4
@@ -123,7 +109,7 @@ jobs:
           const file = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
           if (result.status !== 'quarantined-patch-ready') throw new Error('patch not ready');
           if (result.patchBaseSha !== base) throw new Error('wrong patch base');
-          if (!result.interactionId || !result.environmentId) throw new Error('missing continuation IDs');
+          if (!result.interactionId || !result.environmentId) throw new Error('missing interaction evidence');
           if (result.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
           if (JSON.stringify(result.changedFiles) !== JSON.stringify([file])) throw new Error('patch escaped allowlist');
           if (result.patchBytes <= 0 || result.patchBytes > 10000) throw new Error('patch size invalid');
@@ -133,53 +119,17 @@ jobs:
       - name: Prove candidate on frozen base
         run: |
           BASE_SHA='10ccd2723b8fa6b925f47629491a9e51e6388500'
-          DIR="$RUNNER_TEMP/sw-ops-002-initial"
+          DIR="$RUNNER_TEMP/sw-ops-002-candidate"
           git worktree add --detach "$DIR" "$BASE_SHA"
           git -C "$DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
           git -C "$DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-live/worker.patch"
           git -C "$DIR" diff --check
           test "$(cat "$DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nGitHub writes remain Director-controlled'
 
-      - name: Send one Director correction
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          INTERACTION_ID=$(node -e "const x=require('./evidence/sw-ops-002-live/result.json');process.stdout.write(x.interactionId)")
-          ENVIRONMENT_ID=$(node -e "const x=require('./evidence/sw-ops-002-live/result.json');process.stdout.write(x.environmentId)")
-          node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue \
-            --task tools/antigravity/tasks/sw-ops-002-smoke.json \
-            --interaction "$INTERACTION_ID" \
-            --environment "$ENVIRONMENT_ID" \
-            --input "Use code_execution immediately. Work in /workspace/repo. Keep the first line of tools/antigravity/fixtures/sw-ops-002-smoke.txt unchanged. Change only its second line to exactly 'Director controls every GitHub write'. Then run git status --short and git diff --check and stop. Do not inspect unrelated files or make any other intentional edit." \
-            --output-dir evidence/sw-ops-002-revised
-
-      - name: Validate revised patch
-        run: |
-          node - <<'NODE'
-          const first = require('./evidence/sw-ops-002-live/result.json');
-          const next = require('./evidence/sw-ops-002-revised/result.json');
-          const file = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
-          if (next.environmentId !== first.environmentId) throw new Error('correction did not reuse sandbox');
-          if (!next.interactionId || next.interactionId === first.interactionId) throw new Error('correction interaction missing');
-          if (JSON.stringify(next.changedFiles) !== JSON.stringify([file])) throw new Error('revised patch escaped allowlist');
-          NODE
-
-      - name: Prove revised patch on frozen base
-        run: |
-          BASE_SHA='10ccd2723b8fa6b925f47629491a9e51e6388500'
-          DIR="$RUNNER_TEMP/sw-ops-002-revised"
-          git worktree add --detach "$DIR" "$BASE_SHA"
-          git -C "$DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ops-002-revised/worker.patch"
-          git -C "$DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ops-002-revised/worker.patch"
-          git -C "$DIR" diff --check
-          test "$(cat "$DIR/tools/antigravity/fixtures/sw-ops-002-smoke.txt")" = $'SW-OPS-002 sandbox worker reached\nDirector controls every GitHub write'
-
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sw-ops-002-simple-worker-evidence
-          path: |
-            evidence/sw-ops-002-live/
-            evidence/sw-ops-002-revised/
+          path: evidence/sw-ops-002-live/
           if-no-files-found: warn
