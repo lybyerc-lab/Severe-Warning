@@ -1,0 +1,20 @@
+{
+  "version": "SW_ART_009_COW17_RUNTIME_QA_V2",
+  "task": "SW-ART-009",
+  "issue": 106,
+  "exactBaseSha": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
+  "expectedImplementationHead": "673c9159c10957267df44470c3388fa18768e750",
+  "loader": {
+    "threeRevision": "128",
+    "upstreamCommit": "d4aa9e00ea29808534a3e082f602c544e5f2419c",
+    "gitBlob": "cfa518ede1b0893f1da14347d78fcd19355f3686"
+  },
+  "asset": {
+    "path": "assets/production/characters/cow17-walking-v1.glb",
+    "sha256": "d5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93",
+    "bytes": 14412828
+  },
+  "generationAllowed": false,
+  "productionPromotionAllowed": false,
+  "purpose": "Prove the exact authored Cow 17 with the official Three.js r128 GLTFLoader, walk animation, protected cow safety, and primitive fallback, then seal a visual candidate for owner QA."
+}
