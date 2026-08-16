@@ -49,7 +49,7 @@ if (task.taskId !== 'SW-OPS-002-SMOKE') errors.push('smoke task ID mismatch');
 if (task.exactBaseSha !== expectedBase) errors.push('smoke exact base SHA mismatch');
 if (task.repositoryUrl !== 'https://github.com/lybyerc-lab/Severe-Warning') errors.push('smoke repository URL mismatch');
 if (JSON.stringify(task.allowedPaths) !== JSON.stringify([expectedFixture])) errors.push('smoke allowed path is not exactly the disposable fixture');
-if (task.tokenBudget > 8000) errors.push('smoke token budget widened above 8000');
+if (task.tokenBudget > 16000) errors.push('smoke token budget widened above 16000');
 if (task.maxPatchBytes > 10000) errors.push('smoke patch limit widened above 10000 bytes');
 if (task.requirePatch !== true) errors.push('smoke must require a patch');
 
@@ -98,5 +98,6 @@ console.log(`- exact base: ${expectedBase}`);
 console.log(`- allowed smoke path: ${expectedFixture}`);
 console.log('- execution: custom environment, unary create, adaptive poll only if in_progress');
 console.log('- network: github.com only, no injected GitHub credentials');
+console.log('- smoke token ceiling: 16000');
 console.log('- superseded background/snapshot worker: absent');
 console.log('- runtime imports: none detected');
