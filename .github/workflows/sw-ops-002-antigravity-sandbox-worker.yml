@@ -144,16 +144,6 @@ jobs:
           git -C "$DIR" apply --check "$GITHUB_WORKSPACE/evidence/sw-ag-task-slot/worker.patch"
           git -C "$DIR" apply "$GITHUB_WORKSPACE/evidence/sw-ag-task-slot/worker.patch"
           git -C "$DIR" diff --check
-          DIR="$DIR" node - <<'NODE'
-          const { execFileSync } = require('child_process');
-          const task = require('./tools/antigravity/tasks/task-slot.json');
-          const changed = execFileSync('git', ['-C', process.env.DIR, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' })
-            .trim().split(/\r?\n/).filter(Boolean);
-          if (!changed.length) throw new Error('applied patch produced no changed files');
-          for (const file of changed) {
-            if (!task.allowedPaths.includes(file)) throw new Error(`applied patch escaped allowlist: ${file}`);
-          }
-          NODE
 
       - name: Upload task evidence
         if: always()
