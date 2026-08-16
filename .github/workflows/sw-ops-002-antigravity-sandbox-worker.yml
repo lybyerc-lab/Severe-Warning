@@ -150,7 +150,7 @@ jobs:
             --task tools/antigravity/tasks/sw-ops-002-smoke.json \
             --interaction "$INTERACTION_ID" \
             --environment "$ENVIRONMENT_ID" \
-            --input "Keep the first line unchanged. Change only the second line to exactly 'Director controls every GitHub write'. Make no other intentional edit, run the lightweight checks, and stop." \
+            --input "Use code_execution immediately. Work in /workspace/repo. Keep the first line of tools/antigravity/fixtures/sw-ops-002-smoke.txt unchanged. Change only its second line to exactly 'Director controls every GitHub write'. Then run git status --short and git diff --check and stop. Do not inspect unrelated files or make any other intentional edit." \
             --output-dir evidence/sw-ops-002-revised
 
       - name: Validate revised patch
