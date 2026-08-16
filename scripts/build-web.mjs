@@ -17,10 +17,17 @@ const modernDistDir = path.join(projectRoot, 'modern-dist');
 const modernEntryPath = path.join(modernDistDir, 'modern-shell.js');
 const cow17RuntimeFile = 'sw-art-009-cow17-runtime.js';
 const cow17RuntimePath = path.join(sourceRuntimeDir, cow17RuntimeFile);
+const cow17LoaderFile = 'vendor/GLTFLoader-r128.js';
+const cow17LoaderPath = path.join(sourceRuntimeDir, cow17LoaderFile);
+const cow17LicenseFile = 'vendor/THREE-LICENSE.txt';
+const cow17LicensePath = path.join(sourceRuntimeDir, cow17LicenseFile);
+const cow17LoaderExpectedBlob = 'cfa518ede1b0893f1da14347d78fcd19355f3686';
+const cow17LicenseExpectedBlob = '5303437e406ed22d8cb0b4c12398870792a25878';
 const cow17AssetRelativePath = path.join('characters', 'cow17-walking-v1.glb');
 const cow17ProductionAssetPath = path.join(sourceProductionAssetsDir, cow17AssetRelativePath);
 const cow17ExpectedSha256 = 'd5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93';
 const cow17ExpectedBytes = 14412828;
+const cow17LoaderMarker = '[SW:SOURCE:GLTFLoader-r128.js]';
 const cow17InjectionMarker = '[SW:SOURCE:sw-art-009-cow17-runtime.js]';
 const gameplayLoopMarker = '// --- MAIN ANIMATION LOOP WITH 3-STAGE ESCALATION ---';
 const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
@@ -54,8 +61,15 @@ const runtimeFiles = [
   'v510-tornado.js',
   'v510-world.js',
   'v510-runtime.js',
+  cow17LoaderFile,
+  cow17LicenseFile,
   cow17RuntimeFile,
 ];
+
+function gitBlobSha1(bytes) {
+  const header = Buffer.from(`blob ${bytes.length}\0`, 'utf8');
+  return createHash('sha1').update(header).update(bytes).digest('hex');
+}
 
 let html = await readFile(sourceHtml, 'utf8');
 const forbiddenRemoteResources = [...html.matchAll(/<(?:script|link)[^>]+(?:src|href)=["']https?:\/\/[^"']+/gi)];
@@ -116,7 +130,19 @@ if (cow17Bytes.length > 15000000) {
   throw new Error(`Cow 17 production GLB exceeds 15 MB mobile guard: ${cow17Bytes.length}`);
 }
 
+const cow17LoaderBytes = await readFile(cow17LoaderPath);
+const cow17LicenseBytes = await readFile(cow17LicensePath);
+if (gitBlobSha1(cow17LoaderBytes) !== cow17LoaderExpectedBlob) {
+  throw new Error('Vendored Cow 17 GLTFLoader does not match official Three.js r128 source.');
+}
+if (gitBlobSha1(cow17LicenseBytes) !== cow17LicenseExpectedBlob) {
+  throw new Error('Vendored Three.js license does not match r128.');
+}
+const cow17Loader = cow17LoaderBytes.toString('utf8').trim();
 const cow17Runtime = (await readFile(cow17RuntimePath, 'utf8')).trim();
+if (!cow17Loader.includes('THREE.GLTFLoader = GLTFLoader;')) {
+  throw new Error('Official r128 GLTFLoader registration is missing.');
+}
 for (const prerequisite of [
   'V500_BOVINE_SIGNATURE_V1',
   'function configureBovineAnimal',
@@ -128,16 +154,21 @@ for (const prerequisite of [
     throw new Error(`Cow 17 runtime integration requires accepted bovine seam: missing ${prerequisite}`);
   }
 }
-if (cow17Runtime.includes('</script>')) {
-  throw new Error('Cow 17 runtime source contains a closing script tag.');
+if (cow17Loader.includes('</script>') || cow17Runtime.includes('</script>')) {
+  throw new Error('Cow 17 injected runtime source contains a closing script tag.');
 }
-if (html.includes(cow17InjectionMarker)) {
-  throw new Error('Source gameplay HTML must not contain the generated Cow 17 runtime injection.');
+if (html.includes(cow17LoaderMarker) || html.includes(cow17InjectionMarker)) {
+  throw new Error('Source gameplay HTML must not contain generated Cow 17 runtime injection markers.');
 }
-const cow17RuntimeBundle = `\n// ${cow17InjectionMarker}\n${cow17Runtime}\n\n`;
+const cow17RuntimeBundle = `\n// ${cow17LoaderMarker}\n${cow17Loader}\n\n// ${cow17InjectionMarker}\n${cow17Runtime}\n\n`;
 html = html.replace(gameplayLoopMarker, `${cow17RuntimeBundle}${gameplayLoopMarker}`);
-if (!html.includes(cow17InjectionMarker) || html.indexOf(cow17InjectionMarker) > html.indexOf(gameplayLoopMarker)) {
-  throw new Error('Cow 17 runtime must be injected before the first gameplay animation loop.');
+if (
+  !html.includes(cow17LoaderMarker)
+  || !html.includes(cow17InjectionMarker)
+  || html.indexOf(cow17LoaderMarker) > html.indexOf(cow17InjectionMarker)
+  || html.indexOf(cow17InjectionMarker) > html.indexOf(gameplayLoopMarker)
+) {
+  throw new Error('Official GLTFLoader and Cow 17 adapter must be injected in order before the gameplay loop.');
 }
 
 const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';
@@ -187,6 +218,7 @@ const audioSha256 = createHash('sha256').update(await readFile(path.join(sourceA
 const modernShellSha256 = createHash('sha256').update(await readFile(modernEntryPath)).digest('hex');
 const storefrontSha256 = createHash('sha256').update(await readFile(path.join(sourceProductionAssetsDir, 'structures', 'storefront-v1.json'))).digest('hex');
 const cow17RuntimeSha256 = createHash('sha256').update(cow17Runtime).digest('hex');
+const cow17LoaderSha256 = createHash('sha256').update(cow17LoaderBytes).digest('hex');
 await writeFile(
   path.join(outputDir, 'build-info.json'),
   `${JSON.stringify({
@@ -201,6 +233,12 @@ await writeFile(
     modernShellSha256,
     runtimeFiles,
     cow17RuntimeSha256,
+    cow17Loader: {
+      source: cow17LoaderFile,
+      upstreamCommit: 'd4aa9e00ea29808534a3e082f602c544e5f2419c',
+      gitBlob: cow17LoaderExpectedBlob,
+      sha256: cow17LoaderSha256,
+    },
     productionAssets: {
       root: 'assets/production',
       storefront: 'assets/production/structures/storefront-v1.json',
@@ -213,4 +251,4 @@ await writeFile(
   'utf8'
 );
 
-console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), PWA shell (manifest + root-scoped service worker), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files), authored storefront (${storefrontSha256}), Cow 17 (${cow17Sha256}, ${cow17Bytes.length} bytes)`);
+console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), PWA shell (manifest + root-scoped service worker), modern shell (${modernShellSha256}), audio (${audioSha256}), runtime (${runtimeFiles.length} files), official Cow 17 GLTFLoader (${cow17LoaderExpectedBlob}), authored storefront (${storefrontSha256}), Cow 17 (${cow17Sha256}, ${cow17Bytes.length} bytes)`);
