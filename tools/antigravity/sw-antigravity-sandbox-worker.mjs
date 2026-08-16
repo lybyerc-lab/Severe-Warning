@@ -148,23 +148,25 @@ function firstPrompt(task) {
   ].join('\n');
 }
 
-function correctionPrompt(task, input) {
+function correctionPrompt(task, input, priorInteractionId) {
   return [
-    'Continue the same bounded Severe Weather Warning task in the same sandbox.',
+    'This is a fresh stateless agent turn reusing the same Severe Weather Warning sandbox filesystem.',
+    `Prior audited interaction ID: ${priorInteractionId}. Do not rely on its conversation history; inspect the current filesystem state directly.`,
     `Task ID remains ${task.taskId}. Exact base remains ${task.exactBaseSha}.`,
     'Do not widen allowed paths, network access, or authority.',
     '',
     'Director correction:', requiredString(input, '--input'),
     '',
-    `Regenerate ${OUTPUT_ROOT}/worker.patch from the same exact base and refresh ${OUTPUT_ROOT}/result.json.`,
+    `Inspect the current diff against ${task.exactBaseSha}, apply only the requested correction, rerun the requested lightweight checks, and regenerate ${OUTPUT_ROOT}/worker.patch plus ${OUTPUT_ROOT}/result.json.`,
     'Return ONLY valid JSON matching this exact top-level shape:', resultContract(),
     'The patch field must exactly equal worker.patch. Do not wrap the JSON in markdown.',
   ].join('\n');
 }
 
-function finishReturnPrompt(task) {
+function finishReturnPrompt(task, priorInteractionId) {
   return [
-    'Finish return contract only. The previous interaction hit its token ceiling.',
+    'Finish return contract only using the existing sandbox filesystem. Start with a clean conversation context.',
+    `Prior audited interaction ID: ${priorInteractionId}. That turn hit its token ceiling; do not inherit or reconstruct its reasoning.`,
     `Task ID remains ${task.taskId}. Exact base remains ${task.exactBaseSha}.`,
     'Do not broaden scope. Do not create new repository changes unless strictly required to correct the already-requested allowed-path edit.',
     `Inspect the current sandbox diff against ${task.exactBaseSha}.`,
@@ -202,24 +204,26 @@ function initialBody(task) {
 }
 
 function continuationBody(task, options) {
+  const auditInteractionId = requiredString(options.interaction, '--interaction');
   return {
     agent: task.agent,
-    input: correctionPrompt(task, options.input),
-    previous_interaction_id: requiredString(options.interaction, '--interaction'),
+    input: correctionPrompt(task, options.input, auditInteractionId),
     environment: requiredString(options.environment, '--environment'),
     tools: [{ type: 'code_execution' }],
     agent_config: agentConfig(task),
+    auditInteractionId,
   };
 }
 
 function finishReturnBody(task, interaction) {
+  const auditInteractionId = requiredString(interaction.id, 'interaction.id');
   return {
     agent: task.agent,
-    input: finishReturnPrompt(task),
-    previous_interaction_id: requiredString(interaction.id, 'interaction.id'),
+    input: finishReturnPrompt(task, auditInteractionId),
     environment: requiredString(interaction.environment_id, 'interaction.environment_id'),
     tools: [{ type: 'code_execution' }],
     agent_config: agentConfig(task, Math.min(task.tokenBudget, FINISH_RETURN_TOKEN_BUDGET)),
+    auditInteractionId,
   };
 }
 
@@ -229,6 +233,7 @@ function drySummary(task, taskFile, mode, extras = {}) {
     dryRun: true,
     mode,
     executionMode: 'custom-environment-unary-with-adaptive-poll',
+    continuationStateMode: 'same-environment-fresh-conversation',
     taskFile,
     taskId: task.taskId,
     exactBaseSha: task.exactBaseSha,
@@ -242,7 +247,7 @@ function drySummary(task, taskFile, mode, extras = {}) {
     allowedPaths: task.allowedPaths,
     protectedPaths: task.protectedPaths,
     returnChannel: 'validated inline JSON patch',
-    incompleteRecovery: 'one same-environment finish-return continuation only',
+    incompleteRecovery: 'one fresh-conversation turn in the same environment only',
     ...extras,
   };
 }
@@ -282,7 +287,9 @@ function diagnostics(interaction) {
 }
 
 async function completeInteraction(body) {
-  let interaction = await apiJson('POST', API_ROOT, body);
+  const requestBody = { ...body };
+  delete requestBody.auditInteractionId;
+  let interaction = await apiJson('POST', API_ROOT, requestBody);
   const id = requiredString(interaction.id, 'interaction.id');
   const started = Date.now();
   while (interaction.status === 'in_progress') {
@@ -353,7 +360,7 @@ function hasCompletedReturn(interaction) {
 
 async function finishIncompleteReturn(task, interaction) {
   if (interaction.status !== 'incomplete' || hasCompletedReturn(interaction)) return interaction;
-  console.log(`[SW-OPS-002] Antigravity API status incomplete; reusing environment ${interaction.environment_id} for one finish-return pass.`);
+  console.log(`[SW-OPS-002] Antigravity API status incomplete; reusing environment ${interaction.environment_id} with a fresh conversation for one finish-return pass.`);
   return completeInteraction(finishReturnBody(task, interaction));
 }
 
@@ -457,7 +464,7 @@ async function continueTask(options) {
   const body = continuationBody(task, options);
   if (options.dryRun) {
     return writeDry(drySummary(task, path.relative(process.cwd(), absolute), 'continue', {
-      previousInteractionId: body.previous_interaction_id,
+      auditPreviousInteractionId: body.auditInteractionId,
       environmentId: body.environment,
       directorFeedback: body.input,
     }), options['output-dir']);
