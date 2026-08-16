@@ -101,9 +101,15 @@ jobs:
       - name: Execute V2 exact-base edit correction proof
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: >-
-          node tools/antigravity/sw-ops-002-proof-v2.mjs
-          --output-dir evidence/sw-ops-002-v2-live
+        run: |
+          mkdir -p evidence/sw-ops-002-v2-live
+          set +e
+          node tools/antigravity/sw-ops-002-proof-v2.mjs \
+            --output-dir evidence/sw-ops-002-v2-live \
+            > evidence/sw-ops-002-v2-live/live.log 2>&1
+          CODE=$?
+          cat evidence/sw-ops-002-v2-live/live.log
+          exit "$CODE"
 
       - name: Validate V2 final proof
         run: |
@@ -125,15 +131,10 @@ jobs:
           if (proof.githubWriteAuthority !== false) throw new Error('GitHub write authority changed');
           NODE
 
-      - name: Upload V2 sandbox proof evidence
+      - name: Upload V2 sandbox proof evidence even on failure
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sw-ops-002-v2-live-evidence
-          path: |
-            evidence/sw-ops-002-v2-live/bootstrap.json
-            evidence/sw-ops-002-v2-live/initial.json
-            evidence/sw-ops-002-v2-live/initial.patch
-            evidence/sw-ops-002-v2-live/corrected.json
-            evidence/sw-ops-002-v2-live/corrected.patch
-            evidence/sw-ops-002-v2-live/proof.json
-          if-no-files-found: error
+          path: evidence/sw-ops-002-v2-live/
+          if-no-files-found: warn
