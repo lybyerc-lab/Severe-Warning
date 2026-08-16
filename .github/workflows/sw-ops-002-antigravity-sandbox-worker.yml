@@ -6,7 +6,7 @@ on:
     branches:
       - agent/sw-ops-001-antigravity-bridge
     paths:
-      - 'tools/antigravity/sw-antigravity-worker.mjs'
+      - 'tools/antigravity/sw-antigravity-sandbox-worker.mjs'
       - 'tools/antigravity/tasks/sw-ops-002-smoke.json'
       - 'scripts/verify-sw-ops-002-antigravity-worker.mjs'
       - '.github/workflows/sw-ops-002-antigravity-sandbox-worker.yml'
@@ -37,7 +37,7 @@ jobs:
         env:
           GEMINI_API_KEY: ''
         run: >-
-          node tools/antigravity/sw-antigravity-worker.mjs execute
+          node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute
           --task tools/antigravity/tasks/sw-ops-002-smoke.json
           --output-dir evidence/sw-ops-002-dry
           --dry-run
@@ -46,7 +46,7 @@ jobs:
         env:
           GEMINI_API_KEY: ''
         run: >-
-          node tools/antigravity/sw-antigravity-worker.mjs continue
+          node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue
           --task tools/antigravity/tasks/sw-ops-002-smoke.json
           --interaction test_interaction_id
           --environment test_environment_id
@@ -69,9 +69,8 @@ jobs:
           if (request.allowedPaths.length !== 1 || request.allowedPaths[0] !== 'tools/antigravity/fixtures/sw-ops-002-smoke.txt') throw new Error('allowed territory widened');
           if (request.tokenBudget > 8000) throw new Error('token budget widened');
           if (request.maxPatchBytes > 10000) throw new Error('patch limit widened');
-          if (request.primaryReturnChannel !== 'validated inline patch in structured model output') throw new Error('wrong primary return channel');
-          if (!request.outputFiles.some((item) => item.endsWith('/worker.patch'))) throw new Error('missing patch output');
-          if (!request.outputFiles.some((item) => item.endsWith('/result.json'))) throw new Error('missing result output');
+          if (request.executionMode !== 'custom-environment-unary-with-adaptive-poll') throw new Error('wrong execution mode');
+          if (request.returnChannel !== 'validated inline JSON patch') throw new Error('wrong return channel');
           if (continuation.mode !== 'continue') throw new Error('continuation mode missing');
           if (continuation.previousInteractionId !== 'test_interaction_id') throw new Error('continuation lost interaction ID');
           if (continuation.environmentId !== 'test_environment_id') throw new Error('continuation lost environment ID');
@@ -118,7 +117,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: >-
-          node tools/antigravity/sw-antigravity-worker.mjs execute
+          node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute
           --task tools/antigravity/tasks/sw-ops-002-smoke.json
           --output-dir evidence/sw-ops-002-live
 
@@ -161,7 +160,7 @@ jobs:
         run: |
           INTERACTION_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json','utf8'));process.stdout.write(x.interactionId)")
           ENVIRONMENT_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('evidence/sw-ops-002-live/envelope.json','utf8'));process.stdout.write(x.environmentId)")
-          node tools/antigravity/sw-antigravity-worker.mjs continue \
+          node tools/antigravity/sw-antigravity-sandbox-worker.mjs continue \
             --task tools/antigravity/tasks/sw-ops-002-smoke.json \
             --interaction "$INTERACTION_ID" \
             --environment "$ENVIRONMENT_ID" \
