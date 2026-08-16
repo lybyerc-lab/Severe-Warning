@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// SW_OPS_002_ANTIGRAVITY_WORKER_VERIFIER_V2
+// SW_OPS_002_ANTIGRAVITY_WORKER_VERIFIER_V3
 
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -53,20 +53,25 @@ if (task.tokenBudget > 16000) errors.push('smoke token budget widened above 1600
 if (task.maxPatchBytes > 10000) errors.push('smoke patch limit widened above 10000 bytes');
 if (task.requirePatch !== true) errors.push('smoke must require a patch');
 
-requireText(worker, 'SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V2', 'worker');
+requireText(worker, 'SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V3', 'worker');
 requireText(worker, "target: REPO_TARGET", 'worker');
 requireText(worker, "target: '.agents/AGENTS.md'", 'worker');
 requireText(worker, "target: '/workspace/sw-antigravity-task.json'", 'worker');
 requireText(worker, "{ domain: 'github.com' }", 'worker');
-requireText(worker, "tools: [{ type: 'code_execution' }]", 'worker');
-requireText(worker, "executionMode: 'custom-environment-unary-with-adaptive-poll'", 'worker');
+requireText(worker, "const SUBMIT_TOOL_NAME = 'submit_worker_bundle'", 'worker');
+requireText(worker, "type: 'function'", 'worker');
+requireText(worker, "tools: [{ type: 'code_execution' }, submitTool()]", 'worker');
+requireText(worker, 'store: true', 'worker');
+requireText(worker, "executionMode: 'custom-environment-function-handoff'", 'worker');
+requireText(worker, "returnChannel: `function_call:${SUBMIT_TOOL_NAME}`", 'worker');
+requireText(worker, "step?.type === 'function_call'", 'worker');
 requireText(worker, "while (interaction.status === 'in_progress')", 'worker');
 requireText(worker, 'worker.patch', 'worker');
-requireText(worker, 'result.json', 'worker');
 requireText(worker, 'Patch path outside allowed territory', 'worker');
 requireText(worker, 'worker did not prove the exact base SHA', 'worker');
 requireText(worker, 'Renames are not accepted', 'worker');
 requireText(worker, 'GEMINI_API_KEY', 'worker');
+rejectText(worker, 'response_format', 'worker');
 rejectText(worker, 'background: true', 'worker');
 rejectText(worker, 'environment-snapshot', 'worker');
 rejectText(worker, '/v1beta/files', 'worker');
@@ -96,7 +101,8 @@ if (errors.length) {
 console.log('SW-OPS-002 verifier PASS');
 console.log(`- exact base: ${expectedBase}`);
 console.log(`- allowed smoke path: ${expectedFixture}`);
-console.log('- execution: custom environment, unary create, adaptive poll only if in_progress');
+console.log('- execution: custom environment + terminal submit_worker_bundle function call');
+console.log('- continuation: same environment, fresh conversation');
 console.log('- network: github.com only, no injected GitHub credentials');
 console.log('- smoke token ceiling: 16000');
 console.log('- superseded background/snapshot worker: absent');
