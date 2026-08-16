@@ -1,9 +1,0 @@
-{
-  "task": "SW-ART-009",
-  "purpose": "same-runner Moo Level browser QA parity probe",
-  "acceptedBase": "de2e62835e79567b4bbfc079a372ce2af4ee0879",
-  "candidateParentHead": "8d71f1bae8051662a685c5a95e958dd20c9d0696",
-  "qa": "scripts/qa-sw-game-002.mjs",
-  "paidServicesAuthorized": false,
-  "launchNonce": 1
-}
