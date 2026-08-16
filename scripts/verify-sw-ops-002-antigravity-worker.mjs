@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// SW_OPS_002_ANTIGRAVITY_WORKER_VERIFIER_V4
+// SW_OPS_002_ANTIGRAVITY_WORKER_VERIFIER_V5
 
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -47,28 +47,32 @@ if (task.tokenBudget > 16000) errors.push('smoke token budget widened above 1600
 if (task.maxPatchBytes > 10000) errors.push('smoke patch limit widened above 10000 bytes');
 if (task.requirePatch !== true) errors.push('smoke must require a patch');
 
-requireText(worker, 'SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V4', 'worker');
+requireText(worker, 'SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V5', 'worker');
 requireText(worker, "target: REPO_TARGET", 'worker');
 requireText(worker, "target: '.agents/AGENTS.md'", 'worker');
 requireText(worker, "target: '/workspace/sw-antigravity-task.json'", 'worker');
 requireText(worker, "{ domain: 'github.com' }", 'worker');
 requireText(worker, "tools: [{ type: 'code_execution' }]", 'worker');
-requireText(worker, "executionMode: 'custom-environment-snapshot-handoff'", 'worker');
-requireText(worker, "returnChannel: 'environment-snapshot'", 'worker');
+requireText(worker, "executionMode: 'custom-environment-host-derived-snapshot-diff'", 'worker');
+requireText(worker, "returnChannel: 'host-derived-snapshot-diff'", 'worker');
+requireText(worker, 'workerHandoffFilesRequired: false', 'worker');
 requireText(worker, "const SNAPSHOT_RETRIES = 6", 'worker');
 requireText(worker, "const ENVIRONMENTS_URL = `${API_ROOT}/environments`", 'worker');
 requireText(worker, "const FILES_URL = `${API_ROOT}/files`", 'worker');
 requireText(worker, "environment-${encodeURIComponent(environmentId)}:download?alt=media", 'worker');
-requireText(worker, "worker.patch", 'worker');
-requireText(worker, "result.json", 'worker');
+requireText(worker, "run('rsync', ['-a', '--delete'", 'worker');
+requireText(worker, "ls-files', '--others', '--exclude-standard', '-z'", 'worker');
+requireText(worker, "'diff', '--check'", 'worker');
+requireText(worker, "'diff', '--binary', '--no-ext-diff', '--full-index', 'HEAD'", 'worker');
 requireText(worker, 'Patch path outside allowed territory', 'worker');
-requireText(worker, 'worker did not prove the exact base SHA', 'worker');
+requireText(worker, 'Sandbox checkout mismatch', 'worker');
 requireText(worker, 'Renames are not accepted', 'worker');
 requireText(worker, 'GEMINI_API_KEY', 'worker');
-requireText(worker, 'MissingWorkerArtifactsError', 'worker');
+requireText(worker, 'MissingWorkerPatchError', 'worker');
 rejectText(worker, 'submit_worker_bundle', 'worker');
 rejectText(worker, 'background: true', 'worker');
 rejectText(worker, 'response_format', 'worker');
+rejectText(worker, 'worker.patch and result.json', 'worker');
 
 for (const forbidden of ['ghp_', 'github_pat_', 'x-oauth-basic:', 'Authorization: Bearer', 'Authorization: Basic']) {
   rejectText(worker, forbidden, 'worker');
@@ -94,9 +98,9 @@ if (errors.length) {
 console.log('SW-OPS-002 verifier PASS');
 console.log(`- exact base: ${expectedBase}`);
 console.log(`- allowed smoke path: ${expectedFixture}`);
-console.log('- return: environment snapshot -> worker.patch + result.json');
-console.log('- snapshot: environment metadata verified, bounded retry');
-console.log('- continuation: same environment, fresh conversation');
+console.log('- return: host derives patch from complete sandbox filesystem snapshot');
+console.log('- snapshot repo HEAD must equal exact task base');
+console.log('- untracked files are included by host intent-to-add before diff');
+console.log('- patch paths are allowlisted before independent apply proof');
 console.log('- network: github.com only, no injected GitHub credentials');
-console.log('- superseded function/background workers: absent');
 console.log('- runtime imports: none detected');
