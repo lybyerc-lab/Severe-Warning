@@ -7,6 +7,7 @@ on:
       - agent/sw-ops-001-antigravity-bridge
     paths:
       - 'tools/antigravity/sw-antigravity-sandbox-worker.mjs'
+      - 'tools/antigravity/sw-antigravity-exact-base-bootstrap.mjs'
       - 'tools/antigravity/tasks/sw-ops-002-bootstrap.json'
       - 'tools/antigravity/tasks/sw-ops-002-smoke.json'
       - 'scripts/verify-sw-ops-002-antigravity-worker.mjs'
@@ -30,6 +31,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Syntax-check exact-base bootstrap
+        run: node --check tools/antigravity/sw-antigravity-exact-base-bootstrap.mjs
 
       - name: Verify sandbox worker isolation
         run: node scripts/verify-sw-ops-002-antigravity-worker.mjs
@@ -135,11 +139,11 @@ jobs:
           test "$RUN_ATTEMPT" = "1"
           test -n "$GEMINI_API_KEY"
 
-      - name: Bootstrap sandbox to exact frozen base
+      - name: Bootstrap sandbox through exact-base airlock
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: >-
-          node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute
+          node tools/antigravity/sw-antigravity-exact-base-bootstrap.mjs
           --task tools/antigravity/tasks/sw-ops-002-bootstrap.json
           --output-dir evidence/sw-ops-002-bootstrap
 
@@ -153,9 +157,14 @@ jobs:
           const envelope = JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/envelope.json', 'utf8'));
           const result = JSON.parse(fs.readFileSync('evidence/sw-ops-002-bootstrap/result.json', 'utf8'));
           const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
+          const expectedRef = 'agent/sw-ops-001-antigravity-bridge';
           if (!envelope.interactionId || !envelope.environmentId) throw new Error('bootstrap IDs missing');
+          if (envelope.exactBaseRef !== expectedRef) throw new Error('bootstrap ref changed');
           if (envelope.exactBaseSha !== expectedBase || envelope.snapshotHead !== expectedBase) throw new Error('bootstrap did not reach exact base');
+          if (envelope.returnChannel !== 'host-verified-hooked-snapshot') throw new Error('wrong bootstrap return channel');
+          if (envelope.quarantineStatus !== 'exact-base-ready-no-patch') throw new Error('wrong bootstrap quarantine state');
           if (envelope.patchBytes !== 0 || JSON.stringify(envelope.patchPaths) !== '[]') throw new Error('bootstrap changed repository files');
+          if (result.status !== 'exact-base-sandbox-ready') throw new Error('bootstrap host result not ready');
           if (result.verifiedBaseSha !== expectedBase) throw new Error('bootstrap base not independently verified');
           if (JSON.stringify(result.changedFiles) !== '[]') throw new Error('bootstrap changed files');
           if (JSON.stringify(result.untrackedFiles) !== '[]') throw new Error('bootstrap left untracked files');
