@@ -171,8 +171,24 @@ async function apiRequest(method, url, body) {
   return payload;
 }
 
+function extractOutputText(payload) {
+  if (typeof payload?.output_text === 'string' && payload.output_text.trim()) return payload.output_text.trim();
+  const steps = Array.isArray(payload?.steps) ? payload.steps : [];
+  for (let i = steps.length - 1; i >= 0; i -= 1) {
+    const step = steps[i];
+    if (step?.type !== 'model_output' || !Array.isArray(step.content)) continue;
+    const text = step.content
+      .filter((item) => item?.type === 'text' && typeof item.text === 'string')
+      .map((item) => item.text)
+      .join('\n')
+      .trim();
+    if (text) return text;
+  }
+  return '';
+}
+
 function parseWorkerOutput(payload) {
-  const outputText = typeof payload?.output_text === 'string' ? payload.output_text.trim() : '';
+  const outputText = extractOutputText(payload);
   if (!outputText) return null;
   const stripped = outputText.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
   try {
