@@ -175,7 +175,7 @@ function interactionStepTypes(interaction) {
 async function runInteraction(task) {
   const body = {
     agent: task.agent,
-    input: `Bootstrap only. Run exactly these read-only checks, then stop:\ngit -C ${REPO_TARGET} rev-parse HEAD\ngit -C ${REPO_TARGET} status --short\nDo not edit repository files.`,
+    input: `Bootstrap only. Run exactly these read-only checks, then stop:\ngit -C ${REPO_TARGET} rev-parse HEAD\ngit -C ${REPO_TARGET} status --short\nDo not edit repository files during this bootstrap turn.`,
     environment: {
       type: 'remote',
       sources: [
@@ -185,7 +185,7 @@ async function runInteraction(task) {
         {
           type: 'inline',
           target: '.agents/AGENTS.md',
-          content: `# SW-OPS-002 bootstrap\nRun only the requested read-only Git checks. The pre-tool airlock owns exact-base normalization. Never edit, commit, push, publish, or deploy.\n`,
+          content: `# SW-OPS-002 sandbox policy\nBootstrap turn: perform only the requested read-only Git checks and do not edit repository files.\nLater Director-authorized turn: only tools/antigravity/fixtures/sw-ops-002-smoke.txt may be edited when the Director prompt explicitly requests it.\nNever edit any other repository path. Never alter .git configuration/history. Never commit, push, open a PR, merge, publish, release, deploy, or request/use GitHub credentials.\nThe host independently derives and validates every patch before any GitHub write is considered.\n`,
         },
       ],
       network: { allowlist: [{ domain: 'github.com' }] },
