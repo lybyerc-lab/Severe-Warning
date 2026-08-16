@@ -8,9 +8,11 @@ import process from 'node:process';
 
 const root = process.cwd();
 const workerPath = path.join(root, 'tools', 'antigravity', 'sw-antigravity-sandbox-worker.mjs');
+const bootstrapHelperPath = path.join(root, 'tools', 'antigravity', 'sw-antigravity-exact-base-bootstrap.mjs');
 const legacyWorkerPath = path.join(root, 'tools', 'antigravity', 'sw-antigravity-worker.mjs');
 const taskPath = path.join(root, 'tools', 'antigravity', 'tasks', 'sw-ops-002-smoke.json');
 const bootstrapPath = path.join(root, 'tools', 'antigravity', 'tasks', 'sw-ops-002-bootstrap.json');
+const expectedBaseRef = 'agent/sw-ops-001-antigravity-bridge';
 const expectedBase = '10ccd2723b8fa6b925f47629491a9e51e6388500';
 const expectedFixture = 'tools/antigravity/fixtures/sw-ops-002-smoke.txt';
 const errors = [];
@@ -34,6 +36,7 @@ async function walk(dir) {
 }
 
 const worker = await readFile(workerPath, 'utf8');
+const bootstrapHelper = await readFile(bootstrapHelperPath, 'utf8');
 const legacyWorker = await readFile(legacyWorkerPath, 'utf8').catch(() => null);
 const taskText = await readFile(taskPath, 'utf8');
 const bootstrapText = await readFile(bootstrapPath, 'utf8');
@@ -56,6 +59,7 @@ rejectText(taskText, 'Create result.json', 'smoke task');
 
 if (bootstrap.version !== 'SW_ANTIGRAVITY_WORKER_TASK_V1') errors.push('bootstrap task version mismatch');
 if (bootstrap.taskId !== 'SW-OPS-002-SMOKE') errors.push('bootstrap task ID mismatch');
+if (bootstrap.exactBaseRef !== expectedBaseRef) errors.push('bootstrap exact base ref mismatch');
 if (bootstrap.exactBaseSha !== expectedBase) errors.push('bootstrap exact base SHA mismatch');
 if (bootstrap.repositoryUrl !== 'https://github.com/lybyerc-lab/Severe-Warning') errors.push('bootstrap repository URL mismatch');
 if (JSON.stringify(bootstrap.allowedPaths) !== JSON.stringify([expectedFixture])) errors.push('bootstrap allowed path widened');
@@ -63,8 +67,26 @@ if (bootstrap.tokenBudget > 4000) errors.push('bootstrap token budget widened ab
 if (bootstrap.maxPatchBytes > 10000) errors.push('bootstrap patch limit widened above 10000 bytes');
 if (bootstrap.requirePatch !== false) errors.push('bootstrap must not require a patch');
 requireText(bootstrap.goal, 'Bootstrap only. Do not edit any repository file.', 'bootstrap goal');
+requireText(bootstrap.goal, expectedBaseRef, 'bootstrap goal');
 requireText(bootstrap.goal, expectedBase, 'bootstrap goal');
-requireText(bootstrap.goal, 'git status --short is empty', 'bootstrap goal');
+requireText(bootstrap.goal, 'infrastructure hook', 'bootstrap goal');
+
+requireText(bootstrapHelper, 'SW:OPS:ANTIGRAVITY_EXACT_BASE_BOOTSTRAP_V1', 'bootstrap helper');
+requireText(bootstrapHelper, "pre_tool_execution", 'bootstrap helper');
+requireText(bootstrapHelper, "matcher: '.*'", 'bootstrap helper');
+requireText(bootstrapHelper, "command: 'python3 /.agents/hooks-scripts/exact_base_gate.py'", 'bootstrap helper');
+requireText(bootstrapHelper, "git(\"fetch\", \"--no-tags\", \"--depth=1\", \"origin\", EXPECTED_REF)", 'bootstrap helper');
+requireText(bootstrapHelper, 'if fetched != EXPECTED_SHA', 'bootstrap helper');
+requireText(bootstrapHelper, 'respond("deny", "Exact-base airlock failed closed before tool execution.")', 'bootstrap helper');
+requireText(bootstrapHelper, "tools: [{ type: 'code_execution' }]", 'bootstrap helper');
+requireText(bootstrapHelper, "network: { allowlist: [{ domain: 'github.com' }] }", 'bootstrap helper');
+requireText(bootstrapHelper, "patchBytes: 0", 'bootstrap helper');
+requireText(bootstrapHelper, "patchPaths: []", 'bootstrap helper');
+requireText(bootstrapHelper, "returnChannel: 'host-verified-hooked-snapshot'", 'bootstrap helper');
+requireText(bootstrapHelper, "quarantineStatus: 'exact-base-ready-no-patch'", 'bootstrap helper');
+rejectText(bootstrapHelper, 'Authorization:', 'bootstrap helper');
+rejectText(bootstrapHelper, 'github_pat_', 'bootstrap helper');
+rejectText(bootstrapHelper, 'ghp_', 'bootstrap helper');
 
 requireText(worker, 'SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER_V5', 'worker');
 requireText(worker, "target: REPO_TARGET", 'worker');
@@ -95,6 +117,7 @@ rejectText(worker, 'worker.patch and result.json', 'worker');
 
 for (const forbidden of ['ghp_', 'github_pat_', 'x-oauth-basic:', 'Authorization: Bearer', 'Authorization: Basic']) {
   rejectText(worker, forbidden, 'worker');
+  rejectText(bootstrapHelper, forbidden, 'bootstrap helper');
   rejectText(taskText, forbidden, 'smoke task');
   rejectText(bootstrapText, forbidden, 'bootstrap task');
 }
@@ -103,8 +126,8 @@ for (const relativeRoot of ['runtime', 'modern', 'MechanicsLab', 'android']) {
   for (const file of await walk(path.join(root, relativeRoot))) {
     if (!/\.(?:js|mjs|cjs|ts|tsx|html|json|java|kt|gradle)$/i.test(file)) continue;
     const text = await readFile(file, 'utf8').catch(() => '');
-    if (text.includes('sw-antigravity-sandbox-worker') || text.includes('SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER')) {
-      errors.push(`runtime imports/references Antigravity worker: ${path.relative(root, file)}`);
+    if (text.includes('sw-antigravity-sandbox-worker') || text.includes('SW_OPS_002_ANTIGRAVITY_SANDBOX_WORKER') || text.includes('sw-antigravity-exact-base-bootstrap')) {
+      errors.push(`runtime imports/references Antigravity tooling: ${path.relative(root, file)}`);
     }
   }
 }
@@ -116,9 +139,11 @@ if (errors.length) {
 }
 
 console.log('SW-OPS-002 verifier PASS');
-console.log(`- exact base: ${expectedBase}`);
+console.log(`- exact base ref: ${expectedBaseRef}`);
+console.log(`- exact base SHA: ${expectedBase}`);
 console.log(`- allowed smoke path: ${expectedFixture}`);
-console.log('- bootstrap: checkout-only, 4000 tokens max, clean-tree proof required before edit turn');
+console.log('- bootstrap: pre-tool exact-base airlock, 4000 tokens max, clean-tree host proof before edit turn');
+console.log('- hook errors are converted to deny decisions instead of crashing open');
 console.log('- return: host derives patch from complete sandbox filesystem snapshot');
 console.log('- snapshot repo HEAD must equal exact task base');
 console.log('- untracked files are included by host intent-to-add before diff');
