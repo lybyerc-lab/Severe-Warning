@@ -1,83 +1,69 @@
-name: SW-ART-009 Cow 17 Asset Intake
+name: SW-ART-009 Cow 17 Loader Intake
 
 on:
   push:
     branches:
       - agent/sw-art-009-cow17-runtime-integration
     paths:
-      - tools/art/live-requests/cow17-runtime-intake-v1.json
+      - tools/art/live-requests/cow17-loader-intake-v1.json
 
 permissions:
   contents: write
-  actions: read
 
 concurrency:
-  group: sw-art-009-cow17-asset-intake
+  group: sw-art-009-cow17-loader-intake
   cancel-in-progress: false
 
 jobs:
   intake:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - name: Checkout exact task source
+      - name: Checkout exact Cow 17 task branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Prove exact task ancestry and one-shot launch
+      - name: Prove exact one-shot request
         shell: bash
         run: |
           set -euo pipefail
           base='de2e62835e79567b4bbfc079a372ce2af4ee0879'
+          request='tools/art/live-requests/cow17-loader-intake-v1.json'
           test "$(git merge-base "$base" HEAD)" = "$base"
-          test "${GITHUB_RUN_ATTEMPT}" = '1' || { echo 'Asset intake reruns are forbidden.' >&2; exit 1; }
-          request='tools/art/live-requests/cow17-runtime-intake-v1.json'
+          test "${GITHUB_RUN_ATTEMPT}" = '1' || { echo 'Loader intake reruns are forbidden.' >&2; exit 1; }
           test -s "$request"
           changed="$(git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA" -- "$request")"
-          test "$changed" = "$request" || { echo 'Launch commit must add exactly the reviewed Cow 17 intake request.' >&2; exit 1; }
+          test "$changed" = "$request" || { echo 'Launch commit must change exactly the reviewed loader intake request.' >&2; exit 1; }
 
-      - name: Download exact SW-ART-008 rigging artifact
-        uses: actions/download-artifact@v4
-        with:
-          artifact-ids: 9253571210
-          path: sw-art-009-source
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: 31910662893
-          merge-multiple: true
-
-      - name: Verify and stage exact walking Cow 17 GLB
+      - name: Vendor exact official Three.js r128 GLTFLoader
         shell: bash
         run: |
           set -euo pipefail
-          source='sw-art-009-source/art-source/generated/meshy/cow17-rigged-v1/cow17-walking-v1.glb'
-          expected='d5bb4e47a12fde652808a53fdcb3dfddf71b944f2efb6641bf18ce8ac5c82a93'
-          test -s "$source"
-          actual="$(sha256sum "$source" | awk '{print $1}')"
-          test "$actual" = "$expected" || { echo "Cow 17 GLB SHA mismatch: $actual" >&2; exit 1; }
-          bytes="$(stat -c '%s' "$source")"
-          test "$bytes" -le 15000000 || { echo "Cow 17 walking GLB exceeds 15 MB guard: $bytes" >&2; exit 1; }
-          mkdir -p assets/production/characters
-          cp "$source" assets/production/characters/cow17-walking-v1.glb
-          printf 'sha256=%s\nbytes=%s\nsource_run=%s\nsource_artifact=%s\n' "$actual" "$bytes" '31910662893' '9253571210' | tee sw-art-009-cow17-intake-receipt.txt
+          upstream='d4aa9e00ea29808534a3e082f602c544e5f2419c'
+          mkdir -p runtime/vendor /tmp/sw-art-009-loader
+          curl --fail --location --retry 3 --retry-delay 1 \
+            "https://raw.githubusercontent.com/mrdoob/three.js/${upstream}/examples/js/loaders/GLTFLoader.js" \
+            --output /tmp/sw-art-009-loader/GLTFLoader-r128.js
+          curl --fail --location --retry 3 --retry-delay 1 \
+            "https://raw.githubusercontent.com/mrdoob/three.js/${upstream}/LICENSE" \
+            --output /tmp/sw-art-009-loader/THREE-LICENSE.txt
+          test "$(git hash-object /tmp/sw-art-009-loader/GLTFLoader-r128.js)" = 'cfa518ede1b0893f1da14347d78fcd19355f3686'
+          test "$(git hash-object /tmp/sw-art-009-loader/THREE-LICENSE.txt)" = '5303437e406ed22d8cb0b4c12398870792a25878'
+          grep -F 'THREE.GLTFLoader = GLTFLoader;' /tmp/sw-art-009-loader/GLTFLoader-r128.js
+          cp /tmp/sw-art-009-loader/GLTFLoader-r128.js runtime/vendor/GLTFLoader-r128.js
+          cp /tmp/sw-art-009-loader/THREE-LICENSE.txt runtime/vendor/THREE-LICENSE.txt
 
-      - name: Commit only the exact production GLB
+      - name: Commit only official loader and license
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/production/characters/cow17-walking-v1.glb
-          staged="$(git diff --cached --name-only)"
-          test "$staged" = 'assets/production/characters/cow17-walking-v1.glb' || { echo "Unexpected staged files: $staged" >&2; exit 1; }
-          git commit -m 'Add accepted Cow 17 walking production asset'
+          git add runtime/vendor/GLTFLoader-r128.js runtime/vendor/THREE-LICENSE.txt
+          mapfile -t staged < <(git diff --cached --name-only)
+          test "${#staged[@]}" -eq 2
+          test "${staged[0]}" = 'runtime/vendor/GLTFLoader-r128.js'
+          test "${staged[1]}" = 'runtime/vendor/THREE-LICENSE.txt'
+          git commit -m 'Vendor official Three.js r128 GLTFLoader for Cow 17'
           git push origin HEAD:agent/sw-art-009-cow17-runtime-integration
-
-      - name: Upload intake receipt
-        uses: actions/upload-artifact@v4
-        with:
-          name: sw-art-009-cow17-intake-receipt
-          retention-days: 30
-          if-no-files-found: error
-          path: sw-art-009-cow17-intake-receipt.txt
