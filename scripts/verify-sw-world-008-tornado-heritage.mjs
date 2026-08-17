@@ -11,19 +11,22 @@ const check = (name, pass, detail = '') => checks.push({ name, pass: Boolean(pas
 
 check('marker', runtime.includes('SW_WORLD_008_TORNADO_HERITAGE_V1'));
 check('visual-target-recorded', runtime.includes("SW_WORLD_008_VISUAL_TARGET = 'tornado-visual-dev-reference-v1'"));
-check('irregular-ring-budget', runtime.includes('SW_WORLD_008_RING_LEVELS = 27') && runtime.includes('SW_WORLD_008_RING_SEGMENTS = 40'));
+check('irregular-ring-budget', runtime.includes('SW_WORLD_008_RING_LEVELS = 35') && runtime.includes('SW_WORLD_008_RING_SEGMENTS = 56'));
 check('irregular-buffer-geometry', runtime.includes('swWorld008CreateRingGeometry') && runtime.includes("geometry.setAttribute('position'") && runtime.includes('geometry.setIndex(indices)'));
-check('nonlinear-width-profile', runtime.includes('swWorld008ProfileRadius') && runtime.includes('lowerBulge') && runtime.includes('midPinch') && runtime.includes('upperShoulder') && runtime.includes('verticalBreath'));
-check('asymmetric-centerline', runtime.includes('swWorld008Centerline') && runtime.includes('middle * 2.25') && runtime.includes('middle * 1.95'));
-check('ring-asymmetry', runtime.includes('const asymmetry = 1') && runtime.includes('angle * 3.0') && runtime.includes('angle * 5.0') && runtime.includes('yRipple'));
-check('patchy-alpha-maps', runtime.includes('swWorld008CreateCondensationAlphaTexture') && runtime.includes('alphaMap: swWorld008CondensationAlpha') && runtime.includes('alphaMap: swWorld008SheathAlpha') && runtime.includes('alphaTest: 0.075'));
-check('core-material-bounded', runtime.includes("color: '#34474e'") && runtime.includes('opacity: 0.78') && runtime.includes('roughness: 0.94') && runtime.includes('depthWrite: true'));
-check('sheath-subordinate', runtime.includes("color: '#86969a'") && runtime.includes('opacity: 0.16') && runtime.includes('swWorld008CondensationSheath.scale.set(1.10, 1.015, 1.10)'));
+check('nonlinear-width-profile', runtime.includes('swWorld008ProfileRadius') && runtime.includes('lowerBulge') && runtime.includes('midPinch') && runtime.includes('upperShoulder') && runtime.includes('upperTuck') && runtime.includes('verticalBreath'));
+check('asymmetric-centerline', runtime.includes('swWorld008Centerline') && runtime.includes('middle * 2.15') && runtime.includes('middle * 1.85'));
+check('ring-to-ring-breakup', runtime.includes('swWorld008RingBreakup') && runtime.includes('const coherentBreakup =') && runtime.includes('lowerPocket') && runtime.includes('midPocket') && runtime.includes('upperBurst'));
+check('ring-asymmetry', runtime.includes('const asymmetry = 1') && runtime.includes('angle * 3.0') && runtime.includes('* 0.18') && runtime.includes('localLobe') && runtime.includes('yRipple'));
+check('patchy-alpha-maps', runtime.includes('swWorld008CreateCondensationAlphaTexture') && runtime.includes('alphaMap: swWorld008CondensationAlpha') && runtime.includes('alphaMap: swWorld008SheathAlpha') && runtime.includes('alphaTest: 0.055'));
+check('core-material-dense-matte', runtime.includes("color: '#626d70'") && runtime.includes('transparent: false') && runtime.includes('opacity: 1.0') && runtime.includes('roughness: 1.0') && runtime.includes('depthWrite: true'));
+check('condensation-pockets-colored', runtime.includes("geometry.setAttribute('color'") && runtime.includes('vertexColors: true') && runtime.includes('const pocket =') && runtime.includes('colors.setXYZ'));
+check('condensation-surface-breakup', runtime.includes('bumpMap: swWorld008CondensationAlpha') && runtime.includes('bumpScale: 1.25'));
+check('sheath-subordinate', runtime.includes("color: '#86969a'") && runtime.includes('opacity: 0.07') && runtime.includes('swWorld008CondensationSheath.scale.set(1.10, 1.015, 1.10)'));
 check('legacy-visible-surfaces-suppressed', runtime.includes('funnelMesh.visible = false') && runtime.includes('outerFunnelMesh.visible = false') && runtime.includes('mesoCloudGroup.visible = false') && runtime.includes('dustBowlGroup.visible = false'));
-check('historical-debris-demoted', runtime.includes('particleSystem.visible = true') && runtime.includes('particleMat.map = swWorld008DustMistTexture') && runtime.includes('particleMat, 0.30'));
-check('soft-atmosphere-bounded', runtime.includes("mobile ? 90 : 130") && runtime.includes("mobile ? 42 : 62") && runtime.includes("mobile ? 46 : 68") && runtime.includes("mobile ? 56 : 82"));
-check('soft-ground-contact', runtime.includes('swWorld008UpdateGroundDust'));
-check('compact-parent-cloud', runtime.includes('swWorld008UpdateCanopy') && runtime.includes('4.5 + seed.a * 11.5'));
+check('historical-debris-demoted', runtime.includes('particleSystem.visible = false') && runtime.includes('particleMat.map = swWorld008DustMistTexture') && runtime.includes('particleMat, 0.10'));
+check('soft-atmosphere-bounded', runtime.includes("mobile ? 90 : 130") && runtime.includes("mobile ? 42 : 62") && runtime.includes("mobile ? 54 : 76") && runtime.includes("mobile ? 132 : 168"));
+check('churning-ground-contact', runtime.includes('swWorld008UpdateGroundDust') && runtime.includes('const lane = i % 3') && runtime.includes('direction = lane === 1 ? -1 : 1'));
+check('compact-parent-cloud', runtime.includes('swWorld008UpdateCanopy') && runtime.includes('2.4 + seed.a * 7.6'));
 check('slice6-visible-geometry-suppressed', runtime.includes("SWVisualSlice6StormShell") && runtime.includes("SWVisualSlice6CondensationStreak") && runtime.includes("SWVisualSlice6EdgeWisp") && runtime.includes("SWVisualSlice6GroundPull") && runtime.includes('object.visible = false'));
 check('secondary-exclusivity-preserved', runtime.includes('swWorld008SuppressForSecondary') && runtime.includes("activeStorm === 'tornado'") && runtime.includes('swWorld008PresentationRoot.visible = false'));
 check('neon-remains-cosmetic', runtime.includes("neon ? '#256a75'") && runtime.includes("neon ? '#7ce2ee'"));
@@ -58,8 +61,8 @@ const report = {
     protectedMutations,
     pointBudgets,
     oversizedPointBudgets,
-    expectedCondensationVertices: 1080,
-    expectedCondensationTriangles: 2080,
+    expectedCondensationVertices: 1960,
+    expectedCondensationTriangles: 3808,
     historicalReference: [
       '667888bb3e15d912c71873951e58d456597219e9',
       '326e60895c2f861e02532021b32fd63181cd8fb3'

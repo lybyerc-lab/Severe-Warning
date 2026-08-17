@@ -87,11 +87,13 @@ try {
   check('referenceTargetRecorded', tornado.heritage?.visualTarget === 'tornado-visual-dev-reference-v1', String(tornado.heritage?.visualTarget || ''));
   check('condensationAdvanced', (tornado.heritage?.condensationFrames || 0) > 0, String(tornado.heritage?.condensationFrames || 0));
   check('legacyVisibleSurfacesSuppressed', legacy.funnelVisible === false && legacy.outerVisible === false && legacy.dustVisible === false && legacy.canopyVisible === false, JSON.stringify(legacy));
-  check('historicalDebrisSubordinate', legacy.debrisVisible === true && legacy.debrisOpacity >= 0.26 && legacy.debrisOpacity <= 0.34, JSON.stringify(legacy));
+  check('historicalDebrisSubordinate', legacy.debrisVisible === false && legacy.debrisOpacity <= 0.12, JSON.stringify(legacy));
   check('irregularCondensationVisible', condensation.rootVisible === true && condensation.coreVisible === true && condensation.sheathVisible === true, JSON.stringify(condensation));
-  check('irregularCondensationBudget', condensation.vertexCount === 1080 && condensation.triangleCount === 2080, JSON.stringify(condensation));
-  check('condensationMaterialsBounded', condensation.coreOpacity >= 0.74 && condensation.coreOpacity <= 0.82 && condensation.sheathOpacity >= 0.12 && condensation.sheathOpacity <= 0.20 && condensation.alphaTest >= 0.07, JSON.stringify(condensation));
-  check('softAtmosphereBounded', atmosphere.drawFields === 4 && atmosphere.finePoints >= 85 && atmosphere.finePoints <= 135 && atmosphere.broadPoints >= 40 && atmosphere.broadPoints <= 65 && atmosphere.canopyPoints >= 44 && atmosphere.canopyPoints <= 70 && atmosphere.dustPoints >= 54 && atmosphere.dustPoints <= 85, JSON.stringify(atmosphere));
+  check('irregularCondensationBudget', condensation.vertexCount === 1960 && condensation.triangleCount === 3808, JSON.stringify(condensation));
+  check('condensationMaterialsDenseAndBroken', condensation.coreOpacity === 1 && condensation.sheathOpacity >= 0.05 && condensation.sheathOpacity <= 0.09 && condensation.alphaTest >= 0.05, JSON.stringify(condensation));
+  check('nonlinearSilhouetteTelemetry', condensation.ringBreakupRange?.[0] <= 0.72 && condensation.ringBreakupRange?.[1] >= 1.28 && condensation.centerlineOffsetScale >= 2.1, JSON.stringify(condensation));
+  check('softAtmosphereBounded', atmosphere.drawFields === 4 && atmosphere.finePoints >= 85 && atmosphere.finePoints <= 135 && atmosphere.broadPoints >= 40 && atmosphere.broadPoints <= 65 && atmosphere.canopyPoints >= 52 && atmosphere.canopyPoints <= 80 && atmosphere.dustPoints >= 128 && atmosphere.dustPoints <= 175, JSON.stringify(atmosphere));
+  check('churningTouchdownTelemetry', atmosphere.dustMotionLanes === 3 && atmosphere.canopyRadiusMax <= 10.0, JSON.stringify(atmosphere));
   check('slice6VisibleGeometryRemoved', ribbon.streaks >= 8 && ribbon.visibleStreaks === 0 && ribbon.visibleWisps === 0 && ribbon.visibleGroundPulls === 0, JSON.stringify(ribbon));
   check('tornadoPresentationRootsVisible', tornado.slice6Visible === true && tornado.tornadoGroupVisible === true, JSON.stringify(tornado));
   await page.screenshot({ path: path.join(artifactDir, '01_tornado_irregular_844x390.png'), fullPage: false });
@@ -108,7 +110,7 @@ try {
   const derecho = await select(page, 'derecho');
   check('derechoStillExclusive', derecho.active === 'derecho' && derecho.tornadoGroupVisible === false && derecho.slice6Visible === false && derecho.heritage?.condensation?.rootVisible === false, JSON.stringify(derecho));
   const tornadoReturn = await select(page, 'tornado');
-  check('tornadoRestoresAfterSecondary', tornadoReturn.tornadoGroupVisible === true && tornadoReturn.heritage?.legacy?.debrisVisible === true && tornadoReturn.heritage?.condensation?.rootVisible === true, JSON.stringify(tornadoReturn));
+  check('tornadoRestoresAfterSecondary', tornadoReturn.tornadoGroupVisible === true && tornadoReturn.heritage?.legacy?.debrisVisible === false && tornadoReturn.heritage?.condensation?.rootVisible === true, JSON.stringify(tornadoReturn));
 
   check('noRuntimeErrors', errors.length === 0, errors.join(' | '));
   await context.close();

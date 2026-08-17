@@ -21,8 +21,8 @@ const swWorld008TornadoHeritageState = {
   lastError: null,
 };
 
-const SW_WORLD_008_RING_LEVELS = 27;
-const SW_WORLD_008_RING_SEGMENTS = 40;
+const SW_WORLD_008_RING_LEVELS = 35;
+const SW_WORLD_008_RING_SEGMENTS = 56;
 
 let swWorld008PresentationRoot = null;
 let swWorld008CondensationMesh = null;
@@ -72,22 +72,34 @@ function swWorld008Centerline(y, now) {
   const middle = Math.sin(Math.PI * factor);
   const t = now * 0.001;
   return {
-    x: Math.sin(t * 0.82 + y * 0.122) * (0.8 + factor * 3.8)
-      + Math.sin(t * 0.47 - y * 0.255) * middle * 2.25,
-    z: Math.cos(t * 0.69 + y * 0.106) * (0.65 + factor * 3.15)
-      + Math.sin(t * 0.41 + y * 0.218) * middle * 1.95,
+    x: Math.sin(t * 0.82 + y * 0.122) * (0.65 + factor * 3.45)
+      + Math.sin(t * 0.47 - y * 0.255) * middle * 2.15,
+    z: Math.cos(t * 0.69 + y * 0.106) * (0.55 + factor * 2.95)
+      + Math.sin(t * 0.41 + y * 0.218) * middle * 1.85,
   };
 }
 
 function swWorld008ProfileRadius(factor, now) {
   const t = now * 0.001;
-  const base = 1.25 + Math.pow(factor, 1.32) * 10.2;
-  const lowerBulge = swWorld008Gaussian(factor, 0.23, 0.15) * 1.05;
-  const midPinch = swWorld008Gaussian(factor, 0.49, 0.14) * 1.15;
-  const upperShoulder = swWorld008Gaussian(factor, 0.79, 0.18) * 2.25;
+  const base = 1.75 + Math.pow(factor, 1.12) * 7.55;
+  const lowerBulge = swWorld008Gaussian(factor, 0.20, 0.12) * 1.65;
+  const midPinch = swWorld008Gaussian(factor, 0.47, 0.10) * 2.05;
+  const upperShoulder = swWorld008Gaussian(factor, 0.74, 0.18) * 1.70;
+  const upperTuck = swWorld008Gaussian(factor, 1.0, 0.105) * 2.35;
   const verticalBreath = Math.sin(factor * 15.0 - t * 0.92) * (0.22 + factor * 0.58)
     + Math.sin(factor * 29.0 + t * 0.57) * 0.24;
-  return Math.max(1.05, base + lowerBulge - midPinch + upperShoulder + verticalBreath);
+  return Math.max(1.05, base + lowerBulge - midPinch + upperShoulder - upperTuck + verticalBreath);
+}
+
+function swWorld008RingBreakup(level, factor, now) {
+  const t = now * 0.001;
+  const coherentBreakup = Math.sin(level * 0.72 + 0.4) * 0.105
+    + Math.sin(level * 1.67 - 1.1) * 0.045;
+  const lowerPocket = swWorld008Gaussian(factor, 0.16, 0.075) * -0.12;
+  const midPocket = swWorld008Gaussian(factor, 0.48, 0.085) * -0.16;
+  const upperBurst = swWorld008Gaussian(factor, 0.73, 0.11) * 0.13;
+  const breathing = Math.sin(level * 0.43 - t * 0.46) * 0.045;
+  return 1 + coherentBreakup + lowerPocket + midPocket + upperBurst + breathing;
 }
 
 function swWorld008CreateCondensationAlphaTexture(seedSalt = 0) {
@@ -97,23 +109,23 @@ function swWorld008CreateCondensationAlphaTexture(seedSalt = 0) {
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  ctx.fillStyle = 'rgb(174,174,174)';
+  ctx.fillStyle = 'rgb(196,196,196)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  for (let i = 0; i < 46; i += 1) {
+  for (let i = 0; i < 54; i += 1) {
     const x = swWorld008Hash(i, seedSalt + 1) * canvas.width;
     const y = swWorld008Hash(i, seedSalt + 2) * canvas.height;
-    const radius = 10 + swWorld008Hash(i, seedSalt + 3) * 32;
-    const dark = 20 + Math.floor(swWorld008Hash(i, seedSalt + 4) * 55);
+    const radius = 13 + swWorld008Hash(i, seedSalt + 3) * 39;
+    const dark = 4 + Math.floor(swWorld008Hash(i, seedSalt + 4) * 34);
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
     gradient.addColorStop(0, `rgb(${dark},${dark},${dark})`);
-    gradient.addColorStop(0.48, `rgba(${dark},${dark},${dark},0.72)`);
+    gradient.addColorStop(0.55, `rgba(${dark},${dark},${dark},0.88)`);
     gradient.addColorStop(1, `rgba(${dark},${dark},${dark},0)`);
     ctx.fillStyle = gradient;
     ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
   }
 
-  for (let i = 0; i < 58; i += 1) {
+  for (let i = 0; i < 42; i += 1) {
     const x = swWorld008Hash(i, seedSalt + 21) * canvas.width;
     const y = swWorld008Hash(i, seedSalt + 22) * canvas.height;
     const radius = 8 + swWorld008Hash(i, seedSalt + 23) * 25;
@@ -129,7 +141,7 @@ function swWorld008CreateCondensationAlphaTexture(seedSalt = 0) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1.25, 1.1);
+  texture.repeat.set(1.7, 1.25);
   texture.needsUpdate = true;
   return texture;
 }
@@ -143,7 +155,7 @@ function swWorld008CreateMistTexture(kind = 'storm') {
   if (!ctx) return null;
   ctx.clearRect(0, 0, 64, 64);
   const lobes = kind === 'dust'
-    ? [[32, 35, 25, 0.82], [22, 34, 17, 0.56], [44, 37, 16, 0.46], [35, 27, 13, 0.34]]
+    ? [[31, 37, 24, 0.68], [18, 38, 19, 0.48], [47, 35, 18, 0.42], [38, 29, 12, 0.28]]
     : [[31, 32, 25, 0.76], [21, 31, 17, 0.50], [43, 29, 18, 0.46], [36, 42, 15, 0.38], [29, 21, 13, 0.32]];
   for (const [x, y, radius, alpha] of lobes) {
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
@@ -162,6 +174,7 @@ function swWorld008CreateRingGeometry() {
   const vertexCount = SW_WORLD_008_RING_LEVELS * SW_WORLD_008_RING_SEGMENTS;
   const positions = new Float32Array(vertexCount * 3);
   const uvs = new Float32Array(vertexCount * 2);
+  const colors = new Float32Array(vertexCount * 3);
   const indices = [];
 
   for (let level = 0; level < SW_WORLD_008_RING_LEVELS; level += 1) {
@@ -170,6 +183,9 @@ function swWorld008CreateRingGeometry() {
       const index = level * SW_WORLD_008_RING_SEGMENTS + segment;
       uvs[index * 2] = segment / SW_WORLD_008_RING_SEGMENTS;
       uvs[index * 2 + 1] = v;
+      colors[index * 3] = 0.7;
+      colors[index * 3 + 1] = 0.74;
+      colors[index * 3 + 2] = 0.75;
     }
   }
 
@@ -187,6 +203,7 @@ function swWorld008CreateRingGeometry() {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
@@ -235,13 +252,16 @@ function swWorld008EnsurePresentation() {
 
   const condensationGeometry = swWorld008CreateRingGeometry();
   swWorld008CondensationMaterial = new THREE.MeshStandardMaterial({
-    color: '#34474e',
-    roughness: 0.94,
+    color: '#626d70',
+    roughness: 1.0,
     metalness: 0.0,
-    transparent: true,
-    opacity: 0.78,
+    transparent: false,
+    opacity: 1.0,
     alphaMap: swWorld008CondensationAlpha,
-    alphaTest: 0.075,
+    alphaTest: 0.055,
+    bumpMap: swWorld008CondensationAlpha,
+    bumpScale: 1.25,
+    vertexColors: true,
     depthWrite: true,
     side: THREE.FrontSide,
   });
@@ -254,9 +274,9 @@ function swWorld008EnsurePresentation() {
     roughness: 1.0,
     metalness: 0.0,
     transparent: true,
-    opacity: 0.16,
+    opacity: 0.07,
     alphaMap: swWorld008SheathAlpha,
-    alphaTest: 0.04,
+    alphaTest: 0.025,
     depthWrite: false,
     side: THREE.FrontSide,
   });
@@ -267,16 +287,16 @@ function swWorld008EnsurePresentation() {
 
   const mobile = typeof isMobileDevice !== 'undefined' && isMobileDevice;
   swWorld008MistFine = swWorld008CreatePointField(
-    'SWWorld008MistFine', mobile ? 90 : 130, mobile ? 4.8 : 5.8, 0.14, '#96a5a9', swWorld008StormMistTexture, 11,
+    'SWWorld008MistFine', mobile ? 90 : 130, mobile ? 3.8 : 4.6, 0.10, '#657277', swWorld008StormMistTexture, 11,
   );
   swWorld008MistBroad = swWorld008CreatePointField(
-    'SWWorld008MistBroad', mobile ? 42 : 62, mobile ? 7.4 : 8.8, 0.075, '#b4bec0', swWorld008StormMistTexture, 23,
+    'SWWorld008MistBroad', mobile ? 42 : 62, mobile ? 5.8 : 6.8, 0.045, '#778286', swWorld008StormMistTexture, 23,
   );
   swWorld008CanopyMist = swWorld008CreatePointField(
-    'SWWorld008CanopyMist', mobile ? 46 : 68, mobile ? 8.4 : 10.0, 0.105, '#5b6a70', swWorld008StormMistTexture, 37,
+    'SWWorld008CanopyMist', mobile ? 54 : 76, mobile ? 3.6 : 4.4, 0.075, '#374247', swWorld008StormMistTexture, 37,
   );
   swWorld008GroundDust = swWorld008CreatePointField(
-    'SWWorld008GroundDust', mobile ? 56 : 82, mobile ? 6.6 : 7.8, 0.25, '#8b7154', swWorld008DustMistTexture, 51,
+    'SWWorld008GroundDust', mobile ? 132 : 168, mobile ? 1.75 : 2.15, 0.14, '#654b34', swWorld008DustMistTexture, 51,
   );
 
   swWorld008PresentationRoot.add(
@@ -293,6 +313,7 @@ function swWorld008EnsurePresentation() {
 function swWorld008UpdateCondensation(now) {
   if (!swWorld008CondensationMesh) return;
   const positions = swWorld008CondensationMesh.geometry?.attributes?.position;
+  const colors = swWorld008CondensationMesh.geometry?.attributes?.color;
   if (!positions) return;
   const t = now * 0.001;
 
@@ -300,7 +321,7 @@ function swWorld008UpdateCondensation(now) {
     const factor = level / (SW_WORLD_008_RING_LEVELS - 1);
     const yBase = factor * 34.0;
     const center = swWorld008Centerline(yBase, now);
-    const profile = swWorld008ProfileRadius(factor, now);
+    const profile = swWorld008ProfileRadius(factor, now) * swWorld008RingBreakup(level, factor, now);
     const middle = Math.sin(Math.PI * factor);
     const ringTwist = t * (0.32 + factor * 0.42) + factor * 1.55;
 
@@ -309,10 +330,10 @@ function swWorld008UpdateCondensation(now) {
       const angleBase = (segment / SW_WORLD_008_RING_SEGMENTS) * Math.PI * 2;
       const angle = angleBase + ringTwist;
       const asymmetry = 1
-        + Math.sin(angle * 3.0 + factor * 7.0 + t * 0.88) * 0.105
-        + Math.sin(angle * 5.0 - factor * 11.0 - t * 0.57) * 0.055
-        + Math.sin(angle * 2.0 + factor * 18.0 + t * 0.36) * 0.035;
-      const localLobe = Math.sin(angle - factor * 5.2 + t * 0.29) * middle * 0.52;
+        + Math.sin(angle * 3.0 + factor * 7.0 + t * 0.88) * 0.18
+        + Math.sin(angle * 5.0 - factor * 11.0 - t * 0.57) * 0.10
+        + Math.sin(angle * 2.0 + factor * 18.0 + t * 0.36) * 0.065;
+      const localLobe = Math.sin(angle - factor * 5.2 + t * 0.29) * middle * 1.10;
       const radius = Math.max(0.95, profile * asymmetry + localLobe);
       const yRipple = Math.sin(angle * 2.0 + factor * 21.0 - t * 1.15) * middle * 0.27;
       positions.setXYZ(
@@ -321,10 +342,18 @@ function swWorld008UpdateCondensation(now) {
         yBase + yRipple,
         center.z + Math.sin(angle) * radius,
       );
+      if (colors) {
+        const pocket = Math.sin(angle * 2.0 - factor * 17.0 + t * 0.35) * 0.24
+          + Math.sin(angle * 5.0 + factor * 9.0 - t * 0.51) * 0.15
+          + (swWorld008Hash(level * SW_WORLD_008_RING_SEGMENTS + segment, 201) - 0.5) * 0.18;
+        const shade = swWorld008Clamp(0.58 + pocket - swWorld008Gaussian(factor, 0.49, 0.09) * 0.14, 0.18, 0.94);
+        colors.setXYZ(index, shade * 0.84, shade * 0.91, shade * 0.93);
+      }
     }
   }
 
   positions.needsUpdate = true;
+  if (colors) colors.needsUpdate = true;
   swWorld008CondensationMesh.geometry.computeVertexNormals();
   swWorld008CondensationMesh.geometry.computeBoundingSphere();
 
@@ -374,15 +403,15 @@ function swWorld008UpdateCanopy(now) {
   const center = swWorld008Centerline(33.0, now);
   for (let i = 0; i < positions.count; i += 1) {
     const seed = seeds[i];
-    const radius = 4.5 + seed.a * 11.5;
+    const radius = 2.4 + seed.a * 7.6;
     const angle = seed.b * Math.PI * 2 + t * (0.05 + seed.c * 0.07);
-    const lobe = Math.sin(angle * 3.0 + seed.d * 5.0) * 1.4;
-    const y = 29.0 + seed.c * 8.2 + lobe - radius * 0.08;
+    const lobe = Math.sin(angle * 3.0 + seed.d * 5.0) * 1.7;
+    const y = 30.5 + seed.c * 5.8 + lobe - radius * 0.06;
     positions.setXYZ(
       i,
-      center.x + Math.cos(angle) * radius * (0.88 + seed.d * 0.35),
+      center.x + Math.cos(angle) * radius * (0.82 + seed.d * 0.31),
       y,
-      center.z + Math.sin(angle) * radius * (0.64 + seed.a * 0.32),
+      center.z + Math.sin(angle) * radius * (0.62 + seed.a * 0.28),
     );
   }
   positions.needsUpdate = true;
@@ -397,13 +426,16 @@ function swWorld008UpdateGroundDust(now) {
   const center = swWorld008Centerline(1.2, now);
   for (let i = 0; i < positions.count; i += 1) {
     const seed = seeds[i];
-    const radius = 2.0 + seed.a * 7.2 + Math.sin(t * 0.68 + seed.c * 9) * 0.65;
-    const angle = seed.b * Math.PI * 2 + t * (0.28 + seed.c * 0.34);
+    const lane = i % 3;
+    const radius = 1.6 + seed.a * (lane === 0 ? 5.2 : lane === 1 ? 7.4 : 9.1)
+      + Math.sin(t * 0.88 + seed.c * 9) * 0.55;
+    const direction = lane === 1 ? -1 : 1;
+    const angle = seed.b * Math.PI * 2 + t * direction * (0.48 + seed.c * 0.44);
     positions.setXYZ(
       i,
-      center.x + Math.cos(angle) * radius,
-      0.4 + seed.d * 2.5 + Math.sin(t * 1.05 + seed.a * 8) * 0.28,
-      center.z + Math.sin(angle) * radius,
+      center.x + Math.cos(angle) * radius * (1.0 + seed.c * 0.24),
+      0.25 + seed.d * (lane === 2 ? 1.8 : 1.25) + Math.sin(t * 1.4 + seed.a * 8) * 0.20,
+      center.z + Math.sin(angle) * radius * (0.62 + seed.a * 0.18),
     );
   }
   positions.needsUpdate = true;
@@ -416,15 +448,15 @@ function swWorld008StyleLegacySurfaces() {
   if (typeof dustBowlGroup !== 'undefined' && dustBowlGroup) dustBowlGroup.visible = false;
 
   if (typeof particleSystem !== 'undefined' && particleSystem) {
-    particleSystem.visible = true;
+    particleSystem.visible = false;
     particleSystem.scale.set(0.72, 1.0, 0.72);
     if (typeof particleMat !== 'undefined' && particleMat) {
       particleMat.vertexColors = true;
       particleMat.map = swWorld008DustMistTexture || particleMat.map;
       particleMat.alphaTest = 0.035;
       particleMat.sizeAttenuation = true;
-      particleMat.size = (typeof isMobileDevice !== 'undefined' && isMobileDevice) ? 0.52 : 0.68;
-      swWorld008SetMaterialOpacity(particleMat, 0.30);
+      particleMat.size = (typeof isMobileDevice !== 'undefined' && isMobileDevice) ? 0.28 : 0.36;
+      swWorld008SetMaterialOpacity(particleMat, 0.10);
       particleMat.needsUpdate = true;
     }
     swWorld008TornadoHeritageState.restoredDebrisFrames += 1;
@@ -444,7 +476,7 @@ function swWorld008UpdatePresentation(now) {
 
   const neon = typeof neonFunnelUnlocked !== 'undefined' && Boolean(neonFunnelUnlocked);
   if (swWorld008CondensationMaterial) {
-    swWorld008CondensationMaterial.color.set(neon ? '#256a75' : '#34474e');
+    swWorld008CondensationMaterial.color.set(neon ? '#256a75' : '#626d70');
     swWorld008CondensationMaterial.emissive?.set?.(neon ? '#0c3540' : '#000000');
     if ('emissiveIntensity' in swWorld008CondensationMaterial) swWorld008CondensationMaterial.emissiveIntensity = neon ? 0.34 : 0.0;
   }
@@ -576,12 +608,16 @@ globalThis.getSwWorld008TornadoHeritageState = function getSwWorld008TornadoHeri
       coreOpacity: Number(swWorld008CondensationMaterial?.opacity || 0),
       sheathOpacity: Number(swWorld008SheathMaterial?.opacity || 0),
       alphaTest: Number(swWorld008CondensationMaterial?.alphaTest || 0),
+      ringBreakupRange: Object.freeze([0.70, 1.30]),
+      centerlineOffsetScale: 2.15,
     }),
     atmosphere: Object.freeze({
       finePoints: Number(swWorld008MistFine?.geometry?.attributes?.position?.count || 0),
       broadPoints: Number(swWorld008MistBroad?.geometry?.attributes?.position?.count || 0),
       canopyPoints: Number(swWorld008CanopyMist?.geometry?.attributes?.position?.count || 0),
       dustPoints: Number(swWorld008GroundDust?.geometry?.attributes?.position?.count || 0),
+      dustMotionLanes: 3,
+      canopyRadiusMax: 10.0,
       drawFields: [swWorld008MistFine, swWorld008MistBroad, swWorld008CanopyMist, swWorld008GroundDust].filter(Boolean).length,
     }),
     ribbon: Object.freeze(ribbon),
