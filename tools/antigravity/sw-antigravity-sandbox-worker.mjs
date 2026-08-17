@@ -195,8 +195,8 @@ async function runInteraction(body) {
     await sleep(POLL_MS);
     interaction = await apiJson('GET', `${INTERACTIONS_URL}/${encodeURIComponent(id)}`);
   }
-  if (!['completed', 'incomplete'].includes(interaction.status)) {
-    throw new Error(`Antigravity interaction ended in unusable status ${interaction.status || '(missing)'}`);
+  if (interaction.status !== 'completed') {
+    throw new Error(`Antigravity interaction ${id} did not complete: ${interaction.status || '(missing)'}`);
   }
   requiredString(interaction.environment_id, 'interaction.environment_id');
   return interaction;
@@ -288,6 +288,9 @@ function patchPaths(patch) {
 function validatePatch(task, patch) {
   const bytes = Buffer.byteLength(patch, 'utf8');
   if (bytes > task.maxPatchBytes) throw new Error(`Patch exceeds ${task.maxPatchBytes} byte limit`);
+  if (/^deleted file mode /m.test(patch) || /^\+\+\+ \/dev\/null$/m.test(patch)) {
+    throw new Error('File deletions are not accepted by SW-OPS-002');
+  }
   const paths = patchPaths(patch);
   if (task.requirePatch && !paths.length) throw new Error('Sandbox produced no allowlisted patch');
   for (const candidate of paths) {
@@ -310,6 +313,10 @@ async function derivePatch(task, interaction, outputDir) {
     const snapshotAttempts = await downloadSnapshot(environmentId, tarPath);
     await mkdir(candidateDir, { recursive: true });
     const extraction = JSON.parse(run('python3', ['-c', EXTRACT_ALLOWED_SCRIPT, tarPath, candidateDir, JSON.stringify(task.allowedPaths)]) || '{}');
+    if (!Array.isArray(extraction.absent)) throw new Error('Antigravity snapshot extraction did not report absent allowlisted files');
+    if (extraction.absent.length) {
+      throw new Error(`Antigravity snapshot missing allowlisted file(s): ${extraction.absent.join(', ')}. File deletions are not supported by SW-OPS-002.`);
+    }
 
     run('git', ['worktree', 'add', '--detach', baseWorktree, task.exactBaseSha]);
     worktreeAdded = true;
@@ -317,17 +324,13 @@ async function derivePatch(task, interaction, outputDir) {
     for (const relative of task.allowedPaths) {
       const source = path.join(candidateDir, ...relative.split('/'));
       const target = path.join(baseWorktree, ...relative.split('/'));
-      if (extraction.present.includes(relative)) {
-        await mkdir(path.dirname(target), { recursive: true });
-        await copyFile(source, target);
-      } else {
-        await rm(target, { force: true });
-      }
+      await mkdir(path.dirname(target), { recursive: true });
+      await copyFile(source, target);
     }
 
     for (const relative of task.allowedPaths) {
       const tracked = spawnSync('git', ['-C', baseWorktree, 'ls-files', '--error-unmatch', '--', relative], { encoding: 'utf8' });
-      if (extraction.present.includes(relative) && tracked.status !== 0) run('git', ['-C', baseWorktree, 'add', '-N', '--', relative]);
+      if (tracked.status !== 0) run('git', ['-C', baseWorktree, 'add', '-N', '--', relative]);
     }
 
     run('git', ['-C', baseWorktree, 'diff', '--check']);
