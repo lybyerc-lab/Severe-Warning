@@ -16,6 +16,6 @@
   },
   "generationAllowed": false,
   "productionPromotionAllowed": false,
-  "proofRevision": "2026-08-17-cow17-glb-csp-correction",
+  "proofRevision": "2026-08-17-cow17-glb-csp-ci-retry",
   "purpose": "Prove the exact authored Cow 17 with the official Three.js r128 GLTFLoader, walk animation, protected cow safety, and primitive fallback, then seal a visual candidate for owner QA."
 }
