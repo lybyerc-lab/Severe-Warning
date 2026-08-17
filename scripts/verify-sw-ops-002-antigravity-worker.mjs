@@ -58,7 +58,7 @@ if (slot.repository !== 'lybyerc-lab/Severe-Warning') errors.push('task slot rep
 if (slot.repositoryUrl !== 'https://github.com/lybyerc-lab/Severe-Warning') errors.push('task slot repository URL changed');
 if (!/^[0-9a-f]{40}$/i.test(slot.exactBaseSha || '')) errors.push('task slot exactBaseSha must be a full Git SHA');
 if (!Array.isArray(slot.allowedPaths) || !slot.allowedPaths.length || slot.allowedPaths.some((item) => !safeRepoPath(item))) errors.push('task slot allowedPaths must contain safe exact file paths');
-if (!Number.isInteger(slot.tokenBudget) || slot.tokenBudget < 2000 || slot.tokenBudget > 20000) errors.push('task slot token budget outside worker limits');
+if (!Number.isInteger(slot.tokenBudget) || slot.tokenBudget < 2000 || slot.tokenBudget > 50000) errors.push('task slot token budget outside worker limits');
 if (!Number.isInteger(slot.maxPatchBytes) || slot.maxPatchBytes < 1 || slot.maxPatchBytes > 100000) errors.push('task slot patch size outside worker limits');
 if (slot.requirePatch !== true) errors.push('task slot must require a patch');
 requireText(slot.goal, 'Use code_execution immediately.', 'task slot');
@@ -73,6 +73,7 @@ requireText(worker, "marker = 'workspace/repo/'", 'worker');
 requireText(worker, 'if rel not in allowed:', 'worker');
 requireText(worker, 'allowlisted snapshot path is not a regular file', 'worker');
 requireText(worker, "interaction.status !== 'completed'", 'worker');
+requireText(worker, 'interaction?.usage?.total_tokens', 'worker');
 requireText(worker, 'Antigravity snapshot missing allowlisted file(s)', 'worker');
 requireText(worker, 'File deletions are not accepted by SW-OPS-002', 'worker');
 requireText(worker, "run('git', ['worktree', 'add', '--detach', baseWorktree, task.exactBaseSha])", 'worker');
