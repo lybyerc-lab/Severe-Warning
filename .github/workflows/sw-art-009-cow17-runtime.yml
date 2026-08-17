@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           if ! command -v ffmpeg >/dev/null 2>&1; then
             sudo timeout 120s apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
-            sudo timeout 120s apt-get install --yes --no-install-recommends ffmpeg
+            sudo timeout 300s apt-get install --yes --no-install-recommends ffmpeg
           fi
           timeout 180s pnpm run audio:generate
           timeout 60s node scripts/vendor-threejs-hero-slice4-assets.mjs
