@@ -18,6 +18,8 @@ const POLL_MS = 4000;
 const POLL_CEILING_MS = 8 * 60 * 1000;
 const SNAPSHOT_RETRIES = 4;
 const SNAPSHOT_RETRY_MS = 4000;
+const INLINE_FILE_MAX_BYTES = 1024 * 1024;
+const INLINE_TOTAL_MAX_BYTES = 2 * 1024 * 1024;
 
 function usage() {
   console.log(`Severe Weather Warning Antigravity worker\n\nUsage:\n  node tools/antigravity/sw-antigravity-sandbox-worker.mjs execute --task <task.json> --output-dir <dir> [--dry-run]\n\nEnvironment:\n  GEMINI_API_KEY  Required for live calls only. Never commit or print it.\n`);
@@ -68,6 +70,9 @@ async function loadTask(inputPath) {
   if (!Number.isInteger(tokenBudget) || tokenBudget < 2000 || tokenBudget > 50000) throw new Error('tokenBudget must be an integer between 2000 and 50000');
   if (!Number.isInteger(maxPatchBytes) || maxPatchBytes < 1 || maxPatchBytes > 100000) throw new Error('maxPatchBytes must be an integer between 1 and 100000');
 
+  const sourceMode = raw.sourceMode ? requiredString(raw.sourceMode, 'sourceMode') : 'repository';
+  if (!['repository', 'focused-inline'].includes(sourceMode)) throw new Error('sourceMode must be repository or focused-inline');
+
   const task = {
     version: requiredString(raw.version, 'version'),
     taskId: requiredString(raw.taskId, 'taskId'),
@@ -77,6 +82,8 @@ async function loadTask(inputPath) {
     goal: requiredString(raw.goal, 'goal'),
     nonGoals: stringList(raw.nonGoals, 'nonGoals'),
     allowedPaths: stringList(raw.allowedPaths, 'allowedPaths').map((item, index) => safeExactFile(item, `allowedPaths[${index}]`)),
+    contextPaths: stringList(raw.contextPaths ?? [], 'contextPaths').map((item, index) => safeExactFile(item, `contextPaths[${index}]`)),
+    sourceMode,
     requestedTests: stringList(raw.requestedTests, 'requestedTests'),
     tokenBudget,
     maxPatchBytes,
@@ -85,6 +92,8 @@ async function loadTask(inputPath) {
   };
 
   if (!task.allowedPaths.length) throw new Error('allowedPaths must contain at least one exact file path');
+  const overlap = task.contextPaths.filter((item) => task.allowedPaths.includes(item));
+  if (overlap.length) throw new Error(`contextPaths must not overlap allowedPaths: ${overlap.join(', ')}`);
   if (!/^[0-9a-f]{40}$/i.test(task.exactBaseSha)) throw new Error('exactBaseSha must be a full 40-character Git SHA');
   if (!/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(?:\.git)?$/.test(task.repositoryUrl)) {
     throw new Error('repositoryUrl must be a public https://github.com/owner/repo URL');
@@ -107,6 +116,16 @@ function policyText(task) {
 }
 
 function taskPrompt(task) {
+  const focusedContext = task.sourceMode === 'focused-inline'
+    ? [
+        '',
+        'This is a focused workspace, not a full repository clone.',
+        `Editable files live under ${REPO_TARGET}.`,
+        'Read-only host context is mounted under /workspace/context:',
+        ...task.contextPaths.map((item) => `- /workspace/context/${item}`),
+        'Do not clone, fetch, or search for another repository copy. Do not modify /workspace/context.',
+      ]
+    : [];
   return [
     'Execute this bounded Severe Weather Warning task now.',
     `Task ID: ${task.taskId}`,
@@ -114,28 +133,74 @@ function taskPrompt(task) {
     'Goal:', task.goal,
     '',
     'Exact files you may edit:', ...task.allowedPaths.map((item) => `- ${item}`),
+    ...focusedContext,
     '',
     'Non-goals:', ...task.nonGoals.map((item) => `- ${item}`),
     '',
     'Requested checks:', ...task.requestedTests.map((item) => `- ${item}`),
     '',
-    'Do not spend time changing Git branches or matching the host base SHA. The sandbox checkout is untrusted by design.',
-    'Make the bounded file edit, run the lightweight checks, and stop. The host derives and validates the patch.',
+    'Do not spend time changing Git branches or matching the host base SHA. The sandbox workspace is untrusted by design.',
+    'Make the bounded file edit, run the lightweight checks, and stop. The host derives and validates the patch against the frozen base.',
   ].join('\n');
 }
 
+function baseFileText(task, relative) {
+  const text = run('git', ['show', `${task.exactBaseSha}:${relative}`]);
+  const bytes = Buffer.byteLength(text, 'utf8');
+  if (bytes > INLINE_FILE_MAX_BYTES) throw new Error(`Focused inline source exceeds 1 MB: ${relative}`);
+  return { text, bytes };
+}
+
+function buildEnvironment(task) {
+  if (task.sourceMode === 'repository') {
+    return {
+      environment: {
+        type: 'remote',
+        sources: [
+          { type: 'repository', source: task.repositoryUrl, target: REPO_TARGET },
+          { type: 'inline', target: `${REPO_TARGET}/.agents/AGENTS.md`, content: policyText(task) },
+        ],
+        network: { allowlist: [{ domain: 'github.com' }] },
+      },
+      manifest: { sourceMode: 'repository', mountedBaseFiles: [], inlineBytes: Buffer.byteLength(policyText(task), 'utf8'), networkMode: 'github-only' },
+    };
+  }
+
+  const sources = [];
+  const mountedBaseFiles = [];
+  let inlineBytes = 0;
+  const addInline = (target, content, label) => {
+    const bytes = Buffer.byteLength(content, 'utf8');
+    if (bytes > INLINE_FILE_MAX_BYTES) throw new Error(`Focused inline source exceeds 1 MB: ${label}`);
+    inlineBytes += bytes;
+    if (inlineBytes > INLINE_TOTAL_MAX_BYTES) throw new Error('Focused inline sources exceed 2 MB total');
+    sources.push({ type: 'inline', target, content });
+  };
+
+  for (const relative of task.allowedPaths) {
+    const source = baseFileText(task, relative);
+    addInline(`${REPO_TARGET}/${relative}`, source.text, relative);
+    mountedBaseFiles.push(relative);
+  }
+  for (const relative of task.contextPaths) {
+    const source = baseFileText(task, relative);
+    addInline(`/workspace/context/${relative}`, source.text, relative);
+    mountedBaseFiles.push(relative);
+  }
+  addInline(`${REPO_TARGET}/.agents/AGENTS.md`, policyText(task), '.agents/AGENTS.md');
+
+  return {
+    environment: { type: 'remote', sources, network: 'disabled' },
+    manifest: { sourceMode: 'focused-inline', mountedBaseFiles, inlineBytes, networkMode: 'disabled' },
+  };
+}
+
 function requestBody(task) {
+  const { environment } = buildEnvironment(task);
   return {
     agent: task.agent,
     input: taskPrompt(task),
-    environment: {
-      type: 'remote',
-      sources: [
-        { type: 'repository', source: task.repositoryUrl, target: REPO_TARGET },
-        { type: 'inline', target: '.agents/AGENTS.md', content: policyText(task) },
-      ],
-      network: { allowlist: [{ domain: 'github.com' }] },
-    },
+    environment,
     store: true,
     tools: [{ type: 'code_execution' }],
     agent_config: { type: 'antigravity', max_total_tokens: task.tokenBudget },
@@ -143,6 +208,7 @@ function requestBody(task) {
 }
 
 function drySummary(task, taskFile) {
+  const sourceManifest = buildEnvironment(task).manifest;
   return {
     version: 'SW_OPS_002_SIMPLE_WORKER_REQUEST_V1',
     dryRun: true,
@@ -152,6 +218,9 @@ function drySummary(task, taskFile) {
     repositoryUrl: task.repositoryUrl,
     repositoryTarget: REPO_TARGET,
     allowedPaths: task.allowedPaths,
+    contextPaths: task.contextPaths,
+    sourceMode: task.sourceMode,
+    sourceManifest,
     tokenBudget: task.tokenBudget,
     maxPatchBytes: task.maxPatchBytes,
     sandboxTrust: 'untrusted',
@@ -347,6 +416,7 @@ async function derivePatch(task, interaction, outputDir) {
       interactionId: interaction.id,
       environmentId,
       interactionStatus: interaction.status,
+      sourceMode: task.sourceMode,
       changedFiles: checked.paths,
       patchBytes: checked.bytes,
       snapshotAttempts,
