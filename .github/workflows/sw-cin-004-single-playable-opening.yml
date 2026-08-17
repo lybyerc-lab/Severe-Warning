@@ -176,6 +176,21 @@ jobs:
           node scripts/qa-sw-quality-002-visual-rescue.mjs
           node scripts/qa-sw-ui-003-run-shell-identity.mjs
           node scripts/qa-sw-int-004-commercial-shell.mjs
+
+      - name: Preserve accepted opening browser QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/sw-cin-003
+          python3 -m http.server 4173 --directory www > artifacts/sw-cin-003/cin-004-inherited-server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --silent --fail 'http://127.0.0.1:4173/' >/dev/null
           node scripts/qa-threejs-opening-cinematic-integration.mjs
 
       - name: Prove CIN-004 single playable opening
