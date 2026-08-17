@@ -65,7 +65,7 @@ async function loadTask(inputPath) {
   const raw = JSON.parse(await readFile(absolute, 'utf8'));
   const tokenBudget = Number(raw.tokenBudget ?? 8000);
   const maxPatchBytes = Number(raw.maxPatchBytes ?? 100000);
-  if (!Number.isInteger(tokenBudget) || tokenBudget < 2000 || tokenBudget > 20000) throw new Error('tokenBudget must be an integer between 2000 and 20000');
+  if (!Number.isInteger(tokenBudget) || tokenBudget < 2000 || tokenBudget > 50000) throw new Error('tokenBudget must be an integer between 2000 and 50000');
   if (!Number.isInteger(maxPatchBytes) || maxPatchBytes < 1 || maxPatchBytes > 100000) throw new Error('maxPatchBytes must be an integer between 1 and 100000');
 
   const task = {
@@ -196,7 +196,9 @@ async function runInteraction(body) {
     interaction = await apiJson('GET', `${INTERACTIONS_URL}/${encodeURIComponent(id)}`);
   }
   if (interaction.status !== 'completed') {
-    throw new Error(`Antigravity interaction ${id} did not complete: ${interaction.status || '(missing)'}`);
+    const used = Number(interaction?.usage?.total_tokens);
+    const usageNote = Number.isFinite(used) ? ` after ${used} tokens` : '';
+    throw new Error(`Antigravity interaction ${id} did not complete: ${interaction.status || '(missing)'}${usageNote}`);
   }
   requiredString(interaction.environment_id, 'interaction.environment_id');
   return interaction;
