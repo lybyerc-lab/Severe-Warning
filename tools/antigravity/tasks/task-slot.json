@@ -41,6 +41,8 @@
     "test \"$(grep -c 'pnpm run verify:phase4' /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml)\" = 1"
   ],
   "tokenBudget": 30000,
+  "continuationTokenBudget": 30000,
+  "maxContinuationAttempts": 1,
   "maxPatchBytes": 12000,
   "requirePatch": true,
   "agent": "antigravity-preview-05-2026",
