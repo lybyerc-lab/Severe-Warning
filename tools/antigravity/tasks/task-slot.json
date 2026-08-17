@@ -1,10 +1,10 @@
 {
   "version": "SW_ANTIGRAVITY_WORKER_TASK_V1",
-  "taskId": "SW-AG-ART-009-CI-GATE-002",
+  "taskId": "SW-AG-ART-009-CI-GATE-003",
   "repository": "lybyerc-lab/Severe-Warning",
   "repositoryUrl": "https://github.com/lybyerc-lab/Severe-Warning",
   "exactBaseSha": "19a83af9f77d51feab64dc0edfe94c896b9b5c17",
-  "goal": "Use code_execution immediately. Work only on .github/workflows/sw-art-009-cow17-runtime.yml for this fresh correction. The frozen host patch base is 19a83af9f77d51feab64dc0edfe94c896b9b5c17. Do not change branches or Git history. Sandbox Git state is not authority. Run 31950101752 proved the Cow-specific static verifier passes 47/47, but the workflow's 'Verify protected Cow seam and build' step still invokes obsolete 'pnpm run verify:v500', which fails on legacy v5.0.0 identity/four-stop expectations. Inspect only the target workflow, package.json verification aliases, and directly relevant accepted Stage 2B workflow patterns. Replace only the obsolete verify:v500 invocation with the smallest current blocking verifier command or commands that preserve campaign/Cow continuity. Preserve verify:process, verify:asset-pipeline, modern:typecheck, build, packaged Cow GLB hash/size checks, official GLTFLoader identity, browser proof, source assembly order, scope gate, trigger, and one-shot rule. No runtime, gameplay, assets, scripts, package, task, Antigravity, source assembly, or QA edits. Run node scripts/verify-sw-art-009-cow17-runtime.mjs, git status --short, and git diff --check, then stop.",
+  "goal": "Use code_execution immediately. Work only on /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml in this fresh focused correction. The host mounted that exact file from frozen base 19a83af9f77d51feab64dc0edfe94c896b9b5c17 plus read-only context under /workspace/context. Do not change branches or Git history. Do not clone or fetch the repository. Sandbox state is not authority. Run 31950101752 proved the Cow-specific static verifier passes 47/47, but the workflow's 'Verify protected Cow seam and build' step invokes obsolete 'pnpm run verify:v500', which fails on legacy v5.0.0 identity/four-stop expectations. Inspect only the editable workflow and mounted context: package.json, verify-v510-production-slice.mjs, verify-modernization-phase4-scoring-campaign.mjs, and verify-sw-art-009-cow17-runtime.mjs. Replace only the obsolete verify:v500 invocation with the smallest current blocking verifier command or commands that preserve current production identity plus campaign/Cow continuity. Preserve verify:process, verify:asset-pipeline, modern:typecheck, build, packaged Cow GLB hash/size checks, official GLTFLoader identity, browser proof, source assembly order, scope gate, trigger, and one-shot rule. No runtime, gameplay, assets, scripts, package, task, Antigravity, source assembly, or QA edits. Re-read the edited workflow, run the requested lightweight checks, then stop.",
   "nonGoals": [
     "No runtime, gameplay, campaign, Cow behavior, art, asset, or presentation changes",
     "No changes to source assembly order or worker scope allowlist",
@@ -28,21 +28,26 @@
     "tools/"
   ],
   "proofPlan": [
-    "Confirm the failing workflow currently invokes legacy verify:v500 after verify:process",
-    "Inspect current package verification aliases and accepted Stage 2B workflow patterns without editing them",
+    "Confirm the editable workflow invokes legacy verify:v500 after verify:process",
+    "Inspect only the mounted exact-base context files without cloning or fetching the repository",
     "Make one workflow-only substitution for the obsolete verifier gate",
-    "Preserve all Cow 17 task-specific and build/browser proof steps",
-    "Run node scripts/verify-sw-art-009-cow17-runtime.mjs",
-    "Run git status --short and git diff --check",
-    "Host extracts only the allowlisted workflow file and validates the patch against exactBaseSha"
+    "Preserve all Cow 17 task-specific build, asset identity, and browser proof steps",
+    "Run the two focused workspace checks in requestedTests",
+    "Host extracts only the allowlisted workflow file and validates the patch against exactBaseSha with git apply --check and git diff --check"
   ],
   "requestedTests": [
-    "node scripts/verify-sw-art-009-cow17-runtime.mjs",
-    "git status --short",
-    "git diff --check"
+    "test -s /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml",
+    "grep -n 'verify:process\\|verify:v500\\|verify:v510\\|verify:phase4\\|verify:asset-pipeline' /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml"
   ],
   "tokenBudget": 30000,
   "maxPatchBytes": 12000,
   "requirePatch": true,
-  "agent": "antigravity-preview-05-2026"
+  "agent": "antigravity-preview-05-2026",
+  "sourceMode": "focused-inline",
+  "contextPaths": [
+    "package.json",
+    "scripts/verify-v510-production-slice.mjs",
+    "scripts/verify-modernization-phase4-scoring-campaign.mjs",
+    "scripts/verify-sw-art-009-cow17-runtime.mjs"
+  ]
 }
