@@ -66,8 +66,12 @@ async function loadTask(inputPath) {
   const absolute = path.resolve(process.cwd(), requiredString(inputPath, '--task'));
   const raw = JSON.parse(await readFile(absolute, 'utf8'));
   const tokenBudget = Number(raw.tokenBudget ?? 8000);
+  const continuationTokenBudget = Number(raw.continuationTokenBudget ?? tokenBudget);
+  const maxContinuationAttempts = Number(raw.maxContinuationAttempts ?? 0);
   const maxPatchBytes = Number(raw.maxPatchBytes ?? 100000);
   if (!Number.isInteger(tokenBudget) || tokenBudget < 2000 || tokenBudget > 50000) throw new Error('tokenBudget must be an integer between 2000 and 50000');
+  if (!Number.isInteger(continuationTokenBudget) || continuationTokenBudget < 2000 || continuationTokenBudget > 50000) throw new Error('continuationTokenBudget must be an integer between 2000 and 50000');
+  if (!Number.isInteger(maxContinuationAttempts) || maxContinuationAttempts < 0 || maxContinuationAttempts > 1) throw new Error('maxContinuationAttempts must be 0 or 1');
   if (!Number.isInteger(maxPatchBytes) || maxPatchBytes < 1 || maxPatchBytes > 100000) throw new Error('maxPatchBytes must be an integer between 1 and 100000');
 
   const sourceMode = raw.sourceMode ? requiredString(raw.sourceMode, 'sourceMode') : 'repository';
@@ -86,6 +90,8 @@ async function loadTask(inputPath) {
     sourceMode,
     requestedTests: stringList(raw.requestedTests, 'requestedTests'),
     tokenBudget,
+    continuationTokenBudget,
+    maxContinuationAttempts,
     maxPatchBytes,
     requirePatch: raw.requirePatch !== false,
     agent: raw.agent ? requiredString(raw.agent, 'agent') : DEFAULT_AGENT,
@@ -222,6 +228,8 @@ function drySummary(task, taskFile) {
     sourceMode: task.sourceMode,
     sourceManifest,
     tokenBudget: task.tokenBudget,
+    continuationTokenBudget: task.continuationTokenBudget,
+    maxContinuationAttempts: task.maxContinuationAttempts,
     maxPatchBytes: task.maxPatchBytes,
     sandboxTrust: 'untrusted',
     returnChannel: 'allowlisted-files-to-host-derived-patch',
@@ -255,8 +263,7 @@ async function apiJson(method, url, body) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function runInteraction(body) {
-  let interaction = await apiJson('POST', INTERACTIONS_URL, body);
+async function pollInteraction(interaction) {
   const id = requiredString(interaction.id, 'interaction.id');
   const started = Date.now();
   while (interaction.status === 'in_progress') {
@@ -264,13 +271,54 @@ async function runInteraction(body) {
     await sleep(POLL_MS);
     interaction = await apiJson('GET', `${INTERACTIONS_URL}/${encodeURIComponent(id)}`);
   }
-  if (interaction.status !== 'completed') {
-    const used = Number(interaction?.usage?.total_tokens);
-    const usageNote = Number.isFinite(used) ? ` after ${used} tokens` : '';
-    throw new Error(`Antigravity interaction ${id} did not complete: ${interaction.status || '(missing)'}${usageNote}`);
-  }
   requiredString(interaction.environment_id, 'interaction.environment_id');
   return interaction;
+}
+
+function interactionEvidence(interaction) {
+  const used = Number(interaction?.usage?.total_tokens);
+  return {
+    id: requiredString(interaction.id, 'interaction.id'),
+    status: requiredString(interaction.status, 'interaction.status'),
+    totalTokens: Number.isFinite(used) ? used : null,
+  };
+}
+
+async function runInteraction(task, body) {
+  let interaction = await pollInteraction(await apiJson('POST', INTERACTIONS_URL, body));
+  const rootEnvironmentId = requiredString(interaction.environment_id, 'interaction.environment_id');
+  const interactionChain = [interactionEvidence(interaction)];
+  let continuationCount = 0;
+
+  while (interaction.status === 'incomplete' && continuationCount < task.maxContinuationAttempts) {
+    const previousInteractionId = requiredString(interaction.id, 'interaction.id');
+    const environmentId = requiredString(interaction.environment_id, 'interaction.environment_id');
+    if (environmentId !== rootEnvironmentId) throw new Error('Antigravity environment changed before continuation');
+    const continuationBody = {
+      agent: task.agent,
+      input: 'continue',
+      previous_interaction_id: previousInteractionId,
+      environment: environmentId,
+      store: true,
+      agent_config: { type: 'antigravity', max_total_tokens: task.continuationTokenBudget },
+    };
+    interaction = await pollInteraction(await apiJson('POST', INTERACTIONS_URL, continuationBody));
+    continuationCount += 1;
+    if (interaction.environment_id !== rootEnvironmentId) throw new Error('Antigravity environment changed across continuation');
+    interactionChain.push(interactionEvidence(interaction));
+  }
+
+  if (interaction.status !== 'completed') {
+    const detail = interactionChain.map((item) => `${item.status}${item.totalTokens === null ? '' : `:${item.totalTokens}`}`).join(' -> ');
+    throw new Error(`Antigravity task did not complete after ${continuationCount} continuation(s): ${detail}`);
+  }
+
+  return {
+    interaction,
+    rootInteractionId: interactionChain[0].id,
+    interactionChain,
+    continuationCount,
+  };
 }
 
 async function downloadSnapshot(environmentId, tarPath) {
@@ -370,7 +418,8 @@ function validatePatch(task, patch) {
   return { bytes, paths };
 }
 
-async function derivePatch(task, interaction, outputDir) {
+async function derivePatch(task, interactionRun, outputDir) {
+  const { interaction, rootInteractionId, interactionChain, continuationCount } = interactionRun;
   const environmentId = requiredString(interaction.environment_id, 'interaction.environment_id');
   const dir = path.resolve(process.cwd(), requiredString(outputDir, '--output-dir'));
   await mkdir(dir, { recursive: true });
@@ -413,7 +462,13 @@ async function derivePatch(task, interaction, outputDir) {
       status: 'quarantined-patch-ready',
       taskId: task.taskId,
       patchBaseSha: task.exactBaseSha,
+      rootInteractionId,
       interactionId: interaction.id,
+      interactionIds: interactionChain.map((item) => item.id),
+      interactionChain,
+      continuationCount,
+      continuationLimit: task.maxContinuationAttempts,
+      continuationTokenBudget: task.continuationTokenBudget,
       environmentId,
       interactionStatus: interaction.status,
       sourceMode: task.sourceMode,
@@ -427,7 +482,7 @@ async function derivePatch(task, interaction, outputDir) {
 
     await writeFile(path.join(dir, 'worker.patch'), patch, 'utf8');
     await writeFile(path.join(dir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
-    console.log(`SW-OPS-002 candidate patch: ${checked.paths.length} path(s), ${checked.bytes} bytes`);
+    console.log(`SW-OPS-002 candidate patch: ${checked.paths.length} path(s), ${checked.bytes} bytes, ${continuationCount} continuation(s)`);
   } finally {
     if (worktreeAdded) spawnSync('git', ['worktree', 'remove', '--force', baseWorktree], { cwd: process.cwd(), encoding: 'utf8' });
     await rm(scratch, { recursive: true, force: true });
@@ -444,8 +499,8 @@ async function execute(options) {
     await writeFile(path.join(path.resolve(process.cwd(), dir), 'request.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
     return;
   }
-  const interaction = await runInteraction(requestBody(task));
-  await derivePatch(task, interaction, options['output-dir']);
+  const interactionRun = await runInteraction(task, requestBody(task));
+  await derivePatch(task, interactionRun, options['output-dir']);
 }
 
 async function main() {
