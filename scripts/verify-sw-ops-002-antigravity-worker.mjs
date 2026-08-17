@@ -124,6 +124,8 @@ requireText(workflow, 'task.allowedPaths.includes', 'workflow');
 requireText(workflow, 'task.exactBaseSha', 'workflow');
 requireText(workflow, "result.interactionStatus !== 'completed'", 'workflow');
 requireText(workflow, "result.sourceMode !== (task.sourceMode ?? 'repository')", 'workflow');
+requireText(workflow, 'result.continuationCount', 'workflow');
+requireText(workflow, 'result.interactionIds', 'workflow');
 requireText(workflow, 'deleted file mode', 'workflow');
 requireText(workflow, 'apply --check', 'workflow');
 requireText(workflow, expectedFixture, 'workflow');
