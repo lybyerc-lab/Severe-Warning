@@ -1,10 +1,10 @@
 {
   "version": "SW_ANTIGRAVITY_WORKER_TASK_V1",
-  "taskId": "SW-AG-ART-009-CI-GATE-001",
+  "taskId": "SW-AG-ART-009-CI-GATE-002",
   "repository": "lybyerc-lab/Severe-Warning",
   "repositoryUrl": "https://github.com/lybyerc-lab/Severe-Warning",
   "exactBaseSha": "19a83af9f77d51feab64dc0edfe94c896b9b5c17",
-  "goal": "Use code_execution immediately. Work in /workspace/repo at the frozen task base. Fix only .github/workflows/sw-art-009-cow17-runtime.yml. Latest exact-head run 31950101752 fails in 'Verify protected Cow seam and build' because the workflow invokes legacy 'pnpm run verify:v500'; that verifier reports 'v5 build identity :: v5.0.0' and 'four campaign stops' against the accepted Stage 2B assembly, while the task-specific SW-ART-009 static verifier passed 47/47. Inspect the current repository's verification commands and accepted Stage 2B workflow patterns, then replace only that obsolete v5 verifier invocation with the smallest current Stage 2B-appropriate blocking verification command or commands needed to protect campaign/Cow continuity. Do not weaken Cow 17 proof. Preserve verify:process, verify:asset-pipeline, modern:typecheck, build, packaged GLB identity/hash/size checks, official GLTFLoader identity, browser proof, source assembly order, scope gate, trigger, and one-shot run-attempt rule exactly unless the stale verifier line itself requires a directly adjacent command substitution. Do not change gameplay, runtime, assets, scripts, package files, QA logic, task request files, Antigravity files, or any source assembly list. Do not change branches or Git history. After the edit, run git diff --check and the existing SW-ART-009 static verifier, then stop.",
+  "goal": "Use code_execution immediately. Work only on .github/workflows/sw-art-009-cow17-runtime.yml for this fresh correction. The frozen host patch base is 19a83af9f77d51feab64dc0edfe94c896b9b5c17. Do not change branches or Git history. Sandbox Git state is not authority. Run 31950101752 proved the Cow-specific static verifier passes 47/47, but the workflow's 'Verify protected Cow seam and build' step still invokes obsolete 'pnpm run verify:v500', which fails on legacy v5.0.0 identity/four-stop expectations. Inspect only the target workflow, package.json verification aliases, and directly relevant accepted Stage 2B workflow patterns. Replace only the obsolete verify:v500 invocation with the smallest current blocking verifier command or commands that preserve campaign/Cow continuity. Preserve verify:process, verify:asset-pipeline, modern:typecheck, build, packaged Cow GLB hash/size checks, official GLTFLoader identity, browser proof, source assembly order, scope gate, trigger, and one-shot rule. No runtime, gameplay, assets, scripts, package, task, Antigravity, source assembly, or QA edits. Run node scripts/verify-sw-art-009-cow17-runtime.mjs, git status --short, and git diff --check, then stop.",
   "nonGoals": [
     "No runtime, gameplay, campaign, Cow behavior, art, asset, or presentation changes",
     "No changes to source assembly order or worker scope allowlist",
@@ -41,7 +41,7 @@
     "git status --short",
     "git diff --check"
   ],
-  "tokenBudget": 9000,
+  "tokenBudget": 30000,
   "maxPatchBytes": 12000,
   "requirePatch": true,
   "agent": "antigravity-preview-05-2026"
