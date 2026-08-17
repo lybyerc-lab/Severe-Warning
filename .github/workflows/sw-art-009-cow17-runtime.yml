@@ -157,7 +157,8 @@ jobs:
         run: |
           set -euo pipefail
           pnpm run verify:process
-          pnpm run verify:v500
+          pnpm run verify:v510
+          pnpm run verify:phase4
           pnpm run verify:asset-pipeline
           pnpm run modern:typecheck
           pnpm run build
