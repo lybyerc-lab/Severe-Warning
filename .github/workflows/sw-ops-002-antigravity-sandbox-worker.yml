@@ -68,12 +68,15 @@ jobs:
           if (smoke.patchBaseSha !== base) throw new Error('wrong smoke patch base');
           if (JSON.stringify(smoke.allowedPaths) !== JSON.stringify([file])) throw new Error('smoke allowlist widened');
           if (smoke.tokenBudget > 8000 || smoke.maxPatchBytes > 10000) throw new Error('smoke budget widened');
+          if (smoke.maxContinuationAttempts !== 0) throw new Error('smoke continuation widened');
           if (smoke.sandboxTrust !== 'untrusted') throw new Error('smoke sandbox became authoritative');
           if (slot.sandboxTrust !== 'untrusted') throw new Error('task slot sandbox became authoritative');
           if (slot.returnChannel !== 'allowlisted-files-to-host-derived-patch') throw new Error('wrong task slot return channel');
           if (slot.githubWriteAuthority !== false) throw new Error('task slot GitHub write authority widened');
           if (!Array.isArray(slot.allowedPaths) || !slot.allowedPaths.length) throw new Error('task slot allowlist missing');
           if (!['repository', 'focused-inline'].includes(slot.sourceMode ?? 'repository')) throw new Error('task slot source mode invalid');
+          if (!Number.isInteger(slot.maxContinuationAttempts) || slot.maxContinuationAttempts < 0 || slot.maxContinuationAttempts > 1) throw new Error('task slot continuation attempts invalid');
+          if (!Number.isInteger(slot.continuationTokenBudget) || slot.continuationTokenBudget < 2000 || slot.continuationTokenBudget > 50000) throw new Error('task slot continuation budget invalid');
           if ((slot.sourceMode ?? 'repository') === 'focused-inline') {
             if (slot.sourceManifest?.networkMode !== 'disabled') throw new Error('focused task network not disabled');
             const expected = slot.allowedPaths.length + (slot.contextPaths?.length || 0);
@@ -130,12 +133,21 @@ jobs:
           const task = JSON.parse(fs.readFileSync('tools/antigravity/tasks/task-slot.json', 'utf8'));
           const result = JSON.parse(fs.readFileSync('evidence/sw-ag-task-slot/result.json', 'utf8'));
           const patch = fs.readFileSync('evidence/sw-ag-task-slot/worker.patch', 'utf8');
+          const continuationLimit = task.maxContinuationAttempts ?? 0;
+          const continuationTokenBudget = task.continuationTokenBudget ?? task.tokenBudget;
           if (result.status !== 'quarantined-patch-ready') throw new Error('patch not ready');
           if (result.taskId !== task.taskId) throw new Error('wrong task result');
           if (result.patchBaseSha !== task.exactBaseSha) throw new Error('wrong patch base');
-          if (!result.interactionId || !result.environmentId) throw new Error('missing interaction evidence');
+          if (!result.rootInteractionId || !result.interactionId || !result.environmentId) throw new Error('missing interaction evidence');
           if (result.interactionStatus !== 'completed') throw new Error('Antigravity interaction did not complete');
           if (result.sourceMode !== (task.sourceMode ?? 'repository')) throw new Error('wrong task source mode');
+          if (!Number.isInteger(result.continuationCount) || result.continuationCount < 0 || result.continuationCount > continuationLimit) throw new Error('continuation count escaped task limit');
+          if (result.continuationLimit !== continuationLimit) throw new Error('wrong continuation limit');
+          if (result.continuationTokenBudget !== continuationTokenBudget) throw new Error('wrong continuation token budget');
+          if (!Array.isArray(result.interactionIds) || result.interactionIds.length !== result.continuationCount + 1) throw new Error('invalid interaction chain');
+          if (!Array.isArray(result.interactionChain) || result.interactionChain.length !== result.interactionIds.length) throw new Error('missing interaction chain evidence');
+          if (result.rootInteractionId !== result.interactionIds[0]) throw new Error('wrong root interaction');
+          if (result.interactionId !== result.interactionIds[result.interactionIds.length - 1]) throw new Error('wrong final interaction');
           if (result.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
           if (!Array.isArray(result.changedFiles) || !result.changedFiles.length) throw new Error('task returned no changed files');
           for (const file of result.changedFiles) {
