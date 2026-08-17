@@ -26,6 +26,16 @@ const report = {
   fallback: null,
   failures: [],
 };
+const knownOptionalVfxPaths = Object.freeze([
+  '/assets/production/vfx/kenney/dirt_01.png',
+  '/assets/production/vfx/kenney/smoke_03.png',
+  '/assets/production/vfx/kenney/trace_03.png',
+]);
+
+function unexpectedFailedResponses(failedResponses, extraAllowedPaths = []) {
+  const allowedPaths = [...knownOptionalVfxPaths, ...extraAllowedPaths];
+  return failedResponses.filter((entry) => !allowedPaths.some((allowedPath) => entry.url.endsWith(allowedPath)));
+}
 
 function requireCondition(condition, message) {
   if (!condition) report.failures.push(message);
@@ -36,6 +46,7 @@ async function makePage() {
   page.setDefaultTimeout(45000);
   const logs = [];
   const errors = [];
+  const failedResponses = [];
   page.on('console', (message) => {
     const line = `[${message.type()}] ${message.text()}`;
     logs.push(line);
@@ -46,7 +57,10 @@ async function makePage() {
     logs.push(line);
     errors.push(line);
   });
-  return { page, logs, errors };
+  page.on('response', (response) => {
+    if (response.status() >= 400) failedResponses.push({ status: response.status(), url: response.url() });
+  });
+  return { page, logs, errors, failedResponses };
 }
 
 async function dismissIntroAndStart(page) {
@@ -190,7 +204,10 @@ try {
   requireCondition(report.success.cow?.skinnedMeshes >= 1, 'Live Cow scene has no skinned mesh.');
   requireCondition(report.success.bovine?.invariant === 'Cow injuries: 0', `Cow safety invariant changed: ${report.success.bovine?.invariant}.`);
   requireCondition(report.visual?.assetId === 'character.cow17.walking.v1', 'Focused screenshot is not the authored Cow 17 asset.');
-  if (success.errors.length) report.failures.push(`Success-path browser errors: ${success.errors.join(' | ')}`);
+  const unexpectedErrors = success.errors.filter((line) => !line.includes('Failed to load resource:'));
+  const unexpectedResponses = unexpectedFailedResponses(success.failedResponses);
+  if (unexpectedErrors.length) report.failures.push(`Success-path browser errors: ${unexpectedErrors.join(' | ')}`);
+  if (unexpectedResponses.length) report.failures.push(`Success-path failed responses: ${JSON.stringify(unexpectedResponses)}`);
 } finally {
   await writeFile(path.join(outputDir, 'cow17-success-browser.log'), `${success.logs.join('\n')}\n`, 'utf8');
   await success.page.close();
@@ -238,8 +255,13 @@ try {
   requireCondition(report.fallback.cow?.rootMaterialVisible === true, 'Primitive Cow root did not restore on load failure.');
   requireCondition(report.fallback.cow?.fallbackChildrenVisible === true, 'Primitive Cow decoration did not restore on load failure.');
   requireCondition(report.fallback.bovine?.invariant === 'Cow injuries: 0', `Cow safety changed in fallback: ${report.fallback.bovine?.invariant}.`);
-  const unexpectedErrors = fallback.errors.filter((line) => !line.includes('cow17-walking-v1.glb') && !line.includes('404'));
+  const unexpectedErrors = fallback.errors.filter((line) => !line.includes('Failed to load resource:'));
+  const unexpectedResponses = unexpectedFailedResponses(
+    fallback.failedResponses,
+    ['/assets/production/characters/cow17-walking-v1.glb'],
+  );
   if (unexpectedErrors.length) report.failures.push(`Fallback browser errors: ${unexpectedErrors.join(' | ')}`);
+  if (unexpectedResponses.length) report.failures.push(`Fallback failed responses: ${JSON.stringify(unexpectedResponses)}`);
 } finally {
   await writeFile(path.join(outputDir, 'cow17-fallback-browser.log'), `${fallback.logs.join('\n')}\n`, 'utf8');
   await fallback.page.close();

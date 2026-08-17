@@ -79,6 +79,9 @@ if (forbiddenRemoteResources.length > 0) {
 if (!html.includes('Content-Security-Policy')) {
   throw new Error('The game must define a Content Security Policy before Android packaging.');
 }
+// Three.js GLTFLoader resolves images embedded in a GLB through temporary blob
+// URLs. Keep those URLs local while allowing the browser to fetch the texture.
+html = html.replace("connect-src 'self';", "connect-src 'self' blob:;");
 
 const gameplayVersions = [...new Set(
   [...html.matchAll(/\bv(\d+\.\d+\.\d+)\b/g)].map((match) => match[1])
@@ -169,6 +172,9 @@ if (
   || html.indexOf(cow17InjectionMarker) > html.indexOf(gameplayLoopMarker)
 ) {
   throw new Error('Official GLTFLoader and Cow 17 adapter must be injected in order before the gameplay loop.');
+}
+if (!html.includes("connect-src 'self' blob:;")) {
+  throw new Error('Packaged Cow 17 GLB textures require local blob URLs in connect-src.');
 }
 
 const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';

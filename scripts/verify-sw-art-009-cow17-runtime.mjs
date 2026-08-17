@@ -11,6 +11,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
 const assetPath = path.join(projectRoot, 'assets', 'production', 'characters', 'cow17-walking-v1.glb');
 const runtimePath = path.join(projectRoot, 'runtime', 'sw-art-009-cow17-runtime.js');
+const qaPath = path.join(projectRoot, 'scripts', 'qa-sw-art-009-cow17-runtime.mjs');
 const loaderPath = path.join(projectRoot, 'runtime', 'vendor', 'GLTFLoader-r128.js');
 const licensePath = path.join(projectRoot, 'runtime', 'vendor', 'THREE-LICENSE.txt');
 const buildPath = path.join(projectRoot, 'scripts', 'build-web.mjs');
@@ -129,12 +130,24 @@ for (const marker of [
   'cow17LoaderMarker',
   'cow17InjectionMarker',
   'cow17RuntimeBundle',
+  "connect-src 'self' blob:;",
   expectedSha256,
 ]) {
   check(build.includes(marker), `build marker ${marker}`);
 }
 check(build.includes('html.indexOf(cow17LoaderMarker) > html.indexOf(cow17InjectionMarker)'), 'build enforces loader before Cow adapter');
 check(build.includes('await cp(sourceProductionAssetsDir, outputProductionAssets, { recursive: true });'), 'build packages Cow locally');
+
+const qa = await readFile(qaPath, 'utf8');
+check(qa.includes("page.on('response'"), 'browser QA records failed response URLs');
+for (const optionalVfxPath of [
+  '/assets/production/vfx/kenney/dirt_01.png',
+  '/assets/production/vfx/kenney/smoke_03.png',
+  '/assets/production/vfx/kenney/trace_03.png',
+]) {
+  check(qa.includes(optionalVfxPath), `browser QA names optional inherited VFX path ${optionalVfxPath}`);
+}
+check(qa.includes("['/assets/production/characters/cow17-walking-v1.glb']"), 'fallback QA allows only its deliberate Cow 17 404');
 
 const provenance = JSON.parse(await readFile(provenancePath, 'utf8'));
 const entry = (provenance.productionImports || []).find((candidate) => candidate.id === 'character.cow17.walking.v1');
