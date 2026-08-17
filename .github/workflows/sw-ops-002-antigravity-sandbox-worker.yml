@@ -123,15 +123,18 @@ jobs:
           const fs = require('fs');
           const task = JSON.parse(fs.readFileSync('tools/antigravity/tasks/task-slot.json', 'utf8'));
           const result = JSON.parse(fs.readFileSync('evidence/sw-ag-task-slot/result.json', 'utf8'));
+          const patch = fs.readFileSync('evidence/sw-ag-task-slot/worker.patch', 'utf8');
           if (result.status !== 'quarantined-patch-ready') throw new Error('patch not ready');
           if (result.taskId !== task.taskId) throw new Error('wrong task result');
           if (result.patchBaseSha !== task.exactBaseSha) throw new Error('wrong patch base');
           if (!result.interactionId || !result.environmentId) throw new Error('missing interaction evidence');
+          if (result.interactionStatus !== 'completed') throw new Error('Antigravity interaction did not complete');
           if (result.sandboxTrust !== 'untrusted') throw new Error('sandbox became authoritative');
           if (!Array.isArray(result.changedFiles) || !result.changedFiles.length) throw new Error('task returned no changed files');
           for (const file of result.changedFiles) {
             if (!task.allowedPaths.includes(file)) throw new Error(`patch escaped allowlist: ${file}`);
           }
+          if (/^deleted file mode /m.test(patch) || /^\+\+\+ \/dev\/null$/m.test(patch)) throw new Error('candidate patch deletes an allowlisted file');
           if (result.patchBytes <= 0 || result.patchBytes > task.maxPatchBytes) throw new Error('patch size invalid');
           if (result.githubWriteAuthority !== false) throw new Error('GitHub write authority widened');
           NODE
