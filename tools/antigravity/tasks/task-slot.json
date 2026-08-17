@@ -1,10 +1,10 @@
 {
   "version": "SW_ANTIGRAVITY_WORKER_TASK_V1",
-  "taskId": "SW-AG-ART-009-CI-GATE-003",
+  "taskId": "SW-AG-ART-009-CI-GATE-004",
   "repository": "lybyerc-lab/Severe-Warning",
   "repositoryUrl": "https://github.com/lybyerc-lab/Severe-Warning",
   "exactBaseSha": "19a83af9f77d51feab64dc0edfe94c896b9b5c17",
-  "goal": "Use code_execution immediately. Work only on /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml in this fresh focused correction. The host mounted that exact file from frozen base 19a83af9f77d51feab64dc0edfe94c896b9b5c17 plus read-only context under /workspace/context. Do not change branches or Git history. Do not clone or fetch the repository. Sandbox state is not authority. Run 31950101752 proved the Cow-specific static verifier passes 47/47, but the workflow's 'Verify protected Cow seam and build' step invokes obsolete 'pnpm run verify:v500', which fails on legacy v5.0.0 identity/four-stop expectations. Inspect only the editable workflow and mounted context: package.json, verify-v510-production-slice.mjs, verify-modernization-phase4-scoring-campaign.mjs, and verify-sw-art-009-cow17-runtime.mjs. Replace only the obsolete verify:v500 invocation with the smallest current blocking verifier command or commands that preserve current production identity plus campaign/Cow continuity. Preserve verify:process, verify:asset-pipeline, modern:typecheck, build, packaged Cow GLB hash/size checks, official GLTFLoader identity, browser proof, source assembly order, scope gate, trigger, and one-shot rule. No runtime, gameplay, assets, scripts, package, task, Antigravity, source assembly, or QA edits. Re-read the edited workflow, run the requested lightweight checks, then stop.",
+  "goal": "Use code_execution immediately. Perform exactly one bounded workflow edit in /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml. Do not change branches or Git history. Do not clone, fetch, search for, or inspect any other repository copy. The Director has already made the verification decision. Inside the 'Verify protected Cow seam and build' run block, replace the single line 'pnpm run verify:v500' with exactly these two lines at the same indentation: 'pnpm run verify:v510' followed immediately by 'pnpm run verify:phase4'. Do not alter any other line, ordering, trigger, gate, proof, comment, whitespace outside that replacement, or file. Re-read the edited workflow, run the requested lightweight checks, and stop.",
   "nonGoals": [
     "No runtime, gameplay, campaign, Cow behavior, art, asset, or presentation changes",
     "No changes to source assembly order or worker scope allowlist",
@@ -28,26 +28,22 @@
     "tools/"
   ],
   "proofPlan": [
-    "Confirm the editable workflow invokes legacy verify:v500 after verify:process",
-    "Inspect only the mounted exact-base context files without cloning or fetching the repository",
-    "Make one workflow-only substitution for the obsolete verifier gate",
-    "Preserve all Cow 17 task-specific build, asset identity, and browser proof steps",
-    "Run the two focused workspace checks in requestedTests",
+    "Confirm the editable workflow contains exactly one pnpm run verify:v500 line",
+    "Replace only that line with pnpm run verify:v510 then pnpm run verify:phase4",
+    "Confirm verify:process remains immediately before the replacement and verify:asset-pipeline remains after it",
+    "Run the focused requestedTests",
     "Host extracts only the allowlisted workflow file and validates the patch against exactBaseSha with git apply --check and git diff --check"
   ],
   "requestedTests": [
-    "test -s /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml",
-    "grep -n 'verify:process\\|verify:v500\\|verify:v510\\|verify:phase4\\|verify:asset-pipeline' /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml"
+    "grep -n 'pnpm run verify:process\\|pnpm run verify:v500\\|pnpm run verify:v510\\|pnpm run verify:phase4\\|pnpm run verify:asset-pipeline' /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml",
+    "test \"$(grep -c 'pnpm run verify:v500' /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml)\" = 0",
+    "test \"$(grep -c 'pnpm run verify:v510' /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml)\" = 1",
+    "test \"$(grep -c 'pnpm run verify:phase4' /workspace/repo/.github/workflows/sw-art-009-cow17-runtime.yml)\" = 1"
   ],
   "tokenBudget": 30000,
   "maxPatchBytes": 12000,
   "requirePatch": true,
   "agent": "antigravity-preview-05-2026",
   "sourceMode": "focused-inline",
-  "contextPaths": [
-    "package.json",
-    "scripts/verify-v510-production-slice.mjs",
-    "scripts/verify-modernization-phase4-scoring-campaign.mjs",
-    "scripts/verify-sw-art-009-cow17-runtime.mjs"
-  ]
+  "contextPaths": []
 }
