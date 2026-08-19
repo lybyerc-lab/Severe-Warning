@@ -412,21 +412,29 @@ let currentBotWp = 0;
 let isTitleCardCollapsed = false;
 function toggleTitleCard() {
   const panel = getCachedEl('titleCardPanel');
+  if (!panel) return;
   const btn = panel.querySelector('.collapse-btn');
   isTitleCardCollapsed = !isTitleCardCollapsed;
   if (isTitleCardCollapsed) {
     panel.classList.add('collapsed');
-    btn.innerText = '[ ➕ ]';
+    if (btn) btn.innerText = '[ ➕ ]';
   } else {
     panel.classList.remove('collapsed');
-    btn.innerText = '[ ─ ]';
+    if (btn) btn.innerText = '[ ─ ]';
   }
 }
 
-// Auto-Collapse Title Card after 10 seconds into the run for Android/Mobile view clarity
-setTimeout(() => {
-  if (window.innerWidth < 850 && !isTitleCardCollapsed) toggleTitleCard();
-}, 10000);
+// Auto-Collapse Title Card 10 seconds into the run for Android/Mobile view clarity.
+// Armed when a run starts so the countdown cannot burn down while the player is
+// still reading the main menu.
+let titleCardAutoCollapseTimer = null;
+function armTitleCardAutoCollapse() {
+  if (titleCardAutoCollapseTimer !== null) clearTimeout(titleCardAutoCollapseTimer);
+  titleCardAutoCollapseTimer = setTimeout(() => {
+    titleCardAutoCollapseTimer = null;
+    if (window.innerWidth < 850 && !isTitleCardCollapsed) toggleTitleCard();
+  }, 10000);
+}
 
 // --- WEB AUDIO API SYNTHESIZER ---
 // --- WEB AUDIO API ADVANCED SYNTHESIZER & SOUNDSCAPE ENGINE ---
@@ -657,6 +665,9 @@ function startRunFromMenu() {
 
 function togglePauseMenu() {
   if (!gameStarted) return;
+  // Pausing requires a live run; resuming stays available so a run suspended
+  // while backgrounded can always be dismissed.
+  if (!isPaused && !runActive) return;
   initAudio();
   playSound('click');
   isPaused = !isPaused;
@@ -682,16 +693,22 @@ function togglePauseMenu() {
 }
 
 function restartCurrentRun() {
-  togglePauseMenu();
+  // Clear the pause rather than toggling it, so a restart always resumes a live
+  // run instead of leaving the fresh run frozen behind a dismissed overlay.
+  if (isPaused) togglePauseMenu();
   resetWarningRun();
 }
 
 function quitToMainMenu() {
   isPaused = false;
   gameStarted = false;
+  runActive = false;
+  runSuspendedByVisibility = false;
   const pauseOverlay = getCachedEl('pauseOverlay');
+  const resultsOverlay = getCachedEl('resultsOverlay');
   const menu = getCachedEl('mainMenu');
   if (pauseOverlay) pauseOverlay.classList.remove('active');
+  if (resultsOverlay) resultsOverlay.classList.remove('active');
   if (menu) {
     menu.classList.remove('hidden');
     menu.style.display = 'flex';
@@ -739,6 +756,7 @@ if (isBotMode) {
   const menu = getCachedEl('mainMenu');
   if (menu) menu.classList.add('hidden');
   gameStarted = true;
+  armTitleCardAutoCollapse();
 }
 
 loadHighScores();
@@ -2448,6 +2466,7 @@ function destroyTarget(target, source = 'storm') {
 }
 
 function damageTarget(target, amount, source = 'storm') {
+  if (!runActive) return;
   if (!target || target.destroyed || target.health <= 0) return;
   target.health = Math.max(0, target.health - amount);
   if (target.health <= 0) destroyTarget(target, source);
@@ -2528,22 +2547,25 @@ function damageLandmark(lm, amount) {
 
 // STRICT STAGE SCORE HARD CAPS + SCORE DOUBLER PICKUP SUPPORT
 function addScore(pts) {
-  comboMultiplier = Math.min(3.5, comboMultiplier + 0.05);
+  const stageCap = currentStage === 1 ? 2999 : (currentStage === 2 ? 7999 : Infinity);
+  if (destructionScore >= stageCap) return 0;
+
+  // The combo is only advanced once points actually land, so a run sitting on a
+  // stage hard cap cannot farm a free 3.5x best-combo result stat.
+  const nextCombo = Math.min(3.5, comboMultiplier + 0.05);
+  let multiplied = Math.round(pts * nextCombo);
+  if (scoreDoublerTimer > 0) multiplied *= 2;
+
+  const previousScore = destructionScore;
+  destructionScore = Math.min(stageCap, destructionScore + multiplied);
+  const awarded = destructionScore - previousScore;
+  if (awarded <= 0) return 0;
+
+  comboMultiplier = nextCombo;
   maxComboReached = Math.max(maxComboReached, comboMultiplier);
   comboDecayTimer = 4.5;
-
-  let multiplied = Math.round(pts * comboMultiplier);
-  if (scoreDoublerTimer > 0) multiplied *= 2;
-  const added = multiplied;
   baseScore += pts;
-  
-  const previousScore = destructionScore;
-  let targetScore = destructionScore + added;
-  if (currentStage === 1) targetScore = Math.min(2999, targetScore);
-  else if (currentStage === 2) targetScore = Math.min(7999, targetScore);
-
-  destructionScore = targetScore;
-  return destructionScore - previousScore;
+  return awarded;
 }
 
 function publishMediaHeadline(text, duration = 3.2) {
@@ -3044,7 +3066,7 @@ function selectStormClass(type) {
 }
 
 function triggerAbility(slot) {
-  if (!runActive) return;
+  if (!runActive || isPaused || !gameStarted) return;
   initAudio();
 
   const cd = cooldowns[slot];
@@ -3293,6 +3315,7 @@ function finishRun() {
 }
 
 function resetWarningRun() {
+  armTitleCardAutoCollapse();
   runTimeRemaining = 180;
   destructionScore = 0;
   baseScore = 0;
@@ -3380,6 +3403,14 @@ function animate(now) {
   lastFrameTime = now;
 
   const dt = realDelta;
+
+  // A paused run freezes completely: timer, storm motion, scoring and abilities.
+  // The scene keeps rendering so it stays visible behind the pause overlay.
+  if (isPaused) {
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+    return;
+  }
 
   // Run Timer & Stage Transitions
   if (runActive) {
@@ -3491,7 +3522,7 @@ function animate(now) {
   const isMoving = (moveX !== 0 || moveZ !== 0 || joystickActive || isBotMode);
 
   // Tornado PULL Vortex Physics
-  if (activePullVortex && pullVortexTimer > 0) {
+  if (activePullVortex && pullVortexTimer > 0 && runActive) {
     pullVortexTimer -= dt;
     if (pullVortexTimer <= 0) activePullVortex = false;
     targets.forEach(t => {
