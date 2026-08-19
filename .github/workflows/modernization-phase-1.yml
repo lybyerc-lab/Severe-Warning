@@ -145,8 +145,41 @@ jobs:
           output_dir="dist/modernization-phase-1"
           mkdir -p "$output_dir"
 
+          # Packaging identity comes from package.json and is checked against the
+          # APK Gradle actually produced, so these evidence bundles cannot keep
+          # advertising a version that nobody builds any more.
+          base_version="$(node -p "require('./package.json').version")"
+          if [[ ! "$base_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::package.json version must be semantic x.y.z, received: $base_version"
+            exit 1
+          fi
+          IFS='.' read -r major minor patch <<< "$base_version"
+          if (( minor > 9 || patch > 9 )); then
+            echo "::error::The xyz versionCode scheme cannot encode $base_version; minor and patch must each stay below 10."
+            exit 1
+          fi
+          version_code="$((major * 100 + minor * 10 + patch))"
+
+          metadata="android/app/build/outputs/apk/debug/output-metadata.json"
+          test -s "$metadata"
+          actual_version_code="$(node -p "String(require('./$metadata').elements?.[0]?.versionCode ?? '')")"
+          actual_version_name="$(node -p "String(require('./$metadata').elements?.[0]?.versionName ?? '')")"
+          identity_ok=1
+          if [[ "$actual_version_code" != "$version_code" ]]; then
+            echo "::error::APK versionCode is '$actual_version_code', expected '$version_code'"
+            identity_ok=0
+          fi
+          if [[ "$actual_version_name" != "$base_version" ]]; then
+            echo "::error::APK versionName is '$actual_version_name', expected '$base_version'"
+            identity_ok=0
+          fi
+          if (( identity_ok == 0 )); then
+            echo "::error::Packaged APK identity does not match package.json. Refusing to record a mislabelled evidence bundle."
+            exit 1
+          fi
+
           source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
-          output_apk="$output_dir/Severe-Weather-v5.1.0-Modern-Shell-${GITHUB_RUN_NUMBER}.apk"
+          output_apk="$output_dir/Severe-Weather-v${base_version}-Modern-Shell-${GITHUB_RUN_NUMBER}.apk"
           test -s "$source_apk"
           cp "$source_apk" "$output_apk"
           sha256sum "$output_apk" | tee "$output_apk.sha256"
@@ -159,8 +192,8 @@ jobs:
             "sourceBranch": "agent/modernization-phase-1-shell",
             "sourceCommit": "$source_commit",
             "workflowRun": $GITHUB_RUN_NUMBER,
-            "versionName": "5.1.0",
-            "versionCode": 510,
+            "versionName": "$base_version",
+            "versionCode": $version_code,
             "renderer": "Three.js r128",
             "architecture": "modern-shell-v1",
             "apkFile": "$(basename "$output_apk")",
