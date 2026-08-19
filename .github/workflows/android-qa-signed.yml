@@ -53,9 +53,28 @@ jobs:
         shell: bash
         run: |
           source_commit="$(git rev-parse HEAD)"
-          version_code="$((500000 + GITHUB_RUN_NUMBER))"
-          version_name="5.0.0-qa.${GITHUB_RUN_NUMBER}"
+          base_version="$(node -p "require('./package.json').version")"
+          if [[ ! "$base_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::package.json version must be semantic x.y.z, received: $base_version"
+            exit 1
+          fi
+          IFS='.' read -r major minor patch <<< "$base_version"
+          if (( minor > 9 || patch > 9 )); then
+            echo "::error::The xyz versionCode scheme cannot encode $base_version; minor and patch must each stay below 10."
+            exit 1
+          fi
+          if (( GITHUB_RUN_NUMBER > 999 )); then
+            echo "::error::Run number $GITHUB_RUN_NUMBER no longer fits the QA versionCode scheme; widen the multiplier before packaging again."
+            exit 1
+          fi
+
+          # QA builds keep their own per-run identity so an installed QA APK can
+          # update in place, but the base version now comes from package.json
+          # instead of a literal that silently goes stale.
+          version_code="$(( (major * 100 + minor * 10 + patch) * 1000 + GITHUB_RUN_NUMBER ))"
+          version_name="${base_version}-qa.${GITHUB_RUN_NUMBER}"
           source_ref="${{ inputs.source_ref || github.ref_name }}"
+          echo "SEVERE_WEATHER_BASE_VERSION=$base_version" >> "$GITHUB_ENV"
           echo "SEVERE_WEATHER_SOURCE_COMMIT=$source_commit" >> "$GITHUB_ENV"
           echo "SEVERE_WEATHER_SOURCE_REF=$source_ref" >> "$GITHUB_ENV"
           echo "SEVERE_WEATHER_VERSION_CODE=$version_code" >> "$GITHUB_ENV"
@@ -162,7 +181,7 @@ jobs:
         run: |
           source_apk="android/app/build/outputs/apk/release/app-release.apk"
           output_dir="dist/android-qa"
-          output_apk="$output_dir/Severe-Weather-v5.0.0-QA-${GITHUB_RUN_NUMBER}.apk"
+          output_apk="$output_dir/Severe-Weather-v${SEVERE_WEATHER_BASE_VERSION}-QA-${GITHUB_RUN_NUMBER}.apk"
           metadata="android/app/build/outputs/apk/release/output-metadata.json"
 
           test -s "$source_apk"
@@ -178,9 +197,23 @@ jobs:
           actual_version_code="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('$metadata','utf8')); process.stdout.write(String(m.elements?.[0]?.versionCode ?? ''))")"
           actual_version_name="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('$metadata','utf8')); process.stdout.write(String(m.elements?.[0]?.versionName ?? ''))")"
 
-          [[ "$actual_application_id" == "$SEVERE_WEATHER_APPLICATION_ID" ]]
-          [[ "$actual_version_code" == "$SEVERE_WEATHER_VERSION_CODE" ]]
-          [[ "$actual_version_name" == "$SEVERE_WEATHER_VERSION_NAME" ]]
+          identity_ok=1
+          if [[ "$actual_application_id" != "$SEVERE_WEATHER_APPLICATION_ID" ]]; then
+            echo "::error::APK applicationId is '$actual_application_id', expected '$SEVERE_WEATHER_APPLICATION_ID'"
+            identity_ok=0
+          fi
+          if [[ "$actual_version_code" != "$SEVERE_WEATHER_VERSION_CODE" ]]; then
+            echo "::error::APK versionCode is '$actual_version_code', expected '$SEVERE_WEATHER_VERSION_CODE'"
+            identity_ok=0
+          fi
+          if [[ "$actual_version_name" != "$SEVERE_WEATHER_VERSION_NAME" ]]; then
+            echo "::error::APK versionName is '$actual_version_name', expected '$SEVERE_WEATHER_VERSION_NAME'"
+            identity_ok=0
+          fi
+          if (( identity_ok == 0 )); then
+            echo "::error::Signed QA APK identity does not match package.json. Refusing to publish a mislabelled artifact."
+            exit 1
+          fi
 
           sha256sum "$output_apk" | tee "$output_apk.sha256"
           cert_sha256="$(awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' "$output_dir/apksigner-report.txt")"
@@ -201,7 +234,7 @@ jobs:
           EOF
 
           echo "apk_path=$output_apk" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=severe-weather-v5.0.0-qa-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=severe-weather-v${SEVERE_WEATHER_BASE_VERSION}-qa-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
       - name: Upload signed QA package
         uses: actions/upload-artifact@v7
