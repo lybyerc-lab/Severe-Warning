@@ -88,6 +88,32 @@ jobs:
           cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
           cmp -s www/audio/storm-feel-manifest.json android/app/src/main/assets/public/audio/storm-feel-manifest.json
 
+      - name: Resolve package identity from package.json
+        shell: bash
+        run: |
+          version_name="$(node -p "require('./package.json').version")"
+          if [[ ! "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::package.json version must be semantic x.y.z, received: $version_name"
+            exit 1
+          fi
+          IFS='.' read -r major minor patch <<< "$version_name"
+          if (( minor > 9 || patch > 9 )); then
+            echo "::error::The xyz versionCode scheme cannot encode $version_name; minor and patch must each stay below 10."
+            exit 1
+          fi
+          application_id="$(node -p "require('./capacitor.config.json').appId")"
+          source_commit="$(git rev-parse HEAD)"
+
+          echo "SEVERE_WEATHER_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
+          echo "SEVERE_WEATHER_VERSION_CODE=$((major * 100 + minor * 10 + patch))" >> "$GITHUB_ENV"
+          echo "SEVERE_WEATHER_APPLICATION_ID=$application_id" >> "$GITHUB_ENV"
+          echo "SEVERE_WEATHER_SOURCE_COMMIT=$source_commit" >> "$GITHUB_ENV"
+
+          echo "Source commit: $source_commit"
+          echo "Application ID: $application_id"
+          echo "Version name: $version_name"
+          echo "Version code: $((major * 100 + minor * 10 + patch))"
+
       - name: Assemble debug APK
         shell: bash
         run: |
@@ -100,9 +126,38 @@ jobs:
         shell: bash
         run: |
           source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          metadata="android/app/build/outputs/apk/debug/output-metadata.json"
           output_dir="dist/android-debug"
-          output_apk="$output_dir/Severe-Weather-v4.5.0-Mobile-Test-${GITHUB_RUN_NUMBER}.apk"
           test -s "$source_apk"
+          test -s "$metadata"
+
+          # Read the identity Gradle stamped into the APK and hold it against the
+          # identity resolved from package.json. The manifest below then describes
+          # the binary that was actually built instead of asserting a hardcoded
+          # version that silently goes stale.
+          actual_application_id="$(node -p "require('./$metadata').applicationId ?? ''")"
+          actual_version_code="$(node -p "String(require('./$metadata').elements?.[0]?.versionCode ?? '')")"
+          actual_version_name="$(node -p "String(require('./$metadata').elements?.[0]?.versionName ?? '')")"
+
+          identity_ok=1
+          if [[ "$actual_application_id" != "$SEVERE_WEATHER_APPLICATION_ID" ]]; then
+            echo "::error::APK applicationId is '$actual_application_id', expected '$SEVERE_WEATHER_APPLICATION_ID'"
+            identity_ok=0
+          fi
+          if [[ "$actual_version_code" != "$SEVERE_WEATHER_VERSION_CODE" ]]; then
+            echo "::error::APK versionCode is '$actual_version_code', expected '$SEVERE_WEATHER_VERSION_CODE'"
+            identity_ok=0
+          fi
+          if [[ "$actual_version_name" != "$SEVERE_WEATHER_VERSION_NAME" ]]; then
+            echo "::error::APK versionName is '$actual_version_name', expected '$SEVERE_WEATHER_VERSION_NAME'"
+            identity_ok=0
+          fi
+          if (( identity_ok == 0 )); then
+            echo "::error::Packaged APK identity does not match package.json. Refusing to publish a mislabelled artifact."
+            exit 1
+          fi
+
+          output_apk="$output_dir/Severe-Weather-v${actual_version_name}-Mobile-Test-${GITHUB_RUN_NUMBER}.apk"
           mkdir -p "$output_dir"
           cp "$source_apk" "$output_apk"
           sha256sum "$output_apk" | tee "$output_apk.sha256"
@@ -110,11 +165,11 @@ jobs:
           cat > "$output_dir/package-manifest.json" <<EOF
           {
             "sourceRef": "${{ inputs.source_ref }}",
-            "sourceCommit": "$GITHUB_SHA",
+            "sourceCommit": "$SEVERE_WEATHER_SOURCE_COMMIT",
             "workflowRun": $GITHUB_RUN_NUMBER,
-            "applicationId": "com.lybyerclab.severeweather",
-            "versionCode": 450,
-            "versionName": "4.5.0",
+            "applicationId": "$actual_application_id",
+            "versionCode": $actual_version_code,
+            "versionName": "$actual_version_name",
             "signingMode": "ephemeral-debug-key",
             "updateInPlaceExpected": false,
             "apkFile": "$(basename "$output_apk")",
@@ -122,7 +177,7 @@ jobs:
           }
           EOF
 
-          echo "artifact_name=severe-weather-v4.5.0-mobile-test-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=severe-weather-v${actual_version_name}-mobile-test-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
       - name: Upload mobile test package
         uses: actions/upload-artifact@v7
