@@ -1071,6 +1071,8 @@ function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material
 const creekMat = new THREE.MeshStandardMaterial({ color: '#164e63', roughness: 0.3, metalness: 0.08, transparent: true, opacity: 0.88, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
 createTerrainRoad(9, 780, 255, 0, false, creekMat, 0.12);
 
+const polePositions = [];
+
 for (let r = -320; r <= 320; r += 80) {
   createTerrainRoad(17, 800, 0, r, true, shoulderMat, 0.22);
   createTerrainRoad(12, 800, 0, r, true, roadMat, 0.30);
@@ -1083,26 +1085,62 @@ for (let r = -320; r <= 320; r += 80) {
   }
 
   for (let px = -300; px <= 300; px += 50) {
-    const poleGroup = new THREE.Group();
-    const poleGeo = new THREE.CylinderGeometry(0.35, 0.45, 11, 10);
-    const poleMat = new THREE.MeshStandardMaterial({ color: '#542605', roughness: 0.7 });
-    const pole = new THREE.Mesh(poleGeo, poleMat);
-    pole.position.y = 5.5;
-    pole.castShadow = true;
-    poleGroup.add(pole);
-
-    const crossGeo = new THREE.BoxGeometry(4.5, 0.35, 0.45);
-    const crossMat = new THREE.MeshStandardMaterial({ color: '#311202' });
-    const cross = new THREE.Mesh(crossGeo, crossMat);
-    cross.position.y = 10.2;
-    cross.castShadow = true;
-    poleGroup.add(cross);
-
-    poleGroup.position.set(px, terrainHeightAt(px, r + 13.5), r + 13.5);
-    scene.add(poleGroup);
-    powerPoles.push({ group: poleGroup, x: px, z: r + 13.5, sparked: false });
+    polePositions.push({ x: px, z: r + 13.5 });
   }
 }
+
+// poleMat and crossMat keep their original declaration text verbatim because
+// apply-v440-source-patch.mjs replaces both lines to swap in toon materials.
+// The utility line is static for the life of a run: poles are never moved and
+// never removed, and the only transform they ever take is a 1.08 pulse for
+// 120ms from the grid-zap cascade. Two InstancedMeshes therefore replace what
+// were 234 separate meshes, each of which was allocating its own geometry and
+// material inside the loop.
+const poleGeo = new THREE.CylinderGeometry(0.35, 0.45, 11, 10);
+const poleMat = new THREE.MeshStandardMaterial({ color: '#542605', roughness: 0.7 });
+const crossGeo = new THREE.BoxGeometry(4.5, 0.35, 0.45);
+const crossMat = new THREE.MeshStandardMaterial({ color: '#311202' });
+const poleTrunks = new THREE.InstancedMesh(poleGeo, poleMat, polePositions.length);
+const poleCrossarms = new THREE.InstancedMesh(crossGeo, crossMat, polePositions.length);
+[poleTrunks, poleCrossarms].forEach(mesh => {
+  mesh.castShadow = true;
+  // The line spans the whole map, so culling the set as one object would only
+  // ever remove it wholesale or not at all.
+  mesh.frustumCulled = false;
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(mesh);
+});
+
+const poleMatrix = new THREE.Matrix4();
+const poleQuat = new THREE.Quaternion();
+const poleScaleVec = new THREE.Vector3();
+const polePosVec = new THREE.Vector3();
+function writePoleInstance(index, scale) {
+  const spot = polePositions[index];
+  const groundY = terrainHeightAt(spot.x, spot.z);
+  poleScaleVec.set(scale, scale, scale);
+  polePosVec.set(spot.x, groundY + 5.5 * scale, spot.z);
+  poleMatrix.compose(polePosVec, poleQuat, poleScaleVec);
+  poleTrunks.setMatrixAt(index, poleMatrix);
+  polePosVec.set(spot.x, groundY + 10.2 * scale, spot.z);
+  poleMatrix.compose(polePosVec, poleQuat, poleScaleVec);
+  poleCrossarms.setMatrixAt(index, poleMatrix);
+  poleTrunks.instanceMatrix.needsUpdate = true;
+  poleCrossarms.instanceMatrix.needsUpdate = true;
+}
+
+polePositions.forEach((spot, index) => {
+  writePoleInstance(index, 1);
+  powerPoles.push({
+    // `group` is a stand-in with just the surface the accepted grid-zap cascade
+    // uses, so pole.group.scale.set(...) keeps working unchanged and drives the
+    // instance matrix instead of an Object3D.
+    group: { scale: { set: (scale) => writePoleInstance(index, scale) } },
+    x: spot.x,
+    z: spot.z,
+    sparked: false
+  });
+});
 
 function addInstancedRoadMarks(geometry, transforms) {
   const marks = new THREE.InstancedMesh(geometry, laneMat, transforms.length);
