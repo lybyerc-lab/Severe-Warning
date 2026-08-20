@@ -141,6 +141,7 @@ jobs:
           npm run patch:v442
           npm run patch:v450
           npm run patch:v500
+          npm run patch:v510
 
       - name: Build, stamp, and synchronize offline Android assets
         shell: bash
