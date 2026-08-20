@@ -9,6 +9,16 @@ const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 
 const html = await readFile(sourcePath, 'utf8');
+
+// The build identity is whatever package.json declares, not a literal. A literal
+// here goes stale the moment the patch chain advances, and then reports a healthy
+// build as broken.
+const { version: expectedVersion } = JSON.parse(
+  await readFile(path.join(projectRoot, 'package.json'), 'utf8')
+);
+if (!/^\d+\.\d+\.\d+$/.test(expectedVersion)) {
+  throw new Error(`package.json version must be semantic x.y.z, received: ${expectedVersion}`);
+}
 const checks = [];
 
 function check(name, condition, detail = '') {
@@ -18,7 +28,7 @@ function check(name, condition, detail = '') {
 }
 
 for (const [name, marker] of [
-  ['v5 build identity', 'v5.0.0'],
+  ['build identity', `v${expectedVersion}`],
   ['campaign foundation marker', 'V500_CAMPAIGN_FOUNDATION_V1'],
   ['campaign subsystem anchor', '[SW:CAMPAIGN:HEARTLAND]'],
   ['campaign save schema', 'severe_weather_campaign_v1'],
