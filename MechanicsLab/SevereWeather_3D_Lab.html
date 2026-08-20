@@ -870,6 +870,41 @@ loadCosmeticProgress();
 const container = document.getElementById('webgl');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#030712');
+
+// Stylised sky dome. The world previously ended in a flat void, so there was no
+// horizon and nothing to read scale or depth against. scene.background stays a
+// Color because the lightning flash and the stage atmosphere driver both write
+// to it; the dome simply renders behind everything else.
+const skyDomeUniforms = {
+  uTop: { value: new THREE.Color('#0a1526') },
+  uHorizon: { value: new THREE.Color('#3d5878') },
+  uGround: { value: new THREE.Color('#162437') },
+  uFlash: { value: 0 }
+};
+const skyDome = new THREE.Mesh(
+  new THREE.SphereGeometry(760, 32, 20),
+  new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+    uniforms: skyDomeUniforms,
+    vertexShader: 'varying vec3 vWorld; void main(){ vWorld = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: [
+      'uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uGround; uniform float uFlash;',
+      'varying vec3 vWorld;',
+      'void main(){',
+      '  float h = normalize(vWorld).y;',
+      '  vec3 sky = mix(uHorizon, uTop, clamp(pow(max(h, 0.0), 0.55), 0.0, 1.0));',
+      '  vec3 col = mix(uGround, sky, smoothstep(-0.14, 0.05, h));',
+      '  col += uFlash * vec3(0.34, 0.52, 0.82);',
+      '  gl_FragColor = vec4(col, 1.0);',
+      '}'
+    ].join('\n')
+  })
+);
+skyDome.renderOrder = -1;
+skyDome.frustumCulled = false;
+scene.add(skyDome);
 scene.fog = new THREE.FogExp2('#030712', 0.0014);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -1350,13 +1385,21 @@ scene.add(tornadoGroup);
 // Overhead Mesocyclone Storm Cloud Canopy Base
 const mesoCloudGroup = new THREE.Group();
 mesoCloudGroup.position.y = 34;
-const mesoCloudMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.75, roughness: 0.3 });
-for (let i = 0; i < 6; i++) {
-  const angle = (i / 6) * Math.PI * 2;
-  const rad = 14 + Math.random() * 6;
-  const cloudLobeGeo = new THREE.CylinderGeometry(rad, rad * 0.8, 8, 16);
-  const cloudLobe = new THREE.Mesh(cloudLobeGeo, mesoCloudMat);
-  cloudLobe.position.set(Math.cos(angle) * 10, 0, Math.sin(angle) * 10);
+const mesoCloudMat = new THREE.MeshStandardMaterial({
+  color: '#18223a', transparent: true, opacity: 0.58,
+  roughness: 1.0, metalness: 0.0, depthWrite: false
+});
+for (let i = 0; i < 15; i++) {
+  const angle = (i / 15) * Math.PI * 2 + (i % 2) * 0.32;
+  const ring = i < 6 ? 6 : (i < 11 ? 15 : 24);
+  const rad = (i < 6 ? 13 : (i < 11 ? 10.5 : 7.5)) + Math.random() * 4;
+  const cloudLobe = new THREE.Mesh(new THREE.DodecahedronGeometry(rad, 1), mesoCloudMat);
+  cloudLobe.position.set(
+    Math.cos(angle) * ring,
+    (i < 6 ? 1.5 : (i < 11 ? -0.5 : -2.2)) + (Math.random() - 0.5) * 2.2,
+    Math.sin(angle) * ring
+  );
+  cloudLobe.scale.set(1, 0.42 + Math.random() * 0.16, 1);
   mesoCloudGroup.add(cloudLobe);
 }
 tornadoGroup.add(mesoCloudGroup);
@@ -2489,7 +2532,9 @@ function triggerLightningStrike(targetX, targetZ) {
   lightningGeo.setFromPoints(points);
 
   scene.background.set('#38bdf8');
+  skyDomeUniforms.uFlash.value = 0.9;
   setTimeout(() => scene.background.set('#030712'), 90);
+  setTimeout(() => { skyDomeUniforms.uFlash.value = 0; }, 90);
   playSound('zap');
   addCameraShake(1.0);
 }

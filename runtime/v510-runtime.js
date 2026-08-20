@@ -77,11 +77,18 @@ function updateProductionAtmosphere(dt) {
     const targetFog = new THREE.Color(currentStage === 1 ? '#162437' : (currentStage === 2 ? '#101c2c' : '#09111e'));
     scene.fog.color.lerp(targetFog, Math.min(1, dt * 0.22));
     scene.background.lerp(targetFog, Math.min(1, dt * 0.16));
+    if (typeof skyDomeUniforms !== 'undefined') {
+      skyDomeUniforms.uGround.value.lerp(targetFog, Math.min(1, dt * 0.22));
+      skyDomeUniforms.uHorizon.value.lerp(
+        targetFog.clone().lerp(new THREE.Color('#5d7ba3'), 0.55),
+        Math.min(1, dt * 0.18)
+      );
+    }
   }
 
-  ambientLight.intensity = THREE.MathUtils.lerp(ambientLight.intensity, 1.02 - stageFactor * 0.22, Math.min(1, dt * 0.6));
-  skyLight.intensity = THREE.MathUtils.lerp(skyLight.intensity, 0.46 - stageFactor * 0.10, Math.min(1, dt * 0.6));
-  dirLight.intensity = THREE.MathUtils.lerp(dirLight.intensity, 1.72 - stageFactor * 0.34, Math.min(1, dt * 0.5));
+  ambientLight.intensity = THREE.MathUtils.lerp(ambientLight.intensity, 0.52 - stageFactor * 0.14, Math.min(1, dt * 0.6));
+  skyLight.intensity = THREE.MathUtils.lerp(skyLight.intensity, 0.70 - stageFactor * 0.16, Math.min(1, dt * 0.6));
+  dirLight.intensity = THREE.MathUtils.lerp(dirLight.intensity, 2.30 - stageFactor * 0.45, Math.min(1, dt * 0.5));
   dirLight.color.lerp(new THREE.Color(currentStage === 3 ? '#c4d2ea' : '#f1ddb0'), Math.min(1, dt * 0.18));
 }
 

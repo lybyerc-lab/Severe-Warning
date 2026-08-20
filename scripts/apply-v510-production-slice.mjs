@@ -146,17 +146,17 @@ replaceExact(
 
 replaceExact(
   "const funnelMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.82, roughness: 0.15, side: THREE.DoubleSide });",
-  "const funnelMat = new THREE.MeshStandardMaterial({ color: '#111827', transparent: true, opacity: 0.62, roughness: 0.52, side: THREE.DoubleSide, depthWrite: false });",
+  "const funnelMat = new THREE.MeshStandardMaterial({ color: '#1b2536', transparent: true, opacity: 0.46, roughness: 1.0, metalness: 0.0, side: THREE.DoubleSide, depthWrite: false });",
   'inner funnel production material'
 );
 replaceExact(
   "const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.38, side: THREE.DoubleSide });",
-  "const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#94a3b8', transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false, blending: THREE.NormalBlending });",
+  "const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#9fb0c8', transparent: true, opacity: 0.24, side: THREE.DoubleSide, depthWrite: false, blending: THREE.NormalBlending });",
   'outer funnel production material'
 );
 replaceExact(
   "const dustMat = new THREE.MeshStandardMaterial({ color: '#1e293b', transparent: true, opacity: 0.55, roughness: 0.9 });",
-  "const dustMat = new THREE.MeshStandardMaterial({ color: '#6b5139', transparent: true, opacity: 0.42, roughness: 0.96, depthWrite: false });",
+  "const dustMat = new THREE.MeshStandardMaterial({ color: '#7d6f5b', transparent: true, opacity: 0.5, roughness: 1.0, metalness: 0.0, depthWrite: false });",
   'touchdown dust material'
 );
 replaceExact(
