@@ -326,8 +326,8 @@ replaceExact(
 );
 
 replaceExact(
-  '  let multiplied = Math.round(pts * comboMultiplier);',
-  '  let multiplied = Math.round(pts * comboMultiplier * campaignScoreMultiplier());',
+  '  let multiplied = Math.round(pts * nextCombo);',
+  '  let multiplied = Math.round(pts * nextCombo * campaignScoreMultiplier());',
   'campaign score modifier'
 );
 

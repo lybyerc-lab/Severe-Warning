@@ -427,13 +427,17 @@ function toggleTitleCard() {
 // Auto-Collapse Title Card 10 seconds into the run for Android/Mobile view clarity.
 // Armed when a run starts so the countdown cannot burn down while the player is
 // still reading the main menu.
-let titleCardAutoCollapseTimer = null;
+let titleCardCollapseArmed = false;
 function armTitleCardAutoCollapse() {
-  if (titleCardAutoCollapseTimer !== null) clearTimeout(titleCardAutoCollapseTimer);
-  titleCardAutoCollapseTimer = setTimeout(() => {
-    titleCardAutoCollapseTimer = null;
-    if (window.innerWidth < 850 && !isTitleCardCollapsed) toggleTitleCard();
-  }, 10000);
+  titleCardCollapseArmed = true;
+}
+// Collapsing on first movement rather than on a clock: the card is worth reading
+// while the player is still stationary, and worth losing the moment they start
+// driving the storm and need the field of view.
+function collapseTitleCardOnFirstMove() {
+  if (!titleCardCollapseArmed || isTitleCardCollapsed) return;
+  titleCardCollapseArmed = false;
+  toggleTitleCard();
 }
 
 // --- WEB AUDIO API SYNTHESIZER ---
@@ -705,9 +709,9 @@ function quitToMainMenu() {
   runActive = false;
   runSuspendedByVisibility = false;
   const pauseOverlay = getCachedEl('pauseOverlay');
-  const resultsOverlay = getCachedEl('resultsOverlay');
   const menu = getCachedEl('mainMenu');
   if (pauseOverlay) pauseOverlay.classList.remove('active');
+  const resultsOverlay = getCachedEl('resultsOverlay');
   if (resultsOverlay) resultsOverlay.classList.remove('active');
   if (menu) {
     menu.classList.remove('hidden');
@@ -1458,13 +1462,21 @@ for (let i = 0; i < 15; i++) {
   cloudLobe.scale.set(1, 0.66 + Math.random() * 0.2, 1);
   mesoCloudGroup.add(cloudLobe);
 }
+const cloudBaseMat = new THREE.MeshStandardMaterial({
+  color: '#141c30', transparent: true, opacity: 0.82,
+  roughness: 1.0, metalness: 0.0, depthWrite: false
+});
+const cloudBase = new THREE.Mesh(new THREE.CylinderGeometry(25, 19.5, 3.2, 30), cloudBaseMat);
+cloudBase.position.y = -5.2;
+mesoCloudGroup.add(cloudBase);
+
 tornadoGroup.add(mesoCloudGroup);
 
 // Multi-Segmented Inner Heavy Condensation Funnel Core (Top radius 22, Bottom radius 2.2, Height 34, 16 Height Segments)
 const funnelGeo = new THREE.CylinderGeometry(22, 2.2, 34, 32, 16, true);
 const funnelMat = new THREE.MeshStandardMaterial({ color: '#090d16', transparent: true, opacity: 0.82, roughness: 0.15, side: THREE.DoubleSide });
 const funnelMesh = new THREE.Mesh(funnelGeo, funnelMat);
-funnelMesh.position.y = 17;
+funnelMesh.position.y = 17.5;
 tornadoGroup.add(funnelMesh);
 
 // Store original vertex position buffer for dynamic serpentine wave deformation
@@ -1475,7 +1487,7 @@ const baseFunnelPos = new Float32Array(funnelPosAttr.array);
 const outerFunnelGeo = new THREE.CylinderGeometry(28, 4.5, 36, 24, 16, true);
 const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.38, side: THREE.DoubleSide });
 const outerFunnelMesh = new THREE.Mesh(outerFunnelGeo, outerFunnelMat);
-outerFunnelMesh.position.y = 18;
+outerFunnelMesh.position.y = 18.5;
 tornadoGroup.add(outerFunnelMesh);
 
 const outerPosAttr = outerFunnelGeo.attributes.position;
@@ -1483,16 +1495,19 @@ const baseOuterPos = new Float32Array(outerPosAttr.array);
 
 // Ground Touchdown Churning Dust & Debris Cloud Bowl
 const dustBowlGroup = new THREE.Group();
-dustBowlGroup.position.y = 1.5;
+dustBowlGroup.position.y = 4.2;
 const dustPuffs = [];
 const dustMat = new THREE.MeshStandardMaterial({ color: '#1e293b', transparent: true, opacity: 0.55, roughness: 0.9 });
 for (let i = 0; i < 8; i++) {
-  const pSize = 3.5 + Math.random() * 3.5;
+  const pSize = 3.5 + Math.random() * 3.0;
   const pGeo = new THREE.DodecahedronGeometry(pSize, 1);
   const pMesh = new THREE.Mesh(pGeo, dustMat);
   const pAngle = (i / 8) * Math.PI * 2;
   const pDist = 4.0 + Math.random() * 4.0;
   pMesh.position.set(Math.cos(pAngle) * pDist, (Math.random() - 0.5) * 1.5, Math.sin(pAngle) * pDist);
+  // Flattened so the skirt spreads outward along the ground instead of hanging
+  // below it; the lowest point stays above the 0.30 road lift at every EF scale.
+  pMesh.scale.set(1, 0.4, 1);
   dustBowlGroup.add(pMesh);
   dustPuffs.push({ mesh: pMesh, angle: pAngle, dist: pDist, rotSpeed: 0.04 + Math.random() * 0.05, baseSize: pSize });
 }
@@ -3398,8 +3413,8 @@ function finishRun() {
 }
 
 function resetWarningRun() {
-  armTitleCardAutoCollapse();
   runTimeRemaining = 180;
+  armTitleCardAutoCollapse();
   destructionScore = 0;
   baseScore = 0;
   comboMultiplier = 1.0;
@@ -3489,11 +3504,11 @@ function animate(now) {
 
   // A paused run freezes completely: timer, storm motion, scoring and abilities.
   // The scene keeps rendering so it stays visible behind the pause overlay, and
-  // the wind rumble is still driven so it ramps down to silence -- the loop's own
-  // updateWindRumble call sits past this return and would otherwise leave the
-  // oscillator howling for the whole pause.
+  // the storm soundscape is still driven so it ramps down to silence -- the
+  // loop's own updateStormSoundscape call sits past this return and would
+  // otherwise leave the ambience running for the whole pause.
   if (isPaused) {
-    updateWindRumble(0, efMultiplier);
+    updateStormSoundscape(0, efMultiplier);
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
     return;
@@ -3607,6 +3622,7 @@ function animate(now) {
   }
 
   const isMoving = (moveX !== 0 || moveZ !== 0 || joystickActive || isBotMode);
+  if (isMoving && runActive && gameStarted) collapseTitleCardOnFirstMove();
 
   // Tornado PULL Vortex Physics
   if (activePullVortex && pullVortexTimer > 0 && runActive) {
@@ -3645,7 +3661,7 @@ function animate(now) {
   const fPositions = funnelMesh.geometry.attributes.position;
   for (let i = 0; i < fPositions.count; i++) {
     const vy = baseFunnelPos[i * 3 + 1];
-    const factor = (vy / 34.0); // 0 at ground, 1 at cloud top
+    const factor = ((vy + 17.0) / 34.0); // 0 at the touchdown, 1 at the cloud base
     const waveX = Math.sin(tTime * 4 + vy * 0.22) * (factor * 3.8);
     const waveZ = Math.cos(tTime * 3.2 + vy * 0.22) * (factor * 3.8);
     fPositions.setX(i, baseFunnelPos[i * 3] + waveX);
@@ -3657,7 +3673,7 @@ function animate(now) {
   const oPositions = outerFunnelMesh.geometry.attributes.position;
   for (let i = 0; i < oPositions.count; i++) {
     const vy = baseOuterPos[i * 3 + 1];
-    const factor = (vy / 36.0);
+    const factor = ((vy + 18.0) / 36.0);
     const waveX = Math.sin(tTime * 3.5 - vy * 0.18) * (factor * 4.4);
     const waveZ = Math.cos(tTime * 2.8 - vy * 0.18) * (factor * 4.4);
     oPositions.setX(i, baseOuterPos[i * 3] + waveX);
@@ -3675,7 +3691,9 @@ function animate(now) {
     p.mesh.position.z = Math.sin(p.angle) * p.dist;
     p.mesh.rotation.y += 0.08;
     const pulseScale = 1.0 + Math.sin(tTime * 6 + p.angle) * 0.2;
-    p.mesh.scale.set(pulseScale, pulseScale, pulseScale);
+    // Y stays flattened: the skirt spreads along the ground rather than hanging
+    // below it, which at the 23 degree camera was visible under the road lip.
+    p.mesh.scale.set(pulseScale, pulseScale * 0.4, pulseScale);
   });
 
   // 5. Upward Helical Swirling Particle Helices

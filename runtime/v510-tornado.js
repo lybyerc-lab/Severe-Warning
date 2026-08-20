@@ -9,7 +9,7 @@ function createProductionTornadoLayers() {
     new THREE.CylinderGeometry(19.5, 1.7, 37, 32, 14, true),
     '#273244',
     0,
-    18.5,
+    19.0,
     0,
     { transparent: true, opacity: 0.28, depthWrite: false, roughness: 0.62, castShadow: false }
   );
@@ -21,7 +21,7 @@ function createProductionTornadoLayers() {
     new THREE.CylinderGeometry(13.5, 0.9, 35, 24, 10, true),
     '#080b12',
     0,
-    17.5,
+    18.0,
     0,
     { transparent: true, opacity: 0.72, depthWrite: false, roughness: 0.8, castShadow: false }
   );
