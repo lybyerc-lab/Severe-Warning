@@ -184,9 +184,9 @@ replaceExact(
   `  let baseCamY = 78, baseCamZ = 110;
   if (currentStorm === 'supercell') { baseCamY = 105; baseCamZ = 150; }
   else if (currentStorm === 'derecho') { baseCamY = 130; baseCamZ = 185; }`,
-  `  let baseCamY = isMobileDevice ? 68 : 70, baseCamZ = isMobileDevice ? 92 : 96;
-  if (currentStorm === 'supercell') { baseCamY = isMobileDevice ? 92 : 96; baseCamZ = isMobileDevice ? 128 : 134; }
-  else if (currentStorm === 'derecho') { baseCamY = isMobileDevice ? 108 : 114; baseCamZ = isMobileDevice ? 152 : 160; }`,
+  `  let baseCamY = isMobileDevice ? 44 : 46, baseCamZ = isMobileDevice ? 104 : 108;
+  if (currentStorm === 'supercell') { baseCamY = isMobileDevice ? 62 : 64; baseCamZ = isMobileDevice ? 145 : 150; }
+  else if (currentStorm === 'derecho') { baseCamY = isMobileDevice ? 73 : 76; baseCamZ = isMobileDevice ? 172 : 178; }`,
   'tighter authored camera composition'
 );
 
@@ -233,6 +233,12 @@ requiredHtmlMarkers.forEach(required => {
 });
 if (html.includes('v5.0.0')) throw new Error('stale v5.0.0 identity remains after v5.1.0 patch');
 if (html.includes('<script src="runtime/v510-')) throw new Error('v5.1.0 runtime must be lexically bundled, not loaded as isolated scripts');
+
+replaceExact(
+  '    camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 1.5, storm.pos.z + (moveZ * 8));',
+  '    camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 14, storm.pos.z + (moveZ * 8));',
+  'camera aim height'
+);
 
 await writeFile(sourcePath, html, 'utf8');
 console.log(`Applied v5.1.0 Three.js production slice to ${sourcePath}`);
