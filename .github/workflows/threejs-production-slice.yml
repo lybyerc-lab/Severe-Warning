@@ -97,6 +97,7 @@ jobs:
       - name: Build and verify offline web package
         shell: bash
         run: |
+          npm run modern:build
           node scripts/build-web.mjs
           node scripts/stamp-qa-pages.mjs
           node scripts/verify-qa-package.mjs

@@ -89,6 +89,7 @@ jobs:
           npm run patch:v500
           npm run patch:v510
           npm run verify:v500
+          npm run modern:build
           node scripts/build-web.mjs
           node scripts/stamp-qa-pages.mjs
 
