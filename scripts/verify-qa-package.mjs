@@ -89,7 +89,10 @@ const requiredMarkers = [
   ['district ribbon UI', 'UI_POLISH_DISTRICT_RIBBON_V1'],
   ['district dwell', 'isBotMode ? 450 : 1250'],
   ['score continuity', 'SCORE_CONTINUITY_V1'],
-  ['score accumulation', 'destructionScore += added'],
+  // The pointless 'const added = multiplied' alias was dropped when addScore was
+  // restructured to gate the combo on points actually landing. The assertion that
+  // matters is that the accumulation is unclamped, which this still checks.
+  ['score accumulation', 'destructionScore += multiplied'],
   ['QA4 Visual Lab', '[SW:UI:QA4_VISUAL_LAB]'],
   ['QA4 deterministic runtime', '[SW:QA:DETERMINISTIC_TEST]'],
   ['QA4 report version', 'QA4_DETERMINISTIC_V1'],
