@@ -130,6 +130,7 @@ jobs:
       - name: Build, stamp, and synchronize offline Android assets
         shell: bash
         run: |
+          npm run modern:build
           node scripts/build-web.mjs
           GITHUB_SHA="$SEVERE_WEATHER_SOURCE_COMMIT" node scripts/stamp-qa-pages.mjs
           node scripts/verify-qa-package.mjs

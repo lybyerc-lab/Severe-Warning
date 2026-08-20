@@ -76,6 +76,7 @@ jobs:
       - name: Build, stamp, and synchronize offline game assets
         shell: bash
         run: |
+          npm run modern:build
           node scripts/build-web.mjs
           node scripts/stamp-qa-pages.mjs
           node node_modules/@capacitor/cli/bin/capacitor sync android
