@@ -1391,15 +1391,15 @@ const mesoCloudMat = new THREE.MeshStandardMaterial({
 });
 for (let i = 0; i < 15; i++) {
   const angle = (i / 15) * Math.PI * 2 + (i % 2) * 0.32;
-  const ring = i < 6 ? 6 : (i < 11 ? 15 : 24);
-  const rad = (i < 6 ? 13 : (i < 11 ? 10.5 : 7.5)) + Math.random() * 4;
+  const ring = i < 6 ? 5 : (i < 11 ? 13 : 20);
+  const rad = (i < 6 ? 13.5 : (i < 11 ? 11 : 8)) + Math.random() * 3.5;
   const cloudLobe = new THREE.Mesh(new THREE.DodecahedronGeometry(rad, 1), mesoCloudMat);
   cloudLobe.position.set(
     Math.cos(angle) * ring,
-    (i < 6 ? 1.5 : (i < 11 ? -0.5 : -2.2)) + (Math.random() - 0.5) * 2.2,
+    (i < 6 ? 7.0 : (i < 11 ? 1.0 : -4.5)) + (Math.random() - 0.5) * 2.6,
     Math.sin(angle) * ring
   );
-  cloudLobe.scale.set(1, 0.42 + Math.random() * 0.16, 1);
+  cloudLobe.scale.set(1, 0.66 + Math.random() * 0.2, 1);
   mesoCloudGroup.add(cloudLobe);
 }
 tornadoGroup.add(mesoCloudGroup);
