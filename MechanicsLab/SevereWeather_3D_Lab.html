@@ -3405,8 +3405,12 @@ function animate(now) {
   const dt = realDelta;
 
   // A paused run freezes completely: timer, storm motion, scoring and abilities.
-  // The scene keeps rendering so it stays visible behind the pause overlay.
+  // The scene keeps rendering so it stays visible behind the pause overlay, and
+  // the wind rumble is still driven so it ramps down to silence -- the loop's own
+  // updateWindRumble call sits past this return and would otherwise leave the
+  // oscillator howling for the whole pause.
   if (isPaused) {
+    updateWindRumble(0, efMultiplier);
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
     return;
