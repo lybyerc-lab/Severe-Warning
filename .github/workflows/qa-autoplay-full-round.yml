@@ -71,23 +71,9 @@ jobs:
       - name: Build exact patched QA game
         shell: bash
         run: |
-          node --check scripts/apply-qa-corrections-patch.mjs
-          node --check scripts/apply-audio-mix-followup-patch.mjs
           node --check scripts/qa-play-full-round.mjs
           node --check scripts/qa-v500-world-tour.mjs
-          node --check scripts/apply-v500-campaign-patch.mjs
-          node --check scripts/apply-v500-realtime-clock-fix.mjs
-          node --check scripts/apply-v500-world-tour-patch.mjs
-          node --check scripts/apply-v500-mobile-layout-fix.mjs
-          node --check scripts/apply-v500-cow-signature-patch.mjs
           node --check scripts/verify-v500-campaign.mjs
-          npm run patch:v431
-          npm run patch:v440
-          npm run patch:v441
-          npm run patch:v442
-          npm run patch:v450
-          npm run patch:v500
-          npm run patch:v510
           npm run verify:v500
           npm run modern:build
           node scripts/build-web.mjs

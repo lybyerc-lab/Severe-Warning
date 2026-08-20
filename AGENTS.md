@@ -41,3 +41,16 @@ Use these terms precisely:
 - **Browser-QA passed**: tested successfully through the GitHub Pages QA lane.
 - **Physically accepted**: tested and approved on the target Android device.
 - **Merged**: accepted branch integrated into `main`.
+
+## Gameplay source is flat
+
+`MechanicsLab/SevereWeather_3D_Lab.html` is the game and is edited directly.
+
+It used to be a frozen older base that 24 `scripts/apply-*.mjs` patches rewrote on
+every build. That chain has been flattened away: there is no `patch:*` npm script,
+no patch step in any workflow, and no anchor text to preserve. If you need to change
+the game, change the file.
+
+Navigate it with the `[SW:AREA:NAME]` region tags listed in the header comment at
+the top of the gameplay script. `runtime/*.js` is no longer a build input — see
+`runtime/README.md`.

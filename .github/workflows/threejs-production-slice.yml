@@ -63,7 +63,6 @@ jobs:
       - name: Verify new script syntax
         shell: bash
         run: |
-          node --check scripts/apply-v510-production-slice.mjs
           node --check scripts/verify-v510-production-slice.mjs
           node --check scripts/qa-v510-production-slice.mjs
           node --check scripts/verify-qa-package.mjs
@@ -75,15 +74,6 @@ jobs:
       - name: Generate verified audio
         run: npm run audio:generate
 
-      - name: Apply accepted gameplay patch chain
-        shell: bash
-        run: |
-          npm run patch:v431
-          npm run patch:v440
-          npm run patch:v441
-          npm run patch:v442
-          npm run patch:v450
-          npm run patch:v500
 
       - name: Verify untouched V5 foundation
         run: npm run verify:v500
@@ -91,7 +81,6 @@ jobs:
       - name: Apply and verify Three.js production slice
         shell: bash
         run: |
-          npm run patch:v510
           npm run verify:v510
 
       - name: Build and verify offline web package

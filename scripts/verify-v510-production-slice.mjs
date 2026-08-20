@@ -38,7 +38,9 @@ const runtime = Object.values(runtimeText).join('\n');
 
 check('package version', packageJson.version === '5.1.0', packageJson.version);
 check('package build label', packageJson.buildLabel === 'Three.js Production Slice', packageJson.buildLabel);
-check('patch command', packageJson.scripts?.['patch:v510'] === 'node scripts/apply-v510-production-slice.mjs');
+// The build-time patch chain was flattened into the gameplay source, so there is
+// no patch command to verify. The markers below now assert directly against the
+// committed file rather than against a script that regenerates it.
 check('verify command', packageJson.scripts?.['verify:v510'] === 'node scripts/verify-v510-production-slice.mjs');
 check('QA command', packageJson.scripts?.['qa:v510'] === 'node scripts/qa-v510-production-slice.mjs');
 check('Android version code', gradle.includes("'510'"));

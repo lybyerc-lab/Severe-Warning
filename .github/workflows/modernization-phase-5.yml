@@ -100,20 +100,10 @@ jobs:
         working-directory: phase5-base
         run: |
           set -euo pipefail
-          pnpm run patch:v431
-          pnpm run patch:v440
-          pnpm run patch:v441
-          pnpm run patch:v442
-          pnpm run patch:v450
-          pnpm run patch:v500
           pnpm run verify:v500
-          pnpm run patch:v510
           pnpm run verify:v510
-          pnpm run patch:phase2
           pnpm run verify:phase2
-          pnpm run patch:phase3
           pnpm run verify:phase3
-          pnpm run patch:phase4
           pnpm run verify:phase4
           pnpm run modern:build
           node scripts/build-web.mjs
@@ -124,22 +114,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm run patch:v431
-          pnpm run patch:v440
-          pnpm run patch:v441
-          pnpm run patch:v442
-          pnpm run patch:v450
-          pnpm run patch:v500
           pnpm run verify:v500
-          pnpm run patch:v510
           pnpm run verify:v510
-          pnpm run patch:phase2
           pnpm run verify:phase2
-          pnpm run patch:phase3
           pnpm run verify:phase3
-          pnpm run patch:phase4
           pnpm run verify:phase4
-          pnpm run patch:phase5
           pnpm run verify:phase5
           pnpm run modern:build
           node scripts/build-web.mjs

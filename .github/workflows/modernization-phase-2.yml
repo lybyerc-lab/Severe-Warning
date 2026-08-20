@@ -64,20 +64,12 @@ jobs:
       - name: Apply accepted gameplay chain
         shell: bash
         run: |
-          npm run patch:v431
-          npm run patch:v440
-          npm run patch:v441
-          npm run patch:v442
-          npm run patch:v450
-          npm run patch:v500
           npm run verify:v500
-          npm run patch:v510
           npm run verify:v510
 
       - name: Apply and verify Phase 2 clocks
         shell: bash
         run: |
-          npm run patch:phase2
           npm run verify:phase2
 
       - name: Build modern shell and offline package
