@@ -3093,8 +3093,12 @@ function addTerrainContour(cx, cz, radiusX, radiusZ, color) {
 [[50, 36], [92, 68], [138, 100]].forEach(size => addTerrainContour(120, 125, size[0], size[1], '#d6ad60'));
 
 // Asphalt Roads & Power Line Poles
-const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', roughness: 0.58, metalness: 0.12, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-const shoulderMat = new THREE.MeshStandardMaterial({ color: '#64748b', roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+// [SW:AREA:TERRAIN_ROADS] polygonOffsetFactor is deliberately 0: it scales with the
+// polygon's depth slope, and at this game's shallow chase angle a non-zero factor
+// drags the road surface far enough toward the camera to cut through the tornado.
+// The 0.30 geometric lift already separates the road from the ground.
+const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', roughness: 0.58, metalness: 0.12, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -2 });
+const shoulderMat = new THREE.MeshStandardMaterial({ color: '#64748b', roughness: 0.88, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -1 });
 const laneMat = new THREE.MeshBasicMaterial({ color: '#f8d568' });
 const powerPoles = [];
 const activeGridZapEffects = [];
@@ -3103,10 +3107,26 @@ const activePullEffects = [];
 const eastWestLaneDashes = [];
 const northSouthLaneDashes = [];
 
+// [SW:AREA:TERRAIN_ROADS] Road surfaces conformed to the same ground equation.
+// The terrain mesh is tessellated at TERRAIN_GRID_SPACING. A road that spans its
+// whole width in a single segment chord-cuts straight across that curvature, so
+// its surface drifts off the ground by up to ~0.4 units - enough for the ribbon
+// to float over the terrain and slice through anything standing on it, including
+// the tornado touchdown. Sampling the road across its width at a finer step than
+// the terrain grid keeps both surfaces in sync, which makes `lift` a real,
+// constant clearance above the ground instead of an average of one.
+const TERRAIN_GRID_SPACING = 800 / 64;
+const ROAD_CROSS_SAMPLE_STEP = 2;
+function terrainRoadSegments(span, step) {
+  return Math.max(1, Math.ceil(span / step));
+}
+
 function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material, lift) {
+  const alongSegments = terrainRoadSegments(length, TERRAIN_GRID_SPACING);
+  const acrossSegments = terrainRoadSegments(width, ROAD_CROSS_SAMPLE_STEP);
   const geometry = isEastWest
-    ? new THREE.PlaneGeometry(length, width, 64, 1)
-    : new THREE.PlaneGeometry(width, length, 1, 64);
+    ? new THREE.PlaneGeometry(length, width, alongSegments, acrossSegments)
+    : new THREE.PlaneGeometry(width, length, acrossSegments, alongSegments);
   conformPlaneToTerrain(geometry, centerX, centerZ, lift);
   const road = new THREE.Mesh(geometry, material);
   road.rotation.x = -Math.PI / 2;
@@ -3117,20 +3137,30 @@ function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material
 }
 
 // A shallow creek cuts through the east side; roads render afterward as bridges.
-const creekMat = new THREE.MeshStandardMaterial({ color: '#164e63', roughness: 0.3, metalness: 0.08, transparent: true, opacity: 0.88, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-createTerrainRoad(9, 780, 255, 0, false, creekMat, 0.12);
+const creekMat = new THREE.MeshStandardMaterial({ color: '#164e63', roughness: 0.3, metalness: 0.08, transparent: true, opacity: 0.88, depthWrite: false, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -1 });
+// [SW:AREA:TERRAIN_ROADS] Surface lifts are measured, not guessed. The tornado
+// touchdown sits at terrainHeightAt() + 0.50, so every ground layer has to stay
+// clear underneath that line or the road ends up slicing the funnel in half. The
+// terrain mesh renders at -0.08, which leaves the whole road stack a usable band
+// between -0.08 and +0.50. Keep these ordered creek < shoulder < road < dashes,
+// and keep the tallest of them well under 0.50.
+const CREEK_LIFT = 0.06;
+const SHOULDER_LIFT = 0.10;
+const ROAD_LIFT = 0.16;
+const LANE_DASH_LIFT = 0.24;
+createTerrainRoad(9, 780, 255, 0, false, creekMat, CREEK_LIFT);
 
 const polePositions = [];
 
 for (let r = -320; r <= 320; r += 80) {
-  createTerrainRoad(17, 800, 0, r, true, shoulderMat, 0.22);
-  createTerrainRoad(12, 800, 0, r, true, roadMat, 0.30);
-  createTerrainRoad(17, 800, r, 0, false, shoulderMat, 0.22);
-  createTerrainRoad(12, 800, r, 0, false, roadMat, 0.30);
+  createTerrainRoad(17, 800, 0, r, true, shoulderMat, SHOULDER_LIFT);
+  createTerrainRoad(12, 800, 0, r, true, roadMat, ROAD_LIFT);
+  createTerrainRoad(17, 800, r, 0, false, shoulderMat, SHOULDER_LIFT);
+  createTerrainRoad(12, 800, r, 0, false, roadMat, ROAD_LIFT);
 
   for (let m = -360; m <= 360; m += 32) {
-    eastWestLaneDashes.push({ x: m, y: terrainHeightAt(m, r) + 0.46, z: r });
-    northSouthLaneDashes.push({ x: r, y: terrainHeightAt(r, m) + 0.46, z: m });
+    eastWestLaneDashes.push({ x: m, y: terrainHeightAt(m, r) + LANE_DASH_LIFT, z: r });
+    northSouthLaneDashes.push({ x: r, y: terrainHeightAt(r, m) + LANE_DASH_LIFT, z: m });
   }
 
   for (let px = -300; px <= 300; px += 50) {
@@ -3430,7 +3460,9 @@ const swathOverlayMat = new THREE.MeshStandardMaterial({
   roughness: 1.0,
   depthWrite: false,
   polygonOffset: true,
-  polygonOffsetFactor: -1,
+  // [SW:AREA:TERRAIN_ROADS] Factor stays 0 for the same grazing-angle reason as the
+  // roads; this overlay spans the entire play field and sits directly under the storm.
+  polygonOffsetFactor: 0,
   polygonOffsetUnits: -1
 });
 const swathOverlay = new THREE.Mesh(swathOverlayGeo, swathOverlayMat);
