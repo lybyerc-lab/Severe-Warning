@@ -758,6 +758,7 @@
   </div>
 </div>
 
+<!-- [SW:BUILD:ECONOMY_PRELUDE] -->
 <script>
 // =============================================================================
 // SEVERE WEATHER 3D -- gameplay source of truth
@@ -6783,9 +6784,21 @@ function triggerAbility(slot) {
 //
 // Each rung is now a fraction of the county's own scoreTarget, so it has to be
 // earned and it scales with the campaign instead of drifting away from it.
-const EF_LADDER = { ef1: 0.02, ef2: 0.06, ef3: 0.18, ef4: 0.40, ef5: 0.75 };
+// [SW:ARCH:ECONOMY_PRELUDE] The ladder itself now lives in TypeScript, at
+// src/gameplay/economy/economy-system.ts, compiled to an IIFE and inlined above
+// this script by build-web.mjs. It is typechecked by tsc and covered by
+// `npm test`, including regressions for the exact drift that broke it.
+//
+// This is a real extraction, not a mirror: the answer the game uses comes from
+// there. The fallbacks below exist only so a missing prelude degrades to the
+// previous behaviour rather than throwing mid-run; verify-qa-package fails the
+// build if the prelude is absent, so they should never be reached in a shipped
+// package.
 function efScoreThreshold(rung) {
-  return EF_LADDER[rung] * (getActiveCampaignLevel().scoreTarget || 45000);
+  const target = getActiveCampaignLevel().scoreTarget || 45000;
+  const economy = globalThis.__SW_ECONOMY__;
+  if (economy) return economy.efScoreThreshold(rung, target);
+  return ({ ef1: 0.02, ef2: 0.06, ef3: 0.18, ef4: 0.40, ef5: 0.75 })[rung] * target;
 }
 
 function updateEFRating() {
@@ -6793,16 +6806,25 @@ function updateEFRating() {
   let mult = 1.0;
   let scaleVal = 1.0;
 
-  if (currentStage === 1) { // STAGE 1 STRICT CAP: EF-2 / HAIL 2.5" / 90 MPH
+  // [SW:ARCH:ECONOMY_PRELUDE] Stage ceilings and score thresholds both live in
+  // resolveEfRating; stage 1 caps at EF-2 and stage 2 at EF-4 so the run climbs
+  // through its three acts instead of topping out in the first one.
+  const economy = globalThis.__SW_ECONOMY__;
+  if (economy) {
+    const rating = economy.resolveEfRating(currentStage, destructionScore, getActiveCampaignLevel().scoreTarget);
+    badgeText = rating.badge;
+    mult = rating.multiplier;
+    scaleVal = rating.funnelScale;
+  } else if (currentStage === 1) {
     if (destructionScore >= efScoreThreshold('ef2')) { badgeText = 'EF-2'; mult = 1.6; scaleVal = 1.25; }
     else if (destructionScore >= efScoreThreshold('ef1')) { badgeText = 'EF-1'; mult = 1.25; scaleVal = 1.1; }
     else { badgeText = 'EF-0'; mult = 1.0; scaleVal = 1.0; }
-  } else if (currentStage === 2) { // STAGE 2 UNLOCK: EF-3 / EF-4
+  } else if (currentStage === 2) {
     if (destructionScore >= efScoreThreshold('ef4')) { badgeText = 'EF-4'; mult = 2.8; scaleVal = 1.8; }
     else if (destructionScore >= efScoreThreshold('ef3')) { badgeText = 'EF-3'; mult = 2.2; scaleVal = 1.5; }
     else if (destructionScore >= efScoreThreshold('ef2')) { badgeText = 'EF-2'; mult = 1.6; scaleVal = 1.25; }
     else { badgeText = 'EF-1'; mult = 1.25; scaleVal = 1.1; }
-  } else { // STAGE 3 FINALE UNLOCK: EF-5 OPPORTUNITY
+  } else {
     if (destructionScore >= efScoreThreshold('ef5')) { badgeText = 'EF-5'; mult = 3.8; scaleVal = 2.2; }
     else if (destructionScore >= efScoreThreshold('ef4')) { badgeText = 'EF-4'; mult = 2.8; scaleVal = 1.8; }
     else if (destructionScore >= efScoreThreshold('ef3')) { badgeText = 'EF-3'; mult = 2.2; scaleVal = 1.5; }
@@ -6916,8 +6938,18 @@ function finishRun() {
   // Graded against the county's own target for the same reason the EF ladder is:
   // fixed numbers here fell six times below a real run within one version.
   const target = getActiveCampaignLevel().scoreTarget || 45000;
+  // [SW:ARCH:ECONOMY_PRELUDE] resolveGrade is unit-tested, including the device
+  // run that scored 149,669 with zero landmarks and used to be graded A.
+  const gradeEconomy = globalThis.__SW_ECONOMY__;
   let grade = 'F';
-  if (doneCount === 3 && destructionScore >= target * 1.5) grade = 'S+';
+  if (gradeEconomy) {
+    grade = gradeEconomy.resolveGrade({
+      objectivesDone: doneCount,
+      contentObjectiveDone,
+      destructionScore,
+      scoreTarget: target,
+    });
+  } else if (doneCount === 3 && destructionScore >= target * 1.5) grade = 'S+';
   else if (contentObjectiveDone && destructionScore >= target) grade = 'A';
   else if (doneCount >= 1 && destructionScore >= target * 0.4) grade = 'B';
   else if (destructionScore >= target * 0.1) grade = 'C';

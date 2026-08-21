@@ -126,7 +126,15 @@ const requiredMarkers = [
   ['modern bridge: input and abilities', 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1'],
   ['modern bridge: scoring and campaign', 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2'],
   ['modern bridge: presentation and world', 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2'],
-  ['modern bridge: clock sample is authoritative', 'modernClockSample.runDeltaMs / 1000']
+  ['modern bridge: clock sample is authoritative', 'modernClockSample.runDeltaMs / 1000'],
+  // [SW:ARCH:ECONOMY_PRELUDE] The extracted, unit-tested economy has to be inlined
+  // AND actually called. The gameplay keeps literal fallbacks so a missing prelude
+  // degrades instead of throwing mid-run, which means its absence would otherwise
+  // be invisible - the game would just quietly run on the old inline numbers again.
+  ['economy prelude bundled', '[SW:SOURCE:sw-economy-prelude.js]'],
+  ['economy prelude identity', 'SW_ECONOMY_V1'],
+  ['economy drives the EF rating', 'economy.resolveEfRating(currentStage, destructionScore'],
+  ['economy drives the grade', 'gradeEconomy.resolveGrade({']
 ];
 
 for (const [name, marker] of requiredMarkers) record(name, html.includes(marker), marker);

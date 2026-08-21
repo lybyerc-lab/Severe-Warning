@@ -136,6 +136,13 @@ jobs:
       - name: Build, stamp, and synchronize offline Android assets
         shell: bash
         run: |
+          # [SW:ARCH:ECONOMY_PRELUDE] Neither of these ran in ANY workflow before.
+          # The TypeScript was never typechecked in CI and there were no unit
+          # tests at all, so the only checks over gameplay logic were string
+          # matches against the source - which stayed green while every threshold
+          # in the run economy drifted about ten-fold out of scale.
+          npm run modern:typecheck
+          npm test
           npm run modern:build
           node scripts/build-web.mjs
           GITHUB_SHA="$SEVERE_WEATHER_SOURCE_COMMIT" node scripts/stamp-qa-pages.mjs

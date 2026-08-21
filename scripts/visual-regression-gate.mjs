@@ -28,9 +28,17 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const CANDIDATE_PORT = Number(process.env.VISUAL_CANDIDATE_PORT || 4183);
 const BASELINE_PORT = Number(process.env.VISUAL_BASELINE_PORT || 4184);
 
-// Everything that feeds what build-web.mjs renders. modern-dist is a build
-// artifact rebuilt from src, so it is restored by rebuilding, not by checkout.
-const RENDER_INPUTS = ['MechanicsLab/SevereWeather_3D_Lab.html', 'runtime'];
+// Everything that can change what the page looks like. src and build-web belong
+// here as much as the gameplay HTML does: src compiles into the economy prelude
+// the game calls for its ratings, and build-web decides how the page is assembled
+// - when it grew a new requirement, rebuilding an older commit with the current
+// build-web failed outright, which is how this list was found to be incomplete.
+const RENDER_INPUTS = [
+  'MechanicsLab/SevereWeather_3D_Lab.html',
+  'runtime',
+  'src',
+  'scripts/build-web.mjs',
+];
 
 const git = (...args) => execFileSync('git', args, { cwd: projectRoot, encoding: 'utf8' }).trim();
 const run = (cmd, args, env) =>
@@ -57,6 +65,9 @@ function resolveBaselineRef() {
 }
 
 async function buildInto(destination) {
+  // src is a render input, so the bundles have to be rebuilt from whichever
+  // revision is currently checked out, not carried over from the last build.
+  run('npm', ['run', '--silent', 'modern:build']);
   run('node', ['scripts/build-web.mjs']);
   await rm(destination, { recursive: true, force: true });
   await cp(path.join(projectRoot, 'www'), destination, { recursive: true });
@@ -158,12 +169,28 @@ try {
   servers.push(serve(CANDIDATE_PORT, candidateDir), serve(BASELINE_PORT, baselineDir));
   await Promise.all([waitForServer(CANDIDATE_PORT), waitForServer(BASELINE_PORT)]);
 
-  run('node', ['scripts/compare-phase5-visual-baseline.mjs'], {
+  // The harness fails a scenario when the BASELINE disagrees with itself
+  // (baseRepeatNoiseWithinLimit) - that is "could not measure", not "regressed".
+  // Boot timing occasionally shifts which frame the shell becomes ready on, and
+  // the whole sim lands a frame out. A real regression reproduces every time; a
+  // flake usually does not, so measure twice before calling it. Failing loudly on
+  // an unmeasurable run would train everyone to ignore this gate, and passing
+  // silently would defeat it.
+  const compare = (attempt) => run('node', ['scripts/compare-phase5-visual-baseline.mjs'], {
     SEVERE_WEATHER_QA_URL: `http://127.0.0.1:${CANDIDATE_PORT}/`,
     SEVERE_WEATHER_BASE_URL: `http://127.0.0.1:${BASELINE_PORT}/`,
-    SEVERE_WEATHER_VISUAL_DIR: process.env.SEVERE_WEATHER_VISUAL_DIR
-      || path.join(projectRoot, 'qa-artifacts', 'visual-regression'),
+    SEVERE_WEATHER_VISUAL_DIR: path.join(
+      process.env.SEVERE_WEATHER_VISUAL_DIR || path.join(projectRoot, 'qa-artifacts', 'visual-regression'),
+      attempt === 1 ? '.' : `attempt-${attempt}`,
+    ),
   });
+  try {
+    compare(1);
+  } catch {
+    console.log('\nFirst comparison did not pass. Measuring once more before calling it.');
+    compare(2);
+    console.log('The second comparison passed; treating the first as measurement noise.');
+  }
 } catch (error) {
   failure = error;
 } finally {

@@ -13,6 +13,7 @@ const sourceAudioDir = path.join(projectRoot, 'assets', 'audio');
 const sourceRuntimeDir = path.join(projectRoot, 'runtime');
 const modernDistDir = path.join(projectRoot, 'modern-dist');
 const modernEntryPath = path.join(modernDistDir, 'modern-shell.js');
+const economyPreludePath = path.join(modernDistDir, 'sw-economy-prelude.js');
 const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
   ? path.resolve(process.env.SEVERE_WEATHER_WWW_DIR)
   : path.join(projectRoot, 'www');
@@ -77,6 +78,25 @@ for (const runtimeFile of runtimeFiles) {
   await access(path.join(sourceRuntimeDir, runtimeFile));
 }
 await access(modernEntryPath);
+await access(economyPreludePath);
+
+// [SW:ARCH:ECONOMY_PRELUDE] The gameplay source is one classic script in a single
+// lexical scope and cannot import. To let it call typed, unit-tested TypeScript
+// synchronously while it builds the world, the compiled economy bundle is inlined
+// at a marker ahead of that script. It must be INLINE and it must come first: a
+// module or a deferred src would arrive after the game has already run.
+const PRELUDE_MARKER = '<!-- [SW:BUILD:ECONOMY_PRELUDE] -->';
+if (!html.includes(PRELUDE_MARKER)) {
+  throw new Error(`Gameplay source is missing ${PRELUDE_MARKER}; the economy prelude has nowhere to land.`);
+}
+const economyPreludeSource = await readFile(economyPreludePath, 'utf8');
+if (economyPreludeSource.includes('</script>')) {
+  throw new Error('Economy prelude contains a closing script tag.');
+}
+html = html.replace(
+  PRELUDE_MARKER,
+  `<script>\n/* [SW:SOURCE:sw-economy-prelude.js] built from src/gameplay/economy */\n${economyPreludeSource}\n</script>`,
+);
 
 const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';
 if (html.includes(modernScriptTag)) {
@@ -118,6 +138,7 @@ await writeFile(
     sourceSha256,
     audioSha256,
     modernShellSha256,
+    economyPreludeSha256: createHash('sha256').update(economyPreludeSource).digest('hex'),
     runtimeFiles
   }, null, 2)}\n`,
   'utf8'
