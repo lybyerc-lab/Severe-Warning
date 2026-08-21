@@ -11,6 +11,9 @@ const startedAt = new Date().toISOString();
 await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({
+  // Matches qa-play-full-round.mjs: lets this run against a pre-installed
+  // Chromium instead of only a `playwright install` one. Unset in CI.
+  executablePath: process.env.QA_PLAY_BROWSER || undefined,
   headless: true,
   args: [
     '--disable-background-timer-throttling',
@@ -70,6 +73,14 @@ try {
     }, index);
     states.push(state);
     await page.waitForTimeout(350);
+    // One capture per county. This used to take a single screenshot after the
+    // last stop, so three of the four counties were swept without anyone ever
+    // seeing them - which is how roads floating up to twelve units over the
+    // ground on Prairie Junction reached a phone.
+    await page.screenshot({
+      path: path.join(outputDir, `QA_V500_WORLD_TOUR_${index}_${state.levelId}.png`),
+      fullPage: false,
+    });
   }
 
   await page.screenshot({ path: path.join(outputDir, 'QA_V500_WORLD_TOUR_SCREENSHOT.png'), fullPage: true });
@@ -105,6 +116,13 @@ const checks = {
   cow17EarTagPersists: states.every(state => state.bovine?.cow17?.tagged === true),
   fourHayBaleLandingZones: states.every(state => state.bovine?.hayBales === 4),
   animalsRemainUnharmed: states.every(state => state.bovine?.invariant === 'Cow injuries: 0'),
+  // [SW:AREA:TERRAIN_ROADS] Every road vertex is conformed to terrainHeightAt +
+  // its lift, so this is zero in a correct build. Selecting a county rebuilds the
+  // ground; anything conformed at page load has to be rebuilt with it. When it
+  // was not, this reached 11.91 units on Prairie Junction, 8.51 on Grain Belt and
+  // 11.07 on the finale, while Lincoln County - the default, and the only one
+  // anybody ever rendered - stayed correct and hid it.
+  roadsFollowGroundAtEveryStop: states.every(state => (state.groundAgreement?.maxLiftError ?? Infinity) < 0.01),
   noPageErrors: pageErrors.length === 0,
   noConsoleErrors: consoleErrors.length === 0,
   harnessCompletedWithoutException: harnessError === null

@@ -2723,7 +2723,8 @@ window.getCampaignWorldQaState = function getCampaignWorldQaState() {
     challenge: getDistrictChallenge(1)?.text || '',
     media: chaserVans.map(van => van.callSign),
     animals: animals.length,
-    terrainSamples: [[-235,-235],[35,35],[235,235]].map(([x,z]) => Number(terrainHeightAt(x,z).toFixed(2)))
+    terrainSamples: [[-235,-235],[35,35],[235,235]].map(([x,z]) => Number(terrainHeightAt(x,z).toFixed(2))),
+    groundAgreement: measureRoadGroundAgreement()
   };
 };
 // [SW:WORLD:CAMPAIGN_IDENTITY:END]
@@ -3339,6 +3340,33 @@ function terrainRoadSegments(span, step) {
   return Math.max(1, Math.ceil(span / step));
 }
 
+// Every ribbon conformed to the ground, with the lift it was conformed at, so QA
+// can assert they still agree with the terrain after a county change.
+const terrainRoadSurfaces = [];
+
+// [SW:AREA:TERRAIN_ROADS] Worst deviation of any road vertex from where it should
+// sit. conformPlaneToTerrain puts every vertex at exactly terrainHeightAt + lift,
+// so in a correct build this is zero to floating-point noise. When the county
+// changed without rebuilding these ribbons it reached 11.91 units on Prairie
+// Junction - roads hanging in the air over the ground they are drawn on.
+function measureRoadGroundAgreement() {
+  let maxLiftError = 0;
+  let worst = null;
+  for (const surface of terrainRoadSurfaces) {
+    const positions = surface.mesh.geometry.attributes.position;
+    for (let i = 0; i < positions.count; i++) {
+      const worldX = surface.centerX + positions.getX(i);
+      const worldZ = surface.centerZ - positions.getY(i);
+      const error = Math.abs(positions.getZ(i) - (terrainHeightAt(worldX, worldZ) + surface.lift));
+      if (error > maxLiftError) {
+        maxLiftError = error;
+        worst = [Math.round(worldX), Math.round(worldZ)];
+      }
+    }
+  }
+  return { surfaces: terrainRoadSurfaces.length, maxLiftError: Number(maxLiftError.toFixed(4)), worst };
+}
+
 function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material, lift) {
   const alongSegments = terrainRoadSegments(length, TERRAIN_GRID_SPACING);
   const acrossSegments = terrainRoadSegments(width, ROAD_CROSS_SAMPLE_STEP);
@@ -3353,6 +3381,7 @@ function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material
   road.position.set(centerX, 0, centerZ);
   road.receiveShadow = true;
   scene.add(road);
+  terrainRoadSurfaces.push({ mesh: road, centerX, centerZ, lift });
   return road;
 }
 
