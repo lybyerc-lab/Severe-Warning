@@ -11,6 +11,7 @@ const startedAt = new Date().toISOString();
 await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({
+  executablePath: process.env.QA_PLAY_BROWSER || undefined,
   headless: true,
   args: [
     '--autoplay-policy=no-user-gesture-required',

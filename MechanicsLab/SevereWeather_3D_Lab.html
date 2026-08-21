@@ -3148,6 +3148,15 @@ const CREEK_LIFT = 0.06;
 const SHOULDER_LIFT = 0.10;
 const ROAD_LIFT = 0.16;
 const LANE_DASH_LIFT = 0.24;
+
+// [SW:AREA:TERRAIN_ROADS] Anything that DRIVES must stand on the road surface, not
+// on the raw ground the road is lifted above. Vehicle models are built with their
+// wheels touching y = 0, so placing one at terrainHeightAt() alone buries the
+// bottom of every wheel under the asphalt. Use this for cars, news trucks, and any
+// future road traffic; keep terrainHeightAt() for things that stand on grass.
+function roadSurfaceHeightAt(x, z) {
+  return terrainHeightAt(x, z) + ROAD_LIFT;
+}
 createTerrainRoad(9, 780, 255, 0, false, creekMat, CREEK_LIFT);
 
 const polePositions = [];
@@ -4378,7 +4387,7 @@ function spawnTownCars() {
     const z = lane.z + lane.dz * offset;
     const speed = 20 + Math.random() * 12;
     
-    group.position.set(x, terrainHeightAt(x, z), z);
+    group.position.set(x, roadSurfaceHeightAt(x, z), z);
     group.rotation.y = Math.atan2(lane.dx, lane.dz); // Perfectly face driving direction!
     scene.add(group);
     
@@ -6092,7 +6101,7 @@ function updateMediaCrews(dt) {
       }
     }
 
-    crew.mesh.position.set(crew.x, terrainHeightAt(crew.x, crew.z), crew.z);
+    crew.mesh.position.set(crew.x, roadSurfaceHeightAt(crew.x, crew.z), crew.z);
     if (Math.abs(moveX) + Math.abs(moveZ) > 0.001) crew.mesh.rotation.y = Math.atan2(moveX, moveZ);
   });
 }
@@ -6404,7 +6413,7 @@ function init3DWorld() {
     const meshData = createMediaVehicleMesh(spawn.role, index + 1);
     const laneOffset = index % 2 === 0 ? 3.6 : -3.6;
     const roadSpawn = snapMediaCrewToRoad(spawn.x, spawn.z, laneOffset);
-    meshData.group.position.set(roadSpawn.x, terrainHeightAt(roadSpawn.x, roadSpawn.z), roadSpawn.z);
+    meshData.group.position.set(roadSpawn.x, roadSurfaceHeightAt(roadSpawn.x, roadSpawn.z), roadSpawn.z);
     meshData.group.rotation.y = Math.random() * Math.PI * 2;
     scene.add(meshData.group);
     chaserVans.push({
@@ -7338,7 +7347,7 @@ function animate(now) {
       if (car.x > 250) car.x = -250; if (car.x < -250) car.x = 250;
       if (car.z > 250) car.z = -250; if (car.z < -250) car.z = 250;
       
-      car.group.position.set(car.x, terrainHeightAt(car.x, car.z), car.z);
+      car.group.position.set(car.x, roadSurfaceHeightAt(car.x, car.z), car.z);
       car.group.rotation.y = Math.atan2(car.dx, car.dz);
       
       // Storm contact destruction
