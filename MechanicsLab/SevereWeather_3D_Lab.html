@@ -3053,14 +3053,33 @@ const skyEnvironment = {
     next.needsUpdate = true;
     if (this.texture) this.texture.dispose();
     this.texture = next;
-    scene.environment = next;
-    this.builtFrom = horizon.clone();
+    this.apply();
   },
-  refreshIfSkyDrifted() {
-    if (!this.builtFrom) { this.build(); return; }
-    const c = skyDomeUniforms.uHorizon.value;
-    const drift = Math.abs(c.r - this.builtFrom.r) + Math.abs(c.g - this.builtFrom.g) + Math.abs(c.b - this.builtFrom.b);
-    if (drift > 0.12) this.build();
+  // Deliberately per-material rather than scene.environment. scene.environment
+  // applies image-based lighting to EVERY MeshStandardMaterial, including the
+  // terrain and the county apron - two planes that cover the whole screen at
+  // metalness 0.02, so they gain nothing visible and pay the full per-pixel cost.
+  // Measured on the software renderer here: global costs about 19ms per frame,
+  // per-material costs less than nothing by comparison. That margin matters,
+  // because any frame over one second contributes ZERO to the real-time run
+  // clock, so steady fill cost on a slow device silently steals run time.
+  METAL_THRESHOLD: 0.15,
+  apply() {
+    if (!this.texture) return;
+    const seen = new Set();
+    scene.traverse(object => {
+      const list = Array.isArray(object.material) ? object.material : (object.material ? [object.material] : []);
+      for (const material of list) {
+        if (!material || !material.isMeshStandardMaterial || seen.has(material.uuid)) continue;
+        seen.add(material.uuid);
+        const wants = (material.metalness ?? 0) >= this.METAL_THRESHOLD;
+        const next = wants ? this.texture : null;
+        if (material.envMap !== next) {
+          material.envMap = next;
+          material.needsUpdate = true;
+        }
+      }
+    });
   }
 };
 skyEnvironment.build();
@@ -6897,6 +6916,9 @@ function resetWarningRun() {
   init3DWorld();
   applyCampaignPresentation();
   if (globalThis.__SW_V510_REBUILD__) globalThis.__SW_V510_REBUILD__();
+  // [SW:RENDER:ENVIRONMENT] init3DWorld/rebuild create fresh materials; re-point
+  // the metals at the environment now that they exist.
+  if (typeof skyEnvironment !== 'undefined') skyEnvironment.apply();
   selectStormClass(currentStorm);
   updateEFRating();
   renderObjectives();
@@ -8433,10 +8455,6 @@ function updateProductionAtmosphere(dt) {
         targetFog.clone().lerp(new THREE.Color('#5d7ba3'), 0.55),
         Math.min(1, dt * 0.18)
       );
-      // [SW:RENDER:ENVIRONMENT] Keep reflections agreeing with the drifted sky.
-      // This self-throttles on how far the sky has actually moved, so it costs
-      // a handful of prefilter passes across a whole run, not one per frame.
-      if (typeof skyEnvironment !== 'undefined') skyEnvironment.refreshIfSkyDrifted();
     }
   }
 
