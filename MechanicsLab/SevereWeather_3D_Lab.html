@@ -791,6 +791,14 @@
 //   VISUAL:TORNADO_LAYERS, VISUAL:DUST_SKIRT, VISUAL:PRODUCTION_SLICE
 //   CAMPAIGN:HEARTLAND, WORLD:BOVINE_SIGNATURE, UI:QA_PANEL
 //
+// Some gameplay logic has LEFT this file. src/gameplay/economy holds the run
+// economy - the EF ladder, the grade curve, campaign stars - as typed, unit-
+// tested TypeScript, compiled to an IIFE and inlined ABOVE this script at the
+// [SW:BUILD:ECONOMY_PRELUDE] marker. The game calls it for real answers; the
+// literal fallbacks beside those calls exist only so a missing prelude degrades
+// instead of throwing, and verify-qa-package fails the build if it is absent.
+// See AGENTS.md for how to move another piece out.
+//
 // The modern TypeScript shell (src/, built to modern/modern-shell.js) attaches to
 // this file through four lexical bridges inlined at the end of the last script:
 //

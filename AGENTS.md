@@ -54,3 +54,41 @@ the game, change the file.
 Navigate it with the `[SW:AREA:NAME]` region tags listed in the header comment at
 the top of the gameplay script. `runtime/*.js` is no longer a build input — see
 `runtime/README.md`.
+
+## Moving logic out of the inline script
+
+The gameplay source is one classic `<script>` in a single lexical scope, so it
+cannot `import`. That is the constraint behind everything here: it is why the
+modernization bridges are inlined rather than side-loaded, and why extracting
+logic needs a delivery route rather than just a module.
+
+The route is `src/gameplay/economy` — the worked example. Pure logic lives in
+TypeScript, is typechecked by `tsc` and covered by `npm test`, compiles through
+`vite.prelude.config.ts` to an IIFE, and `scripts/build-web.mjs` inlines it at
+the `<!-- [SW:BUILD:ECONOMY_PRELUDE] -->` marker **ahead of** the gameplay
+script. The game then calls it synchronously while building the world.
+
+To extract another piece, follow that shape:
+
+1. It has to be genuinely pure — no `THREE`, no DOM, no gameplay globals. Logic
+   entangled with the scene graph is not ready to move yet.
+2. Add it to the prelude entry so it lands on `globalThis`.
+3. Have the gameplay **call** it, keeping a literal fallback so a missing prelude
+   degrades instead of throwing mid-run.
+4. Add a `verify-qa-package` check that the prelude is present *and used* —
+   without one, a regression to the fallback path is invisible.
+
+The distinction that matters: the phase bridges *mirror* the game and validate
+it; the prelude *is* the game's logic. Prefer extraction over another mirror.
+
+## Checks that can actually see
+
+`npm test` runs `node:test` with Node 22 type stripping — real TypeScript tests,
+no extra dependencies. Every `verify-*.mjs` check is a string match against the
+source and cannot see anything; roads on causeways, a sand checkerboard, black
+metals and cars buried in asphalt all shipped with them green.
+
+`node scripts/visual-regression-gate.mjs` renders the build against the previous
+one and fails when the picture moves. It fails on **intended** changes too — put
+`[visual-change]` in the commit message to accept one, which leaves a record in
+history of every commit allowed to move the picture.
