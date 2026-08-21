@@ -786,8 +786,23 @@
 //   WORLD:PICKUPS         map pickups
 //   WORLD:MEDIA_CREWS     news vans and chasers (invincible, never targets)
 //   LOOP:MAIN             the per-frame loop
+//   AREA:TERRAIN_ROADS    ground/road surface heights and the lift budget
 //   VISUAL:TORNADO_LAYERS, VISUAL:DUST_SKIRT, VISUAL:PRODUCTION_SLICE
 //   CAMPAIGN:HEARTLAND, WORLD:BOVINE_SIGNATURE, UI:QA_PANEL
+//
+// The modern TypeScript shell (src/, built to modern/modern-shell.js) attaches to
+// this file through four lexical bridges inlined at the end of the last script:
+//
+//   ARCH:PHASE2_CLOCK_BRIDGE            run clock authority
+//   ARCH:PHASE3_INPUT_ABILITY_BRIDGE    input and ability authority
+//   ARCH:PHASE4_SCORING_CAMPAIGN_BRIDGE scoring/district/campaign mirror
+//   ARCH:PHASE5_PRESENTATION_WORLD      presentation and world mirror
+//
+// They must stay INLINE in this script. They close over `let` bindings declared
+// here (runTimeRemaining, cooldowns, triggerAbility, ...), so they cannot be
+// loaded as separate files - that is exactly why the shell sat dead for months.
+// The shell refuses to boot unless all four report their expected version, so if
+// you rename or remove one, modern-shell.js throws on every page load.
 //
 // Design laws that are not negotiable, enforced by scripts/verify-*.mjs:
 //   - people and animals are never targets and never take damage
@@ -6742,6 +6757,7 @@ function resetWarningRun() {
   resetStormAudioState();
   runTimeRemaining = getActiveCampaignLevel().durationSeconds;
   runClockLastTimestamp = performance.now();
+  globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.reset(runTimeRemaining, runClockLastTimestamp);
   maxStage3Elapsed = 0;
   armTitleCardAutoCollapse();
   destructionScore = 0;
@@ -6824,6 +6840,7 @@ document.addEventListener('visibilitychange', () => {
   } else {
     lastFrameTime = performance.now();
     runClockLastTimestamp = lastFrameTime;
+    globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.resume(lastFrameTime);
     if (runSuspendedByVisibility) {
       runActive = true;
       runSuspendedByVisibility = false;
@@ -6843,10 +6860,18 @@ function animate(now) {
 
   // REAL DELTA-TIME CALCULATION IN SECONDS (FRAME-RATE INDEPENDENT)
   const realDelta = Math.min(0.1, (now - lastFrameTime) / 1000);
-  const rawRunClockDelta = Math.max(0, (now - runClockLastTimestamp) / 1000);
-  // A delay over one second indicates a suspended/backgrounded renderer. The
-  // visibility handler also resets this clock, but this guard covers OS stalls.
-  const runClockDelta = rawRunClockDelta <= 1 ? rawRunClockDelta : 0;
+  const modernClockSample = globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.sample({
+    nowMs: now,
+    renderDeltaMs: realDelta * 1000,
+    simulationDeltaMs: realDelta * 1000,
+    runActive: Boolean(runActive),
+    paused: Boolean(isPaused),
+    remainingSeconds: Number(runTimeRemaining)
+  });
+  // Compatibility mirrors remain until the legacy loop is fully retired.
+  const runClockDelta = modernClockSample
+    ? modernClockSample.runDeltaMs / 1000
+    : Math.max(0, Math.min(1, (now - runClockLastTimestamp) / 1000));
   lastFrameTime = now;
   runClockLastTimestamp = now;
 
@@ -6969,14 +6994,19 @@ function animate(now) {
       if (cooldowns.secondary.current <= 0) triggerAbility('secondary');
       if (cooldowns.tertiary.current <= 0) triggerAbility('tertiary');
     } else {
-      if (keys['KeyA'] || keys['a'] || keys['ArrowLeft']) moveX -= 1;
-      if (keys['KeyD'] || keys['d'] || keys['ArrowRight']) moveX += 1;
-      if (keys['KeyW'] || keys['w'] || keys['ArrowUp']) moveZ -= 1;
-      if (keys['KeyS'] || keys['s'] || keys['ArrowDown']) moveZ += 1;
-
-      if (joystickActive) {
-        moveX = joystickDir.x;
-        moveZ = joystickDir.z;
+      const phase3Movement = globalThis.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.getMovement();
+      if (phase3Movement) {
+        moveX = phase3Movement.x;
+        moveZ = phase3Movement.z;
+      } else {
+        if (keys['KeyA'] || keys['a'] || keys['ArrowLeft']) moveX -= 1;
+        if (keys['KeyD'] || keys['d'] || keys['ArrowRight']) moveX += 1;
+        if (keys['KeyW'] || keys['w'] || keys['ArrowUp']) moveZ -= 1;
+        if (keys['KeyS'] || keys['s'] || keys['ArrowDown']) moveZ += 1;
+        if (joystickActive) {
+          moveX = joystickDir.x;
+          moveZ = joystickDir.z;
+        }
       }
     }
   }
@@ -7138,20 +7168,22 @@ function animate(now) {
     cameraShakeIntensity = Math.max(0, cameraShakeIntensity - dt * 4.0);
   }
 
-  if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {
-    const cow = bovineCowCam.cow;
-    const cinematicX = cow.x + 23;
-    const cinematicY = cow.groundY + cow.altitude + 17;
-    const cinematicZ = cow.z + 27;
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, cinematicX, 0.11);
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, cinematicY, 0.11);
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, cinematicZ, 0.11);
-    camera.lookAt(cow.x, cow.groundY + cow.altitude, cow.z);
-  } else {
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, storm.pos.y + currentCamY, 0.08);
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);
-    camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 14, storm.pos.z + (moveZ * 8));
+  if (!globalThis.productionQaPrepared && !(typeof globalThis.isPhase5PresentationLatched === 'function' && globalThis.isPhase5PresentationLatched())) {
+    if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {
+      const cow = bovineCowCam.cow;
+      const cinematicX = cow.x + 23;
+      const cinematicY = cow.groundY + cow.altitude + 17;
+      const cinematicZ = cow.z + 27;
+      camera.position.x = THREE.MathUtils.lerp(camera.position.x, cinematicX, 0.11);
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, cinematicY, 0.11);
+      camera.position.z = THREE.MathUtils.lerp(camera.position.z, cinematicZ, 0.11);
+      camera.lookAt(cow.x, cow.groundY + cow.altitude, cow.z);
+    } else {
+      camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, storm.pos.y + currentCamY, 0.08);
+      camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);
+      camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 14, storm.pos.z + (moveZ * 8));
+    }
   }
 
   updateCampaignScenery(dt);
@@ -8479,6 +8511,907 @@ if (urlParams.get('sliceqa') === '1') {
 }
 // [SW:VISUAL:PRODUCTION_SLICE:END]
 
+
+
+// [SW:SOURCE:modernization-phase2-clocks.js]
+// ============================================================================
+// [SW:ARCH:PHASE2_CLOCK_BRIDGE]
+// Lexical bridge between the accepted legacy animation loop and GameClocks.
+// Before the ES module attaches, fallback behavior exactly mirrors V5 timing.
+// ============================================================================
+const PHASE2_CLOCK_BRIDGE_VERSION = 'MODERNIZATION_PHASE2_CLOCKS_V1';
+let phase2ClockAuthority = null;
+let phase2FallbackLastTimestamp = typeof runClockLastTimestamp === 'number'
+  ? runClockLastTimestamp
+  : performance.now();
+let phase2LatestClockSample = {
+  renderDeltaMs: 0,
+  simulationDeltaMs: 0,
+  runDeltaMs: 0,
+  runState: 'idle'
+};
+
+function phase2ResolveRunState(active, paused, remainingSeconds) {
+  if (remainingSeconds <= 0) return 'finished';
+  if (!active) return 'idle';
+  return paused ? 'paused' : 'running';
+}
+
+function phase2FallbackSample(input) {
+  const rawRunDeltaMs = Math.max(0, input.nowMs - phase2FallbackLastTimestamp);
+  const runState = phase2ResolveRunState(input.runActive, input.paused, input.remainingSeconds);
+  const runDeltaMs = runState === 'running' && rawRunDeltaMs <= 1000 ? rawRunDeltaMs : 0;
+  phase2FallbackLastTimestamp = input.nowMs;
+  phase2LatestClockSample = {
+    renderDeltaMs: Math.max(0, input.renderDeltaMs),
+    simulationDeltaMs: Math.max(0, input.simulationDeltaMs),
+    runDeltaMs,
+    runState
+  };
+  return phase2LatestClockSample;
+}
+
+const phase2ClockBridge = {
+  version: PHASE2_CLOCK_BRIDGE_VERSION,
+
+  attach(authority) {
+    if (!authority || typeof authority.sample !== 'function' || typeof authority.getSnapshot !== 'function') {
+      throw new Error('Phase 2 clock authority is missing required methods.');
+    }
+    phase2ClockAuthority = authority;
+    if (typeof authority.resetRun === 'function') {
+      authority.resetRun(Math.max(0, runTimeRemaining) * 1000, performance.now());
+    }
+    return true;
+  },
+
+  sample(input) {
+    if (phase2ClockAuthority) {
+      phase2LatestClockSample = phase2ClockAuthority.sample(input);
+      return phase2LatestClockSample;
+    }
+    return phase2FallbackSample(input);
+  },
+
+  reset(durationSeconds, nowMs = performance.now()) {
+    phase2FallbackLastTimestamp = nowMs;
+    if (phase2ClockAuthority && typeof phase2ClockAuthority.resetRun === 'function') {
+      phase2ClockAuthority.resetRun(Math.max(0, durationSeconds) * 1000, nowMs);
+    }
+  },
+
+  resume(nowMs = performance.now()) {
+    phase2FallbackLastTimestamp = nowMs;
+    if (phase2ClockAuthority && typeof phase2ClockAuthority.resumeAfterSuspension === 'function') {
+      phase2ClockAuthority.resumeAfterSuspension(nowMs);
+    }
+  },
+
+  getLegacyRunState() {
+    return Object.freeze({
+      runActive: Boolean(runActive),
+      paused: Boolean(isPaused),
+      remainingSeconds: Number(runTimeRemaining),
+      stage: Number(currentStage),
+      gameStarted: Boolean(gameStarted)
+    });
+  },
+
+  getSnapshot() {
+    const authoritySnapshot = phase2ClockAuthority
+      ? phase2ClockAuthority.getSnapshot()
+      : null;
+    return Object.freeze({
+      version: PHASE2_CLOCK_BRIDGE_VERSION,
+      attached: Boolean(phase2ClockAuthority),
+      latestSample: { ...phase2LatestClockSample },
+      authority: authoritySnapshot,
+      legacy: this.getLegacyRunState()
+    });
+  }
+};
+
+globalThis.__SW_PHASE2_CLOCK_BRIDGE__ = phase2ClockBridge;
+// [SW:ARCH:PHASE2_CLOCK_BRIDGE:END]
+
+
+// [SW:SOURCE:modernization-phase3-input-abilities.js]
+// ============================================================================
+// [SW:ARCH:PHASE3_INPUT_ABILITY_BRIDGE]
+// Lexical bridge from accepted legacy handlers to typed input and ability
+// authorities. Fallback behavior preserves the existing runtime before attach.
+// ============================================================================
+const PHASE3_INPUT_ABILITY_BRIDGE_VERSION = 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1';
+const phase3OriginalTriggerAbility = triggerAbility;
+let phase3InputAuthority = null;
+let phase3AbilityAuthority = null;
+let phase3LastEventSource = 'keyboard';
+let phase3LastTouchAbility = { slot: null, atMs: -Infinity };
+let phase3SuppressedDuplicates = 0;
+let phase3AbilityRequests = 0;
+
+function phase3ResolveMovementFallback() {
+  if (joystickActive) {
+    return Object.freeze({
+      x: Number(joystickDir.x) || 0,
+      z: Number(joystickDir.z) || 0,
+      active: Boolean(joystickDir.x || joystickDir.z),
+      source: 'touch'
+    });
+  }
+  let x = 0;
+  let z = 0;
+  if (keys.KeyA || keys.a || keys.ArrowLeft) x -= 1;
+  if (keys.KeyD || keys.d || keys.ArrowRight) x += 1;
+  if (keys.KeyW || keys.w || keys.ArrowUp) z -= 1;
+  if (keys.KeyS || keys.s || keys.ArrowDown) z += 1;
+  return Object.freeze({ x, z, active: x !== 0 || z !== 0, source: x !== 0 || z !== 0 ? 'keyboard' : 'none' });
+}
+
+function phase3ExecuteLegacyAbility(slot) {
+  const cooldown = cooldowns[slot];
+  const before = cooldown ? Number(cooldown.current) : NaN;
+  const eligible = Boolean(runActive && cooldown && before <= 0);
+  phase3OriginalTriggerAbility(slot);
+  const after = cooldown ? Number(cooldown.current) : NaN;
+  return eligible && after > before;
+}
+
+function phase3ResolveAbilitySource(explicitSource) {
+  if (explicitSource) return explicitSource;
+  if (isBotMode) return 'bot';
+  return phase3LastEventSource === 'touch' ? 'touch' : 'keyboard';
+}
+
+function phase3ShouldSuppressDuplicate(slot, source, nowMs) {
+  const followsTouch = phase3LastTouchAbility.slot === slot
+    && nowMs - phase3LastTouchAbility.atMs <= 450;
+  if (followsTouch) {
+    phase3SuppressedDuplicates += 1;
+    return true;
+  }
+  if (source === 'touch') phase3LastTouchAbility = { slot, atMs: nowMs };
+  return false;
+}
+
+const phase3InputAbilityBridge = {
+  version: PHASE3_INPUT_ABILITY_BRIDGE_VERSION,
+
+  attach(inputAuthority, abilityAuthority) {
+    if (!inputAuthority || typeof inputAuthority.getMovement !== 'function') {
+      throw new Error('Phase 3 input authority is missing required methods.');
+    }
+    if (!abilityAuthority || typeof abilityAuthority.attachExecutor !== 'function') {
+      throw new Error('Phase 3 ability authority is missing required methods.');
+    }
+    phase3InputAuthority = inputAuthority;
+    phase3AbilityAuthority = abilityAuthority;
+    abilityAuthority.attachExecutor(phase3ExecuteLegacyAbility);
+    inputAuthority.setJoystick(Number(joystickDir.x) || 0, Number(joystickDir.z) || 0, Boolean(joystickActive));
+    return true;
+  },
+
+  setKeyboard(code, key, pressed) {
+    if (phase3InputAuthority && typeof phase3InputAuthority.setKeyboard === 'function') {
+      phase3InputAuthority.setKeyboard(String(code || ''), String(key || ''), Boolean(pressed));
+    }
+  },
+
+  setJoystick(x, z, active) {
+    const nextX = active ? Number(x) || 0 : 0;
+    const nextZ = active ? Number(z) || 0 : 0;
+    const nextActive = Boolean(active);
+    joystickDir.x = nextX;
+    joystickDir.z = nextZ;
+    joystickActive = nextActive;
+    if (phase3InputAuthority && typeof phase3InputAuthority.setJoystick === 'function') {
+      phase3InputAuthority.setJoystick(nextX, nextZ, nextActive);
+    }
+  },
+
+  getMovement() {
+    if (!phase3InputAuthority) return phase3ResolveMovementFallback();
+    phase3InputAuthority.setJoystick(Number(joystickDir.x) || 0, Number(joystickDir.z) || 0, Boolean(joystickActive));
+    return phase3InputAuthority.getMovement();
+  },
+
+  requestAbility(slot, explicitSource) {
+    const nowMs = performance.now();
+    const source = phase3ResolveAbilitySource(explicitSource);
+    phase3AbilityRequests += 1;
+    if (phase3ShouldSuppressDuplicate(slot, source, nowMs)) {
+      return Object.freeze({ accepted: false, reason: 'duplicate-suppressed', slot, source });
+    }
+    if (phase3AbilityAuthority) return phase3AbilityAuthority.request(slot, source, nowMs);
+    const accepted = phase3ExecuteLegacyAbility(slot);
+    return Object.freeze({ accepted, reason: accepted ? 'executed' : 'legacy-rejected', slot, source });
+  },
+
+  reset() {
+    this.setJoystick(0, 0, false);
+    if (phase3InputAuthority && typeof phase3InputAuthority.reset === 'function') phase3InputAuthority.reset();
+    if (phase3AbilityAuthority && typeof phase3AbilityAuthority.resetTelemetry === 'function') phase3AbilityAuthority.resetTelemetry();
+    phase3LastTouchAbility = { slot: null, atMs: -Infinity };
+    phase3SuppressedDuplicates = 0;
+    phase3AbilityRequests = 0;
+  },
+
+  getSnapshot() {
+    return Object.freeze({
+      version: PHASE3_INPUT_ABILITY_BRIDGE_VERSION,
+      attached: Boolean(phase3InputAuthority && phase3AbilityAuthority),
+      movement: this.getMovement(),
+      input: phase3InputAuthority && typeof phase3InputAuthority.getSnapshot === 'function'
+        ? phase3InputAuthority.getSnapshot()
+        : null,
+      abilities: phase3AbilityAuthority && typeof phase3AbilityAuthority.getSnapshot === 'function'
+        ? phase3AbilityAuthority.getSnapshot()
+        : null,
+      abilityRequests: phase3AbilityRequests,
+      suppressedDuplicates: phase3SuppressedDuplicates,
+      legacy: Object.freeze({
+        joystickActive: Boolean(joystickActive),
+        joystickX: Number(joystickDir.x) || 0,
+        joystickZ: Number(joystickDir.z) || 0
+      })
+    });
+  }
+};
+
+document.addEventListener('touchstart', () => { phase3LastEventSource = 'touch'; }, true);
+document.addEventListener('pointerdown', event => {
+  phase3LastEventSource = event.pointerType === 'touch' ? 'touch' : 'keyboard';
+}, true);
+document.addEventListener('keydown', event => {
+  phase3LastEventSource = 'keyboard';
+  phase3InputAbilityBridge.setKeyboard(event.code || '', event.key || '', true);
+}, true);
+document.addEventListener('keyup', event => {
+  phase3InputAbilityBridge.setKeyboard(event.code || '', event.key || '', false);
+}, true);
+window.addEventListener('blur', () => {
+  if (phase3InputAuthority && typeof phase3InputAuthority.reset === 'function') phase3InputAuthority.reset();
+});
+
+triggerAbility = function phase3RoutedAbility(slot) {
+  return phase3InputAbilityBridge.requestAbility(slot);
+};
+
+globalThis.__SW_PHASE3_INPUT_ABILITY_BRIDGE__ = phase3InputAbilityBridge;
+// [SW:ARCH:PHASE3_INPUT_ABILITY_BRIDGE:END]
+
+
+// [SW:SOURCE:modernization-phase4-scoring-campaign.js]
+// ============================================================================
+// [SW:ARCH:PHASE4_SCORING_CAMPAIGN_BRIDGE]
+// The accepted legacy functions remain the execution authority in Phase 4.
+// Typed systems mirror their exact inputs, outputs, transitions, and save data.
+// ============================================================================
+const PHASE4_SCORING_CAMPAIGN_BRIDGE_VERSION = 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2';
+
+const phase4OriginalAddScore = typeof addScore === 'function' ? addScore : null;
+const phase4OriginalShowDistrictTransition = typeof showDistrictTransition === 'function' ? showDistrictTransition : null;
+const phase4OriginalCompleteCampaignRun = typeof completeCampaignRun === 'function' ? completeCampaignRun : null;
+const phase4OriginalSelectCampaignLevel = typeof selectCampaignLevel === 'function' ? selectCampaignLevel : null;
+const phase4OriginalStartNextCampaignLevel = typeof startNextCampaignLevel === 'function' ? startNextCampaignLevel : null;
+const phase4OriginalSaveCampaignProgress = typeof saveCampaignProgress === 'function' ? saveCampaignProgress : null;
+const phase4OriginalLoadCampaignProgress = typeof loadCampaignProgress === 'function' ? loadCampaignProgress : null;
+const phase4OriginalResetWarningRun = typeof resetWarningRun === 'function' ? resetWarningRun : null;
+
+let phase4ScoringAuthority = null;
+let phase4DistrictAuthority = null;
+let phase4CampaignAuthority = null;
+let phase4PersistenceAuthority = null;
+
+function phase4LegacyScoreState() {
+  return Object.freeze({
+    destructionScore: Number(typeof destructionScore === 'undefined' ? 0 : destructionScore) || 0,
+    baseScore: Number(typeof baseScore === 'undefined' ? 0 : baseScore) || 0,
+    comboMultiplier: Number(typeof comboMultiplier === 'undefined' ? 1 : comboMultiplier) || 1,
+    maxComboReached: Number(typeof maxComboReached === 'undefined' ? 1 : maxComboReached) || 1,
+    comboDecayTimerSeconds: Number(typeof comboDecayTimer === 'undefined' ? 0 : comboDecayTimer) || 0,
+    scoreDoublerTimerSeconds: Number(typeof scoreDoublerTimer === 'undefined' ? 0 : scoreDoublerTimer) || 0,
+    campaignScoreMultiplier: typeof campaignScoreMultiplier === 'function'
+      ? Number(campaignScoreMultiplier()) || 1
+      : 1,
+    currentStage: Math.max(1, Math.min(3, Number(typeof currentStage === 'undefined' ? 1 : currentStage) || 1))
+  });
+}
+
+function phase4LegacyDistrictState() {
+  const stage = Math.max(1, Math.min(3, Number(typeof currentStage === 'undefined' ? 1 : currentStage) || 1));
+  const definition = typeof DISTRICTS === 'undefined' ? null : DISTRICTS[stage];
+  return Object.freeze({
+    stage,
+    destructionScore: Number(typeof destructionScore === 'undefined' ? 0 : destructionScore) || 0,
+    title: definition && definition.name ? String(definition.name) : `DISTRICT ${stage}`,
+    subtitle: definition && definition.subtitle ? String(definition.subtitle) : ''
+  });
+}
+
+function phase4LegacyCampaignState() {
+  return typeof campaignProgress === 'undefined'
+    ? Object.freeze({ schema: 1, unlockedLevel: 0, selectedLevel: 0, levels: Object.freeze({}) })
+    : campaignProgress;
+}
+
+function phase4SynchronizeAll() {
+  const scoreState = phase4LegacyScoreState();
+  const districtState = phase4LegacyDistrictState();
+  const campaignState = phase4LegacyCampaignState();
+  if (phase4ScoringAuthority) phase4ScoringAuthority.synchronize(scoreState);
+  if (phase4DistrictAuthority) {
+    phase4DistrictAuthority.observeLegacyState(
+      districtState.stage,
+      districtState.destructionScore,
+      districtState.title,
+      districtState.subtitle,
+      performance.now()
+    );
+  }
+  if (phase4PersistenceAuthority) phase4PersistenceAuthority.synchronize(campaignState);
+  if (phase4CampaignAuthority) phase4CampaignAuthority.synchronize(campaignState);
+  return Object.freeze({ scoreState, districtState, campaignState });
+}
+
+const phase4ScoringCampaignBridge = {
+  version: PHASE4_SCORING_CAMPAIGN_BRIDGE_VERSION,
+
+  attach(scoringAuthority, districtAuthority, campaignAuthority, persistenceAuthority) {
+    if (!scoringAuthority || typeof scoringAuthority.synchronize !== 'function' || typeof scoringAuthority.recordLegacyAward !== 'function') {
+      throw new Error('Phase 4 scoring mirror is missing required methods.');
+    }
+    if (!districtAuthority || typeof districtAuthority.observeLegacyState !== 'function') {
+      throw new Error('Phase 4 district mirror is missing required methods.');
+    }
+    if (!campaignAuthority || typeof campaignAuthority.synchronize !== 'function') {
+      throw new Error('Phase 4 campaign mirror is missing required methods.');
+    }
+    if (!persistenceAuthority || typeof persistenceAuthority.synchronize !== 'function') {
+      throw new Error('Phase 4 persistence mirror is missing required methods.');
+    }
+    phase4ScoringAuthority = scoringAuthority;
+    phase4DistrictAuthority = districtAuthority;
+    phase4CampaignAuthority = campaignAuthority;
+    phase4PersistenceAuthority = persistenceAuthority;
+    phase4SynchronizeAll();
+    return true;
+  },
+
+  syncFromLegacy() {
+    return phase4SynchronizeAll();
+  },
+
+  reset() {
+    const districtState = phase4LegacyDistrictState();
+    if (phase4ScoringAuthority) phase4ScoringAuthority.reset(phase4LegacyScoreState());
+    if (phase4DistrictAuthority) phase4DistrictAuthority.reset(districtState.title, districtState.subtitle);
+    phase4SynchronizeAll();
+  },
+
+  runContractProbe() {
+    return Object.freeze({
+      scoring: phase4ScoringAuthority ? phase4ScoringAuthority.runContractProbe() : null,
+      districts: phase4DistrictAuthority ? phase4DistrictAuthority.runContractProbe() : null,
+      campaign: phase4CampaignAuthority ? phase4CampaignAuthority.runContractProbe() : null,
+      persistence: phase4PersistenceAuthority ? phase4PersistenceAuthority.runContractProbe() : null
+    });
+  },
+
+  getSnapshot() {
+    const legacy = phase4SynchronizeAll();
+    return Object.freeze({
+      version: PHASE4_SCORING_CAMPAIGN_BRIDGE_VERSION,
+      attached: Boolean(phase4ScoringAuthority && phase4DistrictAuthority && phase4CampaignAuthority && phase4PersistenceAuthority),
+      score: Object.freeze({
+        authority: phase4ScoringAuthority ? phase4ScoringAuthority.getSnapshot() : null,
+        legacy: legacy.scoreState
+      }),
+      district: Object.freeze({
+        authority: phase4DistrictAuthority ? phase4DistrictAuthority.getSnapshot() : null,
+        legacy: legacy.districtState
+      }),
+      campaign: Object.freeze({
+        activeStop: phase4CampaignAuthority ? phase4CampaignAuthority.activeStopId : null,
+        furthestUnlocked: phase4CampaignAuthority ? phase4CampaignAuthority.furthestUnlockedStopId : null,
+        progress: phase4CampaignAuthority ? phase4CampaignAuthority.getProgressMap() : null,
+        save: phase4CampaignAuthority ? phase4CampaignAuthority.getSnapshot() : null,
+        legacy: legacy.campaignState
+      }),
+      persistence: phase4PersistenceAuthority ? phase4PersistenceAuthority.getSnapshot() : null
+    });
+  }
+};
+
+if (phase4OriginalAddScore) {
+  addScore = function phase4ObservedAddScore(points, label) {
+    const before = phase4LegacyScoreState();
+    const result = phase4OriginalAddScore.apply(this, arguments);
+    const after = phase4LegacyScoreState();
+    if (phase4ScoringAuthority) {
+      const awarded = Number.isFinite(Number(result))
+        ? Number(result)
+        : after.destructionScore - before.destructionScore;
+      phase4ScoringAuthority.recordLegacyAward(points, awarded, label || 'points', after, performance.now());
+    }
+    return result;
+  };
+}
+
+if (phase4OriginalShowDistrictTransition) {
+  showDistrictTransition = function phase4ObservedDistrictTransition(stage) {
+    const result = phase4OriginalShowDistrictTransition.apply(this, arguments);
+    const districtState = phase4LegacyDistrictState();
+    if (phase4DistrictAuthority) {
+      phase4DistrictAuthority.observeLegacyState(
+        stage,
+        districtState.destructionScore,
+        districtState.title,
+        districtState.subtitle,
+        performance.now()
+      );
+    }
+    return result;
+  };
+}
+
+if (phase4OriginalCompleteCampaignRun) {
+  completeCampaignRun = function phase4ObservedCampaignCompletion() {
+    const result = phase4OriginalCompleteCampaignRun.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+if (phase4OriginalSelectCampaignLevel) {
+  selectCampaignLevel = function phase4ObservedCampaignSelection() {
+    const result = phase4OriginalSelectCampaignLevel.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+if (phase4OriginalStartNextCampaignLevel) {
+  startNextCampaignLevel = function phase4ObservedNextCampaignLevel() {
+    const result = phase4OriginalStartNextCampaignLevel.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+if (phase4OriginalSaveCampaignProgress) {
+  saveCampaignProgress = function phase4ObservedCampaignSave() {
+    const result = phase4OriginalSaveCampaignProgress.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+if (phase4OriginalLoadCampaignProgress) {
+  loadCampaignProgress = function phase4ObservedCampaignLoad() {
+    const result = phase4OriginalLoadCampaignProgress.apply(this, arguments);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+if (phase4OriginalResetWarningRun) {
+  resetWarningRun = function phase4ObservedWarningReset() {
+    const result = phase4OriginalResetWarningRun.apply(this, arguments);
+    const districtState = phase4LegacyDistrictState();
+    if (phase4ScoringAuthority) phase4ScoringAuthority.reset(phase4LegacyScoreState());
+    if (phase4DistrictAuthority) phase4DistrictAuthority.reset(districtState.title, districtState.subtitle);
+    phase4SynchronizeAll();
+    return result;
+  };
+}
+
+globalThis.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__ = phase4ScoringCampaignBridge;
+// [SW:ARCH:PHASE4_SCORING_CAMPAIGN_BRIDGE:END]
+
+
+// [SW:SOURCE:modernization-phase5-presentation-world.js]
+// ============================================================================
+// [SW:ARCH:PHASE5_PRESENTATION_WORLD_BRIDGE]
+// Lexical bridge from the accepted live Three.js runtime to passive typed
+// mirrors. It creates no renderer, scene, camera, world, effects, or gameplay.
+// ============================================================================
+const PHASE5_PRESENTATION_WORLD_BRIDGE_VERSION = 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2';
+
+let phase5RendererAuthority = null;
+let phase5SceneAuthority = null;
+let phase5CameraAuthority = null;
+let phase5AtmosphereAuthority = null;
+let phase5TornadoAuthority = null;
+let phase5WorldAuthority = null;
+let phase5HartFarmSetpiece = null;
+let phase5SecondSetpiece = null;
+
+let phase5PresentationLatched = false;
+let phase5LatchedTimestamp = 0;
+let phase5LatchedFrameId = 0;
+
+globalThis.isPhase5PresentationLatched = function isPhase5PresentationLatched() {
+  return phase5PresentationLatched;
+};
+
+globalThis.getPhase5LatchedTimestamp = function getPhase5LatchedTimestamp() {
+  return phase5LatchedTimestamp;
+};
+
+function phase5ColorHex(color) {
+  return color && typeof color.getHexString === 'function'
+    ? `#${color.getHexString()}`
+    : null;
+}
+
+function phase5CountSceneResources() {
+  const geometries = new Map();
+  const materials = new Map();
+  const textures = new Map();
+  let meshCount = 0;
+
+  scene.traverse((object) => {
+    if (!object) return;
+    if (object.isMesh) {
+      meshCount += 1;
+      if (object.geometry && object.geometry.uuid) {
+        geometries.set(object.geometry.uuid, {
+          uuid: object.geometry.uuid,
+          type: object.geometry.type || 'BufferGeometry',
+          name: object.geometry.name || '',
+          objectName: object.name || '',
+          objectType: object.type || 'Mesh',
+        });
+      }
+    }
+    if (object.material) {
+      const matList = Array.isArray(object.material) ? object.material : [object.material];
+      matList.forEach((material) => {
+        if (!material || !material.uuid) return;
+        materials.set(material.uuid, {
+          uuid: material.uuid,
+          type: material.type || 'Material',
+          name: material.name || '',
+        });
+        if (material.map && material.map.uuid) {
+          textures.set(material.map.uuid, {
+            uuid: material.map.uuid,
+            name: material.map.name || '',
+            source: material.map.image ? (material.map.image.src || 'canvas') : 'none',
+          });
+        }
+      });
+    }
+  });
+
+  return {
+    meshCount,
+    uniqueMaterialCount: materials.size,
+    uniqueGeometryCount: geometries.size,
+    uniqueTextureCount: textures.size,
+    geometryDetails: Array.from(geometries.values()),
+    materialDetails: Array.from(materials.values()),
+    textureDetails: Array.from(textures.values()),
+  };
+}
+
+function phase5ReadLegacySnapshot() {
+  const size = renderer.getSize(new THREE.Vector2());
+  const contextAttributes = renderer.getContext().getContextAttributes();
+  const forward = camera.getWorldDirection(new THREE.Vector3());
+  const sceneResources = phase5CountSceneResources();
+  const qaState = typeof globalThis.getProductionSliceQaState === 'function'
+    ? globalThis.getProductionSliceQaState()
+    : null;
+  const cow17 = animals.find((animal) => animal.id === 17) || null;
+  const primaryLandmark = landmarks[0] || null;
+  const barnStageIds = ['intact', 'damaged', 'roof-peel', 'exposed', 'wreckage'];
+  const barnStageScores = [0, 140, 210, 280, 720];
+  const barnAwardedStages = productionBarn && productionBarn.awardedStages instanceof Set
+    ? Array.from(productionBarn.awardedStages)
+    : [];
+  const barnScoreAwarded = barnAwardedStages.reduce(
+    (total, stage) => total + (barnStageScores[Number(stage)] || 0),
+    0,
+  );
+  const barnHealth = productionBarn ? Number(productionBarn.health) : 0;
+  const barnMaxHealth = productionBarn ? Number(productionBarn.maxHealth) : 0;
+  const barnLegacyStage = productionBarn ? Number(productionBarn.stage) : 0;
+  const landmarkHealth = primaryLandmark ? Number(primaryLandmark.health) : 0;
+  const landmarkMaxHealth = primaryLandmark ? Number(primaryLandmark.maxHealth) : 0;
+
+  return Object.freeze({
+    presentationLatched: phase5PresentationLatched,
+    latchedFrameId: phase5LatchedFrameId,
+    latchedTimestamp: phase5LatchedTimestamp,
+    renderer: Object.freeze({
+      rendererName: 'Three.js WebGLRenderer',
+      version: 'r128',
+      antialias: contextAttributes ? Boolean(contextAttributes.antialias) : null,
+      shadowMapEnabled: Boolean(renderer.shadowMap.enabled),
+      shadowMapType: renderer.shadowMap.type === THREE.PCFSoftShadowMap ? 'PCFSoftShadowMap' : 'unknown',
+      toneMapping: renderer.toneMapping === THREE.ACESFilmicToneMapping ? 'ACESFilmicToneMapping' : 'unknown',
+      exposure: Number(renderer.toneMappingExposure),
+      outputEncoding: renderer.outputEncoding === THREE.sRGBEncoding ? 'sRGBEncoding' : 'unknown',
+      pixelRatio: Number(renderer.getPixelRatio()),
+      viewportWidth: Number(size.x),
+      viewportHeight: Number(size.y),
+      memory: Object.freeze({
+        geometries: Number(renderer.info.memory.geometries || 0),
+        textures: Number(renderer.info.memory.textures || 0),
+      }),
+      frame: Object.freeze({
+        calls: Number(renderer.info.render.calls || 0),
+        triangles: Number(renderer.info.render.triangles || 0),
+        points: Number(renderer.info.render.points || 0),
+        lines: Number(renderer.info.render.lines || 0),
+      }),
+    }),
+    scene: Object.freeze({
+      sceneId: String(scene.uuid || 'production-scene-r128'),
+      childCount: Number(scene.children.length),
+      meshCount: sceneResources.meshCount,
+      uniqueMaterialCount: sceneResources.uniqueMaterialCount,
+      uniqueGeometryCount: sceneResources.uniqueGeometryCount,
+      uniqueTextureCount: sceneResources.uniqueTextureCount,
+      geometries: sceneResources.geometryDetails,
+      materials: sceneResources.materialDetails,
+      textures: sceneResources.textureDetails,
+      fog: Object.freeze({
+        type: scene.fog && scene.fog.isFogExp2 ? 'FogExp2' : (scene.fog ? 'unknown' : 'none'),
+        color: scene.fog ? phase5ColorHex(scene.fog.color) : null,
+        density: scene.fog && typeof scene.fog.density === 'number' ? Number(scene.fog.density) : null,
+      }),
+      lights: Object.freeze([
+        Object.freeze({
+          type: 'AmbientLight',
+          color: phase5ColorHex(ambientLight.color) || '#000000',
+          intensity: Number(ambientLight.intensity),
+        }),
+        Object.freeze({
+          type: 'HemisphereLight',
+          color: phase5ColorHex(skyLight.color) || '#000000',
+          groundColor: phase5ColorHex(skyLight.groundColor) || '#000000',
+          intensity: Number(skyLight.intensity),
+        }),
+        Object.freeze({
+          type: 'DirectionalLight',
+          color: phase5ColorHex(dirLight.color) || '#000000',
+          intensity: Number(dirLight.intensity),
+        }),
+      ]),
+      backgroundColor: phase5ColorHex(scene.background),
+    }),
+    camera: Object.freeze({
+      fov: Number(camera.fov),
+      near: Number(camera.near),
+      far: Number(camera.far),
+      aspect: Number(camera.aspect),
+      position: Object.freeze({
+        x: Number(camera.position.x),
+        y: Number(camera.position.y),
+        z: Number(camera.position.z),
+      }),
+      forward: Object.freeze({
+        x: Number(forward.x),
+        y: Number(forward.y),
+        z: Number(forward.z),
+      }),
+      shakeAmount: Number(cameraShakeIntensity || 0),
+    }),
+    atmosphere: Object.freeze({
+      fogColorHex: scene.fog ? phase5ColorHex(scene.fog.color) : null,
+      fogDensity: scene.fog && typeof scene.fog.density === 'number' ? Number(scene.fog.density) : null,
+      exposure: Number(renderer.toneMappingExposure),
+      ambientIntensity: Number(ambientLight.intensity),
+      hemisphereIntensity: Number(skyLight.intensity),
+      directionalIntensity: Number(dirLight.intensity),
+      stormLightPresent: Boolean(productionStormLight && productionStormLight.parent),
+      stormLightIntensity: productionStormLight ? Number(productionStormLight.intensity) : 0,
+      flashTimer: Number(productionFlashTimer || 0),
+    }),
+    tornado: Object.freeze({
+      quality: String(productionQuality),
+      rootPresent: Boolean(productionTornadoRoot && productionTornadoRoot.parent),
+      funnelLayerCount: Number(2 + productionVaporRibbons.length),
+      vaporRibbonCount: Number(productionVaporRibbons.length),
+      suctionRingCount: Number(productionSuctionRings.length),
+      activeDebrisCount: Number(productionDebrisMeta.length),
+      dustPuffCount: Number(productionDustPuffs.length),
+      detachedFragmentCount: Number(productionFragments.length),
+      stormLightPresent: Boolean(productionStormLight && productionStormLight.parent),
+      isMultiVolumeHero: (2 + productionVaporRibbons.length) >= 3 && productionSuctionRings.length === 3,
+    }),
+    world: Object.freeze({
+      campaignId: String(productionCurrentCampaignId || ''),
+      quality: String(productionQuality),
+      cropRowsCount: Number(productionDressingStats.cropRows || 0),
+      treesCount: Number(productionDressingStats.trees || 0),
+      fencesCount: Number(productionDressingStats.fences || 0),
+      streetPropsCount: Number(productionDressingStats.streetProps || 0),
+      targetsCount: Number(targets.length),
+      landmarksCount: Number(landmarks.length),
+      substationsCount: Number(substations.length),
+      mediaCrewsCount: Number(chaserVans.length),
+      animalsCount: Number(animals.length),
+      cow17: Object.freeze({
+        present: Boolean(cow17),
+        decorated: Boolean(cow17 && cow17.mesh && cow17.mesh.userData.v510Decorated === true),
+        airborne: Boolean(cow17 && cow17.airborne),
+        scale: cow17 && cow17.mesh ? Number(cow17.mesh.scale.x) : null,
+        earTag: '#17',
+      }),
+    }),
+    setpieces: Object.freeze({
+      hartFarm: Object.freeze({
+        setpieceId: 'hart-farm-barn',
+        displayName: 'Hart Farm Signature Barn',
+        currentStageId: barnStageIds[barnLegacyStage] || 'intact',
+        legacyStage: barnLegacyStage,
+        health: barnHealth,
+        maxHealth: barnMaxHealth,
+        remainingHealthRatio: barnMaxHealth > 0 ? barnHealth / barnMaxHealth : 0,
+        isFullyDestroyed: Boolean(productionBarn && productionBarn.destroyed),
+        scoreAwardedTotal: barnScoreAwarded,
+        detachedPieceCount: Number(productionFragments.length),
+      }),
+      secondStructure: Object.freeze({
+        setpieceId: 'primary-campaign-landmark',
+        displayName: primaryLandmark ? String(primaryLandmark.name || 'Primary Campaign Landmark') : 'Primary Campaign Landmark',
+        currentStageId: primaryLandmark && primaryLandmark.destroyed ? 'destroyed' : 'intact',
+        legacyStage: primaryLandmark && primaryLandmark.destroyed ? 1 : 0,
+        health: landmarkHealth,
+        maxHealth: landmarkMaxHealth,
+        remainingHealthRatio: landmarkMaxHealth > 0 ? landmarkHealth / landmarkMaxHealth : 0,
+        isFullyDestroyed: Boolean(primaryLandmark && primaryLandmark.destroyed),
+        scoreAwardedTotal: primaryLandmark && primaryLandmark.destroyed ? 500 : 0,
+        detachedPieceCount: 0,
+      }),
+    }),
+    productionQa: qaState,
+  });
+}
+
+function phase5SynchronizeAuthorities(live) {
+  phase5RendererAuthority.synchronize(live.renderer);
+  phase5SceneAuthority.synchronize(live.scene);
+  phase5CameraAuthority.synchronize(live.camera);
+  phase5AtmosphereAuthority.synchronize(live.atmosphere);
+  phase5TornadoAuthority.synchronize(live.tornado);
+  phase5WorldAuthority.synchronize(live.world);
+  phase5HartFarmSetpiece.synchronize(live.setpieces.hartFarm);
+  phase5SecondSetpiece.synchronize(live.setpieces.secondStructure);
+}
+
+function phase5AuthoritiesAttached() {
+  return Boolean(
+    phase5RendererAuthority &&
+    phase5SceneAuthority &&
+    phase5CameraAuthority &&
+    phase5AtmosphereAuthority &&
+    phase5TornadoAuthority &&
+    phase5WorldAuthority &&
+    phase5HartFarmSetpiece &&
+    phase5SecondSetpiece
+  );
+}
+
+const phase5PresentationWorldBridge = {
+  version: PHASE5_PRESENTATION_WORLD_BRIDGE_VERSION,
+
+  attach(rendererAuthority, sceneAuthority, cameraAuthority, atmosphereAuthority, tornadoAuthority, worldAuthority, hartFarmAuthority, secondSetpieceAuthority) {
+    const authorities = [
+      rendererAuthority,
+      sceneAuthority,
+      cameraAuthority,
+      atmosphereAuthority,
+      tornadoAuthority,
+      worldAuthority,
+      hartFarmAuthority,
+      secondSetpieceAuthority,
+    ];
+    if (authorities.some((authority) => !authority || typeof authority.synchronize !== 'function' || typeof authority.getSnapshot !== 'function')) {
+      throw new Error('Phase 5 passive mirrors are missing synchronize/getSnapshot methods.');
+    }
+    phase5RendererAuthority = rendererAuthority;
+    phase5SceneAuthority = sceneAuthority;
+    phase5CameraAuthority = cameraAuthority;
+    phase5AtmosphereAuthority = atmosphereAuthority;
+    phase5TornadoAuthority = tornadoAuthority;
+    phase5WorldAuthority = worldAuthority;
+    phase5HartFarmSetpiece = hartFarmAuthority;
+    phase5SecondSetpiece = secondSetpieceAuthority;
+    this.syncFromLegacy();
+    return true;
+  },
+
+  latchPresentationFrame(timestamp = 1000) {
+    phase5PresentationLatched = true;
+    phase5LatchedTimestamp = Number(timestamp || 1000);
+    phase5LatchedFrameId += 1;
+    if (typeof globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause === 'function') {
+      globalThis.__SW_PHASE2_CLOCK_BRIDGE__.pause();
+    }
+    if (typeof cameraShakeIntensity !== 'undefined') {
+      cameraShakeIntensity = 0;
+    }
+    if (typeof productionQaPrepared !== 'undefined' && productionQaPrepared && typeof productionBarn !== 'undefined' && productionBarn && typeof storm !== 'undefined' && storm) {
+      camera.position.set(storm.pos.x + 52, storm.pos.y + 50, storm.pos.z + 68);
+      camera.lookAt(productionBarn.x, terrainHeightAt(productionBarn.x, productionBarn.z) + 8, productionBarn.z);
+    }
+    renderer.render(scene, camera);
+    this.syncFromLegacy();
+    return Object.freeze({
+      presentationLatched: true,
+      latchedFrameId: phase5LatchedFrameId,
+      latchedTimestamp: phase5LatchedTimestamp,
+    });
+  },
+
+  unlatchPresentation() {
+    phase5PresentationLatched = false;
+    return false;
+  },
+
+  syncFromLegacy() {
+    if (!phase5AuthoritiesAttached()) return null;
+    const live = phase5ReadLegacySnapshot();
+    phase5SynchronizeAuthorities(live);
+    return live;
+  },
+
+  reset() {
+    phase5PresentationLatched = false;
+    if (!phase5AuthoritiesAttached()) return;
+    this.syncFromLegacy();
+  },
+
+  runContractProbe() {
+    const snapshot = this.getSnapshot();
+    const checks = Object.freeze({
+      rendererAgrees: JSON.stringify(snapshot.renderer) === JSON.stringify(snapshot.live.renderer),
+      sceneAgrees: JSON.stringify(snapshot.scene) === JSON.stringify(snapshot.live.scene),
+      cameraAgrees: JSON.stringify(snapshot.camera) === JSON.stringify(snapshot.live.camera),
+      atmosphereAgrees: JSON.stringify(snapshot.atmosphere) === JSON.stringify(snapshot.live.atmosphere),
+      tornadoAgrees: JSON.stringify(snapshot.tornado) === JSON.stringify(snapshot.live.tornado),
+      worldAgrees: JSON.stringify(snapshot.world) === JSON.stringify(snapshot.live.world),
+      hartFarmAgrees: JSON.stringify(snapshot.setpieces.hartFarm) === JSON.stringify(snapshot.live.setpieces.hartFarm),
+      secondStructureAgrees: JSON.stringify(snapshot.setpieces.secondStructure) === JSON.stringify(snapshot.live.setpieces.secondStructure),
+      oneProductionRenderer: snapshot.live.renderer.rendererName === 'Three.js WebGLRenderer',
+      acceptedThreeRevision: snapshot.live.renderer.version === 'r128',
+      acceptedHartFarmStages: snapshot.live.setpieces.hartFarm.legacyStage >= 0 && snapshot.live.setpieces.hartFarm.legacyStage <= 4,
+      secondStructureUsesExistingLifecycle: ['intact', 'destroyed'].includes(snapshot.live.setpieces.secondStructure.currentStageId),
+    });
+    return Object.freeze({
+      version: PHASE5_PRESENTATION_WORLD_BRIDGE_VERSION,
+      checks,
+      passed: Object.values(checks).every(Boolean),
+    });
+  },
+
+  getSnapshot() {
+    const live = this.syncFromLegacy();
+    return Object.freeze({
+      version: PHASE5_PRESENTATION_WORLD_BRIDGE_VERSION,
+      attached: phase5AuthoritiesAttached(),
+      renderer: phase5RendererAuthority ? phase5RendererAuthority.getSnapshot() : null,
+      scene: phase5SceneAuthority ? phase5SceneAuthority.getSnapshot() : null,
+      camera: phase5CameraAuthority ? phase5CameraAuthority.getSnapshot() : null,
+      atmosphere: phase5AtmosphereAuthority ? phase5AtmosphereAuthority.getSnapshot() : null,
+      tornado: phase5TornadoAuthority ? phase5TornadoAuthority.getSnapshot() : null,
+      world: phase5WorldAuthority ? phase5WorldAuthority.getSnapshot() : null,
+      setpieces: Object.freeze({
+        hartFarm: phase5HartFarmSetpiece ? phase5HartFarmSetpiece.getSnapshot() : null,
+        secondStructure: phase5SecondSetpiece ? phase5SecondSetpiece.getSnapshot() : null,
+      }),
+      live,
+    });
+  },
+};
+
+globalThis.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__ = phase5PresentationWorldBridge;
+// [SW:ARCH:PHASE5_PRESENTATION_WORLD_BRIDGE:END]
 </script>
 </body>
 </html>

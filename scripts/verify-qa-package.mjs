@@ -115,7 +115,18 @@ const requiredMarkers = [
   ['v5.1 production quality control', 'btnProductionQuality'],
   ['v5.1 lexical bundle', '[SW:VISUAL:PRODUCTION_SLICE_BUNDLE]'],
   ['v5.1 update hook', '__SW_V510_UPDATE__'],
-  ['v5.1 rebuild hook', '__SW_V510_REBUILD__']
+  ['v5.1 rebuild hook', '__SW_V510_REBUILD__'],
+  // The modern TypeScript shell refuses to boot unless all four lexical bridges
+  // are present in the SAME script scope as the gameplay code. They shipped
+  // missing for months: modern-shell.js threw "Legacy runtime contract is
+  // incomplete" on every page load, the error was caught, and the whole modern
+  // layer sat inert while every gate stayed green. These checks exist so that
+  // cannot happen silently again.
+  ['modern bridge: clocks', 'MODERNIZATION_PHASE2_CLOCKS_V1'],
+  ['modern bridge: input and abilities', 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1'],
+  ['modern bridge: scoring and campaign', 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2'],
+  ['modern bridge: presentation and world', 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2'],
+  ['modern bridge: clock sample is authoritative', 'modernClockSample.runDeltaMs / 1000']
 ];
 
 for (const [name, marker] of requiredMarkers) record(name, html.includes(marker), marker);
