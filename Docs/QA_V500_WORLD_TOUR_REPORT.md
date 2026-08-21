@@ -1,10 +1,10 @@
 # V5 Heartland World-Tour QA Report
 
-- Tested commit: `f8609e966669f85b39c9b20eb6de31b41b8ddd0a`
-- Workflow run: `39`
+- Tested commit: `a697ae85bc759f49ae7188ad679095aeb3598f8f`
+- Workflow run: `40`
 - Mode: mobile-landscape four-stop authored-world sweep
-- Started: 2026-08-21T16:17:07.133Z
-- Finished: 2026-08-21T16:17:19.284Z
+- Started: 2026-08-21T16:45:32.512Z
+- Finished: 2026-08-21T16:46:17.376Z
 
 ## Checks
 
@@ -24,6 +24,7 @@
 | cow17EarTagPersists | PASS |
 | fourHayBaleLandingZones | PASS |
 | animalsRemainUnharmed | PASS |
+| roadsFollowGroundAtEveryStop | PASS |
 | noPageErrors | PASS |
 | noConsoleErrors | PASS |
 | harnessCompletedWithoutException | PASS |

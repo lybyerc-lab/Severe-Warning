@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "testedCommit": "f8609e966669f85b39c9b20eb6de31b41b8ddd0a",
-  "workflowRun": "39",
-  "startedAt": "2026-08-21T16:17:07.133Z",
-  "finishedAt": "2026-08-21T16:17:19.284Z",
+  "testedCommit": "a697ae85bc759f49ae7188ad679095aeb3598f8f",
+  "workflowRun": "40",
+  "startedAt": "2026-08-21T16:45:32.512Z",
+  "finishedAt": "2026-08-21T16:46:17.376Z",
   "url": "http://127.0.0.1:4173/",
   "mode": "mobile-landscape four-stop authored-world sweep",
   "checks": {
@@ -21,6 +21,7 @@
     "cow17EarTagPersists": true,
     "fourHayBaleLandingZones": true,
     "animalsRemainUnharmed": true,
+    "roadsFollowGroundAtEveryStop": true,
     "noPageErrors": true,
     "noConsoleErrors": true,
     "harnessCompletedWithoutException": true
@@ -55,6 +56,14 @@
         3.89,
         -0.28
       ],
+      "groundAgreement": {
+        "surfaces": 37,
+        "maxLiftError": 0,
+        "worst": [
+          81,
+          -125
+        ]
+      },
       "bovine": {
         "marker": "V500_BOVINE_SIGNATURE_V1",
         "invariant": "Cow injuries: 0",
@@ -119,6 +128,14 @@
         1.69,
         -0.23
       ],
+      "groundAgreement": {
+        "surfaces": 37,
+        "maxLiftError": 0,
+        "worst": [
+          156,
+          -87
+        ]
+      },
       "bovine": {
         "marker": "V500_BOVINE_SIGNATURE_V1",
         "invariant": "Cow injuries: 0",
@@ -183,6 +200,14 @@
         3.74,
         -1.21
       ],
+      "groundAgreement": {
+        "surfaces": 37,
+        "maxLiftError": 0,
+        "worst": [
+          -275,
+          -2
+        ]
+      },
       "bovine": {
         "marker": "V500_BOVINE_SIGNATURE_V1",
         "invariant": "Cow injuries: 0",
@@ -247,6 +272,14 @@
         -0.47,
         -0.17
       ],
+      "groundAgreement": {
+        "surfaces": 37,
+        "maxLiftError": 0,
+        "worst": [
+          225,
+          -82
+        ]
+      },
       "bovine": {
         "marker": "V500_BOVINE_SIGNATURE_V1",
         "invariant": "Cow injuries: 0",
