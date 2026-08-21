@@ -847,6 +847,7 @@ function toggleTitleCard() {
   } else {
     panel.classList.remove('collapsed');
     if (btn) btn.innerText = '[ ─ ]';
+    rearmTitleCardIfReopenedDuringRun();
   }
 }
 
@@ -864,6 +865,13 @@ function collapseTitleCardOnFirstMove() {
   if (!titleCardCollapseArmed || isTitleCardCollapsed) return;
   titleCardCollapseArmed = false;
   toggleTitleCard();
+}
+// Re-arm whenever the player opens the card back up during a live run, so it
+// folds away again on their next move. Without this the auto-collapse fired
+// exactly once per run and any mid-run peek at the objectives left the card
+// covering the field of view for the rest of the round.
+function rearmTitleCardIfReopenedDuringRun() {
+  if (!isTitleCardCollapsed && runActive && gameStarted) titleCardCollapseArmed = true;
 }
 
 // [SW:AUDIO:ENGINE] --- v5.1.0 HEARTLAND CAMPAIGN AUDIO ENGINE ---
@@ -3094,12 +3102,14 @@ function campaignTerrainProfile(x, z, baseHeight) {
   const profile = Number.isInteger(globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__)
     ? globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__
     : 0;
-  const roadDistance = Math.min(
-    Math.abs(x - Math.round(x / 80) * 80),
-    Math.abs(z - Math.round(z / 80) * 80)
-  );
-  const maskT = THREE.MathUtils.clamp((roadDistance - 15) / 20, 0, 1);
-  const parcelMask = maskT * maskT * (3 - 2 * maskT);
+  // [SW:AREA:TERRAIN_ROADS] These landforms used to be multiplied by a mask that
+  // faded them out within 15 units of every road. That held each road corridor at
+  // one height while the parcel interiors sat 2.6 to 9.1 units lower, so every
+  // road read as a raised causeway with the fields sunk between them - roughly
+  // fifty times the 0.16 road lift, which is why adjusting that lift never
+  // touched it. The landscape is continuous now: roads conform to it and climb
+  // it like roads do. Creek crossings are handled by the deck in terrainHeightAt.
+  const parcelMask = 1;
 
   if (profile === 1) {
     const prairieRoll = 0.9 * Math.sin(x * 0.012) + 0.55 * Math.cos(z * 0.016);
@@ -3124,14 +3134,19 @@ function campaignGroundPalette(color, x, z, height) {
   const profile = Number.isInteger(globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__)
     ? globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__
     : 0;
+  // Alternating parcels read as crop variation in farm country, which is the
+  // right idea, but the pairs used to span green-to-sand and were applied at
+  // nearly half strength - so every other 80-unit parcel turned into a bright
+  // sand patch and the map looked like it was covered in dry lakes. Each pair is
+  // now close in hue and value, and the blend is roughly a third of what it was.
   const palette = [
-    ['#24452d', '#596f3b'],
-    ['#709451', '#b8a957'],
-    ['#7b552e', '#c08a3e'],
-    ['#5c365f', '#d78345']
+    ['#2c4a33', '#41583a'],
+    ['#6b8b4f', '#849455'],
+    ['#75633a', '#8e7742'],
+    ['#5c4a52', '#7d6647']
   ][profile];
   const tint = new THREE.Color(((Math.floor((x + 400) / 80) + Math.floor((z + 400) / 80)) & 1) ? palette[0] : palette[1]);
-  const amount = profile === 0 ? 0.28 : 0.48;
+  const amount = profile === 0 ? 0.13 : 0.17;
   return color.lerp(tint, amount).lerp(new THREE.Color('#cbd5a1'), THREE.MathUtils.clamp(height / 35, 0, 0.12));
 }
 
@@ -3141,16 +3156,42 @@ function terrainHeightAt(x, z) {
   const fairKnolls = 4.5 * Math.sin((x + 35) * 0.025) * Math.sin((z - 20) * 0.021) * Math.exp(-(((x - 120) ** 2 + (z - 125) ** 2) / 78000));
   const drainage = -4.0 * Math.exp(-((x - 255) ** 2) / 750) * Math.exp(-(z ** 2) / 125000);
   const countyRoll = 1.4 * Math.sin(x * 0.018) * Math.cos(z * 0.015);
-  const baseHeight = pineRidge + mainStreetRise + fairKnolls + drainage + countyRoll;
+  // [SW:AREA:TERRAIN_ROADS] The creek is the one feature narrow and deep enough
+  // that a road should cross it rather than dive through it, so the road grid
+  // carries a deck over it. This is the ONLY place road proximity is allowed to
+  // change ground height - see campaignTerrainProfile for why.
+  const roadDistance = Math.min(
+    Math.abs(x - Math.round(x / 80) * 80),
+    Math.abs(z - Math.round(z / 80) * 80)
+  );
+  const deckT = THREE.MathUtils.clamp((roadDistance - 9) / 17, 0, 1);
+  const creekDeck = 1 - deckT * deckT * (3 - 2 * deckT);
+  const baseHeight = pineRidge + mainStreetRise + fairKnolls + drainage * (1 - creekDeck) + countyRoll;
   return campaignTerrainProfile(x, z, baseHeight);
 }
 
+// [SW:AREA:TERRAIN_ROADS] District ground identity, blended rather than switched.
+// These four colours used to be selected by a hard sign test on x and z, which
+// painted the map as four flat quadrants meeting at a seam straight across the
+// middle of the world - and the brown and gold halves read as sand. The district
+// centres keep their colour; only the boundaries between them are now a blend.
+const DISTRICT_GROUND = {
+  northWest: new THREE.Color('#26343f'),
+  northEast: new THREE.Color('#33603a'),
+  southWest: new THREE.Color('#4a4230'),
+  southEast: new THREE.Color('#5f5a2c')
+};
 function districtGroundColor(x, z, height) {
-  let color;
-  if (x < 0 && z < 0) color = new THREE.Color('#1b2738');
-  else if (x >= 0 && z < 0) color = new THREE.Color('#285b2b');
-  else if (x < 0) color = new THREE.Color('#4a3022');
-  else color = new THREE.Color('#70511d');
+  const bx = THREE.MathUtils.clamp((x + 70) / 140, 0, 1);
+  const bz = THREE.MathUtils.clamp((z + 70) / 140, 0, 1);
+  const eastward = bx * bx * (3 - 2 * bx);
+  const southward = bz * bz * (3 - 2 * bz);
+  const color = DISTRICT_GROUND.northWest.clone()
+    .lerp(DISTRICT_GROUND.northEast, eastward)
+    .lerp(
+      DISTRICT_GROUND.southWest.clone().lerp(DISTRICT_GROUND.southEast, eastward),
+      southward
+    );
   const elevationMix = THREE.MathUtils.clamp((height - 2) / 18, 0, 0.36);
   const drainageMix = THREE.MathUtils.clamp(1 - Math.abs(x - 255) / 42, 0, 0.24);
   color.lerp(new THREE.Color('#879b69'), elevationMix);
