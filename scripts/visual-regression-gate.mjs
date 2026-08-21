@@ -47,7 +47,13 @@ function resolveBaselineRef() {
   // to HEAD - which would compare the build against itself and pass every time.
   // Walk back to the last commit that actually touched something we render.
   const commits = git('log', '-2', '--format=%H', '--', ...RENDER_INPUTS).split('\n').filter(Boolean);
-  return commits[1] || null;
+  const head = git('rev-parse', 'HEAD');
+  // When HEAD itself changed a render input, compare against the one before it.
+  // When it did not - a CI-only or script-only commit - the newest render-input
+  // commit IS this build, so comparing against it is a true no-op. Taking the one
+  // before that instead would re-report the previous commit's already-accepted
+  // change as a fresh regression, and a gate that cries wolf gets switched off.
+  return (commits[0] === head ? commits[1] : commits[0]) || null;
 }
 
 async function buildInto(destination) {
@@ -128,7 +134,15 @@ try {
     await cp(path.join(projectRoot, input), saved, { recursive: true });
   }
 
-  git('checkout', baselineRef, '--', ...RENDER_INPUTS);
+  // `git checkout <ref> -- <paths>` would ALSO stage the baseline version. The
+  // workflow that runs this later calls `git commit` to record playtest evidence,
+  // and a plain commit takes whatever is staged - so that stale index entry would
+  // quietly commit the baseline gameplay source back onto qa, reverting the very
+  // change under test. git archive writes the working tree only and never touches
+  // the index.
+  const baselineTar = path.join(workspace, 'baseline-inputs.tar');
+  git('archive', '-o', baselineTar, baselineRef, '--', ...RENDER_INPUTS);
+  execFileSync('tar', ['-xf', baselineTar, '-C', projectRoot], { stdio: 'inherit' });
   try {
     await buildInto(baselineDir);
   } finally {
