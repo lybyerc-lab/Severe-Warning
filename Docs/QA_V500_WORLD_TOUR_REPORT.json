@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "testedCommit": "33781cfd3cc5f7a4611a7691221b9a44f62cb3d3",
-  "workflowRun": "27",
-  "startedAt": "2026-08-21T00:31:19.955Z",
-  "finishedAt": "2026-08-21T00:31:30.855Z",
+  "testedCommit": "8188a451440bda4731c71351a7df0cdee40f6c18",
+  "workflowRun": "38",
+  "startedAt": "2026-08-21T14:54:14.902Z",
+  "finishedAt": "2026-08-21T14:54:28.088Z",
   "url": "http://127.0.0.1:4173/",
   "mode": "mobile-landscape four-stop authored-world sweep",
   "checks": {
@@ -53,7 +53,7 @@
       "terrainSamples": [
         0.73,
         3.89,
-        -1.79
+        -0.28
       ],
       "bovine": {
         "marker": "V500_BOVINE_SIGNATURE_V1",
@@ -115,9 +115,9 @@
       ],
       "animals": 24,
       "terrainSamples": [
-        0.16,
+        -0.57,
         1.69,
-        -0.39
+        -0.23
       ],
       "bovine": {
         "marker": "V500_BOVINE_SIGNATURE_V1",
@@ -179,9 +179,9 @@
       ],
       "animals": 18,
       "terrainSamples": [
-        0.35,
+        3.93,
         3.74,
-        -0.86
+        -1.21
       ],
       "bovine": {
         "marker": "V500_BOVINE_SIGNATURE_V1",
@@ -243,9 +243,9 @@
       ],
       "animals": 8,
       "terrainSamples": [
-        0.23,
+        0.15,
         -0.47,
-        -0.57
+        -0.17
       ],
       "bovine": {
         "marker": "V500_BOVINE_SIGNATURE_V1",

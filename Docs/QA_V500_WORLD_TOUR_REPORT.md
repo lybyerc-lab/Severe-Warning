@@ -1,10 +1,10 @@
 # V5 Heartland World-Tour QA Report
 
-- Tested commit: `33781cfd3cc5f7a4611a7691221b9a44f62cb3d3`
-- Workflow run: `27`
+- Tested commit: `8188a451440bda4731c71351a7df0cdee40f6c18`
+- Workflow run: `38`
 - Mode: mobile-landscape four-stop authored-world sweep
-- Started: 2026-08-21T00:31:19.955Z
-- Finished: 2026-08-21T00:31:30.855Z
+- Started: 2026-08-21T14:54:14.902Z
+- Finished: 2026-08-21T14:54:28.088Z
 
 ## Checks
 
@@ -32,10 +32,10 @@
 
 | Stop | Profile | Scenery | Landmarks | Animals | Cow 17 | Terrain samples |
 |---|---:|---:|---|---:|---|---|
-| lincoln-county | 0 | 14 | LINCOLN WATER TOWER, COUNTY COURTHOUSE | 38 | tagged | 0.73 / 3.89 / -1.79 |
-| prairie-junction | 1 | 21 | PRAIRIE GRAIN ELEVATOR, JUNCTION WINDMILL | 24 | tagged | 0.16 / 1.69 / -0.39 |
-| grain-belt | 2 | 11 | NORTH SILO BANK, HEARTLAND FOUNDRY | 18 | tagged | 0.35 / 3.74 / -0.86 |
-| state-fair-finale | 3 | 23 | CHAMPIONSHIP FERRIS WHEEL, HEARTLAND GRANDSTAND | 8 | tagged | 0.23 / -0.47 / -0.57 |
+| lincoln-county | 0 | 14 | LINCOLN WATER TOWER, COUNTY COURTHOUSE | 38 | tagged | 0.73 / 3.89 / -0.28 |
+| prairie-junction | 1 | 21 | PRAIRIE GRAIN ELEVATOR, JUNCTION WINDMILL | 24 | tagged | -0.57 / 1.69 / -0.23 |
+| grain-belt | 2 | 11 | NORTH SILO BANK, HEARTLAND FOUNDRY | 18 | tagged | 3.93 / 3.74 / -1.21 |
+| state-fair-finale | 3 | 23 | CHAMPIONSHIP FERRIS WHEEL, HEARTLAND GRANDSTAND | 8 | tagged | 0.15 / -0.47 / -0.17 |
 
 ## Errors
 
