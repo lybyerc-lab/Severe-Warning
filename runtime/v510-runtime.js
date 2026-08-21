@@ -83,6 +83,10 @@ function updateProductionAtmosphere(dt) {
         targetFog.clone().lerp(new THREE.Color('#5d7ba3'), 0.55),
         Math.min(1, dt * 0.18)
       );
+      // [SW:RENDER:ENVIRONMENT] Keep reflections agreeing with the drifted sky.
+      // This self-throttles on how far the sky has actually moved, so it costs
+      // a handful of prefilter passes across a whole run, not one per frame.
+      if (typeof skyEnvironment !== 'undefined') skyEnvironment.refreshIfSkyDrifted();
     }
   }
 

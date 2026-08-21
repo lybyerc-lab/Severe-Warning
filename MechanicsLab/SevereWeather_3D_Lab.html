@@ -2976,6 +2976,95 @@ dirLight.shadow.camera.top = 220;
 dirLight.shadow.camera.bottom = -220;
 scene.add(dirLight);
 
+// [SW:RENDER:ENVIRONMENT] --- IMAGE-BASED LIGHTING ---
+// MeshStandardMaterial gets a metal's colour almost entirely from what it
+// reflects. This scene had no scene.environment and no envMap on any material,
+// while 49 materials specify metalness up to 0.8 - so every metal surface had
+// nothing to reflect and rendered near-black. That is why the car cabins, the
+// silo, and the darker props read as flat black cut-outs rather than as
+// materials, and a large part of why the whole scene looked untextured.
+//
+// The environment is prefiltered from the SAME gradient the visible sky dome
+// draws, so reflections agree with the sky the player is actually looking at
+// instead of being a second, unrelated light source. Rebuild it when the stage
+// atmosphere has drifted the sky far enough to matter - never per frame, since
+// PMREM prefiltering is far too expensive for that.
+const skyEnvironment = {
+  texture: null,
+  builtFrom: null,
+  size: 64,
+  // Direction of texel (u, v) on each cube face, in three's face order.
+  faceDir: [
+    (u, v) => [1, -v, -u], (u, v) => [-1, -v, u],
+    (u, v) => [u, 1, v],   (u, v) => [u, -1, -v],
+    (u, v) => [u, -v, 1],  (u, v) => [-u, -v, -1]
+  ],
+  build() {
+    const top = skyDomeUniforms.uTop.value;
+    const horizon = skyDomeUniforms.uHorizon.value;
+    const ground = skyDomeUniforms.uGround.value;
+    const n = this.size;
+    const faces = this.faceDir.map(dirOf => {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = n;
+      const ctx = canvas.getContext('2d');
+      const img = ctx.createImageData(n, n);
+      for (let y = 0; y < n; y++) {
+        for (let x = 0; x < n; x++) {
+          const u = ((x + 0.5) / n) * 2 - 1;
+          const v = ((y + 0.5) / n) * 2 - 1;
+          const d = dirOf(u, v);
+          const len = Math.hypot(d[0], d[1], d[2]);
+          const h = d[1] / len;
+          // Same gradient the visible sky dome draws, so reflections agree
+          // with the sky rather than acting as a second, unrelated light.
+          const t = Math.min(1, Math.max(0, Math.pow(Math.max(h, 0), 0.55)));
+          const sr = horizon.r + (top.r - horizon.r) * t;
+          const sg = horizon.g + (top.g - horizon.g) * t;
+          const sb = horizon.b + (top.b - horizon.b) * t;
+          const e = Math.min(1, Math.max(0, (h + 0.14) / 0.19));
+          const m = e * e * (3 - 2 * e);
+          // Overcast storm light: lift the probe so metals read as lit surfaces
+          // instead of holes, and warm the ground bounce so the prairie throws
+          // a little colour back up into undersides.
+          const b = Math.min(1, Math.max(0, (0.05 - h) / 0.55));
+          const bounce = b * b * (3 - 2 * b);
+          const o = (y * n + x) * 4;
+          img.data[o]     = Math.min(255, ((ground.r + (sr - ground.r) * m) * 2.35 + 0.055 + 0.10 * bounce) * 255);
+          img.data[o + 1] = Math.min(255, ((ground.g + (sg - ground.g) * m) * 2.35 + 0.062 + 0.075 * bounce) * 255);
+          img.data[o + 2] = Math.min(255, ((ground.b + (sb - ground.b) * m) * 2.35 + 0.078 + 0.045 * bounce) * 255);
+          img.data[o + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      return canvas;
+    });
+    const next = new THREE.CubeTexture(faces);
+    // Deliberately NOT PMREM-prefiltered. PMREM needs float render targets, and
+    // where OES_texture_half_float_linear is missing r128 silently falls back to
+    // an RGBE-packed 8-bit target that the standard shader mis-decodes - which
+    // renders every MeshStandardMaterial in the scene solid black. A plain cube
+    // texture works on every device, and this environment is a smooth gradient
+    // with nothing sharp in it, so roughness prefiltering would buy nothing.
+    next.mapping = THREE.CubeReflectionMapping;
+    // LinearEncoding, so the bytes written above land as the same values the
+    // dome shader outputs. r128 applies no colour management of its own.
+    next.encoding = THREE.LinearEncoding;
+    next.needsUpdate = true;
+    if (this.texture) this.texture.dispose();
+    this.texture = next;
+    scene.environment = next;
+    this.builtFrom = horizon.clone();
+  },
+  refreshIfSkyDrifted() {
+    if (!this.builtFrom) { this.build(); return; }
+    const c = skyDomeUniforms.uHorizon.value;
+    const drift = Math.abs(c.r - this.builtFrom.r) + Math.abs(c.g - this.builtFrom.g) + Math.abs(c.b - this.builtFrom.b);
+    if (drift > 0.12) this.build();
+  }
+};
+skyEnvironment.build();
+
 // CONTINUOUS FOUR-DISTRICT TERRAIN WITH ARCADE-SAFE ELEVATION
 const groundGroup = new THREE.Group();
 scene.add(groundGroup);
@@ -8331,6 +8420,10 @@ function updateProductionAtmosphere(dt) {
         targetFog.clone().lerp(new THREE.Color('#5d7ba3'), 0.55),
         Math.min(1, dt * 0.18)
       );
+      // [SW:RENDER:ENVIRONMENT] Keep reflections agreeing with the drifted sky.
+      // This self-throttles on how far the sky has actually moved, so it costs
+      // a handful of prefilter passes across a whole run, not one per frame.
+      if (typeof skyEnvironment !== 'undefined') skyEnvironment.refreshIfSkyDrifted();
     }
   }
 
