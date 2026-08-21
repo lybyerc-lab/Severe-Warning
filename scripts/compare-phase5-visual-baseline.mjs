@@ -16,6 +16,34 @@ const randomSeed = 0x5e1e5eed;
 const frameDurationMs = 16.6667;
 const scenarioFrameCount = 5;
 const maxBootFrames = 240;
+// Boot to a FIXED number of stepped frames, not "however many it took".
+//
+// requestAnimationFrame is frozen from page load, so every frame this world has
+// ever advanced is one this controller stepped. That makes the animation phase
+// of everything on screen - the mesocyclone canopy at +0.04 rad a frame, the
+// funnel at +0.15, the dust skirt's orbit angle, the camera's follow smoothing -
+// a pure function of how many steps have been taken. The boot loop used to stop
+// the moment the page reported ready, which is a WALL-CLOCK quantity: a fast
+// machine got there in 0 frames and a loaded CI runner in dozens, so the same
+// build captured a different phase of the same animation and about a fifth of
+// the frame changed. Padding to a constant makes the captured frame a function
+// of the build again.
+//
+// 24 rather than a rounder, larger number because every padding frame is a full
+// software-rendered frame of a 2110-object scene and costs about 0.6s on CI
+// hardware; 90 turned a four-minute comparison into twenty. The pad only has to
+// clear the frame count readiness actually needs - 6 even under a 20x CPU
+// throttle - and boot overrunning it is a loud error rather than a silent
+// return to measuring different animation phases.
+const deterministicBootFrames = 24;
+// Reproducing a loaded CI runner on a fast machine. Off by default.
+//
+// The visual flake this harness spent months working around was invisible here
+// and constant on CI, because the difference is how long the page takes to boot
+// in WALL-CLOCK terms - a quantity no amount of frame freezing controls. Chrome
+// can be told to pretend, so set SEVERE_WEATHER_VISUAL_CPU_THROTTLE=20 to make
+// the slow-runner condition reproducible instead of mythical.
+const cpuThrottleRate = Number(process.env.SEVERE_WEATHER_VISUAL_CPU_THROTTLE || 0);
 
 await mkdir(outputDir, { recursive: true });
 
@@ -225,8 +253,34 @@ function comparePixels(left, right) {
   };
 }
 
+// Report WHICH fields moved, not just that something did.
+//
+// For a long time this returned booleans only, so a divergence printed as
+// `semantic=false` and told nobody anything. The ~20% "renderer
+// nondeterminism" this harness was built to tolerate turned out to be two
+// fields - camera.y and camera.z - drifting by a fraction of a unit, and the
+// evidence needed to see that was thrown away on every run.
+function describeSemanticDifferences(base, candidate) {
+  const flatten = (value, prefix = '') => (
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.entries(value).flatMap(([key, inner]) => flatten(inner, `${prefix}${key}.`))
+      : [[prefix.replace(/\.$/, ''), JSON.stringify(value) ?? 'undefined']]
+  );
+  const baseFields = new Map(flatten(base));
+  const candidateFields = new Map(flatten(candidate));
+  const differences = [];
+  for (const key of new Set([...baseFields.keys(), ...candidateFields.keys()])) {
+    if (baseFields.get(key) !== candidateFields.get(key)) {
+      differences.push({ field: key, base: baseFields.get(key) ?? null, candidate: candidateFields.get(key) ?? null });
+    }
+  }
+  return differences;
+}
+
 function compareSemantics(base, candidate) {
-  if (!base || !candidate) return { match: false, stableMatch: false, cameraMatch: false, cow17Match: false };
+  if (!base || !candidate) {
+    return { match: false, stableMatch: false, cameraMatch: false, cow17Match: false, differences: [] };
+  }
   const stableMatch = base.renderer === candidate.renderer
     && base.quality === candidate.quality
     && base.funnelLayers === candidate.funnelLayers
@@ -248,11 +302,17 @@ function compareSemantics(base, candidate) {
     && base.cow17.airborne === candidate.cow17.airborne
     && base.cow17.scale === candidate.cow17.scale
   );
-  return { stableMatch, cameraMatch, cow17Match, match: stableMatch && cameraMatch && cow17Match };
+  return {
+    stableMatch,
+    cameraMatch,
+    cow17Match,
+    match: stableMatch && cameraMatch && cow17Match,
+    differences: describeSemanticDifferences(base, candidate),
+  };
 }
 
 async function advanceFrozenBoot(page) {
-  const result = await page.evaluate(async ({ frameDuration, frameLimit }) => {
+  const result = await page.evaluate(async ({ frameDuration, frameLimit, padTo }) => {
     const controller = globalThis.__SW_QA_TIME_CONTROLLER__;
     if (!controller) throw new Error('QA time controller is missing before boot advancement.');
     const isReady = () => (
@@ -263,13 +323,23 @@ async function advanceFrozenBoot(page) {
       && typeof globalThis.getProductionSliceQaState === 'function'
     );
 
-    for (let frame = 0; frame < frameLimit && !isReady(); frame += 1) {
-      controller.stepFrame(1000.0 + frame * frameDuration);
-      await new Promise((resolve) => setTimeout(resolve, 0));
+    let readyAtFrame = -1;
+    let stepped = 0;
+    while (stepped < frameLimit) {
+      if (readyAtFrame < 0 && isReady()) readyAtFrame = stepped;
+      if (readyAtFrame >= 0 && stepped >= padTo) break;
+      controller.stepFrame(1000.0 + stepped * frameDuration);
+      stepped += 1;
+      // Yield only while the page is still coming up; boot needs the microtask
+      // turn to make progress, the padding frames do not, and every yield is
+      // wall-clock time in which an unfrozen timer could fire.
+      if (readyAtFrame < 0) await new Promise((resolve) => setTimeout(resolve, 0));
     }
 
     return {
       ready: isReady(),
+      readyAtFrame,
+      framesUsed: stepped,
       controller: controller.getStatus(),
       shellReady: globalThis.__SW_MODERN_SHELL_READY__ === true,
       productionReady: globalThis.__SW_PRODUCTION_SLICE_READY__ === true,
@@ -277,10 +347,18 @@ async function advanceFrozenBoot(page) {
       triggerReady: typeof globalThis.triggerProductionSliceQa === 'function',
       snapshotReady: typeof globalThis.getProductionSliceQaState === 'function',
     };
-  }, { frameDuration: frameDurationMs, frameLimit: maxBootFrames });
+  }, { frameDuration: frameDurationMs, frameLimit: maxBootFrames, padTo: deterministicBootFrames });
 
   if (!result.ready) {
     throw new Error(`Deterministic boot did not reach QA readiness: ${JSON.stringify(result)}`);
+  }
+  // Fail loudly rather than quietly measuring a different animation phase than
+  // the other captures in this run.
+  if (result.framesUsed !== deterministicBootFrames) {
+    throw new Error(
+      `Boot needed ${result.framesUsed} frames, past the fixed ${deterministicBootFrames}; `
+      + 'captures in this run would not share an animation phase.',
+    );
   }
   return result;
 }
@@ -295,6 +373,10 @@ async function capture(browser, url, viewport, scenario, label) {
   await context.addInitScript(installQaFrameController, randomSeed);
   const page = await context.newPage();
   page.setDefaultTimeout(60_000);
+  if (cpuThrottleRate > 1) {
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpuThrottleRate });
+  }
   const pageErrors = [];
   const consoleErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -322,6 +404,11 @@ async function capture(browser, url, viewport, scenario, label) {
       globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.pause?.();
       if (typeof productionQuality !== 'undefined') productionQuality = 'HIGH';
       shell?.app?.reset?.();
+      // The page may spend anywhere from zero to dozens of stepped frames
+      // booting depending on how loaded the machine is, and every one of them
+      // pushes a sample here. Clearing it keeps the QA snapshot's measured FPS
+      // and sample count identical across captures.
+      if (typeof productionFrameSamples !== 'undefined') productionFrameSamples.length = 0;
       window.dispatchEvent(new Event('resize'));
       globalThis.__SW_V510_REBUILD__?.();
 
@@ -408,6 +495,30 @@ async function capture(browser, url, viewport, scenario, label) {
         controller.stepFrame(1000.0 + frame * frameDuration);
       }
       if (typeof cameraShakeIntensity !== 'undefined') cameraShakeIntensity = 0;
+
+      // Re-pin the camera to the authored QA pose before the capture render.
+      //
+      // triggerProductionSliceQa sets it exactly, then sets productionQaPrepared
+      // to park the follow rig - and the normalization above clears that flag so
+      // the world keeps animating across the stepped frames. That also reopens
+      // the follow lerp, which drags the camera back off the pose toward a
+      // target built from currentCamY / currentCamZ. Those accumulators smooth
+      // at 0.06 per frame and survive controller.reset(), so they still carry
+      // however many frames the page happened to spend booting - a wall-clock
+      // quantity. Five frames at 0.08 clear only a third of the resulting error,
+      // so the camera lands a fraction of a unit off, the horizon moves, and
+      // about a fifth of the frame changes. That was the ~20% flake.
+      //
+      // The fallback matters: the baseline side of the gate is an older build
+      // that may predate the shared helper, and both sides must end up at the
+      // same pose or the fix would itself read as a visual change.
+      if (typeof globalThis.applyProductionSliceQaCamera === 'function') {
+        globalThis.applyProductionSliceQaCamera();
+      } else if (typeof camera !== 'undefined' && typeof productionBarn !== 'undefined' && productionBarn) {
+        camera.position.set(storm.pos.x + 52, storm.pos.y + 50, storm.pos.z + 68);
+        camera.lookAt(productionBarn.x, terrainHeightAt(productionBarn.x, productionBarn.z) + 8, productionBarn.z);
+      }
+
       if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
         renderer.render(scene, camera);
       }
@@ -556,6 +667,7 @@ try {
         + ` candidate=${(candidateDiff.changedRatio * 100).toFixed(4)}%`
         + ` valid=${captureValidityPass}`
         + ` semantic=${semanticDiff.match}`
+        + (semanticDiff.match ? '' : ` [${semanticDiff.differences.map(d => `${d.field} ${d.base}->${d.candidate}`).join(', ')}]`)
         + ` frames=${candidate.controllerStatus?.steppedFrameCount}`,
       );
     }
@@ -574,6 +686,7 @@ const report = {
   generatedAt: new Date().toISOString(),
   baseUrl,
   candidateUrl,
+  cpuThrottleRate,
   pixelLaw: {
     comparisonSource: 'Playwright canvas PNG after deterministic frozen boot, authored scenario normalization, and explicit render',
     changedPixelChannelThreshold: 8,

@@ -105,3 +105,39 @@ metals and cars buried in asphalt all shipped with them green.
 one and fails when the picture moves. It fails on **intended** changes too — put
 `[visual-change]` in the commit message to accept one, which leaves a record in
 history of every commit allowed to move the picture.
+
+### Reproducing a CI-only rendering difference
+
+The capture harness freezes `requestAnimationFrame`, `performance.now`,
+`Date.now` and `Math.random`, so it is tempting to read any remaining difference
+as renderer noise. For a long time this repo did exactly that, and the gate grew
+a three-attempt voting rule to work around "renderer nondeterminism on this
+project's CI runner". It was not the renderer.
+
+**Frame count is the hidden clock.** Freezing rAF does not stop the world
+advancing — it just means the harness decides when it advances. Almost
+everything animated moves by a fixed amount per *frame* rather than per unit of
+simulated time: the mesocyclone canopy at `+0.04` rad, the funnel at `+0.15`,
+the dust skirt's orbit angle, and the camera follow rig's `0.08` lerp at
+`[SW:VISUAL:CAMERA_FOLLOW]`. So the picture is a function of how many frames
+have been stepped — and the boot loop used to stop the instant the page reported
+ready, which is pure wall clock. An idle machine got there in zero frames and a
+loaded runner in dozens, so the same build was captured at a different phase of
+the same animation and about a fifth of the frame changed.
+
+`advanceFrozenBoot` now pads to a fixed `deterministicBootFrames` and throws if
+readiness needs more, so every capture in a run shares one animation phase.
+
+Three things make this class findable instead of mythical:
+
+- `SEVERE_WEATHER_VISUAL_CPU_THROTTLE=20` throttles Chrome's CPU so a fast
+  machine boots as slowly as a loaded runner. What was invisible locally and
+  constant on CI then reproduces in a single run.
+- A `semantic=false` line names the fields that moved
+  (`camera.y 57.29->57.77`) instead of only reporting that something did.
+- Equal-versus-unequal boot frame counts is the diagnostic: two captures that
+  stepped the same number of frames come out byte-identical, and two that did
+  not, do not.
+
+If you add per-frame animation, prefer deriving it from the simulated clock over
+accumulating it, and suspect the harness before the renderer.

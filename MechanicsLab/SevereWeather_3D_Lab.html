@@ -7479,6 +7479,11 @@ function animate(now) {
     cameraShakeIntensity = Math.max(0, cameraShakeIntensity - dt * 4.0);
   }
 
+  // [SW:VISUAL:CAMERA_FOLLOW]
+  // Exponential smoothing, so the camera never exactly reaches its target: after
+  // n frames 0.92^n of the error remains. Anything that captures a frame after a
+  // fixed, small number of steps therefore inherits wherever this rig had got to
+  // beforehand - see applyProductionSliceQaCamera.
   if (!globalThis.productionQaPrepared && !(typeof globalThis.isPhase5PresentationLatched === 'function' && globalThis.isPhase5PresentationLatched())) {
     if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {
       const cow = bovineCowCam.cow;
@@ -8785,6 +8790,19 @@ globalThis.getProductionSliceQaState = function getProductionSliceQaState() {
 // Deterministic hero setup for paired desktop and mobile evidence. It does not
 // report a pass/fail judgment on aesthetics, and it never invents FPS samples.
 // ============================================================================
+// The QA camera pose, exported so the capture harness can re-apply it rather
+// than keep its own copy of these two lines. It has to: the harness clears
+// productionQaPrepared to keep the world animating, which reopens the follow
+// lerp at [SW:VISUAL:CAMERA_FOLLOW] and drags the camera back off this pose.
+// See scripts/compare-phase5-visual-baseline.mjs for why that mattered.
+function applyProductionSliceQaCamera() {
+  if (!productionBarn) return false;
+  camera.position.set(storm.pos.x + 52, storm.pos.y + 50, storm.pos.z + 68);
+  camera.lookAt(productionBarn.x, terrainHeightAt(productionBarn.x, productionBarn.z) + 8, productionBarn.z);
+  return true;
+}
+globalThis.applyProductionSliceQaCamera = applyProductionSliceQaCamera;
+
 globalThis.triggerProductionSliceQa = function triggerProductionSliceQa(mode = 'hero') {
   if (!productionBarn) return false;
   getCachedEl('mainMenu')?.classList.add('hidden');
@@ -8807,8 +8825,7 @@ globalThis.triggerProductionSliceQa = function triggerProductionSliceQa(mode = '
     cow17.groundY = terrainHeightAt(cow17.x, cow17.z);
     cow17.mesh.position.set(cow17.x, cow17.groundY + cow17.altitude, cow17.z);
   }
-  camera.position.set(storm.pos.x + 52, storm.pos.y + 50, storm.pos.z + 68);
-  camera.lookAt(productionBarn.x, terrainHeightAt(productionBarn.x, productionBarn.z) + 8, productionBarn.z);
+  applyProductionSliceQaCamera();
   return true;
 };
 

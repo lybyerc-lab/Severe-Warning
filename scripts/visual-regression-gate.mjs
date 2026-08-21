@@ -208,7 +208,12 @@ try {
   const LINE = /^(PASS|FAIL) (\S+) (\S+) :: repeat=([\d.]+)% candidate=([\d.]+)%/;
   const NOISE_LIMIT = 0.05;   // percent; the harness's own baseRepeatNoise limit
   const CHANGE_LIMIT = 0.10;  // percent above the noise floor to count as moved
-  const attempts = 3;
+  // Two, not three. The third attempt existed to out-vote a flake whose cause -
+  // captures landing on different animation phases because boot length is
+  // wall-clock - is fixed at source in compare-phase5-visual-baseline.mjs. The
+  // agreement rule below still needs two usable measurements, so a single bad
+  // attempt reports INCONCLUSIVE rather than a regression.
+  const attempts = 2;
   // Per scenario, every measurement taken while the baseline was reproducible.
   const samples = new Map();
 
