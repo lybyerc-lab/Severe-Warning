@@ -2671,6 +2671,8 @@ function rebuildCampaignTerrainSurface() {
   };
   update(terrainMesh, -0.08, false);
   update(countyApron, -0.65, true);
+  // The ground moved; everything conformed to it at load has to move with it.
+  for (const reconform of terrainConformedAtLoad) reconform();
 }
 
 function prepareCampaignWorld() {
@@ -3208,6 +3210,25 @@ function districtGroundColor(x, z, height) {
   return campaignGroundPalette(color, x, z, height);
 }
 
+// [SW:AREA:TERRAIN_ROADS] Everything conformed to the ground AT PAGE LOAD.
+// The terrain is regenerated whenever a campaign county is selected, but this
+// geometry was built once, under the default county's profile, and never
+// rebuilt - so on every county except the first the roads hung in the air or
+// sank out of sight. Measured against the ground actually drawn: Lincoln County
+// 0.24 units (correct, that is just the lift), Prairie Junction 11.91 above and
+// 3.70 below, Grain Belt 8.51 above and 7.30 below, State Fair Finale 11.07
+// above and 9.02 below.
+//
+// Anything conformed at load time MUST register here, or it will silently
+// disagree with the ground on three counties out of four. Objects created inside
+// init3DWorld are fine without this: that runs after prepareCampaignWorld, so
+// they are built against the correct profile already.
+const terrainConformedAtLoad = [];
+function registerTerrainConformed(reconform) {
+  terrainConformedAtLoad.push(reconform);
+  reconform();
+}
+
 function conformPlaneToTerrain(geometry, centerX = 0, centerZ = 0, lift = 0) {
   const positions = geometry.attributes.position;
   for (let i = 0; i < positions.count; i++) {
@@ -3271,9 +3292,17 @@ function addTerrainContour(cx, cz, radiusX, radiusZ, color) {
     const angle = (i / 64) * Math.PI * 2;
     const x = cx + Math.cos(angle) * radiusX;
     const z = cz + Math.sin(angle) * radiusZ;
-    points.push(new THREE.Vector3(x, terrainHeightAt(x, z) + 0.44, z));
+    points.push(new THREE.Vector3(x, 0, z));
   }
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  registerTerrainConformed(() => {
+    const position = geometry.attributes.position;
+    for (let i = 0; i < position.count; i++) {
+      position.setY(i, terrainHeightAt(position.getX(i), position.getZ(i)) + 0.44);
+    }
+    position.needsUpdate = true;
+    geometry.computeBoundingSphere();
+  });
   const contour = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.10, depthWrite: false }));
   scene.add(contour);
 }
@@ -3316,7 +3345,9 @@ function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material
   const geometry = isEastWest
     ? new THREE.PlaneGeometry(length, width, alongSegments, acrossSegments)
     : new THREE.PlaneGeometry(width, length, acrossSegments, alongSegments);
-  conformPlaneToTerrain(geometry, centerX, centerZ, lift);
+  // conformPlaneToTerrain only writes Z from the untouched X/Y, so re-running it
+  // against a new profile is safe and exact rather than cumulative.
+  registerTerrainConformed(() => conformPlaneToTerrain(geometry, centerX, centerZ, lift));
   const road = new THREE.Mesh(geometry, material);
   road.rotation.x = -Math.PI / 2;
   road.position.set(centerX, 0, centerZ);
@@ -3422,11 +3453,16 @@ polePositions.forEach((spot, index) => {
 function addInstancedRoadMarks(geometry, transforms) {
   const marks = new THREE.InstancedMesh(geometry, laneMat, transforms.length);
   const matrix = new THREE.Matrix4();
-  transforms.forEach((transform, index) => {
-    matrix.makeTranslation(transform.x, transform.y, transform.z);
-    marks.setMatrixAt(index, matrix);
+  // Height is re-derived from x/z rather than read from the transform, so the
+  // dashes follow the county's ground instead of the one they were baked against.
+  registerTerrainConformed(() => {
+    transforms.forEach((transform, index) => {
+      transform.y = terrainHeightAt(transform.x, transform.z) + LANE_DASH_LIFT;
+      matrix.makeTranslation(transform.x, transform.y, transform.z);
+      marks.setMatrixAt(index, matrix);
+    });
+    marks.instanceMatrix.needsUpdate = true;
   });
-  marks.instanceMatrix.needsUpdate = true;
   scene.add(marks);
 }
 
@@ -3650,7 +3686,8 @@ swathCtx.fillStyle = 'rgba(0,0,0,0)'; swathCtx.fillRect(0, 0, 1024, 1024);
 const swathTexture = new THREE.CanvasTexture(swathCanvas);
 
 // The scar sits under roads and bridges so it reads as torn turf instead of brown paint.
-const swathOverlayGeo = conformPlaneToTerrain(new THREE.PlaneGeometry(800, 800, 64, 64), 0, 0, 0.10);
+const swathOverlayGeo = new THREE.PlaneGeometry(800, 800, 64, 64);
+registerTerrainConformed(() => conformPlaneToTerrain(swathOverlayGeo, 0, 0, 0.10));
 const swathOverlayMat = new THREE.MeshStandardMaterial({
   map: swathTexture,
   transparent: true,
