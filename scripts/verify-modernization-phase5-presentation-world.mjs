@@ -2,6 +2,7 @@ import { access, readFile, writeFile, rm } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { joinRegions, readInlinedRegions } from './lib/inlined-regions.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -32,7 +33,6 @@ const requiredFiles = [
   'src/world/setpieces/destructible-setpiece-system.ts',
   'src/world/setpieces/hart-farm-definition.ts',
   'src/world/setpieces/second-structure-definition.ts',
-  'runtime/modernization-phase5-presentation-world.js',
   'scripts/qa-modernization-phase5-presentation-world.mjs',
   'scripts/compare-phase5-visual-baseline.mjs',
 ];
@@ -48,7 +48,8 @@ for (const file of requiredFiles) {
 
 const read = async (...segments) => readFile(path.join(projectRoot, ...segments), 'utf8');
 const html = await readFile(sourcePath, 'utf8');
-const bridge = await read('runtime', 'modernization-phase5-presentation-world.js');
+// Read from the gameplay source itself; see scripts/lib/inlined-regions.mjs.
+const bridge = joinRegions(await readInlinedRegions(sourcePath), ['modernization-phase5-presentation-world.js']);
 const renderer = await read('src', 'presentation', 'renderer', 'renderer-system.ts');
 const scene = await read('src', 'presentation', 'scene', 'scene-system.ts');
 const camera = await read('src', 'presentation', 'camera', 'camera-system.ts');

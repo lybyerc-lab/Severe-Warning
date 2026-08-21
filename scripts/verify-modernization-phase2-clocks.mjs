@@ -16,7 +16,6 @@ function check(name, passed, detail = '') {
 
 const requiredFiles = [
   'src/core/clocks.ts',
-  'runtime/modernization-phase2-clocks.js',
 ];
 for (const file of requiredFiles) {
   try {

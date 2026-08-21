@@ -11,7 +11,6 @@ on:
     paths:
       - '.github/workflows/threejs-production-slice.yml'
       - 'MechanicsLab/**'
-      - 'runtime/**'
       - 'assets/**'
       - 'scripts/**'
       - 'android/**'
@@ -66,10 +65,7 @@ jobs:
           node --check scripts/verify-v510-production-slice.mjs
           node --check scripts/qa-v510-production-slice.mjs
           node --check scripts/verify-qa-package.mjs
-          node --check runtime/v510-foundation.js
-          node --check runtime/v510-tornado.js
-          node --check runtime/v510-world.js
-          node --check runtime/v510-runtime.js
+          node --check scripts/lib/inlined-regions.mjs
 
       - name: Generate verified audio
         run: npm run audio:generate
@@ -90,10 +86,6 @@ jobs:
           node scripts/build-web.mjs
           node scripts/stamp-qa-pages.mjs
           node scripts/verify-qa-package.mjs
-          test -s www/runtime/v510-foundation.js
-          test -s www/runtime/v510-tornado.js
-          test -s www/runtime/v510-world.js
-          test -s www/runtime/v510-runtime.js
 
       - name: Run deterministic production-slice browser QA
         shell: bash
@@ -122,7 +114,6 @@ jobs:
         run: |
           node node_modules/@capacitor/cli/bin/capacitor sync android
           cmp -s www/index.html android/app/src/main/assets/public/index.html
-          cmp -s www/runtime/v510-runtime.js android/app/src/main/assets/public/runtime/v510-runtime.js
 
       - name: Assemble debug APK
         shell: bash

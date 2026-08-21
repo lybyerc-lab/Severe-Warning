@@ -1,6 +1,12 @@
 import { access, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  extractInlinedRegions,
+  joinRegions,
+  MODERNIZATION_BRIDGE_REGIONS,
+  PRODUCTION_SLICE_REGIONS,
+} from './lib/inlined-regions.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -28,19 +34,12 @@ async function requireFile(relativePath) {
   }
 }
 
-const runtimeFiles = [
-  'runtime/v510-foundation.js',
-  'runtime/v510-tornado.js',
-  'runtime/v510-world.js',
-  'runtime/v510-runtime.js'
-];
 for (const relativePath of [
   'index.html',
   '404.html',
   'qa-build.json',
   'audio/storm-feel-sprite.wav',
-  'audio/storm-feel-manifest.json',
-  ...runtimeFiles
+  'audio/storm-feel-manifest.json'
 ]) {
   await requireFile(relativePath);
 }
@@ -138,11 +137,12 @@ const requiredMarkers = [
 ];
 
 for (const [name, marker] of requiredMarkers) record(name, html.includes(marker), marker);
-for (const runtimeFile of runtimeFiles) {
-  const sourceMarker = `[SW:SOURCE:${path.basename(runtimeFile)}]`;
-  record(`bundled source marker ${runtimeFile}`, html.includes(sourceMarker), sourceMarker);
+for (const region of PRODUCTION_SLICE_REGIONS) {
+  const sourceMarker = `[SW:SOURCE:${region}]`;
+  record(`bundled source marker ${region}`, html.includes(sourceMarker), sourceMarker);
 }
 record('runtime avoids isolated script scope', !html.includes('<script src="runtime/v510-'));
+record('no stale runtime copy shipped', !html.includes('<script src="runtime/'));
 
 const forbiddenMarkers = [
   ['stale v4.5 identity', 'v4.5.0'],
@@ -169,8 +169,12 @@ try {
 }
 
 try {
-  const runtimeSources = await Promise.all(runtimeFiles.map(file => readFile(path.join(wwwDir, file), 'utf8')));
-  const runtime = runtimeSources.join('\n');
+  // Read the slice out of the PACKAGED page. This used to read mirrored
+  // runtime/*.js copies that build-web.mjs shipped alongside the bundle purely
+  // so this check had something to read - dead weight in the APK, and a second
+  // file to keep in step by hand.
+  const packagedRegions = extractInlinedRegions(html);
+  const runtime = joinRegions(packagedRegions, PRODUCTION_SLICE_REGIONS);
   for (const marker of [
     '[SW:VISUAL:PRODUCTION_SLICE]',
     '[SW:VISUAL:TORNADO_LAYERS]',
@@ -181,9 +185,22 @@ try {
     'triggerProductionSliceQa',
     'productionMeasuredFps'
   ]) record(`runtime marker ${marker}`, runtime.includes(marker), marker);
-  runtimeSources.forEach((source, index) => {
-    record(`packaged runtime bundled ${runtimeFiles[index]}`, html.includes(source.trim()), `${source.length} chars`);
-  });
+
+  // The check that actually earns its keep: what shipped is what was authored.
+  // Comparing the packaged page against the gameplay source catches a stale or
+  // half-built bundle, which comparing it against a third copy never could.
+  const authoredRegions = extractInlinedRegions(
+    await readFile(path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html'), 'utf8'),
+  );
+  for (const region of [...PRODUCTION_SLICE_REGIONS, ...MODERNIZATION_BRIDGE_REGIONS]) {
+    const packaged = packagedRegions.get(region);
+    const authored = authoredRegions.get(region);
+    record(
+      `packaged region matches source ${region}`,
+      Boolean(packaged) && packaged === authored,
+      `${packaged?.length ?? 0} vs ${authored?.length ?? 0} chars`,
+    );
+  }
   record('runtime has no synthetic FPS fallback', !/productionMeasuredFps\(\)\s*(?:\|\||\?\?)\s*60/.test(runtime));
 } catch (error) {
   record('runtime parse inputs', false, error.message);

@@ -1,6 +1,7 @@
-import { access, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { extractInlinedRegions, PRODUCTION_SLICE_REGIONS } from './lib/inlined-regions.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -17,22 +18,18 @@ function check(name, passed, detail = '') {
 const packageJson = JSON.parse(await readFile(path.join(projectRoot, 'package.json'), 'utf8'));
 const gradle = await readFile(path.join(projectRoot, 'android', 'app', 'build.gradle'), 'utf8');
 const html = await readFile(sourcePath, 'utf8');
-const runtimeFiles = [
-  'v510-foundation.js',
-  'v510-tornado.js',
-  'v510-world.js',
-  'v510-runtime.js'
-];
+const inlineScripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]);
+const inlineScriptText = inlineScripts.join('\n');
+// The production slice is read out of the gameplay source it runs in. It used
+// to be read from mirrored runtime/*.js copies and asserted to match the inline
+// text byte-for-byte, which made every edit here a two-file edit and quietly
+// went stale whenever the second file was forgotten.
+const regions = extractInlinedRegions(html);
 const runtimeText = {};
-for (const file of runtimeFiles) {
-  const filePath = path.join(projectRoot, 'runtime', file);
-  try {
-    await access(filePath);
-    runtimeText[file] = await readFile(filePath, 'utf8');
-    check(`runtime file ${file}`, runtimeText[file].length > 100, `${runtimeText[file].length} chars`);
-  } catch (error) {
-    check(`runtime file ${file}`, false, error.message);
-  }
+for (const file of PRODUCTION_SLICE_REGIONS) {
+  const region = regions.get(file);
+  if (region) runtimeText[file] = region;
+  check(`inlined region ${file}`, Boolean(region) && region.length > 100, `${region?.length ?? 0} chars`);
 }
 const runtime = Object.values(runtimeText).join('\n');
 
@@ -69,8 +66,12 @@ check('accepted Cow 17 law preserved', html.includes('[SW:LAW:SAFE-ANIMALS]'));
 check('accepted QA4 preserved', html.includes('QA4_DETERMINISTIC_V1'));
 check('accepted score continuity preserved', html.includes('SCORE_CONTINUITY_V1'));
 
+// Each region has to sit inside an inline <script>, not a <script src>. That is
+// the property the old byte-for-byte comparison was really defending: these
+// bridges close over the gameplay script's `let` bindings and cannot load as
+// separate files.
 for (const [file, source] of Object.entries(runtimeText)) {
-  check(`bundled source ${file}`, html.includes(source.trim()), `${source.length} chars`);
+  check(`inlined region bundled ${file}`, inlineScriptText.includes(source.trim()), `${source.length} chars`);
 }
 
 for (const marker of [
@@ -97,7 +98,6 @@ check('Cow 17 readable scale', runtime.includes('cow.mesh.scale.setScalar(1.32)'
 check('no synthetic FPS fallback', !/productionMeasuredFps\(\)\s*\|\|\s*60/.test(runtime) && !/\?\?\s*60/.test(runtime));
 check('Three.js remains renderer', runtime.includes("renderer: 'Three.js r128'"));
 
-const inlineScripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]);
 check('inline scripts found', inlineScripts.length >= 1, `${inlineScripts.length} scripts`);
 inlineScripts.forEach((source, index) => {
   try {

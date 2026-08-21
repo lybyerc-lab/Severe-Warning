@@ -35,7 +35,6 @@ const BASELINE_PORT = Number(process.env.VISUAL_BASELINE_PORT || 4184);
 // build-web failed outright, which is how this list was found to be incomplete.
 const RENDER_INPUTS = [
   'MechanicsLab/SevereWeather_3D_Lab.html',
-  'runtime',
   'src',
   'scripts/build-web.mjs',
 ];

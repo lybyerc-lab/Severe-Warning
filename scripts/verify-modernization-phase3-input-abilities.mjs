@@ -17,7 +17,6 @@ function check(name, passed, detail = '') {
 for (const file of [
   'src/input/input-system.ts',
   'src/abilities/ability-system.ts',
-  'runtime/modernization-phase3-input-abilities.js',
 ]) {
   try {
     await access(path.join(projectRoot, file));

@@ -92,7 +92,6 @@ The current workflow packages a complete `web-preview` and QA evidence bundle. I
 ## Repository map
 
 - `MechanicsLab/`: active Three.js game source and preserved browser laboratories
-- `runtime/`: maintained V5.1 Three.js runtime source fragments
 - `android/`: Capacitor Android project
 - `scripts/`: build, patch, verification, QA, and packaging tools
 - `Docs/`: product direction, current decisions, device evidence, and historical records

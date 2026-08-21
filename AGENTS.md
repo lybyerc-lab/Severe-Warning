@@ -52,8 +52,21 @@ no patch step in any workflow, and no anchor text to preserve. If you need to ch
 the game, change the file.
 
 Navigate it with the `[SW:AREA:NAME]` region tags listed in the header comment at
-the top of the gameplay script. `runtime/*.js` is no longer a build input — see
-`runtime/README.md`.
+the top of the gameplay script.
+
+Logic that began life as separate modules — the Three.js production slice and the
+four modernization bridges — lives inside `// [SW:SOURCE:<name>]` regions of that
+same script. The bridges *must* be inline: they close over its `let` bindings
+(`runTimeRemaining`, `cooldowns`, `triggerAbility`, …), so they cannot load as
+separate `<script src>` files.
+
+There used to be a `runtime/` directory holding a second copy of every one of
+those regions, which the verifications read and `build-web.mjs` shipped next to
+the bundle where nothing loaded it. Keeping the two in step was a manual step
+that was missed more than once. The copies are gone: `scripts/lib/inlined-regions.mjs`
+reads the regions straight out of the gameplay source, so the file the game runs
+is the only file there is. Add a region by adding its marker — nothing else needs
+teaching.
 
 ## Moving logic out of the inline script
 

@@ -1,6 +1,7 @@
 import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { joinRegions, readInlinedRegions } from './lib/inlined-regions.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -24,7 +25,6 @@ const requiredFiles = [
   'src/gameplay/campaign/campaign-system.ts',
   'src/platform/persistence/campaign-save-schema.ts',
   'src/platform/persistence/campaign-store.ts',
-  'runtime/modernization-phase4-scoring-campaign.js',
   'scripts/qa-modernization-phase4-scoring-campaign.mjs',
 ];
 for (const file of requiredFiles) {
@@ -46,7 +46,9 @@ const definitions = await readFile(path.join(projectRoot, 'src/gameplay/campaign
 const campaign = await readFile(path.join(projectRoot, 'src/gameplay/campaign/campaign-system.ts'), 'utf8');
 const schema = await readFile(path.join(projectRoot, 'src/platform/persistence/campaign-save-schema.ts'), 'utf8');
 const persistence = await readFile(path.join(projectRoot, 'src/platform/persistence/campaign-store.ts'), 'utf8');
-const runtime = await readFile(path.join(projectRoot, 'runtime/modernization-phase4-scoring-campaign.js'), 'utf8');
+// The bridge is read out of the gameplay source it actually runs in, not from
+// a mirrored copy that only matched while someone remembered to update both.
+const runtime = joinRegions(await readInlinedRegions(sourcePath), ['modernization-phase4-scoring-campaign.js']);
 const adapter = await readFile(path.join(projectRoot, 'src/legacy/legacy-runtime-adapter.ts'), 'utf8');
 const app = await readFile(path.join(projectRoot, 'src/app/game-app.ts'), 'utf8');
 
