@@ -2977,13 +2977,15 @@ renderer.setClearColor('#0f172a');
 scene.fog = new THREE.FogExp2('#0f172a', 0.0022);
 
 // Lighting
-const ambientLight = new THREE.AmbientLight('#334155', 1.2);
+// Storm light, not afternoon light: a dimmer, cooler fill so the directional key
+// actually models form. At 1.2 the ambient was washing the shading flat.
+const ambientLight = new THREE.AmbientLight('#2b3a4e', 0.86);
 scene.add(ambientLight);
 
-const skyLight = new THREE.HemisphereLight('#93c5fd', '#3f2d1d', 0.38);
+const skyLight = new THREE.HemisphereLight('#8fb3d9', '#2f2a22', 0.42);
 scene.add(skyLight);
 
-const dirLight = new THREE.DirectionalLight('#fef08a', 2.0);
+const dirLight = new THREE.DirectionalLight('#dfe7f2', 1.62);
 dirLight.position.set(70, 120, 70);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.width = 2048;
@@ -3242,15 +3244,27 @@ function terrainHeightAt(x, z) {
 // painted the map as four flat quadrants meeting at a seam straight across the
 // middle of the world - and the brown and gold halves read as sand. The district
 // centres keep their colour; only the boundaries between them are now a blend.
+// Farm country is green. These used to run slate -> green -> olive -> khaki,
+// which put the first county the player ever sees on a flat tan field; the
+// reference art for this game is pasture. Four tints that still read as four
+// districts, but all of them grass.
 const DISTRICT_GROUND = {
-  northWest: new THREE.Color('#26343f'),
-  northEast: new THREE.Color('#33603a'),
-  southWest: new THREE.Color('#4a4230'),
-  southEast: new THREE.Color('#5f5a2c')
+  northWest: new THREE.Color('#2f4436'),
+  northEast: new THREE.Color('#3d6b40'),
+  southWest: new THREE.Color('#4a5c33'),
+  southEast: new THREE.Color('#5c6b39')
 };
+// The blend has to span the world, not the middle of it.
+//
+// This was clamp((x + 70) / 140), a 140x140 window on an 800x800 terrain, so
+// past +/-70 the clamp pinned every vertex to one corner colour and about 95% of
+// the map came out a single flat tone - the barn at x=-280 sat on unbroken
+// '#4a4230'. Same class of mistake as the shadow frustum at [SW:RENDER:SHADOW_FIT]:
+// a range sized for a much smaller world and never revisited when it grew.
+const DISTRICT_BLEND_SPAN = 520;
 function districtGroundColor(x, z, height) {
-  const bx = THREE.MathUtils.clamp((x + 70) / 140, 0, 1);
-  const bz = THREE.MathUtils.clamp((z + 70) / 140, 0, 1);
+  const bx = THREE.MathUtils.clamp((x + DISTRICT_BLEND_SPAN / 2) / DISTRICT_BLEND_SPAN, 0, 1);
+  const bz = THREE.MathUtils.clamp((z + DISTRICT_BLEND_SPAN / 2) / DISTRICT_BLEND_SPAN, 0, 1);
   const eastward = bx * bx * (3 - 2 * bx);
   const southward = bz * bz * (3 - 2 * bz);
   const color = DISTRICT_GROUND.northWest.clone()
@@ -3856,9 +3870,86 @@ mesoCloudGroup.add(cloudBase);
 
 tornadoGroup.add(mesoCloudGroup);
 
+// [SW:VISUAL:FUNNEL_SHADER]
+// The funnel shells are a ShaderMaterial rather than translucent standard
+// material. Two stacked semi-transparent cylinders read as a static cone no
+// matter how fast the group is rotated, because a flat-shaded surface of one
+// colour has nothing on it for the eye to see turning. Banding the surface in
+// the shader gives the rotation something to carry, and it costs one draw call
+// each, the same as before.
+//
+// Fog chunks are included deliberately: the funnel is 37 units tall in a scene
+// with FogExp2, and a custom material that skips fog stops matching the world it
+// stands in as the camera pulls back.
+const productionFunnelMaterials = [];
+function createProductionFunnelMaterial({ core, vapor, opacity, bands, spin, sway = 1.0 }) {
+  const material = new THREE.ShaderMaterial({
+    uniforms: THREE.UniformsUtils.merge([
+      THREE.UniformsLib.fog,
+      {
+        uTime: { value: 0 },
+        uColorCore: { value: new THREE.Color(core) },
+        uColorVapor: { value: new THREE.Color(vapor) },
+        uOpacity: { value: opacity },
+        uBands: { value: bands },
+        uSpin: { value: spin },
+        uSway: { value: sway }
+      }
+    ]),
+    vertexShader: [
+      '#include <common>',
+      '#include <fog_pars_vertex>',
+      'uniform float uTime;',
+      'uniform float uSway;',
+      'varying vec2 vUv;',
+      'void main() {',
+      '  vUv = uv;',
+      '  vec3 transformed = position;',
+      '  float lift = clamp(position.y / 40.0, 0.0, 1.0);',
+      '  transformed.x += sin(uTime * 1.7 + position.y * 0.09) * lift * 2.2 * uSway;',
+      '  transformed.z += cos(uTime * 1.4 + position.y * 0.08) * lift * 1.9 * uSway;',
+      '  vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);',
+      '  gl_Position = projectionMatrix * mvPosition;',
+      '  #include <fog_vertex>',
+      '}'
+    ].join('\n'),
+    fragmentShader: [
+      '#include <common>',
+      '#include <fog_pars_fragment>',
+      'uniform float uTime;',
+      'uniform vec3 uColorCore;',
+      'uniform vec3 uColorVapor;',
+      'uniform float uOpacity;',
+      'uniform float uBands;',
+      'uniform float uSpin;',
+      'varying vec2 vUv;',
+      'void main() {',
+      '  float bandA = sin((vUv.x * 6.2831 * 3.0) - (uTime * 2.6 * uSpin) + vUv.y * uBands);',
+      '  float bandB = sin((vUv.x * 6.2831 * 5.0) + (uTime * 1.7 * uSpin) - vUv.y * (uBands * 0.6));',
+      '  float bands = (bandA * 0.6 + bandB * 0.4) * 0.5 + 0.5;',
+      '  vec3 col = mix(uColorCore, uColorVapor, pow(vUv.y, 0.7));',
+      '  col = mix(col, uColorVapor, bands * 0.45);',
+      '  float shape = smoothstep(0.0, 0.10, vUv.y) * smoothstep(1.0, 0.72, vUv.y);',
+      '  float alpha = uOpacity * shape * (0.55 + bands * 0.45);',
+      '  gl_FragColor = vec4(col, alpha);',
+      '  #include <fog_fragment>',
+      '}'
+    ].join('\n'),
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    fog: true
+  });
+  productionFunnelMaterials.push(material);
+  return material;
+}
+
+
 // Multi-Segmented Inner Heavy Condensation Funnel Core (Top radius 22, Bottom radius 2.2, Height 34, 16 Height Segments)
 const funnelGeo = new THREE.CylinderGeometry(22, 2.2, 34, 32, 16, true);
-const funnelMat = new THREE.MeshStandardMaterial({ color: '#1b2536', transparent: true, opacity: 0.46, roughness: 1.0, metalness: 0.0, side: THREE.DoubleSide, depthWrite: false });
+const funnelMat = createProductionFunnelMaterial({
+  core: '#141d2c', vapor: '#9fb4cd', opacity: 0.52, bands: 24.0, spin: 1.0, sway: 0.0
+});
 const funnelMesh = new THREE.Mesh(funnelGeo, funnelMat);
 funnelMesh.position.y = 17.5;
 tornadoGroup.add(funnelMesh);
@@ -7475,6 +7566,8 @@ function animate(now) {
   pPositions.needsUpdate = true;
 
   funnelMesh.rotation.y += 0.15;
+  // [SW:VISUAL:FUNNEL_SHADER] the visible funnel's band clock.
+  if (funnelMat.uniforms && funnelMat.uniforms.uTime) funnelMat.uniforms.uTime.value = tTime;
   outerFunnelMesh.rotation.y -= 0.10;
 
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
@@ -7989,6 +8082,7 @@ function clearProductionSlice() {
   productionStormLight = null;
   productionSuctionRings = [];
   productionVaporRibbons = [];
+  productionFunnelMaterials.length = 0;
   productionDustPuffs = [];
   productionDebrisMesh = null;
   productionDebrisMeta = [];
@@ -8108,7 +8202,10 @@ function createProductionTornadoLayers() {
     0,
     19.0,
     0,
-    { transparent: true, opacity: 0.28, depthWrite: false, roughness: 0.62, castShadow: false }
+    {
+      castShadow: false,
+      material: createProductionFunnelMaterial({ core: '#1b2534', vapor: '#c3d3e6', opacity: 0.42, bands: 22.0, spin: 1.0 })
+    }
   );
   middleShell.material.side = THREE.DoubleSide;
   middleShell.name = 'ProductionMiddleVortex';
@@ -8120,7 +8217,12 @@ function createProductionTornadoLayers() {
     0,
     18.0,
     0,
-    { transparent: true, opacity: 0.72, depthWrite: false, roughness: 0.8, castShadow: false }
+    {
+      castShadow: false,
+      // Denser, darker, and counter-spun, so the two shells shear against each
+      // other instead of turning as one solid object.
+      material: createProductionFunnelMaterial({ core: '#05080f', vapor: '#7d8ea6', opacity: 0.78, bands: 30.0, spin: -1.45 })
+    }
   );
   coreShell.material.side = THREE.DoubleSide;
   coreShell.name = 'ProductionDarkCore';
@@ -8630,6 +8732,10 @@ function updateProductionTornado(dt, now) {
   const intensity = THREE.MathUtils.clamp(0.82 + (efMultiplier - 1) * 0.16, 0.82, 1.34);
   productionTornadoRoot.scale.setScalar(intensity);
   productionTornadoRoot.rotation.y += dt * 0.34;
+  // [SW:VISUAL:FUNNEL_SHADER] one uniform write per shell per frame.
+  for (let i = 0; i < productionFunnelMaterials.length; i++) {
+    productionFunnelMaterials[i].uniforms.uTime.value = time;
+  }
 
   productionVaporRibbons.forEach((ribbon, index) => {
     ribbon.rotation.y += dt * (0.28 + index * 0.08) * (index % 2 === 0 ? 1 : -1);
@@ -8694,7 +8800,10 @@ function updateProductionAtmosphere(dt) {
     } catch (_) {}
     const targetDensity = baseDensity * (1 + stageFactor * 0.18);
     scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, targetDensity, Math.min(1, dt * 0.45));
-    const targetFog = new THREE.Color(currentStage === 1 ? '#162437' : (currentStage === 2 ? '#101c2c' : '#09111e'));
+    // Darken the county's authored fog as the storm builds, rather than replacing
+    // it with one of three fixed tints and losing the county identity entirely.
+    const targetFog = new THREE.Color((typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel().fogColor : null) || '#162437');
+    targetFog.lerp(new THREE.Color('#070d18'), 0.18 + stageFactor * 0.42);
     scene.fog.color.lerp(targetFog, Math.min(1, dt * 0.22));
     scene.background.lerp(targetFog, Math.min(1, dt * 0.16));
     if (typeof skyDomeUniforms !== 'undefined') {
@@ -8708,8 +8817,24 @@ function updateProductionAtmosphere(dt) {
 
   ambientLight.intensity = THREE.MathUtils.lerp(ambientLight.intensity, 0.52 - stageFactor * 0.14, Math.min(1, dt * 0.6));
   skyLight.intensity = THREE.MathUtils.lerp(skyLight.intensity, 0.70 - stageFactor * 0.16, Math.min(1, dt * 0.6));
-  dirLight.intensity = THREE.MathUtils.lerp(dirLight.intensity, 2.30 - stageFactor * 0.45, Math.min(1, dt * 0.5));
-  dirLight.color.lerp(new THREE.Color(currentStage === 3 ? '#c4d2ea' : '#f1ddb0'), Math.min(1, dt * 0.18));
+  // [SW:RENDER:STORM_LIGHT]
+  // Each county authors a sunColor, and this used to lerp straight past it to one
+  // of two hardcoded tints - so the four counties' authored light reached the
+  // screen for about a second after load and was then erased. Blend the county's
+  // own sun toward the storm instead, so the cooling still happens and Grain
+  // Belt still looks nothing like State Fair.
+  dirLight.intensity = THREE.MathUtils.lerp(dirLight.intensity, 1.62 - stageFactor * 0.34, Math.min(1, dt * 0.5));
+  const countySun = new THREE.Color((typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel().sunColor : null) || '#f1ddb0');
+  countySun.lerp(new THREE.Color('#b9c9dd'), 0.34 + stageFactor * 0.30);
+  dirLight.color.lerp(countySun, Math.min(1, dt * 0.18));
+  // Lightning has to reach the whole county. productionFlashTimer already fires
+  // on strikes and ability hits, but it only drove the point light at the
+  // funnel - a 92-unit radius, which reads as a lamp switching on rather than
+  // as the sky going off. Riding the key light instead flashes everything the
+  // sun touches, and it costs one comparison a frame.
+  if (productionFlashTimer > 0) {
+    dirLight.intensity = Math.max(dirLight.intensity, 1.62 + productionFlashTimer * 9.0);
+  }
 }
 
 function updateProductionBarn(dt, isMoving) {
