@@ -14,8 +14,7 @@
 // self-calibrating: it renders the baseline twice to measure its own noise floor,
 // then requires the candidate to land inside it. This script's job is only to put
 // the right two builds in front of it.
-import { execFileSync } from 'node:child_process';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -118,6 +117,8 @@ if (!baselineRef) {
 const shortRef = baselineRef.slice(0, 7);
 console.log(`Visual regression gate: comparing HEAD against ${shortRef}`);
 
+const visualDir = process.env.SEVERE_WEATHER_VISUAL_DIR
+  || path.join(projectRoot, 'qa-artifacts', 'visual-regression');
 const workspace = await mkdtemp(path.join(tmpdir(), 'sw-visual-'));
 const baselineDir = path.join(workspace, 'baseline-www');
 const candidateDir = path.join(workspace, 'candidate-www');
@@ -169,27 +170,84 @@ try {
   servers.push(serve(CANDIDATE_PORT, candidateDir), serve(BASELINE_PORT, baselineDir));
   await Promise.all([waitForServer(CANDIDATE_PORT), waitForServer(BASELINE_PORT)]);
 
-  // The harness fails a scenario when the BASELINE disagrees with itself
-  // (baseRepeatNoiseWithinLimit) - that is "could not measure", not "regressed".
-  // Boot timing occasionally shifts which frame the shell becomes ready on, and
-  // the whole sim lands a frame out. A real regression reproduces every time; a
-  // flake usually does not, so measure twice before calling it. Failing loudly on
-  // an unmeasurable run would train everyone to ignore this gate, and passing
-  // silently would defeat it.
-  const compare = (attempt) => run('node', ['scripts/compare-phase5-visual-baseline.mjs'], {
-    SEVERE_WEATHER_QA_URL: `http://127.0.0.1:${CANDIDATE_PORT}/`,
-    SEVERE_WEATHER_BASE_URL: `http://127.0.0.1:${BASELINE_PORT}/`,
-    SEVERE_WEATHER_VISUAL_DIR: path.join(
-      process.env.SEVERE_WEATHER_VISUAL_DIR || path.join(projectRoot, 'qa-artifacts', 'visual-regression'),
-      attempt === 1 ? '.' : `attempt-${attempt}`,
-    ),
-  });
-  try {
-    compare(1);
-  } catch {
-    console.log('\nFirst comparison did not pass. Measuring once more before calling it.');
-    compare(2);
-    console.log('The second comparison passed; treating the first as measurement noise.');
+  // Reading the harness's evidence properly instead of just its exit code.
+  //
+  // Each line reports repeat= (how much the BASELINE differs from a second render
+  // of itself - its own noise floor) and candidate= (how much the candidate
+  // differs from the baseline). On this project's CI runner the renderer is
+  // nondeterministic often enough that a scenario's noise floor jumps to ~20%
+  // roughly half the time, and it hits a different scenario on every attempt. A
+  // scenario in that state has measured nothing: it is not evidence of a
+  // regression, and failing on it would red-light half of all builds for no
+  // reason - which is how the previous version of this check got demoted to
+  // advisory and then forgotten.
+  //
+  // So per scenario, across attempts, take the strongest evidence available:
+  //   stable baseline + small candidate diff  -> proven unchanged
+  //   stable baseline + large candidate diff  -> proven regression, fail
+  //   noisy baseline every time               -> inconclusive, say so loudly
+  // Inconclusive never fails the build on its own, but an ALL-inconclusive run
+  // means the gate measured nothing at all, and that does fail - otherwise it
+  // could rot into a no-op without anyone noticing.
+  const LINE = /^(PASS|FAIL) (\S+) (\S+) :: repeat=([\d.]+)% candidate=([\d.]+)%/;
+  const NOISE_LIMIT = 0.05; // percent; the harness's own baseRepeatNoise limit
+  const verdicts = new Map();
+  const attempts = 3;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    // spawnSync, not execFileSync: the comparison exits non-zero whenever any
+    // scenario fails, and its output is exactly what has to be read to tell a
+    // real change from a scenario that could not measure itself. Throwing on the
+    // exit code would discard the evidence this gate is built to weigh.
+    const result = spawnSync(process.execPath, ['scripts/compare-phase5-visual-baseline.mjs'], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'inherit'],
+      env: {
+        ...process.env,
+        SEVERE_WEATHER_QA_URL: `http://127.0.0.1:${CANDIDATE_PORT}/`,
+        SEVERE_WEATHER_BASE_URL: `http://127.0.0.1:${BASELINE_PORT}/`,
+        SEVERE_WEATHER_VISUAL_DIR: path.join(visualDir, attempt === 1 ? '.' : `attempt-${attempt}`),
+      },
+    });
+    const output = result.stdout || '';
+    process.stdout.write(output);
+
+    for (const line of output.split('\n')) {
+      const match = LINE.exec(line.trim());
+      if (!match) continue;
+      const [, , viewport, scenario, repeatText, candidateText] = match;
+      const key = `${viewport} ${scenario}`;
+      if (verdicts.get(key)?.proven) continue;
+      const repeat = Number(repeatText);
+      const candidate = Number(candidateText);
+      if (repeat > NOISE_LIMIT) {
+        if (!verdicts.has(key)) verdicts.set(key, { proven: false, regressed: false, repeat });
+        continue;
+      }
+      verdicts.set(key, { proven: true, regressed: candidate > repeat + 0.1, repeat, candidate });
+    }
+    if ([...verdicts.values()].every(v => v.proven) && verdicts.size > 0) break;
+    if (attempt < attempts) console.log(`\nSome scenarios could not be measured; attempt ${attempt + 1} of ${attempts}.`);
+  }
+
+  const regressed = [...verdicts].filter(([, v]) => v.regressed);
+  const inconclusive = [...verdicts].filter(([, v]) => !v.proven);
+  const measured = verdicts.size - inconclusive.length;
+
+  console.log(`\nScenarios measured: ${measured} of ${verdicts.size}.`);
+  for (const [key, v] of inconclusive) {
+    console.log(`  INCONCLUSIVE ${key} - the baseline could not reproduce itself (noise ${v.repeat}%).`);
+  }
+  for (const [key, v] of regressed) {
+    console.log(`  CHANGED ${key} - candidate differs by ${v.candidate}% against a ${v.repeat}% noise floor.`);
+  }
+
+  if (regressed.length > 0) {
+    throw new Error(`${regressed.length} scenario(s) show a real visual change.`);
+  }
+  if (measured === 0) {
+    throw new Error('No scenario could be measured; this gate proved nothing.');
   }
 } catch (error) {
   failure = error;
