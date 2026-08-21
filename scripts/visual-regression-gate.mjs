@@ -1,0 +1,175 @@
+// [SW:QA:VISUAL_REGRESSION_GATE]
+// Renders the current build against the last build that could have changed how
+// the game looks, and fails when the picture moved in a way the harness can tell
+// apart from its own measured noise.
+//
+// Why this exists: every verify-*.mjs check in this repo asserts that a STRING is
+// present in the source. They cannot see. Roads on causeways, a sand checkerboard
+// across the map, every metal surface rendering solid black, cars buried in the
+// asphalt, and a modern shell that had never once booted all shipped with those
+// checks fully green. scripts/compare-phase5-visual-baseline.mjs already knew how
+// to catch that class of bug and was wired into nothing.
+//
+// The comparison itself lives in compare-phase5-visual-baseline.mjs, which is
+// self-calibrating: it renders the baseline twice to measure its own noise floor,
+// then requires the candidate to land inside it. This script's job is only to put
+// the right two builds in front of it.
+import { execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
+import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Deliberately not 4173/4174: the workflow that runs this already has a server on
+// 4173 serving www for the playtest steps, and binding over it would be a silent
+// mess to debug.
+const CANDIDATE_PORT = Number(process.env.VISUAL_CANDIDATE_PORT || 4183);
+const BASELINE_PORT = Number(process.env.VISUAL_BASELINE_PORT || 4184);
+
+// Everything that feeds what build-web.mjs renders. modern-dist is a build
+// artifact rebuilt from src, so it is restored by rebuilding, not by checkout.
+const RENDER_INPUTS = ['MechanicsLab/SevereWeather_3D_Lab.html', 'runtime'];
+
+const git = (...args) => execFileSync('git', args, { cwd: projectRoot, encoding: 'utf8' }).trim();
+const run = (cmd, args, env) =>
+  execFileSync(cmd, args, { cwd: projectRoot, stdio: 'inherit', env: { ...process.env, ...env } });
+
+function resolveBaselineRef() {
+  if (process.env.VISUAL_BASELINE_REF) return process.env.VISUAL_BASELINE_REF;
+  // Uncommitted edits to the render inputs are themselves the change under test,
+  // so HEAD is the thing to compare them against. CI never hits this branch;
+  // it matters when running the gate by hand before committing.
+  if (git('status', '--porcelain', '--', ...RENDER_INPUTS)) return 'HEAD';
+  // NOT HEAD~1. The full-round workflow commits playtest evidence back to qa, so
+  // HEAD~1 is frequently a Docs-only bot commit whose render inputs are identical
+  // to HEAD - which would compare the build against itself and pass every time.
+  // Walk back to the last commit that actually touched something we render.
+  const commits = git('log', '-2', '--format=%H', '--', ...RENDER_INPUTS).split('\n').filter(Boolean);
+  return commits[1] || null;
+}
+
+async function buildInto(destination) {
+  run('node', ['scripts/build-web.mjs']);
+  await rm(destination, { recursive: true, force: true });
+  await cp(path.join(projectRoot, 'www'), destination, { recursive: true });
+}
+
+function serve(port, directory) {
+  const child = spawn('python3', ['-m', 'http.server', String(port), '--directory', directory],
+    { cwd: projectRoot, stdio: 'ignore', detached: true });
+  child.unref();
+  return child;
+}
+
+async function waitForServer(port) {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/`);
+      if (response.ok) return;
+    } catch { /* not up yet */ }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  throw new Error(`Static server on port ${port} never became ready.`);
+}
+
+// A visual gate fails on INTENDED changes too - that is the whole point, and it
+// is also how this kind of check dies. The previous incarnation of this
+// comparison was demoted to "advisory evidence" and then wired into nothing,
+// which is why a sand checkerboard and roads on causeways reached a phone.
+// So: fail by default, and let a commit opt in deliberately by saying so in its
+// message. That keeps a permanent, greppable record in history of every commit
+// that was allowed to move the picture, instead of a setting nobody revisits.
+const ACK_MARKER = '[visual-change]';
+function changeIsAcknowledged() {
+  try {
+    return git('log', '-1', '--format=%B').includes(ACK_MARKER);
+  } catch {
+    return false;
+  }
+}
+
+const baselineRef = resolveBaselineRef();
+if (!baselineRef) {
+  // A branch whose history contains no earlier change to the render inputs has
+  // nothing to compare against. That is not a regression.
+  console.log('Visual regression gate: no earlier build to compare against; skipping.');
+  process.exit(0);
+}
+
+const shortRef = baselineRef.slice(0, 7);
+console.log(`Visual regression gate: comparing HEAD against ${shortRef}`);
+
+const workspace = await mkdtemp(path.join(tmpdir(), 'sw-visual-'));
+const baselineDir = path.join(workspace, 'baseline-www');
+const candidateDir = path.join(workspace, 'candidate-www');
+const stampedWww = path.join(workspace, 'stamped-www');
+const savedInputs = path.join(workspace, 'saved-inputs');
+const servers = [];
+let failure = null;
+
+try {
+  // Both sides are built fresh and UNSTAMPED. By the time this runs, www has
+  // usually been through stamp-qa-pages, which prints the run number and commit
+  // into the corner of the page - so comparing the live www against a freshly
+  // built baseline diffs the build label rather than the game. Keep the stamped
+  // copy aside and hand it back afterwards, so every later step still sees it.
+  await cp(path.join(projectRoot, 'www'), stampedWww, { recursive: true });
+  await buildInto(candidateDir);
+
+  // Copy the render inputs aside EXACTLY as they stand before touching them.
+  // Restoring them with `git checkout HEAD --` would overwrite uncommitted work
+  // with the committed version and silently destroy it - which is precisely what
+  // an earlier draft of this script did to a working tree.
+  for (const input of RENDER_INPUTS) {
+    const saved = path.join(savedInputs, input);
+    await mkdir(path.dirname(saved), { recursive: true });
+    await cp(path.join(projectRoot, input), saved, { recursive: true });
+  }
+
+  git('checkout', baselineRef, '--', ...RENDER_INPUTS);
+  try {
+    await buildInto(baselineDir);
+  } finally {
+    for (const input of RENDER_INPUTS) {
+      const live = path.join(projectRoot, input);
+      await rm(live, { recursive: true, force: true });
+      await cp(path.join(savedInputs, input), live, { recursive: true });
+    }
+    await rm(path.join(projectRoot, 'www'), { recursive: true, force: true });
+    await cp(stampedWww, path.join(projectRoot, 'www'), { recursive: true });
+  }
+
+  servers.push(serve(CANDIDATE_PORT, candidateDir), serve(BASELINE_PORT, baselineDir));
+  await Promise.all([waitForServer(CANDIDATE_PORT), waitForServer(BASELINE_PORT)]);
+
+  run('node', ['scripts/compare-phase5-visual-baseline.mjs'], {
+    SEVERE_WEATHER_QA_URL: `http://127.0.0.1:${CANDIDATE_PORT}/`,
+    SEVERE_WEATHER_BASE_URL: `http://127.0.0.1:${BASELINE_PORT}/`,
+    SEVERE_WEATHER_VISUAL_DIR: process.env.SEVERE_WEATHER_VISUAL_DIR
+      || path.join(projectRoot, 'qa-artifacts', 'visual-regression'),
+  });
+} catch (error) {
+  failure = error;
+} finally {
+  for (const server of servers) {
+    try { process.kill(-server.pid); } catch { /* already gone */ }
+  }
+  await rm(workspace, { recursive: true, force: true });
+}
+
+if (failure) {
+  if (changeIsAcknowledged()) {
+    console.log(`\nThe picture moved against ${shortRef}, and this commit says that was intended`);
+    console.log(`(its message carries ${ACK_MARKER}). Recording the change and passing.`);
+    console.log('The diff images in the artifact are worth a look before you ship it.');
+    process.exit(0);
+  }
+  console.error(`\nVisual regression gate FAILED against ${shortRef}.`);
+  console.error('The rendered picture moved further than this harness\'s own measured noise.');
+  console.error('The diff images in the run artifact show exactly what moved.');
+  console.error(`If you meant to change it, put ${ACK_MARKER} in the commit message.`);
+  process.exit(1);
+}
+console.log(`\nVisual regression gate passed against ${shortRef}.`);

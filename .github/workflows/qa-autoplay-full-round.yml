@@ -33,6 +33,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: qa
+          # The visual regression gate rebuilds an earlier commit to compare
+          # against, so the shallow default checkout is not enough history.
+          fetch-depth: 50
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
@@ -99,6 +102,17 @@ jobs:
           QA_PLAY_OUTPUT: Docs
         run: node scripts/qa-play-full-round.mjs
 
+      # [SW:QA:VISUAL_REGRESSION_GATE] Every verify-*.mjs check in this repo
+      # asserts a string is present in the source; none of them can see. Roads on
+      # causeways, a sand checkerboard, black metals, and cars buried in asphalt
+      # all shipped with those checks green. This one renders the build and looks.
+      - name: Gate on visual regression against the previous build
+        env:
+          # No CHROME_BIN: the compare harness falls back to the Chromium that
+          # `playwright install` put in place a few steps up.
+          SEVERE_WEATHER_VISUAL_DIR: qa-artifacts/visual-regression
+        run: node scripts/visual-regression-gate.mjs
+
       - name: Sweep all four authored Heartland worlds
         env:
           QA_PLAY_URL: http://127.0.0.1:4173/
@@ -135,6 +149,7 @@ jobs:
         with:
           name: severe-weather-qa-autoplay-${{ github.run_number }}
           path: |
+            qa-artifacts/visual-regression
             Docs/QA_AUTOPLAY_REPORT.json
             Docs/QA_AUTOPLAY_REPORT.md
             Docs/QA_AUTOPLAY_SCREENSHOT.png
