@@ -190,9 +190,11 @@ try {
   // means the gate measured nothing at all, and that does fail - otherwise it
   // could rot into a no-op without anyone noticing.
   const LINE = /^(PASS|FAIL) (\S+) (\S+) :: repeat=([\d.]+)% candidate=([\d.]+)%/;
-  const NOISE_LIMIT = 0.05; // percent; the harness's own baseRepeatNoise limit
-  const verdicts = new Map();
+  const NOISE_LIMIT = 0.05;   // percent; the harness's own baseRepeatNoise limit
+  const CHANGE_LIMIT = 0.10;  // percent above the noise floor to count as moved
   const attempts = 3;
+  // Per scenario, every measurement taken while the baseline was reproducible.
+  const samples = new Map();
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     // spawnSync, not execFileSync: the comparison exits non-zero whenever any
@@ -218,36 +220,43 @@ try {
       if (!match) continue;
       const [, , viewport, scenario, repeatText, candidateText] = match;
       const key = `${viewport} ${scenario}`;
-      if (verdicts.get(key)?.proven) continue;
-      const repeat = Number(repeatText);
-      const candidate = Number(candidateText);
-      if (repeat > NOISE_LIMIT) {
-        if (!verdicts.has(key)) verdicts.set(key, { proven: false, regressed: false, repeat });
-        continue;
-      }
-      verdicts.set(key, { proven: true, regressed: candidate > repeat + 0.1, repeat, candidate });
+      if (!samples.has(key)) samples.set(key, []);
+      // A noisy baseline measured nothing; record no sample for it.
+      if (Number(repeatText) > NOISE_LIMIT) continue;
+      samples.get(key).push({ repeat: Number(repeatText), candidate: Number(candidateText) });
     }
-    if ([...verdicts.values()].every(v => v.proven) && verdicts.size > 0) break;
-    if (attempt < attempts) console.log(`\nSome scenarios could not be measured; attempt ${attempt + 1} of ${attempts}.`);
   }
 
-  const regressed = [...verdicts].filter(([, v]) => v.regressed);
-  const inconclusive = [...verdicts].filter(([, v]) => !v.proven);
-  const measured = verdicts.size - inconclusive.length;
-
-  console.log(`\nScenarios measured: ${measured} of ${verdicts.size}.`);
-  for (const [key, v] of inconclusive) {
-    console.log(`  INCONCLUSIVE ${key} - the baseline could not reproduce itself (noise ${v.repeat}%).`);
+  // A real visual change is deterministic: every usable measurement shows it.
+  // A flaky render is random, so it shows up in one attempt and not the others.
+  // Requiring agreement across at least two usable measurements is what separates
+  // them - a single sample cannot, because the CANDIDATE render flakes too. CI
+  // has produced repeat=0.0000% candidate=19.9414% between two builds that differ
+  // only in test scripts, which a one-sample rule would have called a regression.
+  const moved = [];
+  const unmeasured = [];
+  for (const [key, list] of samples) {
+    if (list.length < 2) { unmeasured.push([key, list.length]); continue; }
+    if (list.every(sample => sample.candidate > sample.repeat + CHANGE_LIMIT)) {
+      moved.push([key, list]);
+    }
   }
-  for (const [key, v] of regressed) {
-    console.log(`  CHANGED ${key} - candidate differs by ${v.candidate}% against a ${v.repeat}% noise floor.`);
+  const measured = samples.size - unmeasured.length;
+
+  console.log(`\nScenarios with enough agreeing measurements: ${measured} of ${samples.size}.`);
+  for (const [key, count] of unmeasured) {
+    console.log(`  INCONCLUSIVE ${key} - only ${count} usable measurement(s) in ${attempts} attempts.`);
+  }
+  for (const [key, list] of moved) {
+    console.log(`  CHANGED ${key} - moved in all ${list.length} measurements `
+      + `(${list.map(x => x.candidate.toFixed(2) + '%').join(', ')}).`);
   }
 
-  if (regressed.length > 0) {
-    throw new Error(`${regressed.length} scenario(s) show a real visual change.`);
+  if (moved.length > 0) {
+    throw new Error(`${moved.length} scenario(s) moved consistently across attempts.`);
   }
   if (measured === 0) {
-    throw new Error('No scenario could be measured; this gate proved nothing.');
+    throw new Error(`No scenario could be measured twice in ${attempts} attempts; this gate proved nothing.`);
   }
 } catch (error) {
   failure = error;
