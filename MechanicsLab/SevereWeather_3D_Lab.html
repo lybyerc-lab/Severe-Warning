@@ -2925,11 +2925,22 @@ scene.background = new THREE.Color('#030712');
 // horizon and nothing to read scale or depth against. scene.background stays a
 // Color because the lightning flash and the stage atmosphere driver both write
 // to it; the dome simply renders behind everything else.
+// [SW:VISUAL:STORM_SKY]
+// The dome was a smooth three-colour vertical gradient, which is why the sky
+// read as a flat band in every screenshot: a storm game whose sky has no
+// structure in it. Cloud noise goes in the shader that already exists rather
+// than a second sky system - it is one material, no new objects, and the
+// existing uTop/uHorizon/uGround/uFlash contract is untouched because other
+// code reads and writes those.
 const skyDomeUniforms = {
   uTop: { value: new THREE.Color('#0a1526') },
   uHorizon: { value: new THREE.Color('#3d5878') },
   uGround: { value: new THREE.Color('#162437') },
-  uFlash: { value: 0 }
+  uFlash: { value: 0 },
+  uTime: { value: 0 },
+  uCloud: { value: new THREE.Color('#79899f') },
+  uCloudDark: { value: new THREE.Color('#0b111b') },
+  uCloudCover: { value: 0.70 }
 };
 const skyDome = new THREE.Mesh(
   new THREE.SphereGeometry(760, 32, 20),
@@ -2941,12 +2952,44 @@ const skyDome = new THREE.Mesh(
     vertexShader: 'varying vec3 vWorld; void main(){ vWorld = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: [
       'uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uGround; uniform float uFlash;',
+      'uniform float uTime; uniform vec3 uCloud; uniform vec3 uCloudDark; uniform float uCloudCover;',
       'varying vec3 vWorld;',
+      // Value noise rather than a texture: no asset, no upload, and the dome is
+      // drawn once behind everything else.
+      'float skyHash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }',
+      'float skyNoise(vec2 p){',
+      '  vec2 i = floor(p); vec2 f = fract(p);',
+      '  vec2 u = f * f * (3.0 - 2.0 * f);',
+      '  return mix(mix(skyHash(i), skyHash(i + vec2(1.0, 0.0)), u.x),',
+      '             mix(skyHash(i + vec2(0.0, 1.0)), skyHash(i + vec2(1.0, 1.0)), u.x), u.y);',
+      '}',
+      'float skyFbm(vec2 p){',
+      '  float v = 0.0; float a = 0.5;',
+      '  for (int i = 0; i < 5; i++){ v += a * skyNoise(p); p *= 2.02; a *= 0.5; }',
+      '  return v;',
+      '}',
       'void main(){',
-      '  float h = normalize(vWorld).y;',
+      '  vec3 dir = normalize(vWorld);',
+      '  float h = dir.y;',
       '  vec3 sky = mix(uHorizon, uTop, clamp(pow(max(h, 0.0), 0.55), 0.0, 1.0));',
-      '  vec3 col = mix(uGround, sky, smoothstep(-0.14, 0.05, h));',
-      '  col += uFlash * vec3(0.34, 0.52, 0.82);',
+      // Project the view direction onto a flat cloud deck. Clamping y keeps the
+      // projection finite at the horizon instead of stretching to infinity.
+      '  float deck = 1.0 / max(h, 0.055);',
+      '  vec2 cloudUv = dir.xz * deck * 0.30 + vec2(uTime * 0.010, uTime * 0.006);',
+      '  float base = skyFbm(cloudUv * 1.15);',
+      '  float detail = skyFbm(cloudUv * 3.10 - vec2(uTime * 0.015, 0.0));',
+      '  float clouds = clamp(base * 0.72 + detail * 0.38, 0.0, 1.0);',
+      '  clouds = smoothstep(1.0 - uCloudCover, 1.0 - uCloudCover + 0.42, clouds);',
+      // Fade the deck out towards the horizon so it never crosses the ground.
+      '  clouds *= smoothstep(0.02, 0.30, h);',
+      // Underlit bases, brighter tops: the shading that makes a deck read as
+      // volume rather than as a flat stencil.
+      '  vec3 cloudCol = mix(uCloudDark, uCloud, clamp(detail * 1.05, 0.0, 1.0));',
+      '  vec3 col = mix(sky, cloudCol, clouds * 0.94);',
+      '  col = mix(uGround, col, smoothstep(-0.14, 0.05, h));',
+      // Lightning lights the cloud bases hardest, which is where a real flash
+      // shows: scale the flash by cloud density instead of washing the whole dome.
+      '  col += uFlash * vec3(0.34, 0.52, 0.82) * (0.45 + clouds * 0.90);',
       '  gl_FragColor = vec4(col, 1.0);',
       '}'
     ].join('\n')
@@ -7309,6 +7352,10 @@ document.addEventListener('visibilitychange', () => {
 
 function animate(now) {
   frameCount++;
+  // [SW:VISUAL:STORM_SKY] The deck drifts on real elapsed time, not on the run
+  // clock, so it keeps moving on the menu and while paused - a storm that stops
+  // when the game does looks like a painted backdrop.
+  skyDomeUniforms.uTime.value = now * 0.001;
   if (now - fpsTimer >= 1000) {
     fps = frameCount;
     frameCount = 0;
