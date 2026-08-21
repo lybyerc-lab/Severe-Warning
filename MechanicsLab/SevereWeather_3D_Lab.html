@@ -3550,8 +3550,8 @@ let pullVortexTimer = 0;
 const missionObjectives = {
   tornado: [
     { text: "Shatter Water Tower 💧 & Silo 🌾", done: false },
-    { text: "Reach EF-3 Rating (3,800+ PTS)", done: false },
-    { text: "Score 7,500 Total Points", done: false }
+    { text: "Reach EF-4 Rating (7,000+ PTS)", done: false },
+    { text: "Score 15,000 Total Points", done: false }
   ],
   supercell: [
     { text: "Spawn 5+ Hail Corridors", count: 0, target: 5, done: false },
@@ -6758,9 +6758,14 @@ function updateEFRating() {
 
 function updateObjectives() {
   if (currentStorm === 'tornado') {
+    // [SW:GAMEPLAY:OBJECTIVE_SCALE] These thresholds track the EF table above and
+    // the campaign scoreTargets (8k / 12k / 18k / 26k). They used to sit at 3,800
+    // and 7,500 - both cleared inside the first minute of a run that finishes
+    // around 22,000 - so two of the three objectives completed themselves and the
+    // only one with any content, the landmarks, was the one players skipped.
     missionObjectives.tornado[0].done = (destroyedLandmarksCount >= 2);
-    missionObjectives.tornado[1].done = (destructionScore >= 3800);
-    missionObjectives.tornado[2].done = (destructionScore >= 7500);
+    missionObjectives.tornado[1].done = (destructionScore >= 7000);
+    missionObjectives.tornado[2].done = (destructionScore >= 15000);
   } else if (currentStorm === 'supercell') {
     missionObjectives.supercell[0].done = (missionObjectives.supercell[0].count >= 5);
     missionObjectives.supercell[1].done = (missionObjectives.supercell[1].count >= 4);
@@ -6819,11 +6824,19 @@ function finishRun() {
   const objs = missionObjectives[currentStorm];
   objs.forEach(o => { if (o.done) doneCount++; });
 
+  // [SW:GAMEPLAY:GRADE_CURVE] The top two grades require the storm's FIRST
+  // objective - the one with actual content behind it (landmarks for a tornado,
+  // hail corridors for a supercell, structures for a derecho). Grading purely on
+  // doneCount let a run that shattered nothing take an A on score thresholds
+  // alone, because the other two objectives were themselves just score gates.
+  // Campaign stars and level unlocks read score and objectivesDone directly and
+  // are unaffected by this curve, so progression cannot be blocked by it.
+  const contentObjectiveDone = Boolean(objs[0] && objs[0].done);
   let grade = 'F';
-  if (doneCount === 3 && destructionScore >= 8000) grade = 'S+';
-  else if (doneCount >= 2 && destructionScore >= 4500) grade = 'A';
-  else if (doneCount >= 1 && destructionScore >= 2000) grade = 'B';
-  else if (destructionScore >= 500) grade = 'C';
+  if (doneCount === 3 && destructionScore >= 20000) grade = 'S+';
+  else if (contentObjectiveDone && destructionScore >= 12000) grade = 'A';
+  else if (doneCount >= 1 && destructionScore >= 6000) grade = 'B';
+  else if (destructionScore >= 1500) grade = 'C';
 
   const challengeCount = completedChallengeCount();
   let cosmeticResult = neonFunnelUnlocked ? 'NEON FUNNEL EQUIPPED' : `${challengeCount}/3 TO UNLOCK`;
