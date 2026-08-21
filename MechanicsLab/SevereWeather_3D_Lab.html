@@ -2248,7 +2248,7 @@ const HEARTLAND_CAMPAIGN = [
   {
     id: 'lincoln-county', name: 'LINCOLN COUNTY', shortName: 'LINCOLN', station: 'KSWX 8',
     brief: 'The original county run. Three districts, one very nervous insurance office.',
-    scoreTarget: 8000, scoreMultiplier: 1.0, durationSeconds: 180,
+    scoreTarget: 45000, scoreMultiplier: 1.0, durationSeconds: 180,
     skyColor: '#0f172a', fogColor: '#0f172a', terrainTint: '#ffffff', sunColor: '#fef08a',
     spawn: { x: 0, z: 0 },
     districts: [
@@ -2260,7 +2260,7 @@ const HEARTLAND_CAMPAIGN = [
   {
     id: 'prairie-junction', name: 'PRAIRIE JUNCTION', shortName: 'PRAIRIE', station: 'KPRJ 4',
     brief: 'Open-country crosswind. Longer sightlines and a 10% broadcast score bonus.',
-    scoreTarget: 12000, scoreMultiplier: 1.10, durationSeconds: 180,
+    scoreTarget: 65000, scoreMultiplier: 1.10, durationSeconds: 180,
     skyColor: '#172554', fogColor: '#1e3a5f', terrainTint: '#dff7d2', sunColor: '#fde68a',
     spawn: { x: 120, z: -105 },
     districts: [
@@ -2272,7 +2272,7 @@ const HEARTLAND_CAMPAIGN = [
   {
     id: 'grain-belt', name: 'GRAIN BELT', shortName: 'GRAIN BELT', station: 'KGBN 11',
     brief: 'Industrial harvest corridor. Tougher targets pay a 15% chain-reaction bonus.',
-    scoreTarget: 18000, scoreMultiplier: 1.15, durationSeconds: 180,
+    scoreTarget: 85000, scoreMultiplier: 1.15, durationSeconds: 180,
     skyColor: '#292524', fogColor: '#3f3a32', terrainTint: '#f0d79b', sunColor: '#fdba74',
     spawn: { x: -110, z: 80 },
     districts: [
@@ -2284,7 +2284,7 @@ const HEARTLAND_CAMPAIGN = [
   {
     id: 'state-fair-finale', name: 'STATE FAIR', shortName: 'STATE FAIR', station: 'LIVE NETWORK',
     brief: 'Heartland finale. Maximum cameras, maximum spectacle, 25% score bonus.',
-    scoreTarget: 26000, scoreMultiplier: 1.25, durationSeconds: 180,
+    scoreTarget: 105000, scoreMultiplier: 1.25, durationSeconds: 180,
     skyColor: '#240b36', fogColor: '#33134a', terrainTint: '#ffd9a8', sunColor: '#f9a8d4',
     spawn: { x: 118, z: 118 },
     districts: [
@@ -3610,8 +3610,8 @@ let pullVortexTimer = 0;
 const missionObjectives = {
   tornado: [
     { text: "Shatter Water Tower 💧 & Silo 🌾", done: false },
-    { text: "Reach EF-4 Rating (7,000+ PTS)", done: false },
-    { text: "Score 15,000 Total Points", done: false }
+    { text: "Reach EF-4 Rating", detail: () => `${Math.round(efScoreThreshold('ef4')).toLocaleString()}+ PTS`, done: false },
+    { text: "Beat the County Score Target", detail: () => `${getActiveCampaignLevel().scoreTarget.toLocaleString()} PTS`, done: false }
   ],
   supercell: [
     { text: "Spawn 5+ Hail Corridors", count: 0, target: 5, done: false },
@@ -6773,24 +6773,39 @@ function triggerAbility(slot) {
 }
 
 // STRICT STAGE EF CAPS & REAL-TIME EAS SYNC
+// [SW:GAMEPLAY:EF_LADDER] The EF rating is the run's whole sense of climb, and it
+// used to be decorative. Its thresholds were absolute scores - EF-3 at 3,800,
+// EF-4 at 7,000, EF-5 at 11,000 - while a real run finishes near 150,000.
+// Fitting a rate model to two device data points and simulating this ladder put
+// EF-4 at t=60s and EF-5 at t=120s: exactly the stage boundaries. The score gates
+// never bound at all; the clock alone drove the badge, so the tornado sat at
+// maximum size and multiplier for most of every round.
+//
+// Each rung is now a fraction of the county's own scoreTarget, so it has to be
+// earned and it scales with the campaign instead of drifting away from it.
+const EF_LADDER = { ef1: 0.02, ef2: 0.06, ef3: 0.18, ef4: 0.40, ef5: 0.75 };
+function efScoreThreshold(rung) {
+  return EF_LADDER[rung] * (getActiveCampaignLevel().scoreTarget || 45000);
+}
+
 function updateEFRating() {
   let badgeText = 'EF-0';
   let mult = 1.0;
   let scaleVal = 1.0;
 
   if (currentStage === 1) { // STAGE 1 STRICT CAP: EF-2 / HAIL 2.5" / 90 MPH
-    if (destructionScore >= 1500) { badgeText = 'EF-2'; mult = 1.6; scaleVal = 1.25; }
-    else if (destructionScore >= 400) { badgeText = 'EF-1'; mult = 1.25; scaleVal = 1.1; }
+    if (destructionScore >= efScoreThreshold('ef2')) { badgeText = 'EF-2'; mult = 1.6; scaleVal = 1.25; }
+    else if (destructionScore >= efScoreThreshold('ef1')) { badgeText = 'EF-1'; mult = 1.25; scaleVal = 1.1; }
     else { badgeText = 'EF-0'; mult = 1.0; scaleVal = 1.0; }
   } else if (currentStage === 2) { // STAGE 2 UNLOCK: EF-3 / EF-4
-    if (destructionScore >= 7000) { badgeText = 'EF-4'; mult = 2.8; scaleVal = 1.8; }
-    else if (destructionScore >= 3800) { badgeText = 'EF-3'; mult = 2.2; scaleVal = 1.5; }
-    else if (destructionScore >= 1500) { badgeText = 'EF-2'; mult = 1.6; scaleVal = 1.25; }
+    if (destructionScore >= efScoreThreshold('ef4')) { badgeText = 'EF-4'; mult = 2.8; scaleVal = 1.8; }
+    else if (destructionScore >= efScoreThreshold('ef3')) { badgeText = 'EF-3'; mult = 2.2; scaleVal = 1.5; }
+    else if (destructionScore >= efScoreThreshold('ef2')) { badgeText = 'EF-2'; mult = 1.6; scaleVal = 1.25; }
     else { badgeText = 'EF-1'; mult = 1.25; scaleVal = 1.1; }
   } else { // STAGE 3 FINALE UNLOCK: EF-5 OPPORTUNITY
-    if (destructionScore >= 11000) { badgeText = 'EF-5'; mult = 3.8; scaleVal = 2.2; }
-    else if (destructionScore >= 7000) { badgeText = 'EF-4'; mult = 2.8; scaleVal = 1.8; }
-    else if (destructionScore >= 3800) { badgeText = 'EF-3'; mult = 2.2; scaleVal = 1.5; }
+    if (destructionScore >= efScoreThreshold('ef5')) { badgeText = 'EF-5'; mult = 3.8; scaleVal = 2.2; }
+    else if (destructionScore >= efScoreThreshold('ef4')) { badgeText = 'EF-4'; mult = 2.8; scaleVal = 1.8; }
+    else if (destructionScore >= efScoreThreshold('ef3')) { badgeText = 'EF-3'; mult = 2.2; scaleVal = 1.5; }
     else { badgeText = 'EF-2'; mult = 1.6; scaleVal = 1.25; }
   }
 
@@ -6824,8 +6839,8 @@ function updateObjectives() {
     // around 22,000 - so two of the three objectives completed themselves and the
     // only one with any content, the landmarks, was the one players skipped.
     missionObjectives.tornado[0].done = (destroyedLandmarksCount >= 2);
-    missionObjectives.tornado[1].done = (destructionScore >= 7000);
-    missionObjectives.tornado[2].done = (destructionScore >= 15000);
+    missionObjectives.tornado[1].done = (destructionScore >= efScoreThreshold('ef4'));
+    missionObjectives.tornado[2].done = (destructionScore >= getActiveCampaignLevel().scoreTarget);
   } else if (currentStorm === 'supercell') {
     missionObjectives.supercell[0].done = (missionObjectives.supercell[0].count >= 5);
     missionObjectives.supercell[1].done = (missionObjectives.supercell[1].count >= 4);
@@ -6845,7 +6860,13 @@ function renderObjectives() {
     const isDone = o.done;
     const mark = isDone ? '✓' : '⚪';
     const cls = isDone ? 'obj-item done' : 'obj-item';
-    html += `<div class="${cls}">${mark} ${o.text}</div>`;
+    // Objective wording reads its own threshold at render time. Baked-in numbers
+    // are how these drifted six-fold out of scale without anyone noticing.
+    let label = o.text;
+    if (typeof o.detail === 'function') {
+      try { label += ` (${o.detail()})`; } catch { /* level not ready yet */ }
+    }
+    html += `<div class="${cls}">${mark} ${label}</div>`;
   });
 
   // Dynamic Landmark Wording (Removes "(Unlocks in Stage 2)" when Stage 2 begins or when done!)
@@ -6892,11 +6913,14 @@ function finishRun() {
   // Campaign stars and level unlocks read score and objectivesDone directly and
   // are unaffected by this curve, so progression cannot be blocked by it.
   const contentObjectiveDone = Boolean(objs[0] && objs[0].done);
+  // Graded against the county's own target for the same reason the EF ladder is:
+  // fixed numbers here fell six times below a real run within one version.
+  const target = getActiveCampaignLevel().scoreTarget || 45000;
   let grade = 'F';
-  if (doneCount === 3 && destructionScore >= 20000) grade = 'S+';
-  else if (contentObjectiveDone && destructionScore >= 12000) grade = 'A';
-  else if (doneCount >= 1 && destructionScore >= 6000) grade = 'B';
-  else if (destructionScore >= 1500) grade = 'C';
+  if (doneCount === 3 && destructionScore >= target * 1.5) grade = 'S+';
+  else if (contentObjectiveDone && destructionScore >= target) grade = 'A';
+  else if (doneCount >= 1 && destructionScore >= target * 0.4) grade = 'B';
+  else if (destructionScore >= target * 0.1) grade = 'C';
 
   const challengeCount = completedChallengeCount();
   let cosmeticResult = neonFunnelUnlocked ? 'NEON FUNNEL EQUIPPED' : `${challengeCount}/3 TO UNLOCK`;
