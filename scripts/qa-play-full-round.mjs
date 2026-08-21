@@ -138,7 +138,18 @@ try {
   snapshots.push({ label: 'start', elapsedSeconds: 0, ...startState });
 
   const roundStart = Date.now();
-  const hardDeadline = roundStart + 205000;
+  // The run clock is real time, but any frame taking over a second contributes
+  // ZERO to it (a guard against backgrounded tabs). On a slow software renderer
+  // enough frames cross that line for a 180-second run to need well over 180
+  // seconds of wall clock. At the old 205s the deadline was doing double duty as
+  // an unreliable performance test: every run from #28 onward failed here on
+  // `roundCompleted` while finishing the round perfectly well in about 225s.
+  //
+  // This check answers "does a round complete", so give it room to answer that.
+  // Actual pace is reported as runtimeSeconds and wallClockOvershootSeconds
+  // below (runtimeSeconds is already wall clock), which is where a genuine
+  // slowdown should be read from.
+  const hardDeadline = roundStart + 300000;
   while (Date.now() < hardDeadline) {
     runtimeMs = Date.now() - roundStart;
     if (runtimeMs >= nextMoveAt) {
@@ -233,6 +244,7 @@ const report = {
   url: baseUrl,
   mode: 'normal-audio scripted full round',
   runtimeSeconds: Math.round(runtimeMs / 1000),
+  wallClockOvershootSeconds: Math.max(0, Math.round(runtimeMs / 1000) - 180),
   checks,
   summary: {
     finalStage: finalSnapshot.direct?.currentStage ?? null,
