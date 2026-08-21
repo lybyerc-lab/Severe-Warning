@@ -15,6 +15,7 @@
 // then requires the candidate to land inside it. This script's job is only to put
 // the right two builds in front of it.
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { get as httpGet } from 'node:http';
 import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -79,15 +80,31 @@ function serve(port, directory) {
   return child;
 }
 
-async function waitForServer(port) {
-  for (let attempt = 0; attempt < 40; attempt++) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/`);
-      if (response.ok) return;
-    } catch { /* not up yet */ }
-    await new Promise(resolve => setTimeout(resolve, 250));
-  }
-  throw new Error(`Static server on port ${port} never became ready.`);
+// Deliberately not fetch(). fetch keeps its sockets alive in a pool, and killing
+// the static servers at the end of the run left undici holding a connection that
+// had just been torn out from under it - which crashed the whole process with
+// `assert(!this.paused)` AFTER the comparison had finished, failing the step no
+// matter what the verdict was. A raw request that closes its own socket has no
+// pool to outlive the server.
+function waitForServer(port) {
+  const probe = () => new Promise((resolve) => {
+    // agent:false means this connection is not pooled and closes with the
+    // response, so nothing outlives the server we later kill.
+    const request = httpGet({ host: '127.0.0.1', port, path: '/', agent: false }, (response) => {
+      const ok = response.statusCode === 200;
+      response.resume();
+      response.on('end', () => resolve(ok));
+    });
+    request.on('error', () => resolve(false));
+    request.setTimeout(2000, () => { request.destroy(); resolve(false); });
+  });
+  return (async () => {
+    for (let attempt = 0; attempt < 40; attempt++) {
+      if (await probe()) return;
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    throw new Error(`Static server on port ${port} never became ready.`);
+  })();
 }
 
 // A visual gate fails on INTENDED changes too - that is the whole point, and it
