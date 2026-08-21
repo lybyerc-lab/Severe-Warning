@@ -7484,7 +7484,20 @@ function animate(now) {
   // n frames 0.92^n of the error remains. Anything that captures a frame after a
   // fixed, small number of steps therefore inherits wherever this rig had got to
   // beforehand - see applyProductionSliceQaCamera.
-  if (!globalThis.productionQaPrepared && !(typeof globalThis.isPhase5PresentationLatched === 'function' && globalThis.isPhase5PresentationLatched())) {
+  //
+  // qaCameraParked used to be read as a property of globalThis. It never was
+  // one: productionQaPrepared is a top-level `let` (declared further down, in
+  // the next classic script), which makes it a global LEXICAL binding, and those
+  // are not exposed on globalThis. The read was permanently undefined, so this
+  // guard had never once fired and the pose triggerProductionSliceQa pins did
+  // not survive a single frame, in any context - measured at 60.8 units of drift
+  // over 30 frames. Read the binding the way
+  // [SW:ARCH:PHASE5_PRESENTATION_WORLD_BRIDGE] already does; the typeof keeps it
+  // safe if that script never evaluated.
+  const qaCameraParked = typeof productionQaPrepared !== 'undefined' && productionQaPrepared;
+  const presentationLatched = typeof globalThis.isPhase5PresentationLatched === 'function'
+    && globalThis.isPhase5PresentationLatched();
+  if (!qaCameraParked && !presentationLatched) {
     if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {
       const cow = bovineCowCam.cow;
       const cinematicX = cow.x + 23;

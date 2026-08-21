@@ -123,7 +123,12 @@ check('obsolete Phase 5 V1 marker absent', !generatedHtml.includes('MODERNIZATIO
 check('Phase 5 bridge inserted exactly once', generatedHtml.split('[SW:SOURCE:modernization-phase5-presentation-world.js]').length === 2);
 
 const normGeneratedHtml = generatedHtml.replaceAll('\r\n', '\n');
-const cameraGuardMarker = "if (!globalThis.productionQaPrepared && !(typeof globalThis.isPhase5PresentationLatched === 'function' && globalThis.isPhase5PresentationLatched()))";
+// The camera block has to stay guarded by BOTH the QA park flag and the Phase 5
+// presentation latch. This used to pin one frozen expression, which broke the
+// moment the QA flag was fixed to read its lexical binding rather than a
+// globalThis property it never had. Assert the two conditions and the single
+// guard instead, so a refactor of the same intent does not read as a regression.
+const cameraGuardMarker = 'if (!qaCameraParked && !presentationLatched) {';
 const unguardedCameraAnchor = [
   '  if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {',
   '    const cow = bovineCowCam.cow;',
@@ -143,6 +148,10 @@ const unguardedCameraAnchor = [
 ].join('\n');
 
 check('generated output contains camera latch guard exactly once', normGeneratedHtml.split(cameraGuardMarker).length === 2);
+check(
+  'camera latch guard still consults the Phase 5 presentation latch',
+  normGeneratedHtml.includes("const presentationLatched = typeof globalThis.isPhase5PresentationLatched === 'function'"),
+);
 check('unguarded camera block is absent from generated output', !normGeneratedHtml.includes(unguardedCameraAnchor));
 
 // The frozen-base check that used to live here asserted the committed gameplay

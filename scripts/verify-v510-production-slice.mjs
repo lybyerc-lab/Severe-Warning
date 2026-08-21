@@ -60,6 +60,17 @@ for (const marker of [
   check(`HTML marker ${marker}`, html.includes(marker));
 }
 check('runtime is lexically bundled', !html.includes('<script src="runtime/v510-'));
+
+// A top-level `let` in a classic script is a global LEXICAL binding and never a
+// property of globalThis, so reading the QA park flag off globalThis silently
+// yielded undefined. That guard never fired once, and the camera pose
+// triggerProductionSliceQa pins did not survive a single frame: measured at 60.8
+// units of drift over 30 frames before the fix, and 0 after.
+check('QA camera park flag is not read off globalThis', !html.includes('globalThis.productionQaPrepared'));
+check(
+  'QA camera park flag is read lexically',
+  html.includes("const qaCameraParked = typeof productionQaPrepared !== 'undefined' && productionQaPrepared"),
+);
 check('single v5.1.0 identity', html.includes('v5.1.0') && !html.includes('v5.0.0'));
 check('accepted district law preserved', html.includes('[SW:LAW:DISTRICTS-FORWARD-ONLY]'));
 check('accepted Cow 17 law preserved', html.includes('[SW:LAW:SAFE-ANIMALS]'));
