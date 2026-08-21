@@ -2994,7 +2994,62 @@ dirLight.shadow.camera.left = -220;
 dirLight.shadow.camera.right = 220;
 dirLight.shadow.camera.top = 220;
 dirLight.shadow.camera.bottom = -220;
+dirLight.shadow.bias = -0.0007;
+dirLight.shadow.normalBias = 0.6;
 scene.add(dirLight);
+// The target has to be in the scene for its world matrix to update; without it
+// the shadow frustum is pinned to the origin whatever we set here.
+scene.add(dirLight.target);
+
+// [SW:RENDER:SHADOW_FIT]
+// Fit the shadow frustum to the county's content after it is built.
+//
+// The box above is a fixed 440x440 centred on the world origin, and the counties
+// author content out to roughly +/-290 - the signature barn sits at x=-280. So
+// everything past the middle third of the map cast NO shadow at all, and a
+// building with no contact shadow reads as pasted onto the ground rather than
+// standing on it. That, more than any model, is why this looked unfinished.
+//
+// Fitted to the CONTENT, not to the 800x800 terrain plane: most of that plane is
+// empty apron, and covering it would spend the same 2048 texels over four times
+// the area, softening every shadow in the game to buy nothing.
+const SHADOW_FIT_MARGIN = 26;
+const SHADOW_LIGHT_OFFSET = { x: 70, y: 120, z: 70 };
+function fitShadowFrustumToCounty() {
+  if (!dirLight.castShadow) return null;
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, casters = 0;
+  const probe = new THREE.Vector3();
+  scene.traverse(object => {
+    if (!object.castShadow) return;
+    object.getWorldPosition(probe);
+    if (!Number.isFinite(probe.x) || !Number.isFinite(probe.z)) return;
+    casters++;
+    if (probe.x < minX) minX = probe.x;
+    if (probe.x > maxX) maxX = probe.x;
+    if (probe.z < minZ) minZ = probe.z;
+    if (probe.z > maxZ) maxZ = probe.z;
+  });
+  if (!casters) return null;
+  const centerX = (minX + maxX) / 2;
+  const centerZ = (minZ + maxZ) / 2;
+  // One square box, so the shadow texel density is the same along both axes.
+  const half = Math.max((maxX - minX) / 2, (maxZ - minZ) / 2) + SHADOW_FIT_MARGIN;
+  dirLight.target.position.set(centerX, 0, centerZ);
+  dirLight.target.updateMatrixWorld();
+  dirLight.position.set(centerX + SHADOW_LIGHT_OFFSET.x, SHADOW_LIGHT_OFFSET.y, centerZ + SHADOW_LIGHT_OFFSET.z);
+  const camera = dirLight.shadow.camera;
+  camera.left = -half;
+  camera.right = half;
+  camera.top = half;
+  camera.bottom = -half;
+  // The light sits above and to one side, so the far plane has to clear the
+  // diagonal of the box as well as the drop, or the far corners lose their
+  // shadows exactly the way the whole outer band used to.
+  camera.far = Math.max(400, half * 2 + SHADOW_LIGHT_OFFSET.y * 2);
+  camera.updateProjectionMatrix();
+  return { casters, centerX: Number(centerX.toFixed(2)), centerZ: Number(centerZ.toFixed(2)), half: Number(half.toFixed(2)) };
+}
+globalThis.fitShadowFrustumToCounty = fitShadowFrustumToCounty;
 
 // [SW:RENDER:ENVIRONMENT] --- IMAGE-BASED LIGHTING ---
 // MeshStandardMaterial gets a metal's colour almost entirely from what it
@@ -8554,6 +8609,10 @@ function rebuildProductionSlice() {
   if (typeof THREE.sRGBEncoding !== 'undefined') renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMappingExposure = 0.94;
   updateProductionQualityUi();
+  // [SW:RENDER:SHADOW_FIT] Last thing after the county is assembled: the dressing,
+  // barn and tornado layers above are all shadow casters, so the frustum can only
+  // be fitted once they exist.
+  fitShadowFrustumToCounty();
   globalThis.__SW_PRODUCTION_SLICE_READY__ = true;
 }
 
