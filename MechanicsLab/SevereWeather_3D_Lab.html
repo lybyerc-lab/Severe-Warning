@@ -1564,6 +1564,10 @@ function refreshVisualLab() {
 // This is diagnostic-only and does not change normal gameplay input behavior.
 // ============================================================================
 const QA4_FORENSIC_STORAGE_KEY = 'severe_weather_qa4_pause_trace_v1';
+const PHASE2_PLAYER_FORENSICS_GUARD = 'PHASE2_PLAYER_FORENSICS_GUARD_V1';
+function qa4ForensicUiEnabled() {
+  return new URLSearchParams(window.location.search).get('qa4') === 'forensic';
+}
 const qa4Forensics = {
   events: [],
   snapshots: [],
@@ -1645,7 +1649,12 @@ const qa4Forensics = {
     this.lastSnapshot = snapshot;
     window.__SW_QA_PAUSE_TRACE__ = snapshot;
     try { localStorage.setItem(QA4_FORENSIC_STORAGE_KEY, JSON.stringify(snapshot)); } catch (error) {}
-    this.render(snapshot);
+    if (qa4ForensicUiEnabled()) {
+      this.render(snapshot);
+    } else {
+      const trace = getCachedEl('qa4ForensicTrace');
+      if (trace) trace.hidden = true;
+    }
     return snapshot;
   },
 
@@ -1653,6 +1662,12 @@ const qa4Forensics = {
     const trace = getCachedEl('qa4ForensicTrace');
     const text = getCachedEl('qa4ForensicText');
     if (!trace || !text || !snapshot) return;
+    if (!qa4ForensicUiEnabled()) {
+      trace.hidden = true;
+      document.documentElement.dataset.swQaForensics = 'hidden';
+      return;
+    }
+    document.documentElement.dataset.swQaForensics = 'visible';
     const stack = String(snapshot.stack || '').split('\n').slice(0, 7).join('\n');
     const events = snapshot.recentEvents.length
       ? snapshot.recentEvents.map(event => event.type + ' ' + event.target + ' top=' + event.top + ' @' + event.x + ',' + event.y + ' trusted=' + event.trusted).join('\n')
@@ -1674,6 +1689,7 @@ const qa4Forensics = {
 
   install() {
     if (this.observer) return;
+    document.documentElement.dataset.swQaForensics = qa4ForensicUiEnabled() ? 'visible' : 'silent';
     const qa4Mode = new URLSearchParams(window.location.search).get('qa4');
     if (qa4Mode === 'forensic') {
       this.snapshot('forensic-url-opened');

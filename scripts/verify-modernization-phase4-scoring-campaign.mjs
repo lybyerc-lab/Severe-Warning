@@ -25,7 +25,6 @@ const requiredFiles = [
   'src/platform/persistence/campaign-save-schema.ts',
   'src/platform/persistence/campaign-store.ts',
   'runtime/modernization-phase4-scoring-campaign.js',
-  'scripts/apply-modernization-phase4-scoring-campaign.mjs',
   'scripts/qa-modernization-phase4-scoring-campaign.mjs',
 ];
 for (const file of requiredFiles) {

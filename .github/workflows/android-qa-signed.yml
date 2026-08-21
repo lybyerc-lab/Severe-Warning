@@ -141,6 +141,14 @@ jobs:
           GITHUB_SHA="$SEVERE_WEATHER_SOURCE_COMMIT" node scripts/stamp-qa-pages.mjs
           node scripts/verify-qa-package.mjs
           node scripts/verify-v500-campaign.mjs
+          node scripts/verify-v510-production-slice.mjs
+          # The modernization bridges are what let modern-shell.js boot at all.
+          # They shipped missing for months because nothing on this path checked
+          # them; these four run here so a broken bridge fails the APK build.
+          npm run verify:phase2
+          npm run verify:phase3
+          npm run verify:phase4
+          npm run verify:phase5
           node node_modules/@capacitor/cli/bin/capacitor sync android
           cmp -s www/index.html android/app/src/main/assets/public/index.html
           cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav

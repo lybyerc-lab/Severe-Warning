@@ -18,7 +18,6 @@ for (const file of [
   'src/input/input-system.ts',
   'src/abilities/ability-system.ts',
   'runtime/modernization-phase3-input-abilities.js',
-  'scripts/apply-modernization-phase3-input-abilities.mjs',
 ]) {
   try {
     await access(path.join(projectRoot, file));

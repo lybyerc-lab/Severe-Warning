@@ -17,8 +17,6 @@ function check(name, passed, detail = '') {
 const requiredFiles = [
   'src/core/clocks.ts',
   'runtime/modernization-phase2-clocks.js',
-  'scripts/apply-modernization-phase2-clocks.mjs',
-  'scripts/apply-phase2-player-forensics-guard.mjs',
 ];
 for (const file of requiredFiles) {
   try {

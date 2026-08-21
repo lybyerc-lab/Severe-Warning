@@ -1,5 +1,5 @@
 import { access, readFile, writeFile, rm } from 'node:fs/promises';
-import { execFileSync, execSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,14 +8,6 @@ const projectRoot = path.resolve(scriptDir, '..');
 const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
   ? path.resolve(process.env.SEVERE_WEATHER_SOURCE_PATH)
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
-const historicalSourceGitPath = 'MechanicsLab/SevereWeather_3D_Lab.html';
-const phase4BaseRepoPath = process.env.SEVERE_WEATHER_PHASE4_BASE_REPO
-  ? path.resolve(process.env.SEVERE_WEATHER_PHASE4_BASE_REPO)
-  : path.join(projectRoot, 'phase5-base');
-const phase4BaseSourcePath = process.env.SEVERE_WEATHER_PHASE4_BASE_SOURCE_PATH
-  ? path.resolve(process.env.SEVERE_WEATHER_PHASE4_BASE_SOURCE_PATH)
-  : null;
-const phase4BaseSha = 'cd89b5ececa6e95848961d625f84eaa7bc7f72c7';
 
 const checks = [];
 function check(name, passed, detail = '') {
@@ -41,7 +33,6 @@ const requiredFiles = [
   'src/world/setpieces/hart-farm-definition.ts',
   'src/world/setpieces/second-structure-definition.ts',
   'runtime/modernization-phase5-presentation-world.js',
-  'scripts/apply-modernization-phase5-presentation-world.mjs',
   'scripts/qa-modernization-phase5-presentation-world.mjs',
   'scripts/compare-phase5-visual-baseline.mjs',
 ];
@@ -58,7 +49,6 @@ for (const file of requiredFiles) {
 const read = async (...segments) => readFile(path.join(projectRoot, ...segments), 'utf8');
 const html = await readFile(sourcePath, 'utf8');
 const bridge = await read('runtime', 'modernization-phase5-presentation-world.js');
-const apply = await read('scripts', 'apply-modernization-phase5-presentation-world.mjs');
 const renderer = await read('src', 'presentation', 'renderer', 'renderer-system.ts');
 const scene = await read('src', 'presentation', 'scene', 'scene-system.ts');
 const camera = await read('src', 'presentation', 'camera', 'camera-system.ts');
@@ -100,11 +90,7 @@ if (!generatedHtml.includes('MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2')) {
     'scripts/apply-v500-mobile-layout-fix.mjs',
     'scripts/apply-v500-cow-signature-patch.mjs',
     'scripts/apply-v510-production-slice.mjs',
-    'scripts/apply-modernization-phase2-clocks.mjs',
     'scripts/apply-phase2-player-forensics-guard.mjs',
-    'scripts/apply-modernization-phase3-input-abilities.mjs',
-    'scripts/apply-modernization-phase4-scoring-campaign.mjs',
-    'scripts/apply-modernization-phase5-presentation-world.mjs',
   ];
   const tempPath = path.join(projectRoot, 'node_modules', '.phase5-temp-verify.html');
   await writeFile(tempPath, html, 'utf8');
@@ -158,55 +144,13 @@ const unguardedCameraAnchor = [
 check('generated output contains camera latch guard exactly once', normGeneratedHtml.split(cameraGuardMarker).length === 2);
 check('unguarded camera block is absent from generated output', !normGeneratedHtml.includes(unguardedCameraAnchor));
 
-function readCommittedSource(repoPath, revision = 'HEAD') {
-  return execFileSync('git', ['-C', repoPath, 'show', `${revision}:${historicalSourceGitPath}`], {
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
-  });
-}
-
-function firstMismatchIndex(left, right) {
-  const sharedLength = Math.min(left.length, right.length);
-  for (let index = 0; index < sharedLength; index += 1) {
-    if (left.charCodeAt(index) !== right.charCodeAt(index)) return index;
-  }
-  return left.length === right.length ? -1 : sharedLength;
-}
-
-try {
-  const committedSource = readCommittedSource(projectRoot);
-  let acceptedBaseSource;
-  let acceptedBaseDescription;
-
-  try {
-    acceptedBaseSource = readCommittedSource(phase4BaseRepoPath);
-    acceptedBaseDescription = `${phase4BaseRepoPath}@HEAD`;
-  } catch (baseRepoError) {
-    if (phase4BaseSourcePath) {
-      acceptedBaseSource = await readFile(phase4BaseSourcePath, 'utf8');
-      acceptedBaseDescription = phase4BaseSourcePath;
-    } else {
-      acceptedBaseSource = readCommittedSource(projectRoot, phase4BaseSha);
-      acceptedBaseDescription = `${phase4BaseSha}:${historicalSourceGitPath}`;
-    }
-  }
-
-  const mismatchIndex = firstMismatchIndex(committedSource, acceptedBaseSource);
-  check(
-    'committed historical source MechanicsLab/SevereWeather_3D_Lab.html remains clean',
-    mismatchIndex === -1,
-    mismatchIndex === -1
-      ? `matches accepted Phase 4 source from ${acceptedBaseDescription}`
-      : `first mismatch at character ${mismatchIndex}; candidate=${committedSource.length} chars, base=${acceptedBaseSource.length} chars, base source=${acceptedBaseDescription}`,
-  );
-} catch (error) {
-  const failureDetail = (error.stderr || error.stdout || error.message || String(error)).toString().trim();
-  check(
-    'committed historical source MechanicsLab/SevereWeather_3D_Lab.html remains clean',
-    false,
-    `unable to compare committed source with accepted Phase 4 source: ${failureDetail}`,
-  );
-}
+// The frozen-base check that used to live here asserted the committed gameplay
+// source stayed byte-identical to cd89b5e, the "accepted Phase 4 source". That
+// belonged to the patch-chain era, when this file was a frozen base that build
+// scripts rewrote on every build. The chain has been flattened: the gameplay
+// source IS the game and is edited directly, so a check demanding it never
+// change would block all future work. The markers verified above are what
+// actually guard the Phase 5 bridge now.
 
 for (const prohibited of [
   'new THREE.WebGLRenderer',
@@ -215,7 +159,6 @@ for (const prohibited of [
   'requestAnimationFrame(',
 ]) {
   check(`bridge does not create ${prohibited}`, !bridge.includes(prohibited));
-  check(`apply script rejects ${prohibited}`, apply.includes(prohibited));
 }
 
 for (const liveSymbol of [
@@ -298,7 +241,6 @@ check('legacy adapter synchronizes after scenario setup', adapter.includes('__SW
 check('legacy adapter exposes Phase 5 contract probe', adapter.includes('runPresentationWorldContractProbe()'));
 check('application attaches Phase 5 mirrors', app.includes('attachPresentationWorld('));
 
-check('package exposes patch:phase5', packageJson.scripts?.['patch:phase5'] === 'node scripts/apply-modernization-phase5-presentation-world.mjs');
 check('package exposes verify:phase5', packageJson.scripts?.['verify:phase5'] === 'node scripts/verify-modernization-phase5-presentation-world.mjs');
 check('package exposes qa:phase5', packageJson.scripts?.['qa:phase5'] === 'node scripts/qa-modernization-phase5-presentation-world.mjs');
 check('package exposes Phase 5 visual comparison', packageJson.scripts?.['qa:phase5:visual'] === 'node scripts/compare-phase5-visual-baseline.mjs');
