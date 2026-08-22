@@ -3428,8 +3428,98 @@ function addTerrainContour(cx, cz, radiusX, radiusZ, color) {
 // polygon's depth slope, and at this game's shallow chase angle a non-zero factor
 // drags the road surface far enough toward the camera to cut through the tornado.
 // The 0.30 geometric lift already separates the road from the ground.
-const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', roughness: 0.58, metalness: 0.12, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -2 });
-const shoulderMat = new THREE.MeshStandardMaterial({ color: '#64748b', roughness: 0.88, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -1 });
+// [SW:VISUAL:SURFACE_TEXTURES]
+// Painted at load with the same trick createSignMaterial already uses for the
+// HART FARM board: draw into a canvas, hand it to THREE.CanvasTexture. No asset,
+// no request, no bytes in the bundle, and it works offline inside the APK - the
+// constraint that rules out every texture pack and every CDN.
+//
+// The randomness is a seeded LCG rather than Math.random on purpose. These are
+// built the first time a material asks for them, which is not a fixed point in
+// the frame schedule, and the visual gate compares renders pixel for pixel: a
+// texture that came out different on the second build would read as a
+// regression forever.
+const surfaceTextureCache = new Map();
+function createSurfaceTexture(kind) {
+  if (surfaceTextureCache.has(kind)) return surfaceTextureCache.get(kind);
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  let seed = 0;
+  for (let i = 0; i < kind.length; i++) seed = (seed * 31 + kind.charCodeAt(i)) >>> 0;
+  const rand = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 256, 256);
+
+  if (kind === 'plank') {
+    // Vertical boards: barns are board-and-batten, and that vertical line is
+    // most of what makes a red box read as a barn at all.
+    for (let x = 0; x < 256; x += 16) {
+      const shade = Math.round(255 * (0.86 + rand() * 0.20));
+      ctx.fillStyle = `rgb(${shade}, ${shade}, ${shade})`;
+      ctx.fillRect(x, 0, 15, 256);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.30)';
+      ctx.fillRect(x + 15, 0, 1, 256);
+    }
+    for (let i = 0; i < 220; i++) {
+      ctx.strokeStyle = rand() > 0.5 ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = rand() * 1.6;
+      const x = rand() * 256;
+      const y = rand() * 256;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (rand() - 0.5) * 3, y + 20 + rand() * 60);
+      ctx.stroke();
+    }
+  } else if (kind === 'shingle') {
+    // Staggered courses; the half-tab offset on alternating rows is what stops
+    // it reading as graph paper.
+    const rowH = 22;
+    for (let row = 0, y = 0; y < 256; row++, y += rowH) {
+      const offset = (row % 2) * 20;
+      for (let x = -40; x < 256; x += 40) {
+        const shade = Math.round(255 * (0.80 + rand() * 0.26));
+        ctx.fillStyle = `rgb(${shade}, ${shade}, ${shade})`;
+        ctx.fillRect(x + offset, y, 38, rowH - 2);
+      }
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.34)';
+      ctx.fillRect(0, y + rowH - 2, 256, 2);
+    }
+  } else if (kind === 'asphalt' || kind === 'gravel') {
+    const grains = kind === 'asphalt' ? 2600 : 1500;
+    for (let i = 0; i < grains; i++) {
+      const dark = kind === 'asphalt' ? 'rgba(0, 0, 0, 0.16)' : 'rgba(0, 0, 0, 0.22)';
+      const light = kind === 'asphalt' ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.16)';
+      ctx.fillStyle = rand() > 0.5 ? dark : light;
+      ctx.beginPath();
+      ctx.arc(rand() * 256, rand() * 256, (kind === 'asphalt' ? 0.0 : 0.7) + rand() * (kind === 'asphalt' ? 1.9 : 2.6), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 4;
+  surfaceTextureCache.set(kind, texture);
+  return texture;
+}
+
+// One canvas per kind, but repeat is a property of the texture, so each surface
+// takes its own clone rather than fighting over a shared repeat vector.
+function surfaceMap(kind, repeatX, repeatY) {
+  const texture = createSurfaceTexture(kind).clone();
+  texture.needsUpdate = true;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(repeatX, repeatY);
+  return texture;
+}
+
+const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', map: surfaceMap('asphalt', 3, 150), roughness: 0.58, metalness: 0.12, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -2 });
+const shoulderMat = new THREE.MeshStandardMaterial({ color: '#64748b', map: surfaceMap('gravel', 4, 190), roughness: 0.88, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -1 });
 const laneMat = new THREE.MeshBasicMaterial({ color: '#f8d568' });
 const powerPoles = [];
 const activeGridZapEffects = [];
@@ -4187,10 +4277,102 @@ const derechoLinesMat = new THREE.LineBasicMaterial({ color: '#38bdf8', transpar
 const derechoWindLines = new THREE.LineSegments(derechoLinesGeo, derechoLinesMat);
 derechoGroup.add(derechoWindLines);
 
-const lightningGeo = new THREE.BufferGeometry();
-const lightningMat = new THREE.LineBasicMaterial({ color: '#38bdf8', linewidth: 4 });
-const lightningMesh = new THREE.Line(lightningGeo, lightningMat);
+// [SW:VISUAL:LIGHTNING]
+// Tube geometry, not THREE.Line. LineBasicMaterial.linewidth is ignored by the
+// WebGL renderer on essentially every platform - Three's own docs say so, and
+// ANGLE, which is what Chrome uses on Android, is one of them. This bolt asked
+// for linewidth 4 and shipped as a one-pixel hairline on the actual target
+// device. A tube is real geometry, so it has real thickness.
+//
+// Two nested tubes: a white-hot core inside a wider additive corona. That pair
+// is what makes a bolt look like it is emitting light rather than being a line
+// drawn on top of the sky.
+// [SW:VISUAL:RAIN_CURTAIN]
+// A distant rain shaft, not rain on the camera.
+//
+// Tornadoes form in the rain-free base of a supercell: the precipitation core
+// sits behind the mesocyclone, which is why classic tornado photography shows a
+// dry, dusty foreground under a black sky. Rain particles around the funnel
+// would be backwards, would grey out the destruction the game is about, and
+// would add thousands of points to a mobile draw budget that already carries a
+// particle system and instanced debris. A shaft on the horizon says "supercell"
+// in one look, costs one open-ended cylinder, and never touches the play area.
+const rainCurtainUniforms = {
+  uTime: { value: 0 },
+  uColor: { value: new THREE.Color('#7f92ab') },
+  uOpacity: { value: 0.42 }
+};
+const rainCurtain = new THREE.Mesh(
+  new THREE.PlaneGeometry(760, 210, 1, 1),
+  new THREE.ShaderMaterial({
+    uniforms: rainCurtainUniforms,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    fog: false,
+    vertexShader: [
+      'varying vec2 vUv;',
+      'void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }'
+    ].join('\n'),
+    fragmentShader: [
+      'uniform float uTime; uniform vec3 uColor; uniform float uOpacity;',
+      'varying vec2 vUv;',
+      'float rainHash(float x){ return fract(sin(x * 127.1) * 43758.5453123); }',
+      'void main(){',
+      '  float column = vUv.x * 220.0 + uTime * 0.6;',
+      '  float streak = rainHash(floor(column));',
+      '  float fall = fract(vUv.y * 3.0 - uTime * (0.35 + streak * 0.5));',
+      '  float intensity = smoothstep(0.55, 1.0, streak) * smoothstep(0.0, 0.35, fall);',
+      // Soft at both ends: the shaft hangs out of the cloud and dissolves before
+      // it reaches the ground, never terminating in a hard line.
+      '  float shape = smoothstep(0.0, 0.35, vUv.y) * smoothstep(1.0, 0.62, vUv.y);',
+      '  float alpha = uOpacity * shape * (0.35 + intensity * 0.85);',
+      '  gl_FragColor = vec4(uColor, alpha);',
+      '}'
+    ].join('\n')
+  })
+);
+// Pinned to a map coordinate the shaft sat behind the camera half the time. A
+// real precipitation core travels with the supercell, so it trails the storm at
+// a fixed bearing instead - beyond the funnel from the chase camera's usual
+// side, far enough out to stay on the horizon and out of the play area.
+rainCurtain.position.set(0, 74, 0);
+rainCurtain.renderOrder = -1;
+rainCurtain.frustumCulled = false;
+scene.add(rainCurtain);
+
+const lightningMat = new THREE.MeshBasicMaterial({
+  color: '#eaf6ff', transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending
+});
+const lightningGlowMat = new THREE.MeshBasicMaterial({
+  color: '#38bdf8', transparent: true, opacity: 0.42, depthWrite: false, blending: THREE.AdditiveBlending
+});
+// The old Line was added to the scene and never hidden, so the last bolt stayed
+// drawn for the rest of the run. At one pixel nobody noticed; at tube width it
+// would be glaring, so the bolt now has a lifetime.
+let lightningVisibleUntil = 0;
+const lightningMesh = new THREE.Mesh(new THREE.BufferGeometry(), lightningMat);
+const lightningGlowMesh = new THREE.Mesh(new THREE.BufferGeometry(), lightningGlowMat);
+lightningMesh.frustumCulled = false;
+lightningGlowMesh.frustumCulled = false;
+lightningMesh.visible = false;
+lightningGlowMesh.visible = false;
 scene.add(lightningMesh);
+scene.add(lightningGlowMesh);
+
+// Recursive midpoint displacement. A fixed five-step walk gave a lazy zigzag
+// with the same character every strike; subdividing and offsetting the midpoint
+// gives detail at every scale, which is what real lightning has.
+function buildLightningPath(start, end, displacement, depth) {
+  if (depth <= 0 || start.distanceTo(end) < 3.0) return [start, end];
+  const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+  mid.x += (Math.random() - 0.5) * displacement;
+  mid.y += (Math.random() - 0.5) * displacement * 0.28;
+  mid.z += (Math.random() - 0.5) * displacement;
+  const head = buildLightningPath(start, mid, displacement * 0.55, depth - 1);
+  const tail = buildLightningPath(mid, end, displacement * 0.55, depth - 1);
+  return head.concat(tail.slice(1));
+}
 
 // World Objects & Visually Differentiated 4-District Layout
 const targets = [];
@@ -5630,17 +5812,20 @@ function triggerSubstationBlackoutEvent() {
 }
 
 function triggerLightningStrike(targetX, targetZ) {
-  const points = [];
-  let cx = storm.pos.x, cy = 42, cz = storm.pos.z;
-  points.push(new THREE.Vector3(cx, cy, cz));
-  for (let i = 0; i < 5; i++) {
-    cx += (Math.random() - 0.5) * 14;
-    cy -= 8;
-    cz += (Math.random() - 0.5) * 14;
-    points.push(new THREE.Vector3(cx, cy, cz));
-  }
-  points.push(new THREE.Vector3(targetX, terrainHeightAt(targetX, targetZ), targetZ));
-  lightningGeo.setFromPoints(points);
+  const start = new THREE.Vector3(storm.pos.x, 42, storm.pos.z);
+  const end = new THREE.Vector3(targetX, terrainHeightAt(targetX, targetZ), targetZ);
+  const points = buildLightningPath(start, end, 16, 5);
+
+  // A tube needs a curve, and the geometry is rebuilt per strike, so the old one
+  // has to go back to the GPU rather than leak once per bolt for a whole run.
+  const curve = new THREE.CatmullRomCurve3(points);
+  lightningMesh.geometry.dispose();
+  lightningGlowMesh.geometry.dispose();
+  lightningMesh.geometry = new THREE.TubeGeometry(curve, Math.min(96, points.length * 2), 0.30, 5, false);
+  lightningGlowMesh.geometry = new THREE.TubeGeometry(curve, Math.min(96, points.length * 2), 0.95, 5, false);
+  lightningMesh.visible = true;
+  lightningGlowMesh.visible = true;
+  lightningVisibleUntil = performance.now() + 140;
 
   scene.background.set('#38bdf8');
   skyDomeUniforms.uFlash.value = 0.9;
@@ -7356,6 +7541,25 @@ function animate(now) {
   // clock, so it keeps moving on the menu and while paused - a storm that stops
   // when the game does looks like a painted backdrop.
   skyDomeUniforms.uTime.value = now * 0.001;
+  rainCurtainUniforms.uTime.value = now * 0.001;
+  // A plane rather than a cylinder wedge: which way a wedge faces depends on its
+  // theta range and rotation, and it kept ending up edge-on or behind the
+  // camera. A plane parked square across the storm's far side is predictable.
+  rainCurtain.position.set(storm.pos.x - 30, 96, storm.pos.z - 300);
+
+  // [SW:VISUAL:LIGHTNING] Bolts decay over their last 90ms rather than vanishing
+  // on a frame boundary, which reads as a flicker rather than a cut.
+  if (lightningMesh.visible) {
+    const remaining = lightningVisibleUntil - now;
+    if (remaining <= 0) {
+      lightningMesh.visible = false;
+      lightningGlowMesh.visible = false;
+    } else {
+      const fade = Math.min(1, remaining / 90);
+      lightningMat.opacity = 0.95 * fade;
+      lightningGlowMat.opacity = 0.42 * fade;
+    }
+  }
   if (now - fpsTimer >= 1000) {
     fps = frameCount;
     frameCount = 0;
@@ -8144,6 +8348,7 @@ function clearProductionSlice() {
 function productionMaterial(color, options = {}) {
   return new THREE.MeshStandardMaterial({
     color,
+    map: options.map || null,
     roughness: options.roughness ?? 0.74,
     metalness: options.metalness ?? 0.02,
     transparent: options.transparent === true,
@@ -8537,13 +8742,16 @@ function createProductionBarn() {
   productionSliceRoot.add(group);
 
   const foundation = addProductionPart(group, new THREE.BoxGeometry(24, 0.7, 18), '#7a746c', 0, 0.35, 0, { roughness: 0.95 });
-  const bodyMaterial = productionMaterial(campaignIndex === 3 ? '#7a2f56' : '#a43d32', { roughness: 0.82 });
+  // [SW:VISUAL:SURFACE_TEXTURES] Board-and-batten on the walls, staggered courses
+  // on the roof. The barn is what the camera is pointed at for most of a run, so
+  // it is the surface where flat untextured colour showed most.
+  const bodyMaterial = productionMaterial(campaignIndex === 3 ? '#7a2f56' : '#a43d32', { roughness: 0.82, map: surfaceMap('plank', 4, 2) });
   const frontWall = addProductionPart(group, new THREE.BoxGeometry(22, 10, 0.75), '#a43d32', 0, 5.3, -8.55, { material: bodyMaterial });
-  const backWall = addProductionPart(group, new THREE.BoxGeometry(22, 10, 0.75), '#8c342d', 0, 5.3, 8.55, { roughness: 0.84 });
-  const leftWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', -10.65, 5.3, 0, { roughness: 0.84 });
-  const rightWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', 10.65, 5.3, 0, { roughness: 0.84 });
+  const backWall = addProductionPart(group, new THREE.BoxGeometry(22, 10, 0.75), '#8c342d', 0, 5.3, 8.55, { roughness: 0.84, map: surfaceMap('plank', 4, 2) });
+  const leftWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', -10.65, 5.3, 0, { roughness: 0.84, map: surfaceMap('plank', 3, 2) });
+  const rightWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', 10.65, 5.3, 0, { roughness: 0.84, map: surfaceMap('plank', 3, 2) });
 
-  const roofMaterial = productionMaterial('#27313d', { roughness: 0.68, metalness: 0.08 });
+  const roofMaterial = productionMaterial('#27313d', { roughness: 0.68, metalness: 0.08, map: surfaceMap('shingle', 3, 4) });
   const roofLeft = addProductionPart(group, new THREE.BoxGeometry(13.3, 0.62, 19), '#27313d', -5.1, 13.2, 0, { material: roofMaterial, rotation: { z: 0.55 } });
   const roofRight = addProductionPart(group, new THREE.BoxGeometry(13.3, 0.62, 19), '#27313d', 5.1, 13.2, 0, { material: roofMaterial.clone(), rotation: { z: -0.55 } });
   const ridge = addProductionPart(group, new THREE.BoxGeometry(0.75, 0.8, 19.4), '#18202b', 0, 16.55, 0, { roughness: 0.7 });
