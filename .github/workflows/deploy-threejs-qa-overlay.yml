@@ -1,12 +1,31 @@
 name: Deploy Three.js QA Overlay
 
+# COMPLETED ONE-TIME PROMOTION -- retained as a record, not a live job.
+#
+# This ran twice on 2026-08-08 (runs 1 and 2, both successful) and promoted the
+# sealed Three.js visual-production build onto the QA Pages site. It cannot
+# succeed again: it downloads from two hardcoded historical run ids and both
+# artifacts have since passed their retention window.
+#   run 31266354373  github-pages                               expired
+#   run 31279291767  severe-weather-threejs-visual-production-5  expired
+#
+# The push trigger was removed rather than the file, because this documents how
+# the promotion was actually performed. It previously fired on any push touching
+# this file, and since it holds `concurrency: group: pages` with
+# cancel-in-progress, an incidental edit would cancel an in-flight
+# deploy-qa-pages run and then fail at the download step -- a dead workflow able
+# to interrupt a live deploy.
+#
+# Dispatching it manually will still fail at the first download step. To promote
+# a new build, point the run ids at current runs with unexpired artifacts, or
+# write a fresh workflow.
+#
+# Note: download-artifact is deliberately pinned to v4. The artifact format is
+# versioned and v4 is the correct reader for the artifacts named above; bumping
+# it in step with the checkout actions would break the read, not modernize it.
+
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - qa
-    paths:
-      - '.github/workflows/deploy-threejs-qa-overlay.yml'
 
 permissions:
   contents: read
