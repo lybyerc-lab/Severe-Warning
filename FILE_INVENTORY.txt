@@ -11,6 +11,7 @@
 .github/workflows/deploy-threejs-qa-overlay.yml
 .github/workflows/qa-autoplay-full-round.yml
 .github/workflows/threejs-production-slice.yml
+.github/workflows/validate-project.yml
 .gitignore
 AGENTS.md
 Assets/SevereWeather/Editor/ProductionSliceBuilder.cs

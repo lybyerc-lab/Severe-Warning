@@ -15,15 +15,15 @@ name: Archive branch tags
 
 # Two triggers on purpose.
 #
-# workflow_dispatch is the one you want, but GitHub only registers dispatchable
-# workflows from the DEFAULT branch, and this repo's default is `main`, which
-# the QA sessions cannot push to (and the UI currently refuses to change it:
-# "Could not change default branch"). So this workflow does not appear in the
-# Actions tab at all and dispatching it returns 404.
+# workflow_dispatch is the one you want. GitHub only registers dispatchable
+# workflows from the DEFAULT branch; that default is now `qa`, so this workflow
+# does appear in the Actions tab and can be dispatched normally. It was not
+# always so -- while `main` was still default this file was invisible there and
+# dispatching returned 404, which is why the push trigger below exists.
 #
-# `push` has no such requirement: a workflow on the pushed branch runs. So the
-# tags can be created by writing to .github/archive-tags.trigger, which is the
-# only lever available from a session scoped to the qa branch.
+# `push` has no such requirement: a workflow on the pushed branch runs. It is
+# kept as a fallback, and because writing to .github/archive-tags.trigger is
+# still the only lever available from a session scoped to the qa branch.
 #
 # Put `apply` in that file to create tags. Anything else is a dry run.
 on:

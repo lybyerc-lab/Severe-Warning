@@ -1,0 +1,40 @@
+name: Validate project
+
+# Runs Tools/validate_project.py, which asserts required files exist, checks the
+# Unity package manifest, lints C# for brace balance / tabs / namespace, scans
+# text files for committed JWTs, and holds FILE_INVENTORY.txt against the real
+# tracked file set.
+#
+# It exists as CI because that last check is the one that rots. The inventory is
+# a checked-in listing, so every added or removed file invalidates it, and it had
+# drifted 116 files behind before anyone noticed -- the validator was documented
+# in REPOSITORY_BOOTSTRAP.md as a manual step and nothing ran it.
+#
+# If this fails on FILE_INVENTORY.txt, regenerate it the same way the validator
+# builds its expectation:
+#   git ls-files --cached --others --exclude-standard | LC_ALL=C sort > FILE_INVENTORY.txt
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [qa]
+  pull_request:
+    branches: [qa]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-project-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Run project validator
+        shell: bash
+        run: python3 Tools/validate_project.py

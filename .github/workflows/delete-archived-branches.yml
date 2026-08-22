@@ -18,10 +18,11 @@ name: Delete archived branches
 #      This repo has PR chains up to ten deep, so this rule matters more than
 #      it looks.
 #
-# Runs on push because GitHub only registers workflow_dispatch workflows from
-# the default branch, which is main, which QA sessions cannot push to. Put
-# `apply` in .github/delete-branches.trigger to arm it; anything else is a dry
-# run.
+# The push trigger dates from when `main` was still the default branch: GitHub
+# only registers workflow_dispatch workflows from the default, so this file was
+# invisible in the Actions tab and could not be dispatched. `qa` is now default,
+# so dispatch works -- the push trigger is kept as a fallback. Put `apply` in
+# .github/delete-branches.trigger to arm it; anything else is a dry run.
 
 on:
   workflow_dispatch:
