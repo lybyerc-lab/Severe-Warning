@@ -1,0 +1,133 @@
+name: Delete archived branches
+
+# Delete branches whose history is already preserved as an archive/<branch> tag.
+#
+# Every deletion here is recoverable: `git push origin <sha>:refs/heads/<name>`
+# from the tag brings a branch back exactly as it was. That is only true while
+# the invariants below hold, so they are enforced at RUN TIME rather than
+# trusted from a list computed earlier - branches move.
+#
+# A branch is deleted only when ALL of these are true:
+#   1. it is not qa (live trunk), main (default), or claude/* (agent working)
+#   2. an archive/<branch> tag exists
+#   3. that tag points at EXACTLY the branch's current tip - if the branch has
+#      advanced since tagging, the new commits are not archived, so it is left
+#      alone
+#   4. it is neither the head nor the base of an open pull request - deleting a
+#      head closes its PR, and deleting a base closes every PR stacked on it.
+#      This repo has PR chains up to ten deep, so this rule matters more than
+#      it looks.
+#
+# Runs on push because GitHub only registers workflow_dispatch workflows from
+# the default branch, which is main, which QA sessions cannot push to. Put
+# `apply` in .github/delete-branches.trigger to arm it; anything else is a dry
+# run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List what would be deleted without deleting anything'
+        type: boolean
+        default: true
+  push:
+    branches: [qa]
+    paths:
+      - '.github/delete-branches.trigger'
+      - '.github/workflows/delete-archived-branches.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: delete-archived-branches
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out with full history and all refs
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete archived branches
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISPATCH_DRY_RUN: ${{ inputs.dry_run }}
+          EVENT: ${{ github.event_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          git fetch --prune --tags origin '+refs/heads/*:refs/remotes/origin/*'
+
+          if [ "$EVENT" = "push" ]; then
+            want="$(tr -d '[:space:]' < .github/delete-branches.trigger 2>/dev/null || echo dry)"
+            if [ "$want" = "apply" ]; then DRY_RUN=false; else DRY_RUN=true; fi
+            echo "push trigger: .github/delete-branches.trigger says '$want' -> dry_run=$DRY_RUN"
+          else
+            DRY_RUN="${DISPATCH_DRY_RUN:-true}"
+          fi
+
+          # Every ref an open PR depends on, head and base alike.
+          gh pr list --state open --limit 300 --json headRefName,baseRefName \
+            | jq -r '.[] | .headRefName, .baseRefName' | sort -u > /tmp/pr_refs.txt
+          echo "branches involved in open PRs: $(wc -l < /tmp/pr_refs.txt)"
+
+          deleted=0; kept=0; no_tag=0; moved=0; in_pr=0; planned=0
+
+          while read -r ref; do
+            branch="${ref#refs/remotes/origin/}"
+            [ "$branch" = "HEAD" ] && continue
+
+            case "$branch" in
+              qa|main|"$DEFAULT_BRANCH"|claude/*)
+                kept=$((kept + 1)); continue ;;
+            esac
+
+            if grep -qxF "$branch" /tmp/pr_refs.txt; then
+              echo "skip  $branch - open pull request depends on it"
+              in_pr=$((in_pr + 1)); continue
+            fi
+
+            tag_sha="$(git rev-parse -q --verify "refs/tags/archive/$branch" || true)"
+            if [ -z "$tag_sha" ]; then
+              echo "SKIP  $branch - no archive tag; run 'Archive branch tags' first"
+              no_tag=$((no_tag + 1)); continue
+            fi
+
+            branch_sha="$(git rev-parse "origin/$branch")"
+            if [ "$tag_sha" != "$branch_sha" ]; then
+              echo "SKIP  $branch - advanced past its tag ($(echo "$tag_sha" | cut -c1-7) -> $(echo "$branch_sha" | cut -c1-7)); re-tag first"
+              moved=$((moved + 1)); continue
+            fi
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete $branch ($(echo "$branch_sha" | cut -c1-7)) - restorable from archive/$branch"
+              planned=$((planned + 1))
+            else
+              git push origin --delete "$branch"
+              deleted=$((deleted + 1))
+            fi
+          done < <(git for-each-ref --format='%(refname)' refs/remotes/origin | sort)
+
+          echo
+          echo "kept (trunk/agent): $kept"
+          echo "held by open PRs:   $in_pr"
+          echo "missing a tag:      $no_tag"
+          echo "moved past its tag: $moved"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "DRY RUN: $planned branch(es) would be deleted."
+            echo "Put 'apply' in .github/delete-branches.trigger to do it."
+            exit 0
+          fi
+
+          echo "deleted: $deleted"
+          echo "branches remaining: $(git ls-remote --heads origin | wc -l)"
+          echo
+          echo "To restore any of them:"
+          echo "  git push origin refs/tags/archive/<branch>:refs/heads/<branch>"
