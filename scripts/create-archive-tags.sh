@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Create one archive/<branch> tag per remote branch, then push them.
 #
-# Why this is a script you run rather than something the QA automation did:
-# the automation session is scoped to push the `qa` branch only, and the remote
-# rejects tag pushes from it with HTTP 403. Creating these tags needs a token
-# with write access to refs/tags/*.
+# Prefer the workflow: Actions -> "Archive branch tags" -> Run workflow.
+# It does exactly this with the repository's own token. Use this script only if
+# you would rather run it locally.
+#
+# Neither can be done from a QA agent session: those reach GitHub through a
+# proxy that refuses ref writes outright ("Write access to this GitHub API path
+# is not permitted through this proxy"), and their git credential is scoped to
+# the qa branch, so `git push --tags` returns 403.
 #
 # Run this BEFORE deleting any branch. Tags are what keep the commits reachable;
 # Docs/BRANCH_ARCHIVE_MANIFEST.md only records the SHAs, which is not the same

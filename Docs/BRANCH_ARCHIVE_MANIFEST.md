@@ -9,8 +9,17 @@ This repository carries 127 remote branches across **two unrelated histories**
 their tips need to be recorded somewhere durable.
 
 The intended safety net was an `archive/<branch>` tag per branch. Those tags
-**have not been created**: the automation session that produced this file is
-scoped to push the `qa` branch only, and tag pushes are rejected with HTTP 403.
+**have not been created yet**. An agent session cannot create them: it reaches
+GitHub through a proxy that refuses ref writes outright ("Write access to this
+GitHub API path is not permitted through this proxy"), and its git credential is
+scoped to the `qa` branch, so `git push --tags` returns 403. There is no `gh`
+CLI in that environment either, and the GitHub MCP tool set exposes `get_tag`
+but no tag-creation call.
+
+To create them, run the **Archive branch tags** workflow
+(Actions -> Archive branch tags -> Run workflow, with `dry_run` unchecked). It
+runs with the repository's own token and is not proxied.
+`scripts/create-archive-tags.sh` does the same thing locally.
 
 **A manifest is not a substitute for tags.** Tags keep commits reachable so git
 never garbage-collects them; this file only records the SHAs. Do not delete any
