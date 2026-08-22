@@ -4,20 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - agent/v500-heartland-campaign
-  push:
-    branches:
-      - agent/threejs-production-slice
-    paths:
-      - '.github/workflows/threejs-production-slice.yml'
-      - 'MechanicsLab/**'
-      - 'assets/**'
-      - 'scripts/**'
-      - 'android/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'capacitor.config.json'
+      - qa
 
 permissions:
   contents: read

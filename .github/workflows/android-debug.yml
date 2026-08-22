@@ -10,7 +10,7 @@ on:
         type: string
   pull_request:
     branches:
-      - main
+      - qa
     paths:
       - '.github/workflows/android-debug.yml'
       - 'MechanicsLab/**'
