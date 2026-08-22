@@ -47,6 +47,21 @@ The enjoyable Three.js/WebGL game remains production. Capacitor packages the sam
 - GitHub Actions remains the build and verification path.
 - GitHub Pages is the approved future hosted QA-preview path.
 
+### Inactive engine trees
+
+The historical experiments are still in the repository, unbuilt and unshipped.
+Each carries a README stating that it is inactive and pointing back here:
+
+| Tree | Contents | Marker |
+|---|---|---|
+| `Assets/SevereWeather/`, `Packages/`, `ProjectSettings/` | Unity 6 slice, 34 C# files | `Assets/SevereWeather/README.md` |
+| `Godot/` | Godot 4.7 scaffold, 3 files | `Godot/README.md` |
+
+Neither is referenced by any workflow. Both were last touched in `be1d4e6`
+(2026-08-04). They are retained because the engine-evaluation docs cite them
+directly, and because `Tools/validate_project.py` asserts on several Unity files
+-- removing either tree means updating that validator in the same change.
+
 ## Protected accepted behavior
 
 Future work must preserve:
