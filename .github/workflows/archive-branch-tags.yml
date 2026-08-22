@@ -13,6 +13,19 @@ name: Archive branch tags
 # the SHAs, but a list of SHAs does not stop garbage collection - so nothing
 # should be deleted until this has run and the tags are confirmed.
 
+# Two triggers on purpose.
+#
+# workflow_dispatch is the one you want, but GitHub only registers dispatchable
+# workflows from the DEFAULT branch, and this repo's default is `main`, which
+# the QA sessions cannot push to (and the UI currently refuses to change it:
+# "Could not change default branch"). So this workflow does not appear in the
+# Actions tab at all and dispatching it returns 404.
+#
+# `push` has no such requirement: a workflow on the pushed branch runs. So the
+# tags can be created by writing to .github/archive-tags.trigger, which is the
+# only lever available from a session scoped to the qa branch.
+#
+# Put `apply` in that file to create tags. Anything else is a dry run.
 on:
   workflow_dispatch:
     inputs:
@@ -20,6 +33,11 @@ on:
         description: 'List what would be tagged without creating anything'
         type: boolean
         default: true
+  push:
+    branches: [qa]
+    paths:
+      - '.github/archive-tags.trigger'
+      - '.github/workflows/archive-branch-tags.yml'
 
 permissions:
   contents: write
@@ -40,10 +58,22 @@ jobs:
       - name: Create archive tags
         shell: bash
         env:
-          DRY_RUN: ${{ inputs.dry_run }}
+          DISPATCH_DRY_RUN: ${{ inputs.dry_run }}
+          EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
           git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+          # On dispatch the checkbox decides. On push the trigger file decides,
+          # so that a session which can only write to qa can still say "apply"
+          # deliberately rather than having every push create refs.
+          if [ "$EVENT" = "push" ]; then
+            want="$(tr -d '[:space:]' < .github/archive-tags.trigger 2>/dev/null || echo dry)"
+            if [ "$want" = "apply" ]; then DRY_RUN=false; else DRY_RUN=true; fi
+            echo "push trigger: .github/archive-tags.trigger says '$want' -> dry_run=$DRY_RUN"
+          else
+            DRY_RUN="${DISPATCH_DRY_RUN:-true}"
+          fi
 
           created=0
           existing=0
