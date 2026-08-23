@@ -1,2 +1,3 @@
 trigger cow-17 V2 export
 retry with pinned exporter versions
+retry with geometry contract verification
