@@ -176,6 +176,7 @@ android/gradlew.bat
 android/settings.gradle
 android/variables.gradle
 assets/models/README.md
+assets/models/cow-17.glb
 capacitor.config.json
 package.json
 pnpm-lock.yaml
