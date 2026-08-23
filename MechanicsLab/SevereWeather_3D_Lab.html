@@ -3076,6 +3076,14 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// [SW:RENDER:COLOR_SPACE]
+// Set here, beside toneMapping and shadowMap, rather than inside the production
+// slice builder where it used to live alone. Every other renderer-wide setting
+// is established at construction; leaving this one to a builder meant any path
+// that did not assemble the slice rendered with linear output - washed out, and
+// with ACES tone mapping applied on top of the wrong transfer function. The
+// guard keeps r128 and any later Three that renamed this property both safe.
+if (typeof THREE.sRGBEncoding !== 'undefined') renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.setClearColor('#0f172a');
 scene.fog = new THREE.FogExp2('#0f172a', 0.0022);
 
@@ -3499,6 +3507,26 @@ function addTerrainContour(cx, cz, radiusX, radiusZ, color) {
 // the frame schedule, and the visual gate compares renders pixel for pixel: a
 // texture that came out different on the second build would read as a
 // regression forever.
+// [SW:RENDER:TEXTURE_FILTERING]
+// Anisotropic filtering is what keeps a texture sharp when its surface runs away
+// from the camera. It was pinned at 4 while the camera looked steeply down and
+// almost no ground reached a grazing angle. With the STORM framing the county
+// now runs to a visible horizon, so the roads and crop rows that were previously
+// off-screen are exactly the pixels this controls.
+//
+// try/catch rather than a typeof guard on purpose: PRODUCTION_QUALITY_CONFIG is
+// a `const` declared further down this file, and `typeof` on a const in its
+// temporal dead zone THROWS rather than yielding 'undefined'. Surface textures
+// are built during world assembly, which can run before that declaration is
+// evaluated, so the read has to be genuinely guarded.
+function preferredAnisotropy() {
+  let want = 4;
+  try { want = productionQualityConfig().anisotropy ?? 4; } catch (_) { want = 4; }
+  let max = 1;
+  try { max = renderer.capabilities.getMaxAnisotropy(); } catch (_) { max = 1; }
+  return Math.max(1, Math.min(want, max));
+}
+
 const surfaceTextureCache = new Map();
 function createSurfaceTexture(kind) {
   if (surfaceTextureCache.has(kind)) return surfaceTextureCache.get(kind);
@@ -3562,7 +3590,7 @@ function createSurfaceTexture(kind) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.anisotropy = 4;
+  texture.anisotropy = preferredAnisotropy();
   surfaceTextureCache.set(kind, texture);
   return texture;
 }
@@ -8311,10 +8339,10 @@ requestAnimationFrame(animate);
 // ============================================================================
 const PRODUCTION_QUALITY_LEVELS = ['LOW', 'BALANCED', 'HIGH', 'SHOWCASE'];
 const PRODUCTION_QUALITY_CONFIG = {
-  LOW: { ribbons: 1, debris: 10, dust: 6, trees: 18, cropRows: 12, shadows: false },
-  BALANCED: { ribbons: 2, debris: 18, dust: 9, trees: 28, cropRows: 18, shadows: true },
-  HIGH: { ribbons: 3, debris: 26, dust: 12, trees: 38, cropRows: 24, shadows: true },
-  SHOWCASE: { ribbons: 4, debris: 34, dust: 15, trees: 46, cropRows: 30, shadows: true }
+  LOW: { ribbons: 1, debris: 10, dust: 6, trees: 18, cropRows: 12, shadows: false, anisotropy: 2 },
+  BALANCED: { ribbons: 2, debris: 18, dust: 9, trees: 28, cropRows: 18, shadows: true, anisotropy: 4 },
+  HIGH: { ribbons: 3, debris: 26, dust: 12, trees: 38, cropRows: 24, shadows: true, anisotropy: 8 },
+  SHOWCASE: { ribbons: 4, debris: 34, dust: 15, trees: 46, cropRows: 30, shadows: true, anisotropy: 16 }
 };
 const PRODUCTION_QUALITY_KEY = 'severe_weather_visual_quality_v1';
 let productionQuality = loadProductionQuality();
@@ -8347,6 +8375,16 @@ function saveProductionQuality() {
   try { localStorage.setItem(PRODUCTION_QUALITY_KEY, productionQuality); } catch (_) {}
 }
 
+function refreshSurfaceTextureFiltering() {
+  const want = preferredAnisotropy();
+  surfaceTextureCache.forEach(texture => {
+    if (texture.anisotropy !== want) {
+      texture.anisotropy = want;
+      texture.needsUpdate = true;
+    }
+  });
+}
+
 function productionQualityConfig() {
   return PRODUCTION_QUALITY_CONFIG[productionQuality] || PRODUCTION_QUALITY_CONFIG.BALANCED;
 }
@@ -8365,6 +8403,10 @@ function cycleProductionQuality() {
   const index = PRODUCTION_QUALITY_LEVELS.indexOf(productionQuality);
   productionQuality = PRODUCTION_QUALITY_LEVELS[(index + 1) % PRODUCTION_QUALITY_LEVELS.length];
   saveProductionQuality();
+  // [SW:RENDER:TEXTURE_FILTERING] surfaceTextureCache deliberately survives a
+  // slice rebuild, so cached textures would keep the anisotropy of whatever tier
+  // was active when they were first built. Re-apply before rebuilding.
+  refreshSurfaceTextureFiltering();
   rebuildProductionSlice();
   showGagToast('VISUAL QUALITY: ' + productionQuality);
 }
@@ -8447,7 +8489,7 @@ function productionSignMaterial(text, background = '#7c2d12', foreground = '#fff
   }
   const texture = new THREE.CanvasTexture(canvas);
   if (typeof THREE.sRGBEncoding !== 'undefined') texture.encoding = THREE.sRGBEncoding;
-  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  texture.anisotropy = preferredAnisotropy();
   return new THREE.MeshStandardMaterial({
     map: texture,
     color: '#ffffff',
@@ -9025,13 +9067,21 @@ function rebuildProductionSlice() {
   productionCurrentCampaignId = typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel().id : 'lincoln-county';
   // [SW:VISUAL:STORM_FRAMING] honour the framing toggle rather than pinning 42.
   applyStormFraming();
-  if (typeof THREE.sRGBEncoding !== 'undefined') renderer.outputEncoding = THREE.sRGBEncoding;
+  // outputEncoding is established once at renderer construction; see
+  // [SW:RENDER:COLOR_SPACE].
   renderer.toneMappingExposure = 0.94;
   updateProductionQualityUi();
   // [SW:RENDER:SHADOW_FIT] Last thing after the county is assembled: the dressing,
   // barn and tornado layers above are all shadow casters, so the frustum can only
   // be fitted once they exist.
   fitShadowFrustumToCounty();
+  // [SW:RENDER:TEXTURE_FILTERING] Surface textures created during early world
+  // assembly take preferredAnisotropy's fallback, because the quality config is
+  // a `const` still in its temporal dead zone at that point. That left the cache
+  // holding a mix of fallback and tier values on first load, converging only
+  // after the player happened to cycle quality. Converge it here instead, once
+  // the county exists and the config is certainly evaluated.
+  refreshSurfaceTextureFiltering();
   globalThis.__SW_PRODUCTION_SLICE_READY__ = true;
 }
 
