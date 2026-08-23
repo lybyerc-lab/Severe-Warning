@@ -1,10 +1,10 @@
 # V5 Heartland World-Tour QA Report
 
-- Tested commit: `d56eb4732785124f7e191c5c76cfdb6c47e74c2a`
-- Workflow run: `49`
+- Tested commit: `580a093a7a39fb2d485e2c62d0c55eb088d5c52b`
+- Workflow run: `51`
 - Mode: mobile-landscape four-stop authored-world sweep
-- Started: 2026-08-23T03:14:09.065Z
-- Finished: 2026-08-23T03:14:53.060Z
+- Started: 2026-08-23T04:04:42.921Z
+- Finished: 2026-08-23T04:05:27.578Z
 
 ## Checks
 
