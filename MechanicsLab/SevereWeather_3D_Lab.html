@@ -5745,6 +5745,10 @@ function spawnDamagePuff(target) {
   }
 }
 
+// [SW:VISUAL:DAMAGE_TINT] Dark enough to read as scorched, never so dark that a
+// roof loses its shading and becomes a flat silhouette.
+const DAMAGE_TINT_MIN_LIGHTNESS = 0.06;
+
 function applyTargetDamageStage(target) {
   if (!target || target.destroyed) return;
   const ratio = target.health / target.maxHealth;
@@ -5809,9 +5813,38 @@ function applyTargetDamageStage(target) {
     spawnScorePopup(target.x, terrainHeightAt(target.x, target.z) + 4, target.z, '+18', '#ef4444');
   }
 
-  // Darken remaining parts
+  // [SW:VISUAL:DAMAGE_TINT]
+  // Darken remaining parts, with a floor on lightness.
+  //
+  // This was offsetHSL(0, -0.12, -0.10/-0.18), which SUBTRACTS lightness, and
+  // Color.setHSL clamps the result to 0. Anything that started dark did not
+  // darken - it went to pure #000000 and rendered as a hard black silhouette
+  // with no shading at all. Measured against the actual palettes:
+  //
+  //   #1e293b  L 0.175  ->  -0.005  black   (house roof variant 0)
+  //   #0f172a  L 0.112  ->  -0.068  black   (house roof variant 3)
+  //   #450a0a  L 0.155  ->  -0.025  black   (every district 3 roof)
+  //   #334155  L 0.267  ->   0.087  ok
+  //   #713f12  L 0.257  ->   0.077  ok
+  //
+  // So two of the four house roof variants and all of district 3 turned into
+  // black quads on a single stage-2 hit. Confirmed in a running build by
+  // raycasting the black region: ExtrudeGeometry (the gabled roof mesh) with a
+  // MeshStandardMaterial whose color read exactly #000000.
+  //
+  // Flooring rather than scaling keeps the existing look for every colour that
+  // was already staying above the floor, so this changes only the cases that
+  // were broken.
+  const damageHsl = { h: 0, s: 0, l: 0 };
+  const lightnessDrop = nextStage === 1 ? 0.10 : 0.18;
   (target.meshData.damageParts || [target.meshData.base]).filter(Boolean).forEach(part => {
-    if (part.material && part.material.color) part.material.color.offsetHSL(0, -0.12, nextStage === 1 ? -0.10 : -0.18);
+    if (!part.material || !part.material.color) return;
+    part.material.color.getHSL(damageHsl);
+    part.material.color.setHSL(
+      damageHsl.h,
+      Math.max(0, damageHsl.s - 0.12),
+      Math.max(DAMAGE_TINT_MIN_LIGHTNESS, damageHsl.l - lightnessDrop)
+    );
   });
   spawnDamagePuff(target);
 }
