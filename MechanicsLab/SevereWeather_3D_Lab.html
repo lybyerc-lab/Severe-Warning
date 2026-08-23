@@ -542,6 +542,7 @@
     <div class="menu-options">
       <button class="opt-btn production-quality-btn" id="btnProductionQuality" data-quality="BALANCED" onclick="cycleProductionQuality()">VISUALS: BALANCED</button>
       <button class="opt-btn" id="btnToggleNeonMenu" onclick="toggleNeonCosmetic()">NEON FUNNEL: OFF</button>
+      <button class="opt-btn" id="btnToggleFramingMenu" onclick="toggleStormFraming()">FRAMING: CLASSIC</button>
       <button class="opt-btn" id="btnToggleAudioMenu" onclick="toggleAudioMute()">AUDIO: ON 🔊</button>
     </div>
 
@@ -2211,6 +2212,16 @@ function toggleNeonCosmetic() {
   if (btn) btn.innerText = `NEON FUNNEL: ${neonFunnelUnlocked ? 'ON 🦄' : 'OFF'}`;
 }
 
+function toggleStormFraming() {
+  initAudio();
+  playSound('click');
+  stormFramingEnabled = !stormFramingEnabled;
+  saveCosmeticProgress();
+  applyStormFraming();
+  const btn = getCachedEl('btnToggleFramingMenu');
+  if (btn) btn.innerText = `FRAMING: ${stormFramingEnabled ? 'STORM' : 'CLASSIC'}`;
+}
+
 function setupMenuEventListeners() {
   const bindClick = (id, fn) => {
     const el = document.getElementById(id);
@@ -2225,6 +2236,7 @@ function setupMenuEventListeners() {
   bindClick('menuCardSupercell', () => selectMenuStorm('supercell'));
   bindClick('menuCardDerecho', () => selectMenuStorm('derecho'));
   bindClick('btnToggleNeonMenu', toggleNeonCosmetic);
+  bindClick('btnToggleFramingMenu', toggleStormFraming);
   bindClick('btnToggleAudioMenu', toggleAudioMute);
   bindClick('btnStartMenu', startRunFromMenu);
 }
@@ -2822,6 +2834,38 @@ const DISTRICT_CHALLENGE_POOLS = {
 const COSMETIC_STORAGE_KEY = 'severe_weather_cosmetics_v1';
 let districtChallenges = [];
 let neonFunnelUnlocked = false;
+// [SW:VISUAL:STORM_FRAMING]
+// The follow rig settles at ~26.3 degrees of downward pitch against a 42 degree
+// vertical FOV, which puts the horizon 5.3 degrees ABOVE the top edge of the
+// frame: the sky dome, its cloud deck, the rain curtain and any bolt drawn
+// against them render every frame and are never on screen. Measured, not
+// estimated - see the pitch/FOV readout in the QA visual panel.
+//
+// Pitch is a consequence of currentCamY, which is baseCamY * funnelScale, so it
+// STEEPENS as the storm intensifies: sky is briefly visible while the camera
+// lerps in at run start and is gone by the time the funnel has grown. Rather
+// than move the camera - the follow distance is tuned for target readability -
+// this raises the lookAt point (tilting up in place) and widens the FOV.
+//
+// 'classic' is the shipped framing and stays the default. 'storm' is the
+// prototype. lookAtY 33 puts the settled pitch near 18 degrees; with a 55 degree
+// FOV the horizon lands about 17% down from the top edge.
+const STORM_FRAMING = {
+  classic: { fov: 42, lookAtY: 14 },
+  storm:   { fov: 55, lookAtY: 33 }
+};
+let stormFramingEnabled = false;
+function activeStormFraming() {
+  return stormFramingEnabled ? STORM_FRAMING.storm : STORM_FRAMING.classic;
+}
+// Guarded: the production slice sets the FOV while building, and this also runs
+// from the menu before a camera exists in some load orders.
+function applyStormFraming() {
+  if (typeof camera === 'undefined' || !camera) return;
+  camera.fov = activeStormFraming().fov;
+  camera.updateProjectionMatrix();
+}
+globalThis.applyStormFraming = applyStormFraming;
 let gagToastToken = 0;
 let districtOverlayToken = 0;
 
@@ -2829,14 +2873,16 @@ function loadCosmeticProgress() {
   try {
     const saved = JSON.parse(localStorage.getItem(COSMETIC_STORAGE_KEY) || '{}');
     neonFunnelUnlocked = saved.neonFunnel === true;
+    stormFramingEnabled = saved.stormFraming === true;
   } catch (_) {
     neonFunnelUnlocked = false;
+    stormFramingEnabled = false;
   }
 }
 
 function saveCosmeticProgress() {
   try {
-    localStorage.setItem(COSMETIC_STORAGE_KEY, JSON.stringify({ neonFunnel: neonFunnelUnlocked }));
+    localStorage.setItem(COSMETIC_STORAGE_KEY, JSON.stringify({ neonFunnel: neonFunnelUnlocked, stormFraming: stormFramingEnabled }));
   } catch (_) {
     // The game remains fully playable when storage is unavailable.
   }
@@ -2915,6 +2961,19 @@ function completedChallengeCount() {
 }
 
 loadCosmeticProgress();
+// [SW:VISUAL:STORM_FRAMING] The saved preference has to reach the button label,
+// or a stored 'storm' comes back reading 'CLASSIC' and the first tap appears to
+// do nothing. The camera does not exist yet at this point, so only the label is
+// synced here; the FOV is applied at camera construction below.
+function syncStormFramingUi() {
+  const btn = document.getElementById('btnToggleFramingMenu');
+  if (btn) btn.innerText = `FRAMING: ${stormFramingEnabled ? 'STORM' : 'CLASSIC'}`;
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', syncStormFramingUi);
+} else {
+  syncStormFramingUi();
+}
 
 // [SW:RENDER:BOOTSTRAP] --- THREE.JS 3D INITIALIZATION ---
 const container = document.getElementById('webgl');
@@ -3001,6 +3060,7 @@ scene.add(skyDome);
 scene.fog = new THREE.FogExp2('#030712', 0.0014);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+applyStormFraming();
 const isMobileDevice = (window.innerWidth < 850 || window.innerHeight < 540);
 const mobileFactor = isMobileDevice ? 1.22 : 1.0;
 
@@ -7910,7 +7970,9 @@ function animate(now) {
       camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.08);
       camera.position.y = THREE.MathUtils.lerp(camera.position.y, storm.pos.y + currentCamY, 0.08);
       camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.08);
-      camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + 14, storm.pos.z + (moveZ * 8));
+      // [SW:VISUAL:STORM_FRAMING] raising this tilts the rig up in place, so the
+      // follow distance tuned for target readability is unchanged.
+      camera.lookAt(storm.pos.x + (moveX * 8), storm.pos.y + activeStormFraming().lookAtY, storm.pos.z + (moveZ * 8));
     }
   }
 
@@ -8961,8 +9023,8 @@ function rebuildProductionSlice() {
   createProductionTornadoLayers();
   decorateProductionCow17();
   productionCurrentCampaignId = typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel().id : 'lincoln-county';
-  camera.fov = 42;
-  camera.updateProjectionMatrix();
+  // [SW:VISUAL:STORM_FRAMING] honour the framing toggle rather than pinning 42.
+  applyStormFraming();
   if (typeof THREE.sRGBEncoding !== 'undefined') renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMappingExposure = 0.94;
   updateProductionQualityUi();
