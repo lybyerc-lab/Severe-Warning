@@ -1,4 +1,5 @@
 import { access, readFile, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -42,6 +43,32 @@ for (const relativePath of [
   'audio/storm-feel-manifest.json'
 ]) {
   await requireFile(relativePath);
+}
+
+// [SW:BUILD:MODELS] Every model the build says it packaged must actually be in
+// the package. build-web.mjs discovers models from assets/models rather than
+// from a list here, so this asserts against what that build recorded instead of
+// a second hardcoded roster that could drift from it. Zero models is valid --
+// the loader falls back to procedural geometry -- so an empty manifest passes.
+try {
+  const buildInfo = JSON.parse(await readFile(path.join(wwwDir, 'build-info.json'), 'utf8'));
+  const models = Array.isArray(buildInfo.models) ? buildInfo.models : [];
+  record('models manifest present', Array.isArray(buildInfo.models), `${models.length} model(s)`);
+  for (const model of models) {
+    await requireFile(model.file);
+    try {
+      const bytes = await readFile(path.join(wwwDir, model.file));
+      const magicOk = bytes.length >= 12 && bytes.toString('ascii', 0, 4) === 'glTF';
+      const digest = createHash('sha256').update(bytes).digest('hex');
+      record(`model ${model.file} is binary glTF`, magicOk);
+      record(`model ${model.file} matches manifest sha256`, digest === model.sha256,
+        digest === model.sha256 ? `${model.bytes} bytes` : `expected ${model.sha256}, packaged ${digest}`);
+    } catch (error) {
+      record(`model ${model.file} readable`, false, error.message);
+    }
+  }
+} catch (error) {
+  record('read www/build-info.json', false, error.message);
 }
 
 let html = '';

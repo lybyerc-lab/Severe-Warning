@@ -20,6 +20,13 @@
 
 </script>
 
+<!-- [SW:BUILD:GLTF_LOADER] -->
+<!-- vendor/three-gltfloader-r128.js is inlined here at build time, the same way
+     the economy prelude is. It must sit after three (it extends THREE.Loader and
+     assigns THREE.GLTFLoader) and before the gameplay script that consumes it.
+     Kept out of the source file so the vendored copy stays auditable on its own
+     and can be re-extracted from a three release without touching gameplay. -->
+
 <style>
   @font-face { font-family: Inter; src: url('./fonts/inter-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
   @font-face { font-family: Inter; src: url('./fonts/inter-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
@@ -3526,6 +3533,87 @@ function preferredAnisotropy() {
   try { max = renderer.capabilities.getMaxAnisotropy(); } catch (_) { max = 1; }
   return Math.max(1, Math.min(want, max));
 }
+
+// [SW:VISUAL:ACTOR_MODELS]
+// Loading path for Blender-authored .glb actors and scenery.
+//
+// The world is assembled synchronously from procedural geometry, and glTF
+// loading is asynchronous, so a model can never be a prerequisite for building
+// the world. The contract here is deliberately one-directional: procedural
+// geometry is always built, and a model -- if it arrives -- is an enhancement
+// layered on afterwards. A missing, corrupt or slow model degrades to exactly
+// what the game looks like today rather than leaving a hole in the county.
+//
+// Every failure path resolves rather than rejects, for that reason: callers
+// should not need a try/catch to avoid an unhandled rejection taking out a
+// frame. `null` means "carry on with what you already drew".
+//
+// Models are fetched once and cached as a prototype, then cloned per instance.
+// A county holds many copies of the same house or vehicle; parsing the same
+// buffer for each would be wasteful, and sharing one THREE.Group between
+// instances would make them share a transform.
+const ACTOR_MODEL_PATH = './models/';
+const actorModelCache = new Map();
+
+// Exposed for the QA visual panel and the headless harness: which models were
+// asked for, which arrived, and which are still procedural. Without this a
+// missing asset is invisible -- the fallback is silent by design.
+const actorModelStatus = { requested: 0, loaded: 0, failed: 0, unavailable: [] };
+globalThis.__SW_ACTOR_MODELS__ = actorModelStatus;
+
+function loadActorModel(name) {
+  if (actorModelCache.has(name)) return actorModelCache.get(name);
+  const pending = new Promise(resolve => {
+    // The loader is inlined at build time from vendor/. If a build ever ships
+    // without it, every actor stays procedural instead of throwing per spawn.
+    if (typeof THREE.GLTFLoader !== 'function') {
+      actorModelStatus.unavailable.push(`${name} (no GLTFLoader in build)`);
+      resolve(null);
+      return;
+    }
+    actorModelStatus.requested++;
+    new THREE.GLTFLoader().load(
+      `${ACTOR_MODEL_PATH}${name}.glb`,
+      gltf => {
+        // Models are authored origin-at-base, so they can be positioned with the
+        // same ground-Y the procedural props use without a per-model offset.
+        gltf.scene.traverse(object => {
+          if (!object.isMesh) return;
+          object.castShadow = true;
+          object.receiveShadow = true;
+        });
+        actorModelStatus.loaded++;
+        resolve(gltf.scene);
+      },
+      undefined,
+      () => {
+        // A 404 is the normal state for an actor whose model has not been
+        // authored yet, so this is not logged as an error.
+        actorModelStatus.failed++;
+        actorModelStatus.unavailable.push(name);
+        resolve(null);
+      }
+    );
+  });
+  actorModelCache.set(name, pending);
+  return pending;
+}
+
+// Resolves to a fresh clone ready to add to a group, or null to keep whatever
+// was drawn procedurally. Cloning is what makes the shared prototype safe:
+// SkeletonUtils is not needed while models are unrigged, and three's own clone
+// shares geometry and materials, which is what we want for identical props.
+function instantiateActorModel(name, options = {}) {
+  return loadActorModel(name).then(prototype => {
+    if (!prototype) return null;
+    const instance = prototype.clone(true);
+    const scale = options.scale ?? 1;
+    instance.scale.setScalar(scale);
+    if (options.rotationY) instance.rotation.y = options.rotationY;
+    return instance;
+  });
+}
+globalThis.instantiateActorModel = instantiateActorModel;
 
 const surfaceTextureCache = new Map();
 function createSurfaceTexture(kind) {

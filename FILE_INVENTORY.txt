@@ -175,6 +175,7 @@ android/gradlew
 android/gradlew.bat
 android/settings.gradle
 android/variables.gradle
+assets/models/README.md
 capacitor.config.json
 package.json
 pnpm-lock.yaml
@@ -251,5 +252,6 @@ src/world/setpieces/second-structure-definition.ts
 src/world/world-contracts.ts
 src/world/world-system.ts
 tsconfig.json
+vendor/three-gltfloader-r128.js
 vite.config.ts
 vite.prelude.config.ts

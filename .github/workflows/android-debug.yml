@@ -92,9 +92,26 @@ jobs:
       - name: Verify Android asset synchronization
         shell: bash
         run: |
-          cmp -s www/index.html android/app/src/main/assets/public/index.html
-          cmp -s www/audio/storm-feel-sprite.wav android/app/src/main/assets/public/audio/storm-feel-sprite.wav
-          cmp -s www/audio/storm-feel-manifest.json android/app/src/main/assets/public/audio/storm-feel-manifest.json
+          # [SW:BUILD:ASSET_SYNC] See android-qa-signed.yml for the rationale:
+          # the three explicit cmp lines this replaces left fonts/, modern/,
+          # runtime/ and models/ unverified. Extra Android-side files are fine.
+          sync_failed=0
+          while IFS= read -r -d '' asset; do
+            rel="${asset#www/}"
+            packaged="android/app/src/main/assets/public/$rel"
+            if [ ! -f "$packaged" ]; then
+              echo "::error::asset missing from APK payload: $rel"
+              sync_failed=1
+            elif ! cmp -s "$asset" "$packaged"; then
+              echo "::error::asset differs from its www/ source in the APK: $rel"
+              sync_failed=1
+            fi
+          done < <(find www -type f -print0)
+          if [ "$sync_failed" -ne 0 ]; then
+            echo "::error::Capacitor sync did not reproduce www/ faithfully; refusing to package."
+            exit 1
+          fi
+          echo "asset sync verified: $(find www -type f | wc -l) file(s)"
 
       - name: Resolve package identity from package.json
         shell: bash

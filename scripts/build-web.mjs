@@ -15,14 +15,17 @@ const sourceHtml = process.env.SEVERE_WEATHER_SOURCE_PATH
   : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const sourceAudioDir = path.join(projectRoot, 'assets', 'audio');
+const sourceModelsDir = path.join(projectRoot, 'assets', 'models');
 const modernDistDir = path.join(projectRoot, 'modern-dist');
 const modernEntryPath = path.join(modernDistDir, 'modern-shell.js');
 const economyPreludePath = path.join(modernDistDir, 'sw-economy-prelude.js');
+const gltfLoaderPath = path.join(projectRoot, 'vendor', 'three-gltfloader-r128.js');
 const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
   ? path.resolve(process.env.SEVERE_WEATHER_WWW_DIR)
   : path.join(projectRoot, 'www');
 const outputFonts = path.join(outputDir, 'fonts');
 const outputAudio = path.join(outputDir, 'audio');
+const outputModels = path.join(outputDir, 'models');
 const outputModern = path.join(outputDir, 'modern');
 
 const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
@@ -103,6 +106,30 @@ html = html.replace(
   `<script>\n/* [SW:SOURCE:sw-economy-prelude.js] built from src/gameplay/economy */\n${economyPreludeSource}\n</script>`,
 );
 
+// [SW:VENDOR:GLTF_LOADER] three r128's GLTFLoader, inlined for the same reason as
+// the prelude: the gameplay is a classic script that cannot import, and three
+// itself is inlined rather than resolved from npm. The vendored copy is the
+// legacy examples/js IIFE, which assigns THREE.GLTFLoader onto the global. It is
+// kept as its own file so it stays auditable and re-extractable, and injected
+// here so the gameplay source is not carrying 96 KB of third-party code inline.
+const GLTF_LOADER_MARKER = '<!-- [SW:BUILD:GLTF_LOADER] -->';
+if (!html.includes(GLTF_LOADER_MARKER)) {
+  throw new Error(`Gameplay source is missing ${GLTF_LOADER_MARKER}; the glTF loader has nowhere to land.`);
+}
+const gltfLoaderSource = await readFile(gltfLoaderPath, 'utf8');
+if (gltfLoaderSource.includes('</script>')) {
+  throw new Error('Vendored glTF loader contains a closing script tag.');
+}
+// A loader that silently failed to define itself would surface much later, as
+// actors quietly missing from the world. Fail the build instead.
+if (!gltfLoaderSource.includes('THREE.GLTFLoader = GLTFLoader')) {
+  throw new Error('Vendored glTF loader does not assign THREE.GLTFLoader; wrong build or wrong file.');
+}
+html = html.replace(
+  GLTF_LOADER_MARKER,
+  `<script>\n/* [SW:SOURCE:three-gltfloader-r128.js] vendored from three@0.128.0 examples/js */\n${gltfLoaderSource}\n</script>`,
+);
+
 const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';
 if (html.includes(modernScriptTag)) {
   throw new Error('Source gameplay HTML must not contain the generated modern-shell script tag.');
@@ -116,6 +143,7 @@ html = `${html.slice(0, bodyCloseIndex)}${modernScriptTag}\n${html.slice(bodyClo
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputFonts, { recursive: true });
 await mkdir(outputAudio, { recursive: true });
+await mkdir(outputModels, { recursive: true });
 await writeFile(path.join(outputDir, 'index.html'), html, 'utf8');
 
 for (const [packagePath, outputName] of fontFiles) {
@@ -125,6 +153,42 @@ for (const audioFile of await readdir(sourceAudioDir)) {
   await copyFile(path.join(sourceAudioDir, audioFile), path.join(outputAudio, audioFile));
 }
 await cp(modernDistDir, outputModern, { recursive: true });
+
+// [SW:BUILD:MODELS]
+// Blender-authored .glb actors and scenery.
+//
+// Deliberately discovered rather than listed. Every other asset here is named
+// explicitly, which means adding one is a four-file change -- this script, the
+// package verifier, the workflow's sync check and the file inventory -- and a
+// missed edit shows up as an asset that silently is not in the APK. Models will
+// arrive in batches from an external authoring pipeline, so they enumerate
+// themselves, and the manifest below carries the result to whoever asserts on it.
+//
+// An empty or absent directory is a normal state, not an error: the loader falls
+// back to procedural geometry for anything it cannot find.
+const models = [];
+let modelSourceNames = [];
+try {
+  modelSourceNames = (await readdir(sourceModelsDir)).filter(name => name.toLowerCase().endsWith('.glb')).sort();
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
+for (const modelFile of modelSourceNames) {
+  const bytes = await readFile(path.join(sourceModelsDir, modelFile));
+  // A glTF binary opens with the ASCII magic 'glTF'. Catching a mis-exported or
+  // truncated file here costs nothing; catching it on a device means working
+  // backwards from an actor that simply never appeared.
+  if (bytes.length < 12 || bytes.toString('ascii', 0, 4) !== 'glTF') {
+    throw new Error(`assets/models/${modelFile} is not a binary glTF (.glb); expected 'glTF' magic.`);
+  }
+  await copyFile(path.join(sourceModelsDir, modelFile), path.join(outputModels, modelFile));
+  models.push({
+    file: `models/${modelFile}`,
+    bytes: bytes.length,
+    sha256: createHash('sha256').update(bytes).digest('hex')
+  });
+}
+const modelsTotalBytes = models.reduce((sum, entry) => sum + entry.bytes, 0);
 
 const sourceSha256 = createHash('sha256').update(html).digest('hex');
 const audioSha256 = createHash('sha256').update(await readFile(path.join(sourceAudioDir, 'storm-feel-sprite.wav'))).digest('hex');
@@ -142,9 +206,12 @@ await writeFile(
     audioSha256,
     modernShellSha256,
     economyPreludeSha256: createHash('sha256').update(economyPreludeSource).digest('hex'),
+    gltfLoaderSha256: createHash('sha256').update(gltfLoaderSource).digest('hex'),
+    models,
+    modelsTotalBytes,
     inlinedRegions
   }, null, 2)}\n`,
   'utf8'
 );
 
-console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), modern shell (${modernShellSha256}), audio (${audioSha256}), inlined regions (${inlinedRegions.length})`);
+console.log(`Built offline web bundle v${buildVersion} (${buildLabel}): www/index.html (${sourceSha256}), modern shell (${modernShellSha256}), audio (${audioSha256}), inlined regions (${inlinedRegions.length}), models (${models.length}${models.length ? `, ${(modelsTotalBytes / 1048576).toFixed(2)} MB` : ''})`);
