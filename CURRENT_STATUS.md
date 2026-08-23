@@ -18,6 +18,36 @@ The full product name is **Severe Weather Warning**.
 - People remain protected and are never targets.
 - Animals and media crews remain invincible, non-targetable witnesses or safe slapstick participants.
 
+### First law: nothing that moves is ever harmed
+
+People are never harmed. Nothing that moves under its own power is ever a valid
+target. Cattle, media crews, storm chasers and every future moving actor can be
+lifted, spun, flung and landed, and are never damaged, never scored for damage,
+and never destroyed.
+
+This is enforced, not documented. `damageTarget` is the single point every
+hazard in the game reaches a target through -- gust, downburst, microburst, wind
+wall, pull vortex, storm contact, chain cascade and the QA harness all funnel
+through it -- and it refuses a protected actor before touching any state. A new
+hazard cannot bypass the rule by existing.
+
+Moving actors are marked with `markProtectedActor()` at construction and
+recognised by `isProtectedActor()`, which also treats anything without a numeric
+`health` as protected: an entity that was never built to be damaged is not a
+target, and treating it as one is a bug either way.
+
+Before this, the rule held only because moving actors were never pushed into
+`targets`. That is an invariant kept by everyone remembering it, and its failure
+would have been silent -- `damageTarget` would have computed
+`Math.max(0, undefined - amount)` into `NaN` health rather than refusing.
+
+`globalThis.__SW_NO_HARM_BLOCKS__` counts refusals so a run can assert the law
+actively held rather than merely not having been exercised. See
+`[SW:LAW:NO_HARM]` in the gameplay source.
+
+Do not add a bypass. If a future actor needs to be destructible, it is not a
+moving actor and does not get marked.
+
 ## Canonical memory order
 
 Use this order when sources conflict:
