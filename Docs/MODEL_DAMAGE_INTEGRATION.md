@@ -1,6 +1,7 @@
 # Wiring glTF actors into the damage system
 
-Status: options for decision. Nothing here is implemented.
+Status: decided 2026-08-23. The material fix is implemented; the damage adapter
+and wreck swap are not yet.
 
 Five models are committed and verified in `assets/models/`, and none is
 referenced by gameplay yet. Making them real means satisfying the contract the
@@ -97,36 +98,60 @@ model per stage.
 - No dynamic chunk physics, so it loses the flying-debris language the game
   currently leans on.
 
-## Recommendation
+## Decision
 
-**B as the default contract, D reserved for hero actors, and the material fix
-regardless.**
+**Both, in sequence: chunks during the damage stages, collapse at destruction.**
 
-Reasoning for the future cast rather than these five:
+Directed 2026-08-23. This is cheaper than the three-state version originally
+costed, because the damage stages are carried by the shared debris kit and only
+the final state needs authoring: **two states per landmark, not three.**
 
-- B costs nothing per actor. Every model GPT produces works on arrival with no
-  naming convention to honour and no per-actor engine work. That property
-  matters more as the cast grows than any single actor's damage fidelity.
-- A and C both scale their cost with the number of actors -- A in draw calls and
-  authoring, C in complexity. Neither is a good trade for a mobile target that
-  already carries a particle system and instanced debris.
-- D is genuinely better looking, so it should stay available. The water tower
-  and grain silo are landmarks the player deliberately targets and watches fall;
-  those are worth three states. A parked news van is not.
+    stage 1   tint + lean + squash + throw chunks from the shared kit
+    stage 2   deeper tint + more lean/squash + more chunks
+    destroy   explodeStructure, then swap in <name>-wreck.glb if one exists
 
-This gives one code path with an optional upgrade, rather than four paths.
+It also improves something independent of models. `destroyTarget` currently does
+`scene.remove(group)` and an explosion, so a building vanishes and leaves bare
+ground. A wreck state means rubble persists after the storm passes, which the
+county has never had.
 
-### Required regardless of choice
+The wreck swap is optional per actor. An actor with no `-wreck` model falls back
+to today's behaviour -- removal plus explosion -- so this stays a per-actor
+upgrade rather than a requirement, exactly like the loader's procedural
+fallback.
+
+### Cost
+
+Only landmarks need a wreck: the water tower and grain silo are targets the
+player deliberately lines up and watches fall. Vehicles and cattle do not. At
+roughly 70 KB per model that is ~140 KB against the remaining ~1.75 MB budget.
+
+### What to ask the authoring pipeline for
+
+Per landmark, one additional `.glb` named `<actor>-wreck.glb`, same contract as
+the intact model: one mesh, one primitive, explicit material at metal 0.0 /
+rough 0.8, POSITION + NORMAL + COLOR_0, minY 0.0, no compression.
+
+Authored as the collapsed remains occupying the same footprint and origin as the
+intact model, so the swap needs no repositioning: same X/Z extents, base at
+Y = 0, and a height roughly a third of the intact model.
+
+## Required regardless of choice
 
 Clone the material per instance for damageable actors, in
-`instantiateActorModel`. Geometry stays shared. Without this, any option that
-tints will tint the whole species.
+`instantiateActorModel`. Geometry stays shared.
 
-An `options.damageable` flag is the cheapest way to scope it: cows and parked
-scenery keep the shared material and stay cheap; targets get their own.
+**Implemented.** Gated on `options.damageable`, so cattle and parked scenery keep
+the shared material and stay cheap while targets get their own. Verified in a
+running build: with the flag, materials are distinct, geometry is still shared,
+and tinting one instance leaves a sibling at `#ffffff`; without it, both
+materials remain the same object.
 
-## Open question for the director
+## Remaining work
 
-Do landmarks keep the flying-chunk language, or is art-directed collapse (D)
-better for them? It changes what to ask GPT for next: one mesh per actor, or
-three states for the landmarks.
+1. An adapter that presents a loaded model to the damage system in the shape
+   `applyTargetDamageStage` expects -- `group`, a synthetic `damageParts`
+   backed by the debris kit, `footprint`, `points`, `color`.
+2. Chunk spawning from the shared kit, tinted to the actor.
+3. The wreck swap in `destroyTarget`, with fallback when no wreck model exists.
+4. Wreck models for the two landmarks.

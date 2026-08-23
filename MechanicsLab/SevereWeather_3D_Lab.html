@@ -3610,6 +3610,27 @@ function instantiateActorModel(name, options = {}) {
     const scale = options.scale ?? 1;
     instance.scale.setScalar(scale);
     if (options.rotationY) instance.rotation.y = options.rotationY;
+
+    // [SW:VISUAL:ACTOR_MODELS] Per-instance materials, but only when asked for.
+    //
+    // Object3D.clone copies transforms and reuses the material by reference, so
+    // every instance of an actor shares one material object. That is exactly
+    // what you want for 38 identical cows -- and exactly wrong for anything the
+    // damage system tints, because applyTargetDamageStage mutates
+    // material.color in place. Measured before this guard existed: tinting one
+    // water tower moved an untouched sibling from #ffffff to #d1d1d1. Hit one
+    // and the whole species darkens.
+    //
+    // Geometry stays shared either way; it is never mutated, and sharing it is
+    // what keeps a county full of one prop cheap.
+    if (options.damageable) {
+      instance.traverse(object => {
+        if (!object.isMesh || !object.material) return;
+        object.material = Array.isArray(object.material)
+          ? object.material.map(entry => entry.clone())
+          : object.material.clone();
+      });
+    }
     return instance;
   });
 }
