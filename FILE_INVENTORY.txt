@@ -177,6 +177,10 @@ android/settings.gradle
 android/variables.gradle
 assets/models/README.md
 assets/models/cow-17.glb
+assets/models/grain-silo.glb
+assets/models/news-van.glb
+assets/models/storm-chaser-vehicle.glb
+assets/models/water-tower.glb
 capacitor.config.json
 package.json
 pnpm-lock.yaml
