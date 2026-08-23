@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install exporter dependencies
-        run: python -m pip install --disable-pip-version-check numpy trimesh
+        run: python -m pip install --disable-pip-version-check numpy==2.3.5 trimesh==4.11.1 scipy==1.17.0
       - name: Generate cow-17 V2
         run: python .github/scripts/build-cow17-v2.py
       - name: Verify exact asset
