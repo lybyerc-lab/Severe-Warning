@@ -1,7 +1,8 @@
 # Wiring glTF actors into the damage system
 
-Status: decided 2026-08-23. The material fix is implemented; the damage adapter
-and wreck swap are not yet.
+Status: implemented 2026-08-23. Adapter, chunk spawning and wreck swap are in.
+Outstanding: wreck models for the two landmarks, and swapping the procedural
+water tower and grain silo for the authored ones.
 
 Five models are committed and verified in `assets/models/`, and none is
 referenced by gameplay yet. Making them real means satisfying the contract the
@@ -110,10 +111,12 @@ the final state needs authoring: **two states per landmark, not three.**
     stage 2   deeper tint + more lean/squash + more chunks
     destroy   explodeStructure, then swap in <name>-wreck.glb if one exists
 
-It also improves something independent of models. `destroyTarget` currently does
-`scene.remove(group)` and an explosion, so a building vanishes and leaves bare
-ground. A wreck state means rubble persists after the storm passes, which the
-county has never had.
+Correction to an earlier draft of this doc: rubble already persists.
+`spawnPersistentRuin` drops a concrete slab and tilted debris into `ruinsGroup`
+on every destruction. A wreck model therefore does not add persistence -- it
+replaces a generic slab-and-boxes ruin with an authored one. Still worth it for
+landmarks the player lines up and watches fall; a smaller claim than first
+made.
 
 The wreck swap is optional per actor. An actor with no `-wreck` model falls back
 to today's behaviour -- removal plus explosion -- so this stays a per-actor
@@ -147,11 +150,42 @@ running build: with the flag, materials are distinct, geometry is still shared,
 and tinting one instance leaves a sibling at `#ffffff`; without it, both
 materials remain the same object.
 
+## Implementation
+
+`buildActorMeshData(instance, spec)` presents a loaded model in the shape
+`applyTargetDamageStage` expects, and marks it with `modelActor`.
+
+The single mesh still lands in `damageParts` because the tint loop reads that
+array. The stage-2 pop loop is guarded by `parts.length > 1`, so it will not
+remove the only mesh an actor has -- that existing guard is what makes this safe
+without a special case inside the stage code.
+
+`spawnActorChunks(target, count)` throws generic boxes tinted to the actor,
+reusing `activeExplosionFragments` so physics, bouncing and lifetime are the
+ones the rest of the game already uses. Five at stage 1 (standing in for the
+roof a model has no way to shed), nine at stage 2.
+
+`explodeStructure` takes an optional `wreckName`. The generic ruin is placed
+first and removed only once a wreck has actually loaded, because destruction is
+synchronous and loading is not: anything that waited for the model would leave
+bare ground for a frame, or forever if the file is missing.
+
+Verified in a running build, on a model-backed target driven through every
+stage:
+
+    stage 1     tint #ffffff -> #e5e5e5, scale.y 0.88, lean 0.08, chunks spawned
+    stage 2     tint -> #b7b7b7, scale.y 0.616, more chunks
+    destroy     group removed, damageParts never popped, ruin persists
+
+and on the wreck swap specifically, with one actor given a wreck and one given a
+missing name: immediately after destruction both hold a generic ruin; once the
+async load lands, one is an authored wreck and one is still generic, with the
+total unchanged. The generic ruin is replaced, not added to.
+
 ## Remaining work
 
-1. An adapter that presents a loaded model to the damage system in the shape
-   `applyTargetDamageStage` expects -- `group`, a synthetic `damageParts`
-   backed by the debris kit, `footprint`, `points`, `color`.
-2. Chunk spawning from the shared kit, tinted to the actor.
-3. The wreck swap in `destroyTarget`, with fallback when no wreck model exists.
-4. Wreck models for the two landmarks.
+1. Wreck models for the two landmarks (`water-tower-wreck.glb`,
+   `grain-silo-wreck.glb`).
+2. Swap the procedural water tower and grain silo for the authored models, using
+   `buildActorMeshData` with `damageable: true`.
+3. Decide whether vehicles become damageable targets or stay scenery.
