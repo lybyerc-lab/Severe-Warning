@@ -61,11 +61,10 @@ jobs:
           rm -f .github/scripts/build-cow17-v2.py
           rm -f .github/workflows/cow17-v2-one-shot.yml
           rm -f .github/cow17-v2-trigger.txt
-          rm -f .github/cow17-v2-pr-trigger.txt
       - name: Commit asset replacement
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A assets/models/cow-17.glb .github/scripts/build-cow17-v2.py .github/workflows/cow17-v2-one-shot.yml .github/cow17-v2-trigger.txt .github/cow17-v2-pr-trigger.txt
+          git add -A
           git commit -m 'assets: replace cow-17 with game-scale V2'
           git push origin HEAD:qa
