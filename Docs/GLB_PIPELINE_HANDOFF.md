@@ -44,6 +44,7 @@ compressed `.glb` looks fine in a viewer and fails to load here.
 | Axes | Y-up, −Z forward, origin at the base |
 | Base | `minY` exactly `0.0` |
 | Triangles | ~500–3000 |
+| Vertices | **Welded.** Merge duplicates before export; see below |
 | Scale | Final game scale. Drop in at `scale: 1` |
 
 **One mesh is a performance rule, not a style preference.** Three issues one
@@ -54,6 +55,34 @@ is ~1,178 draw calls for cattle alone on a phone.
 glTF *default*, and that default is `metallicFactor 1.0`. A fully metallic actor
 with no environment reflection renders as dark grey sludge. The first cow shipped
 this way and the vertex colours were invisible until metalness was zeroed.
+
+**Weld vertices before export.** An unwelded mesh gives every triangle its own
+three copies of position, normal and colour, which costs roughly 3.5x the bytes
+for identical geometry and identical appearance.
+
+Measured across the wreck models in this repo:
+
+    model                 tris  verts  v/tri  bytes/tri
+    water-tower-wreck     1056    562   0.53       28.2   welded
+    grain-silo-wreck      1176    618   0.53       27.9   welded
+    farm-windmill-wreck    600    342   0.57       30.1   welded
+    courthouse-wreck       460   1380   3.00       98.7   unwelded
+    foundry-wreck          980   2940   3.00       97.3   unwelded
+    ferris-wheel-wreck    1296   3888   3.00       97.0   unwelded
+    grandstand-wreck       432   1296   3.00       98.9   unwelded
+
+Those four unwelded files are 309 KB; welded they would be about 89 KB. That is
+215 KB of the ~2 MB budget spent on nothing.
+
+**Self-check:** vertices divided by triangles. Around 0.5 is welded. Exactly
+3.00 means no vertex sharing at all -- every triangle is standalone.
+
+In trimesh, `mesh.merge_vertices()` before export. In Blender, Merge by Distance.
+Do it as the last step before writing the `.glb`.
+
+Flat shading is not a reason to skip it: `NORMAL` is per-vertex, so hard edges
+still need split vertices at those edges specifically -- but a v/tri of exactly
+3.00 means nothing anywhere is shared, which is not what flat shading requires.
 
 **The world is not in metres.** Author against these, measured in-engine:
 
@@ -155,16 +184,20 @@ eight colour variants with size variation. One model makes every house identical
 
 ## State
 
-Live: `water-tower`, `grain-silo`, `farm-windmill` (+ their wrecks),
-`courthouse`, `foundry`, `ferris-wheel`, `grandstand`.
+Payload is 1,034,180 bytes across nineteen models -- 49% of the ~2 MB budget.
+About 215 KB of that is the unwelded overhead described above, so welding those
+four recovers roughly a fifth of what has been spent.
+
+Live: all eight campaign landmark kinds, each with a model and a wreck.
 
 Payload only, nothing references them yet: `cow-17`, `news-van`,
 `storm-chaser-vehicle`, `hart-barn`, `hart-farmhouse`.
 
 Open work:
 
-1. Wrecks for `courthouse`, `foundry`, `ferris-wheel`, `grandstand` -- currently
-   the generic ruin, which is valid, not broken.
+1. Re-weld `courthouse-wreck`, `foundry-wreck`, `ferris-wheel-wreck` and
+   `grandstand-wreck`. They render correctly but are unwelded; welding recovers
+   about 215 KB with no visual change.
 2. A home for `hart-farmhouse.glb`. It matches the generic house dimensions but
    must not replace them (see hard rules). Candidates: a unique building beside
    the barn, or a district-3 landmark.
