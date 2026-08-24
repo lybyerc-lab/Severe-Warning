@@ -3963,6 +3963,18 @@ const crossGeo = new THREE.BoxGeometry(4.5, 0.35, 0.45);
 const crossMat = new THREE.MeshToonMaterial({ color: '#2f1608' });
 const poleTrunks = new THREE.InstancedMesh(poleGeo, poleMat, polePositions.length);
 const poleCrossarms = new THREE.InstancedMesh(crossGeo, crossMat, polePositions.length);
+
+// [SW:VISUAL:ACTOR_MODELS] A pole is drawn as a list of layers rather than a
+// hardcoded trunk-plus-crossarm pair, because the authored model replaces BOTH
+// with a single mesh. Each layer carries the height its own origin sits at: the
+// procedural parts are centred, so they need half their height, while the glTF
+// pole is modelled with its base at y = 0 and needs none. Keeping the shape of
+// writePoleInstance identical is what lets pole.group.scale.set() and the
+// grid-zap cascade go on working without knowing which set is on screen.
+const poleLayers = [
+  { mesh: poleTrunks, yOffset: 5.5, scale: 1 },
+  { mesh: poleCrossarms, yOffset: 10.2, scale: 1 }
+];
 [poleTrunks, poleCrossarms].forEach(mesh => {
   mesh.castShadow = true;
   // The line spans the whole map, so culling the set as one object would only
@@ -3976,19 +3988,65 @@ const poleMatrix = new THREE.Matrix4();
 const poleQuat = new THREE.Quaternion();
 const poleScaleVec = new THREE.Vector3();
 const polePosVec = new THREE.Vector3();
+// The pulse the cascade applies is transient, but a layer swap can land in the
+// middle of one, so the live scale has to be readable rather than inferred.
+const poleInstanceScales = new Float32Array(polePositions.length).fill(1);
 function writePoleInstance(index, scale) {
   const spot = polePositions[index];
   const groundY = terrainHeightAt(spot.x, spot.z);
-  poleScaleVec.set(scale, scale, scale);
-  polePosVec.set(spot.x, groundY + 5.5 * scale, spot.z);
-  poleMatrix.compose(polePosVec, poleQuat, poleScaleVec);
-  poleTrunks.setMatrixAt(index, poleMatrix);
-  polePosVec.set(spot.x, groundY + 10.2 * scale, spot.z);
-  poleMatrix.compose(polePosVec, poleQuat, poleScaleVec);
-  poleCrossarms.setMatrixAt(index, poleMatrix);
-  poleTrunks.instanceMatrix.needsUpdate = true;
-  poleCrossarms.instanceMatrix.needsUpdate = true;
+  poleInstanceScales[index] = scale;
+  for (let i = 0; i < poleLayers.length; i++) {
+    const layer = poleLayers[i];
+    const layerScale = scale * layer.scale;
+    poleScaleVec.set(layerScale, layerScale, layerScale);
+    polePosVec.set(spot.x, groundY + layer.yOffset * layerScale, spot.z);
+    poleMatrix.compose(polePosVec, poleQuat, poleScaleVec);
+    layer.mesh.setMatrixAt(index, poleMatrix);
+    layer.mesh.instanceMatrix.needsUpdate = true;
+  }
 }
+
+// [SW:VISUAL:ACTOR_MODELS] Swap the utility line over to the authored pole.
+//
+// This is deliberately NOT instantiateActorModel(). That path clones an
+// Object3D per instance, which is right for twenty cars and wrong for a
+// hundred-odd poles: it would turn two draw calls into two hundred and
+// thirty-four. The model's geometry goes into an InstancedMesh instead, so the
+// whole line stays one call - fewer than the two it replaces, because the
+// authored pole carries its crossarms in the same mesh as its trunk.
+//
+// A model bound for an instanced prop has to be a single mesh with a single
+// material or it cannot come through here at all. power-pole satisfies that;
+// nothing in the export contract asked it to, which is worth fixing before the
+// next batch is authored.
+const POLE_MODEL_HEIGHT = 9;      // measured from the authored glb's bounds
+const POLE_SILHOUETTE_HEIGHT = 11; // the procedural trunk this has to stand in for
+loadActorModel('power-pole').then(prototype => {
+  if (!prototype) return;         // no authored pole; the procedural pair stays
+  prototype.updateMatrixWorld(true);
+  let source = null;
+  prototype.traverse(child => { if (!source && child.isMesh) source = child; });
+  if (!source) return;
+  // Bake the node transform into the geometry. An InstancedMesh applies only
+  // its own per-instance matrix, so anything the exporter left on the parent
+  // node would otherwise be dropped silently.
+  const geometry = source.geometry.clone();
+  geometry.applyMatrix4(source.matrixWorld);
+  const poles = new THREE.InstancedMesh(geometry, source.material, polePositions.length);
+  poles.castShadow = true;
+  poles.frustumCulled = false;
+  poles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(poles);
+  // Scaled to the height it replaces rather than shipped at authored size, so
+  // the storm reads against the same skyline it always did.
+  poleLayers.length = 0;
+  poleLayers.push({ mesh: poles, yOffset: 0, scale: POLE_SILHOUETTE_HEIGHT / POLE_MODEL_HEIGHT });
+  for (let i = 0; i < polePositions.length; i++) writePoleInstance(i, poleInstanceScales[i]);
+  scene.remove(poleTrunks);
+  scene.remove(poleCrossarms);
+  poleTrunks.dispose();
+  poleCrossarms.dispose();
+});
 
 polePositions.forEach((spot, index) => {
   writePoleInstance(index, 1);
