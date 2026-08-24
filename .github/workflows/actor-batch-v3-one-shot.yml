@@ -24,7 +24,7 @@ jobs:
           set -euo pipefail
           mkdir -p assets/models
           for name in water-tower-wreck grain-silo-wreck hart-barn-v2 hart-farmhouse-v2 farm-windmill-v2; do
-            cat .github/sww-batch-v3-src/${name}.part.* | tr -d '\n' | base64 -d > assets/models/${name}.glb
+            cat .github/sww-batch-v3-src/${name}.gz.b64 | tr -d '\n' | base64 -d | gzip -dc > assets/models/${name}.glb
           done
       - name: Verify exact files and contract
         shell: bash
