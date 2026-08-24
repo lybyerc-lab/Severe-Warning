@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Severe Warning — 3D Model Inspector & Viewer</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --panel: #0f172a;
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 320px;
+      background: var(--panel);
+      border-right: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    #sidebar-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+    #sidebar-header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #sidebar-header p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    #model-search {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+    #search-input {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #fff;
+      font-size: 13px;
+    }
+    #search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    #model-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .category-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 12px 10px 6px;
+    }
+    .model-item {
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2px;
+      transition: background 0.15s;
+    }
+    .model-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .model-item.active {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+    }
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+    }
+    #canvas3d {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #top-bar {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+    .hud-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      pointer-events: auto;
+    }
+    #model-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+    #model-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    #controls-card {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--panel-border);
+      color: #fff;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn:hover {
+      background: #334155;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .btn.active {
+      background: var(--accent);
+      color: #090d16;
+      border-color: var(--accent);
+    }
+    .btn-danger.active {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+    #stats-card {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    #stats-card span {
+      color: var(--accent);
+    }
+    #view-hint {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.7);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+    }
+  </style>
+  <script src="/MechanicsLab/three.min.js"></script>
+  <script src="/vendor/three-gltfloader-r128.js"></script>
+</head>
+<body>
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h1>🌪️ Severe Warning</h1>
+      <p>3D glTF Model Inspector & Viewer</p>
+    </div>
+    <div id="model-search">
+      <input type="text" id="search-input" placeholder="Filter models (e.g. flamingo, house)...">
+    </div>
+    <div id="model-list"></div>
+  </div>
+
+  <div id="viewport-container">
+    <div id="top-bar">
+      <div class="hud-card">
+        <div id="model-title">Select a model</div>
+        <div id="model-subtitle">78 Models tracked</div>
+      </div>
+      <div class="hud-card" id="controls-card">
+        <button class="btn active" id="btn-intact">Intact</button>
+        <button class="btn btn-danger" id="btn-wreck">Wreck</button>
+        <div style="width: 1px; height: 20px; background: var(--panel-border); margin: 0 4px;"></div>
+        <button class="btn" id="btn-wireframe">Wireframe</button>
+        <button class="btn" id="btn-bbox">Bounds</button>
+        <button class="btn active" id="btn-rotate">Auto-Rotate</button>
+        <button class="btn" id="btn-reset">Reset View</button>
+      </div>
+    </div>
+
+    <canvas id="canvas3d"></canvas>
+
+    <div class="hud-card" id="stats-card">
+      <div>Dimensions: <span id="stat-dims">-</span></div>
+      <div>Geometry: <span id="stat-tris">-</span> tris | <span id="stat-verts">-</span> verts</div>
+      <div>Base Alignment: <span id="stat-miny">-</span> (minY = 0)</div>
+    </div>
+
+    <div id="view-hint">Left click: Orbit | Right click: Pan | Scroll: Zoom</div>
+  </div>
+
+  <script>
+    const MODEL_CATALOG = [
+      {
+        category: 'Comedy Gag Props',
+        items: [
+          { id: 'flamingo', name: 'Lawn Flamingo', wreck: 'flamingo-wreck', gag: 'Lawn flamingo migration begins early.' },
+          { id: 'trampoline', name: 'Backyard Trampoline', wreck: 'trampoline-wreck', gag: 'Trampoline achieves low Earth orbit.' },
+          { id: 'bbq-grill', name: 'Barbecue Grill', wreck: 'bbq-grill-wreck', gag: 'Barbecue takes the high ground.' },
+          { id: 'coffee-cup', name: 'Moo Brew Coffee Cup', wreck: 'coffee-cup-wreck', gag: 'Coffee cup on the roof defies physics.' },
+          { id: 'inflatable-mascot', name: 'Inflatable Mayor Mascot', wreck: 'inflatable-mascot-wreck', gag: 'Inflatable mayor leaves the campaign trail.' },
+          { id: 'shopping-carts', name: 'Supermarket Shopping Carts', wreck: 'shopping-carts-wreck', gag: 'Shopping carts gather at the county line.' },
+          { id: 'carousel', name: 'Carnival Carousel', wreck: 'carousel-wreck', gag: 'Merry-go-round goes maximum round.' },
+          { id: 'food-cart', name: 'Funnel Cakes Food Cart', wreck: 'food-cart-wreck', gag: 'Funnel cakes meet an actual funnel.' },
+          { id: 'giant-corndog', name: 'Giant Corn Dog Attraction', wreck: 'giant-corndog-wreck', gag: 'Giant corn dog files flight plan.' },
+          { id: 'porta-potty', name: 'Festival Porta-Potty', wreck: 'porta-potty-wreck', gag: 'Porta-potty dispersion in progress.' },
+          { id: 'rural-mailbox', name: 'Rural Mailbox', wreck: 'rural-mailbox-wreck', gag: 'County mail delivery slightly delayed.' },
+          { id: 'billboard', name: 'Storm-Proof Billboard', wreck: 'billboard-wreck', gag: 'Storm-Proof Roofing sign proves otherwise.' },
+          { id: 'ferris-wheel', name: 'Fairground Ferris Wheel', wreck: 'ferris-wheel-wreck', gag: 'Ferris wheel discovers gyroscopic stability.' }
+        ]
+      },
+      {
+        category: 'Modular Residential Houses',
+        items: [
+          { id: 'ranch-house', name: 'Ranch House', wreck: 'ranch-house-wreck', gag: 'Single-story midwestern ranch home.' },
+          { id: 'craftsman-house', name: 'Craftsman House', wreck: 'craftsman-house-wreck', gag: 'Two-story American Craftsman home.' },
+          { id: 'split-level-house', name: 'Split-Level Home', wreck: 'split-level-house-wreck', gag: 'Suburban split-level home with garage.' }
+        ]
+      },
+      {
+        category: 'Campaign Heartland Landmarks',
+        items: [
+          { id: 'water-tower', name: 'Municipal Water Tower', wreck: 'water-tower-wreck' },
+          { id: 'grain-silo', name: 'Agricultural Grain Silo', wreck: 'grain-silo-wreck' },
+          { id: 'farm-windmill', name: 'Farm Windmill (Welded)', wreck: 'farm-windmill-wreck' },
+          { id: 'courthouse', name: 'County Courthouse', wreck: 'courthouse-wreck' },
+          { id: 'foundry', name: 'Industrial Foundry', wreck: 'foundry-wreck' },
+          { id: 'grandstand', name: 'Fairgrounds Grandstand', wreck: 'grandstand-wreck' },
+          { id: 'grain-bin', name: 'Grain Belt Bin', wreck: 'grain-bin-wreck' }
+        ]
+      },
+      {
+        category: 'Municipal Infrastructure & Nature',
+        items: [
+          { id: 'gas-station', name: 'Gas Station Canopy', wreck: 'gas-station-wreck' },
+          { id: 'carwash', name: 'Automated Car Wash', wreck: 'carwash-wreck' },
+          { id: 'substation', name: 'Power Substation', wreck: 'substation-wreck' },
+          { id: 'commercial-shop', name: 'Commercial Shop', wreck: 'commercial-shop-wreck' },
+          { id: 'industrial-warehouse', name: 'Industrial Warehouse', wreck: 'industrial-warehouse-wreck' },
+          { id: 'propane-tank', name: 'Propane Tank', wreck: 'propane-tank-wreck' },
+          { id: 'power-pole', name: 'Utility Power Pole', wreck: 'power-pole-wreck' },
+          { id: 'traffic-signal', name: 'Traffic Signal', wreck: 'traffic-signal-wreck' },
+          { id: 'street-lamp', name: 'Street Lamp', wreck: 'street-lamp-wreck' },
+          { id: 'fire-hydrant', name: 'Fire Hydrant', wreck: 'fire-hydrant-wreck' },
+          { id: 'pine-tree', name: 'Pine Tree', wreck: 'pine-tree-wreck' },
+          { id: 'oak-tree', name: 'Oak Tree', wreck: 'oak-tree-wreck' }
+        ]
+      },
+      {
+        category: 'Protected Moving Actors',
+        items: [
+          { id: 'cow-17', name: 'Hero Cow 17 (#17 Ear Tag)', wreck: null },
+          { id: 'news-van', name: 'Media News Van', wreck: null },
+          { id: 'storm-chaser-vehicle', name: 'Storm Chaser Rig', wreck: null },
+          { id: 'town-car', name: 'Civic Town Car', wreck: null },
+          { id: 'pickup-truck', name: 'Farm Pickup Truck', wreck: null },
+          { id: 'tractor', name: 'Agricultural Tractor', wreck: null }
+        ]
+      },
+      {
+        category: 'Special & Hero Structures',
+        items: [
+          { id: 'hart-barn', name: 'Hart Farm Signature Barn (Welded)', wreck: null },
+          { id: 'hart-farmhouse', name: 'Hart Farmhouse (Welded)', wreck: null }
+        ]
+      }
+    ];
+
+    let currentItem = MODEL_CATALOG[0].items[0];
+    let isWreck = false;
+    let isWireframe = false;
+    let showBounds = false;
+    let autoRotate = true;
+
+    // Build sidebar list
+    const listEl = document.getElementById('model-list');
+    function renderList(filter = '') {
+      listEl.innerHTML = '';
+      MODEL_CATALOG.forEach(cat => {
+        const filteredItems = cat.items.filter(item => 
+          item.name.toLowerCase().includes(filter.toLowerCase()) || 
+          item.id.toLowerCase().includes(filter.toLowerCase())
+        );
+        if (!filteredItems.length) return;
+
+        const catHeader = document.createElement('div');
+        catHeader.className = 'category-header';
+        catHeader.textContent = cat.category;
+        listEl.appendChild(catHeader);
+
+        filteredItems.forEach(item => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'model-item' + (currentItem.id === item.id ? ' active' : '');
+          itemEl.innerHTML = `
+            <span>${item.name}</span>
+            <span class="tag">${item.wreck ? 'Pair' : 'Hero'}</span>
+          `;
+          itemEl.onclick = () => selectModel(item);
+          listEl.appendChild(itemEl);
+        });
+      });
+    }
+    renderList();
+
+    document.getElementById('search-input').oninput = (e) => renderList(e.target.value);
+
+    // Three.js Scene Setup
+    const container = document.getElementById('viewport-container');
+    const canvas = document.getElementById('canvas3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+
+    // Lights
+    const amb = new THREE.AmbientLight(0xffffff, 0.75);
+    scene.add(amb);
+
+    const sun = new THREE.DirectionalLight(0xfff7ed, 1.4);
+    sun.position.set(30, 45, 30);
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 2048;
+    sun.shadow.mapSize.height = 2048;
+    scene.add(sun);
+
+    const fill = new THREE.DirectionalLight(0x38bdf8, 0.5);
+    fill.position.set(-30, 20, -30);
+    scene.add(fill);
+
+    // Stage ground disk
+    const groundGeo = new THREE.CylinderGeometry(28, 29, 1.5, 48);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.position.y = -0.75;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const grid = new THREE.GridHelper(50, 50, 0x38bdf8, 0x334155);
+    grid.position.y = 0.01;
+    scene.add(grid);
+
+    // Controls
+    let currentModelGroup = null;
+    let bboxHelper = null;
+    let targetDist = 10;
+    let cameraAngle = Math.PI / 4;
+    let cameraPitch = Math.PI / 6;
+    let isDragging = false;
+    let isPanning = false;
+    let lastX = 0, lastY = 0;
+    let panOffset = new THREE.Vector3();
+
+    const loader = new THREE.GLTFLoader();
+
+    function selectModel(item) {
+      currentItem = item;
+      renderList(document.getElementById('search-input').value);
+      loadActiveModel();
+    }
+
+    function loadActiveModel() {
+      const modelId = isWreck && currentItem.wreck ? currentItem.wreck : currentItem.id;
+      document.getElementById('model-title').textContent = currentItem.name + (isWreck ? ' (Wreck)' : ' (Intact)');
+      document.getElementById('model-subtitle').textContent = currentItem.gag || `Model: ${modelId}.glb`;
+
+      document.getElementById('btn-wreck').style.display = currentItem.wreck ? 'inline-flex' : 'none';
+
+      if (currentModelGroup) scene.remove(currentModelGroup);
+      if (bboxHelper) scene.remove(bboxHelper);
+
+      loader.load(`/assets/models/${modelId}.glb`, (gltf) => {
+        currentModelGroup = gltf.scene;
+
+        let triCount = 0;
+        let vertCount = 0;
+
+        currentModelGroup.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            child.material.wireframe = isWireframe;
+            if (child.geometry) {
+              vertCount += child.geometry.attributes.position.count;
+              if (child.geometry.index) triCount += child.geometry.index.count / 3;
+              else triCount += child.geometry.attributes.position.count / 3;
+            }
+          }
+        });
+
+        currentModelGroup.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(currentModelGroup);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        // Center on X/Z, align minY to 0
+        currentModelGroup.position.x = -center.x;
+        currentModelGroup.position.z = -center.z;
+        currentModelGroup.position.y = -box.min.y;
+
+        scene.add(currentModelGroup);
+
+        bboxHelper = new THREE.BoxHelper(currentModelGroup, 0x38bdf8);
+        bboxHelper.visible = showBounds;
+        scene.add(bboxHelper);
+
+        const maxDim = Math.max(size.x, size.y, size.z, 1);
+        targetDist = (maxDim / (2 * Math.tan(camera.fov * Math.PI / 360))) * 1.4;
+
+        document.getElementById('stat-dims').textContent = `${size.x.toFixed(2)}m × ${size.y.toFixed(2)}m × ${size.z.toFixed(2)}m`;
+        document.getElementById('stat-tris').textContent = triCount.toLocaleString();
+        document.getElementById('stat-verts').textContent = vertCount.toLocaleString();
+        document.getElementById('stat-miny').textContent = `0.0000m (ground aligned)`;
+      });
+    }
+
+    // UI event handlers
+    document.getElementById('btn-intact').onclick = () => {
+      isWreck = false;
+      document.getElementById('btn-intact').classList.add('active');
+      document.getElementById('btn-wreck').classList.remove('active');
+      loadActiveModel();
+    };
+    document.getElementById('btn-wreck').onclick = () => {
+      if (!currentItem.wreck) return;
+      isWreck = true;
+      document.getElementById('btn-wreck').classList.add('active');
+      document.getElementById('btn-intact').classList.remove('active');
+      loadActiveModel();
+    };
+    document.getElementById('btn-wireframe').onclick = () => {
+      isWireframe = !isWireframe;
+      document.getElementById('btn-wireframe').classList.toggle('active', isWireframe);
+      if (currentModelGroup) {
+        currentModelGroup.traverse(c => { if (c.isMesh) c.material.wireframe = isWireframe; });
+      }
+    };
+    document.getElementById('btn-bbox').onclick = () => {
+      showBounds = !showBounds;
+      document.getElementById('btn-bbox').classList.toggle('active', showBounds);
+      if (bboxHelper) bboxHelper.visible = showBounds;
+    };
+    document.getElementById('btn-rotate').onclick = () => {
+      autoRotate = !autoRotate;
+      document.getElementById('btn-rotate').classList.toggle('active', autoRotate);
+    };
+    document.getElementById('btn-reset').onclick = () => {
+      cameraAngle = Math.PI / 4;
+      cameraPitch = Math.PI / 6;
+      panOffset.set(0, 0, 0);
+    };
+
+    // Mouse Controls
+    container.onmousedown = (e) => {
+      if (e.button === 0) isDragging = true;
+      if (e.button === 2) isPanning = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+    window.onmouseup = () => { isDragging = false; isPanning = false; };
+    container.oncontextmenu = (e) => e.preventDefault();
+
+    container.onmousemove = (e) => {
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+
+      if (isDragging) {
+        cameraAngle -= dx * 0.008;
+        cameraPitch = Math.max(0.05, Math.min(Math.PI / 2.1, cameraPitch + dy * 0.008));
+      } else if (isPanning) {
+        const right = new THREE.Vector3(Math.cos(cameraAngle), 0, -Math.sin(cameraAngle));
+        panOffset.addScaledVector(right, -dx * 0.02);
+        panOffset.y += dy * 0.02;
+      }
+    };
+
+    container.onwheel = (e) => {
+      targetDist = Math.max(2, Math.min(100, targetDist * (e.deltaY > 0 ? 1.1 : 0.9)));
+    };
+
+    window.onresize = () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    };
+
+    // Initial load
+    loadActiveModel();
+
+    // Render loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (autoRotate && !isDragging) {
+        cameraAngle += 0.005;
+      }
+
+      const cx = panOffset.x + Math.sin(cameraAngle) * Math.cos(cameraPitch) * targetDist;
+      const cy = panOffset.y + Math.sin(cameraPitch) * targetDist;
+      const cz = panOffset.z + Math.cos(cameraAngle) * Math.cos(cameraPitch) * targetDist;
+
+      camera.position.set(cx, cy, cz);
+      camera.lookAt(panOffset.x, panOffset.y + 1.2, panOffset.z);
+
+      if (bboxHelper && currentModelGroup) bboxHelper.update();
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
