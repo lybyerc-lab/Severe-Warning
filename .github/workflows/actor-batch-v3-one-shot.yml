@@ -1,7 +1,7 @@
 name: actor-batch-v3-one-shot
 
 on:
-  pull_request:
+  push:
     branches: [qa]
     paths:
       - '.github/sww-batch-v3-trigger.txt'
@@ -11,12 +11,10 @@ permissions:
 
 jobs:
   install-assets:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - name: Reassemble and verify exact GLBs
         shell: bash
