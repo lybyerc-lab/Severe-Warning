@@ -191,7 +191,7 @@ eight colour variants with size variation. One model makes every house identical
 
 ## State
 
-Payload is 1,091,020 bytes across 50 models -- 52% of the ~2 MB budget. All
+Payload is 1,166,964 bytes across 62 models -- 55% of the ~2 MB budget. All
 models are fully welded with merge-by-distance and normalized with base minY at
 0.0000.
 
@@ -200,6 +200,8 @@ Live:
 - All signature setpieces and props: gas station, carwash, substation, power pole,
   billboard, grain bin, propane tank, commercial shop, industrial warehouse,
   fire hydrant, street lamp, traffic signal, pine tree, oak tree, and their matching wrecks.
+- Modular residential houses: ranch-house, craftsman-house, split-level-house, and their matching wrecks.
+- Comedy yard props: flamingo, trampoline, bbq-grill, and their matching wrecks.
 - Vehicles: news-van, storm-chaser-vehicle, town-car, pickup-truck, tractor.
 - Special / Hero: cow-17 (wired exclusively to hero Cow 17 with damageable: false),
   hart-farmhouse (placed beside the Hart Farm signature barn).
@@ -207,9 +209,7 @@ Live:
 
 Open work:
 
-1. Modular residential house variants (authoring 3-4 distinct modular residential
-   footprints to replace procedural boxes while preserving color/size variety).
-2. Comedy props (flamingo, trampoline, BBQ grill) for yard dressing.
+1. Power pole variants and wire tension (currently owned by Claude).
 
 ## Verifying a change
 
