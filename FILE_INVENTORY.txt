@@ -297,6 +297,7 @@ src/presentation/scene/scene-system.ts
 src/presentation/tornado/tornado-presentation-contracts.ts
 src/presentation/tornado/tornado-presentation-system.ts
 src/qa/bridge/severe-weather-qa-bridge.ts
+src/world/setpieces/chain-setpiece-definitions.ts
 src/world/setpieces/destructible-setpiece-contracts.ts
 src/world/setpieces/destructible-setpiece-system.ts
 src/world/setpieces/hart-farm-definition.ts

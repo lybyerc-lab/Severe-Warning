@@ -23,7 +23,7 @@ export interface SetpieceStageDefinition {
 export interface SetpieceDefinition {
   readonly id: string;
   readonly name: string;
-  readonly category: 'farmstead' | 'landmark';
+  readonly category: 'farmstead' | 'landmark' | 'chain' | 'substation';
   readonly stages: readonly SetpieceStageDefinition[];
 }
 
