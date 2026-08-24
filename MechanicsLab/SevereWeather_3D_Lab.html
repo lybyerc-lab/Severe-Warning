@@ -5280,6 +5280,11 @@ function clearRampageFeedback() {
 // [SW:WORLD:TRAFFIC] --- AMBIENT TOWN CARS SYSTEM (POLISHED & PROPERLY ALIGNED) ---
 function createTownCarGroup(color) {
   const group = new THREE.Group();
+  const isTruck = Math.random() < 0.35;
+  const modelName = isTruck ? 'pickup-truck' : 'town-car';
+
+  const procBody = new THREE.Group();
+  group.add(procBody);
   
   // Main body (Length 5.5 along Z)
   const bodyGeo = new THREE.BoxGeometry(3.0, 1.4, 5.4);
@@ -5287,14 +5292,14 @@ function createTownCarGroup(color) {
   const body = new THREE.Mesh(bodyGeo, bodyMat);
   body.position.y = 0.9;
   body.castShadow = true;
-  group.add(body);
+  procBody.add(body);
   
   // Cabin & Windshield (Centered slightly back at z = -0.3)
   const cabinGeo = new THREE.BoxGeometry(2.5, 1.1, 2.7);
   const cabinMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.1, metalness: 0.8 });
   const cabin = new THREE.Mesh(cabinGeo, cabinMat);
   cabin.position.set(0, 2.0, -0.3);
-  group.add(cabin);
+  procBody.add(cabin);
   
   // 4 Black Wheels with Silver Hubcaps
   const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 12);
@@ -5306,12 +5311,12 @@ function createTownCarGroup(color) {
     const wheel = new THREE.Mesh(wheelGeo, wheelMat);
     wheel.rotation.z = Math.PI / 2;
     wheel.position.set(pos[0], pos[1], pos[2]);
-    group.add(wheel);
+    procBody.add(wheel);
     
     const cap = new THREE.Mesh(capGeo, capMat);
     cap.rotation.z = Math.PI / 2;
     cap.position.set(pos[0], pos[1], pos[2]);
-    group.add(cap);
+    procBody.add(cap);
   });
   
   // Headlights at FRONT (+Z)
@@ -5319,7 +5324,7 @@ function createTownCarGroup(color) {
   [-1.0, 1.0].forEach(hx => {
     const hl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.2), hlMat);
     hl.position.set(hx, 0.95, 2.72);
-    group.add(hl);
+    procBody.add(hl);
   });
   
   // Headlight Light Cones (projecting forward in +Z)
@@ -5335,7 +5340,14 @@ function createTownCarGroup(color) {
   [-1.0, 1.0].forEach(tx => {
     const tl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.2), tlMat);
     tl.position.set(tx, 0.95, -2.72);
-    group.add(tl);
+    procBody.add(tl);
+  });
+
+  // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF vehicle model once loaded
+  instantiateActorModel(modelName, { damageable: false }).then(model => {
+    if (!model) return;
+    if (procBody.parent) group.remove(procBody);
+    group.add(model);
   });
   
   return group;
@@ -5730,37 +5742,41 @@ function createMediaVehicleMesh(role, crewNumber) {
   const isNews = role === 'news';
   const bodyColor = isNews ? '#f8fafc' : '#f59e0b';
   const stripeColor = isNews ? '#2563eb' : '#111827';
+  const modelName = isNews ? 'news-van' : 'storm-chaser-vehicle';
+
+  const procBody = new THREE.Group();
+  group.add(procBody);
 
   // Length 4.8 along Z (front at +Z), Width 2.4 along X
-  addPropPart(group, new THREE.BoxGeometry(2.4, 1.5, 4.8), bodyColor, 0, 1.25, 0, { roughness: 0.32, metalness: 0.38 });
-  addPropPart(group, new THREE.BoxGeometry(2.2, 1.15, isNews ? 3.0 : 2.7), bodyColor, 0, 2.35, -0.45, { roughness: 0.3, metalness: 0.28 });
-  addPropPart(group, new THREE.BoxGeometry(2.45, 0.36, 5.0), stripeColor, 0, 1.28, 0, { roughness: 0.35, metalness: 0.42 });
+  addPropPart(procBody, new THREE.BoxGeometry(2.4, 1.5, 4.8), bodyColor, 0, 1.25, 0, { roughness: 0.32, metalness: 0.38 });
+  addPropPart(procBody, new THREE.BoxGeometry(2.2, 1.15, isNews ? 3.0 : 2.7), bodyColor, 0, 2.35, -0.45, { roughness: 0.3, metalness: 0.28 });
+  addPropPart(procBody, new THREE.BoxGeometry(2.45, 0.36, 5.0), stripeColor, 0, 1.28, 0, { roughness: 0.35, metalness: 0.42 });
   
   // Windshield at FRONT (+Z)
-  addPropPart(group, new THREE.BoxGeometry(2.2, 0.72, 0.75), '#0f172a', 0, 2.38, 1.7, { roughness: 0.12, metalness: 0.2 });
+  addPropPart(procBody, new THREE.BoxGeometry(2.2, 0.72, 0.75), '#0f172a', 0, 2.38, 1.7, { roughness: 0.12, metalness: 0.2 });
 
   // 4 Black Wheels along Z-axis (x = ±1.25, z = ±1.55)
   [-1.25, 1.25].forEach(x => [-1.55, 1.55].forEach(z => {
-    addPropPart(group, new THREE.CylinderGeometry(0.54, 0.54, 0.34, 12), '#09090b', x, 0.55, z, { rotation: { z: Math.PI / 2 } });
+    addPropPart(procBody, new THREE.CylinderGeometry(0.54, 0.54, 0.34, 12), '#09090b', x, 0.55, z, { rotation: { z: Math.PI / 2 } });
   }));
 
   // Headlights at FRONT (+Z)
   const hlMat = new THREE.MeshBasicMaterial({ color: '#fef08a' });
   [-0.9, 0.9].forEach(hx => {
-    addPropPart(group, new THREE.BoxGeometry(0.4, 0.35, 0.15), '#fef08a', hx, 1.1, 2.42, { material: hlMat });
+    addPropPart(procBody, new THREE.BoxGeometry(0.4, 0.35, 0.15), '#fef08a', hx, 1.1, 2.42, { material: hlMat });
   });
 
   if (isNews) {
     const stationMat = createSignMaterial(`MOO BREW|LIVE NEWS`, '#7c2d12', '#fff7ed');
-    addPropPart(group, new THREE.BoxGeometry(0.12, 1.15, 2.7), '#ffffff', -1.14, 2.25, -0.55, { material: stationMat });
-    addPropPart(group, new THREE.CylinderGeometry(0.08, 0.1, 2.4, 8), '#e2e8f0', 0, 3.9, -0.8);
-    const dish = addPropPart(group, new THREE.SphereGeometry(0.85, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), '#e2e8f0', 0, 5.15, -0.8, { roughness: 0.2, metalness: 0.65 });
+    addPropPart(procBody, new THREE.BoxGeometry(0.12, 1.15, 2.7), '#ffffff', -1.14, 2.25, -0.55, { material: stationMat });
+    addPropPart(procBody, new THREE.CylinderGeometry(0.08, 0.1, 2.4, 8), '#e2e8f0', 0, 3.9, -0.8);
+    const dish = addPropPart(procBody, new THREE.SphereGeometry(0.85, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), '#e2e8f0', 0, 5.15, -0.8, { roughness: 0.2, metalness: 0.65 });
     dish.rotation.x = -Math.PI / 3;
   } else {
-    addPropPart(group, new THREE.BoxGeometry(1.9, 0.18, 2.7), '#111827', 0, 3.0, -0.35, { roughness: 0.25, metalness: 0.55 });
-    addPropPart(group, new THREE.CylinderGeometry(0.18, 0.22, 0.8, 8), '#475569', 0, 3.5, 0.25);
-    addPropPart(group, new THREE.BoxGeometry(0.52, 0.48, 0.75), '#111827', 0, 3.95, 0.25);
-    addPropPart(group, new THREE.CylinderGeometry(0.04, 0.04, 2.0, 6), '#e2e8f0', 0, 4.0, -1.3, { rotation: { x: 0.15 } });
+    addPropPart(procBody, new THREE.BoxGeometry(1.9, 0.18, 2.7), '#111827', 0, 3.0, -0.35, { roughness: 0.25, metalness: 0.55 });
+    addPropPart(procBody, new THREE.CylinderGeometry(0.18, 0.22, 0.8, 8), '#475569', 0, 3.5, 0.25);
+    addPropPart(procBody, new THREE.BoxGeometry(0.52, 0.48, 0.75), '#111827', 0, 3.95, 0.25);
+    addPropPart(procBody, new THREE.CylinderGeometry(0.04, 0.04, 2.0, 6), '#e2e8f0', 0, 4.0, -1.3, { rotation: { x: 0.15 } });
   }
 
   const flash = addPropPart(group, new THREE.SphereGeometry(0.42, 8, 6), '#ffffff', 0, isNews ? 5.25 : 4.0, isNews ? -0.8 : 0.25, {
@@ -5768,10 +5784,17 @@ function createMediaVehicleMesh(role, crewNumber) {
   });
   flash.visible = false;
 
-  const crewTag = addPropPart(group, new THREE.BoxGeometry(1.35, 0.62, 0.1), stripeColor, 0, 1.55, 2.42, {
+  const crewTag = addPropPart(procBody, new THREE.BoxGeometry(1.35, 0.62, 0.1), stripeColor, 0, 1.55, 2.42, {
     material: createSignMaterial(isNews ? `${crewNumber}|LIVE` : `WX|${crewNumber}`, isNews ? '#1d4ed8' : '#111827')
   });
   crewTag.rotation.y = Math.PI / 2;
+
+  // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF vehicle model once loaded
+  instantiateActorModel(modelName, { damageable: false }).then(model => {
+    if (!model) return;
+    if (procBody.parent) group.remove(procBody);
+    group.add(model);
+  });
 
   return { group, flash };
 }
@@ -9234,6 +9257,20 @@ function createProductionBarn() {
   beacon.rotation.x = Math.PI / 2;
   beacon.position.y = 19.2;
   group.add(beacon);
+
+  // [SW:VISUAL:ACTOR_MODELS] Parked tractor and farmhouse setpiece dressing
+  instantiateActorModel('tractor', { damageable: false }).then(tractor => {
+    if (!tractor) return;
+    tractor.position.set(-16, 0, 12);
+    tractor.rotation.y = 0.45;
+    group.add(tractor);
+  });
+  instantiateActorModel('hart-farmhouse', { damageable: false }).then(house => {
+    if (!house) return;
+    house.position.set(22, 0, -4);
+    house.rotation.y = -0.15;
+    group.add(house);
+  });
 
   productionBarn = {
     group,
