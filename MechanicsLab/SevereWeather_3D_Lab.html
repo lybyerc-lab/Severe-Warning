@@ -5682,15 +5682,18 @@ function createLandmarkMesh(icon) {
 // STAGE 3 FINALE SYSTEM: HIGH-VALUE POWER SUBSTATION MESH WITH PULSING BEACON
 function createSubstationMesh() {
   const group = new THREE.Group();
+  const procBody = new THREE.Group();
+  group.add(procBody);
+
   const padGeo = new THREE.BoxGeometry(10, 0.6, 10);
   const padMat = new THREE.MeshStandardMaterial({ color: '#475569', roughness: 0.9 });
   const pad = new THREE.Mesh(padGeo, padMat); pad.position.y = 0.3;
-  group.add(pad);
+  procBody.add(pad);
 
   const transGeo = new THREE.CylinderGeometry(1.6, 1.6, 5, 12);
   const transMat = new THREE.MeshStandardMaterial({ color: '#0284c7', metalness: 0.8, roughness: 0.2 });
   const trans = new THREE.Mesh(transGeo, transMat); trans.position.y = 2.8;
-  group.add(trans);
+  procBody.add(trans);
 
   const sparkRingGeo = new THREE.TorusGeometry(2.2, 0.3, 8, 20);
   const sparkRingMat = new THREE.MeshBasicMaterial({ color: '#38bdf8', wireframe: true });
@@ -5704,7 +5707,14 @@ function createSubstationMesh() {
   beacon.position.y = 9.0;
   group.add(beacon);
 
-  return { group, base: trans, sparkRing, beacon, color: '#38bdf8' };
+  // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF substation model once loaded
+  instantiateActorModel('substation', { damageable: true }).then(model => {
+    if (!model) return;
+    if (procBody.parent) group.remove(procBody);
+    group.add(model);
+  });
+
+  return { group, base: trans, sparkRing, beacon, color: '#38bdf8', wreck: 'substation-wreck' };
 }
 
 function addPropPart(group, geometry, color, x, y, z, options = {}) {
@@ -5827,8 +5837,16 @@ function createComedyPropMesh(kind) {
   } else if (kind === 'billboard') {
     color = '#fbbf24';
     const signMat = createSignMaterial('STORM PROOF|ROOFING', '#7f1d1d');
-    addPropPart(group, new THREE.BoxGeometry(8.5, 4.2, 0.45), color, 0, 7.2, 0, { material: signMat });
-    [-2.8, 2.8].forEach(x => addPropPart(group, new THREE.CylinderGeometry(0.22, 0.3, 5.2, 8), '#78350f', x, 2.6, 0));
+    const procBillboard = new THREE.Group();
+    group.add(procBillboard);
+    addPropPart(procBillboard, new THREE.BoxGeometry(8.5, 4.2, 0.45), color, 0, 7.2, 0, { material: signMat });
+    [-2.8, 2.8].forEach(x => addPropPart(procBillboard, new THREE.CylinderGeometry(0.22, 0.3, 5.2, 8), '#78350f', x, 2.6, 0));
+    // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF billboard model once loaded
+    instantiateActorModel('billboard', { damageable: true }).then(model => {
+      if (!model) return;
+      if (procBillboard.parent) group.remove(procBillboard);
+      group.add(model);
+    });
   } else if (kind === 'coffee') {
     color = '#f97316';
     addPropPart(group, new THREE.CylinderGeometry(1.9, 1.55, 4.2, 18), '#f8fafc', 0, 2.2, 0);
@@ -7199,37 +7217,53 @@ function createChainSetpieceMesh(kind) {
   let color = '#ef4444';
   let effectColor = '#fb923c';
   let footprint = 16;
+  let modelName = null;
+  let wreckName = null;
+
+  const procBody = new THREE.Group();
+  group.add(procBody);
 
   if (kind === 'gas') {
     color = '#ef4444'; effectColor = '#f97316'; footprint = 18;
-    addPropPart(group, new THREE.BoxGeometry(16, 1.1, 10), '#f8fafc', 0, 6.6, 0, { roughness: 0.42 });
-    addPropPart(group, new THREE.BoxGeometry(16, 0.5, 10.2), color, 0, 7.25, 0);
+    modelName = 'gas-station'; wreckName = 'gas-station-wreck';
+    addPropPart(procBody, new THREE.BoxGeometry(16, 1.1, 10), '#f8fafc', 0, 6.6, 0, { roughness: 0.42 });
+    addPropPart(procBody, new THREE.BoxGeometry(16, 0.5, 10.2), color, 0, 7.25, 0);
     [-4.5, 0, 4.5].forEach(x => {
-      addPropPart(group, new THREE.BoxGeometry(1.8, 3.2, 1.8), '#f8fafc', x, 1.7, 0);
-      addPropPart(group, new THREE.BoxGeometry(1.9, 0.65, 1.9), color, x, 2.9, 0);
+      addPropPart(procBody, new THREE.BoxGeometry(1.8, 3.2, 1.8), '#f8fafc', x, 1.7, 0);
+      addPropPart(procBody, new THREE.BoxGeometry(1.9, 0.65, 1.9), color, x, 2.9, 0);
     });
-    [-7, 7].forEach(x => addPropPart(group, new THREE.BoxGeometry(0.55, 6.2, 0.55), '#64748b', x, 3.2, 0));
-    addPropPart(group, new THREE.BoxGeometry(8, 4.2, 0.45), color, 0, 11.2, 0, { material: createSignMaterial('LAST CHANCE|GAS', '#b91c1c') });
+    [-7, 7].forEach(x => addPropPart(procBody, new THREE.BoxGeometry(0.55, 6.2, 0.55), '#64748b', x, 3.2, 0));
+    addPropPart(procBody, new THREE.BoxGeometry(8, 4.2, 0.45), color, 0, 11.2, 0, { material: createSignMaterial('LAST CHANCE|GAS', '#b91c1c') });
   } else if (kind === 'carwash') {
     color = '#06b6d4'; effectColor = '#38bdf8'; footprint = 20;
-    addPropPart(group, new THREE.BoxGeometry(20, 7.2, 9), '#dbeafe', 0, 3.6, 0, { roughness: 0.5 });
-    addPropPart(group, new THREE.BoxGeometry(12, 5.2, 0.5), '#172554', 0, 3.1, -4.65);
-    [-3.3, 3.3].forEach(x => addPropPart(group, new THREE.CylinderGeometry(1.1, 1.1, 4.8, 12), x < 0 ? '#f472b6' : '#22d3ee', x, 3.0, -4.9, { rotation: { z: Math.PI / 2 } }));
-    addPropPart(group, new THREE.BoxGeometry(13, 2.2, 0.45), color, 0, 8.25, -1.5, { material: createSignMaterial('TWISTER SHINE|CAR WASH', '#0369a1') });
+    modelName = 'carwash'; wreckName = 'carwash-wreck';
+    addPropPart(procBody, new THREE.BoxGeometry(20, 7.2, 9), '#dbeafe', 0, 3.6, 0, { roughness: 0.5 });
+    addPropPart(procBody, new THREE.BoxGeometry(12, 5.2, 0.5), '#172554', 0, 3.1, -4.65);
+    [-3.3, 3.3].forEach(x => addPropPart(procBody, new THREE.CylinderGeometry(1.1, 1.1, 4.8, 12), x < 0 ? '#f472b6' : '#22d3ee', x, 3.0, -4.9, { rotation: { z: Math.PI / 2 } }));
+    addPropPart(procBody, new THREE.BoxGeometry(13, 2.2, 0.45), color, 0, 8.25, -1.5, { material: createSignMaterial('TWISTER SHINE|CAR WASH', '#0369a1') });
   } else if (kind === 'fireworks') {
     color = '#7c3aed'; effectColor = '#facc15'; footprint = 17;
-    addPropPart(group, new THREE.BoxGeometry(17, 6.0, 11), '#581c87', 0, 3.0, 0, { roughness: 0.72 });
-    addPropPart(group, new THREE.ConeGeometry(11, 4.2, 4), '#dc2626', 0, 8.0, 0, { rotation: { y: Math.PI / 4 } });
-    addPropPart(group, new THREE.BoxGeometry(15, 2.8, 0.5), color, 0, 5.1, -5.7, { material: createSignMaterial('TOTALLY LEGAL|FIREWORKS', '#7c3aed') });
-    [-5, 0, 5].forEach(x => addPropPart(group, new THREE.BoxGeometry(2.6, 2.0, 2.6), ['#ef4444','#facc15','#3b82f6'][(x + 5) / 5], x, 1.1, -7.1));
+    addPropPart(procBody, new THREE.BoxGeometry(17, 6.0, 11), '#581c87', 0, 3.0, 0, { roughness: 0.72 });
+    addPropPart(procBody, new THREE.ConeGeometry(11, 4.2, 4), '#dc2626', 0, 8.0, 0, { rotation: { y: Math.PI / 4 } });
+    addPropPart(procBody, new THREE.BoxGeometry(15, 2.8, 0.5), color, 0, 5.1, -5.7, { material: createSignMaterial('TOTALLY LEGAL|FIREWORKS', '#7c3aed') });
+    [-5, 0, 5].forEach(x => addPropPart(procBody, new THREE.BoxGeometry(2.6, 2.0, 2.6), ['#ef4444','#facc15','#3b82f6'][(x + 5) / 5], x, 1.1, -7.1));
   } else {
     color = '#f59e0b'; effectColor = '#fde047'; footprint = 19;
-    addPropPart(group, new THREE.BoxGeometry(17, 5.8, 12), '#78716c', 0, 2.9, 0, { roughness: 0.82 });
-    [-5, 0, 5].forEach(x => addPropPart(group, new THREE.CylinderGeometry(1.45, 1.45, 8.2, 14), '#f8fafc', x, 4.2, -7.1, { rotation: { z: Math.PI / 2 }, metalness: 0.45 }));
-    addPropPart(group, new THREE.BoxGeometry(14, 2.8, 0.45), color, 0, 6.3, -6.3, { material: createSignMaterial('HANKS PROPANE|& PROPANE', '#92400e') });
+    addPropPart(procBody, new THREE.BoxGeometry(17, 5.8, 12), '#78716c', 0, 2.9, 0, { roughness: 0.82 });
+    [-5, 0, 5].forEach(x => addPropPart(procBody, new THREE.CylinderGeometry(1.45, 1.45, 8.2, 14), '#f8fafc', x, 4.2, -7.1, { rotation: { z: Math.PI / 2 }, metalness: 0.45 }));
+    addPropPart(procBody, new THREE.BoxGeometry(14, 2.8, 0.45), color, 0, 6.3, -6.3, { material: createSignMaterial('HANKS PROPANE|& PROPANE', '#92400e') });
   }
 
-  return { group, color, effectColor, footprint };
+  // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF setpiece model once loaded
+  if (modelName) {
+    instantiateActorModel(modelName, { damageable: true }).then(model => {
+      if (!model) return;
+      if (procBody.parent) group.remove(procBody);
+      group.add(model);
+    });
+  }
+
+  return { group, color, effectColor, footprint, wreck: wreckName };
 }
 
 function spawnChainSetpieces() {
@@ -7273,7 +7307,7 @@ function destroyChainSetpiece(setpiece) {
   addCameraShake(3.2);
   playSound('explode');
   spawnSetpieceShockwave(setpiece);
-  explodeStructure(setpiece.x, setpiece.z, setpiece.meshData.color, false, false, setpiece.meshData.footprint);
+  explodeStructure(setpiece.x, setpiece.z, setpiece.meshData.color, false, false, setpiece.meshData.footprint, setpiece.meshData.wreck);
   targets.forEach(target => {
     const distance = Math.hypot(target.x - setpiece.x, target.z - setpiece.z);
     if (distance <= 58) damageTarget(target, Math.max(95, 230 - distance * 2.5), 'chain');
@@ -8446,7 +8480,7 @@ function animate(now) {
             destroyedSubstationsCount++;
             addScore(350);
             triggerSubstationBlackoutEvent();
-            explodeStructure(sub.x, sub.z, sub.meshData.color);
+            explodeStructure(sub.x, sub.z, sub.meshData.color, false, false, 10, sub.meshData.wreck || 'substation-wreck');
           }
         }
       });
@@ -9258,7 +9292,7 @@ function createProductionBarn() {
   beacon.position.y = 19.2;
   group.add(beacon);
 
-  // [SW:VISUAL:ACTOR_MODELS] Parked tractor and farmhouse setpiece dressing
+  // [SW:VISUAL:ACTOR_MODELS] Parked tractor, farmhouse, grain bin, and propane tank setpiece dressing
   instantiateActorModel('tractor', { damageable: false }).then(tractor => {
     if (!tractor) return;
     tractor.position.set(-16, 0, 12);
@@ -9270,6 +9304,17 @@ function createProductionBarn() {
     house.position.set(22, 0, -4);
     house.rotation.y = -0.15;
     group.add(house);
+  });
+  instantiateActorModel('grain-bin', { damageable: false }).then(bin => {
+    if (!bin) return;
+    bin.position.set(-20, 0, -14);
+    group.add(bin);
+  });
+  instantiateActorModel('propane-tank', { damageable: false }).then(tank => {
+    if (!tank) return;
+    tank.position.set(16, 0, 12);
+    tank.rotation.y = Math.PI / 2;
+    group.add(tank);
   });
 
   productionBarn = {
