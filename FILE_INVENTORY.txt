@@ -178,6 +178,8 @@ android/gradlew.bat
 android/settings.gradle
 android/variables.gradle
 assets/models/README.md
+assets/models/bbq-grill-wreck.glb
+assets/models/bbq-grill.glb
 assets/models/billboard-wreck.glb
 assets/models/billboard.glb
 assets/models/carwash-wreck.glb
@@ -187,12 +189,16 @@ assets/models/commercial-shop.glb
 assets/models/courthouse-wreck.glb
 assets/models/courthouse.glb
 assets/models/cow-17.glb
+assets/models/craftsman-house-wreck.glb
+assets/models/craftsman-house.glb
 assets/models/farm-windmill-wreck.glb
 assets/models/farm-windmill.glb
 assets/models/ferris-wheel-wreck.glb
 assets/models/ferris-wheel.glb
 assets/models/fire-hydrant-wreck.glb
 assets/models/fire-hydrant.glb
+assets/models/flamingo-wreck.glb
+assets/models/flamingo.glb
 assets/models/foundry-wreck.glb
 assets/models/foundry.glb
 assets/models/gas-station-wreck.glb
@@ -217,6 +223,10 @@ assets/models/power-pole-wreck.glb
 assets/models/power-pole.glb
 assets/models/propane-tank-wreck.glb
 assets/models/propane-tank.glb
+assets/models/ranch-house-wreck.glb
+assets/models/ranch-house.glb
+assets/models/split-level-house-wreck.glb
+assets/models/split-level-house.glb
 assets/models/storm-chaser-vehicle.glb
 assets/models/street-lamp-wreck.glb
 assets/models/street-lamp.glb
@@ -226,6 +236,8 @@ assets/models/town-car.glb
 assets/models/tractor.glb
 assets/models/traffic-signal-wreck.glb
 assets/models/traffic-signal.glb
+assets/models/trampoline-wreck.glb
+assets/models/trampoline.glb
 assets/models/water-tower-wreck.glb
 assets/models/water-tower.glb
 capacitor.config.json
