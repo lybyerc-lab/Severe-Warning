@@ -123,6 +123,9 @@ REPOSITORY_BOOTSTRAP.md
 SHA256SUMS.txt
 Tools/validate_project.py
 VALIDATION_REPORT.md
+_tmp_test.txt
+_tmp_test2.txt
+_tmp_test3.txt
 android/.gitignore
 android/app/.gitignore
 android/app/build.gradle
@@ -178,9 +181,14 @@ android/settings.gradle
 android/variables.gradle
 assets/models/README.md
 assets/models/cow-17.glb
+assets/models/farm-windmill.glb
+assets/models/grain-silo-wreck.glb
 assets/models/grain-silo.glb
+assets/models/hart-barn.glb
+assets/models/hart-farmhouse.glb
 assets/models/news-van.glb
 assets/models/storm-chaser-vehicle.glb
+assets/models/water-tower-wreck.glb
 assets/models/water-tower.glb
 capacitor.config.json
 package.json
