@@ -102,10 +102,17 @@ An actor can have a collapse state at `<name>-wreck.glb`. It is optional --
 without one, destruction falls back to the generic procedural ruin.
 
 **Same footprint as the intact model.** Identical X and Z extents, base at
-Y = 0, height roughly a third. That is what lets the swap skip repositioning:
+Y = 0, height roughly a third. The wreck must sit strictly inside the intact
+model's footprint or it pops visually on destruction:
 
     water-tower        10.40 x 28.07 x 10.40
     water-tower-wreck  10.40 x  9.30 x 10.40
+
+**Author intact + wreck as a pair, one commit per prop family.** For
+destructible scenery, authoring the intact model without its wreck causes
+visual pops or creates avoidable multi-agent handoff churn. Every destructible
+prop family must commit its intact and wreck models together in a single
+atomic commit along with `FILE_INVENTORY.txt`.
 
 ## Adding a model
 

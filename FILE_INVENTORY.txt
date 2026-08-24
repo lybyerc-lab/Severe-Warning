@@ -178,6 +178,7 @@ android/gradlew.bat
 android/settings.gradle
 android/variables.gradle
 assets/models/README.md
+assets/models/billboard-wreck.glb
 assets/models/billboard.glb
 assets/models/carwash-wreck.glb
 assets/models/carwash.glb
@@ -192,6 +193,7 @@ assets/models/foundry-wreck.glb
 assets/models/foundry.glb
 assets/models/gas-station-wreck.glb
 assets/models/gas-station.glb
+assets/models/grain-bin-wreck.glb
 assets/models/grain-bin.glb
 assets/models/grain-silo-wreck.glb
 assets/models/grain-silo.glb
@@ -201,7 +203,9 @@ assets/models/hart-barn.glb
 assets/models/hart-farmhouse.glb
 assets/models/news-van.glb
 assets/models/pickup-truck.glb
+assets/models/power-pole-wreck.glb
 assets/models/power-pole.glb
+assets/models/propane-tank-wreck.glb
 assets/models/propane-tank.glb
 assets/models/storm-chaser-vehicle.glb
 assets/models/substation-wreck.glb
