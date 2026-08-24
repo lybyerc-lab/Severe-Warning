@@ -4006,6 +4006,9 @@ const poleLayers = [
   { mesh: poleTrunks, yOffset: 5.5, scale: 1 },
   { mesh: poleCrossarms, yOffset: 10.2, scale: 1 }
 ];
+// [SW:VISUAL:ACTOR_DAMAGE] The snapped-off stump, empty until its glb lands.
+const poleWreckLayers = [];
+const poleWrecked = new Uint8Array(polePositions.length);
 [poleTrunks, poleCrossarms].forEach(mesh => {
   mesh.castShadow = true;
   // The line spans the whole map, so culling the set as one object would only
@@ -4022,19 +4025,53 @@ const polePosVec = new THREE.Vector3();
 // The pulse the cascade applies is transient, but a layer swap can land in the
 // middle of one, so the live scale has to be readable rather than inferred.
 const poleInstanceScales = new Float32Array(polePositions.length).fill(1);
+const poleWreckQuat = new THREE.Quaternion();
+const poleWreckEuler = new THREE.Euler();
+// A whole line of stumps facing the same way reads as a repeated asset rather
+// than as damage. This is the golden angle, so the yaw spreads evenly along the
+// line, and it is derived from the index rather than drawn at random: a wreck
+// that re-oriented every time an unrelated pole was written would twitch.
+function poleWreckOrientation(index) {
+  poleWreckEuler.set(0, (index * 2.399963) % (Math.PI * 2), 0);
+  return poleWreckQuat.setFromEuler(poleWreckEuler);
+}
+function writePoleLayerSet(layers, index, spot, groundY, scale, quaternion) {
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+    const layerScale = scale * layer.scale;
+    poleScaleVec.set(layerScale, layerScale, layerScale);
+    polePosVec.set(spot.x, groundY + layer.yOffset * layerScale, spot.z);
+    poleMatrix.compose(polePosVec, quaternion, poleScaleVec);
+    layer.mesh.setMatrixAt(index, poleMatrix);
+    layer.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
 function writePoleInstance(index, scale) {
   const spot = polePositions[index];
   const groundY = terrainHeightAt(spot.x, spot.z);
   poleInstanceScales[index] = scale;
-  for (let i = 0; i < poleLayers.length; i++) {
-    const layer = poleLayers[i];
-    const layerScale = scale * layer.scale;
-    poleScaleVec.set(layerScale, layerScale, layerScale);
-    polePosVec.set(spot.x, groundY + layer.yOffset * layerScale, spot.z);
-    poleMatrix.compose(polePosVec, poleQuat, poleScaleVec);
-    layer.mesh.setMatrixAt(index, poleMatrix);
-    layer.mesh.instanceMatrix.needsUpdate = true;
+  const wrecked = poleWrecked[index] === 1;
+  // An InstancedMesh has no way to skip an instance, so whichever set is not
+  // showing gets written at zero scale. It costs its one draw call either way;
+  // what it stops costing is pixels.
+  writePoleLayerSet(poleLayers, index, spot, groundY, wrecked ? 0 : scale, poleQuat);
+  if (poleWreckLayers.length) {
+    writePoleLayerSet(poleWreckLayers, index, spot, groundY, wrecked ? scale : 0, poleWreckOrientation(index));
   }
+}
+
+// [SW:VISUAL:ACTOR_DAMAGE] A pole the storm has taken out snaps to its stump.
+function setPoleWrecked(index) {
+  // With no authored wreck there is nothing to swap to, and zeroing the intact
+  // pole would simply delete it from the county. Leave it standing instead.
+  if (!poleWreckLayers.length) return;
+  if (index == null || poleWrecked[index] === 1) return;
+  poleWrecked[index] = 1;
+  writePoleInstance(index, poleInstanceScales[index]);
+}
+function clearPoleWrecks() {
+  poleWrecked.fill(0);
+  for (let i = 0; i < polePositions.length; i++) writePoleInstance(i, 1);
 }
 
 // [SW:VISUAL:ACTOR_MODELS] Swap the utility line over to the authored pole.
@@ -4052,31 +4089,53 @@ function writePoleInstance(index, scale) {
 // next batch is authored.
 const POLE_MODEL_HEIGHT = 9;      // measured from the authored glb's bounds
 const POLE_SILHOUETTE_HEIGHT = 11; // the procedural trunk this has to stand in for
-loadActorModel('power-pole').then(prototype => {
-  if (!prototype) return;         // no authored pole; the procedural pair stays
+const POLE_MODEL_SCALE = POLE_SILHOUETTE_HEIGHT / POLE_MODEL_HEIGHT;
+// Bakes the node transform into the geometry. An InstancedMesh applies only its
+// own per-instance matrix, so anything the exporter left on the parent node
+// would otherwise be dropped silently.
+function instancedPoleMesh(prototype) {
   prototype.updateMatrixWorld(true);
   let source = null;
   prototype.traverse(child => { if (!source && child.isMesh) source = child; });
-  if (!source) return;
-  // Bake the node transform into the geometry. An InstancedMesh applies only
-  // its own per-instance matrix, so anything the exporter left on the parent
-  // node would otherwise be dropped silently.
+  if (!source) return null;
   const geometry = source.geometry.clone();
   geometry.applyMatrix4(source.matrixWorld);
-  const poles = new THREE.InstancedMesh(geometry, source.material, polePositions.length);
-  poles.castShadow = true;
-  poles.frustumCulled = false;
-  poles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  const mesh = new THREE.InstancedMesh(geometry, source.material, polePositions.length);
+  mesh.castShadow = true;
+  // The line spans the whole map, so culling the set as one object would only
+  // ever remove it wholesale or not at all.
+  mesh.frustumCulled = false;
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  return mesh;
+}
+loadActorModel('power-pole').then(prototype => {
+  if (!prototype) return;         // no authored pole; the procedural pair stays
+  const poles = instancedPoleMesh(prototype);
+  if (!poles) return;
   scene.add(poles);
   // Scaled to the height it replaces rather than shipped at authored size, so
   // the storm reads against the same skyline it always did.
   poleLayers.length = 0;
-  poleLayers.push({ mesh: poles, yOffset: 0, scale: POLE_SILHOUETTE_HEIGHT / POLE_MODEL_HEIGHT });
+  poleLayers.push({ mesh: poles, yOffset: 0, scale: POLE_MODEL_SCALE });
   for (let i = 0; i < polePositions.length; i++) writePoleInstance(i, poleInstanceScales[i]);
   scene.remove(poleTrunks);
   scene.remove(poleCrossarms);
   poleTrunks.dispose();
   poleCrossarms.dispose();
+});
+
+// [SW:VISUAL:ACTOR_DAMAGE] Until this lands every pole the storm hit stayed
+// perfectly upright, so a run left no trace along the roads it had crossed.
+// Same instancing as the intact line: one draw call for all 117 stumps, and the
+// pair together costs what the procedural trunk and crossarm pair cost before.
+loadActorModel('power-pole-wreck').then(prototype => {
+  if (!prototype) return;         // no wreck authored; poles simply stay up
+  const wrecks = instancedPoleMesh(prototype);
+  if (!wrecks) return;
+  scene.add(wrecks);
+  poleWreckLayers.push({ mesh: wrecks, yOffset: 0, scale: POLE_MODEL_SCALE });
+  // Every pole starts intact, so this first pass writes all 117 stumps at zero.
+  for (let i = 0; i < polePositions.length; i++) writePoleInstance(i, poleInstanceScales[i]);
 });
 
 polePositions.forEach((spot, index) => {
@@ -4086,6 +4145,7 @@ polePositions.forEach((spot, index) => {
     // uses, so pole.group.scale.set(...) keeps working unchanged and drives the
     // instance matrix instead of an Object3D.
     group: { scale: { set: (scale) => writePoleInstance(index, scale) } },
+    index,
     x: spot.x,
     z: spot.z,
     sparked: false
@@ -6720,6 +6780,7 @@ function triggerGridZapCascade() {
     setTimeout(() => {
       if (!pole.sparked) {
         pole.sparked = true;
+        setPoleWrecked(pole.index);
         addScore(index === 0 ? 110 : 75);
       }
       pole.group.scale.set(1.08, 1.08, 1.08);
@@ -7743,7 +7804,8 @@ function init3DWorld() {
     group.rotation.z = 0;
     group.position.set(prop.x, terrainHeightAt(prop.x, prop.z), prop.z);
   });
-  powerPoles.forEach(pole => { pole.sparked = false; pole.group.scale.set(1, 1, 1); });
+  powerPoles.forEach(pole => { pole.sparked = false; });
+  clearPoleWrecks();
 
   targets.length = 0;
   landmarks.length = 0;
@@ -8771,6 +8833,7 @@ function animate(now) {
       const dist = Math.hypot(pole.x - storm.pos.x, pole.z - storm.pos.z);
       if (dist < storm.radius * 1.4 && !pole.sparked) {
         pole.sparked = true;
+        setPoleWrecked(pole.index);
         triggerPowerFlash();
         addScore(60);
       }
