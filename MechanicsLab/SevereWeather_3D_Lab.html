@@ -4990,6 +4990,18 @@ function configureBovineAnimal(cowMesh, index, x, z, groundY) {
   const productionScale = id === 17 ? 1.32 : 1.0;
   cowMesh.scale.setScalar(productionScale);
   cowMesh.userData.productionBaseScale = productionScale;
+
+  // [SW:VISUAL:ACTOR_MODELS] Hero Cow 17 model instantiation (First Law: protected actor)
+  if (id === 17) {
+    instantiateActorModel('cow-17', { damageable: false }).then(model => {
+      if (!model) return;
+      while (cowMesh.children.length > 0) cowMesh.remove(cowMesh.children[0]);
+      cowMesh.geometry.dispose();
+      cowMesh.geometry = new THREE.BufferGeometry();
+      cowMesh.add(model);
+    });
+  }
+
   return {
     id,
     mesh: cowMesh,
@@ -5680,6 +5692,13 @@ function createCommercialMesh(districtType, variant = 0) {
   const group = new THREE.Group();
   const damageParts = [];
   let h, width, depth, color, roughness, metalness;
+  const isMainStreet = districtType === 0;
+  const isWarehouse = districtType === 2;
+  const modelName = isMainStreet ? 'commercial-shop' : (isWarehouse ? 'industrial-warehouse' : null);
+  const wreckName = isMainStreet ? 'commercial-shop-wreck' : (isWarehouse ? 'industrial-warehouse-wreck' : null);
+
+  const procBody = new THREE.Group();
+  group.add(procBody);
 
   if (districtType === 0) { // Main Street: Glass & Brick Office Towers
     const palette = ['#0f766e', '#1d4ed8', '#334155', '#0369a1', '#475569'];
@@ -5708,7 +5727,7 @@ function createCommercialMesh(districtType, variant = 0) {
   const base = new THREE.Mesh(baseGeo, baseMat);
   base.position.y = h / 2;
   base.castShadow = true; base.receiveShadow = true;
-  group.add(base); damageParts.push(base);
+  procBody.add(base); damageParts.push(base);
 
   // Roof Parapet Border Trim
   const cap = new THREE.Mesh(
@@ -5717,7 +5736,7 @@ function createCommercialMesh(districtType, variant = 0) {
   );
   cap.position.y = h + 0.3;
   cap.castShadow = true;
-  group.add(cap); damageParts.push(cap);
+  procBody.add(cap); damageParts.push(cap);
 
   // Rooftop HVAC Fan & Water Tank Details
   const hvac = new THREE.Mesh(
@@ -5725,7 +5744,7 @@ function createCommercialMesh(districtType, variant = 0) {
     new THREE.MeshStandardMaterial({ color: '#94a3b8', roughness: 0.3, metalness: 0.7 })
   );
   hvac.position.set(-width * 0.2, h + 1.0, 0);
-  group.add(hvac); damageParts.push(hvac);
+  procBody.add(hvac); damageParts.push(hvac);
 
   // Multi-Story Glass Window Grid
   if (districtType === 0) {
@@ -5733,27 +5752,45 @@ function createCommercialMesh(districtType, variant = 0) {
     const rows = Math.min(6, Math.max(3, Math.floor(h / 4.5)));
     for (let row = 0; row < rows; row++) {
       [-0.28, 0.28].forEach(column => {
-        const windowMesh = addPropPart(group, new THREE.BoxGeometry(width * 0.28, 1.6, 0.22), '#38bdf8', width * column, 3.2 + row * 4.0, -depth / 2 - 0.12, { material: windowMat });
+        const windowMesh = addPropPart(procBody, new THREE.BoxGeometry(width * 0.28, 1.6, 0.22), '#38bdf8', width * column, 3.2 + row * 4.0, -depth / 2 - 0.12, { material: windowMat });
         damageParts.push(windowMesh);
       });
     }
   }
 
+  // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF commercial model once loaded
+  if (modelName) {
+    instantiateActorModel(modelName, { damageable: true }).then(model => {
+      if (!model) return;
+      if (procBody.parent) group.remove(procBody);
+      group.add(model);
+      damageParts.length = 0;
+      damageParts.push(model);
+    });
+  }
+
   group.rotation.y = (variant % 4) * Math.PI / 2;
-  return { group, base, cap, color, damageParts, footprint: Math.max(width, depth), label: districtType === 2 ? 'WORKSHOP' : 'MAIN STREET BUILDING', points: districtType === 2 ? 105 : 135 };
+  return { group, base, cap, color, damageParts, footprint: Math.max(width, depth), label: districtType === 2 ? 'WORKSHOP' : 'MAIN STREET BUILDING', points: districtType === 2 ? 105 : 135, wreck: wreckName };
 }
 
 function createTreeMesh(variant = 0) {
   const group = new THREE.Group();
+  const isPine = variant % 2 === 0;
+  const modelName = isPine ? 'pine-tree' : 'oak-tree';
+  const wreckName = isPine ? 'pine-tree-wreck' : 'oak-tree-wreck';
+
+  const procBody = new THREE.Group();
+  group.add(procBody);
+
   const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 3.6, 8);
   const trunkMat = new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.9 });
   const trunk = new THREE.Mesh(trunkGeo, trunkMat);
   trunk.position.y = 1.8;
-  group.add(trunk);
+  procBody.add(trunk);
 
   // Multi-layered Low-Poly Foliage Canopy (Pine vs Oak)
   const damageParts = [trunk];
-  if (variant % 2 === 0) {
+  if (isPine) {
     // 3-Tier Layered Pine Tree
     const pineColors = ['#14532d', '#15803d', '#166534'];
     [0, 1, 2].forEach(tier => {
@@ -5762,7 +5799,7 @@ function createTreeMesh(variant = 0) {
       const cone = new THREE.Mesh(coneGeo, coneMat);
       cone.position.y = 3.8 + tier * 1.8;
       cone.castShadow = true;
-      group.add(cone); damageParts.push(cone);
+      procBody.add(cone); damageParts.push(cone);
     });
   } else {
     // Multi-Clustered Oak Tree
@@ -5772,11 +5809,20 @@ function createTreeMesh(variant = 0) {
       const sphere = new THREE.Mesh(new THREE.DodecahedronGeometry(2.2, 1), canopyMat);
       sphere.position.set(pos[0], pos[1], pos[2]);
       sphere.castShadow = true;
-      group.add(sphere); damageParts.push(sphere);
+      procBody.add(sphere); damageParts.push(sphere);
     });
   }
 
-  return { group, base: trunk, color: '#15803d', damageParts, footprint: 5.5, label: 'TREE', points: 30 };
+  // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF tree model once loaded
+  instantiateActorModel(modelName, { damageable: true }).then(model => {
+    if (!model) return;
+    if (procBody.parent) group.remove(procBody);
+    group.add(model);
+    damageParts.length = 0;
+    damageParts.push(model);
+  });
+
+  return { group, base: trunk, color: '#15803d', damageParts, footprint: 5.5, label: 'TREE', points: 30, wreck: wreckName };
 }
 
 function createLandmarkMesh(icon) {
