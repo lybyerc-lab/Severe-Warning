@@ -4093,14 +4093,14 @@ const POLE_MODEL_SCALE = POLE_SILHOUETTE_HEIGHT / POLE_MODEL_HEIGHT;
 // Bakes the node transform into the geometry. An InstancedMesh applies only its
 // own per-instance matrix, so anything the exporter left on the parent node
 // would otherwise be dropped silently.
-function instancedPoleMesh(prototype) {
+function instancedModelMesh(prototype, count) {
   prototype.updateMatrixWorld(true);
   let source = null;
   prototype.traverse(child => { if (!source && child.isMesh) source = child; });
   if (!source) return null;
   const geometry = source.geometry.clone();
   geometry.applyMatrix4(source.matrixWorld);
-  const mesh = new THREE.InstancedMesh(geometry, source.material, polePositions.length);
+  const mesh = new THREE.InstancedMesh(geometry, source.material, count);
   mesh.castShadow = true;
   // The line spans the whole map, so culling the set as one object would only
   // ever remove it wholesale or not at all.
@@ -4110,7 +4110,7 @@ function instancedPoleMesh(prototype) {
 }
 loadActorModel('power-pole').then(prototype => {
   if (!prototype) return;         // no authored pole; the procedural pair stays
-  const poles = instancedPoleMesh(prototype);
+  const poles = instancedModelMesh(prototype, polePositions.length);
   if (!poles) return;
   scene.add(poles);
   // Scaled to the height it replaces rather than shipped at authored size, so
@@ -4124,13 +4124,122 @@ loadActorModel('power-pole').then(prototype => {
   poleCrossarms.dispose();
 });
 
+// [SW:VISUAL:STREET_FURNITURE]
+// Lamps, signals and hydrants are placed the way the utility line is, and for
+// the same reason: there are ninety-odd of them, so the clone-per-instance path
+// would cost a draw call each. Each kind is two InstancedMeshes, intact and
+// wrecked, and the storm swaps an instance between them exactly as it does a
+// pole - which is why this shares the pole's geometry bake rather than its own.
+//
+// Placement is the town core only. The road grid runs the full 800 units, but
+// street furniture out at the county edge would be lighting empty crop rows.
+const STREET_CORE_ROWS = [-160, -80, 0, 80, 160];
+// A lamp standing in the middle of a crossing road reads as a bug, so any spot
+// that lands on one of the north-south carriageways is dropped.
+function onCrossingRoad(x) {
+  for (let r = -320; r <= 320; r += 80) if (Math.abs(x - r) < 14) return true;
+  return false;
+}
+const streetLampPositions = [];
+const trafficSignalPositions = [];
+const fireHydrantPositions = [];
+STREET_CORE_ROWS.forEach(row => {
+  // Lamps take the far shoulder, opposite the poles at row + 13.5, so the two
+  // lines of vertical props do not stack up on the same side of the asphalt.
+  for (let x = -300; x <= 300; x += 60) {
+    if (!onCrossingRoad(x)) streetLampPositions.push({ x, z: row - 10.5, yaw: Math.PI });
+  }
+  for (let x = -300; x <= 300; x += 100) {
+    if (!onCrossingRoad(x)) fireHydrantPositions.push({ x, z: row + 9.2, yaw: 0 });
+  }
+  // One signal per core intersection, set back on the corner rather than over
+  // the lane, since nothing here hangs a mast arm out across the road.
+  STREET_CORE_ROWS.forEach(column => {
+    trafficSignalPositions.push({ x: column - 8.5, z: row + 8.5, yaw: Math.PI * 0.25 });
+  });
+});
+
+const streetPropSets = [];
+const streetPropMatrix = new THREE.Matrix4();
+const streetPropQuat = new THREE.Quaternion();
+const streetPropEuler = new THREE.Euler();
+const streetPropScaleVec = new THREE.Vector3();
+const streetPropPosVec = new THREE.Vector3();
+
+function writeStreetPropInstance(set, index) {
+  const spot = set.positions[index];
+  const groundY = terrainHeightAt(spot.x, spot.z);
+  const wrecked = set.wrecked[index] === 1;
+  streetPropEuler.set(0, spot.yaw || 0, 0);
+  streetPropQuat.setFromEuler(streetPropEuler);
+  streetPropPosVec.set(spot.x, groundY, spot.z);
+  // Same trick as the poles: an InstancedMesh cannot skip an instance, so the
+  // set that is not showing is written at zero scale.
+  const write = (mesh, scale) => {
+    if (!mesh) return;
+    streetPropScaleVec.set(scale, scale, scale);
+    streetPropMatrix.compose(streetPropPosVec, streetPropQuat, streetPropScaleVec);
+    mesh.setMatrixAt(index, streetPropMatrix);
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+  write(set.intactMesh, wrecked ? 0 : 1);
+  write(set.wreckMesh, wrecked ? 1 : 0);
+}
+
+function registerStreetProp(name, wreckName, positions) {
+  if (!positions.length) return;
+  const set = { name, positions, intactMesh: null, wreckMesh: null,
+                wrecked: new Uint8Array(positions.length) };
+  streetPropSets.push(set);
+  const attach = (modelName, key) => loadActorModel(modelName).then(prototype => {
+    if (!prototype) return;              // nothing authored; the kind stays absent
+    const mesh = instancedModelMesh(prototype, positions.length);
+    if (!mesh) return;
+    scene.add(mesh);
+    set[key] = mesh;
+    for (let i = 0; i < positions.length; i++) writeStreetPropInstance(set, i);
+  });
+  attach(name, 'intactMesh');
+  if (wreckName) attach(wreckName, 'wreckMesh');
+}
+
+registerStreetProp('street-lamp', 'street-lamp-wreck', streetLampPositions);
+registerStreetProp('traffic-signal', 'traffic-signal-wreck', trafficSignalPositions);
+registerStreetProp('fire-hydrant', 'fire-hydrant-wreck', fireHydrantPositions);
+
+// [SW:VISUAL:ACTOR_DAMAGE] The storm flattens street furniture it drives over,
+// on the same rule the poles use, so a run leaves one consistent trail rather
+// than snapped poles standing among untouched lamps.
+function wreckStreetPropsNear(x, z, radius) {
+  for (let s = 0; s < streetPropSets.length; s++) {
+    const set = streetPropSets[s];
+    // With no authored wreck, zeroing the intact instance would just delete the
+    // prop from the county. Leave it standing.
+    if (!set.wreckMesh) continue;
+    for (let i = 0; i < set.positions.length; i++) {
+      if (set.wrecked[i] === 1) continue;
+      const spot = set.positions[i];
+      if (Math.hypot(spot.x - x, spot.z - z) >= radius) continue;
+      set.wrecked[i] = 1;
+      writeStreetPropInstance(set, i);
+    }
+  }
+}
+function clearStreetPropWrecks() {
+  for (let s = 0; s < streetPropSets.length; s++) {
+    const set = streetPropSets[s];
+    set.wrecked.fill(0);
+    for (let i = 0; i < set.positions.length; i++) writeStreetPropInstance(set, i);
+  }
+}
+
 // [SW:VISUAL:ACTOR_DAMAGE] Until this lands every pole the storm hit stayed
 // perfectly upright, so a run left no trace along the roads it had crossed.
 // Same instancing as the intact line: one draw call for all 117 stumps, and the
 // pair together costs what the procedural trunk and crossarm pair cost before.
 loadActorModel('power-pole-wreck').then(prototype => {
   if (!prototype) return;         // no wreck authored; poles simply stay up
-  const wrecks = instancedPoleMesh(prototype);
+  const wrecks = instancedModelMesh(prototype, polePositions.length);
   if (!wrecks) return;
   scene.add(wrecks);
   poleWreckLayers.push({ mesh: wrecks, yOffset: 0, scale: POLE_MODEL_SCALE });
@@ -7806,6 +7915,7 @@ function init3DWorld() {
   });
   powerPoles.forEach(pole => { pole.sparked = false; });
   clearPoleWrecks();
+  clearStreetPropWrecks();
 
   targets.length = 0;
   landmarks.length = 0;
@@ -8838,6 +8948,7 @@ function animate(now) {
         addScore(60);
       }
     });
+    wreckStreetPropsNear(storm.pos.x, storm.pos.z, storm.radius * 1.4);
 
     landmarks.forEach(lm => {
       const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
