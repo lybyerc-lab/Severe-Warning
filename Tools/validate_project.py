@@ -93,7 +93,26 @@ inventory_path = root / 'FILE_INVENTORY.txt'
 if inventory_path.exists():
     listed = [line.strip() for line in inventory_path.read_text(encoding='utf-8').splitlines() if line.strip()]
     if listed != project_rel_paths:
-        errors.append('FILE_INVENTORY.txt does not match the tracked project file set')
+        # Name the drift and the fix. This check fires on any commit that adds or
+        # removes a tracked file without regenerating the inventory, which is easy
+        # to do and was previously reported only as "does not match" -- true, but
+        # it left the reader to work out both which files and what to run.
+        listed_set, actual_set = set(listed), set(project_rel_paths)
+        added = sorted(actual_set - listed_set)
+        removed = sorted(listed_set - actual_set)
+        detail = []
+        for path in added[:10]:
+            detail.append(f'    tracked but not listed: {path}')
+        if len(added) > 10:
+            detail.append(f'    ... and {len(added) - 10} more not listed')
+        for path in removed[:10]:
+            detail.append(f'    listed but not tracked: {path}')
+        if len(removed) > 10:
+            detail.append(f'    ... and {len(removed) - 10} more no longer tracked')
+        if not added and not removed:
+            detail.append('    same files, different order')
+        detail.append('    fix: git ls-files --cached --others --exclude-standard | LC_ALL=C sort > FILE_INVENTORY.txt')
+        errors.append('FILE_INVENTORY.txt does not match the tracked project file set\n' + '\n'.join(detail))
 
 if errors:
     print('VALIDATION FAILED')
