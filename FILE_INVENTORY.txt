@@ -177,10 +177,15 @@ android/gradlew.bat
 android/settings.gradle
 android/variables.gradle
 assets/models/README.md
+assets/models/courthouse.glb
 assets/models/cow-17.glb
+assets/models/farm-windmill-wreck.glb
 assets/models/farm-windmill.glb
+assets/models/ferris-wheel.glb
+assets/models/foundry.glb
 assets/models/grain-silo-wreck.glb
 assets/models/grain-silo.glb
+assets/models/grandstand.glb
 assets/models/hart-barn.glb
 assets/models/hart-farmhouse.glb
 assets/models/news-van.glb
