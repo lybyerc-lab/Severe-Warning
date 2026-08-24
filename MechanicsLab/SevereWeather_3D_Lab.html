@@ -4295,12 +4295,124 @@ function markGroundSwath(x, z, r) {
 const tornadoGroup = new THREE.Group();
 scene.add(tornadoGroup);
 
+// [SW:VISUAL:STORM_CLOUD_SHADER]
+// The canopy was fifteen dodecahedron lobes sharing one opaque standard
+// material, and it read as a single faceted blob. Three things caused that: a
+// detail-1 dodecahedron is visibly flat-shaded, every lobe terminated in a hard
+// silhouette against the sky, and where two lobes overlapped the intersection
+// drew a crisp seam. Rotating the group did not help, for exactly the reason
+// the funnel needed banding - a flat surface of one colour has nothing on it
+// for the eye to see turning.
+//
+// This is the funnel's trick plus a view-facing alpha term. Alpha falls off
+// where the surface turns edge-on to the camera, which is what a real cloud
+// does when you look through its thinning rim, and it dissolves the silhouette
+// and the overlap seams together. It is a smoothstep over an edge WIDTH, not a
+// pow(): raising the facing term to a power darkens the whole projected disc,
+// not just the rim, and the canopy thinned out to nothing. Only the outer band
+// should dissolve; the middle of a lobe still has to read as solid cloud.
+//
+// The colours are much lighter than the standard material's were, and have to
+// be. That material was lit, so a #18223a lobe reached the eye as mid grey off
+// the storm lights. This one is unlit - what is written here is what renders -
+// so these values carry the lift the lighting used to.
+//
+// Density is layered sines rather than hash
+// noise: three sin/cos pairs instead of the sixteen hashes a trilinear fbm
+// would cost, which is the difference that matters on the phones this ships to.
+//
+// Fog is included for the same reason the funnel includes it. The canopy sits
+// 34 units up in a FogExp2 scene, and a material that skips fog stops matching
+// the world underneath it as the camera pulls back.
+const stormCloudMaterials = [];
+function createStormCloudMaterial({ base, top, opacity, gradient, edge = 0.5, churn = 0.0, density = 1.0, speed = 1.0 }) {
+  const material = new THREE.ShaderMaterial({
+    uniforms: THREE.UniformsUtils.merge([
+      THREE.UniformsLib.fog,
+      {
+        uTime: { value: 0 },
+        uBase: { value: new THREE.Color(base) },
+        uTop: { value: new THREE.Color(top) },
+        uOpacity: { value: opacity },
+        uGradient: { value: gradient },
+        uEdge: { value: edge },
+        uChurn: { value: churn },
+        uDensity: { value: density },
+        uSpeed: { value: speed }
+      }
+    ]),
+    vertexShader: [
+      '#include <common>',
+      '#include <fog_pars_vertex>',
+      'uniform float uTime;',
+      'uniform float uChurn;',
+      'uniform float uSpeed;',
+      'varying vec3 vNormalV;',
+      'varying vec3 vViewV;',
+      'varying vec3 vLocal;',
+      'void main() {',
+      '  vLocal = position;',
+      '  float t = uTime * uSpeed;',
+      '  vec3 transformed = position;',
+      '  float swell = sin(position.x * 0.21 + t * 0.53) * cos(position.z * 0.18 - t * 0.41)',
+      '              + sin(position.y * 0.26 + t * 0.33);',
+      '  transformed += normal * swell * uChurn;',
+      '  vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);',
+      '  vNormalV = normalize(normalMatrix * normal);',
+      '  vViewV = normalize(-mvPosition.xyz);',
+      '  gl_Position = projectionMatrix * mvPosition;',
+      '  #include <fog_vertex>',
+      '}'
+    ].join('\n'),
+    fragmentShader: [
+      '#include <common>',
+      '#include <fog_pars_fragment>',
+      'uniform float uTime;',
+      'uniform vec3 uBase;',
+      'uniform vec3 uTop;',
+      'uniform float uOpacity;',
+      'uniform float uGradient;',
+      'uniform float uEdge;',
+      'uniform float uDensity;',
+      'uniform float uSpeed;',
+      'varying vec3 vNormalV;',
+      'varying vec3 vViewV;',
+      'varying vec3 vLocal;',
+      'void main() {',
+      '  float t = uTime * uSpeed;',
+      '  float a = sin(vLocal.x * 0.29 + t * 0.61) * cos(vLocal.z * 0.24 - t * 0.43);',
+      '  float b = sin(vLocal.y * 0.41 - t * 0.37) * cos(vLocal.x * 0.17 + t * 0.28);',
+      '  float c = sin((vLocal.x + vLocal.z) * 0.12 + t * 0.21);',
+      '  float dens = clamp((a * 0.40 + b * 0.34 + c * 0.26) * 0.5 + 0.5, 0.0, 1.0);',
+      '  dens = mix(0.5, dens, uDensity);',
+      // Edge-on surfaces show less cloud through them than surfaces facing the
+      // camera do. Driving alpha off that one dot product is what removes the
+      // hard rim and the seams where lobes intersect.
+      '  float facing = clamp(abs(dot(normalize(vNormalV), normalize(vViewV))), 0.0, 1.0);',
+      '  float soft = smoothstep(0.0, uEdge, facing);',
+      '  float height = clamp(vLocal.y * uGradient + 0.5, 0.0, 1.0);',
+      '  vec3 col = mix(uBase, uTop, clamp(height * 0.72 + dens * 0.28, 0.0, 1.0));',
+      '  float alpha = uOpacity * soft * (0.52 + dens * 0.48);',
+      '  gl_FragColor = vec4(col, alpha);',
+      '  #include <fog_fragment>',
+      '}'
+    ].join('\n'),
+    transparent: true,
+    depthWrite: false,
+    fog: true
+  });
+  stormCloudMaterials.push(material);
+  return material;
+}
+
 // Overhead Mesocyclone Storm Cloud Canopy Base
 const mesoCloudGroup = new THREE.Group();
 mesoCloudGroup.position.y = 34;
-const mesoCloudMat = new THREE.MeshStandardMaterial({
-  color: '#18223a', transparent: true, opacity: 0.58,
-  roughness: 1.0, metalness: 0.0, depthWrite: false
+// Opacity is up from the old flat 0.58 because the view-facing term now takes
+// most of it back at the rim; the centre of a lobe should still read as solid.
+const mesoCloudMat = createStormCloudMaterial({
+  base: '#2b3750', top: '#4d5b76', opacity: 0.80,
+  gradient: 0.052, edge: 0.55, churn: 1.1, density: 1.0, speed: 1.0
 });
 for (let i = 0; i < 15; i++) {
   const angle = (i / 15) * Math.PI * 2 + (i % 2) * 0.32;
@@ -4315,9 +4427,12 @@ for (let i = 0; i < 15; i++) {
   cloudLobe.scale.set(1, 0.66 + Math.random() * 0.2, 1);
   mesoCloudGroup.add(cloudLobe);
 }
-const cloudBaseMat = new THREE.MeshStandardMaterial({
-  color: '#141c30', transparent: true, opacity: 0.82,
-  roughness: 1.0, metalness: 0.0, depthWrite: false
+// The base disc is seen almost entirely from underneath, so its cap faces the
+// camera and keeps full alpha; only the thin rim fades. churn stays at 0 - a
+// 3.2-unit disc has no room to swell without punching through the lobes above.
+const cloudBaseMat = createStormCloudMaterial({
+  base: '#222c44', top: '#39445f', opacity: 0.88,
+  gradient: 0.31, edge: 0.34, churn: 0.0, density: 0.75, speed: 0.7
 });
 const cloudBase = new THREE.Mesh(new THREE.CylinderGeometry(25, 19.5, 3.2, 30), cloudBaseMat);
 cloudBase.position.y = -5.2;
@@ -4512,8 +4627,18 @@ anvilMesh.position.y = 36;
 supercellGroup.add(anvilMesh);
 
 // Tier 2: Rotating Mid-Layer Mesocyclone Wall Cloud
-const mesoWallGeo = new THREE.CylinderGeometry(36, 22, 12, 32);
-const mesoWallMat = new THREE.MeshStandardMaterial({ color: '#0284c7', transparent: true, opacity: 0.65, roughness: 0.2 });
+// [SW:VISUAL:STORM_CLOUD_SHADER] The supercell's wall cloud was a solid
+// #0284c7 cone: one flat sky-blue, no gradient, hard silhouette. The cyan is
+// the supercell's identity across the anvil, downdraft and hail, so it stays -
+// but it belongs at the top, with a storm-dark underside beneath it, which is
+// the way round a real wall cloud is lit. Height segments go 1 -> 6 so the
+// vertex churn has rings to move; that is 224 verts against 64, and it is what
+// lets the shape breathe instead of spinning as a rigid cone.
+const mesoWallGeo = new THREE.CylinderGeometry(36, 22, 12, 32, 6);
+const mesoWallMat = createStormCloudMaterial({
+  base: '#1d4a6b', top: '#2a9fd8', opacity: 0.80,
+  gradient: 0.083, edge: 0.5, churn: 1.4, density: 1.0, speed: 0.85
+});
 const mesoWallMesh = new THREE.Mesh(mesoWallGeo, mesoWallMat);
 mesoWallMesh.position.y = 25;
 supercellGroup.add(mesoWallMesh);
@@ -8314,6 +8439,14 @@ function animate(now) {
   funnelMesh.rotation.y += 0.15;
   // [SW:VISUAL:FUNNEL_SHADER] the visible funnel's band clock.
   if (funnelMat.uniforms && funnelMat.uniforms.uTime) funnelMat.uniforms.uTime.value = tTime;
+  // [SW:VISUAL:STORM_CLOUD_SHADER] Real seconds, not the funnel's 0.0035 clock,
+  // so the churn rates in the shader read as the seconds they look like. Three
+  // uniform writes a frame, run unconditionally because the supercell's wall
+  // cloud shares the array and its own update sits behind a storm-mode branch.
+  const cloudClock = now * 0.001;
+  for (let i = 0; i < stormCloudMaterials.length; i++) {
+    stormCloudMaterials[i].uniforms.uTime.value = cloudClock;
+  }
   outerFunnelMesh.rotation.y -= 0.10;
 
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
