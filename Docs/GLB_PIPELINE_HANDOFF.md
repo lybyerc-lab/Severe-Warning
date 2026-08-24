@@ -191,8 +191,8 @@ eight colour variants with size variation. One model makes every house identical
 
 ## State
 
-Payload is 1,166,964 bytes across 62 models -- 55% of the ~2 MB budget. All
-models are fully welded with merge-by-distance and normalized with base minY at
+Payload is 1,114,024 bytes across 78 models -- 53% of the ~2 MB budget. All
+78 models are 100% welded with merge-by-distance and normalized with base minY at
 0.0000.
 
 Live:
@@ -201,11 +201,15 @@ Live:
   billboard, grain bin, propane tank, commercial shop, industrial warehouse,
   fire hydrant, street lamp, traffic signal, pine tree, oak tree, and their matching wrecks.
 - Modular residential houses: ranch-house, craftsman-house, split-level-house, and their matching wrecks.
-- Comedy yard props: flamingo, trampoline, bbq-grill, and their matching wrecks.
+- All 13 named comedy gag props (reusing ferris-wheel for the fairground ferris prop):
+  - Yard: flamingo, trampoline, bbq-grill, rural-mailbox, and their wrecks.
+  - Main Street: billboard, coffee-cup, inflatable-mascot, shopping-carts, and their wrecks.
+  - County Fair: ferris-wheel, carousel, food-cart, giant-corndog, porta-potty, and their wrecks.
 - Vehicles: news-van, storm-chaser-vehicle, town-car, pickup-truck, tractor.
 - Special / Hero: cow-17 (wired exclusively to hero Cow 17 with damageable: false),
-  hart-farmhouse (placed beside the Hart Farm signature barn).
+  hart-farmhouse (placed beside the Hart Farm signature barn), hart-barn (welded reference).
 - Hart Farm signature barn preserves its authored 11-part multi-stage collapse.
+- 100% vertex welding verified on all 78 models (including farm-windmill, hart-barn, hart-farmhouse).
 
 Open work:
 

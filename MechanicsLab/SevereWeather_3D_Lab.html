@@ -6099,9 +6099,24 @@ function createMediaVehicleMesh(role, crewNumber) {
 function createComedyPropMesh(kind) {
   const group = new THREE.Group();
   let color = '#f472b6';
-  const modelName = (kind === 'flamingo' || kind === 'trampoline' || kind === 'grill' || kind === 'billboard')
-    ? (kind === 'grill' ? 'bbq-grill' : kind)
-    : null;
+
+  const MODEL_MAP = {
+    'trampoline': 'trampoline',
+    'flamingo': 'flamingo',
+    'grill': 'bbq-grill',
+    'billboard': 'billboard',
+    'coffee': 'coffee-cup',
+    'mascot': 'inflatable-mascot',
+    'carts': 'shopping-carts',
+    'ferris': 'ferris-wheel',
+    'carousel': 'carousel',
+    'foodcart': 'food-cart',
+    'corndog': 'giant-corndog',
+    'porta': 'porta-potty',
+    'mailbox': 'rural-mailbox'
+  };
+
+  const modelName = MODEL_MAP[kind] || null;
   const wreckName = modelName ? `${modelName}-wreck` : null;
 
   const procBody = new THREE.Group();
@@ -6135,51 +6150,51 @@ function createComedyPropMesh(kind) {
     [-2.8, 2.8].forEach(x => addPropPart(procBody, new THREE.CylinderGeometry(0.22, 0.3, 5.2, 8), '#78350f', x, 2.6, 0));
   } else if (kind === 'coffee') {
     color = '#f97316';
-    addPropPart(group, new THREE.CylinderGeometry(1.9, 1.55, 4.2, 18), '#f8fafc', 0, 2.2, 0);
-    addPropPart(group, new THREE.TorusGeometry(1.25, 0.35, 8, 18), color, 1.9, 2.5, 0, { rotation: { y: Math.PI / 2 } });
-    addPropPart(group, new THREE.BoxGeometry(5.3, 1.2, 0.35), color, 0, 5.2, 0, { material: createSignMaterial('MOO BREW|COFFEE', '#7c2d12', '#fff7ed') });
+    addPropPart(procBody, new THREE.CylinderGeometry(1.9, 1.55, 4.2, 18), '#f8fafc', 0, 2.2, 0);
+    addPropPart(procBody, new THREE.TorusGeometry(1.25, 0.35, 8, 18), color, 1.9, 2.5, 0, { rotation: { y: Math.PI / 2 } });
+    addPropPart(procBody, new THREE.BoxGeometry(5.3, 1.2, 0.35), color, 0, 5.2, 0, { material: createSignMaterial('MOO BREW|COFFEE', '#7c2d12', '#fff7ed') });
     [-1.15, 0, 1.15].forEach(x => {
-      addPropPart(group, new THREE.CylinderGeometry(0.35, 0.28, 0.9, 10), '#fff7ed', x, 1.0, 1.75);
-      addPropPart(group, new THREE.CylinderGeometry(0.37, 0.37, 0.08, 10), '#7c2d12', x, 1.48, 1.75);
+      addPropPart(procBody, new THREE.CylinderGeometry(0.35, 0.28, 0.9, 10), '#fff7ed', x, 1.0, 1.75);
+      addPropPart(procBody, new THREE.CylinderGeometry(0.37, 0.37, 0.08, 10), '#7c2d12', x, 1.48, 1.75);
     });
   } else if (kind === 'mascot') {
     color = '#a78bfa';
-    addPropPart(group, new THREE.SphereGeometry(2.2, 14, 12), color, 0, 4.4, 0, { scale: { x: 0.8, y: 2.0, z: 0.8 } });
-    addPropPart(group, new THREE.SphereGeometry(1.55, 12, 10), '#fde68a', 0, 8.3, 0);
-    [-1.8, 1.8].forEach(x => addPropPart(group, new THREE.CylinderGeometry(0.25, 0.25, 4, 8), color, x, 5.2, 0, { rotation: { z: x < 0 ? -0.6 : 0.6 } }));
+    addPropPart(procBody, new THREE.SphereGeometry(2.2, 14, 12), color, 0, 4.4, 0, { scale: { x: 0.8, y: 2.0, z: 0.8 } });
+    addPropPart(procBody, new THREE.SphereGeometry(1.55, 12, 10), '#fde68a', 0, 8.3, 0);
+    [-1.8, 1.8].forEach(x => addPropPart(procBody, new THREE.CylinderGeometry(0.25, 0.25, 4, 8), color, x, 5.2, 0, { rotation: { z: x < 0 ? -0.6 : 0.6 } }));
   } else if (kind === 'carts') {
     color = '#22d3ee';
-    addPropPart(group, new THREE.BoxGeometry(5.5, 1.8, 2.6), color, 0, 2.0, 0, { roughness: 0.25, metalness: 0.7 });
-    [-2, 2].forEach(x => [-0.9, 0.9].forEach(z => addPropPart(group, new THREE.CylinderGeometry(0.4, 0.4, 0.3, 10), '#111827', x, 0.7, z, { rotation: { z: Math.PI / 2 } })));
+    addPropPart(procBody, new THREE.BoxGeometry(5.5, 1.8, 2.6), color, 0, 2.0, 0, { roughness: 0.25, metalness: 0.7 });
+    [-2, 2].forEach(x => [-0.9, 0.9].forEach(z => addPropPart(procBody, new THREE.CylinderGeometry(0.4, 0.4, 0.3, 10), '#111827', x, 0.7, z, { rotation: { z: Math.PI / 2 } })));
   } else if (kind === 'ferris') {
     color = '#f472b6';
-    addPropPart(group, new THREE.TorusGeometry(6.5, 0.45, 10, 32), color, 0, 8.0, 0);
-    [-3.6, 3.6].forEach(x => addPropPart(group, new THREE.BoxGeometry(0.6, 9, 0.6), '#fbbf24', x, 4.5, 0, { rotation: { z: x < 0 ? -0.45 : 0.45 } }));
+    addPropPart(procBody, new THREE.TorusGeometry(6.5, 0.45, 10, 32), color, 0, 8.0, 0);
+    [-3.6, 3.6].forEach(x => addPropPart(procBody, new THREE.BoxGeometry(0.6, 9, 0.6), '#fbbf24', x, 4.5, 0, { rotation: { z: x < 0 ? -0.45 : 0.45 } }));
     for (let i = 0; i < 6; i++) {
       const angle = (i / 6) * Math.PI * 2;
-      addPropPart(group, new THREE.BoxGeometry(1.4, 1.0, 1.2), ['#ef4444','#38bdf8','#4ade80'][i % 3], Math.cos(angle) * 6.5, 8 + Math.sin(angle) * 6.5, 0);
+      addPropPart(procBody, new THREE.BoxGeometry(1.4, 1.0, 1.2), ['#ef4444','#38bdf8','#4ade80'][i % 3], Math.cos(angle) * 6.5, 8 + Math.sin(angle) * 6.5, 0);
     }
   } else if (kind === 'carousel') {
     color = '#c084fc';
-    addPropPart(group, new THREE.CylinderGeometry(5.0, 5.0, 1.0, 24), '#fbbf24', 0, 0.6, 0);
-    addPropPart(group, new THREE.ConeGeometry(6.2, 3.0, 24), color, 0, 6.0, 0);
-    addPropPart(group, new THREE.CylinderGeometry(0.35, 0.35, 6.0, 10), '#f8fafc', 0, 3.3, 0);
-    [-3, 0, 3].forEach(x => addPropPart(group, new THREE.BoxGeometry(1.2, 1.0, 2.2), '#38bdf8', x, 2.0, 0));
+    addPropPart(procBody, new THREE.CylinderGeometry(5.0, 5.0, 1.0, 24), '#fbbf24', 0, 0.6, 0);
+    addPropPart(procBody, new THREE.ConeGeometry(6.2, 3.0, 24), color, 0, 6.0, 0);
+    addPropPart(procBody, new THREE.CylinderGeometry(0.35, 0.35, 6.0, 10), '#f8fafc', 0, 3.3, 0);
+    [-3, 0, 3].forEach(x => addPropPart(procBody, new THREE.BoxGeometry(1.2, 1.0, 2.2), '#38bdf8', x, 2.0, 0));
   } else if (kind === 'foodcart') {
     color = '#ef4444';
-    addPropPart(group, new THREE.BoxGeometry(5.2, 2.8, 3.2), '#f8fafc', 0, 1.8, 0);
-    addPropPart(group, new THREE.CylinderGeometry(3.2, 0.4, 2.2, 12), color, 0, 5.2, 0);
-    addPropPart(group, new THREE.BoxGeometry(5.0, 1.2, 0.3), color, 0, 4.0, -1.7, { material: createSignMaterial('FUNNEL CAKES', '#b91c1c') });
+    addPropPart(procBody, new THREE.BoxGeometry(5.2, 2.8, 3.2), '#f8fafc', 0, 1.8, 0);
+    addPropPart(procBody, new THREE.CylinderGeometry(3.2, 0.4, 2.2, 12), color, 0, 5.2, 0);
+    addPropPart(procBody, new THREE.BoxGeometry(5.0, 1.2, 0.3), color, 0, 4.0, -1.7, { material: createSignMaterial('FUNNEL CAKES', '#b91c1c') });
   } else if (kind === 'corndog') {
     color = '#f59e0b';
-    addPropPart(group, new THREE.CylinderGeometry(1.15, 1.15, 5.0, 14), color, 0, 4.5, 0);
-    addPropPart(group, new THREE.SphereGeometry(1.15, 12, 10), color, 0, 7.0, 0);
-    addPropPart(group, new THREE.CylinderGeometry(0.22, 0.22, 3.0, 8), '#92400e', 0, 1.5, 0);
+    addPropPart(procBody, new THREE.CylinderGeometry(1.15, 1.15, 5.0, 14), color, 0, 4.5, 0);
+    addPropPart(procBody, new THREE.SphereGeometry(1.15, 12, 10), color, 0, 7.0, 0);
+    addPropPart(procBody, new THREE.CylinderGeometry(0.22, 0.22, 3.0, 8), '#92400e', 0, 1.5, 0);
   } else if (kind === 'porta') {
     color = '#0ea5e9';
-    addPropPart(group, new THREE.BoxGeometry(3.5, 6.2, 3.5), color, 0, 3.1, 0);
-    addPropPart(group, new THREE.ConeGeometry(2.7, 1.1, 4), '#0369a1', 0, 6.7, 0, { rotation: { y: Math.PI / 4 } });
-    addPropPart(group, new THREE.BoxGeometry(0.5, 0.5, 0.2), '#f8fafc', 0, 4.2, -1.85);
+    addPropPart(procBody, new THREE.BoxGeometry(3.5, 6.2, 3.5), color, 0, 3.1, 0);
+    addPropPart(procBody, new THREE.ConeGeometry(2.7, 1.1, 4), '#0369a1', 0, 6.7, 0, { rotation: { y: Math.PI / 4 } });
+    addPropPart(procBody, new THREE.BoxGeometry(0.5, 0.5, 0.2), '#f8fafc', 0, 4.2, -1.85);
   }
 
   // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF prop model once loaded
