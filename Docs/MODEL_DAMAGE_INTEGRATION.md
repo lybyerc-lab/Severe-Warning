@@ -1,8 +1,7 @@
 # Wiring glTF actors into the damage system
 
-Status: implemented 2026-08-23. Adapter, chunk spawning and wreck swap are in.
-Outstanding: wreck models for the two landmarks, and swapping the procedural
-water tower and grain silo for the authored ones.
+Status: implemented 2026-08-23. Adapter, chunk spawning, wreck swap and the
+campaign landmark swap are all in.
 
 Five models are committed and verified in `assets/models/`, and none is
 referenced by gameplay yet. Making them real means satisfying the contract the
@@ -182,10 +181,57 @@ missing name: immediately after destruction both hold a generic ruin; once the
 async load lands, one is an authored wreck and one is still generic, with the
 total unchanged. The generic ruin is replaced, not added to.
 
+## What was swapped, and what deliberately was not
+
+Campaign landmarks are swapped by KIND, via `CAMPAIGN_LANDMARK_MODELS`. A new
+model is adopted by dropping a file named after the kind into `assets/models` --
+the same no-code-change property the asset pipeline has. Kinds with no entry
+keep their procedural mesh, which is the fallback rather than a gap:
+
+    water-tower      -> water-tower.glb      (+ wreck)
+    grain-elevator   -> grain-silo.glb       (+ wreck)
+    silo-bank        -> grain-silo.glb       (+ wreck)
+    windmill         -> farm-windmill.glb    (wreck absent; generic ruin)
+    courthouse, foundry, ferris-wheel, grandstand   procedural
+
+The beacon is kept on every landmark. It is wayfinding rather than decoration --
+how a player finds a landmark across the county, and what flashes red on a hit --
+so only the body is replaced.
+
+Landmarks have no damage stages of their own; they take hits and then collapse.
+Chunks are therefore thrown per hit rather than per stage, or a model-backed
+landmark would absorb damage with no visible response until the moment it falls.
+
+### The Hart Farm barn is NOT swapped
+
+`hart-barn.glb` matches the in-world barn to two decimals and is still the wrong
+thing to use. `setProductionBarnStage` is a four-stage hand-authored collapse
+that manipulates eleven named parts: the sign tilts, both big doors swing, the
+loft door falls open, the roof peels one half at a time, walls lean and then
+detach in sequence, and the beacon goes dark. A single-mesh model cannot express
+any of it.
+
+This is the case the model contract is wrong for, and it is worth stating
+plainly: one mesh per actor is right for a county full of props and wrong for a
+hero prop with authored multi-stage destruction. The barn should stay
+procedural unless it is re-authored as an eleven-part model, which would cost
+the draw calls the contract exists to save.
+
+### Generic houses are NOT swapped
+
+`hart-farmhouse.glb` matches the generic house dimensions, but `createHouseMesh`
+builds eight colour variants with size variation. Replacing them with one model
+would make every house in the county identical -- a visual regression, not an
+upgrade. It also has the same multi-part damage story as the barn, at smaller
+scale.
+
+`hart-farmhouse.glb` therefore has no home yet. Candidates: a unique building at
+the Hart Farm beside the barn, or a distinct district-3 landmark. Ships as
+payload until then.
+
 ## Remaining work
 
-1. Wreck models for the two landmarks (`water-tower-wreck.glb`,
-   `grain-silo-wreck.glb`).
-2. Swap the procedural water tower and grain silo for the authored models, using
-   `buildActorMeshData` with `damageable: true`.
-3. Decide whether vehicles become damageable targets or stay scenery.
+1. A wreck for the windmill (`farm-windmill-wreck.glb`), which currently falls
+   back to the generic ruin.
+2. Models for the four unmapped landmark kinds, if wanted.
+3. A home for `hart-farmhouse.glb`.

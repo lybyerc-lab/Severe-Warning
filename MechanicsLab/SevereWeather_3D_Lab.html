@@ -2606,6 +2606,21 @@ function spawnCampaignScenery(level) {
   }
 }
 
+// [SW:VISUAL:ACTOR_MODELS]
+// Authored models for campaign landmark kinds, keyed by the kind itself so a
+// new model is adopted by dropping a file named after the kind into
+// assets/models -- no code change, the same property the asset pipeline has.
+//
+// Kinds with no entry keep their procedural mesh. That is not a gap to be
+// filled: the procedural build IS the fallback, and a level whose landmark has
+// no model must still be playable.
+const CAMPAIGN_LANDMARK_MODELS = {
+  'water-tower': { model: 'water-tower', footprint: 10.4 },
+  'windmill':    { model: 'farm-windmill', footprint: 10.5 },
+  'grain-elevator': { model: 'grain-silo', footprint: 8.86 },
+  'silo-bank':      { model: 'grain-silo', footprint: 8.86 }
+};
+
 function createCampaignLandmarkMesh(kind, accent) {
   const group = new THREE.Group();
   const metal = '#64748b';
@@ -2652,7 +2667,36 @@ function createCampaignLandmarkMesh(kind, accent) {
   }
 
   const beacon = campaignPart(group, new THREE.OctahedronGeometry(2.2), accent, 0, 31, 0, { material: new THREE.MeshBasicMaterial({ color: accent, wireframe: true }) });
-  return { group, base, beacon, color: accent };
+  const meshData = { group, base, beacon, color: accent };
+
+  // Swap the procedural body for an authored model when one exists for this
+  // kind. Built first and unconditionally: landmark creation is synchronous and
+  // loading is not, so a landmark that waited would be missing from the county
+  // for a frame, or permanently if a file were absent.
+  //
+  // The beacon is kept deliberately. It is wayfinding rather than decoration --
+  // how a player finds a landmark across the county, and what flashes red on a
+  // hit. Only the body is replaced.
+  const authored = CAMPAIGN_LANDMARK_MODELS[kind];
+  if (authored) {
+    meshData.modelActor = { name: authored.model, wreck: `${authored.model}-wreck`,
+                            chunkColor: accent, footprint: authored.footprint };
+    instantiateActorModel(authored.model, { damageable: true }).then(model => {
+      if (!model) return;
+      // Every procedural part of the body goes; the beacon stays.
+      for (const child of [...group.children]) {
+        if (child !== beacon) group.remove(child);
+      }
+      model.position.y = 0;
+      group.add(model);
+      let firstMesh = null;
+      model.traverse(object => { if (!firstMesh && object.isMesh) firstMesh = object; });
+      meshData.base = firstMesh || model;
+      meshData.model = model;
+    });
+  }
+
+  return meshData;
 }
 
 function replaceCampaignLandmarks(level) {
@@ -6932,6 +6976,14 @@ function damageLandmark(lm, amount) {
 
   lm.health -= amount;
 
+  // [SW:VISUAL:ACTOR_DAMAGE] Landmarks have no damage stages of their own -- they
+  // take hits and then collapse -- so chunks are thrown per hit rather than per
+  // stage. Without this a model-backed landmark absorbs damage with no visible
+  // response at all until the moment it falls.
+  if (lm.meshData && lm.meshData.modelActor) {
+    spawnActorChunks({ x: lm.x, z: lm.z, meshData: lm.meshData }, 4);
+  }
+
   // Flash Beacon Red on Hit
   if (lm.meshData && lm.meshData.beacon) {
     lm.meshData.beacon.material.color.set('#ef4444');
@@ -6950,7 +7002,12 @@ function damageLandmark(lm, amount) {
     destroyedLandmarksCount++;
     const awarded = addScore(500);
     if (awarded > 0) spawnScorePopup(lm.x, terrainHeightAt(lm.x, lm.z) + 10, lm.z, `+${awarded}`, '#f59e0b');
-    explodeStructure(lm.x, lm.z, lm.meshData.color, lm.icon === '💧', lm.icon === '🌾');
+    // [SW:VISUAL:ACTOR_DAMAGE] Pass the authored wreck and the real footprint.
+    // The footprint was previously left to default to 5, which sized the ruin
+    // and the debris for a small building rather than a landmark.
+    explodeStructure(lm.x, lm.z, lm.meshData.color, lm.icon === '💧', lm.icon === '🌾',
+      lm.meshData.modelActor ? lm.meshData.modelActor.footprint : 5,
+      lm.meshData.modelActor ? lm.meshData.modelActor.wreck : null);
   }
 }
 
