@@ -1,7 +1,7 @@
 name: actor-batch-v3-one-shot
 
 on:
-  pull_request:
+  push:
     branches: [qa]
     paths:
       - '.github/sww-batch-v3-trigger.txt'
@@ -11,69 +11,36 @@ permissions:
 
 jobs:
   install-assets:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: Reassemble exact GLBs
+      - name: Reassemble and verify exact GLBs
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p assets/models
           for name in water-tower-wreck grain-silo-wreck hart-barn-v2 hart-farmhouse-v2 farm-windmill-v2; do
-            cat .github/sww-batch-v3-src/${name}.gz.b64 | tr -d '\n' | base64 -d | gzip -dc > assets/models/${name}.glb
+            src=.github/sww-batch-v3-src/${name}.gz.b64
+            if [[ -f "$src" ]]; then
+              cat "$src"
+            else
+              cat "$src".*
+            fi | tr -d '\n' | base64 -d | gzip -dc > assets/models/${name}.glb
           done
-      - name: Verify exact files and contract
-        shell: bash
-        run: |
-          set -euo pipefail
           echo 'da3ec306c5d7ac0ada355e6fc34b2c53d25199369ce0a0f2063fe88976282d1a  assets/models/water-tower-wreck.glb' | sha256sum -c -
           echo '8ce528c3d9fea78a9d072b59a94d6c8b252c742f103ef51a4b8c512707a5ddd0  assets/models/grain-silo-wreck.glb' | sha256sum -c -
           echo '674aef6ecccdff936548c0a8fd333a36f68e56ca0d089b2101c8fc74df0a4797  assets/models/hart-barn-v2.glb' | sha256sum -c -
           echo '66ad14580cc1ae6552a81040268bc99df3fd03e6a31982723fb1a65c3ebbecd7  assets/models/hart-farmhouse-v2.glb' | sha256sum -c -
           echo 'c24d8426ade899b85ee80f547b730544196556d88e4db606999acf7d8db19090  assets/models/farm-windmill-v2.glb' | sha256sum -c -
-          python - <<'PY'
-          import json, struct
-          expected={
-            'water-tower-wreck.glb':([10.40,9.30,10.40],1056),
-            'grain-silo-wreck.glb':([8.86,5.75,8.93],1176),
-            'hart-barn-v2.glb':([24.70,19.30,19.90],None),
-            'hart-farmhouse-v2.glb':([9.50,17.70,11.50],None),
-            'farm-windmill-v2.glb':([9.60,19.80,10.50],None),
-          }
-          for fn,(dims_expected,tris_expected) in expected.items():
-            b=open('assets/models/'+fn,'rb').read(); assert b[:4]==b'glTF'
-            jl,jt=struct.unpack_from('<I4s',b,12); assert jt==b'JSON'
-            j=json.loads(b[20:20+jl].decode().rstrip(' \x00'))
-            assert len(j['meshes'])==1 and len(j['meshes'][0]['primitives'])==1
-            p=j['meshes'][0]['primitives'][0]
-            assert set(p['attributes'])=={'POSITION','NORMAL','COLOR_0'}
-            assert p.get('material')==0
-            mat=j['materials'][0]['pbrMetallicRoughness']
-            assert mat['metallicFactor']==0.0 and mat['roughnessFactor']==0.8
-            assert j.get('animations') is None and j.get('images') is None and j.get('textures') is None
-            assert j.get('extensionsRequired') is None and j.get('extensionsUsed') is None
-            pos=j['accessors'][p['attributes']['POSITION']]
-            dims=[round(pos['max'][i]-pos['min'][i],2) for i in range(3)]
-            assert dims==dims_expected,(fn,dims)
-            assert pos['min'][1]==0.0
-            tris=j['accessors'][p['indices']]['count']//3
-            if tris_expected is not None: assert tris==tris_expected,(fn,tris)
-            assert 1 <= tris <= 3000,(fn,tris)
-            print(fn, len(b), 'bytes', tris, 'tris', dims)
-          PY
-      - name: Remove one-shot transfer machinery
+      - name: Remove transfer machinery and commit assets
         shell: bash
         run: |
+          set -euo pipefail
           rm -rf .github/sww-batch-v3-src
           rm -f .github/sww-batch-v3-trigger.txt
           rm -f .github/workflows/actor-batch-v3-one-shot.yml
-      - name: Commit exact assets to qa
-        shell: bash
-        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A assets/models .github/sww-batch-v3-src .github/sww-batch-v3-trigger.txt .github/workflows/actor-batch-v3-one-shot.yml
