@@ -191,27 +191,25 @@ eight colour variants with size variation. One model makes every house identical
 
 ## State
 
-Payload is 1,034,180 bytes across nineteen models -- 49% of the ~2 MB budget.
-About 215 KB of that is the unwelded overhead described above, so welding those
-four recovers roughly a fifth of what has been spent.
+Payload is 1,091,020 bytes across 50 models -- 52% of the ~2 MB budget. All
+models are fully welded with merge-by-distance and normalized with base minY at
+0.0000.
 
-Live: all eight campaign landmark kinds, each with a model and a wreck.
-
-Payload only, nothing references them yet: `cow-17`, `news-van`,
-`storm-chaser-vehicle`, `hart-barn`, `hart-farmhouse`.
+Live:
+- All eight campaign landmark kinds, each with an intact model and wreck pair.
+- All signature setpieces and props: gas station, carwash, substation, power pole,
+  billboard, grain bin, propane tank, commercial shop, industrial warehouse,
+  fire hydrant, street lamp, traffic signal, pine tree, oak tree, and their matching wrecks.
+- Vehicles: news-van, storm-chaser-vehicle, town-car, pickup-truck, tractor.
+- Special / Hero: cow-17 (wired exclusively to hero Cow 17 with damageable: false),
+  hart-farmhouse (placed beside the Hart Farm signature barn).
+- Hart Farm signature barn preserves its authored 11-part multi-stage collapse.
 
 Open work:
 
-1. Re-weld `courthouse-wreck`, `foundry-wreck`, `ferris-wheel-wreck` and
-   `grandstand-wreck`. They render correctly but are unwelded; welding recovers
-   about 215 KB with no visual change.
-2. A home for `hart-farmhouse.glb`. It matches the generic house dimensions but
-   must not replace them (see hard rules). Candidates: a unique building beside
-   the barn, or a district-3 landmark.
-3. Whether `cow-17` replaces the procedural cattle. 38 spawn; the model is one
-   mesh so the draw-call cost is acceptable, but they are protected actors and
-   take no damage, so `damageable` is unnecessary and the shared material is the
-   cheap path.
+1. Modular residential house variants (authoring 3-4 distinct modular residential
+   footprints to replace procedural boxes while preserving color/size variety).
+2. Comedy props (flamingo, trampoline, BBQ grill) for yard dressing.
 
 ## Verifying a change
 
