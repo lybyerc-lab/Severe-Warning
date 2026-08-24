@@ -123,9 +123,6 @@ REPOSITORY_BOOTSTRAP.md
 SHA256SUMS.txt
 Tools/validate_project.py
 VALIDATION_REPORT.md
-_tmp_test.txt
-_tmp_test2.txt
-_tmp_test3.txt
 android/.gitignore
 android/app/.gitignore
 android/app/build.gradle
