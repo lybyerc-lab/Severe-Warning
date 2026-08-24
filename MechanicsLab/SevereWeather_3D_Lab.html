@@ -3699,6 +3699,37 @@ globalThis.instantiateActorModel = instantiateActorModel;
 // array. The pop loop is guarded by parts.length > 1, so it will not remove the
 // only mesh an actor has; that guard is what makes this safe rather than
 // something needing a special case inside the stage code.
+// [SW:VISUAL:ACTOR_DAMAGE] Hand a swapped-in model to the damage system in the
+// shape it actually reads.
+//
+// instantiateActorModel returns the Object3D WRAPPER; the mesh is a child of
+// it. Pushing that wrapper into damageParts leaves the array's only entry with
+// no .material, and the stage tint loop bails on exactly that check - so 122 of
+// the map's 140 destructible props were taking damage with no visible change.
+// buildActorMeshData has always traversed to the meshes for this reason; this
+// is the same move for props that start procedural and swap once the glb lands.
+//
+// The wreck name has to be copied onto modelActor too. The target destroy path
+// reads meshData.modelActor.wreck; a top-level meshData.wreck is only read by
+// the substation and chain-setpiece paths, so an authored wreck named there
+// alone is never requested and the generic ruin shows up instead.
+function adoptSwappedActorModel(meshData, model, spec = {}) {
+  const meshes = [];
+  model.traverse(object => { if (object.isMesh) meshes.push(object); });
+  if (Array.isArray(meshData.damageParts)) {
+    meshData.damageParts.length = 0;
+    for (let i = 0; i < meshes.length; i++) meshData.damageParts.push(meshes[i]);
+  }
+  meshData.base = meshes[0] || meshData.base;
+  // A single-mesh actor has nothing to shed at stage 1, and chunks already
+  // stand in for it. Leaving the procedural roof referenced is worse than
+  // nulling it: it is detached from the group but still HAS a parent, so the
+  // stage-1 guard passes and throws a roof the player never saw on the house.
+  meshData.roof = null;
+  meshData.modelActor = { name: spec.name || null, wreck: spec.wreck || null };
+  return meshData;
+}
+
 function buildActorMeshData(instance, spec = {}) {
   if (!instance) return null;
   const meshes = [];
@@ -5054,7 +5085,11 @@ function configureBovineAnimal(cowMesh, index, x, z, groundY) {
     instantiateActorModel('cow-17', { damageable: false }).then(model => {
       if (!model) return;
       while (cowMesh.children.length > 0) cowMesh.remove(cowMesh.children[0]);
-      cowMesh.geometry.dispose();
+      // Not dispose(): every one of the 38 cows is built on the same cowGeo, so
+      // disposing it here frees the buffers the other 37 are still drawing from.
+      // Three re-uploads them on the next frame, which is why nothing looked
+      // broken, but the churn is bought for nothing. Swapping this one mesh to
+      // an empty geometry is the whole intent.
       cowMesh.geometry = new THREE.BufferGeometry();
       cowMesh.add(model);
     });
@@ -5751,19 +5786,20 @@ function createHouseMesh(districtType, i, variant = 0) {
     damageParts.push(chimney);
   }
 
+  const meshData = { group, base, roof, color, damageParts, footprint: Math.max(width, depth), label: districtType === 3 ? 'BARN' : 'HOME', points: districtType === 3 ? 95 : 75, wreck: wreckName };
+
   // [SW:VISUAL:ACTOR_MODELS] Swap to authored modular residential house model once loaded
   if (modelName) {
     instantiateActorModel(modelName, { damageable: true }).then(model => {
       if (!model) return;
       if (procBody.parent) group.remove(procBody);
       group.add(model);
-      damageParts.length = 0;
-      damageParts.push(model);
+      adoptSwappedActorModel(meshData, model, { name: modelName, wreck: wreckName });
     });
   }
 
   group.rotation.y = (variant % 4) * Math.PI / 2;
-  return { group, base, roof, color, damageParts, footprint: Math.max(width, depth), label: districtType === 3 ? 'BARN' : 'HOME', points: districtType === 3 ? 95 : 75, wreck: wreckName };
+  return meshData;
 }
 
 function createCommercialMesh(districtType, variant = 0) {
@@ -5836,19 +5872,20 @@ function createCommercialMesh(districtType, variant = 0) {
     }
   }
 
+  const meshData = { group, base, cap, color, damageParts, footprint: Math.max(width, depth), label: districtType === 2 ? 'WORKSHOP' : 'MAIN STREET BUILDING', points: districtType === 2 ? 105 : 135, wreck: wreckName };
+
   // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF commercial model once loaded
   if (modelName) {
     instantiateActorModel(modelName, { damageable: true }).then(model => {
       if (!model) return;
       if (procBody.parent) group.remove(procBody);
       group.add(model);
-      damageParts.length = 0;
-      damageParts.push(model);
+      adoptSwappedActorModel(meshData, model, { name: modelName, wreck: wreckName });
     });
   }
 
   group.rotation.y = (variant % 4) * Math.PI / 2;
-  return { group, base, cap, color, damageParts, footprint: Math.max(width, depth), label: districtType === 2 ? 'WORKSHOP' : 'MAIN STREET BUILDING', points: districtType === 2 ? 105 : 135, wreck: wreckName };
+  return meshData;
 }
 
 function createTreeMesh(variant = 0) {
@@ -5891,16 +5928,17 @@ function createTreeMesh(variant = 0) {
     });
   }
 
+  const meshData = { group, base: trunk, color: '#15803d', damageParts, footprint: 5.5, label: 'TREE', points: 30, wreck: wreckName };
+
   // [SW:VISUAL:ACTOR_MODELS] Swap to authored glTF tree model once loaded
   instantiateActorModel(modelName, { damageable: true }).then(model => {
     if (!model) return;
     if (procBody.parent) group.remove(procBody);
     group.add(model);
-    damageParts.length = 0;
-    damageParts.push(model);
+    adoptSwappedActorModel(meshData, model, { name: modelName, wreck: wreckName });
   });
 
-  return { group, base: trunk, color: '#15803d', damageParts, footprint: 5.5, label: 'TREE', points: 30, wreck: wreckName };
+  return meshData;
 }
 
 function createLandmarkMesh(icon) {
