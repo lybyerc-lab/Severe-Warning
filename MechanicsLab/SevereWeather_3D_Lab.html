@@ -6101,13 +6101,16 @@ function createCommercialMesh(districtType, variant = 0) {
   const isMainStreet = districtType === 0;
   const isWarehouse = districtType === 2;
 
+  // grocery-store and discount-store are deliberately NOT in this rotation. A
+  // town has one or two of each, not six; they are placed as named anchors with
+  // parking, below. Left in the rotation the county had six discount stores and
+  // five groceries, which is the repetition problem in miniature and thematically
+  // wrong besides.
   const SHOP_VARIANTS = [
     'commercial-shop',
     'commercial-shop-gable',
     'commercial-shop-mansard',
-    'commercial-shop-deco',
-    'discount-store',
-    'grocery-store'
+    'commercial-shop-deco'
   ];
   const WAREHOUSE_VARIANTS = [
     'industrial-warehouse',
@@ -7964,6 +7967,66 @@ function blockDistrict(centerX, centerZ) {
   return 3;
 }
 
+// [SW:VISUAL:GROUND_DRESSING]
+// Every building in the county stood on open grass with nothing joining it to
+// the road. Driveways and lots are what make a town read as built rather than
+// placed, and they cost no new assets: conformPlaneToTerrain already lays a
+// slab that follows the ground, which is how the block pads work.
+//
+// Lift sits above SHOULDER_LIFT and below ROAD_LIFT so paving reads on top of
+// the verge and under the carriageway, with polygonOffset to keep it off the
+// terrain it is a hair above.
+const GROUND_DRESSING_LIFT = 0.13;
+const pavingMat = new THREE.MeshStandardMaterial({
+  color: '#8a94a1', roughness: 0.92, metalness: 0.0,
+  polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -3
+});
+
+function addGroundSlab(width, depth, centerX, centerZ, material) {
+  const segX = Math.max(2, Math.round(width / 6));
+  const segZ = Math.max(2, Math.round(depth / 6));
+  const geometry = conformPlaneToTerrain(
+    new THREE.PlaneGeometry(width, depth, segX, segZ), centerX, centerZ, GROUND_DRESSING_LIFT);
+  const slab = new THREE.Mesh(geometry, material);
+  slab.rotation.x = -Math.PI / 2;
+  slab.position.set(centerX, 0, centerZ);
+  slab.receiveShadow = true;
+  townDressGroup.add(slab);
+  return slab;
+}
+
+// The named anchors. Two of each on opposite diagonals, so a run across the
+// county passes one of both rather than clustering them in a quadrant.
+const SIGNATURE_STORES = [
+  { model: 'grocery-store',  label: 'MOO-MART',    color: '#b91c1c', x: -200, z: -200, w: 24, d: 18, h: 7.5, points: 220, health: 260 },
+  { model: 'grocery-store',  label: 'MOO-MART',    color: '#b91c1c', x:  200, z:  200, w: 24, d: 18, h: 7.5, points: 220, health: 260 },
+  { model: 'discount-store', label: 'UDDER VALUE', color: '#1d4ed8', x:  200, z: -200, w: 18, d: 14, h: 6.8, points: 190, health: 225 },
+  { model: 'discount-store', label: 'UDDER VALUE', color: '#1d4ed8', x: -200, z:  200, w: 18, d: 14, h: 6.8, points: 190, health: 225 }
+];
+
+// Same shape as the other swapped props: a procedural stand-in exists from the
+// first frame so the target can be scored, and the authored model replaces it
+// when it lands.
+function createSignatureStoreMesh(store) {
+  const group = new THREE.Group();
+  const damageParts = [];
+  const procBody = new THREE.Group();
+  group.add(procBody);
+  const base = addPropPart(procBody, new THREE.BoxGeometry(store.w, store.h, store.d),
+    store.color, 0, store.h / 2, 0, { roughness: 0.7 });
+  damageParts.push(base);
+  const wreckName = store.model + '-wreck';
+  const meshData = { group, base, roof: null, color: store.color, damageParts,
+    footprint: Math.max(store.w, store.d), label: store.label, points: store.points, wreck: wreckName };
+  instantiateActorModel(store.model, { damageable: true }).then(model => {
+    if (!model) return;
+    if (procBody.parent) group.remove(procBody);
+    group.add(model);
+    adoptSwappedActorModel(meshData, model, { name: store.model, wreck: wreckName, tint: true });
+  });
+  return meshData;
+}
+
 function buildLivingCounty() {
   townBlocks.length = 0;
   while (townDressGroup.children.length > 0) townDressGroup.remove(townDressGroup.children[0]);
@@ -8023,6 +8086,9 @@ function buildLivingCounty() {
       const x = centerX + offset[0] + (shiftNoise - 0.5) * 2 * LOT_SHIFT;
       const z = centerZ + offset[1] + (turnNoise - 0.5) * 2 * LOT_SHIFT;
       if (reserved.some(point => Math.hypot(x - point[0], z - point[1]) < 24)) return;
+      // An anchor store owns its whole block: the building plus its parking is
+      // what a grocery store actually occupies, and the four lots sat inside it.
+      if (SIGNATURE_STORES.some(store => Math.hypot(x - store.x, z - store.z) < 30)) return;
       const variant = row * centers.length + column + slot;
       let meshData;
       let isTree = false;
@@ -8065,6 +8131,62 @@ function buildLivingCounty() {
       targetIndex++;
     });
   }));
+
+  SIGNATURE_STORES.forEach(store => {
+    const meshData = createSignatureStoreMesh(store);
+    meshData.group.position.set(store.x, terrainHeightAt(store.x, store.z), store.z);
+    // Face the town centre, so the frontage and its lot look inward rather than
+    // out at the county line.
+    meshData.group.rotation.y = store.z > 0 ? Math.PI : 0;
+    scene.add(meshData.group);
+    const toward = store.z > 0 ? -1 : 1;
+    const apronDepth = 15;
+    addGroundSlab(store.w + 9, apronDepth, store.x,
+      store.z + toward * (store.d / 2 + apronDepth / 2 + 1), pavingMat);
+    const block = townBlocks.find(entry => entry.x === store.x && entry.z === store.z);
+    const target = {
+      x: store.x, z: store.z, health: store.health, maxHealth: store.health,
+      stage: 'Intact', damageStage: 0, destroyed: false, meshData,
+      isTree: false, isCommercial: true, color: meshData.color, points: store.points,
+      blockId: block ? block.id : null, blockName: block ? block.name : store.label,
+      district: block ? block.district : 0
+    };
+    targets.push(target);
+    if (block) block.targets.push(target);
+  });
+
+  addCountyDriveways();
+}
+
+// [SW:VISUAL:GROUND_DRESSING]
+// A driveway runs from the house to whichever carriageway it is nearest. Roads
+// sit on multiples of 80 in both axes, so the nearer axis decides which way the
+// drive points and everything stays axis-aligned - which matters, because
+// conformPlaneToTerrain maps plane X to world X and cannot be rotated.
+const DRIVEWAY_WIDTH = 3.6;
+const DRIVEWAY_SHOULDER_EDGE = 8.5;   // outer edge of the gravel verge
+const DRIVEWAY_HOUSE_EDGE = 5.2;      // half a house, near enough
+function addCountyDriveways() {
+  targets.forEach(target => {
+    if (!target.meshData || target.isTree) return;
+    const label = target.meshData.label;
+    if (label !== 'HOME' && label !== 'FARMHOUSE') return;
+    const offsetX = target.x - Math.round(target.x / 80) * 80;
+    const offsetZ = target.z - Math.round(target.z / 80) * 80;
+    const alongZ = Math.abs(offsetZ) <= Math.abs(offsetX);
+    const gap = (alongZ ? Math.abs(offsetZ) : Math.abs(offsetX))
+      - DRIVEWAY_SHOULDER_EDGE - DRIVEWAY_HOUSE_EDGE;
+    // A house sitting almost on the verge has no room for one, and a stub two
+    // units long reads as a mistake rather than a drive.
+    if (gap < 2.5) return;
+    const direction = (alongZ ? offsetZ : offsetX) >= 0 ? -1 : 1;
+    const centre = DRIVEWAY_HOUSE_EDGE + gap / 2;
+    if (alongZ) {
+      addGroundSlab(DRIVEWAY_WIDTH, gap, target.x, target.z + direction * centre, pavingMat);
+    } else {
+      addGroundSlab(gap, DRIVEWAY_WIDTH, target.x + direction * centre, target.z, pavingMat);
+    }
+  });
 }
 
 function init3DWorld() {
