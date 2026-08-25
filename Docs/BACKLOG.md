@@ -93,6 +93,13 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- 3D Model visual repairs & geometry normal fix: Corrected vertex winding order and
+  outward normal calculation in core primitives (`addCylinder`, `addCone`, `addBarrelVault`).
+  Re-authored `coffee-cup` (solid flared ceramic mug with sleeve & foam topping, fixing the
+  inverted cone hole), `foundry` (sealed continuous sawtooth roof bays & 32m smelting stack,
+  eliminating floating wedges), `courthouse` (integrated clock tower, belfry & solid dome,
+  eliminating floating slices), `bbq-grill` (rounded kettle bowl, domed lid, wire grate,
+  eliminating the hourglass cones), and `industrial-warehouse-curved` (sealed barrel vault).
 - Car dealership (`car-dealership` + wreck) with high-ceiling glass showroom, service
   garage bay, brand pylon sign, and parked inventory car (`lot-car` / `parked-car` + wreck)
   with near-neutral COLOR_0 for runtime lot row tinting.
