@@ -4142,15 +4142,11 @@ function onCrossingRoad(x) {
 }
 const streetLampPositions = [];
 const trafficSignalPositions = [];
-const fireHydrantPositions = [];
 STREET_CORE_ROWS.forEach(row => {
   // Lamps take the far shoulder, opposite the poles at row + 13.5, so the two
   // lines of vertical props do not stack up on the same side of the asphalt.
   for (let x = -300; x <= 300; x += 60) {
     if (!onCrossingRoad(x)) streetLampPositions.push({ x, z: row - 10.5, yaw: Math.PI });
-  }
-  for (let x = -300; x <= 300; x += 100) {
-    if (!onCrossingRoad(x)) fireHydrantPositions.push({ x, z: row + 9.2, yaw: 0 });
   }
   // One signal per core intersection, set back on the corner rather than over
   // the lane, since nothing here hangs a mast arm out across the road.
@@ -4205,7 +4201,14 @@ function registerStreetProp(name, wreckName, positions) {
 
 registerStreetProp('street-lamp', 'street-lamp-wreck', streetLampPositions);
 registerStreetProp('traffic-signal', 'traffic-signal-wreck', trafficSignalPositions);
-registerStreetProp('fire-hydrant', 'fire-hydrant-wreck', fireHydrantPositions);
+// Hydrants are deliberately not registered. Measured against this scene's own
+// cameras they stand 5-8 pixels tall - a fifth of a street lamp - while costing
+// 308 triangles an instance between intact and wreck, which is MORE than a lamp
+// at 252 or a signal at 300. That is the worst return in the set by a wide
+// margin, and thirty of them were a tenth of the frame's triangles for
+// something no player can resolve. The models stay on disk; the only thing
+// wrong with them is how far away the camera sits, and that is still an open
+// decision.
 
 // [SW:VISUAL:ACTOR_DAMAGE] The storm flattens street furniture it drives over,
 // on the same rule the poles use, so a run leaves one consistent trail rather
@@ -5909,8 +5912,26 @@ function createHouseMesh(districtType, i, variant = 0) {
   const houseModels = ['ranch-house', 'craftsman-house', 'split-level-house'];
   const houseWrecks = ['ranch-house-wreck', 'craftsman-house-wreck', 'split-level-house-wreck'];
   const houseIndex = (i + variant) % houseModels.length;
-  const modelName = districtType === 3 ? null : houseModels[houseIndex];
+  // [SW:VISUAL:ACTOR_MODELS] District 3 is the farm belt, and its barns were the
+  // last procedural boxes standing among the authored houses.
+  //
+  // hart-barn is used here rather than kept for the hero Hart Farm barn, which
+  // is the call that matters. The hero barn is taken apart BY NAME across four
+  // stages - roofLeft thrown as debris, frontWall darkened, both doors dropped -
+  // and a single-mesh model has none of those parts, so pointing it at the hero
+  // would fire every stage and move nothing. That authored destruction is the
+  // one place in this scene where hand-built multi-part geometry earns its draw
+  // calls, and it stays.
+  //
+  // The two do not read as the same building either: this glb is a gambrel barn
+  // with a cupola, and the hero is a gable barn in a complex with a silo, a
+  // farmhouse and a HART FARM sign. Side by side they are plainly different.
+  const modelName = districtType === 3 ? 'hart-barn' : houseModels[houseIndex];
+  // No hart-barn-wreck has been authored, so a felled barn keeps the generic
+  // ruin it already fell into.
   const wreckName = districtType === 3 ? null : houseWrecks[houseIndex];
+  // The glb is authored 24.7 units wide against this barn's 12.0.
+  const modelScale = districtType === 3 ? 0.52 : 1;
 
   const procBody = new THREE.Group();
   group.add(procBody);
@@ -5959,7 +5980,7 @@ function createHouseMesh(districtType, i, variant = 0) {
 
   // [SW:VISUAL:ACTOR_MODELS] Swap to authored modular residential house model once loaded
   if (modelName) {
-    instantiateActorModel(modelName, { damageable: true }).then(model => {
+    instantiateActorModel(modelName, { damageable: true, scale: modelScale }).then(model => {
       if (!model) return;
       if (procBody.parent) group.remove(procBody);
       group.add(model);
