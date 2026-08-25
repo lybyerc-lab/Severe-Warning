@@ -244,6 +244,8 @@ assets/models/industrial-warehouse-wreck.glb
 assets/models/industrial-warehouse.glb
 assets/models/inflatable-mascot-wreck.glb
 assets/models/inflatable-mascot.glb
+assets/models/lot-car-wreck.glb
+assets/models/lot-car.glb
 assets/models/news-van.glb
 assets/models/oak-tree-wreck.glb
 assets/models/oak-tree.glb

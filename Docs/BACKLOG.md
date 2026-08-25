@@ -16,37 +16,19 @@ Rules for keeping it alive:
 - Numbers in here are measured, not estimated. If a figure cannot be measured
   right now, say so instead of guessing.
 
-State at last update: 93 models, 1.08 MB of the ~2 MB budget (54%). 3 branches,
+State at last update: 103 models, 1.20 MB of the ~2 MB budget (60%). 3 branches,
 0 open PRs, 127 archive tags. `qa` is the default and the working branch.
 
 ---
 
 ## Next up — AG (assets)
 
-1. **Car dealership.** Director's ask.
-   - `car-dealership` + `car-dealership-wreck`. Showroom frontage, glass front,
-     low. In the 200–312 triangle band its main-street neighbours occupy.
-   - `lot-car` + `lot-car-wreck`. A **parked** inventory car. This is not the
-     driving `town-car`: see the no-harm note under Standing rules, because
-     which one it is decides whether the storm may touch it.
-   - Near-neutral `COLOR_0` on `lot-car` so the lot can be tinted into a row of
-     different cars from one model.
-
-2. **House variants with garages attached.** This is a regression, not a new
-   feature. The procedural houses had garages; the model swap deleted them, and
-   a swapped house is now a single mesh with nothing else in the group.
-   Attached to the house model rather than placed as a separate prop — attached
-   keeps it one draw call and one wreck across 45 houses.
-
-3. **Signage.** `MOO-MART` on `grocery-store`, `UDDER VALUE` on
-   `discount-store`. Both are placed as named anchors already; they just do not
-   say what they are yet.
+All current batch requests completed. Open for next director requests.
 
 ## Next up — Claude (code)
 
-1. **Dealership lot.** Blocked on AG's models above. Lot surface reuses
-   `addGroundSlab`; inventory cars are placed as destructible scenery, not as
-   protected actors.
+1. **Dealership lot.** Wire `car-dealership` anchor placement and place `lot-car`
+   inventory rows as destructible scenery on the dealership lot.
 
 Nothing else is queued. Say the word and this fills up.
 
@@ -111,6 +93,13 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Car dealership (`car-dealership` + wreck) with high-ceiling glass showroom, service
+  garage bay, brand pylon sign, and parked inventory car (`lot-car` / `parked-car` + wreck)
+  with near-neutral COLOR_0 for runtime lot row tinting.
+- Attached garage house variants (`ranch-house-garage`, `craftsman-house-garage` + wrecks),
+  restoring suburban attached garage silhouettes in a single welded mesh per house.
+- Authentic supermarket & discount store branding: `MOO-MART` green/white pasture branding
+  on `grocery-store` + wreck, `UDDER VALUE` red/yellow discount branding on `discount-store` + wreck.
 - Sidewalks downtown, gravel shoulder left alone in the farm belt. 20 continuous
   runs rather than 72 per-block slabs.
 - Named store anchors with parking, driveways for every house. 65 ground slabs,
