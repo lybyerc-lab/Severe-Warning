@@ -5900,14 +5900,33 @@ function createGabledRoofMesh(width, depth, roofHeight, roofColor) {
   return mesh;
 }
 
+// [SW:VISUAL:FARM_BELT] A couple of barns, not a belt of them.
+//
+// District 3 put a barn on every building lot, and eighteen of the same one
+// reads as a repeated texture rather than a county. A barn is an outbuilding:
+// a farm has one, and the rest of the road is houses. The cap is enforced by a
+// counter rather than a placement rule so it holds even if the block layout
+// changes underneath it.
+const FARM_BELT_BARN_LIMIT = 2;
+// Farm houses come from the farm-appropriate end of the authored set.
+// split-level reads suburban and stays in district 1 where it belongs.
+const FARM_HOUSE_MODELS = ['ranch-house', 'craftsman-house'];
+let farmBeltBarnCount = 0;
+
 function createHouseMesh(districtType, i, variant = 0) {
   const group = new THREE.Group();
   const damageParts = [];
   const homeColors = ['#e11d48', '#0284c7', '#d97706', '#16a34a', '#9333ea', '#db2777', '#ea580c', '#0891b2'];
-  const color = districtType === 3 ? '#b91c1c' : homeColors[(i + variant) % homeColors.length];
-  const width = districtType === 3 ? 12.0 : 7.8 + (variant % 3) * 1.35;
-  const depth = districtType === 3 ? 8.8 : 7.0 + ((variant + 1) % 2) * 1.6;
-  const wallHeight = districtType === 3 ? 6.5 : 5.0 + (variant % 2) * 1.5;
+  const isFarmBelt = districtType === 3;
+  // Spread by index so the two barns do not land on adjacent lots, capped so
+  // there are never more than two however many lots the belt ends up with.
+  const wantsBarn = isFarmBelt && farmBeltBarnCount < FARM_BELT_BARN_LIMIT && i % 5 === 2;
+  if (wantsBarn) farmBeltBarnCount++;
+
+  const color = wantsBarn ? '#b91c1c' : homeColors[(i + variant) % homeColors.length];
+  const width = wantsBarn ? 12.0 : 7.8 + (variant % 3) * 1.35;
+  const depth = wantsBarn ? 8.8 : 7.0 + ((variant + 1) % 2) * 1.6;
+  const wallHeight = wantsBarn ? 6.5 : 5.0 + (variant % 2) * 1.5;
 
   const houseModels = ['ranch-house', 'craftsman-house', 'split-level-house'];
   const houseWrecks = ['ranch-house-wreck', 'craftsman-house-wreck', 'split-level-house-wreck'];
@@ -5926,12 +5945,15 @@ function createHouseMesh(districtType, i, variant = 0) {
   // The two do not read as the same building either: this glb is a gambrel barn
   // with a cupola, and the hero is a gable barn in a complex with a silo, a
   // farmhouse and a HART FARM sign. Side by side they are plainly different.
-  const modelName = districtType === 3 ? 'hart-barn' : houseModels[houseIndex];
+  const farmHouse = FARM_HOUSE_MODELS[houseIndex % FARM_HOUSE_MODELS.length];
+  const modelName = wantsBarn ? 'hart-barn' : (isFarmBelt ? farmHouse : houseModels[houseIndex]);
   // No hart-barn-wreck has been authored, so a felled barn keeps the generic
-  // ruin it already fell into.
-  const wreckName = districtType === 3 ? null : houseWrecks[houseIndex];
-  // The glb is authored 24.7 units wide against this barn's 12.0.
-  const modelScale = districtType === 3 ? 0.52 : 1;
+  // ruin it already fell into. The farm houses do have wrecks, so most of the
+  // belt now drops into an authored one where none of it used to.
+  const wreckName = wantsBarn ? null
+    : (isFarmBelt ? `${farmHouse}-wreck` : houseWrecks[houseIndex]);
+  // The barn glb is authored 24.7 units wide against this lot's 12.0.
+  const modelScale = wantsBarn ? 0.52 : 1;
 
   const procBody = new THREE.Group();
   group.add(procBody);
@@ -5976,7 +5998,7 @@ function createHouseMesh(districtType, i, variant = 0) {
     damageParts.push(chimney);
   }
 
-  const meshData = { group, base, roof, color, damageParts, footprint: Math.max(width, depth), label: districtType === 3 ? 'BARN' : 'HOME', points: districtType === 3 ? 95 : 75, wreck: wreckName };
+  const meshData = { group, base, roof, color, damageParts, footprint: Math.max(width, depth), label: wantsBarn ? 'BARN' : (isFarmBelt ? 'FARMHOUSE' : 'HOME'), points: wantsBarn ? 95 : 75, wreck: wreckName };
 
   // [SW:VISUAL:ACTOR_MODELS] Swap to authored modular residential house model once loaded
   if (modelName) {
@@ -7939,6 +7961,7 @@ function init3DWorld() {
   clearStreetPropWrecks();
 
   targets.length = 0;
+  farmBeltBarnCount = 0;
   landmarks.length = 0;
   substations.length = 0;
   animals.length = 0;
