@@ -4355,6 +4355,8 @@ function onCrossingRoad(x) {
 }
 const streetLampPositions = [];
 const trafficSignalPositions = [];
+const ruralMailboxPositions = [];
+
 STREET_CORE_ROWS.forEach(row => {
   // Lamps take the far shoulder, opposite the poles at row + 13.5, so the two
   // lines of vertical props do not stack up on the same side of the asphalt.
@@ -4367,6 +4369,62 @@ STREET_CORE_ROWS.forEach(row => {
     trafficSignalPositions.push({ x: column - 8.5, z: row + 8.5, yaw: Math.PI * 0.25 });
   });
 });
+
+// [SW:VISUAL:STREET_FURNITURE]
+// Deterministic computation of rural mailbox positions at residential driveway entrances
+const countyCenters = [-200, -120, -40, 40, 120, 200];
+const countyReserved = [
+  [-145, -110], [-60, -60], [-110, 100], [120, 120], [155, 135],
+  [40, -200], [-40, -200], [-200, 120], [200, 200]
+];
+const countyLotOffsets = [[-18, -18], [18, -18], [-18, 18], [18, 18]];
+const countyLotNoise = (a, b) => {
+  const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+};
+
+countyCenters.forEach((centerZ, row) => countyCenters.forEach((centerX, column) => {
+  const district = (centerZ < 0 ? 0 : 2) + (centerX < 0 ? 0 : 1);
+  countyLotOffsets.forEach((offset, slot) => {
+    const shiftNoise = countyLotNoise(centerX + slot * 7.3, centerZ - slot * 3.1);
+    const turnNoise = countyLotNoise(centerZ + slot * 11.7, centerX - slot * 5.9);
+    const gapNoise = countyLotNoise(centerX * 0.5 + centerZ * 0.25, slot * 19.3);
+    const mixNoise = countyLotNoise(centerZ * 3.7 + slot * 2.3, centerX * 1.9 - slot * 4.1);
+    if (gapNoise > 0.945) return;
+    const x = centerX + offset[0] + (shiftNoise - 0.5) * 8;
+    const z = centerZ + offset[1] + (turnNoise - 0.5) * 8;
+    if (countyReserved.some(point => Math.hypot(x - point[0], z - point[1]) < 24)) return;
+
+    let isHouse = false;
+    const variant = row * countyCenters.length + column + slot;
+    if (district === 0) {
+      if (!(slot === 3 && variant % 2 === 0) && mixNoise > 0.80) isHouse = true;
+    } else if (district === 1) {
+      if (slot !== 3 && mixNoise <= 0.86) isHouse = true;
+    } else if (district === 2) {
+      if (slot !== 2 && mixNoise > 0.88) isHouse = true;
+    } else {
+      if (slot !== 1 && slot !== 3) isHouse = true;
+    }
+    if (!isHouse) return;
+
+    const offsetX = x - Math.round(x / 80) * 80;
+    const offsetZ = z - Math.round(z / 80) * 80;
+    const alongZ = Math.abs(offsetZ) <= Math.abs(offsetX);
+    const gap = (alongZ ? Math.abs(offsetZ) : Math.abs(offsetX)) - 8.5 - 5.2;
+    if (gap < 2.5) return;
+
+    const direction = (alongZ ? offsetZ : offsetX) >= 0 ? -1 : 1;
+    const mbX = alongZ ? x + (direction > 0 ? 2.4 : -2.4) : x + direction * (5.2 + gap);
+    const mbZ = alongZ ? z + direction * (5.2 + gap) : z + (direction > 0 ? 2.4 : -2.4);
+    const yaw = alongZ ? (direction > 0 ? 0 : Math.PI) : (direction > 0 ? Math.PI * 0.5 : -Math.PI * 0.5);
+    ruralMailboxPositions.push({ x: mbX, z: mbZ, yaw });
+  });
+}));
+
+registerStreetProp('street-lamp', 'street-lamp-wreck', streetLampPositions);
+registerStreetProp('traffic-signal', 'traffic-signal-wreck', trafficSignalPositions);
+registerStreetProp('rural-mailbox', 'rural-mailbox-wreck', ruralMailboxPositions);
 
 const streetPropSets = [];
 const streetPropMatrix = new THREE.Matrix4();
@@ -8377,6 +8435,121 @@ function buildLivingCounty() {
 
   addCountyDriveways();
   addCommercialSidewalks();
+  addIndustrialRailSpur();
+  addPastureFencing();
+}
+
+// [SW:VISUAL:GROUND_DRESSING]
+// Industrial rail spur track running through Foundry Row alongside the heavy industrial sector.
+const ballastMat = new THREE.MeshStandardMaterial({
+  color: '#334155', roughness: 0.94, metalness: 0.1,
+  polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -3
+});
+const railSteelMat = new THREE.MeshStandardMaterial({ color: '#64748b', roughness: 0.35, metalness: 0.85 });
+const railTieMat = new THREE.MeshStandardMaterial({ color: '#3f2415', roughness: 0.92 });
+
+function addIndustrialRailSpur() {
+  const spurZ = 96;
+  const startX = -280;
+  const endX = -40;
+  const length = endX - startX;
+  const centreX = (startX + endX) / 2;
+
+  // Crushed rock ballast gravel bed
+  addGroundSlab(length, 5.2, centreX, spurZ, ballastMat);
+
+  // Instanced railroad ties (creosote timber blocks)
+  const tieCount = Math.floor(length / 1.6);
+  const tieGeo = new THREE.BoxGeometry(0.24, 0.18, 3.2);
+  const ties = new THREE.InstancedMesh(tieGeo, railTieMat, tieCount);
+  const matrix = new THREE.Matrix4();
+  const pos = new THREE.Vector3();
+  const quat = new THREE.Quaternion();
+  const scale = new THREE.Vector3(1, 1, 1);
+
+  for (let i = 0; i < tieCount; i++) {
+    const x = startX + i * 1.6;
+    const y = terrainHeightAt(x, spurZ) + 0.14;
+    pos.set(x, y, spurZ);
+    matrix.compose(pos, quat, scale);
+    ties.setMatrixAt(i, matrix);
+  }
+  ties.instanceMatrix.needsUpdate = true;
+  ties.receiveShadow = true;
+  townDressGroup.add(ties);
+
+  // Dual parallel steel rails
+  const railGeo = new THREE.BoxGeometry(length, 0.15, 0.12);
+  [-0.75, 0.75].forEach(railOffsetZ => {
+    const rail = new THREE.Mesh(railGeo, railSteelMat);
+    rail.position.set(centreX, terrainHeightAt(centreX, spurZ + railOffsetZ) + 0.28, spurZ + railOffsetZ);
+    rail.castShadow = true;
+    rail.receiveShadow = true;
+    townDressGroup.add(rail);
+  });
+}
+
+// [SW:VISUAL:GROUND_DRESSING]
+// Rustic split-rail cedar fencing enclosing agricultural pastures in District 3.
+const fenceWoodMat = new THREE.MeshStandardMaterial({ color: '#785438', roughness: 0.92 });
+function addPastureFencing() {
+  const fencePosts = [];
+  const corners = [
+    { x1: 52, z1: 52, x2: 188, z2: 52 },
+    { x1: 188, z1: 52, x2: 188, z2: 188 },
+    { x1: 188, z1: 188, x2: 52, z2: 188 },
+    { x1: 52, z1: 188, x2: 52, z2: 52 }
+  ];
+
+  corners.forEach(edge => {
+    const dist = Math.hypot(edge.x2 - edge.x1, edge.z2 - edge.z1);
+    const steps = Math.floor(dist / 6.0);
+    const angle = Math.atan2(edge.z2 - edge.z1, edge.x2 - edge.x1);
+    for (let i = 0; i < steps; i++) {
+      const t = i / steps;
+      const x = THREE.MathUtils.lerp(edge.x1, edge.x2, t);
+      const z = THREE.MathUtils.lerp(edge.z1, edge.z2, t);
+      fencePosts.push({ x, z, angle });
+    }
+  });
+
+  const postGeo = new THREE.BoxGeometry(0.22, 1.4, 0.22);
+  const railGeo = new THREE.BoxGeometry(5.8, 0.12, 0.12);
+
+  const postsMesh = new THREE.InstancedMesh(postGeo, fenceWoodMat, fencePosts.length);
+  const railsUpperMesh = new THREE.InstancedMesh(railGeo, fenceWoodMat, fencePosts.length);
+  const railsLowerMesh = new THREE.InstancedMesh(railGeo, fenceWoodMat, fencePosts.length);
+
+  const m = new THREE.Matrix4();
+  const p = new THREE.Vector3();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  const s = new THREE.Vector3(1, 1, 1);
+
+  fencePosts.forEach((post, i) => {
+    const groundY = terrainHeightAt(post.x, post.z);
+    e.set(0, post.angle, 0);
+    q.setFromEuler(e);
+
+    p.set(post.x, groundY + 0.7, post.z);
+    m.compose(p, q, s);
+    postsMesh.setMatrixAt(i, m);
+
+    p.set(post.x + Math.cos(post.angle) * 2.9, groundY + 1.05, post.z + Math.sin(post.angle) * 2.9);
+    m.compose(p, q, s);
+    railsUpperMesh.setMatrixAt(i, m);
+
+    p.set(post.x + Math.cos(post.angle) * 2.9, groundY + 0.55, post.z + Math.sin(post.angle) * 2.9);
+    m.compose(p, q, s);
+    railsLowerMesh.setMatrixAt(i, m);
+  });
+
+  [postsMesh, railsUpperMesh, railsLowerMesh].forEach(mesh => {
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    townDressGroup.add(mesh);
+  });
 }
 
 // [SW:VISUAL:GROUND_DRESSING]

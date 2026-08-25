@@ -27,8 +27,7 @@ All current batch requests completed. Open for next director requests.
 
 ## Next up — Code & Modernization
 
-1. **County Micro-Dressing.** Place `rural-mailbox` props at driveway heads, fairgrounds split-rail fencing, and industrial rail spur tracks.
-2. **Phase 6 HUD / UI TypeScript modularization.** Type-safe HUD overlays and campaign transitions.
+1. **Phase 6 HUD / UI TypeScript modularization.** Type-safe HUD overlays and campaign transitions.
 
 Nothing else is queued. Say the word and this fills up.
 
@@ -101,6 +100,10 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- County Micro-Dressing (Driveway Mailboxes, Industrial Rail Spur & Pasture Fencing):
+  - Placed 47 `rural-mailbox` + `rural-mailbox-wreck` props at the heads of residential driveways along Pine Ridge and the farm belt via instanced street props (costing 1 draw call, fully destructible).
+  - Added continuous industrial rail spur tracks (crushed rock ballast bed, 150 creosote timber ties, dual steel rails) along Foundry Row ($X: -280 \to -40, Z = 96$).
+  - Added rustic split-rail cedar timber fencing enclosing agricultural pastures in District 3 (instanced into 1 draw call).
 - Power grid overhaul, catenary lines & transformer blowout FX:
   - Re-authored `power-pole` + `power-pole-wreck` ($1.2\text{m} \times 9.0\text{m} \times 1.2\text{m}$) with authentic cylindrical high-voltage transformer drum cans, tiered crossarms, blue glazed ceramic insulators, and steel conduit.
   - Generated county-wide catenary utility power lines spanning between all 117 poles in a single draw call via `THREE.LineSegments`.
