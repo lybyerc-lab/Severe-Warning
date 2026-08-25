@@ -188,6 +188,60 @@ for (const modelFile of modelSourceNames) {
     sha256: createHash('sha256').update(bytes).digest('hex')
   });
 }
+// [SW:BUILD:MODEL_GUARDS]
+// Two ways a model batch goes wrong silently, both of which have now happened.
+//
+// First: the models arrive in a directory that only differs by case. This repo
+// still carries the Unity-era `Assets/` tree beside the live `assets/` one, and
+// a batch landing in `Assets/models/` looks correct on a case-insensitive
+// machine while being a different directory here and in CI. Nothing failed --
+// the build simply packaged none of them and thirty-nine buildings quietly fell
+// back to procedural boxes, because a model that fails to load leaves the
+// stand-in behind by design.
+//
+// Second, and more general: the gameplay names a model the build did not
+// package. However that happens -- wrong directory, typo, an export that never
+// got committed -- the symptom is identical and invisible. So the build now
+// reads the names the game actually asks for and refuses to produce a bundle
+// that cannot serve them.
+const strayModelDirs = [];
+for (const strayDir of ['Assets/models', 'Assets/Models', 'assets/Models']) {
+  const absolute = path.join(projectRoot, strayDir);
+  if (path.resolve(absolute) === path.resolve(sourceModelsDir)) continue;
+  try {
+    const strays = (await readdir(absolute)).filter(name => name.toLowerCase().endsWith('.glb'));
+    if (strays.length) strayModelDirs.push(`${strayDir} (${strays.length} .glb)`);
+  } catch (error) {
+    if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
+  }
+}
+if (strayModelDirs.length) {
+  throw new Error(
+    `Models found outside assets/models: ${strayModelDirs.join(', ')}. ` +
+    'Only assets/models is packaged; move them with git mv and regenerate FILE_INVENTORY.txt.'
+  );
+}
+
+const packagedModelNames = new Set(modelSourceNames.map(name => name.replace(/\.glb$/i, '')));
+// The gameplay names models as plain quoted strings -- instantiateActorModel and
+// loadActorModel both take a bare name. Reading them back out of the source is
+// crude, but it is the same list the runtime will ask for, which is the point.
+const referencedModelNames = new Set();
+for (const match of html.matchAll(/\b(?:instantiateActorModel|loadActorModel)\(\s*'([a-z0-9-]+)'/g)) {
+  referencedModelNames.add(match[1]);
+}
+// Wrecks are resolved by convention rather than named at the call site.
+for (const name of [...referencedModelNames]) {
+  if (packagedModelNames.has(`${name}-wreck`)) referencedModelNames.add(`${name}-wreck`);
+}
+const missingModels = [...referencedModelNames].filter(name => !packagedModelNames.has(name)).sort();
+if (missingModels.length) {
+  throw new Error(
+    `Gameplay references models that are not packaged: ${missingModels.join(', ')}. ` +
+    'Every name passed to instantiateActorModel/loadActorModel must exist in assets/models.'
+  );
+}
+
 const modelsTotalBytes = models.reduce((sum, entry) => sum + entry.bytes, 0);
 
 const sourceSha256 = createHash('sha256').update(html).digest('hex');

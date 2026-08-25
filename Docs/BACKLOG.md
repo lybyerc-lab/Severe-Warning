@@ -82,6 +82,14 @@ Nothing blocking. The board is clear.
   anything instanced, triangles budgeted against a model's neighbours rather
   than the cap, and near-neutral `COLOR_0` on anything that stands on many lots.
 
+- **The build refuses to ship a model batch that cannot load.** Two guards in
+  `scripts/build-web.mjs`, both added because the failure they catch is silent:
+  a `.glb` anywhere but `assets/models` fails the build (the Unity-era `Assets/`
+  tree differs only by case and is not packaged), and any name passed to
+  `instantiateActorModel`/`loadActorModel` that is not packaged fails it too.
+  Both are proven against negative controls. If a batch lands and the build goes
+  red with either message, that is the guard working, not a broken build.
+
 - **Town layout is deterministic on purpose.** Lot jitter, rotation and gaps are
   hashed from each lot's own coordinates, never `Math.random()`. The town is
   rebuilt every run and the visual regression gate compares one build's render
@@ -92,6 +100,9 @@ Nothing blocking. The board is clear.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- Build guards against silent model-batch failures — wrong-case directory, and
+  gameplay naming a model that is not packaged.
 
 - 3D Model visual repairs & geometry normal fix: Corrected vertex winding order and
   outward normal calculation in core primitives (`addCylinder`, `addCone`, `addBarrelVault`).
