@@ -8018,10 +8018,11 @@ function addGroundSlab(width, depth, centerX, centerZ, material) {
 // The named anchors. Two of each on opposite diagonals, so a run across the
 // county passes one of both rather than clustering them in a quadrant.
 const SIGNATURE_STORES = [
-  { model: 'grocery-store',  label: 'MOO-MART',    color: '#b91c1c', x: -200, z: -200, w: 24, d: 18, h: 7.5, points: 220, health: 260 },
-  { model: 'grocery-store',  label: 'MOO-MART',    color: '#b91c1c', x:  200, z:  200, w: 24, d: 18, h: 7.5, points: 220, health: 260 },
-  { model: 'discount-store', label: 'UDDER VALUE', color: '#1d4ed8', x:  200, z: -200, w: 18, d: 14, h: 6.8, points: 190, health: 225 },
-  { model: 'discount-store', label: 'UDDER VALUE', color: '#1d4ed8', x: -200, z:  200, w: 18, d: 14, h: 6.8, points: 190, health: 225 }
+  { model: 'grocery-store',  label: 'MOO-MART',          color: '#b91c1c', x: -200, z: -200, w: 24, d: 18, h: 7.5, points: 220, health: 260 },
+  { model: 'grocery-store',  label: 'MOO-MART',          color: '#b91c1c', x:  200, z:  200, w: 24, d: 18, h: 7.5, points: 220, health: 260 },
+  { model: 'discount-store', label: 'UDDER VALUE',       color: '#1d4ed8', x:  200, z: -200, w: 18, d: 14, h: 6.8, points: 190, health: 225 },
+  { model: 'discount-store', label: 'UDDER VALUE',       color: '#1d4ed8', x: -200, z:  200, w: 18, d: 14, h: 6.8, points: 190, health: 225 },
+  { model: 'car-dealership', label: 'HEARTLAND MOTORS',  color: '#0284c7', x: -120, z: -120, w: 20, d: 16, h: 7.2, points: 240, health: 280, hasCarLot: true }
 ];
 
 // Same shape as the other swapped props: a procedural stand-in exists from the
@@ -8043,6 +8044,26 @@ function createSignatureStoreMesh(store) {
     if (procBody.parent) group.remove(procBody);
     group.add(model);
     adoptSwappedActorModel(meshData, model, { name: store.model, wreck: wreckName, tint: true });
+  });
+  return meshData;
+}
+
+function createLotCarMesh(color = '#dc2626') {
+  const group = new THREE.Group();
+  const damageParts = [];
+  const procBody = new THREE.Group();
+  group.add(procBody);
+  const body = addPropPart(procBody, new THREE.BoxGeometry(2.8, 1.2, 5.0), color, 0, 0.8, 0, { roughness: 0.4, metalness: 0.6 });
+  damageParts.push(body);
+  const modelName = 'lot-car';
+  const wreckName = 'lot-car-wreck';
+  const meshData = { group, base: body, roof: null, color, damageParts,
+    footprint: 5.2, label: 'INVENTORY CAR', points: 60, wreck: wreckName };
+  instantiateActorModel(modelName, { damageable: true }).then(model => {
+    if (!model) return;
+    if (procBody.parent) group.remove(procBody);
+    group.add(model);
+    adoptSwappedActorModel(meshData, model, { name: modelName, wreck: wreckName, tint: true });
   });
   return meshData;
 }
@@ -8160,8 +8181,9 @@ function buildLivingCounty() {
     meshData.group.rotation.y = store.z > 0 ? Math.PI : 0;
     scene.add(meshData.group);
     const toward = store.z > 0 ? -1 : 1;
-    const apronDepth = 15;
-    addGroundSlab(store.w + 9, apronDepth, store.x,
+    const apronDepth = store.hasCarLot ? 22 : 15;
+    const apronWidth = store.hasCarLot ? store.w + 16 : store.w + 9;
+    addGroundSlab(apronWidth, apronDepth, store.x,
       store.z + toward * (store.d / 2 + apronDepth / 2 + 1), pavingMat);
     const block = townBlocks.find(entry => entry.x === store.x && entry.z === store.z);
     const target = {
@@ -8173,6 +8195,33 @@ function buildLivingCounty() {
     };
     targets.push(target);
     if (block) block.targets.push(target);
+
+    // [SW:WORLD:DEALERSHIP_LOT]
+    // Place 2 rows of 4 color-tinted destructible inventory cars on the lot apron
+    if (store.hasCarLot) {
+      const carPalette = ['#dc2626', '#2563eb', '#facc15', '#16a34a', '#475569', '#f8fafc', '#0f172a', '#9333ea'];
+      for (let rowIdx = 0; rowIdx < 2; rowIdx++) {
+        for (let colIdx = 0; colIdx < 4; colIdx++) {
+          const carColor = carPalette[(rowIdx * 4 + colIdx) % carPalette.length];
+          const carMesh = createLotCarMesh(carColor);
+          const carX = store.x - 12.0 + colIdx * 8.0;
+          const carZ = store.z + toward * (store.d / 2 + 5.5 + rowIdx * 7.5);
+          carMesh.group.position.set(carX, terrainHeightAt(carX, carZ), carZ);
+          carMesh.group.rotation.y = store.z > 0 ? 0 : Math.PI;
+          scene.add(carMesh.group);
+          const carHealth = 65;
+          const carTarget = {
+            x: carX, z: carZ, health: carHealth, maxHealth: carHealth,
+            stage: 'Intact', damageStage: 0, destroyed: false, meshData: carMesh,
+            isTree: false, isCommercial: false, color: carColor, points: 60,
+            blockId: block ? block.id : null, blockName: 'DEALERSHIP LOT',
+            district: block ? block.district : 0
+          };
+          targets.push(carTarget);
+          if (block) block.targets.push(carTarget);
+        }
+      }
+    }
   });
 
   addCountyDriveways();

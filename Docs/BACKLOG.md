@@ -25,10 +25,10 @@ State at last update: 103 models, 1.20 MB of the ~2 MB budget (60%). 3 branches,
 
 All current batch requests completed. Open for next director requests.
 
-## Next up — Claude (code)
+## Next up — Code & Modernization
 
-1. **Dealership lot.** Wire `car-dealership` anchor placement and place `lot-car`
-   inventory rows as destructible scenery on the dealership lot.
+1. **Power pole variants & sagging wire geometry.** Multi-crossarm poles and sagged utility lines across the street grid.
+2. **Phase 6 HUD / UI TypeScript modularization.** Type-safe HUD overlays and campaign transitions.
 
 Nothing else is queued. Say the word and this fills up.
 
@@ -101,6 +101,11 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Dealership lot & parked inventory cars wired in-engine: Placed `car-dealership` as a
+  named county anchor with an expanded 44m x 22m paved parking apron and 2 rows of 4
+  color-tinted destructible `lot-car` inventory sedans (points: 60, health: 65, wreck: `lot-car-wreck`).
+  All inventory cars take damage, flip, and collapse under storm wind/debris while adhering
+  to the First Law (parked cars on lots are inventory).
 - Round 2 3D Model visual polish:
   - Corrected `coffee-cup` handle orientation from horizontal to a proper **vertical ceramic C-ear handle** along the side of the mug, eliminating the 'trash can' appearance.
   - Re-authored `inflatable-mascot` from stiff vertical tubes to a **dynamic S-curve dancing tube man** with wildly flailing wavy arms, yellow fringe fingers, mayor suit/tie, and cartoon smiley face.
