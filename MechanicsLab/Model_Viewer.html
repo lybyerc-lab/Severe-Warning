@@ -26,7 +26,7 @@
       overflow: hidden;
     }
     #sidebar {
-      width: 320px;
+      width: 330px;
       background: var(--panel);
       border-right: 1px solid var(--panel-border);
       display: flex;
@@ -209,10 +209,10 @@
   <div id="sidebar">
     <div id="sidebar-header">
       <h1>🌪️ Severe Warning</h1>
-      <p>3D glTF Model Inspector & Viewer</p>
+      <p>3D glTF Model Inspector & Viewer (93 Models)</p>
     </div>
     <div id="model-search">
-      <input type="text" id="search-input" placeholder="Filter models (e.g. flamingo, house)...">
+      <input type="text" id="search-input" placeholder="Filter models (e.g. shop, grocery, barn)...">
     </div>
     <div id="model-list"></div>
   </div>
@@ -221,7 +221,7 @@
     <div id="top-bar">
       <div class="hud-card">
         <div id="model-title">Select a model</div>
-        <div id="model-subtitle">78 Models tracked</div>
+        <div id="model-subtitle">93 Models tracked</div>
       </div>
       <div class="hud-card" id="controls-card">
         <button class="btn active" id="btn-intact">Intact</button>
@@ -248,7 +248,37 @@
   <script>
     const MODEL_CATALOG = [
       {
-        category: 'Comedy Gag Props',
+        category: 'Main Street Storefronts (4 Silhouettes)',
+        items: [
+          { id: 'commercial-shop', name: 'Stepped Cornice Shop', wreck: 'commercial-shop-wreck', gag: 'Classic 3-story stepped pediment with dual rooftop HVAC chillers.' },
+          { id: 'commercial-shop-gable', name: 'Dutch Gable Pediment Shop', wreck: 'commercial-shop-gable-wreck', gag: 'Triangular Dutch gable façade with overhanging street awning.' },
+          { id: 'commercial-shop-mansard', name: 'Mansard Roofline Shop', wreck: 'commercial-shop-mansard-wreck', gag: 'Sloped mansard 3rd story with dormers and corner ventilation stacks.' },
+          { id: 'commercial-shop-deco', name: 'Art Deco Step-Tower Shop', wreck: 'commercial-shop-deco-wreck', gag: 'Stepped central spire with vertical pilaster columns.' }
+        ]
+      },
+      {
+        category: 'Commercial Anchor Retail Blocks',
+        items: [
+          { id: 'grocery-store', name: 'Supermarket Grocery Store', wreck: 'grocery-store-wreck', gag: 'Low wide grocery store with front glass curtain and rooftop condenser array.' },
+          { id: 'discount-store', name: 'Discount Mart Retail', wreck: 'discount-store-wreck', gag: 'Commercial retail store with stepped parapet fascia and utility chillers.' }
+        ]
+      },
+      {
+        category: 'Industrial Warehouses (2 Silhouettes)',
+        items: [
+          { id: 'industrial-warehouse', name: 'Gabled Corrugated Warehouse', wreck: 'industrial-warehouse-wreck', gag: 'Pitched gabled steel warehouse with loading dock bay.' },
+          { id: 'industrial-warehouse-curved', name: 'Barrel-Vault Arch Warehouse', wreck: 'industrial-warehouse-curved-wreck', gag: 'Curved Quonset-style hangar arch with side pipe annex.' }
+        ]
+      },
+      {
+        category: 'Agricultural Barns',
+        items: [
+          { id: 'hart-barn', name: 'Hart Farmstead Barn (Hero)', wreck: 'hart-barn-wreck', gag: 'Authentic gambrel roof barn with matching authored destruction wreck.' },
+          { id: 'district-barn', name: 'District Farm Belt Barn', wreck: 'district-barn-wreck', gag: 'Background rural barn for farm belt lots.' }
+        ]
+      },
+      {
+        category: 'Comedy Gag Props (13 Interactive Pairs)',
         items: [
           { id: 'flamingo', name: 'Lawn Flamingo', wreck: 'flamingo-wreck', gag: 'Lawn flamingo migration begins early.' },
           { id: 'trampoline', name: 'Backyard Trampoline', wreck: 'trampoline-wreck', gag: 'Trampoline achieves low Earth orbit.' },
@@ -291,13 +321,10 @@
           { id: 'gas-station', name: 'Gas Station Canopy', wreck: 'gas-station-wreck' },
           { id: 'carwash', name: 'Automated Car Wash', wreck: 'carwash-wreck' },
           { id: 'substation', name: 'Power Substation', wreck: 'substation-wreck' },
-          { id: 'commercial-shop', name: 'Commercial Shop', wreck: 'commercial-shop-wreck' },
-          { id: 'industrial-warehouse', name: 'Industrial Warehouse', wreck: 'industrial-warehouse-wreck' },
           { id: 'propane-tank', name: 'Propane Tank', wreck: 'propane-tank-wreck' },
           { id: 'power-pole', name: 'Utility Power Pole', wreck: 'power-pole-wreck' },
           { id: 'traffic-signal', name: 'Traffic Signal', wreck: 'traffic-signal-wreck' },
           { id: 'street-lamp', name: 'Street Lamp', wreck: 'street-lamp-wreck' },
-          { id: 'fire-hydrant', name: 'Fire Hydrant', wreck: 'fire-hydrant-wreck' },
           { id: 'pine-tree', name: 'Pine Tree', wreck: 'pine-tree-wreck' },
           { id: 'oak-tree', name: 'Oak Tree', wreck: 'oak-tree-wreck' }
         ]
@@ -316,7 +343,6 @@
       {
         category: 'Special & Hero Structures',
         items: [
-          { id: 'hart-barn', name: 'Hart Farm Signature Barn (Welded)', wreck: null },
           { id: 'hart-farmhouse', name: 'Hart Farmhouse (Welded)', wreck: null }
         ]
       }

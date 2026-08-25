@@ -235,77 +235,35 @@ eight colour variants with size variation. One model makes every house identical
 
 ## State
 
-Payload is 1,114,024 bytes across 78 models -- 53% of the ~2 MB budget. All
-78 models are 100% welded with merge-by-distance and normalized with base minY at
+Payload is 1,164,896 bytes across 93 models -- 53% of the ~2 MB budget. All
+93 models are 100% welded with merge-by-distance and normalized with base minY at
 0.0000.
 
 Live:
 - All eight campaign landmark kinds, each with an intact model and wreck pair.
-- All signature setpieces and props: gas station, carwash, substation, power pole,
-  billboard, grain bin, propane tank, commercial shop, industrial warehouse,
-  street lamp, traffic signal, pine tree, oak tree, and their matching wrecks.
-- Modular residential houses: ranch-house, craftsman-house, split-level-house, and their matching wrecks.
+- Main Street storefronts with 4 distinct roofline silhouettes (stepped cornice,
+  Dutch gable pediment, sloped mansard, Art Deco step-tower) and near-neutral COLOR_0
+  for district palette color multiplication, each with matching authored wrecks.
+- Commercial anchor blocks: grocery-store and discount-store, each with matching wrecks.
+- Industrial warehouses with 2 distinct roofline silhouettes (pitched gabled steel,
+  barrel-vault arch), each with matching wrecks.
+- Agricultural barns: hart-barn and hart-barn-wreck (authored multi-stage collapse
+  wreck matching hero footprint), district-barn and district-barn-wreck for farm belt.
+- Modular residential houses: ranch-house, craftsman-house, split-level-house, and matching wrecks.
 - All 13 named comedy gag props (reusing ferris-wheel for the fairground ferris prop):
   - Yard: flamingo, trampoline, bbq-grill, rural-mailbox, and their wrecks.
   - Main Street: billboard, coffee-cup, inflatable-mascot, shopping-carts, and their wrecks.
   - County Fair: ferris-wheel, carousel, food-cart, giant-corndog, porta-potty, and their wrecks.
+- All signature setpieces and municipal props: gas station, carwash, substation, power pole,
+  propane tank, grain bin, street lamp, traffic signal, pine tree, oak tree, and matching wrecks.
 - Vehicles: news-van, storm-chaser-vehicle, town-car, pickup-truck, tractor.
 - Special / Hero: cow-17 (wired exclusively to hero Cow 17 with damageable: false),
   hart-farmhouse (placed beside the Hart Farm signature barn).
-- hart-barn stands on exactly two farm-belt lots; the other sixteen are
-  ranch-house and craftsman-house. A barn is an outbuilding, and eighteen of the
-  same one read as a repeated texture.
-- Hart Farm signature barn preserves its authored multi-stage collapse across 14
-  named parts, and is deliberately NOT model-backed: the stage code detaches
-  roofLeft, frontWall and the doors by name, and a single-mesh model has none of
-  them, so every stage would fire and nothing would move.
-- fire-hydrant and fire-hydrant-wreck are authored and welded but deliberately
-  not placed; see the camera-detail rule above.
-- 100% vertex welding verified on all 78 models (including farm-windmill, hart-barn, hart-farmhouse).
+- 100% vertex welding verified across all 93 models.
 
-Open work, most valuable first:
-
-1. **Storefront variants for Main Street.** The largest remaining visual
-   problem in the game, and the director's standing note that the town looks
-   copy-paste. Current spread across the county's 94 buildings:
-
-       commercial-shop        30      one silhouette
-       ranch-house            22
-       industrial-warehouse   17      one silhouette
-       craftsman-house        14
-       split-level-house       9
-       hart-barn               2
-
-   Three or four `commercial-shop` variants would do more for the county than
-   anything else on this list. The houses got three variants and the difference
-   is visible; main street got none.
-   - Vary the **roofline**, not just the frontage. Thirty identical flat white
-     roofs read as repetitively from the storm camera as thirty identical walls,
-     and the camera looks down.
-   - Near-neutral COLOR_0 per the rule above, so the game can tint them apart.
-     This is the difference between three variants reading as three buildings
-     and reading as thirty.
-   - `industrial-warehouse` at 17 lots is the same problem one size smaller;
-     two variants there when the shops are done.
-
-2. **Main-street commercial block.** Director's ask.
-   - `grocery-store` + `grocery-store-wreck`. Low, wide, storefront band along
-     the front, roof units on top. The **parking lot is not part of the model** --
-     it is ground geometry and will be laid procedurally the way the roads are,
-     so author the building only, footprint square to its lot.
-   - `discount-store` + `discount-store-wreck`. Same silhouette family, smaller
-     footprint. Keep the name and signage generic: no real chain's branding on a
-     building the game exists to flatten.
-   - Both in the 200-312 triangle band their main-street neighbours occupy.
-
-3. `hart-barn-wreck` does not exist, so a felled barn still drops into the
-   generic ruin. Small, and the only wreck gap left in the library.
-
-4. `district-barn` + wreck, 200-300 triangles, ~12.0 x 8.8 footprint, if the two
-   hero-detail barns now standing in the belt should come down to background
-   cost. Optional -- two of them is affordable.
-
-5. Power pole variants and wire tension (currently owned by Claude).
+Open work:
+1. Power pole variants and wire tension (currently owned by Claude).
+2. Phase 6 HUD / UI TypeScript modularization & opening cinematic.
 
 Not needed: `fire-hydrant` is authored, welded and deliberately unplaced. It
 renders 8 pixels tall while costing more per instance than a street lamp. Do

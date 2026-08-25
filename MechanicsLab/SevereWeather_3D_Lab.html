@@ -6019,10 +6019,8 @@ function createHouseMesh(districtType, i, variant = 0) {
   // farmhouse and a HART FARM sign. Side by side they are plainly different.
   const farmHouse = FARM_HOUSE_MODELS[houseIndex % FARM_HOUSE_MODELS.length];
   const modelName = wantsBarn ? 'hart-barn' : (isFarmBelt ? farmHouse : houseModels[houseIndex]);
-  // No hart-barn-wreck has been authored, so a felled barn keeps the generic
-  // ruin it already fell into. The farm houses do have wrecks, so most of the
-  // belt now drops into an authored one where none of it used to.
-  const wreckName = wantsBarn ? null
+  // hart-barn-wreck is authored with matching footprint so a felled barn now drops into its authored wreck
+  const wreckName = wantsBarn ? 'hart-barn-wreck'
     : (isFarmBelt ? `${farmHouse}-wreck` : houseWrecks[houseIndex]);
   // The barn glb is authored 24.7 units wide against this lot's 12.0.
   const modelScale = wantsBarn ? 0.52 : 1;
@@ -6092,8 +6090,24 @@ function createCommercialMesh(districtType, variant = 0) {
   let h, width, depth, color, roughness, metalness;
   const isMainStreet = districtType === 0;
   const isWarehouse = districtType === 2;
-  const modelName = isMainStreet ? 'commercial-shop' : (isWarehouse ? 'industrial-warehouse' : null);
-  const wreckName = isMainStreet ? 'commercial-shop-wreck' : (isWarehouse ? 'industrial-warehouse-wreck' : null);
+
+  const SHOP_VARIANTS = [
+    'commercial-shop',
+    'commercial-shop-gable',
+    'commercial-shop-mansard',
+    'commercial-shop-deco',
+    'discount-store',
+    'grocery-store'
+  ];
+  const WAREHOUSE_VARIANTS = [
+    'industrial-warehouse',
+    'industrial-warehouse-curved'
+  ];
+
+  const modelName = isMainStreet 
+    ? SHOP_VARIANTS[variant % SHOP_VARIANTS.length] 
+    : (isWarehouse ? WAREHOUSE_VARIANTS[variant % WAREHOUSE_VARIANTS.length] : null);
+  const wreckName = modelName ? `${modelName}-wreck` : null;
 
   const procBody = new THREE.Group();
   group.add(procBody);
