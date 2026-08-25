@@ -8156,6 +8156,39 @@ function buildLivingCounty() {
   });
 
   addCountyDriveways();
+  addCommercialSidewalks();
+}
+
+// [SW:VISUAL:GROUND_DRESSING]
+// Sidewalks, downtown only.
+//
+// The county already has a 17-wide gravel shoulder under every 12-wide road,
+// which is the right treatment out where the barns are - a concrete walk
+// through the farm belt would look stranger than no walk at all. So these run
+// on the commercial side only: the two quadrants west of the origin, which is
+// Main Street and Foundry Row.
+//
+// Laid as long continuous runs rather than a ring per block. Per-block would be
+// four slabs each across eighteen blocks, and every slab is a draw call; this
+// is twenty for the whole downtown. Where a run crosses a carriageway the road
+// simply draws over it, since ROAD_LIFT sits above GROUND_DRESSING_LIFT.
+const SIDEWALK_WIDTH = 3.2;
+const SIDEWALK_SETBACK = 10.4;   // clear of the 8.5 shoulder edge
+function addCommercialSidewalks() {
+  const commercialRoadsX = [-240, -160, -80];
+  const spanZ = 480;             // -240 to 240
+  commercialRoadsX.forEach(roadX => {
+    [-1, 1].forEach(side => {
+      addGroundSlab(SIDEWALK_WIDTH, spanZ, roadX + side * SIDEWALK_SETBACK, 0, pavingMat);
+    });
+  });
+  const spanX = 240;             // -240 to 0, the commercial half
+  const centreX = -120;
+  for (let roadZ = -240; roadZ <= 240; roadZ += 80) {
+    [-1, 1].forEach(side => {
+      addGroundSlab(spanX, SIDEWALK_WIDTH, centreX, roadZ + side * SIDEWALK_SETBACK, pavingMat);
+    });
+  }
 }
 
 // [SW:VISUAL:GROUND_DRESSING]
