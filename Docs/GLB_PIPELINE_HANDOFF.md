@@ -51,6 +51,37 @@ compressed `.glb` looks fine in a viewer and fails to load here.
 draw call per mesh. The first cow arrived as 31 meshes; at 38 spawned cows that
 is ~1,178 draw calls for cattle alone on a phone.
 
+**A model bound for an instanced prop must be one mesh AND one material.**
+This is stricter than it sounds and it is not negotiable. Props that exist in
+the dozens -- poles, street furniture -- are not cloned per instance; their
+geometry is baked into a single `InstancedMesh` and drawn once for the whole
+set. That path reads exactly one mesh and one material off the prototype and
+silently ignores everything else, so a second mesh does not cost a draw call,
+it simply does not appear. 117 poles as clones would be 234 draw calls against
+the 1 they cost now.
+
+Every model that has gone down this path so far happened to satisfy it. None
+were asked to. If a model is destined for something there are more than a
+handful of, say so in the request and check it before export.
+
+**Budget triangles against the model's neighbours, not against the cap.** The
+~500-3000 range above is a ceiling, not a target. `hart-barn` is 1,464
+triangles because it was authored as a hero prop, and putting it on all
+eighteen farm-belt lots cost 26,352 -- more than every piece of street
+furniture in the game combined. It now stands on two lots and the rest of the
+belt is 200-triangle houses. Background buildings live at 100-312 triangles
+(`split-level-house` 100, `ranch-house` 200, `industrial-warehouse` 256,
+`commercial-shop` 312); match that band unless the prop is a hero.
+
+**Size the detail to how the camera sees it.** The follow rig sits 46 up and
+108 back on the tornado, further on the other storms, so at fov 42 a prop
+renders roughly 6.9 pixels per world unit. `fire-hydrant` was authored at 1.2
+units -- 8 pixels on screen -- while costing 308 triangles an instance between
+intact and wreck, more than a street lamp at 252 and a traffic signal at 300.
+Thirty of them were a tenth of the frame for something no player can resolve,
+and they are no longer placed. The models remain on disk against a future
+closer camera. Check the pixel height before spending detail.
+
 **An explicit material is mandatory.** A primitive with no material takes the
 glTF *default*, and that default is `metallicFactor 1.0`. A fully metallic actor
 with no environment reflection renders as dark grey sludge. The first cow shipped
@@ -199,7 +230,7 @@ Live:
 - All eight campaign landmark kinds, each with an intact model and wreck pair.
 - All signature setpieces and props: gas station, carwash, substation, power pole,
   billboard, grain bin, propane tank, commercial shop, industrial warehouse,
-  fire hydrant, street lamp, traffic signal, pine tree, oak tree, and their matching wrecks.
+  street lamp, traffic signal, pine tree, oak tree, and their matching wrecks.
 - Modular residential houses: ranch-house, craftsman-house, split-level-house, and their matching wrecks.
 - All 13 named comedy gag props (reusing ferris-wheel for the fairground ferris prop):
   - Yard: flamingo, trampoline, bbq-grill, rural-mailbox, and their wrecks.
@@ -207,13 +238,36 @@ Live:
   - County Fair: ferris-wheel, carousel, food-cart, giant-corndog, porta-potty, and their wrecks.
 - Vehicles: news-van, storm-chaser-vehicle, town-car, pickup-truck, tractor.
 - Special / Hero: cow-17 (wired exclusively to hero Cow 17 with damageable: false),
-  hart-farmhouse (placed beside the Hart Farm signature barn), hart-barn (welded reference).
-- Hart Farm signature barn preserves its authored 11-part multi-stage collapse.
+  hart-farmhouse (placed beside the Hart Farm signature barn).
+- hart-barn stands on exactly two farm-belt lots; the other sixteen are
+  ranch-house and craftsman-house. A barn is an outbuilding, and eighteen of the
+  same one read as a repeated texture.
+- Hart Farm signature barn preserves its authored multi-stage collapse across 14
+  named parts, and is deliberately NOT model-backed: the stage code detaches
+  roofLeft, frontWall and the doors by name, and a single-mesh model has none of
+  them, so every stage would fire and nothing would move.
+- fire-hydrant and fire-hydrant-wreck are authored and welded but deliberately
+  not placed; see the camera-detail rule above.
 - 100% vertex welding verified on all 78 models (including farm-windmill, hart-barn, hart-farmhouse).
 
 Open work:
 
-1. Power pole variants and wire tension (currently owned by Claude).
+1. **Main-street commercial block.** Director's ask, and the next batch.
+   - `grocery-store` + `grocery-store-wreck`. Low, wide, storefront band along
+     the front, roof units on top. The **parking lot is not part of the model** --
+     it is ground geometry and will be laid procedurally the way the roads are,
+     so author the building only, footprint square to its lot.
+   - `discount-store` + `discount-store-wreck`. Same silhouette family, smaller
+     footprint. Keep the name and signage generic: no real chain's branding on a
+     building the game exists to flatten.
+   - Both in the 200-312 triangle band their main-street neighbours occupy. See
+     the triangle-budget rule above; the barn is the cautionary tale.
+2. `district-barn` + wreck, 200-300 triangles, ~12.0 x 8.8 footprint, if the two
+   hero-detail barns now standing in the belt should come down to background
+   cost. Optional -- two of them is affordable.
+3. `hart-barn-wreck` does not exist, so a felled barn still drops into the
+   generic ruin. Small, and the only wreck gap left in the library.
+4. Power pole variants and wire tension (currently owned by Claude).
 
 ## Verifying a change
 
