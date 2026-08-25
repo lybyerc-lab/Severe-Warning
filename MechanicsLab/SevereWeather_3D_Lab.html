@@ -97,7 +97,12 @@
   /* Radar Widget */
   .radar-box { position: relative; width: 145px; height: 145px; border-radius: 50%; border: 2px solid var(--green); overflow: hidden; background: #021206; box-shadow: 0 0 20px rgba(74, 222, 128, 0.4); }
   .radar-box canvas { width: 100%; height: 100%; }
-  .radar-label { position: absolute; bottom: 6px; width: 100%; text-align: center; font-size: 9px; font-weight: 900; color: var(--green); letter-spacing: 0.08em; }
+  /* The label sits inside a circle with overflow hidden, so the usable width at
+     the bottom is the chord, not the diameter. At the phone breakpoint the box
+     is 85px across and the full string needs about 104px: it wrapped, and the
+     circle clipped the wrap. nowrap keeps it on one line and the crew half is
+     dropped where it cannot fit. */
+  .radar-label { position: absolute; bottom: 6px; width: 100%; text-align: center; font-size: 9px; font-weight: 900; color: var(--green); letter-spacing: 0.08em; white-space: nowrap; }
 
   /* Telemetry Bar */
   .telemetry { display: flex; gap: 14px; font-size: 11px; font-family: monospace; }
@@ -183,6 +188,7 @@
     .radar-box { width: 85px; height: 85px; }
     .radar-box canvas { width: 85px; height: 85px; }
     .radar-label { font-size: 7px; bottom: 2px; }
+    .radar-crew { display: none; }
 
     .key-guide { display: none !important; }
     
@@ -675,7 +681,7 @@
 
     <div class="panel radar-box">
       <canvas id="radarCanvas" width="145" height="145"></canvas>
-      <div class="radar-label">DOPPLER + LIVE CREWS</div>
+      <div class="radar-label">DOPPLER<span class="radar-crew"> + LIVE CREWS</span></div>
     </div>
   </div>
 
@@ -3507,7 +3513,15 @@ for (let i = 0; i < countyApronPositions.count; i++) {
   const height = terrainHeightAt(x, z);
   countyApronPositions.setZ(i, height - 0.65);
   const edgeFade = THREE.MathUtils.clamp((Math.max(Math.abs(x), Math.abs(z)) - 360) / 520, 0, 1);
-  const color = districtGroundColor(x, z, height).multiplyScalar(1 - edgeFade * 0.42);
+  // The apron used to just darken toward its edge, which ended the county in a
+  // hard line: the fog it fades under is #0e1629 while the sky it meets is
+  // #3d5878, so the ground got darker exactly where the sky got lighter and the
+  // seam between them was the brightest edge in the frame. Fading toward the
+  // sky's own horizon colour instead lets the far ground dissolve into the sky
+  // rather than terminate against it, and it stays correct if the sky is
+  // retuned because it reads the same uniform the dome does.
+  const color = districtGroundColor(x, z, height).multiplyScalar(1 - edgeFade * 0.16);
+  color.lerp(skyDomeUniforms.uHorizon.value, edgeFade * 0.88);
   countyApronColors.push(color.r, color.g, color.b);
 }
 countyApronGeo.setAttribute('color', new THREE.Float32BufferAttribute(countyApronColors, 3));
@@ -5067,14 +5081,32 @@ const rainCurtain = new THREE.Mesh(
       'varying vec2 vUv;',
       'float rainHash(float x){ return fract(sin(x * 127.1) * 43758.5453123); }',
       'void main(){',
-      '  float column = vUv.x * 220.0 + uTime * 0.6;',
-      '  float streak = rainHash(floor(column));',
-      '  float fall = fract(vUv.y * 3.0 - uTime * (0.35 + streak * 0.5));',
-      '  float intensity = smoothstep(0.55, 1.0, streak) * smoothstep(0.0, 0.35, fall);',
+      // Lean the sheet. Perfectly vertical streaks under a storm read as a
+      // picket fence rather than rain, and nothing else in frame is plumb.
+      '  vec2 uv = vec2(vUv.x + vUv.y * 0.11, vUv.y);',
+      '  float column = uv.x * 520.0 + uTime * 0.6;',
+      '  float id = floor(column);',
+      '  float streak = rainHash(id);',
+      // Jitter each column off the lattice. Evenly spaced streaks were the
+      // other half of the fence; real rain has no pitch to it.
+      '  float across = fract(column) - 0.5 + (rainHash(id + 31.7) - 0.5) * 0.62;',
+      '  float band = smoothstep(0.5, 0.05, abs(across));',
+      '  float fall = fract(uv.y * 7.0 - uTime * (0.55 + streak * 0.9) - streak * 13.0);',
+      // Fade the trailing end as well as the leading one so a streak is a
+      // falling dash rather than a bar running the height of the shaft.
+      '  float intensity = smoothstep(0.72, 1.0, streak)',
+      '                  * smoothstep(0.0, 0.26, fall) * smoothstep(1.0, 0.58, fall);',
       // Soft at both ends: the shaft hangs out of the cloud and dissolves before
       // it reaches the ground, never terminating in a hard line.
-      '  float shape = smoothstep(0.0, 0.35, vUv.y) * smoothstep(1.0, 0.62, vUv.y);',
-      '  float alpha = uOpacity * shape * (0.35 + intensity * 0.85);',
+      // Soft on all four sides. Fading only the top and bottom left the plane's
+      // own left and right edges showing as two hard-sided rectangles of rain
+      // hanging in the sky, which is exactly what a curtain must not look like.
+      '  float shape = smoothstep(0.0, 0.35, vUv.y) * smoothstep(1.0, 0.62, vUv.y)',
+      '              * smoothstep(0.0, 0.18, vUv.x) * smoothstep(1.0, 0.82, vUv.x);',
+      // A continuous haze carries the body of the shaft; the streaks ride on
+      // top of it. Multiplying the haze by the streak mask instead would punch
+      // gaps through the core and leave stripes hanging in clear air.
+      '  float alpha = uOpacity * shape * (0.20 + intensity * band * 0.92);',
       '  gl_FragColor = vec4(uColor, alpha);',
       '}'
     ].join('\n')
@@ -10218,14 +10250,30 @@ function updateProductionAtmosphere(dt) {
     // it with one of three fixed tints and losing the county identity entirely.
     const targetFog = new THREE.Color((typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel().fogColor : null) || '#162437');
     targetFog.lerp(new THREE.Color('#070d18'), 0.18 + stageFactor * 0.42);
-    scene.fog.color.lerp(targetFog, Math.min(1, dt * 0.22));
+    // [SW:VISUAL:HORIZON]
+    // The dome's horizon is the county's fog lifted 55% toward a pale blue, and
+    // fog itself used to stay at the unlifted colour. Ground at the horizon is
+    // 99.7% fogged - raycast and measured - so the fog colour IS the colour the
+    // far county renders as, and it was landing far darker than the sky sitting
+    // directly above it. Read off the framebuffer down the horizon:
+    //
+    //     sky     #364c69
+    //     band    #151d2e   <- fog, and the hard line everyone can see
+    //     ground  #a09354
+    //
+    // A dark stripe between two lighter fields is exactly the "hard horizon"
+    // that made the county look like it had an edge. Both now derive from one
+    // horizon tint, so they cannot drift apart again.
+    //
+    // Fog closes most of the gap rather than all of it. Matching exactly makes
+    // the ground dissolve into the sky completely and the county stops reading
+    // as land under a storm; this keeps it grounded while losing the seam.
+    const horizonTint = targetFog.clone().lerp(new THREE.Color('#5d7ba3'), 0.55);
+    scene.fog.color.lerp(targetFog.clone().lerp(horizonTint, 0.80), Math.min(1, dt * 0.22));
     scene.background.lerp(targetFog, Math.min(1, dt * 0.16));
     if (typeof skyDomeUniforms !== 'undefined') {
       skyDomeUniforms.uGround.value.lerp(targetFog, Math.min(1, dt * 0.22));
-      skyDomeUniforms.uHorizon.value.lerp(
-        targetFog.clone().lerp(new THREE.Color('#5d7ba3'), 0.55),
-        Math.min(1, dt * 0.18)
-      );
+      skyDomeUniforms.uHorizon.value.lerp(horizonTint, Math.min(1, dt * 0.18));
     }
   }
 
