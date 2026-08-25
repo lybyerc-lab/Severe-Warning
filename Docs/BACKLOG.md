@@ -101,9 +101,12 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Round 2 3D Model visual polish:
+  - Corrected `coffee-cup` handle orientation from horizontal to a proper **vertical ceramic C-ear handle** along the side of the mug, eliminating the 'trash can' appearance.
+  - Re-authored `inflatable-mascot` from stiff vertical tubes to a **dynamic S-curve dancing tube man** with wildly flailing wavy arms, yellow fringe fingers, mayor suit/tie, and cartoon smiley face.
+  - Re-authored `oak-tree` with natural root flares firmly planted on the ground and clustered low-poly organic canopy masses.
 - Build guards against silent model-batch failures — wrong-case directory, and
   gameplay naming a model that is not packaged.
-
 - 3D Model visual repairs & geometry normal fix: Corrected vertex winding order and
   outward normal calculation in core primitives (`addCylinder`, `addCone`, `addBarrelVault`).
   Re-authored `coffee-cup` (solid flared ceramic mug with sleeve & foam topping, fixing the
