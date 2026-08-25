@@ -5990,7 +5990,12 @@ function createGabledRoofMesh(width, depth, roofHeight, roofColor) {
 const FARM_BELT_BARN_LIMIT = 2;
 // Farm houses come from the farm-appropriate end of the authored set.
 // split-level reads suburban and stays in district 1 where it belongs.
-const FARM_HOUSE_MODELS = ['ranch-house', 'craftsman-house'];
+const FARM_HOUSE_MODELS = [
+  'ranch-house',
+  'ranch-house-garage',
+  'craftsman-house',
+  'craftsman-house-garage'
+];
 let farmBeltBarnCount = 0;
 
 function createHouseMesh(districtType, i, variant = 0) {
@@ -6008,8 +6013,20 @@ function createHouseMesh(districtType, i, variant = 0) {
   const depth = wantsBarn ? 8.8 : 7.0 + ((variant + 1) % 2) * 1.6;
   const wallHeight = wantsBarn ? 6.5 : 5.0 + (variant % 2) * 1.5;
 
-  const houseModels = ['ranch-house', 'craftsman-house', 'split-level-house'];
-  const houseWrecks = ['ranch-house-wreck', 'craftsman-house-wreck', 'split-level-house-wreck'];
+  const houseModels = [
+    'ranch-house',
+    'ranch-house-garage',
+    'craftsman-house',
+    'craftsman-house-garage',
+    'split-level-house'
+  ];
+  const houseWrecks = [
+    'ranch-house-wreck',
+    'ranch-house-garage-wreck',
+    'craftsman-house-wreck',
+    'craftsman-house-garage-wreck',
+    'split-level-house-wreck'
+  ];
   const houseIndex = (i + variant) % houseModels.length;
   // [SW:VISUAL:ACTOR_MODELS] District 3 is the farm belt, and its barns were the
   // last procedural boxes standing among the authored houses.
@@ -6110,7 +6127,8 @@ function createCommercialMesh(districtType, variant = 0) {
     'commercial-shop',
     'commercial-shop-gable',
     'commercial-shop-mansard',
-    'commercial-shop-deco'
+    'commercial-shop-deco',
+    'car-dealership'
   ];
   const WAREHOUSE_VARIANTS = [
     'industrial-warehouse',
@@ -6430,7 +6448,9 @@ function createComedyPropMesh(kind) {
     'foodcart': 'food-cart',
     'corndog': 'giant-corndog',
     'porta': 'porta-potty',
-    'mailbox': 'rural-mailbox'
+    'mailbox': 'rural-mailbox',
+    'car': 'parked-car',
+    'parked-car': 'parked-car'
   };
 
   const modelName = MODEL_MAP[kind] || null;

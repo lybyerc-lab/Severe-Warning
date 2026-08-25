@@ -3,8 +3,8 @@
 Everything needed to add, change or debug a `.glb` actor in this project.
 Written for someone picking this up cold.
 
-Current at `f7b339a` on `qa`. Fifteen models, 725,056 bytes (0.69 MB) against a
-~2 MB budget.
+Current on `qa`. 101 models (46 intact+wreck pairs + 9 single actors),
+1,190,488 bytes (1.135 MB) against a ~2 MB budget (56%).
 
 ## The one-sentence version
 
@@ -241,10 +241,13 @@ Payload is 1,164,896 bytes across 93 models -- 53% of the ~2 MB budget. All
 
 Live:
 - All eight campaign landmark kinds, each with an intact model and wreck pair.
-- Main Street storefronts with 4 distinct roofline silhouettes (stepped cornice,
-  Dutch gable pediment, sloped mansard, Art Deco step-tower) and near-neutral COLOR_0
+- Main Street storefronts with 5 distinct roofline silhouettes (stepped cornice,
+  Dutch gable pediment, sloped mansard, Art Deco step-tower, car-dealership) and near-neutral COLOR_0
   for district palette color multiplication, each with matching authored wrecks.
-- Commercial anchor blocks: grocery-store and discount-store, each with matching wrecks.
+- Commercial anchor blocks with signature county branding:
+  - `grocery-store` with "MOO-MART" green/white branding & bovine badges, plus matching wreck.
+  - `discount-store` with "UDDER VALUE" red/yellow discount branding, plus matching wreck.
+  - `car-dealership` with high-ceiling glass showroom pavilion, service bay rollup door, and pylon sign, plus matching wreck.
 - Industrial warehouses with 2 distinct roofline silhouettes (pitched gabled steel,
   barrel-vault arch), each with matching wrecks.
 - Agricultural barns: district-barn and district-barn-wreck stand on the farm
@@ -257,7 +260,14 @@ Live:
   toast and moves nothing on screen. hart-barn and hart-barn-wreck are therefore
   unused: they are the hero barn's likeness, and the hero barn does not want a
   model. Keep them as reference or retire them, but do not wire them.
-- Modular residential houses: ranch-house, craftsman-house, split-level-house, and matching wrecks.
+- Modular residential houses & attached garage variants:
+  - ranch-house & ranch-house-wreck
+  - ranch-house-garage (attached 1-car garage wing) & ranch-house-garage-wreck
+  - craftsman-house & craftsman-house-wreck
+  - craftsman-house-garage (attached 1-car garage wing) & craftsman-house-garage-wreck
+  - split-level-house & split-level-house-wreck
+- Scenery & Lot Vehicles:
+  - parked-car (stationary lot inventory sedan with price sticker) & parked-car-wreck.
 - All 13 named comedy gag props (reusing ferris-wheel for the fairground ferris prop):
   - Yard: flamingo, trampoline, bbq-grill, rural-mailbox, and their wrecks.
   - Main Street: billboard, coffee-cup, inflatable-mascot, shopping-carts, and their wrecks.
@@ -267,7 +277,7 @@ Live:
 - Vehicles: news-van, storm-chaser-vehicle, town-car, pickup-truck, tractor.
 - Special / Hero: cow-17 (wired exclusively to hero Cow 17 with damageable: false),
   hart-farmhouse (placed beside the Hart Farm signature barn).
-- 100% vertex welding verified across all 93 models.
+- 100% vertex welding verified across all 101 models.
 
 Open work:
 1. Power pole variants and wire tension (currently owned by Claude).
