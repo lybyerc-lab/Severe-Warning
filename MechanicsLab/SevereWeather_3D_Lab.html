@@ -3713,9 +3713,49 @@ globalThis.instantiateActorModel = instantiateActorModel;
 // reads meshData.modelActor.wreck; a top-level meshData.wreck is only read by
 // the substation and chain-setpiece paths, so an authored wreck named there
 // alone is never requested and the generic ruin shows up instead.
+// [SW:VISUAL:BUILDING_TINT]
+// The county computes four or five colours per building type and, until this,
+// not one of them reached the screen. The palettes were applied to the
+// procedural body, and swapping in an authored model deletes that body - so
+// every one of the 102 buildings rendered the same white base and meshData.color
+// survived only as the colour of the explosion puff. That is what made the town
+// read as one asset stamped out over and over.
+//
+// The models carry their detail in COLOR_0, and material.color MULTIPLIES over
+// it rather than replacing it. That rules out simply assigning the palette
+// entry: commercial-shop is authored brick red, and red times the palette's
+// teal is mud, while a light lerp toward teal is invisible. Measured both.
+//
+// So the palette contributes its HUE only, carried on a pale, barely saturated
+// multiplier that lands near white. The building keeps its authored brick and
+// picks up a tone - warmer, cooler, brighter, dirtier - and thirty shopfronts
+// stop looking like one shopfront stamped thirty times. Real colour variety
+// needs authored variants; this is what can be done to a single model.
+//
+// Materials are already cloned per instance for damageable actors, so this is
+// free.
+const BUILDING_TINT_SATURATION = 0.20;
+const BUILDING_TINT_MIN_LIGHT = 0.78;
+const BUILDING_TINT_RANGE = 0.22;
+const buildingTintColor = new THREE.Color();
+const buildingTintHsl = { h: 0, s: 0, l: 0 };
+
 function adoptSwappedActorModel(meshData, model, spec = {}) {
   const meshes = [];
   model.traverse(object => { if (object.isMesh) meshes.push(object); });
+  if (spec.tint && meshData.color) {
+    buildingTintColor.set(meshData.color);
+    buildingTintColor.getHSL(buildingTintHsl);
+    // Lightness comes off the hue so two buildings sharing a palette entry still
+    // differ, and it stays inside a narrow band near white: this value is a
+    // multiplier, so dropping it far would just make the county dark.
+    const light = BUILDING_TINT_MIN_LIGHT + ((buildingTintHsl.h * 7.13) % 1) * BUILDING_TINT_RANGE;
+    for (let i = 0; i < meshes.length; i++) {
+      const material = meshes[i].material;
+      if (!material || !material.color) continue;
+      material.color.setHSL(buildingTintHsl.h, BUILDING_TINT_SATURATION, light);
+    }
+  }
   if (Array.isArray(meshData.damageParts)) {
     meshData.damageParts.length = 0;
     for (let i = 0; i < meshes.length; i++) meshData.damageParts.push(meshes[i]);
@@ -6006,7 +6046,7 @@ function createHouseMesh(districtType, i, variant = 0) {
       if (!model) return;
       if (procBody.parent) group.remove(procBody);
       group.add(model);
-      adoptSwappedActorModel(meshData, model, { name: modelName, wreck: wreckName });
+      adoptSwappedActorModel(meshData, model, { name: modelName, wreck: wreckName, tint: true });
     });
   }
 
@@ -6092,7 +6132,7 @@ function createCommercialMesh(districtType, variant = 0) {
       if (!model) return;
       if (procBody.parent) group.remove(procBody);
       group.add(model);
-      adoptSwappedActorModel(meshData, model, { name: modelName, wreck: wreckName });
+      adoptSwappedActorModel(meshData, model, { name: modelName, wreck: wreckName, tint: true });
     });
   }
 
@@ -7871,6 +7911,25 @@ function buildLivingCounty() {
     [40, -200], [-40, -200], [-200, 120], [200, 200]
   ];
   const lotOffsets = [[-18, -18], [18, -18], [-18, 18], [18, 18]];
+  // [SW:VISUAL:TOWN_ASYMMETRY]
+  // Thirty-six identical blocks, each with a building on the same four corners,
+  // is what makes this read as block town rather than a county. The grid itself
+  // has to stay - the roads are laid on it - so the variety goes into the lots:
+  // they shift, they turn off-axis, some are left empty, and a use turns up
+  // where the district says it should not.
+  //
+  // Deliberately NOT Math.random(). The town is rebuilt every run, so random
+  // placement would mean a different town each time, and the visual regression
+  // gate compares one build's render against another's - it would never pass
+  // again. Hashing the lot's own coordinates gives a layout that looks placed by
+  // hand and is identical every run.
+  const lotNoise = (a, b) => {
+    const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+    return n - Math.floor(n);
+  };
+  // Lots sit 22 units clear of the road they face and the shoulder ends at 8.5,
+  // so 4 units of shift keeps even a rotated building's corner off the verge.
+  const LOT_SHIFT = 4;
   const districtNames = ['MAIN STREET', 'PINE RIDGE', 'FOUNDRY ROW', 'COUNTY FAIR'];
   const padColors = ['#263449', '#315f35', '#5a3b2a', '#806129'];
   let targetIndex = 0;
@@ -7889,28 +7948,48 @@ function buildLivingCounty() {
     townDressGroup.add(pad);
 
     lotOffsets.forEach((offset, slot) => {
-      const x = centerX + offset[0];
-      const z = centerZ + offset[1];
+      const shiftNoise = lotNoise(centerX + slot * 7.3, centerZ - slot * 3.1);
+      const turnNoise = lotNoise(centerZ + slot * 11.7, centerX - slot * 5.9);
+      const gapNoise = lotNoise(centerX * 0.5 + centerZ * 0.25, slot * 19.3);
+      const mixNoise = lotNoise(centerZ * 3.7 + slot * 2.3, centerX * 1.9 - slot * 4.1);
+      // An empty lot here and there. A town has gaps in it; a stamped grid does
+      // not. Kept rare on purpose: every skipped lot is a building the player
+      // cannot score, and the shift, the turn and the mixed uses below already
+      // do most of the work of breaking the grid up. At this threshold the
+      // county loses about one lot in twenty rather than one in eight.
+      if (gapNoise > 0.945) return;
+      const x = centerX + offset[0] + (shiftNoise - 0.5) * 2 * LOT_SHIFT;
+      const z = centerZ + offset[1] + (turnNoise - 0.5) * 2 * LOT_SHIFT;
       if (reserved.some(point => Math.hypot(x - point[0], z - point[1]) < 24)) return;
       const variant = row * centers.length + column + slot;
       let meshData;
       let isTree = false;
       let isCommercial = false;
 
+      // Districts are quadrants - sign of x, sign of z - so left alone every
+      // shop in the county sits north-west of everything else. A house on the
+      // main street and a corner shop among the houses is what a real small
+      // town looks like, and it costs nothing but which function gets called.
       if (district === 0) {
         if (slot === 3 && variant % 2 === 0) { meshData = createTreeMesh(variant); isTree = true; }
+        else if (mixNoise > 0.80) meshData = createHouseMesh(1, targetIndex, variant);
         else { meshData = createCommercialMesh(0, variant); isCommercial = true; }
       } else if (district === 1) {
         if (slot === 3) { meshData = createTreeMesh(variant); isTree = true; }
+        else if (mixNoise > 0.86) { meshData = createCommercialMesh(0, variant); isCommercial = true; }
         else meshData = createHouseMesh(1, targetIndex, variant);
       } else if (district === 2) {
         if (slot === 2) { meshData = createTreeMesh(variant); isTree = true; }
+        else if (mixNoise > 0.88) meshData = createHouseMesh(1, targetIndex, variant);
         else { meshData = createCommercialMesh(2, variant); isCommercial = true; }
       } else {
         if (slot === 1 || slot === 3) { meshData = createTreeMesh(variant); isTree = true; }
         else meshData = createHouseMesh(3, targetIndex, variant);
       }
 
+      // Off the four cardinals. Everything was axis-aligned, which is most of
+      // why the blocks read as tiles.
+      meshData.group.rotation.y += (turnNoise - 0.5) * 0.62;
       meshData.group.position.set(x, terrainHeightAt(x, z), z);
       scene.add(meshData.group);
       const health = isTree ? 42 : (isCommercial ? (district === 0 ? 190 : 165) : (district === 3 ? 145 : 115));
