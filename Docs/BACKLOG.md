@@ -100,6 +100,10 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- QA 90 Playability & Clean Skyline Hotfix:
+  - Fixed startup `ReferenceError: Cannot access 'streetPropSets' before initialization` causing black screen in QA 90.
+  - Removed obtrusive overhead wire lines that formed thick spiderleg polygons across roads; preserved high-detail authored utility poles with step-down transformer cans and dynamic electric blowout particle bursts.
+  - Verified 0 browser console/runtime errors across live Playwright/CDP round simulation.
 - County Micro-Dressing (Driveway Mailboxes, Industrial Rail Spur & Pasture Fencing):
   - Placed 47 `rural-mailbox` + `rural-mailbox-wreck` props at the heads of residential driveways along Pine Ridge and the farm belt via instanced street props (costing 1 draw call, fully destructible).
   - Added continuous industrial rail spur tracks (crushed rock ballast bed, 150 creosote timber ties, dual steel rails) along Foundry Row ($X: -280 \to -40, Z = 96$).

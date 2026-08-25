@@ -4131,15 +4131,6 @@ function setPoleWrecked(index) {
   poleWrecked[index] = 1;
   writePoleInstance(index, poleInstanceScales[index]);
 
-  // Snap connected overhead wires down to ground
-  const wireEntries = poleWireIndices.get(index);
-  if (wireEntries) {
-    wireEntries.forEach(({ vIdx, groundY }) => {
-      utilityWirePositions[vIdx * 3 + 1] = groundY + 0.12;
-    });
-    utilityWireGeometry.attributes.position.needsUpdate = true;
-  }
-
   // Trigger electric transformer blowout burst
   const spot = polePositions[index];
   const groundY = terrainHeightAt(spot.x, spot.z);
@@ -4148,72 +4139,8 @@ function setPoleWrecked(index) {
 function clearPoleWrecks() {
   poleWrecked.fill(0);
   for (let i = 0; i < polePositions.length; i++) writePoleInstance(i, 1);
-  utilityWirePositions.set(intactWirePositions);
-  utilityWireGeometry.attributes.position.needsUpdate = true;
   activeTransformerSparks.length = 0;
 }
-
-// [SW:VISUAL:UTILITY_GRID] Overhead catenary utility lines spanning between poles.
-// Single draw call for the entire county network via THREE.LineSegments.
-const UTILITY_WIRE_CROSSARM_Y = 10.35;
-const wireSegmentVertices = [];
-const poleWireIndices = new Map();
-
-for (let rIdx = 0; rIdx < 9; rIdx++) {
-  const rowBaseIdx = rIdx * 13;
-  for (let span = 0; span < 12; span++) {
-    const poleAIdx = rowBaseIdx + span;
-    const poleBIdx = rowBaseIdx + span + 1;
-    const posA = polePositions[poleAIdx];
-    const posB = polePositions[poleBIdx];
-    const groundYA = terrainHeightAt(posA.x, posA.z);
-    const groundYB = terrainHeightAt(posB.x, posB.z);
-
-    const lineOffsetsZ = [-1.0, 0.0, 1.0];
-    for (const offZ of lineOffsetsZ) {
-      const pA = new THREE.Vector3(posA.x, groundYA + UTILITY_WIRE_CROSSARM_Y, posA.z + offZ);
-      const pB = new THREE.Vector3(posB.x, groundYB + UTILITY_WIRE_CROSSARM_Y, posB.z + offZ);
-
-      const sub = 4;
-      let prevPt = pA;
-      for (let s = 1; s <= sub; s++) {
-        const t = s / sub;
-        const curPt = new THREE.Vector3(
-          THREE.MathUtils.lerp(pA.x, pB.x, t),
-          THREE.MathUtils.lerp(pA.y, pB.y, t) - Math.sin(t * Math.PI) * 0.65,
-          THREE.MathUtils.lerp(pA.z, pB.z, t)
-        );
-
-        const vIdxStart = wireSegmentVertices.length / 3;
-        wireSegmentVertices.push(prevPt.x, prevPt.y, prevPt.z);
-        wireSegmentVertices.push(curPt.x, curPt.y, curPt.z);
-
-        if (s === 1) {
-          if (!poleWireIndices.has(poleAIdx)) poleWireIndices.set(poleAIdx, []);
-          poleWireIndices.get(poleAIdx).push({ vIdx: vIdxStart, groundY: groundYA });
-        }
-        if (s === sub) {
-          if (!poleWireIndices.has(poleBIdx)) poleWireIndices.set(poleBIdx, []);
-          poleWireIndices.get(poleBIdx).push({ vIdx: vIdxStart + 1, groundY: groundYB });
-        }
-        prevPt = curPt;
-      }
-    }
-  }
-}
-
-const utilityWirePositions = new Float32Array(wireSegmentVertices);
-const intactWirePositions = new Float32Array(wireSegmentVertices);
-const utilityWireGeometry = new THREE.BufferGeometry();
-utilityWireGeometry.setAttribute('position', new THREE.BufferAttribute(utilityWirePositions, 3));
-const utilityWireMaterial = new THREE.LineBasicMaterial({
-  color: 0x1e293b,
-  transparent: true,
-  opacity: 0.85
-});
-const utilityWireMesh = new THREE.LineSegments(utilityWireGeometry, utilityWireMaterial);
-utilityWireMesh.frustumCulled = false;
-scene.add(utilityWireMesh);
 
 // [SW:VISUAL:TRANSFORMER_BLOWOUT] Animated electrical spark burst on pole destruction
 const activeTransformerSparks = [];
@@ -4422,10 +4349,6 @@ countyCenters.forEach((centerZ, row) => countyCenters.forEach((centerX, column) 
   });
 }));
 
-registerStreetProp('street-lamp', 'street-lamp-wreck', streetLampPositions);
-registerStreetProp('traffic-signal', 'traffic-signal-wreck', trafficSignalPositions);
-registerStreetProp('rural-mailbox', 'rural-mailbox-wreck', ruralMailboxPositions);
-
 const streetPropSets = [];
 const streetPropMatrix = new THREE.Matrix4();
 const streetPropQuat = new THREE.Quaternion();
@@ -4472,6 +4395,7 @@ function registerStreetProp(name, wreckName, positions) {
 
 registerStreetProp('street-lamp', 'street-lamp-wreck', streetLampPositions);
 registerStreetProp('traffic-signal', 'traffic-signal-wreck', trafficSignalPositions);
+registerStreetProp('rural-mailbox', 'rural-mailbox-wreck', ruralMailboxPositions);
 // Hydrants are deliberately not registered. Measured against this scene's own
 // cameras they stand 5-8 pixels tall - a fifth of a street lamp - while costing
 // 308 triangles an instance between intact and wreck, which is MORE than a lamp
