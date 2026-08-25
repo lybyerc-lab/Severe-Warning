@@ -3614,7 +3614,7 @@ function preferredAnisotropy() {
 // A county holds many copies of the same house or vehicle; parsing the same
 // buffer for each would be wasteful, and sharing one THREE.Group between
 // instances would make them share a transform.
-const ACTOR_MODEL_PATH = './models/';
+const ACTOR_MODEL_PATH = '../assets/models/';
 const actorModelCache = new Map();
 
 // Exposed for the QA visual panel and the headless harness: which models were
@@ -3764,18 +3764,19 @@ const buildingTintHsl = { h: 0, s: 0, l: 0 };
 function adoptSwappedActorModel(meshData, model, spec = {}) {
   const meshes = [];
   model.traverse(object => { if (object.isMesh) meshes.push(object); });
-  if (spec.tint && meshData.color) {
-    buildingTintColor.set(meshData.color).lerp(BUILDING_TINT_BASE, BUILDING_TINT_WHITEN);
-    buildingTintColor.getHSL(buildingTintHsl);
-    // Nudge lightness off the hue so two buildings sharing a palette entry are
-    // still not quite the same building.
-    const jitter = ((buildingTintHsl.h * 7.13) % 1) * BUILDING_TINT_LIGHT_JITTER
-                 - BUILDING_TINT_LIGHT_JITTER * 0.5;
-    const light = THREE.MathUtils.clamp(buildingTintHsl.l + jitter, 0.24, 0.92);
-    for (let i = 0; i < meshes.length; i++) {
-      const material = meshes[i].material;
-      if (!material || !material.color) continue;
-      material.color.setHSL(buildingTintHsl.h, buildingTintHsl.s, light);
+  for (let i = 0; i < meshes.length; i++) {
+    const material = meshes[i].material;
+    if (!material) continue;
+    // Authored models with vertex colors preserve their multi-color palette details
+    if (meshes[i].geometry && meshes[i].geometry.attributes.color) {
+      if (material.color) material.color.set(0xffffff);
+    } else if (spec.tint && meshData.color) {
+      buildingTintColor.set(meshData.color).lerp(BUILDING_TINT_BASE, BUILDING_TINT_WHITEN);
+      buildingTintColor.getHSL(buildingTintHsl);
+      const jitter = ((buildingTintHsl.h * 7.13) % 1) * BUILDING_TINT_LIGHT_JITTER
+                   - BUILDING_TINT_LIGHT_JITTER * 0.5;
+      const light = THREE.MathUtils.clamp(buildingTintHsl.l + jitter, 0.24, 0.92);
+      if (material.color) material.color.setHSL(buildingTintHsl.h, buildingTintHsl.s, light);
     }
   }
   if (Array.isArray(meshData.damageParts)) {
@@ -6269,10 +6270,10 @@ function createCommercialMesh(districtType, variant = 0) {
     'industrial-warehouse-curved'
   ];
 
-  const modelName = isMainStreet 
-    ? SHOP_VARIANTS[variant % SHOP_VARIANTS.length] 
-    : (isWarehouse ? WAREHOUSE_VARIANTS[variant % WAREHOUSE_VARIANTS.length] : null);
-  const wreckName = modelName ? `${modelName}-wreck` : null;
+  const modelName = isWarehouse 
+    ? WAREHOUSE_VARIANTS[variant % WAREHOUSE_VARIANTS.length] 
+    : SHOP_VARIANTS[variant % SHOP_VARIANTS.length];
+  const wreckName = `${modelName}-wreck`;
 
   const procBody = new THREE.Group();
   group.add(procBody);
@@ -6353,7 +6354,6 @@ function createCommercialMesh(districtType, variant = 0) {
     });
   }
 
-  group.rotation.y = (variant % 4) * Math.PI / 2;
   return meshData;
 }
 

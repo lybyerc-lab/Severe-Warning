@@ -100,6 +100,11 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- County-Wide High-Detail Model Overhaul (Residential, Commercial, Landmarks & Vehicles):
+  - Upgraded 24+ primary models and wrecks (`ranch-house`, `ranch-house-garage`, `craftsman-house`, `craftsman-house-garage`, `split-level-house`, `district-barn`, `grocery-store`, `car-dealership`, `discount-store`, `commercial-shop`, `commercial-shop-gable`, `commercial-shop-mansard`, `commercial-shop-deco`, `courthouse`, `gas-station`, `substation`, `farm-windmill`, `grain-bin`, `water-tower`, `coffee-cup`, `lot-car`) with authentic structural geometry, multi-layer siding, stone foundations, window mullions, shutters, porches, and rooftop HVAC machinery.
+  - Re-authored the `coffee-cup` (MOO-BREW) with a proper vertical C-shaped cup handle, dome sipping lid with drinking spout, insulated cardboard sleeve, and espresso spill wreck.
+  - Preserved 100% Single Mesh Contract compliance across all 103 `.glb` files with 0 footprint/Y-min/geometry violations (total payload 1.067 MB / 2.0 MB budget).
+  - Fixed `ACTOR_MODEL_PATH` routing and ensured vertex-color fidelity across swapped models.
 - Residential House Road Alignment & Visible Garage Driveways:
   - Aligned all residential houses and commercial storefronts parallel to the adjacent perimeter street, ensuring front entrances, porches, and garage doors face outward directly towards the road.
   - Prioritized garage house models (`ranch-house-garage`, `craftsman-house-garage`) across residential blocks with procedural white overhead door panels.
