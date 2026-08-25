@@ -4338,12 +4338,12 @@ countyCenters.forEach((centerZ, row) => countyCenters.forEach((centerX, column) 
     const offsetX = x - Math.round(x / 80) * 80;
     const offsetZ = z - Math.round(z / 80) * 80;
     const alongZ = Math.abs(offsetZ) <= Math.abs(offsetX);
-    const gap = (alongZ ? Math.abs(offsetZ) : Math.abs(offsetX)) - 8.5 - 5.2;
-    if (gap < 2.5) return;
+    const gap = (alongZ ? Math.abs(offsetZ) : Math.abs(offsetX)) - 8.5 - 5.0;
+    if (gap < 2.0) return;
 
     const direction = (alongZ ? offsetZ : offsetX) >= 0 ? -1 : 1;
-    const mbX = alongZ ? x + (direction > 0 ? 2.4 : -2.4) : x + direction * (5.2 + gap);
-    const mbZ = alongZ ? z + direction * (5.2 + gap) : z + (direction > 0 ? 2.4 : -2.4);
+    const mbX = alongZ ? x + (direction > 0 ? 3.0 : -3.0) : x + direction * (5.0 + gap);
+    const mbZ = alongZ ? z + direction * (5.0 + gap) : z + (direction > 0 ? 3.0 : -3.0);
     const yaw = alongZ ? (direction > 0 ? 0 : Math.PI) : (direction > 0 ? Math.PI * 0.5 : -Math.PI * 0.5);
     ruralMailboxPositions.push({ x: mbX, z: mbZ, yaw });
   });
@@ -6147,18 +6147,18 @@ function createHouseMesh(districtType, i, variant = 0) {
   const wallHeight = wantsBarn ? 6.5 : 5.0 + (variant % 2) * 1.5;
 
   const houseModels = [
-    'ranch-house',
     'ranch-house-garage',
-    'craftsman-house',
     'craftsman-house-garage',
-    'split-level-house'
+    'split-level-house',
+    'ranch-house',
+    'craftsman-house'
   ];
   const houseWrecks = [
-    'ranch-house-wreck',
     'ranch-house-garage-wreck',
-    'craftsman-house-wreck',
     'craftsman-house-garage-wreck',
-    'split-level-house-wreck'
+    'split-level-house-wreck',
+    'ranch-house-wreck',
+    'craftsman-house-wreck'
   ];
   const houseIndex = (i + variant) % houseModels.length;
   // [SW:VISUAL:ACTOR_MODELS] District 3 is the farm belt, and its barns were the
@@ -6217,10 +6217,12 @@ function createHouseMesh(districtType, i, variant = 0) {
   addPropPart(procBody, new THREE.BoxGeometry(1.2, 2.7, 0.25), '#422006', 0, 1.6 + 0.25, -depth / 2 - 0.14);
   damageParts.push(porch);
 
-  // Optional Chimney or Garage Attachment
-  if (variant % 2 === 0 && districtType !== 3) {
-    const garage = addPropPart(procBody, new THREE.BoxGeometry(4.6, 3.4, 5.4), homeColors[(i + 3) % homeColors.length], width * 0.56, 1.7 + 0.25, 0.6, { roughness: 0.7 });
-    addPropPart(procBody, new THREE.BoxGeometry(3.6, 2.4, 0.22), '#f8fafc', width * 0.56, 1.5 + 0.25, -2.12);
+  // Garage Attachment with White Overhead Door
+  if (districtType !== 3) {
+    const garageWidth = 4.8;
+    const garageDepth = 5.6;
+    const garage = addPropPart(procBody, new THREE.BoxGeometry(garageWidth, 3.4, garageDepth), homeColors[(i + 3) % homeColors.length], width * 0.52, 1.7 + 0.25, 0.4, { roughness: 0.7 });
+    addPropPart(procBody, new THREE.BoxGeometry(3.6, 2.4, 0.22), '#f8fafc', width * 0.52, 1.45 + 0.25, -garageDepth / 2 - 0.05);
     damageParts.push(garage);
   }
   if (variant % 3 === 1) {
@@ -6240,7 +6242,6 @@ function createHouseMesh(districtType, i, variant = 0) {
     });
   }
 
-  group.rotation.y = (variant % 4) * Math.PI / 2;
   return meshData;
 }
 
@@ -8126,13 +8127,12 @@ function blockDistrict(centerX, centerZ) {
 // placed, and they cost no new assets: conformPlaneToTerrain already lays a
 // slab that follows the ground, which is how the block pads work.
 //
-// Lift sits above SHOULDER_LIFT and below ROAD_LIFT so paving reads on top of
-// the verge and under the carriageway, with polygonOffset to keep it off the
-// terrain it is a hair above.
-const GROUND_DRESSING_LIFT = 0.13;
+// Lift sits above SHOULDER_LIFT (0.10) and block pad (0.08), and below ROAD_LIFT (0.28)
+// so paving reads clearly on top of the verge and block pads.
+const GROUND_DRESSING_LIFT = 0.18;
 const pavingMat = new THREE.MeshStandardMaterial({
   color: '#8a94a1', roughness: 0.92, metalness: 0.0,
-  polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -3
+  polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -3
 });
 
 function addGroundSlab(width, depth, centerX, centerZ, material) {
@@ -8191,7 +8191,7 @@ function createLotCarMesh(color = '#dc2626') {
   const modelName = 'lot-car';
   const wreckName = 'lot-car-wreck';
   const meshData = { group, base: body, roof: null, color, damageParts,
-    footprint: 5.2, label: 'INVENTORY CAR', points: 60, wreck: wreckName };
+    footprint: 5.0, label: 'LOT CAR', points: 60, wreck: wreckName };
   instantiateActorModel(modelName, { damageable: true }).then(model => {
     if (!model) return;
     if (procBody.parent) group.remove(procBody);
@@ -8239,7 +8239,7 @@ function buildLivingCounty() {
     const block = { id, x: centerX, z: centerZ, district, name: `${districtNames[district]} ${row + 1}-${column + 1}`, targets: [], cleared: false };
     townBlocks.push(block);
 
-    const padGeometry = conformPlaneToTerrain(new THREE.PlaneGeometry(58, 58, 4, 4), centerX, centerZ, 0.17);
+    const padGeometry = conformPlaneToTerrain(new THREE.PlaneGeometry(58, 58, 4, 4), centerX, centerZ, 0.08);
     const pad = new THREE.Mesh(padGeometry, new THREE.MeshStandardMaterial({ color: padColors[district], transparent: true, opacity: 0.45, roughness: 0.96, depthWrite: false }));
     pad.rotation.x = -Math.PI / 2;
     pad.position.set(centerX, 0, centerZ);
@@ -8289,9 +8289,17 @@ function buildLivingCounty() {
         else meshData = createHouseMesh(3, targetIndex, variant);
       }
 
-      // Off the four cardinals. Everything was axis-aligned, which is most of
-      // why the blocks read as tiles.
-      meshData.group.rotation.y += (turnNoise - 0.5) * 0.62;
+      // [SW:VISUAL:HOUSE_ALIGNMENT]
+      // Houses align parallel to the nearest perimeter road with front facade and garage facing the street.
+      const offX = x - centerX;
+      const offZ = z - centerZ;
+      let houseYaw = 0;
+      if (Math.abs(offZ) >= Math.abs(offX)) {
+        houseYaw = offZ < 0 ? 0 : Math.PI;
+      } else {
+        houseYaw = offX < 0 ? -Math.PI / 2 : Math.PI / 2;
+      }
+      meshData.group.rotation.y = isTree ? (turnNoise - 0.5) * 2 * Math.PI : houseYaw;
       meshData.group.position.set(x, terrainHeightAt(x, z), z);
       scene.add(meshData.group);
       const health = isTree ? 42 : (isCommercial ? (district === 0 ? 190 : 165) : (district === 3 ? 145 : 115));
@@ -8509,13 +8517,14 @@ function addCommercialSidewalks() {
 }
 
 // [SW:VISUAL:GROUND_DRESSING]
-// A driveway runs from the house to whichever carriageway it is nearest. Roads
-// sit on multiples of 80 in both axes, so the nearer axis decides which way the
-// drive points and everything stays axis-aligned - which matters, because
-// conformPlaneToTerrain maps plane X to world X and cannot be rotated.
-const DRIVEWAY_WIDTH = 3.6;
+// A driveway runs from each residential home / garage straight to the nearest road shoulder.
+const DRIVEWAY_WIDTH = 4.8;
 const DRIVEWAY_SHOULDER_EDGE = 8.5;   // outer edge of the gravel verge
-const DRIVEWAY_HOUSE_EDGE = 5.2;      // half a house, near enough
+const DRIVEWAY_HOUSE_EDGE = 5.0;      // half a house, near enough
+const drivewayMat = new THREE.MeshStandardMaterial({
+  color: '#cbd5e1', roughness: 0.85, metalness: 0.05,
+  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4
+});
 function addCountyDriveways() {
   targets.forEach(target => {
     if (!target.meshData || target.isTree) return;
@@ -8526,15 +8535,13 @@ function addCountyDriveways() {
     const alongZ = Math.abs(offsetZ) <= Math.abs(offsetX);
     const gap = (alongZ ? Math.abs(offsetZ) : Math.abs(offsetX))
       - DRIVEWAY_SHOULDER_EDGE - DRIVEWAY_HOUSE_EDGE;
-    // A house sitting almost on the verge has no room for one, and a stub two
-    // units long reads as a mistake rather than a drive.
-    if (gap < 2.5) return;
+    if (gap < 2.0) return;
     const direction = (alongZ ? offsetZ : offsetX) >= 0 ? -1 : 1;
     const centre = DRIVEWAY_HOUSE_EDGE + gap / 2;
     if (alongZ) {
-      addGroundSlab(DRIVEWAY_WIDTH, gap, target.x, target.z + direction * centre, pavingMat);
+      addGroundSlab(DRIVEWAY_WIDTH, gap, target.x, target.z + direction * centre, drivewayMat);
     } else {
-      addGroundSlab(gap, DRIVEWAY_WIDTH, target.x + direction * centre, target.z, pavingMat);
+      addGroundSlab(gap, DRIVEWAY_WIDTH, target.x + direction * centre, target.z, drivewayMat);
     }
   });
 }

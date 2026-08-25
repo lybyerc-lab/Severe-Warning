@@ -100,6 +100,10 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Residential House Road Alignment & Visible Garage Driveways:
+  - Aligned all residential houses and commercial storefronts parallel to the adjacent perimeter street, ensuring front entrances, porches, and garage doors face outward directly towards the road.
+  - Prioritized garage house models (`ranch-house-garage`, `craftsman-house-garage`) across residential blocks with procedural white overhead door panels.
+  - Adjusted ground dressing lift and pad layering so wide concrete driveway slabs (`drivewayMat`, $4.8\text{m}$ width) connect cleanly from the garage and front facade straight to the asphalt road shoulder.
 - QA 90 Playability & Clean Skyline Hotfix:
   - Fixed startup `ReferenceError: Cannot access 'streetPropSets' before initialization` causing black screen in QA 90.
   - Removed obtrusive overhead wire lines that formed thick spiderleg polygons across roads; preserved high-detail authored utility poles with step-down transformer cans and dynamic electric blowout particle bursts.
