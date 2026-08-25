@@ -1,6 +1,6 @@
 // ============================================================================
 // [SW:ARCH:GAME_CONTEXT]
-// Shared Phase 5 ownership for presentation, world, and legacy boundary.
+// Shared Phase 6 ownership for presentation, world, UI, and legacy boundary.
 // ============================================================================
 
 import type { AbilitySystem } from '../abilities/ability-system';
@@ -17,6 +17,7 @@ import type { AtmosphereSystem } from '../presentation/atmosphere/atmosphere-sys
 import type { TornadoPresentationSystem } from '../presentation/tornado/tornado-presentation-system';
 import type { WorldSystem } from '../world/world-system';
 import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system';
+import type { UISubsystem } from '../ui/ui-system';
 import type { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 
 export interface BuildIdentity {
@@ -25,7 +26,7 @@ export interface BuildIdentity {
   readonly label: string;
   readonly renderer: 'Three.js r128';
   readonly architecture: 'modern-shell-v1';
-  readonly modernizationPhase: 'phase-5-rendering-world';
+  readonly modernizationPhase: 'phase-5-rendering-world' | 'phase-6-hud-ui';
 }
 
 export interface GameContext {
@@ -45,6 +46,7 @@ export interface GameContext {
   readonly world: WorldSystem;
   readonly hartFarm: DestructibleSetpieceSystem;
   readonly silo: DestructibleSetpieceSystem;
+  readonly ui: UISubsystem;
   readonly legacy: LegacyRuntimeAdapter;
   readonly document: Document;
   readonly window: Window;
@@ -67,6 +69,7 @@ export function createGameContext(
   world: WorldSystem,
   hartFarm: DestructibleSetpieceSystem,
   silo: DestructibleSetpieceSystem,
+  ui: UISubsystem,
   version: string,
   label: string,
 ): GameContext {
@@ -94,6 +97,7 @@ export function createGameContext(
     world,
     hartFarm,
     silo,
+    ui,
     legacy,
     document,
     window,

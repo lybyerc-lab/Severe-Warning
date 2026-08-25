@@ -52,6 +52,7 @@ export class GameApp {
         this.#context.hartFarm,
         this.#context.silo,
       );
+      this.#context.legacy.attachUi(this.#context.ui);
       this.#initializedAt = new Date().toISOString();
       this.transition('ready');
     } catch (error) {

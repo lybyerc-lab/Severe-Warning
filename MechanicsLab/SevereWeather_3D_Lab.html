@@ -11909,6 +11909,115 @@ const phase5PresentationWorldBridge = {
 
 globalThis.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__ = phase5PresentationWorldBridge;
 // [SW:ARCH:PHASE5_PRESENTATION_WORLD_BRIDGE:END]
+
+// [SW:SOURCE:modernization-phase6-ui.js]
+// ============================================================================
+// [SW:ARCH:PHASE6_UI_BRIDGE]
+// Lexical bridge from the accepted live HUD/UI runtime to typed UI subsystems.
+// ============================================================================
+const PHASE6_UI_BRIDGE_VERSION = 'MODERNIZATION_PHASE6_UI_V1';
+
+let phase6UiAuthority = null;
+
+function phase6ReadLegacySnapshot() {
+  const currentEf = typeof currentEfRating !== 'undefined' ? currentEfRating : 'EF-0';
+  const currentDist = typeof districtStages !== 'undefined' && typeof currentDistrict !== 'undefined' && districtStages[currentDistrict]
+    ? districtStages[currentDistrict].name
+    : 'PINE RIDGE';
+
+  return Object.freeze({
+    hud: Object.freeze({
+      remainingSeconds: typeof remainingSeconds !== 'undefined' ? Number(remainingSeconds) : 180,
+      score: typeof score !== 'undefined' ? Number(score) : 0,
+      comboMultiplier: typeof comboMultiplier !== 'undefined' ? Number(comboMultiplier) : 1.0,
+      efRating: String(currentEf),
+      districtName: String(currentDist),
+      isPaused: typeof isGamePaused !== 'undefined' ? Boolean(isGamePaused) : false,
+    }),
+    feedback: Object.freeze({
+      scorePopupsActive: typeof scorePopups !== 'undefined' ? scorePopups.length : 0,
+      rampageTier: typeof rampageLevel !== 'undefined' ? Number(rampageLevel) : 0,
+    }),
+    transitions: Object.freeze({
+      districtAlertVisible: typeof districtBannerVisible !== 'undefined' ? Boolean(districtBannerVisible) : false,
+      currentDistrictIndex: typeof currentDistrict !== 'undefined' ? Number(currentDistrict) : 0,
+    }),
+    results: Object.freeze({
+      isOpen: typeof resultsCardVisible !== 'undefined' ? Boolean(resultsCardVisible) : false,
+      stars: typeof campaignStarsEarned !== 'undefined' ? Number(campaignStarsEarned) : 0,
+    }),
+  });
+}
+
+function phase6SynchronizeAuthority(live) {
+  if (!phase6UiAuthority) return;
+  if (phase6UiAuthority.hud && typeof phase6UiAuthority.hud.updateTimer === 'function') {
+    phase6UiAuthority.hud.updateTimer(live.hud.remainingSeconds);
+    phase6UiAuthority.hud.updateScore(live.hud.score, live.hud.comboMultiplier, 0, live.hud.efRating);
+    phase6UiAuthority.hud.setPaused(live.hud.isPaused);
+  }
+}
+
+const phase6UiBridge = {
+  version: PHASE6_UI_BRIDGE_VERSION,
+
+  attach(uiAuthority) {
+    if (!uiAuthority || !uiAuthority.hud || typeof uiAuthority.reset !== 'function') {
+      throw new Error('Phase 6 UI authority is missing required UI subsystem contract.');
+    }
+    phase6UiAuthority = uiAuthority;
+    this.syncFromLegacy();
+    return true;
+  },
+
+  syncFromLegacy() {
+    if (!phase6UiAuthority) return null;
+    const live = phase6ReadLegacySnapshot();
+    phase6SynchronizeAuthority(live);
+    return live;
+  },
+
+  reset() {
+    if (phase6UiAuthority && typeof phase6UiAuthority.reset === 'function') {
+      phase6UiAuthority.reset();
+    }
+    this.syncFromLegacy();
+  },
+
+  runContractProbe() {
+    const snapshot = this.getSnapshot();
+    const checks = Object.freeze({
+      bridgeAttached: snapshot.attached === true,
+      hudSynchronized: snapshot.hud !== null,
+      feedbackSynchronized: Array.isArray(snapshot.feedback),
+      transitionsActive: typeof snapshot.transitions !== 'undefined',
+      resultsAvailable: typeof snapshot.results !== 'undefined',
+      timerAgrees: snapshot.hud ? snapshot.hud.timer.remainingSeconds === Math.floor(snapshot.live.hud.remainingSeconds) : false,
+      scoreAgrees: snapshot.hud ? snapshot.hud.score.score === Math.floor(snapshot.live.hud.score) : false,
+    });
+    return Object.freeze({
+      version: PHASE6_UI_BRIDGE_VERSION,
+      checks,
+      passed: Object.values(checks).every(Boolean),
+    });
+  },
+
+  getSnapshot() {
+    const live = this.syncFromLegacy();
+    return Object.freeze({
+      version: PHASE6_UI_BRIDGE_VERSION,
+      attached: Boolean(phase6UiAuthority),
+      hud: phase6UiAuthority && phase6UiAuthority.hud ? phase6UiAuthority.hud.getSnapshot() : null,
+      feedback: phase6UiAuthority && phase6UiAuthority.feedback ? phase6UiAuthority.feedback.getActivePopups() : null,
+      transitions: phase6UiAuthority && phase6UiAuthority.transitions ? phase6UiAuthority.transitions.getCurrentTransition() : null,
+      results: phase6UiAuthority && phase6UiAuthority.results ? phase6UiAuthority.results.getReport() : null,
+      live,
+    });
+  },
+};
+
+globalThis.__SW_PHASE6_UI_BRIDGE__ = phase6UiBridge;
+// [SW:ARCH:PHASE6_UI_BRIDGE:END]
 </script>
 </body>
 </html>

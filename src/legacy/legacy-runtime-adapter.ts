@@ -17,6 +17,7 @@ import type { AtmosphereSystem } from '../presentation/atmosphere/atmosphere-sys
 import type { TornadoPresentationSystem } from '../presentation/tornado/tornado-presentation-system';
 import type { WorldSystem } from '../world/world-system';
 import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system';
+import type { UISubsystem } from '../ui/ui-system';
 import type {
   QaScenarioId,
   QaSnapshot,
@@ -128,6 +129,24 @@ interface LegacyPresentationWorldBridge {
   getSnapshot(): LegacyPresentationWorldBridgeSnapshot;
 }
 
+export interface LegacyUiBridgeSnapshot {
+  readonly version: string;
+  readonly attached: boolean;
+  readonly hud: unknown;
+  readonly feedback: unknown;
+  readonly transitions: unknown;
+  readonly results: unknown;
+}
+
+interface LegacyUiBridge {
+  readonly version: string;
+  attach(uiAuthority: UISubsystem): boolean;
+  syncFromLegacy(): unknown;
+  reset(): void;
+  runContractProbe(): unknown;
+  getSnapshot(): LegacyUiBridgeSnapshot;
+}
+
 interface LegacyRuntimeGlobals {
   __SW_PRODUCTION_SLICE_READY__?: boolean;
   __SW_V510_UPDATE__?: (deltaSeconds: number, nowMs: number, isMoving: boolean) => void;
@@ -136,6 +155,7 @@ interface LegacyRuntimeGlobals {
   __SW_PHASE3_INPUT_ABILITY_BRIDGE__?: LegacyInputAbilityBridge;
   __SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?: LegacyScoringCampaignBridge;
   __SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?: LegacyPresentationWorldBridge;
+  __SW_PHASE6_UI_BRIDGE__?: LegacyUiBridge;
   triggerProductionSliceQa?: (mode?: string) => boolean;
   getProductionSliceQaState?: () => QaSnapshot;
 }
@@ -150,6 +170,7 @@ export interface LegacyRuntimeStatus {
   readonly hasInputAbilityBridge: boolean;
   readonly hasScoringCampaignBridge: boolean;
   readonly hasPresentationWorldBridge: boolean;
+  readonly hasUiBridge: boolean;
 }
 
 export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
@@ -170,6 +191,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       hasInputAbilityBridge: this.#globals.__SW_PHASE3_INPUT_ABILITY_BRIDGE__?.version === 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1',
       hasScoringCampaignBridge: this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.version === 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2',
       hasPresentationWorldBridge: this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.version === 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2',
+      hasUiBridge: this.#globals.__SW_PHASE6_UI_BRIDGE__?.version === 'MODERNIZATION_PHASE6_UI_V1',
     });
   }
 
@@ -236,6 +258,12 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     if (attached !== true) throw new Error('Legacy runtime rejected the Phase 5 presentation and world mirrors.');
   }
 
+  attachUi(ui: UISubsystem): void {
+    this.assertRequiredContracts();
+    const attached = this.#globals.__SW_PHASE6_UI_BRIDGE__?.attach(ui);
+    if (attached !== true) throw new Error('Legacy runtime rejected the Phase 6 UI authority.');
+  }
+
   getRunState(): LegacyRunState {
     this.assertRequiredContracts();
     const state = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.getLegacyRunState();
@@ -271,9 +299,21 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     return snapshot;
   }
 
+  getUiBridgeSnapshot(): LegacyUiBridgeSnapshot {
+    this.assertRequiredContracts();
+    const snapshot = this.#globals.__SW_PHASE6_UI_BRIDGE__?.getSnapshot();
+    if (!snapshot) throw new Error('Legacy runtime returned no UI bridge snapshot.');
+    return snapshot;
+  }
+
   runPresentationWorldContractProbe(): unknown {
     this.assertRequiredContracts();
     return this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.runContractProbe();
+  }
+
+  runUiContractProbe(): unknown {
+    this.assertRequiredContracts();
+    return this.#globals.__SW_PHASE6_UI_BRIDGE__?.runContractProbe();
   }
 
   latchPresentationFrame(timestamp = 1000): unknown {
@@ -300,6 +340,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.synchronizeClockFromLegacy();
     this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.syncFromLegacy();
     this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.syncFromLegacy();
+    this.#globals.__SW_PHASE6_UI_BRIDGE__?.syncFromLegacy();
   }
 
   advance(milliseconds: number): void {
@@ -310,6 +351,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     const now = performance.now();
     this.#globals.__SW_V510_UPDATE__?.(milliseconds / 1000, now, false);
     this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.syncFromLegacy();
+    this.#globals.__SW_PHASE6_UI_BRIDGE__?.syncFromLegacy();
   }
 
   getSnapshot(): QaSnapshot {
@@ -325,6 +367,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.#globals.__SW_V510_REBUILD__?.();
     this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.reset();
     this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.reset();
+    this.#globals.__SW_PHASE6_UI_BRIDGE__?.reset();
     this.synchronizeClockFromLegacy();
   }
 

@@ -27,7 +27,7 @@ All current batch requests completed. Open for next director requests.
 
 ## Next up — Code & Modernization
 
-1. **Phase 6 HUD / UI TypeScript modularization.** Type-safe HUD overlays and campaign transitions.
+1. **Phase 7 Audio & Traffic Subsystems Modularization.** Type-safe Web Audio synthesizer / sprite engine and ambient traffic behavior authorities.
 
 Nothing else is queued. Say the word and this fills up.
 
@@ -100,6 +100,11 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Phase 6 HUD & UI TypeScript Modularization:
+  - Created type-safe TypeScript UI subsystem under `src/ui/` (`HudSystem`, `RampageFeedbackSystem`, `DistrictTransitionSystem`, `ResultsSystem`, and master `UISubsystem`).
+  - Added unit test suite `src/ui/hud/hud-system.test.ts` (100% pass across all 20 test cases).
+  - Inlined `[SW:ARCH:PHASE6_UI_BRIDGE]` / `[SW:SOURCE:modernization-phase6-ui.js]` in `MechanicsLab/SevereWeather_3D_Lab.html` with marker `MODERNIZATION_PHASE6_UI_V1`.
+  - Added automated structural verification (`verify-modernization-phase6-ui.mjs` - 40/40 checks pass) and live headless Chrome CDP probe (`qa-modernization-phase6-ui.mjs`).
 - County-Wide High-Detail Model Overhaul (Residential, Commercial, Landmarks & Vehicles):
   - Upgraded 24+ primary models and wrecks (`ranch-house`, `ranch-house-garage`, `craftsman-house`, `craftsman-house-garage`, `split-level-house`, `district-barn`, `grocery-store`, `car-dealership`, `discount-store`, `commercial-shop`, `commercial-shop-gable`, `commercial-shop-mansard`, `commercial-shop-deco`, `courthouse`, `gas-station`, `substation`, `farm-windmill`, `grain-bin`, `water-tower`, `coffee-cup`, `lot-car`) with authentic structural geometry, multi-layer siding, stone foundations, window mullions, shutters, porches, and rooftop HVAC machinery.
   - Re-authored the `coffee-cup` (MOO-BREW) with a proper vertical C-shaped cup handle, dome sipping lid with drinking spout, insulated cardboard sleeve, and espresso spill wreck.

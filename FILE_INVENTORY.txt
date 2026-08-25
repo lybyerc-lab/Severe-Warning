@@ -86,6 +86,7 @@ Docs/MODERNIZATION_PLAN.md
 Docs/NO_DRIFT_POLICY.md
 Docs/PHASE5_PRESENTATION_SOURCE_MAP.md
 Docs/PHASE5_VISUAL_BASELINE.md
+Docs/PHASE6_UI_SOURCE_MAP.md
 Docs/PRODUCTION_PLAN.md
 Docs/PRODUCT_VISION_AND_ROADMAP.md
 Docs/QA4_MOBILE_INPUT_INCIDENT.md
@@ -303,6 +304,7 @@ scripts/qa-modernization-phase2-clocks.mjs
 scripts/qa-modernization-phase3-input-abilities.mjs
 scripts/qa-modernization-phase4-scoring-campaign.mjs
 scripts/qa-modernization-phase5-presentation-world.mjs
+scripts/qa-modernization-phase6-ui.mjs
 scripts/qa-play-full-round.mjs
 scripts/qa-v500-world-tour.mjs
 scripts/qa-v510-production-slice.mjs
@@ -315,6 +317,7 @@ scripts/verify-modernization-phase2-clocks.mjs
 scripts/verify-modernization-phase3-input-abilities.mjs
 scripts/verify-modernization-phase4-scoring-campaign.mjs
 scripts/verify-modernization-phase5-presentation-world.mjs
+scripts/verify-modernization-phase6-ui.mjs
 scripts/verify-qa-package.mjs
 scripts/verify-v500-campaign.mjs
 scripts/verify-v510-production-slice.mjs
@@ -352,6 +355,17 @@ src/presentation/scene/scene-system.ts
 src/presentation/tornado/tornado-presentation-contracts.ts
 src/presentation/tornado/tornado-presentation-system.ts
 src/qa/bridge/severe-weather-qa-bridge.ts
+src/ui/feedback/rampage-feedback-contracts.ts
+src/ui/feedback/rampage-feedback-system.ts
+src/ui/hud/hud-contracts.ts
+src/ui/hud/hud-system.test.ts
+src/ui/hud/hud-system.ts
+src/ui/results/results-contracts.ts
+src/ui/results/results-system.ts
+src/ui/transitions/district-transition-contracts.ts
+src/ui/transitions/district-transition-system.ts
+src/ui/ui-contracts.ts
+src/ui/ui-system.ts
 src/world/setpieces/destructible-setpiece-contracts.ts
 src/world/setpieces/destructible-setpiece-system.ts
 src/world/setpieces/hart-farm-definition.ts
