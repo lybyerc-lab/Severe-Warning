@@ -247,8 +247,16 @@ Live:
 - Commercial anchor blocks: grocery-store and discount-store, each with matching wrecks.
 - Industrial warehouses with 2 distinct roofline silhouettes (pitched gabled steel,
   barrel-vault arch), each with matching wrecks.
-- Agricultural barns: hart-barn and hart-barn-wreck (authored multi-stage collapse
-  wreck matching hero footprint), district-barn and district-barn-wreck for farm belt.
+- Agricultural barns: district-barn and district-barn-wreck stand on the farm
+  belt's two barn lots. It is authored to that lot at 12.0 x 8.8 with its own
+  wreck, which is why it is wired there rather than hart-barn.
+- The hero Hart Farm barn is deliberately NOT model-backed and must stay that
+  way. Its collapse detaches roofLeft, frontWall, the ridge and both doors BY
+  NAME across four stages; a single-mesh model has none of those parts, so
+  pointing one at it fires every stage, awards every point, prints every gag
+  toast and moves nothing on screen. hart-barn and hart-barn-wreck are therefore
+  unused: they are the hero barn's likeness, and the hero barn does not want a
+  model. Keep them as reference or retire them, but do not wire them.
 - Modular residential houses: ranch-house, craftsman-house, split-level-house, and matching wrecks.
 - All 13 named comedy gag props (reusing ferris-wheel for the fairground ferris prop):
   - Yard: flamingo, trampoline, bbq-grill, rural-mailbox, and their wrecks.

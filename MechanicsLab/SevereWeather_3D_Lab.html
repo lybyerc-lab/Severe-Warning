@@ -3741,16 +3741,23 @@ globalThis.instantiateActorModel = instantiateActorModel;
 // teal is mud, while a light lerp toward teal is invisible. Measured both.
 //
 // So the palette contributes its HUE only, carried on a pale, barely saturated
-// multiplier that lands near white. The building keeps its authored brick and
-// picks up a tone - warmer, cooler, brighter, dirtier - and thirty shopfronts
-// stop looking like one shopfront stamped thirty times. Real colour variety
-// needs authored variants; this is what can be done to a single model.
+// multiplier that lands near white.
+//
+// That was calibrated against models with brick red baked into COLOR_0, where
+// anything stronger multiplied down into mud. The commercial set has since been
+// re-authored neutral for exactly this purpose - measured mean saturation 0.055
+// to 0.098 - and against neutral geometry a pale wash does nothing at all: it
+// produced a county of white blobs, the same failure pointing the other way.
+//
+// So the palette colour now carries, eased toward white first. Undiluted it
+// multiplies a 0.9-value model down into something too dark and too saturated
+// to read as a building, and the roofs go down with the walls.
 //
 // Materials are already cloned per instance for damageable actors, so this is
 // free.
-const BUILDING_TINT_SATURATION = 0.20;
-const BUILDING_TINT_MIN_LIGHT = 0.78;
-const BUILDING_TINT_RANGE = 0.22;
+const BUILDING_TINT_BASE = new THREE.Color(0xffffff);
+const BUILDING_TINT_WHITEN = 0.30;
+const BUILDING_TINT_LIGHT_JITTER = 0.18;
 const buildingTintColor = new THREE.Color();
 const buildingTintHsl = { h: 0, s: 0, l: 0 };
 
@@ -3758,16 +3765,17 @@ function adoptSwappedActorModel(meshData, model, spec = {}) {
   const meshes = [];
   model.traverse(object => { if (object.isMesh) meshes.push(object); });
   if (spec.tint && meshData.color) {
-    buildingTintColor.set(meshData.color);
+    buildingTintColor.set(meshData.color).lerp(BUILDING_TINT_BASE, BUILDING_TINT_WHITEN);
     buildingTintColor.getHSL(buildingTintHsl);
-    // Lightness comes off the hue so two buildings sharing a palette entry still
-    // differ, and it stays inside a narrow band near white: this value is a
-    // multiplier, so dropping it far would just make the county dark.
-    const light = BUILDING_TINT_MIN_LIGHT + ((buildingTintHsl.h * 7.13) % 1) * BUILDING_TINT_RANGE;
+    // Nudge lightness off the hue so two buildings sharing a palette entry are
+    // still not quite the same building.
+    const jitter = ((buildingTintHsl.h * 7.13) % 1) * BUILDING_TINT_LIGHT_JITTER
+                 - BUILDING_TINT_LIGHT_JITTER * 0.5;
+    const light = THREE.MathUtils.clamp(buildingTintHsl.l + jitter, 0.24, 0.92);
     for (let i = 0; i < meshes.length; i++) {
       const material = meshes[i].material;
       if (!material || !material.color) continue;
-      material.color.setHSL(buildingTintHsl.h, BUILDING_TINT_SATURATION, light);
+      material.color.setHSL(buildingTintHsl.h, buildingTintHsl.s, light);
     }
   }
   if (Array.isArray(meshData.damageParts)) {
@@ -6018,12 +6026,14 @@ function createHouseMesh(districtType, i, variant = 0) {
   // with a cupola, and the hero is a gable barn in a complex with a silo, a
   // farmhouse and a HART FARM sign. Side by side they are plainly different.
   const farmHouse = FARM_HOUSE_MODELS[houseIndex % FARM_HOUSE_MODELS.length];
-  const modelName = wantsBarn ? 'hart-barn' : (isFarmBelt ? farmHouse : houseModels[houseIndex]);
-  // hart-barn-wreck is authored with matching footprint so a felled barn now drops into its authored wreck
-  const wreckName = wantsBarn ? 'hart-barn-wreck'
+  // district-barn rather than hart-barn: it is authored to this lot at
+  // 12.0 x 8.8 so it drops in at scale 1, and it carries its own wreck.
+  // hart-barn is the hero Hart Farm barn's likeness and belongs to that
+  // landmark, which is procedural and wants no model at all.
+  const modelName = wantsBarn ? 'district-barn' : (isFarmBelt ? farmHouse : houseModels[houseIndex]);
+  const wreckName = wantsBarn ? 'district-barn-wreck'
     : (isFarmBelt ? `${farmHouse}-wreck` : houseWrecks[houseIndex]);
-  // The barn glb is authored 24.7 units wide against this lot's 12.0.
-  const modelScale = wantsBarn ? 0.52 : 1;
+  const modelScale = 1;
 
   const procBody = new THREE.Group();
   group.add(procBody);
@@ -6113,7 +6123,13 @@ function createCommercialMesh(districtType, variant = 0) {
   group.add(procBody);
 
   if (districtType === 0) { // Main Street: Glass & Brick Office Towers
-    const palette = ['#0f766e', '#1d4ed8', '#334155', '#0369a1', '#475569'];
+    // Every entry here used to be teal, blue or slate, so once the shopfronts
+    // were re-authored neutral and the tint started carrying, main street came
+    // out uniformly cold - varied silhouettes in one colour family still reads
+    // as one street. A real main street is brick and tan and painted awnings
+    // next to the blues, which is what the residential palette already does and
+    // why the houses looked more varied than the shops even before this.
+    const palette = ['#9a3412', '#0f766e', '#b45309', '#334155', '#1d4ed8', '#4d7c0f', '#a16207', '#0369a1'];
     h = 16 + (variant % 4) * 5.0;
     width = 9.5 + (variant % 3) * 2.2;
     depth = 9.5 + ((variant + 1) % 3) * 1.8;
