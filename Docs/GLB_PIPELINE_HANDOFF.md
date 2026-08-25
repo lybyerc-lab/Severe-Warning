@@ -64,6 +64,19 @@ Every model that has gone down this path so far happened to satisfy it. None
 were asked to. If a model is destined for something there are more than a
 handful of, say so in the request and check it before export.
 
+**A model that will stand on many lots needs near-neutral COLOR_0.** The game
+computes a colour for every building and applies it through `material.color`,
+which MULTIPLIES over COLOR_0 rather than replacing it. A model authored with
+its colour baked in cannot be varied: `commercial-shop` is brick red, and red
+times the palette's teal is mud while a light lerp toward teal is invisible.
+Both were measured. Thirty of them therefore render as thirty identical
+buildings no matter what the game asks for.
+
+Author repeated props in near-neutral greys and off-whites, and let the
+material carry the colour. Keep saturation for the parts that should always be
+the same colour -- a red door, a green sign. Hero props that only ever appear
+once may bake whatever they like.
+
 **Budget triangles against the model's neighbours, not against the cap.** The
 ~500-3000 range above is a ceiling, not a target. `hart-barn` is 1,464
 triangles because it was authored as a hero prop, and putting it on all
@@ -250,9 +263,32 @@ Live:
   not placed; see the camera-detail rule above.
 - 100% vertex welding verified on all 78 models (including farm-windmill, hart-barn, hart-farmhouse).
 
-Open work:
+Open work, most valuable first:
 
-1. **Main-street commercial block.** Director's ask, and the next batch.
+1. **Storefront variants for Main Street.** The largest remaining visual
+   problem in the game, and the director's standing note that the town looks
+   copy-paste. Current spread across the county's 94 buildings:
+
+       commercial-shop        30      one silhouette
+       ranch-house            22
+       industrial-warehouse   17      one silhouette
+       craftsman-house        14
+       split-level-house       9
+       hart-barn               2
+
+   Three or four `commercial-shop` variants would do more for the county than
+   anything else on this list. The houses got three variants and the difference
+   is visible; main street got none.
+   - Vary the **roofline**, not just the frontage. Thirty identical flat white
+     roofs read as repetitively from the storm camera as thirty identical walls,
+     and the camera looks down.
+   - Near-neutral COLOR_0 per the rule above, so the game can tint them apart.
+     This is the difference between three variants reading as three buildings
+     and reading as thirty.
+   - `industrial-warehouse` at 17 lots is the same problem one size smaller;
+     two variants there when the shops are done.
+
+2. **Main-street commercial block.** Director's ask.
    - `grocery-store` + `grocery-store-wreck`. Low, wide, storefront band along
      the front, roof units on top. The **parking lot is not part of the model** --
      it is ground geometry and will be laid procedurally the way the roads are,
@@ -260,14 +296,20 @@ Open work:
    - `discount-store` + `discount-store-wreck`. Same silhouette family, smaller
      footprint. Keep the name and signage generic: no real chain's branding on a
      building the game exists to flatten.
-   - Both in the 200-312 triangle band their main-street neighbours occupy. See
-     the triangle-budget rule above; the barn is the cautionary tale.
-2. `district-barn` + wreck, 200-300 triangles, ~12.0 x 8.8 footprint, if the two
-   hero-detail barns now standing in the belt should come down to background
-   cost. Optional -- two of them is affordable.
+   - Both in the 200-312 triangle band their main-street neighbours occupy.
+
 3. `hart-barn-wreck` does not exist, so a felled barn still drops into the
    generic ruin. Small, and the only wreck gap left in the library.
-4. Power pole variants and wire tension (currently owned by Claude).
+
+4. `district-barn` + wreck, 200-300 triangles, ~12.0 x 8.8 footprint, if the two
+   hero-detail barns now standing in the belt should come down to background
+   cost. Optional -- two of them is affordable.
+
+5. Power pole variants and wire tension (currently owned by Claude).
+
+Not needed: `fire-hydrant` is authored, welded and deliberately unplaced. It
+renders 8 pixels tall while costing more per instance than a street lamp. Do
+not author more props at that scale until the camera moves closer.
 
 ## Verifying a change
 
