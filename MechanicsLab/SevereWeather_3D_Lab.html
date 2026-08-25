@@ -4130,10 +4130,161 @@ function setPoleWrecked(index) {
   if (index == null || poleWrecked[index] === 1) return;
   poleWrecked[index] = 1;
   writePoleInstance(index, poleInstanceScales[index]);
+
+  // Snap connected overhead wires down to ground
+  const wireEntries = poleWireIndices.get(index);
+  if (wireEntries) {
+    wireEntries.forEach(({ vIdx, groundY }) => {
+      utilityWirePositions[vIdx * 3 + 1] = groundY + 0.12;
+    });
+    utilityWireGeometry.attributes.position.needsUpdate = true;
+  }
+
+  // Trigger electric transformer blowout burst
+  const spot = polePositions[index];
+  const groundY = terrainHeightAt(spot.x, spot.z);
+  spawnTransformerBlowout(spot.x, groundY + 7.2, spot.z + 0.36);
 }
 function clearPoleWrecks() {
   poleWrecked.fill(0);
   for (let i = 0; i < polePositions.length; i++) writePoleInstance(i, 1);
+  utilityWirePositions.set(intactWirePositions);
+  utilityWireGeometry.attributes.position.needsUpdate = true;
+  activeTransformerSparks.length = 0;
+}
+
+// [SW:VISUAL:UTILITY_GRID] Overhead catenary utility lines spanning between poles.
+// Single draw call for the entire county network via THREE.LineSegments.
+const UTILITY_WIRE_CROSSARM_Y = 10.35;
+const wireSegmentVertices = [];
+const poleWireIndices = new Map();
+
+for (let rIdx = 0; rIdx < 9; rIdx++) {
+  const rowBaseIdx = rIdx * 13;
+  for (let span = 0; span < 12; span++) {
+    const poleAIdx = rowBaseIdx + span;
+    const poleBIdx = rowBaseIdx + span + 1;
+    const posA = polePositions[poleAIdx];
+    const posB = polePositions[poleBIdx];
+    const groundYA = terrainHeightAt(posA.x, posA.z);
+    const groundYB = terrainHeightAt(posB.x, posB.z);
+
+    const lineOffsetsZ = [-1.0, 0.0, 1.0];
+    for (const offZ of lineOffsetsZ) {
+      const pA = new THREE.Vector3(posA.x, groundYA + UTILITY_WIRE_CROSSARM_Y, posA.z + offZ);
+      const pB = new THREE.Vector3(posB.x, groundYB + UTILITY_WIRE_CROSSARM_Y, posB.z + offZ);
+
+      const sub = 4;
+      let prevPt = pA;
+      for (let s = 1; s <= sub; s++) {
+        const t = s / sub;
+        const curPt = new THREE.Vector3(
+          THREE.MathUtils.lerp(pA.x, pB.x, t),
+          THREE.MathUtils.lerp(pA.y, pB.y, t) - Math.sin(t * Math.PI) * 0.65,
+          THREE.MathUtils.lerp(pA.z, pB.z, t)
+        );
+
+        const vIdxStart = wireSegmentVertices.length / 3;
+        wireSegmentVertices.push(prevPt.x, prevPt.y, prevPt.z);
+        wireSegmentVertices.push(curPt.x, curPt.y, curPt.z);
+
+        if (s === 1) {
+          if (!poleWireIndices.has(poleAIdx)) poleWireIndices.set(poleAIdx, []);
+          poleWireIndices.get(poleAIdx).push({ vIdx: vIdxStart, groundY: groundYA });
+        }
+        if (s === sub) {
+          if (!poleWireIndices.has(poleBIdx)) poleWireIndices.set(poleBIdx, []);
+          poleWireIndices.get(poleBIdx).push({ vIdx: vIdxStart + 1, groundY: groundYB });
+        }
+        prevPt = curPt;
+      }
+    }
+  }
+}
+
+const utilityWirePositions = new Float32Array(wireSegmentVertices);
+const intactWirePositions = new Float32Array(wireSegmentVertices);
+const utilityWireGeometry = new THREE.BufferGeometry();
+utilityWireGeometry.setAttribute('position', new THREE.BufferAttribute(utilityWirePositions, 3));
+const utilityWireMaterial = new THREE.LineBasicMaterial({
+  color: 0x1e293b,
+  transparent: true,
+  opacity: 0.85
+});
+const utilityWireMesh = new THREE.LineSegments(utilityWireGeometry, utilityWireMaterial);
+utilityWireMesh.frustumCulled = false;
+scene.add(utilityWireMesh);
+
+// [SW:VISUAL:TRANSFORMER_BLOWOUT] Animated electrical spark burst on pole destruction
+const activeTransformerSparks = [];
+const sparkGeometry = new THREE.BufferGeometry();
+const MAX_SPARKS = 128;
+const sparkPositions = new Float32Array(MAX_SPARKS * 3);
+const sparkColors = new Float32Array(MAX_SPARKS * 3);
+sparkGeometry.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+sparkGeometry.setAttribute('color', new THREE.BufferAttribute(sparkColors, 3));
+const sparkMaterial = new THREE.PointsMaterial({
+  size: 0.75,
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.95,
+  blending: THREE.AdditiveBlending
+});
+const sparkPoints = new THREE.Points(sparkGeometry, sparkMaterial);
+sparkPoints.frustumCulled = false;
+scene.add(sparkPoints);
+
+function spawnTransformerBlowout(x, y, z) {
+  playSound('zap');
+  triggerPowerFlash();
+  for (let i = 0; i < 18; i++) {
+    if (activeTransformerSparks.length >= MAX_SPARKS) activeTransformerSparks.shift();
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 4.0 + Math.random() * 8.0;
+    activeTransformerSparks.push({
+      x, y, z,
+      vx: Math.cos(angle) * speed,
+      vy: 2.0 + Math.random() * 6.0,
+      vz: Math.sin(angle) * speed,
+      life: 0.35 + Math.random() * 0.25,
+      maxLife: 0.6
+    });
+  }
+}
+
+function updateTransformerSparks(delta) {
+  if (!activeTransformerSparks.length) return;
+  const posAttr = sparkGeometry.attributes.position;
+  const colAttr = sparkGeometry.attributes.color;
+  let count = 0;
+  for (let i = activeTransformerSparks.length - 1; i >= 0; i--) {
+    const s = activeTransformerSparks[i];
+    s.life -= delta;
+    if (s.life <= 0) {
+      activeTransformerSparks.splice(i, 1);
+      continue;
+    }
+    s.x += s.vx * delta;
+    s.y += s.vy * delta;
+    s.z += s.vz * delta;
+    s.vy -= 14.0 * delta;
+
+    const pIdx = count * 3;
+    posAttr.array[pIdx] = s.x;
+    posAttr.array[pIdx + 1] = Math.max(terrainHeightAt(s.x, s.z) + 0.05, s.y);
+    posAttr.array[pIdx + 2] = s.z;
+
+    const t = s.life / s.maxLife;
+    colAttr.array[pIdx] = 0.2 + 0.8 * t;
+    colAttr.array[pIdx + 1] = 0.7 + 0.3 * t;
+    colAttr.array[pIdx + 2] = 1.0;
+    count++;
+  }
+  for (let i = count; i < MAX_SPARKS; i++) {
+    posAttr.array[i * 3 + 1] = -999;
+  }
+  posAttr.needsUpdate = true;
+  colAttr.needsUpdate = true;
 }
 
 // [SW:VISUAL:ACTOR_MODELS] Swap the utility line over to the authored pole.
@@ -9201,6 +9352,7 @@ function animate(now) {
     );
   }
   pPositions.needsUpdate = true;
+  updateTransformerSparks(dt);
 
   funnelMesh.rotation.y += 0.15;
   // [SW:VISUAL:FUNNEL_SHADER] the visible funnel's band clock.

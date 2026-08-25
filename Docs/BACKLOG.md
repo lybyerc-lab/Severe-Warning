@@ -27,7 +27,7 @@ All current batch requests completed. Open for next director requests.
 
 ## Next up — Code & Modernization
 
-1. **Power pole variants & sagging wire geometry.** Multi-crossarm poles and sagged utility lines across the street grid.
+1. **County Micro-Dressing.** Place `rural-mailbox` props at driveway heads, fairgrounds split-rail fencing, and industrial rail spur tracks.
 2. **Phase 6 HUD / UI TypeScript modularization.** Type-safe HUD overlays and campaign transitions.
 
 Nothing else is queued. Say the word and this fills up.
@@ -101,6 +101,10 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Power grid overhaul, catenary lines & transformer blowout FX:
+  - Re-authored `power-pole` + `power-pole-wreck` ($1.2\text{m} \times 9.0\text{m} \times 1.2\text{m}$) with authentic cylindrical high-voltage transformer drum cans, tiered crossarms, blue glazed ceramic insulators, and steel conduit.
+  - Generated county-wide catenary utility power lines spanning between all 117 poles in a single draw call via `THREE.LineSegments`.
+  - Added dynamic wire snapping and transformer blowout spark particle bursts with lightning flash and electrical sound FX upon storm impact.
 - Dealership lot & parked inventory cars wired in-engine: Placed `car-dealership` as a
   named county anchor with an expanded 44m x 22m paved parking apron and 2 rows of 4
   color-tinted destructible `lot-car` inventory sedans (points: 60, health: 65, wreck: `lot-car-wreck`).
