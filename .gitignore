@@ -49,3 +49,4 @@ android/**/build/
 *.key
 qa-signing/
 android/signing/
+scratch/

@@ -291,7 +291,6 @@ package.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
 qa-candidate.json
-scratch/inspect-cow.mjs
 scripts/append-rampage-music.mjs
 scripts/apply-recorded-storm-effects.mjs
 scripts/build-web.mjs
