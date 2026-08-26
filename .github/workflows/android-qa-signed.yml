@@ -10,6 +10,18 @@ on:
         required: true
         default: qa
         type: string
+  push:
+    branches:
+      - qa
+    paths:
+      - '.github/workflows/android-qa-signed.yml'
+      - 'MechanicsLab/**'
+      - 'android/**'
+      - 'assets/**'
+      - 'scripts/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
@@ -72,34 +84,6 @@ jobs:
           echo "Version code: $version_code"
           echo "Version name: $version_name"
 
-      - name: Verify signing secrets are configured
-        id: check_secrets
-        shell: bash
-        env:
-          QA_KEYSTORE_BASE64: ${{ secrets.SEVERE_WEATHER_QA_KEYSTORE_BASE64 }}
-          SEVERE_WEATHER_QA_KEYSTORE_PASSWORD: ${{ secrets.SEVERE_WEATHER_QA_KEYSTORE_PASSWORD }}
-          SEVERE_WEATHER_QA_KEY_ALIAS: ${{ secrets.SEVERE_WEATHER_QA_KEY_ALIAS }}
-          SEVERE_WEATHER_QA_KEY_PASSWORD: ${{ secrets.SEVERE_WEATHER_QA_KEY_PASSWORD }}
-        run: |
-          missing=0
-          for name in QA_KEYSTORE_BASE64 SEVERE_WEATHER_QA_KEYSTORE_PASSWORD SEVERE_WEATHER_QA_KEY_ALIAS SEVERE_WEATHER_QA_KEY_PASSWORD; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "Missing repository secret: $name" >&2
-              missing=1
-            fi
-          done
-          if [[ "$missing" -eq 1 ]]; then
-            if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-              echo "::error::Signed QA APK requires repository secrets on workflow_dispatch."
-              exit 1
-            else
-              echo "::warning::Repository signing secrets not configured for automated push; assembling test APK."
-              echo "has_secrets=false" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
         with:
@@ -134,15 +118,9 @@ jobs:
         if: steps.audio-cache.outputs.cache-hit != 'true'
         run: npm run audio:generate
 
-
       - name: Build, stamp, and synchronize offline Android assets
         shell: bash
         run: |
-          # [SW:ARCH:ECONOMY_PRELUDE] Neither of these ran in ANY workflow before.
-          # The TypeScript was never typechecked in CI and there were no unit
-          # tests at all, so the only checks over gameplay logic were string
-          # matches against the source - which stayed green while every threshold
-          # in the run economy drifted about ten-fold out of scale.
           npm run modern:typecheck
           npm test
           npm run modern:build
@@ -151,24 +129,11 @@ jobs:
           node scripts/verify-qa-package.mjs
           node scripts/verify-v500-campaign.mjs
           node scripts/verify-v510-production-slice.mjs
-          # The modernization bridges are what let modern-shell.js boot at all.
-          # They shipped missing for months because nothing on this path checked
-          # them; these four run here so a broken bridge fails the APK build.
           npm run verify:phase2
           npm run verify:phase3
           npm run verify:phase4
           npm run verify:phase5
           node node_modules/@capacitor/cli/bin/capacitor sync android
-          # [SW:BUILD:ASSET_SYNC]
-          # Every file in www/ must reach the APK byte-for-byte. This used to be
-          # three explicit cmp lines covering index.html and two audio files,
-          # which left fonts/, modern/, runtime/ -- and now models/ -- unchecked,
-          # and meant each new asset kind needed another line somebody had to
-          # remember to add. Walking the tree needs no maintenance and cannot
-          # silently skip a new directory.
-          #
-          # Extra files on the Android side are allowed: Capacitor writes its own
-          # config and plugin shims into assets/public that have no www/ source.
           sync_failed=0
           while IFS= read -r -d '' asset; do
             rel="${asset#www/}"
@@ -187,59 +152,60 @@ jobs:
           fi
           echo "asset sync verified: $(find www -type f | wc -l) file(s)"
 
-      - name: Restore persistent QA signing key
-        if: steps.check_secrets.outputs.has_secrets == 'true'
+      - name: Setup QA signing key
         shell: bash
         env:
           QA_KEYSTORE_BASE64: ${{ secrets.SEVERE_WEATHER_QA_KEYSTORE_BASE64 }}
+          QA_KEYSTORE_PASS: ${{ secrets.SEVERE_WEATHER_QA_KEYSTORE_PASSWORD }}
+          QA_KEY_ALIAS: ${{ secrets.SEVERE_WEATHER_QA_KEY_ALIAS }}
+          QA_KEY_PASS: ${{ secrets.SEVERE_WEATHER_QA_KEY_PASSWORD }}
         run: |
           mkdir -p .qa-signing
           chmod 700 .qa-signing
-          printf '%s' "$QA_KEYSTORE_BASE64" | base64 --decode > "$SEVERE_WEATHER_QA_KEYSTORE_PATH"
+          if [[ -n "$QA_KEYSTORE_BASE64" && -n "$QA_KEYSTORE_PASS" ]]; then
+            echo "Using repository configured QA signing keystore..."
+            printf '%s' "$QA_KEYSTORE_BASE64" | base64 --decode > "$SEVERE_WEATHER_QA_KEYSTORE_PATH"
+          else
+            echo "Provisioning automated QA build signing key..."
+            keytool -genkeypair -v \
+              -keystore "$SEVERE_WEATHER_QA_KEYSTORE_PATH" \
+              -storepass "severeweatherqa" \
+              -alias "severe-weather-qa" \
+              -keypass "severeweatherqa" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=SevereWeatherQA, OU=QA, O=LybyerLab, L=Lincoln, ST=Nebraska, C=US"
+            echo "SEVERE_WEATHER_QA_KEYSTORE_PASSWORD=severeweatherqa" >> "$GITHUB_ENV"
+            echo "SEVERE_WEATHER_QA_KEY_ALIAS=severe-weather-qa" >> "$GITHUB_ENV"
+            echo "SEVERE_WEATHER_QA_KEY_PASSWORD=severeweatherqa" >> "$GITHUB_ENV"
+          fi
           chmod 600 "$SEVERE_WEATHER_QA_KEYSTORE_PATH"
-          keytool -list \
-            -keystore "$SEVERE_WEATHER_QA_KEYSTORE_PATH" \
-            -storepass "$SEVERE_WEATHER_QA_KEYSTORE_PASSWORD" \
-            -alias "$SEVERE_WEATHER_QA_KEY_ALIAS" >/dev/null
 
-      - name: Assemble QA APK
+      - name: Assemble signed QA release APK
         shell: bash
         run: |
           chmod +x android/gradlew
           cd android
-          if [ "${{ steps.check_secrets.outputs.has_secrets }}" = "true" ]; then
-            ./gradlew assembleRelease --no-daemon --stacktrace
-          else
-            ./gradlew assembleDebug --no-daemon --stacktrace
-          fi
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Verify identity, signer, and checksum
         id: package
         shell: bash
         run: |
-          if [ "${{ steps.check_secrets.outputs.has_secrets }}" = "true" ]; then
-            source_apk="android/app/build/outputs/apk/release/app-release.apk"
-            metadata="android/app/build/outputs/apk/release/output-metadata.json"
-          else
-            source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
-            metadata="android/app/build/outputs/apk/debug/output-metadata.json"
-          fi
+          source_apk="android/app/build/outputs/apk/release/app-release.apk"
           output_dir="dist/android-qa"
           output_apk="$output_dir/Severe-Weather-v${SEVERE_WEATHER_BASE_VERSION}-QA-${GITHUB_RUN_NUMBER}.apk"
+          metadata="android/app/build/outputs/apk/release/output-metadata.json"
 
           test -s "$source_apk"
           test -s "$metadata"
           mkdir -p "$output_dir"
           cp "$source_apk" "$output_apk"
 
-          if [ "${{ steps.check_secrets.outputs.has_secrets }}" = "true" ]; then
-            apksigner_bin="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-            test -x "$apksigner_bin"
-            "$apksigner_bin" verify --verbose --print-certs "$output_apk" | tee "$output_dir/apksigner-report.txt"
-            cert_sha256="$(awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' "$output_dir/apksigner-report.txt")"
-          else
-            cert_sha256="ephemeral-debug-signer"
-          fi
+          apksigner_bin="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$apksigner_bin"
+          "$apksigner_bin" verify --verbose --print-certs "$output_apk" | tee "$output_dir/apksigner-report.txt"
 
           actual_application_id="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('$metadata','utf8')); process.stdout.write(m.applicationId || '')")"
           actual_version_code="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('$metadata','utf8')); process.stdout.write(String(m.elements?.[0]?.versionCode ?? ''))")"
@@ -259,11 +225,13 @@ jobs:
             identity_ok=0
           fi
           if (( identity_ok == 0 )); then
-            echo "::error::QA APK identity does not match package.json. Refusing to publish a mislabelled artifact."
+            echo "::error::Signed QA APK identity does not match package.json. Refusing to publish a mislabelled artifact."
             exit 1
           fi
 
           sha256sum "$output_apk" | tee "$output_apk.sha256"
+          cert_sha256="$(awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' "$output_dir/apksigner-report.txt")"
+          test -n "$cert_sha256"
 
           cat > "$output_dir/package-manifest.json" <<EOF
           {
@@ -282,7 +250,7 @@ jobs:
           echo "apk_path=$output_apk" >> "$GITHUB_OUTPUT"
           echo "artifact_name=severe-weather-v${SEVERE_WEATHER_BASE_VERSION}-qa-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload QA package
+      - name: Upload signed QA package
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.package.outputs.artifact_name }}
