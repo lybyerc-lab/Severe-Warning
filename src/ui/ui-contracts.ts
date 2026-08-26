@@ -1,7 +1,7 @@
-import { HudSystemContract, HudStateSnapshot } from './hud/hud-contracts.ts';
-import { RampageFeedbackContract } from './feedback/rampage-feedback-contracts.ts';
-import { DistrictTransitionContract } from './transitions/district-transition-contracts.ts';
-import { ResultsSystemContract } from './results/results-contracts.ts';
+import type { HudSystemContract } from './hud/hud-contracts.ts';
+import type { RampageFeedbackContract } from './feedback/rampage-feedback-contracts.ts';
+import type { DistrictTransitionContract } from './transitions/district-transition-contracts.ts';
+import type { ResultsSystemContract } from './results/results-contracts.ts';
 
 export interface UISubsystemContract {
   hud: HudSystemContract;

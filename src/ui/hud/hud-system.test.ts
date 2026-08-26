@@ -33,7 +33,7 @@ test('RampageFeedbackSystem: records score popups and milestones', () => {
   const feedback = new RampageFeedbackSystem();
   feedback.addScorePopup(10, 5, 20, '+150', '#fbbf24');
   assert.equal(feedback.getActivePopups().length, 1);
-  assert.equal(feedback.getActivePopups()[0].amount, 150);
+  assert.equal(feedback.getActivePopups()[0]?.amount, 150);
 
   feedback.triggerMilestone(3, 'UNSTOPPABLE!', '3x Multiplier Active');
   assert.equal(feedback.getCurrentTier(), 3);

@@ -1,8 +1,7 @@
 import type {
   HudStateSnapshot,
   HudSystemContract,
-  HudObjectiveProgress,
-  HudAbilityBadgeState
+  HudObjectiveProgress
 } from './hud-contracts.ts';
 
 const EF_COLORS: Record<string, string> = {
@@ -29,7 +28,7 @@ export class HudSystem implements HudSystemContract {
         comboMultiplier: 1.0,
         comboDecayProgress: 0.0,
         efRating: 'EF-0',
-        efColor: EF_COLORS['EF-0']
+        efColor: EF_COLORS['EF-0'] ?? '#22c55e'
       },
       abilities: [
         { slot: 0, name: 'Pull', key: 'SPACE', ready: true, cooldownRemainingSeconds: 0, cooldownTotalSeconds: 4 },
@@ -56,13 +55,13 @@ export class HudSystem implements HudSystemContract {
   }
 
   public updateScore(score: number, combo: number, decayProgress: number, efRating: string): void {
-    const validEf = (efRating in EF_COLORS) ? (efRating as any) : 'EF-0';
+    const validEf = (efRating in EF_COLORS) ? efRating : 'EF-0';
     this.snapshot.score = {
       score: Math.max(0, Math.floor(score)),
       comboMultiplier: Math.max(1.0, Number(combo.toFixed(2))),
       comboDecayProgress: Math.max(0, Math.min(1, decayProgress)),
       efRating: validEf,
-      efColor: EF_COLORS[validEf]
+      efColor: EF_COLORS[validEf] ?? '#22c55e'
     };
   }
 
