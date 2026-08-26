@@ -125,6 +125,7 @@ export class TornadoPhysicsSystem implements TornadoPhysicsContract {
 
     for (let i = this.debrisParticles.length - 1; i >= 0; i--) {
       const p = this.debrisParticles[i];
+      if (!p) continue;
       p.lifeRemainingSeconds -= dt;
 
       if (p.lifeRemainingSeconds <= 0) {

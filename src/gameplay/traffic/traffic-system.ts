@@ -32,8 +32,9 @@ export class TrafficSystem implements TrafficSystemContract {
 
     for (let i = 0; i < count; i++) {
       const wp = waypoints[i % waypoints.length];
-      const model = models[i % models.length];
-      const color = VEHICLE_COLORS[i % VEHICLE_COLORS.length];
+      const model = models[i % models.length] ?? 'town-car';
+      const color = VEHICLE_COLORS[i % VEHICLE_COLORS.length] ?? '#3b82f6';
+      if (!wp) continue;
       const offset = (i * 24) % 460;
       const x = wp.x + wp.dx * offset;
       const z = wp.z + wp.dz * offset;
@@ -60,6 +61,7 @@ export class TrafficSystem implements TrafficSystemContract {
     for (let i = 0; i < this.vehicles.length; i++) {
       const v = this.vehicles[i];
       const wp = this.waypoints[i % this.waypoints.length];
+      if (!v || !wp) continue;
 
       // Check distance to storm for panic flee reaction
       if (typeof stormX === 'number' && typeof stormZ === 'number') {

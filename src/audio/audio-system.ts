@@ -42,7 +42,7 @@ export class AudioSystem implements AudioSystemContract {
     return true;
   }
 
-  public playCue(cueId: string, gainMultiplier = 1.0, playbackRate = 1.0): string | null {
+  public playCue(cueId: string, _gainMultiplier = 1.0, _playbackRate = 1.0): string | null {
     if (!this.ready || this.mix.isMuted) return null;
     const cue = this.cues.get(cueId);
     if (!cue) return null;
@@ -50,7 +50,7 @@ export class AudioSystem implements AudioSystemContract {
     return `voice-${cueId}-${Date.now()}`;
   }
 
-  public stopCue(voiceId: string): void {
+  public stopCue(_voiceId: string): void {
     if (this.activeVoiceCount > 0) this.activeVoiceCount -= 1;
   }
 

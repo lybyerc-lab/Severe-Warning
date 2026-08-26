@@ -38,7 +38,7 @@ assert(html.includes('getNewspaperPresentationQaState'), 'HTML exposes getNewspa
 assert(html.includes('getOpeningCinematicQaState'), 'HTML exposes getOpeningCinematicQaState()');
 assert(html.includes('__SW_CINEMATIC_QA__'), 'HTML exposes __SW_CINEMATIC_QA__');
 assert(html.includes('MooBrewOpeningCinematicGroup'), 'HTML contains MooBrewOpeningCinematicGroup');
-assert(html.includes('CinematicCow17'), 'HTML contains CinematicCow17');
+assert(html.includes('buildArticulatedBipedalCow17'), 'HTML contains buildArticulatedBipedalCow17');
 
 console.log(`\nNewspaper & Opening Cinematic verification: ${passedChecks}/${totalChecks} checks passed.`);
 if (passedChecks !== totalChecks) {
