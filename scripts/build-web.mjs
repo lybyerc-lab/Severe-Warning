@@ -129,6 +129,7 @@ html = html.replace(
   GLTF_LOADER_MARKER,
   `<script>\n/* [SW:SOURCE:three-gltfloader-r128.js] vendored from three@0.128.0 examples/js */\n${gltfLoaderSource}\n</script>`,
 );
+html = html.replace(/<script src="\.\.\/vendor\/three-gltfloader-r128\.js"><\/script>\s*/g, '');
 
 const modernScriptTag = '<script type="module" src="./modern/modern-shell.js"></script>';
 if (html.includes(modernScriptTag)) {

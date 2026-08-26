@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<title>Severe Weather 3D Lab v5.1.0 - Three.js Production Slice</title>
+<title>Severe Weather Warning v5.1.0 - Three.js Production Slice</title>
 <link rel="icon" href="data:,">
 <script>
 /* INLINED THREE.JS R128 */
@@ -21,6 +21,7 @@
 </script>
 
 <!-- [SW:BUILD:GLTF_LOADER] -->
+<script src="../vendor/three-gltfloader-r128.js"></script>
 <!-- vendor/three-gltfloader-r128.js is inlined here at build time, the same way
      the economy prelude is. It must sit after three (it extends THREE.Loader and
      assigns THREE.GLTFLoader) and before the gameplay script that consumes it.
@@ -517,13 +518,13 @@
 </style>
 </head>
 <body>
-<div id="productionSliceBadge">THREE.JS PRODUCTION SLICE · BALANCED</div>
+<div id="productionSliceBadge">SEVERE WEATHER WARNING · 3D PRODUCTION</div>
 
 <!-- MAIN TITLE MENU OVERLAY -->
 <div id="mainMenu">
   <div class="menu-card">
-    <h1 class="menu-title">🌪️ SEVERE WEATHER 3D</h1>
-    <div class="menu-sub">ARCADE DISASTER SIMULATOR v5.1.0 PRODUCTION SLICE</div>
+    <h1 class="menu-title">🌪️ SEVERE WEATHER WARNING</h1>
+    <div class="menu-sub">ARCADE DISASTER SIMULATOR v5.1.0</div>
 
     <section class="campaign-map" aria-label="Heartland campaign map">
       <div class="campaign-map-head"><strong>LIVE WEATHER MAP: HEARTLAND TOUR</strong><span id="campaignStarTotal">0/12 STARS</span></div>
@@ -646,7 +647,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">🚨 NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">3D LAB v5.1.0 PRODUCTION SLICE</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">SEVERE WEATHER WARNING v5.1.0</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -654,7 +655,7 @@
   <div class="header">
     <div class="panel title-card" id="titleCardPanel">
       <h1>
-        <span><span id="stormIconHead">🌪️</span> SEVERE WEATHER 3D <span class="ef-badge" id="efBadge">EF-0</span></span>
+        <span><span id="stormIconHead">🌪️</span> SEVERE WEATHER WARNING <span class="ef-badge" id="efBadge">EF-0</span></span>
         <button class="collapse-btn" onclick="togglePauseMenu()" style="margin-right: 4px;">⏸️</button>
         <button class="collapse-btn" onclick="toggleTitleCard()">[ ─ ]</button>
       </h1>
@@ -3668,7 +3669,7 @@ function preferredAnisotropy() {
 // A county holds many copies of the same house or vehicle; parsing the same
 // buffer for each would be wasteful, and sharing one THREE.Group between
 // instances would make them share a transform.
-const ACTOR_MODEL_PATH = '../assets/models/';
+const ACTOR_MODEL_PATH = (typeof window !== 'undefined' && window.location.pathname.includes('/MechanicsLab/')) ? '../assets/models/' : './assets/models/';
 const actorModelCache = new Map();
 
 // Exposed for the QA visual panel and the headless harness: which models were
