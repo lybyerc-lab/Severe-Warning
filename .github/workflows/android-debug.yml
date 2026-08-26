@@ -8,18 +8,6 @@ on:
         required: true
         default: qa
         type: string
-  push:
-    branches:
-      - qa
-    paths:
-      - '.github/workflows/android-debug.yml'
-      - 'MechanicsLab/**'
-      - 'android/**'
-      - 'assets/**'
-      - 'scripts/**'
-      - 'capacitor.config.json'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
   pull_request:
     branches:
       - qa

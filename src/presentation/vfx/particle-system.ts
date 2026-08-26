@@ -108,6 +108,7 @@ export class ParticleSystem implements ParticleSystemContract {
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
+      if (!p) continue;
       p.life -= dt;
       if (p.life <= 0) {
         this.particles.splice(i, 1);

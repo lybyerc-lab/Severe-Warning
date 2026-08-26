@@ -3,9 +3,9 @@
 // The only modern module allowed to know legacy global names.
 // ============================================================================
 
-import type { AbilitySystem } from '../abilities/ability-system';
-import type { GameClocks, LegacyClockSample } from '../core/clocks';
-import type { InputSystem } from '../input/input-system';
+import type { AbilitySystem, AbilitySnapshot } from '../abilities/ability-system';
+import type { GameClocks, LegacyClockSample, LegacyClockSampleInput, ClockSnapshot } from '../core/clocks';
+import type { InputSystem, MovementVector, InputSnapshot } from '../input/input-system';
 import type { ScoringSystem } from '../gameplay/scoring/scoring-system';
 import type { DistrictSystem } from '../gameplay/districts/district-system';
 import type { CampaignSystem } from '../gameplay/campaign/campaign-system';

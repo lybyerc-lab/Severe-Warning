@@ -37,7 +37,7 @@ test('TrafficSystem: accelerates vehicles when vortex is within panic radius', (
   // Storm moves directly next to the vehicle at (0, 0)
   traffic.update(0.1, 10, 10);
   assert.equal(traffic.getSnapshot().fleeingCount, 1);
-  assert.equal(traffic.getSnapshot().vehicles[0].isFleeing, true);
+  assert.equal(traffic.getSnapshot().vehicles[0]?.isFleeing, true);
 });
 
 test('AudioSystem: handles sound cue triggers and volume mix', () => {
