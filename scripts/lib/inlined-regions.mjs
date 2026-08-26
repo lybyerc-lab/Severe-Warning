@@ -44,6 +44,8 @@ export const MODERNIZATION_BRIDGE_REGIONS = Object.freeze([
   'modernization-phase7-audio-traffic.js',
   'modernization-phase8-engine.js',
   'sw-rpg-001-moolah-storm-triangle.js',
+  'sw-ui-001-newspaper.js',
+  'sw-cinematic-003-moo-brew.js',
 ]);
 
 const MARKER = name => `// [SW:SOURCE:${name}]`;

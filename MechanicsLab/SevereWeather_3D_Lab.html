@@ -12431,6 +12431,312 @@ globalThis.__SW_RPG_001_QA__ = {
   }
 };
 // [SW:GAME:RPG_V1:END]
+
+// [SW:SOURCE:sw-ui-001-newspaper.js]
+// ============================================================================
+// [SW:UI:NEWSPAPER_PRESENTATION_V1]
+// Broadsheet Newspaper presentation for Main Menu and Evening Edition Results.
+// ============================================================================
+const SW_UI_001_NEWSPAPER_MARKER = 'SW_UI_001_NEWSPAPER_PRESENTATION_V1';
+
+function installNewspaperStyles() {
+  if (document.getElementById('swNewspaperStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'swNewspaperStyles';
+  style.textContent = `
+    .newspaper-masthead { font-family: 'Georgia', serif; text-align: center; color: #1e293b; border-bottom: 2px solid #334155; margin-bottom: 8px; padding-bottom: 4px; }
+    .newspaper-subhead { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
+    .newspaper-kicker { font-family: 'Georgia', serif; font-size: 14px; font-weight: 900; color: #dc2626; margin: 4px 0; }
+    .newspaper-lead { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; color: #334155; margin: 6px 0; }
+    .newspaper-results-masthead { font-family: 'Georgia', serif; font-size: 18px; font-weight: 900; text-align: center; color: #0f172a; border-bottom: 2px double #334155; padding-bottom: 4px; margin-bottom: 6px; }
+    .newspaper-results-headline { font-family: 'Georgia', serif; font-size: 16px; font-weight: 900; color: #b91c1c; text-align: center; margin: 6px 0; }
+    .newspaper-results-copy { font-family: 'Georgia', serif; font-size: 12px; color: #334155; line-height: 1.4; margin: 6px 0; }
+    .newspaper-stat-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: rgba(0,0,0,0.04); padding: 6px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #1e293b; text-align: center; }
+    .newspaper-stat-columns b { display: block; font-size: 13px; color: #0f172a; }
+  `;
+  document.head.appendChild(style);
+}
+
+function decorateNewspaperMenu() {
+  installNewspaperStyles();
+  const card = document.querySelector('#mainMenu .menu-card') || document.getElementById('mainMenu');
+  if (!card) return false;
+  if (!document.getElementById('newspaperLead')) {
+    const lead = document.createElement('div');
+    lead.id = 'newspaperLead';
+    lead.className = 'newspaper-lead';
+    lead.innerHTML = '<b>LEAD FORECAST:</b> Select a storm file. The county has prepared an official weather bulletin.';
+    const grid = card.querySelector('.storm-select-grid') || card.querySelector('.menu-buttons');
+    if (grid) grid.insertAdjacentElement('beforebegin', lead);
+  }
+  const startBtn = document.getElementById('btnStartMenu');
+  if (startBtn && !startBtn.dataset.newspaperStyled) {
+    startBtn.dataset.newspaperStyled = 'true';
+    startBtn.innerHTML = '<small style="display:block;font-size:10px;letter-spacing:0.05em;color:#fde047;">EXTRA! EXTRA! ISSUE THE WARNING!</small>UNLEASH STORM';
+  }
+  return true;
+}
+
+function decorateNewspaperResults() {
+  installNewspaperStyles();
+  const overlay = document.getElementById('resultsOverlay');
+  const card = overlay?.querySelector('.results-card');
+  if (!overlay || !card) return false;
+  if (!document.getElementById('newspaperResultsMasthead')) {
+    const masthead = document.createElement('div');
+    masthead.id = 'newspaperResultsMasthead';
+    masthead.className = 'newspaper-results-masthead';
+    masthead.textContent = 'SEVERE WEATHER WARNING · EVENING DISPATCH';
+    card.insertBefore(masthead, card.firstChild);
+  }
+  if (!document.getElementById('newspaperStoryDeck')) {
+    const deck = document.createElement('section');
+    deck.id = 'newspaperStoryDeck';
+    deck.innerHTML = `
+      <div id="newspaperStoryHeadline" class="newspaper-results-headline">WEATHER DESK REPORTING</div>
+      <p id="newspaperStoryCopy" class="newspaper-results-copy">The final destruction numbers will be printed here.</p>
+      <div class="newspaper-stat-columns">
+        <div>DESTRUCTION DESK<b id="newspaperDestructionStat">0</b></div>
+        <div>GRID DESK<b id="newspaperGridStat">0</b></div>
+        <div>FIELD NOTES<b id="newspaperFieldStat">0</b></div>
+        <div>RATING<b id="newspaperRatingStat">EF-0</b></div>
+      </div>
+    `;
+    const stats = card.querySelector('.results-stats');
+    if (stats) stats.insertAdjacentElement('beforebegin', deck);
+    else card.appendChild(deck);
+  }
+  return true;
+}
+
+function refreshNewspaperResults() {
+  decorateNewspaperResults();
+  const title = document.getElementById('resStormTitle')?.textContent || 'WEATHER WARNING RUN';
+  const grade = document.getElementById('resGrade')?.textContent || 'PENDING';
+  const score = document.getElementById('resScore')?.textContent || '0';
+  const headlineEl = document.getElementById('newspaperStoryHeadline');
+  const copyEl = document.getElementById('newspaperStoryCopy');
+  
+  if (headlineEl) {
+    let headline = 'WEATHER DESK REPORTS A VERY EVENTFUL AFTERNOON';
+    if (/MOO|FAIR/i.test(title)) {
+      headline = grade === 'S+' || grade === 'UDDER CHAOS'
+        ? 'FAIR BOARD DECLARES TOTAL UDDER CHAOS'
+        : 'COUNTY FAIR FILES BOVINE EMERGENCY UPDATE';
+    } else if (grade === 'S+') {
+      headline = 'LOCAL STORM EARNS FRONT-PAGE DISRUPTION';
+    } else if (Number(String(score).replace(/[^0-9.-]/g, '')) >= 4500) {
+      headline = 'COUNTY REASSESSING STRUCTURAL EXPECTATIONS';
+    }
+    headlineEl.textContent = headline;
+  }
+  
+  if (copyEl) {
+    copyEl.textContent = `${title} closes at ${score} points. The score desk printed the official run record without editorial adjustment.`;
+  }
+  
+  const destEl = document.getElementById('newspaperDestructionStat');
+  if (destEl) destEl.textContent = document.getElementById('resBlocks')?.textContent || '0';
+  const gridEl = document.getElementById('newspaperGridStat');
+  if (gridEl) gridEl.textContent = document.getElementById('resSubstations')?.textContent || '0';
+  const fieldEl = document.getElementById('newspaperFieldStat');
+  if (fieldEl) fieldEl.textContent = document.getElementById('resMediaMoments')?.textContent || '0';
+  const rateEl = document.getElementById('newspaperRatingStat');
+  if (rateEl) rateEl.textContent = document.getElementById('resEfRating')?.textContent || 'EF-0';
+}
+
+setTimeout(() => {
+  decorateNewspaperMenu();
+  decorateNewspaperResults();
+}, 200);
+
+globalThis.getNewspaperPresentationQaState = function getNewspaperPresentationQaState() {
+  return Object.freeze({
+    marker: SW_UI_001_NEWSPAPER_MARKER,
+    morningActive: Boolean(document.getElementById('newspaperLead')),
+    eveningActive: Boolean(document.getElementById('newspaperResultsMasthead')),
+    headline: document.getElementById('newspaperStoryHeadline')?.textContent || null
+  });
+};
+// [SW:UI:NEWSPAPER_PRESENTATION_V1:END]
+
+// [SW:SOURCE:sw-cinematic-003-moo-brew.js]
+// ============================================================================
+// [SW:CINEMATIC:PLAYABLE_OPENING_V1]
+// Moo Brew Touchdown opening cutscene controller with seamless camera spline.
+// ============================================================================
+const SW_CIN_003_MARKER = 'SW_CIN_003_PLAYABLE_OPENING_V1';
+const SW_CINEMATIC_DURATION = 12.4;
+
+let openingCinematicState = {
+  active: false,
+  elapsed: 0,
+  completed: false,
+  cinematicGroup: null
+};
+
+function startOpeningCinematic() {
+  if (openingCinematicState.active) return;
+  openingCinematicState.active = true;
+  openingCinematicState.elapsed = 0;
+  openingCinematicState.completed = false;
+  
+  // Create cinematic actor staging group at Hart Farm apron
+  const group = new THREE.Group();
+  group.name = 'MooBrewOpeningCinematicGroup';
+  
+  // 3-post fence
+  const fenceMat = new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.85 });
+  [-2.2, 0, 2.2].forEach(fx => {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.6, 0.35), fenceMat);
+    post.position.set(fx, 1.3, 0);
+    group.add(post);
+  });
+  const rail1 = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.22, 0.15), fenceMat);
+  rail1.position.set(0, 1.1, 0);
+  group.add(rail1);
+  const rail2 = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.22, 0.15), fenceMat);
+  rail2.position.set(0, 2.1, 0);
+  group.add(rail2);
+  
+  // Cow 17 leaning at the fence with Moo Brew cup
+  const cowRig = new THREE.Group();
+  cowRig.name = 'CinematicCow17';
+  const cowMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9 });
+  const patchMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.9 });
+  const coffeeCupMat = new THREE.MeshStandardMaterial({ color: '#b45309', roughness: 0.4 });
+  
+  // Cow Body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.0, 1.8), cowMat);
+  body.position.set(0, 2.2, -1.0);
+  cowRig.add(body);
+  const patch = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.2), patchMat);
+  patch.position.set(0.4, 2.4, -0.05);
+  cowRig.add(patch);
+  
+  // Head & Tag 17
+  const head = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), cowMat);
+  head.position.set(0, 3.4, -0.4);
+  cowRig.add(head);
+  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.08), new THREE.MeshBasicMaterial({ color: '#fbbf24' }));
+  tag.position.set(-0.75, 3.6, -0.4);
+  cowRig.add(tag);
+  
+  // Moo Brew Cup
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.6, 12), coffeeCupMat);
+  cup.position.set(0.6, 2.4, 0.2);
+  cowRig.add(cup);
+  
+  cowRig.position.set(0, 0, 0);
+  group.add(cowRig);
+  
+  // 2 Chickens pecking ground
+  const chickenMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.8 });
+  [-1.5, 1.5].forEach((cx, idx) => {
+    const chicken = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.7, 6), chickenMat);
+    chicken.position.set(cx, 0.35, 1.2 + idx * 0.4);
+    chicken.rotation.x = 0.4;
+    group.add(chicken);
+  });
+  
+  group.position.set(15, terrainHeightAt(15, 15), 15);
+  scene.add(group);
+  openingCinematicState.cinematicGroup = group;
+  
+  // Hide in-game HUD during cinematic
+  const hud = document.getElementById('hud');
+  if (hud) hud.style.opacity = '0';
+}
+
+function updateOpeningCinematic(dt) {
+  if (!openingCinematicState.active || openingCinematicState.completed) return;
+  openingCinematicState.elapsed += dt;
+  const time = openingCinematicState.elapsed;
+  
+  if (time < 5.9) {
+    if (camera) {
+      camera.position.set(27.4, terrainHeightAt(15, 15) + 8.1, 32.6);
+      camera.lookAt(15.2, terrainHeightAt(15, 15) + 3.3, 15.2);
+    }
+  } else if (time < 8.15) {
+    const t = (time - 5.9) / (8.15 - 5.9);
+    if (camera) {
+      camera.position.set(
+        27.4 + (25.8 - 27.4) * t,
+        terrainHeightAt(15, 15) + 8.1 + (7.3 - 8.1) * t,
+        32.6 + (30.2 - 32.6) * t
+      );
+      camera.lookAt(15.2 + (0.15 - 0.2) * t, terrainHeightAt(15, 15) + 3.3 + (4.1 - 3.3) * t, 15.2);
+    }
+  } else if (time < 10.15) {
+    const t = (time - 8.15) / (10.15 - 8.15);
+    if (camera) {
+      camera.position.set(
+        25.8 + (22.1 - 25.8) * t,
+        terrainHeightAt(15, 15) + 7.3 + (6.0 - 7.3) * t,
+        30.2 + (26.5 - 30.2) * t
+      );
+      camera.lookAt(15.15 + 0.7 * t, terrainHeightAt(15, 15) + 4.1 + 0.35 * t, 15.2);
+    }
+  } else if (time < SW_CINEMATIC_DURATION) {
+    // Seamless 1.5s cubic blend into Player Follow Camera
+    const t = (time - 10.15) / (SW_CINEMATIC_DURATION - 10.15);
+    const easeT = t * t * (3 - 2 * t);
+    if (camera) {
+      camera.position.set(
+        22.1 + (storm.pos.x - 22.1) * easeT,
+        terrainHeightAt(15, 15) + 6.0 + (35 - 6.0) * easeT,
+        26.5 + (storm.pos.z + 45 - 26.5) * easeT
+      );
+      camera.lookAt(storm.pos.x, 0, storm.pos.z);
+    }
+  } else {
+    finishOpeningCinematic();
+  }
+}
+
+function skipOpeningCinematic() {
+  if (!openingCinematicState.active && openingCinematicState.completed) return;
+  finishOpeningCinematic();
+}
+
+function finishOpeningCinematic() {
+  openingCinematicState.active = false;
+  openingCinematicState.completed = true;
+  if (openingCinematicState.cinematicGroup) {
+    scene.remove(openingCinematicState.cinematicGroup);
+    openingCinematicState.cinematicGroup = null;
+  }
+  const hud = document.getElementById('hud');
+  if (hud) hud.style.opacity = '1';
+}
+
+window.addEventListener('keydown', (e) => {
+  if (openingCinematicState.active && (e.code === 'Space' || e.code === 'Escape')) {
+    skipOpeningCinematic();
+  }
+});
+window.addEventListener('pointerdown', () => {
+  if (openingCinematicState.active && openingCinematicState.elapsed > 0.5) {
+    skipOpeningCinematic();
+  }
+});
+
+globalThis.getOpeningCinematicQaState = function getOpeningCinematicQaState() {
+  return Object.freeze({
+    marker: SW_CIN_003_MARKER,
+    active: openingCinematicState.active,
+    elapsed: Number(openingCinematicState.elapsed.toFixed(2)),
+    completed: openingCinematicState.completed
+  });
+};
+
+globalThis.__SW_CINEMATIC_QA__ = {
+  start() { startOpeningCinematic(); },
+  update(dt) { updateOpeningCinematic(dt); },
+  skip() { skipOpeningCinematic(); }
+};
+// [SW:CINEMATIC:PLAYABLE_OPENING_V1:END]
 </script>
 </body>
 </html>

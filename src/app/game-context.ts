@@ -23,6 +23,9 @@ import type { TrafficSystem } from '../gameplay/traffic/traffic-system';
 import type { TornadoPhysicsSystem } from '../gameplay/physics/tornado-physics-system';
 import type { ParticleSystem } from '../presentation/vfx/particle-system';
 import type { GameLoopController } from '../gameplay/loop/game-loop-controller';
+import type { MoolahSystem } from '../gameplay/economy/moolah-system';
+import type { MooBrewOpeningCinematic } from '../presentation/cinematics/moo-brew-opening-cinematic';
+import type { NewspaperPresentationSystem } from '../ui/newspaper/newspaper-presentation-system';
 import type { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 
 export interface BuildIdentity {
@@ -57,6 +60,9 @@ export interface GameContext {
   readonly physics: TornadoPhysicsSystem;
   readonly vfx: ParticleSystem;
   readonly loop: GameLoopController;
+  readonly moolah: MoolahSystem;
+  readonly cinematic: MooBrewOpeningCinematic;
+  readonly newspaper: NewspaperPresentationSystem;
   readonly legacy: LegacyRuntimeAdapter;
   readonly document: Document;
   readonly window: Window;
@@ -85,6 +91,9 @@ export function createGameContext(
   physics: TornadoPhysicsSystem,
   vfx: ParticleSystem,
   loop: GameLoopController,
+  moolah: MoolahSystem,
+  cinematic: MooBrewOpeningCinematic,
+  newspaper: NewspaperPresentationSystem,
   version: string,
   label: string,
 ): GameContext {
@@ -118,6 +127,9 @@ export function createGameContext(
     physics,
     vfx,
     loop,
+    moolah,
+    cinematic,
+    newspaper,
     legacy,
     document,
     window,

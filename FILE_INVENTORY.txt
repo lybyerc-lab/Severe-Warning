@@ -325,6 +325,7 @@ scripts/verify-modernization-phase6-ui.mjs
 scripts/verify-modernization-phase7-audio-traffic.mjs
 scripts/verify-modernization-phase8-engine.mjs
 scripts/verify-moolah-economy.mjs
+scripts/verify-newspaper-opening.mjs
 scripts/verify-qa-package.mjs
 scripts/verify-v500-campaign.mjs
 scripts/verify-v510-production-slice.mjs
@@ -369,6 +370,9 @@ src/presentation/atmosphere/atmosphere-contracts.ts
 src/presentation/atmosphere/atmosphere-system.ts
 src/presentation/camera/camera-contracts.ts
 src/presentation/camera/camera-system.ts
+src/presentation/cinematics/moo-brew-opening-cinematic.ts
+src/presentation/cinematics/opening-cinematic-contracts.ts
+src/presentation/cinematics/opening-cinematic.test.ts
 src/presentation/renderer/renderer-contracts.ts
 src/presentation/renderer/renderer-system.ts
 src/presentation/scene/scene-contracts.ts
@@ -383,6 +387,9 @@ src/ui/feedback/rampage-feedback-system.ts
 src/ui/hud/hud-contracts.ts
 src/ui/hud/hud-system.test.ts
 src/ui/hud/hud-system.ts
+src/ui/newspaper/newspaper-contracts.ts
+src/ui/newspaper/newspaper-presentation-system.ts
+src/ui/newspaper/newspaper-presentation.test.ts
 src/ui/results/results-contracts.ts
 src/ui/results/results-system.ts
 src/ui/transitions/district-transition-contracts.ts

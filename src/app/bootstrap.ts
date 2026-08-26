@@ -27,6 +27,9 @@ import { TrafficSystem } from '../gameplay/traffic/traffic-system';
 import { TornadoPhysicsSystem } from '../gameplay/physics/tornado-physics-system';
 import { ParticleSystem } from '../presentation/vfx/particle-system';
 import { GameLoopController } from '../gameplay/loop/game-loop-controller';
+import { MoolahSystem } from '../gameplay/economy/moolah-system';
+import { MooBrewOpeningCinematic } from '../presentation/cinematics/moo-brew-opening-cinematic';
+import { NewspaperPresentationSystem } from '../ui/newspaper/newspaper-presentation-system';
 import { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 import { GameApp } from './game-app';
 import { createGameContext } from './game-context';
@@ -57,6 +60,9 @@ export interface SevereWeatherModernShell {
   readonly physics: TornadoPhysicsSystem;
   readonly vfx: ParticleSystem;
   readonly loop: GameLoopController;
+  readonly moolah: MoolahSystem;
+  readonly cinematic: MooBrewOpeningCinematic;
+  readonly newspaper: NewspaperPresentationSystem;
   readonly qa: LegacyRuntimeAdapter;
   readonly architecture: 'modern-shell-v1';
   readonly modernizationPhase: 'phase-5-rendering-world';
@@ -85,6 +91,9 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
   const physics = new TornadoPhysicsSystem();
   const vfx = new ParticleSystem();
   const loop = new GameLoopController();
+  const moolah = new MoolahSystem();
+  const cinematic = new MooBrewOpeningCinematic();
+  const newspaper = new NewspaperPresentationSystem();
 
   const context = createGameContext(
     legacy,
@@ -109,6 +118,9 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
     physics,
     vfx,
     loop,
+    moolah,
+    cinematic,
+    newspaper,
     __SW_BUILD_VERSION__,
     __SW_BUILD_LABEL__,
   );
@@ -139,6 +151,9 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
     physics,
     vfx,
     loop,
+    moolah,
+    cinematic,
+    newspaper,
     qa: legacy,
     architecture: 'modern-shell-v1',
     modernizationPhase: 'phase-5-rendering-world',
