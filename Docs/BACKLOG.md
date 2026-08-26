@@ -27,7 +27,10 @@ All current batch requests completed. Open for next director requests.
 
 ## Next up — Code & Modernization
 
-1. **Reviving Parked MOO-LAH Economy & Storm Upgrades.** Port the persistent storm currency, upgrade shop, and cosmetic funnel skins into modern shell.
+All three top priority modernization tasks have successfully landed:
+1. Source HTML File Renaming to `SevereWeather_Warning.html`
+2. County Fair & Industrial Landmark Animations
+3. Parked MOO-LAH Economy, Storm Triangle Upgrades & Cosmetic Funnel Skins
 
 ## Decisions open
 
@@ -36,6 +39,13 @@ Nothing blocking. The board is clear.
 ---
 
 ## Landed
+
+- Revived MOO-LAH Economy, Storm Upgrades & Cosmetic Funnel Skins:
+  - Revived persistent storm currency (MOO-LAH) and Storm Triangle ability upgrades (`pull`, `gust`, `gridZap`) with local-first persistent storage.
+  - Added cosmetic funnel skins registry (`default-classic`, `midnight-neon`, `crimson-fury`, `golden-harvest`, `emerald-tempest`).
+  - Added skin purchasing and equipping with balance validation and unit testing under `src/gameplay/economy/` (`moolah-system.ts`, `moolah-system.test.ts`).
+  - Inlined `[SW:SOURCE:sw-rpg-001-moolah-storm-triangle.js]` in `MechanicsLab/SevereWeather_Warning.html` with marker `SW_RPG_001_MOOLAH_STORM_TRIANGLE_V1`.
+  - Added automated verification `scripts/verify-moolah-economy.mjs` (8/8 checks pass).
 
 - County Fair & Industrial Landmark Animations:
   - Added continuous Ferris wheel mechanical rotation (`speed: 0.22`) with counter-rotating gondolas and festive lighting in District 3.

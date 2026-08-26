@@ -1,5 +1,7 @@
 import type {
   MoolahUpgradeDefinition,
+  MoolahSkinDefinition,
+  StormFunnelSkinKey,
   MoolahStoreState,
   MoolahRewardCalculationInput,
   MoolahSystemContract
@@ -34,13 +36,61 @@ export const MOOLAH_UPGRADES: Record<'pull' | 'gust' | 'gridZap', MoolahUpgradeD
   }
 });
 
+export const MOOLAH_SKINS: Record<StormFunnelSkinKey, MoolahSkinDefinition> = Object.freeze({
+  'default-classic': {
+    key: 'default-classic',
+    label: 'CLASSIC DUST DEVIL',
+    cost: 0,
+    coreColor: '#334155',
+    accentColor: '#64748b',
+    suctionGlow: '#94a3b8'
+  },
+  'midnight-neon': {
+    key: 'midnight-neon',
+    label: 'MIDNIGHT NEON',
+    cost: 250,
+    coreColor: '#1e1b4b',
+    accentColor: '#38bdf8',
+    suctionGlow: '#818cf8'
+  },
+  'crimson-fury': {
+    key: 'crimson-fury',
+    label: 'CRIMSON FURY',
+    cost: 350,
+    coreColor: '#450a0a',
+    accentColor: '#ef4444',
+    suctionGlow: '#f87171'
+  },
+  'golden-harvest': {
+    key: 'golden-harvest',
+    label: 'GOLDEN HARVEST',
+    cost: 300,
+    coreColor: '#451a03',
+    accentColor: '#f59e0b',
+    suctionGlow: '#fbbf24'
+  },
+  'emerald-tempest': {
+    key: 'emerald-tempest',
+    label: 'EMERALD TEMPEST',
+    cost: 400,
+    coreColor: '#022c22',
+    accentColor: '#10b981',
+    suctionGlow: '#34d399'
+  }
+});
+
 export class MoolahSystem implements MoolahSystemContract {
   private state: MoolahStoreState;
 
   constructor(initialState?: Partial<MoolahStoreState>) {
     this.state = this.createDefaultState();
     if (initialState) {
-      this.state = { ...this.state, ...initialState };
+      this.state = {
+        ...this.state,
+        ...initialState,
+        unlockedSkins: initialState.unlockedSkins || ['default-classic'],
+        activeSkin: initialState.activeSkin || 'default-classic'
+      };
     }
   }
 
@@ -51,6 +101,8 @@ export class MoolahSystem implements MoolahSystemContract {
       earned: 0,
       spent: 0,
       upgrades: {},
+      activeSkin: 'default-classic',
+      unlockedSkins: ['default-classic'],
       stormTriangle: {
         version: 'sw-storm-triangle-v1',
         slots: ['pull', 'gust', 'gridZap']
@@ -86,6 +138,42 @@ export class MoolahSystem implements MoolahSystemContract {
     return {
       purchased: true,
       balance: this.state.moolah
+    };
+  }
+
+  public getActiveSkin(): StormFunnelSkinKey {
+    return this.state.activeSkin;
+  }
+
+  public hasSkin(skinKey: StormFunnelSkinKey): boolean {
+    return this.state.unlockedSkins.includes(skinKey);
+  }
+
+  public purchaseSkin(skinKey: StormFunnelSkinKey): { purchased: boolean; balance: number; reason?: string } {
+    const skin = MOOLAH_SKINS[skinKey];
+    if (!skin) return { purchased: false, balance: this.state.moolah, reason: 'unknown-skin' };
+    if (this.hasSkin(skinKey)) return { purchased: false, balance: this.state.moolah, reason: 'already-owned' };
+    if (this.state.moolah < skin.cost) return { purchased: false, balance: this.state.moolah, reason: 'insufficient-moolah' };
+
+    this.state.moolah -= skin.cost;
+    this.state.spent += skin.cost;
+    this.state.unlockedSkins.push(skinKey);
+    this.state.activeSkin = skinKey;
+
+    return {
+      purchased: true,
+      balance: this.state.moolah
+    };
+  }
+
+  public equipSkin(skinKey: StormFunnelSkinKey): { equipped: boolean; activeSkin: StormFunnelSkinKey; reason?: string } {
+    if (!this.hasSkin(skinKey)) {
+      return { equipped: false, activeSkin: this.state.activeSkin, reason: 'skin-locked' };
+    }
+    this.state.activeSkin = skinKey;
+    return {
+      equipped: true,
+      activeSkin: this.state.activeSkin
     };
   }
 

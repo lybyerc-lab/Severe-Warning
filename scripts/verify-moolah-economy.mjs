@@ -34,6 +34,9 @@ assert(html.includes('sw-storm-triangle-v1'), 'HTML contains sw-storm-triangle-v
 assert(html.includes('getSwRpgQaState'), 'HTML exposes getSwRpgQaState()');
 assert(html.includes('getSwRpgBuildMetadata'), 'HTML exposes getSwRpgBuildMetadata()');
 assert(html.includes('__SW_RPG_001_QA__'), 'HTML exposes __SW_RPG_001_QA__');
+assert(html.includes('SW_RPG_SKINS'), 'HTML defines SW_RPG_SKINS registry');
+assert(html.includes('purchaseSwRpgSkin'), 'HTML defines purchaseSwRpgSkin()');
+assert(html.includes('equipSwRpgSkin'), 'HTML defines equipSwRpgSkin()');
 
 console.log(`\nMOO-LAH Economy verification: ${passedChecks}/${totalChecks} checks passed.`);
 if (passedChecks !== totalChecks) {

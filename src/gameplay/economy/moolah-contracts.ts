@@ -12,12 +12,25 @@ export interface MoolahUpgradeDefinition {
   unit: string;
 }
 
+export type StormFunnelSkinKey = 'default-classic' | 'midnight-neon' | 'crimson-fury' | 'golden-harvest' | 'emerald-tempest';
+
+export interface MoolahSkinDefinition {
+  key: StormFunnelSkinKey;
+  label: string;
+  cost: number;
+  coreColor: string;
+  accentColor: string;
+  suctionGlow: string;
+}
+
 export interface MoolahStoreState {
   version: 1;
   moolah: number;
   earned: number;
   spent: number;
   upgrades: Record<string, number>;
+  activeSkin: StormFunnelSkinKey;
+  unlockedSkins: StormFunnelSkinKey[];
   stormTriangle: {
     version: 'sw-storm-triangle-v1';
     slots: ['pull', 'gust', 'gridZap'];
@@ -41,6 +54,10 @@ export interface MoolahSystemContract {
   hasUpgrade(key: 'pull' | 'gust' | 'gridZap'): boolean;
   getUpgradeValue(key: 'pull' | 'gust' | 'gridZap'): number;
   purchaseUpgrade(key: 'pull' | 'gust' | 'gridZap'): { purchased: boolean; balance: number; reason?: string };
+  getActiveSkin(): StormFunnelSkinKey;
+  hasSkin(skinKey: StormFunnelSkinKey): boolean;
+  purchaseSkin(skinKey: StormFunnelSkinKey): { purchased: boolean; balance: number; reason?: string };
+  equipSkin(skinKey: StormFunnelSkinKey): { equipped: boolean; activeSkin: StormFunnelSkinKey; reason?: string };
   calculateReward(input: MoolahRewardCalculationInput): number;
   awardReward(amount: number, reason: string): void;
   reset(): void;

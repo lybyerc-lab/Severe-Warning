@@ -37,3 +37,28 @@ test('MoolahSystem: calculates rewards and manages upgrade purchases', () => {
   assert.equal(insufficient.purchased, false);
   assert.equal(insufficient.reason, 'insufficient-moolah');
 });
+
+test('MoolahSystem: manages cosmetic funnel skins and equipping', () => {
+  const moolah = new MoolahSystem();
+  assert.equal(moolah.getActiveSkin(), 'default-classic');
+  assert.equal(moolah.hasSkin('default-classic'), true);
+  assert.equal(moolah.hasSkin('midnight-neon'), false);
+
+  // Cannot equip locked skin
+  const lockedEquip = moolah.equipSkin('midnight-neon');
+  assert.equal(lockedEquip.equipped, false);
+  assert.equal(lockedEquip.reason, 'skin-locked');
+
+  // Award enough MOO-LAH and buy midnight-neon (cost 250)
+  moolah.awardReward(500, 'test-bonus');
+  const purchase = moolah.purchaseSkin('midnight-neon');
+  assert.equal(purchase.purchased, true);
+  assert.equal(moolah.getBalance(), 250);
+  assert.equal(moolah.hasSkin('midnight-neon'), true);
+  assert.equal(moolah.getActiveSkin(), 'midnight-neon');
+
+  // Switch back to classic
+  const equipClassic = moolah.equipSkin('default-classic');
+  assert.equal(equipClassic.equipped, true);
+  assert.equal(moolah.getActiveSkin(), 'default-classic');
+});

@@ -12309,6 +12309,14 @@ const SW_RPG_UPGRADES = Object.freeze({
   gridZap: { key: 'gridZap', label: 'GRID ZAP', cost: 200, base: 6, upgraded: 10, unit: ' NODES' }
 });
 
+const SW_RPG_SKINS = Object.freeze({
+  'default-classic': { key: 'default-classic', label: 'CLASSIC DUST DEVIL', cost: 0, coreColor: '#334155', accentColor: '#64748b', suctionGlow: '#94a3b8' },
+  'midnight-neon': { key: 'midnight-neon', label: 'MIDNIGHT NEON', cost: 250, coreColor: '#1e1b4b', accentColor: '#38bdf8', suctionGlow: '#818cf8' },
+  'crimson-fury': { key: 'crimson-fury', label: 'CRIMSON FURY', cost: 350, coreColor: '#450a0a', accentColor: '#ef4444', suctionGlow: '#f87171' },
+  'golden-harvest': { key: 'golden-harvest', label: 'GOLDEN HARVEST', cost: 300, coreColor: '#451a03', accentColor: '#f59e0b', suctionGlow: '#fbbf24' },
+  'emerald-tempest': { key: 'emerald-tempest', label: 'EMERALD TEMPEST', cost: 400, coreColor: '#022c22', accentColor: '#10b981', suctionGlow: '#34d399' }
+});
+
 function swRpgEmptyStore() {
   return {
     version: SW_RPG_SCHEMA_VERSION,
@@ -12316,6 +12324,8 @@ function swRpgEmptyStore() {
     earned: 0,
     spent: 0,
     upgrades: {},
+    activeSkin: 'default-classic',
+    unlockedSkins: ['default-classic'],
     stormTriangle: { version: SW_RPG_STORM_TRIANGLE_VERSION, slots: [...SW_RPG_ACTIVE_SLOTS] },
     lastReward: null
   };
@@ -12336,6 +12346,8 @@ function swRpgLoadStore() {
       earned: Math.max(0, Number(data.earned) || 0),
       spent: Math.max(0, Number(data.spent) || 0),
       upgrades: typeof data.upgrades === 'object' && data.upgrades ? { ...data.upgrades } : {},
+      activeSkin: typeof data.activeSkin === 'string' && SW_RPG_SKINS[data.activeSkin] ? data.activeSkin : 'default-classic',
+      unlockedSkins: Array.isArray(data.unlockedSkins) ? [...data.unlockedSkins] : ['default-classic'],
       stormTriangle: { version: SW_RPG_STORM_TRIANGLE_VERSION, slots: [...SW_RPG_ACTIVE_SLOTS] },
       lastReward: typeof data.lastReward === 'object' ? data.lastReward : null
     };
@@ -12375,6 +12387,28 @@ function purchaseSwRpgUpgrade(key) {
   return Object.freeze({ purchased: true, key, cost: upgrade.cost, balance: swRpgStore.moolah, persisted });
 }
 
+function purchaseSwRpgSkin(skinKey) {
+  const skin = SW_RPG_SKINS[skinKey];
+  if (!skin) return Object.freeze({ purchased: false, reason: 'unknown-skin' });
+  if (swRpgStore.unlockedSkins.includes(skinKey)) return Object.freeze({ purchased: false, reason: 'already-owned', skinKey });
+  if (swRpgStore.moolah < skin.cost) return Object.freeze({ purchased: false, reason: 'insufficient-moolah', skinKey, cost: skin.cost, balance: swRpgStore.moolah });
+  swRpgStore.moolah -= skin.cost;
+  swRpgStore.spent += skin.cost;
+  swRpgStore.unlockedSkins.push(skinKey);
+  swRpgStore.activeSkin = skinKey;
+  const persisted = swRpgSaveStore();
+  return Object.freeze({ purchased: true, skinKey, cost: skin.cost, balance: swRpgStore.moolah, persisted });
+}
+
+function equipSwRpgSkin(skinKey) {
+  if (!swRpgStore.unlockedSkins.includes(skinKey)) {
+    return Object.freeze({ equipped: false, reason: 'skin-locked', activeSkin: swRpgStore.activeSkin });
+  }
+  swRpgStore.activeSkin = skinKey;
+  const persisted = swRpgSaveStore();
+  return Object.freeze({ equipped: true, activeSkin: swRpgStore.activeSkin, persisted });
+}
+
 function swRpgAwardForAcceptedResult(result) {
   if (!result) return null;
   const base = Math.floor(((result.destructionScore || 0) + (result.baseScore || 0)) / 100);
@@ -12399,7 +12433,9 @@ globalThis.getSwRpgBuildMetadata = function getSwRpgBuildMetadata() {
     upgradeLoadoutVersion: SW_RPG_UPGRADE_LOADOUT_VERSION,
     authority: 'active-local-first',
     activeSlots: [...swRpgStore.stormTriangle.slots],
-    upgrades: { ...swRpgStore.upgrades }
+    upgrades: { ...swRpgStore.upgrades },
+    activeSkin: swRpgStore.activeSkin,
+    unlockedSkins: [...swRpgStore.unlockedSkins]
   });
 };
 
@@ -12412,6 +12448,9 @@ globalThis.getSwRpgQaState = function getSwRpgQaState() {
     earned: swRpgStore.earned,
     spent: swRpgStore.spent,
     upgrades: { ...swRpgStore.upgrades },
+    activeSkin: swRpgStore.activeSkin,
+    unlockedSkins: [...swRpgStore.unlockedSkins],
+    availableSkins: Object.keys(SW_RPG_SKINS),
     stormTriangle: { version: swRpgStore.stormTriangle.version, slots: [...swRpgStore.stormTriangle.slots] },
     effects: Object.fromEntries(SW_RPG_ACTIVE_SLOTS.map(key => [key, { base: SW_RPG_UPGRADES[key].base, upgraded: SW_RPG_UPGRADES[key].upgraded, active: swRpgEffectValue(key) }])),
     lastReward: swRpgLastReward || swRpgStore.lastReward,
@@ -12432,6 +12471,12 @@ globalThis.__SW_RPG_001_QA__ = {
   },
   purchase(key) {
     return purchaseSwRpgUpgrade(key);
+  },
+  purchaseSkin(skinKey) {
+    return purchaseSwRpgSkin(skinKey);
+  },
+  equipSkin(skinKey) {
+    return equipSwRpgSkin(skinKey);
   }
 };
 // [SW:GAME:RPG_V1:END]
