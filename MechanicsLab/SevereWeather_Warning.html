@@ -11631,7 +11631,7 @@ function createProductionDressing() {
   productionSliceRoot.add(parkingLines);
 
   // [SW:WORLD:PARKING_DRESSING] Populate parking lot stalls with diverse parked vehicles
-  const vehicleModelChoices = ['sedan', 'pickup-truck', 'suv', 'station-wagon', 'van', 'coupe'];
+  const vehicleModelChoices = ['parked-car', 'lot-car', 'pickup-truck', 'town-car'];
   const vehicleColorPalette = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#64748b', '#f8fafc', '#1e293b', '#8b5cf6', '#06b6d4', '#ec4899'];
   for (let i = 0; i < 24; i++) {
     if (i === 4 || i === 11 || i === 19) continue; // Realistic empty stalls
