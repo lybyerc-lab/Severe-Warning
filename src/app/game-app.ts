@@ -54,6 +54,11 @@ export class GameApp {
       );
       this.#context.legacy.attachUi(this.#context.ui);
       this.#context.legacy.attachAudioTraffic(this.#context.audio, this.#context.traffic);
+      this.#context.legacy.attachEngine(
+        this.#context.physics,
+        this.#context.vfx,
+        this.#context.loop,
+      );
       this.#initializedAt = new Date().toISOString();
       this.transition('ready');
     } catch (error) {

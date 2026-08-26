@@ -88,6 +88,7 @@ Docs/PHASE5_PRESENTATION_SOURCE_MAP.md
 Docs/PHASE5_VISUAL_BASELINE.md
 Docs/PHASE6_UI_SOURCE_MAP.md
 Docs/PHASE7_AUDIO_TRAFFIC_SOURCE_MAP.md
+Docs/PHASE8_ENGINE_SOURCE_MAP.md
 Docs/PRODUCTION_PLAN.md
 Docs/PRODUCT_VISION_AND_ROADMAP.md
 Docs/QA4_MOBILE_INPUT_INCIDENT.md
@@ -307,6 +308,7 @@ scripts/qa-modernization-phase4-scoring-campaign.mjs
 scripts/qa-modernization-phase5-presentation-world.mjs
 scripts/qa-modernization-phase6-ui.mjs
 scripts/qa-modernization-phase7-audio-traffic.mjs
+scripts/qa-modernization-phase8-engine.mjs
 scripts/qa-play-full-round.mjs
 scripts/qa-v500-world-tour.mjs
 scripts/qa-v510-production-slice.mjs
@@ -321,6 +323,7 @@ scripts/verify-modernization-phase4-scoring-campaign.mjs
 scripts/verify-modernization-phase5-presentation-world.mjs
 scripts/verify-modernization-phase6-ui.mjs
 scripts/verify-modernization-phase7-audio-traffic.mjs
+scripts/verify-modernization-phase8-engine.mjs
 scripts/verify-qa-package.mjs
 scripts/verify-v500-campaign.mjs
 scripts/verify-v510-production-slice.mjs
@@ -342,6 +345,12 @@ src/gameplay/economy/economy-contracts.ts
 src/gameplay/economy/economy-prelude.ts
 src/gameplay/economy/economy-system.test.ts
 src/gameplay/economy/economy-system.ts
+src/gameplay/loop/game-loop-contracts.ts
+src/gameplay/loop/game-loop-controller.ts
+src/gameplay/physics/collision-detection-system.ts
+src/gameplay/physics/tornado-physics-contracts.ts
+src/gameplay/physics/tornado-physics-system.test.ts
+src/gameplay/physics/tornado-physics-system.ts
 src/gameplay/scoring/scoring-contracts.ts
 src/gameplay/scoring/scoring-system.ts
 src/gameplay/traffic/traffic-contracts.ts
@@ -362,6 +371,8 @@ src/presentation/scene/scene-contracts.ts
 src/presentation/scene/scene-system.ts
 src/presentation/tornado/tornado-presentation-contracts.ts
 src/presentation/tornado/tornado-presentation-system.ts
+src/presentation/vfx/particle-system-contracts.ts
+src/presentation/vfx/particle-system.ts
 src/qa/bridge/severe-weather-qa-bridge.ts
 src/ui/feedback/rampage-feedback-contracts.ts
 src/ui/feedback/rampage-feedback-system.ts

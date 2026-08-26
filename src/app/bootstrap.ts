@@ -1,7 +1,8 @@
 // ============================================================================
 // [SW:ARCH:BOOTSTRAP]
 // Creates the modern shell and attaches Phase 2 clocks, Phase 3 controls,
-// Phase 4 scoring/campaign, Phase 5 rendering/world, Phase 6 UI, and Phase 7 audio/traffic.
+// Phase 4 scoring/campaign, Phase 5 rendering/world, Phase 6 UI,
+// Phase 7 audio/traffic, and Phase 8 physics engine authorities.
 // ============================================================================
 
 import { AbilitySystem } from '../abilities/ability-system';
@@ -23,6 +24,9 @@ import { GRAIN_SILO_SETPIECE_DEFINITION } from '../world/setpieces/second-struct
 import { UISubsystem } from '../ui/ui-system';
 import { AudioSystem } from '../audio/audio-system';
 import { TrafficSystem } from '../gameplay/traffic/traffic-system';
+import { TornadoPhysicsSystem } from '../gameplay/physics/tornado-physics-system';
+import { ParticleSystem } from '../presentation/vfx/particle-system';
+import { GameLoopController } from '../gameplay/loop/game-loop-controller';
 import { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 import { GameApp } from './game-app';
 import { createGameContext } from './game-context';
@@ -50,6 +54,9 @@ export interface SevereWeatherModernShell {
   readonly ui: UISubsystem;
   readonly audio: AudioSystem;
   readonly traffic: TrafficSystem;
+  readonly physics: TornadoPhysicsSystem;
+  readonly vfx: ParticleSystem;
+  readonly loop: GameLoopController;
   readonly qa: LegacyRuntimeAdapter;
   readonly architecture: 'modern-shell-v1';
   readonly modernizationPhase: 'phase-5-rendering-world';
@@ -75,6 +82,9 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
   const ui = new UISubsystem();
   const audio = new AudioSystem();
   const traffic = new TrafficSystem();
+  const physics = new TornadoPhysicsSystem();
+  const vfx = new ParticleSystem();
+  const loop = new GameLoopController();
 
   const context = createGameContext(
     legacy,
@@ -96,6 +106,9 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
     ui,
     audio,
     traffic,
+    physics,
+    vfx,
+    loop,
     __SW_BUILD_VERSION__,
     __SW_BUILD_LABEL__,
   );
@@ -123,6 +136,9 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
     ui,
     audio,
     traffic,
+    physics,
+    vfx,
+    loop,
     qa: legacy,
     architecture: 'modern-shell-v1',
     modernizationPhase: 'phase-5-rendering-world',

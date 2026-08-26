@@ -1,6 +1,6 @@
 // ============================================================================
 // [SW:ARCH:GAME_CONTEXT]
-// Shared Phase 7 ownership for presentation, world, UI, audio, and traffic.
+// Shared Phase 8 ownership for presentation, world, UI, audio, traffic, and physics engine.
 // ============================================================================
 
 import type { AbilitySystem } from '../abilities/ability-system';
@@ -20,6 +20,9 @@ import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible
 import type { UISubsystem } from '../ui/ui-system';
 import type { AudioSystem } from '../audio/audio-system';
 import type { TrafficSystem } from '../gameplay/traffic/traffic-system';
+import type { TornadoPhysicsSystem } from '../gameplay/physics/tornado-physics-system';
+import type { ParticleSystem } from '../presentation/vfx/particle-system';
+import type { GameLoopController } from '../gameplay/loop/game-loop-controller';
 import type { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 
 export interface BuildIdentity {
@@ -28,7 +31,7 @@ export interface BuildIdentity {
   readonly label: string;
   readonly renderer: 'Three.js r128';
   readonly architecture: 'modern-shell-v1';
-  readonly modernizationPhase: 'phase-5-rendering-world' | 'phase-6-hud-ui' | 'phase-7-audio-traffic';
+  readonly modernizationPhase: 'phase-5-rendering-world' | 'phase-6-hud-ui' | 'phase-7-audio-traffic' | 'phase-8-engine';
 }
 
 export interface GameContext {
@@ -51,6 +54,9 @@ export interface GameContext {
   readonly ui: UISubsystem;
   readonly audio: AudioSystem;
   readonly traffic: TrafficSystem;
+  readonly physics: TornadoPhysicsSystem;
+  readonly vfx: ParticleSystem;
+  readonly loop: GameLoopController;
   readonly legacy: LegacyRuntimeAdapter;
   readonly document: Document;
   readonly window: Window;
@@ -76,6 +82,9 @@ export function createGameContext(
   ui: UISubsystem,
   audio: AudioSystem,
   traffic: TrafficSystem,
+  physics: TornadoPhysicsSystem,
+  vfx: ParticleSystem,
+  loop: GameLoopController,
   version: string,
   label: string,
 ): GameContext {
@@ -106,6 +115,9 @@ export function createGameContext(
     ui,
     audio,
     traffic,
+    physics,
+    vfx,
+    loop,
     legacy,
     document,
     window,
