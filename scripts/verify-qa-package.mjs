@@ -152,6 +152,9 @@ const requiredMarkers = [
   ['modern bridge: input and abilities', 'MODERNIZATION_PHASE3_INPUT_ABILITIES_V1'],
   ['modern bridge: scoring and campaign', 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2'],
   ['modern bridge: presentation and world', 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2'],
+  ['modern bridge: UI', 'MODERNIZATION_PHASE6_UI_V1'],
+  ['modern bridge: audio and traffic', 'MODERNIZATION_PHASE7_AUDIO_TRAFFIC_V1'],
+  ['modern bridge: engine', 'MODERNIZATION_PHASE8_ENGINE_V1'],
   ['modern bridge: clock sample is authoritative', 'modernClockSample.runDeltaMs / 1000'],
   // [SW:ARCH:ECONOMY_PRELUDE] The extracted, unit-tested economy has to be inlined
   // AND actually called. The gameplay keeps literal fallbacks so a missing prelude
