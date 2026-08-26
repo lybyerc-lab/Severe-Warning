@@ -83,8 +83,14 @@ test('ParticleSystem & GameLoopController: manage particle updates and lifecycle
   particles.emitSparks(0, 5, 0, 10);
   assert.equal(particles.getSnapshot().activeParticleCount, 10);
 
+  particles.emitSmoke(0, 32, 0, 8, '#334155');
+  assert.equal(particles.getSnapshot().activeParticleCount, 18);
+
+  particles.emitMoltenEmber(0, 5, 0, 6);
+  assert.equal(particles.getSnapshot().activeParticleCount, 24);
+
   particles.update(0.1);
-  assert.equal(particles.getSnapshot().activeParticleCount, 10);
+  assert.equal(particles.getSnapshot().activeParticleCount, 24);
 
   const loop = new GameLoopController();
   assert.equal(loop.getSnapshot().state, 'idle');

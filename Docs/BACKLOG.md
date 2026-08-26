@@ -101,6 +101,10 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- County Fair & Industrial Landmark Animations:
+  - Added continuous Ferris wheel mechanical rotation (`speed: 0.22`) for authored and procedural wheel models in District 3.
+  - Added active rising industrial smoke plume particle systems to the 32m twin smelting chimneys on the Foundry in District 2.
+  - Added `emitSmoke` and `emitMoltenEmber` to `ParticleSystem` (`src/presentation/vfx/`) with unit test coverage.
 - Phase 8 Physics & Engine Subsystems Modularization:
   - Created type-safe vortex physics system under `src/gameplay/physics/` (`TornadoPhysicsSystem`, `tornado-physics-contracts.ts`) implementing Rankine vortex velocity fields, radial suction vectors, and ballistic debris particles.
   - Implemented `CollisionDetectionSystem` enforcing the `damageTarget` chokepoint, multi-stage structure degradation, and First Law invariant protection.

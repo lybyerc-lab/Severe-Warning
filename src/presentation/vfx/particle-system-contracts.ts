@@ -1,6 +1,6 @@
 /**
  * [SW:ARCH:PHASE8_VFX_CONTRACTS]
- * Type definitions for visual effects, spark emitters, and dust clouds.
+ * Type definitions for visual effects, spark emitters, dust clouds, and smoke plumes.
  */
 
 export interface ParticleEffectEmitterConfig {
@@ -19,6 +19,8 @@ export interface ParticleSystemSnapshot {
 export interface ParticleSystemContract {
   emitSparks(x: number, y: number, z: number, count?: number, color?: string): void;
   emitDust(x: number, y: number, z: number, radius?: number): void;
+  emitSmoke(x: number, y: number, z: number, count?: number, color?: string): void;
+  emitMoltenEmber(x: number, y: number, z: number, count?: number): void;
   update(deltaSeconds: number): void;
   getSnapshot(): ParticleSystemSnapshot;
   reset(): void;

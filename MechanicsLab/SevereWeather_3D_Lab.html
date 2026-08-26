@@ -2676,6 +2676,38 @@ function createCampaignLandmarkMesh(kind, accent) {
     base = campaignPart(group, new THREE.BoxGeometry(21, 11, 16), '#9a3412', 0, 5.5, 0, { metalness: 0.26 });
     [-6,6].forEach(x => campaignPart(group, new THREE.CylinderGeometry(2.0, 2.7, 28, 10), '#44403c', x, 18, 2, { metalness: 0.38 }));
     campaignPart(group, new THREE.BoxGeometry(25, 2, 4), '#78716c', 0, 15, -4, { rotation: { z: 0.14 }, metalness: 0.55 });
+    
+    // Industrial 32m twin stack smoke plume particles
+    const smokeGroup = new THREE.Group();
+    smokeGroup.position.set(0, 32, 2);
+    group.add(smokeGroup);
+    const smokePuffs = [];
+    [-6, 6].forEach(stackX => {
+      for (let i = 0; i < 6; i++) {
+        const puff = new THREE.Mesh(
+          new THREE.SphereGeometry(1.2 + i * 0.25, 6, 6),
+          new THREE.MeshLambertMaterial({ color: '#475569', transparent: true, opacity: 0.38 })
+        );
+        puff.position.set(stackX + (Math.random() - 0.5) * 1.2, i * 3.0, (Math.random() - 0.5) * 1.2);
+        smokeGroup.add(puff);
+        smokePuffs.push(puff);
+      }
+    });
+    campaignAnimatedMeshes.push({
+      mesh: smokeGroup,
+      axis: 'y',
+      speed: 0.05,
+      update: (dt) => {
+        smokePuffs.forEach(puff => {
+          puff.position.y += 4.5 * dt;
+          puff.position.x += (1.5 + Math.sin(puff.position.y * 0.2)) * dt;
+          if (puff.position.y > 24) {
+            puff.position.y = 0;
+            puff.position.x = (puff.position.x > 0 ? 6 : -6) + (Math.random() - 0.5) * 1.2;
+          }
+        });
+      }
+    });
   } else if (kind === 'ferris-wheel') {
     base = campaignPart(group, new THREE.BoxGeometry(15, 2.2, 12), '#7c3aed', 0, 1.1, 0, { metalness: 0.3 });
     const wheel = new THREE.Group();
@@ -2717,6 +2749,9 @@ function createCampaignLandmarkMesh(kind, accent) {
       model.traverse(object => { if (!firstMesh && object.isMesh) firstMesh = object; });
       meshData.base = firstMesh || model;
       meshData.model = model;
+      if (kind === 'ferris-wheel') {
+        campaignAnimatedMeshes.push({ mesh: model, axis: 'z', speed: 0.22 });
+      }
     });
   }
 
@@ -2792,7 +2827,12 @@ function applyCampaignWorldIdentity(level) {
 
 function updateCampaignScenery(dt) {
   campaignAnimatedMeshes.forEach(item => {
-    item.mesh.rotation[item.axis] += item.speed * dt;
+    if (item.mesh && item.mesh.rotation && item.axis) {
+      item.mesh.rotation[item.axis] += item.speed * dt;
+    }
+    if (typeof item.update === 'function') {
+      item.update(dt);
+    }
   });
 }
 
