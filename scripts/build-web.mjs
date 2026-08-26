@@ -26,6 +26,7 @@ const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
 const outputFonts = path.join(outputDir, 'fonts');
 const outputAudio = path.join(outputDir, 'audio');
 const outputModels = path.join(outputDir, 'models');
+const outputAssetsModels = path.join(outputDir, 'assets', 'models');
 const outputModern = path.join(outputDir, 'modern');
 
 const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
@@ -145,6 +146,7 @@ await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputFonts, { recursive: true });
 await mkdir(outputAudio, { recursive: true });
 await mkdir(outputModels, { recursive: true });
+await mkdir(outputAssetsModels, { recursive: true });
 await writeFile(path.join(outputDir, 'index.html'), html, 'utf8');
 
 for (const [packagePath, outputName] of fontFiles) {
@@ -183,6 +185,7 @@ for (const modelFile of modelSourceNames) {
     throw new Error(`assets/models/${modelFile} is not a binary glTF (.glb); expected 'glTF' magic.`);
   }
   await copyFile(path.join(sourceModelsDir, modelFile), path.join(outputModels, modelFile));
+  await copyFile(path.join(sourceModelsDir, modelFile), path.join(outputAssetsModels, modelFile));
   models.push({
     file: `models/${modelFile}`,
     bytes: bytes.length,

@@ -322,5 +322,13 @@ const failedChecks = Object.entries(checks)
 
 if (failedChecks.length > 0) {
   console.error(`Full-round QA failed required checks: ${failedChecks.join(', ')}`);
+  if (consoleErrors.length > 0) {
+    console.error(`Captured console errors (${consoleErrors.length}):`);
+    consoleErrors.forEach(err => console.error(`  - ${err}`));
+  }
+  if (pageErrors.length > 0) {
+    console.error(`Captured page errors (${pageErrors.length}):`);
+    pageErrors.forEach(err => console.error(`  - ${err}`));
+  }
   process.exitCode = 1;
 }
