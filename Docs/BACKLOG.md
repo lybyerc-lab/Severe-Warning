@@ -101,6 +101,11 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Revived MOO-LAH Economy & Storm Upgrades:
+  - Ported parked MOO-LAH destruction economy and Storm Triangle upgrade loadout (`pull`, `gust`, `gridZap`) into `src/gameplay/economy/` (`MoolahSystem`, `moolah-contracts.ts`).
+  - Added unit test suite `src/gameplay/economy/moolah-system.test.ts` (100% pass).
+  - Inlined `[SW:GAME:RPG_V1]` in `MechanicsLab/SevereWeather_3D_Lab.html` with persistent LocalStorage schema (`severe_weather_rpg_v1`).
+  - Added `scripts/verify-moolah-economy.mjs` verification suite.
 - County Fair & Industrial Landmark Animations:
   - Added continuous Ferris wheel mechanical rotation (`speed: 0.22`) for authored and procedural wheel models in District 3.
   - Added active rising industrial smoke plume particle systems to the 32m twin smelting chimneys on the Foundry in District 2.

@@ -12268,6 +12268,151 @@ const phase8EngineBridge = {
 
 globalThis.__SW_PHASE8_ENGINE_BRIDGE__ = phase8EngineBridge;
 // [SW:ARCH:PHASE8_ENGINE_BRIDGE:END]
+
+// [SW:SOURCE:sw-rpg-001-moolah-storm-triangle.js]
+// ============================================================================
+// [SW:GAME:RPG_V1]
+// MOO-LAH storm currency and Storm Triangle upgrade loadouts.
+// ============================================================================
+const SW_RPG_001_MARKER = 'SW_RPG_001_MOOLAH_STORM_TRIANGLE_V1';
+const SW_RPG_STORAGE_KEY = 'severe_weather_rpg_v1';
+const SW_RPG_SCHEMA_VERSION = 1;
+const SW_RPG_STORM_TRIANGLE_VERSION = 'sw-storm-triangle-v1';
+const SW_RPG_UPGRADE_LOADOUT_VERSION = 'sw-upgrade-loadout-v1';
+const SW_RPG_ACTIVE_SLOTS = Object.freeze(['pull', 'gust', 'gridZap']);
+
+const SW_RPG_UPGRADES = Object.freeze({
+  pull: { key: 'pull', label: 'PULL VORTEX', cost: 150, base: 2.2, upgraded: 3.4, unit: 's' },
+  gust: { key: 'gust', label: 'GUST BURST', cost: 175, base: 180, upgraded: 260, unit: ' DMG' },
+  gridZap: { key: 'gridZap', label: 'GRID ZAP', cost: 200, base: 6, upgraded: 10, unit: ' NODES' }
+});
+
+function swRpgEmptyStore() {
+  return {
+    version: SW_RPG_SCHEMA_VERSION,
+    moolah: 0,
+    earned: 0,
+    spent: 0,
+    upgrades: {},
+    stormTriangle: { version: SW_RPG_STORM_TRIANGLE_VERSION, slots: [...SW_RPG_ACTIVE_SLOTS] },
+    lastReward: null
+  };
+}
+
+let swRpgStore = swRpgLoadStore();
+let swRpgLastReward = null;
+
+function swRpgLoadStore() {
+  try {
+    const raw = localStorage.getItem(SW_RPG_STORAGE_KEY);
+    if (!raw) return swRpgEmptyStore();
+    const data = JSON.parse(raw);
+    if (Number(data.version) !== SW_RPG_SCHEMA_VERSION) return swRpgEmptyStore();
+    return {
+      version: SW_RPG_SCHEMA_VERSION,
+      moolah: Math.max(0, Number(data.moolah) || 0),
+      earned: Math.max(0, Number(data.earned) || 0),
+      spent: Math.max(0, Number(data.spent) || 0),
+      upgrades: typeof data.upgrades === 'object' && data.upgrades ? { ...data.upgrades } : {},
+      stormTriangle: { version: SW_RPG_STORM_TRIANGLE_VERSION, slots: [...SW_RPG_ACTIVE_SLOTS] },
+      lastReward: typeof data.lastReward === 'object' ? data.lastReward : null
+    };
+  } catch (_) {
+    return swRpgEmptyStore();
+  }
+}
+
+function swRpgSaveStore() {
+  try {
+    localStorage.setItem(SW_RPG_STORAGE_KEY, JSON.stringify(swRpgStore));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function swRpgUpgradeActive(key) {
+  return Boolean(swRpgStore.upgrades[key]);
+}
+
+function swRpgEffectValue(key) {
+  const upgrade = SW_RPG_UPGRADES[key];
+  if (!upgrade) return null;
+  return swRpgUpgradeActive(key) ? upgrade.upgraded : upgrade.base;
+}
+
+function purchaseSwRpgUpgrade(key) {
+  const upgrade = SW_RPG_UPGRADES[key];
+  if (!upgrade) return Object.freeze({ purchased: false, reason: 'unknown-upgrade' });
+  if (swRpgUpgradeActive(key)) return Object.freeze({ purchased: false, reason: 'already-owned', key });
+  if (swRpgStore.moolah < upgrade.cost) return Object.freeze({ purchased: false, reason: 'insufficient-moolah', key, cost: upgrade.cost, balance: swRpgStore.moolah });
+  swRpgStore.moolah -= upgrade.cost;
+  swRpgStore.spent += upgrade.cost;
+  swRpgStore.upgrades[key] = 1;
+  const persisted = swRpgSaveStore();
+  return Object.freeze({ purchased: true, key, cost: upgrade.cost, balance: swRpgStore.moolah, persisted });
+}
+
+function swRpgAwardForAcceptedResult(result) {
+  if (!result) return null;
+  const base = Math.floor(((result.destructionScore || 0) + (result.baseScore || 0)) / 100);
+  const combo = Math.floor((result.maxComboReached || 1.0) * 15);
+  const amount = Math.max(15, base + combo);
+  const reward = {
+    amount,
+    reason: 'county-clear',
+    timestamp: new Date().toISOString()
+  };
+  swRpgStore.moolah += amount;
+  swRpgStore.earned += amount;
+  swRpgStore.lastReward = reward;
+  swRpgLastReward = reward;
+  swRpgSaveStore();
+  return reward;
+}
+
+globalThis.getSwRpgBuildMetadata = function getSwRpgBuildMetadata() {
+  return Object.freeze({
+    stormTriangleVersion: SW_RPG_STORM_TRIANGLE_VERSION,
+    upgradeLoadoutVersion: SW_RPG_UPGRADE_LOADOUT_VERSION,
+    authority: 'active-local-first',
+    activeSlots: [...swRpgStore.stormTriangle.slots],
+    upgrades: { ...swRpgStore.upgrades }
+  });
+};
+
+globalThis.getSwRpgQaState = function getSwRpgQaState() {
+  return Object.freeze({
+    marker: SW_RPG_001_MARKER,
+    storageKey: SW_RPG_STORAGE_KEY,
+    schemaVersion: SW_RPG_SCHEMA_VERSION,
+    moolah: swRpgStore.moolah,
+    earned: swRpgStore.earned,
+    spent: swRpgStore.spent,
+    upgrades: { ...swRpgStore.upgrades },
+    stormTriangle: { version: swRpgStore.stormTriangle.version, slots: [...swRpgStore.stormTriangle.slots] },
+    effects: Object.fromEntries(SW_RPG_ACTIVE_SLOTS.map(key => [key, { base: SW_RPG_UPGRADES[key].base, upgraded: SW_RPG_UPGRADES[key].upgraded, active: swRpgEffectValue(key) }])),
+    lastReward: swRpgLastReward || swRpgStore.lastReward,
+    buildMetadata: globalThis.getSwRpgBuildMetadata()
+  });
+};
+
+globalThis.__SW_RPG_001_QA__ = {
+  reset() {
+    try { localStorage.removeItem(SW_RPG_STORAGE_KEY); } catch (_) {}
+    swRpgStore = swRpgEmptyStore();
+    swRpgLastReward = null;
+  },
+  award(amount, reason = 'qa-grant') {
+    swRpgStore.moolah += amount;
+    swRpgStore.earned += amount;
+    swRpgSaveStore();
+  },
+  purchase(key) {
+    return purchaseSwRpgUpgrade(key);
+  }
+};
+// [SW:GAME:RPG_V1:END]
 </script>
 </body>
 </html>

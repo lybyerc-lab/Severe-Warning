@@ -34,7 +34,7 @@ export const PRODUCTION_SLICE_REGIONS = Object.freeze([
   'v510-runtime.js',
 ]);
 
-/** The seven lexical bridges the modern TypeScript shell attaches to. */
+/** The lexical bridges and game subsystems the modern TypeScript shell attaches to. */
 export const MODERNIZATION_BRIDGE_REGIONS = Object.freeze([
   'modernization-phase2-clocks.js',
   'modernization-phase3-input-abilities.js',
@@ -43,6 +43,7 @@ export const MODERNIZATION_BRIDGE_REGIONS = Object.freeze([
   'modernization-phase6-ui.js',
   'modernization-phase7-audio-traffic.js',
   'modernization-phase8-engine.js',
+  'sw-rpg-001-moolah-storm-triangle.js',
 ]);
 
 const MARKER = name => `// [SW:SOURCE:${name}]`;

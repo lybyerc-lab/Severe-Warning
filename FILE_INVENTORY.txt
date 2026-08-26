@@ -324,6 +324,7 @@ scripts/verify-modernization-phase5-presentation-world.mjs
 scripts/verify-modernization-phase6-ui.mjs
 scripts/verify-modernization-phase7-audio-traffic.mjs
 scripts/verify-modernization-phase8-engine.mjs
+scripts/verify-moolah-economy.mjs
 scripts/verify-qa-package.mjs
 scripts/verify-v500-campaign.mjs
 scripts/verify-v510-production-slice.mjs
@@ -345,6 +346,9 @@ src/gameplay/economy/economy-contracts.ts
 src/gameplay/economy/economy-prelude.ts
 src/gameplay/economy/economy-system.test.ts
 src/gameplay/economy/economy-system.ts
+src/gameplay/economy/moolah-contracts.ts
+src/gameplay/economy/moolah-system.test.ts
+src/gameplay/economy/moolah-system.ts
 src/gameplay/loop/game-loop-contracts.ts
 src/gameplay/loop/game-loop-controller.ts
 src/gameplay/physics/collision-detection-system.ts
