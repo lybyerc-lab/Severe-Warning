@@ -1,5 +1,4 @@
 import type {
-  Vector3D,
   DamageableEntity,
   CollisionEvent
 } from './tornado-physics-contracts.ts';

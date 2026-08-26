@@ -101,6 +101,9 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- CI Hardening & TypeScript Hygiene:
+  - Cleaned up unused imports across test suites and systems ensuring strict `tsc --noEmit` adherence (`noUnusedLocals`).
+  - Added `scripts/lib`, `vite.config.ts`, and `vite.prelude.config.ts` to `RENDER_INPUTS` in `scripts/visual-regression-gate.mjs` ensuring historical baseline rebuilds match their exact configuration.
 - Building-Specific Debris FX & Color Mapping:
   - Enhanced `spawnActorChunks` with building-specific color palettes (primary wall paint, foundation stone/mortar, structural wood timber, and galvanized metal trim).
   - Added varied fragment geometries (elongated structural planks, flat wall panels, and shattered blocks).

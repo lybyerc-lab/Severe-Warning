@@ -2,8 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { HudSystem } from './hud-system.ts';
 import { RampageFeedbackSystem } from '../feedback/rampage-feedback-system.ts';
-import { DistrictTransitionSystem } from '../transitions/district-transition-system.ts';
-import { ResultsSystem } from '../results/results-system.ts';
 import { UISubsystem } from '../ui-system.ts';
 
 test('HudSystem: formats countdown time correctly', () => {

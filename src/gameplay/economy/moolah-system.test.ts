@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MoolahSystem, MOOLAH_UPGRADES } from './moolah-system.ts';
+import { MoolahSystem } from './moolah-system.ts';
 
 test('MoolahSystem: calculates rewards and manages upgrade purchases', () => {
   const moolah = new MoolahSystem();

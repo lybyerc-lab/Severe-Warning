@@ -37,6 +37,9 @@ const RENDER_INPUTS = [
   'MechanicsLab/SevereWeather_3D_Lab.html',
   'src',
   'scripts/build-web.mjs',
+  'scripts/lib',
+  'vite.config.ts',
+  'vite.prelude.config.ts',
 ];
 
 const git = (...args) => execFileSync('git', args, { cwd: projectRoot, encoding: 'utf8' }).trim();
