@@ -1,7 +1,7 @@
 // ============================================================================
 // [SW:ARCH:BOOTSTRAP]
 // Creates the modern shell and attaches Phase 2 clocks, Phase 3 controls,
-// Phase 4 scoring/campaign, Phase 5 rendering/world, and Phase 6 UI authorities.
+// Phase 4 scoring/campaign, Phase 5 rendering/world, Phase 6 UI, and Phase 7 audio/traffic.
 // ============================================================================
 
 import { AbilitySystem } from '../abilities/ability-system';
@@ -21,6 +21,8 @@ import { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setp
 import { HART_FARM_SETPIECE_DEFINITION } from '../world/setpieces/hart-farm-definition';
 import { GRAIN_SILO_SETPIECE_DEFINITION } from '../world/setpieces/second-structure-definition';
 import { UISubsystem } from '../ui/ui-system';
+import { AudioSystem } from '../audio/audio-system';
+import { TrafficSystem } from '../gameplay/traffic/traffic-system';
 import { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 import { GameApp } from './game-app';
 import { createGameContext } from './game-context';
@@ -46,6 +48,8 @@ export interface SevereWeatherModernShell {
   readonly hartFarm: DestructibleSetpieceSystem;
   readonly silo: DestructibleSetpieceSystem;
   readonly ui: UISubsystem;
+  readonly audio: AudioSystem;
+  readonly traffic: TrafficSystem;
   readonly qa: LegacyRuntimeAdapter;
   readonly architecture: 'modern-shell-v1';
   readonly modernizationPhase: 'phase-5-rendering-world';
@@ -69,6 +73,8 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
   const hartFarm = new DestructibleSetpieceSystem(HART_FARM_SETPIECE_DEFINITION);
   const silo = new DestructibleSetpieceSystem(GRAIN_SILO_SETPIECE_DEFINITION);
   const ui = new UISubsystem();
+  const audio = new AudioSystem();
+  const traffic = new TrafficSystem();
 
   const context = createGameContext(
     legacy,
@@ -88,6 +94,8 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
     hartFarm,
     silo,
     ui,
+    audio,
+    traffic,
     __SW_BUILD_VERSION__,
     __SW_BUILD_LABEL__,
   );
@@ -113,6 +121,8 @@ export async function bootstrapSevereWeather(): Promise<SevereWeatherModernShell
     hartFarm,
     silo,
     ui,
+    audio,
+    traffic,
     qa: legacy,
     architecture: 'modern-shell-v1',
     modernizationPhase: 'phase-5-rendering-world',

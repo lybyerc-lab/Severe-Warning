@@ -27,7 +27,8 @@ All current batch requests completed. Open for next director requests.
 
 ## Next up — Code & Modernization
 
-1. **Phase 7 Audio & Traffic Subsystems Modularization.** Type-safe Web Audio synthesizer / sprite engine and ambient traffic behavior authorities.
+1. **County Fair & Industrial Landmark Animations.** Ferris wheel / Carousel continuous rotation with glowing light trails and 32m Foundry stack smoke plume particles.
+2. **Reviving Parked MOO-LAH Economy & Storm Upgrades.** Port the persistent storm currency, upgrade shop, and cosmetic funnel skins into modern shell.
 
 Nothing else is queued. Say the word and this fills up.
 
@@ -100,6 +101,12 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Phase 7 Audio & Traffic Subsystems Modularization:
+  - Created type-safe audio subsystem under `src/audio/` (`AudioSystem`, `audio-contracts.ts`) managing master/sfx/ambient/ui gain mix, sprite cue playback, and synthesizer fallback.
+  - Connected generated 41-clip audio sprite (`assets/audio/storm-feel-sprite.wav` and `assets/audio/storm-feel-manifest.json`) resolving audio load errors and warning logs.
+  - Created type-safe ambient traffic subsystem under `src/gameplay/traffic/` (`TrafficSystem`, `traffic-contracts.ts`, `traffic-system.test.ts`) spawning all 4 authored vehicles (`town-car`, `pickup-truck`, `news-van`, `storm-chaser-vehicle`) with waypoint route navigation and panic flee behaviors enforcing the First Law invariant.
+  - Inlined `[SW:ARCH:PHASE7_AUDIO_TRAFFIC_BRIDGE]` in `MechanicsLab/SevereWeather_3D_Lab.html` with marker `MODERNIZATION_PHASE7_AUDIO_TRAFFIC_V1`.
+  - Added verification test suite (`verify-modernization-phase7-audio-traffic.mjs` - 22/22 checks pass) and headless Chrome CDP probe (`qa-modernization-phase7-audio-traffic.mjs`).
 - Phase 6 HUD & UI TypeScript Modularization:
   - Created type-safe TypeScript UI subsystem under `src/ui/` (`HudSystem`, `RampageFeedbackSystem`, `DistrictTransitionSystem`, `ResultsSystem`, and master `UISubsystem`).
   - Added unit test suite `src/ui/hud/hud-system.test.ts` (100% pass across all 20 test cases).

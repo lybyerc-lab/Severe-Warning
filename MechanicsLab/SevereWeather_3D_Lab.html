@@ -964,11 +964,25 @@ async function loadStormAudioAssets() {
   if (!audioCtx || stormAudioReady) return stormAudioReady;
   if (stormAudioLoadPromise) return stormAudioLoadPromise;
   stormAudioLoadPromise = (async () => {
+    async function fetchAudio(file) {
+      const candidates = [
+        `../assets/audio/${file}`,
+        `assets/audio/${file}`,
+        `audio/${file}`
+      ];
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) return res;
+        } catch (_) {}
+      }
+      throw new Error(`Audio asset ${file} unavailable.`);
+    }
+
     const [manifestResponse, spriteResponse] = await Promise.all([
-      fetch('audio/storm-feel-manifest.json'),
-      fetch('audio/storm-feel-sprite.wav')
+      fetchAudio('storm-feel-manifest.json'),
+      fetchAudio('storm-feel-sprite.wav')
     ]);
-    if (!manifestResponse.ok || !spriteResponse.ok) throw new Error('Storm audio assets unavailable.');
     stormAudioManifest = await manifestResponse.json();
     stormAudioBuffer = await audioCtx.decodeAudioData(await spriteResponse.arrayBuffer());
     stormAudioReady = true;
@@ -5891,13 +5905,14 @@ function clearRampageFeedback() {
   pendingRampageHits = [];
   rampageFeedbackTier = 0;
 }
-// [SW:UI:RAMPAGE_FEEDBACK:END]
-
 // [SW:WORLD:TRAFFIC] --- AMBIENT TOWN CARS SYSTEM (POLISHED & PROPERLY ALIGNED) ---
 function createTownCarGroup(color) {
   const group = new THREE.Group();
-  const isTruck = Math.random() < 0.35;
-  const modelName = isTruck ? 'pickup-truck' : 'town-car';
+  const rand = Math.random();
+  let modelName = 'town-car';
+  if (rand < 0.30) modelName = 'pickup-truck';
+  else if (rand < 0.50) modelName = 'news-van';
+  else if (rand < 0.65) modelName = 'storm-chaser-vehicle';
 
   const procBody = new THREE.Group();
   group.add(procBody);
@@ -12018,6 +12033,99 @@ const phase6UiBridge = {
 
 globalThis.__SW_PHASE6_UI_BRIDGE__ = phase6UiBridge;
 // [SW:ARCH:PHASE6_UI_BRIDGE:END]
+
+// [SW:SOURCE:modernization-phase7-audio-traffic.js]
+// ============================================================================
+// [SW:ARCH:PHASE7_AUDIO_TRAFFIC_BRIDGE]
+// Lexical bridge from live Web Audio & traffic runtime to typed subsystems.
+// ============================================================================
+const PHASE7_AUDIO_TRAFFIC_BRIDGE_VERSION = 'MODERNIZATION_PHASE7_AUDIO_TRAFFIC_V1';
+
+let phase7AudioAuthority = null;
+let phase7TrafficAuthority = null;
+
+function phase7ReadLegacySnapshot() {
+  const ready = Boolean(typeof audioCtx !== 'undefined' && audioCtx && typeof stormAudioReady !== 'undefined' && stormAudioReady);
+  const isMuted = typeof isAudioMuted !== 'undefined' ? Boolean(isAudioMuted) : false;
+  const activeVoices = typeof activeAudioVoices !== 'undefined' && Array.isArray(activeAudioVoices) ? activeAudioVoices.length : 0;
+  const vehicles = typeof townCars !== 'undefined' && Array.isArray(townCars) ? townCars : [];
+  const fleeingCount = vehicles.filter(c => c && c.fleeing).length;
+
+  return Object.freeze({
+    audio: Object.freeze({
+      ready,
+      isMuted,
+      activeVoices,
+    }),
+    traffic: Object.freeze({
+      totalVehicles: vehicles.length,
+      fleeingCount,
+    }),
+  });
+}
+
+function phase7SynchronizeAuthorities(live) {
+  if (phase7AudioAuthority && typeof phase7AudioAuthority.setMuted === 'function') {
+    phase7AudioAuthority.setMuted(live.audio.isMuted);
+  }
+}
+
+const phase7AudioTrafficBridge = {
+  version: PHASE7_AUDIO_TRAFFIC_BRIDGE_VERSION,
+
+  attach(audioAuthority, trafficAuthority) {
+    if (!audioAuthority || !trafficAuthority || typeof audioAuthority.getSnapshot !== 'function' || typeof trafficAuthority.getSnapshot !== 'function') {
+      throw new Error('Phase 7 authorities are missing required subsystem contracts.');
+    }
+    phase7AudioAuthority = audioAuthority;
+    phase7TrafficAuthority = trafficAuthority;
+    this.syncFromLegacy();
+    return true;
+  },
+
+  syncFromLegacy() {
+    if (!phase7AudioAuthority && !phase7TrafficAuthority) return null;
+    const live = phase7ReadLegacySnapshot();
+    phase7SynchronizeAuthorities(live);
+    return live;
+  },
+
+  reset() {
+    if (phase7TrafficAuthority && typeof phase7TrafficAuthority.reset === 'function') {
+      phase7TrafficAuthority.reset();
+    }
+    this.syncFromLegacy();
+  },
+
+  runContractProbe() {
+    const snapshot = this.getSnapshot();
+    const checks = Object.freeze({
+      bridgeAttached: snapshot.attached === true,
+      audioSynchronized: snapshot.audio !== null,
+      trafficSynchronized: snapshot.traffic !== null,
+      firstLawCompliance: snapshot.traffic ? snapshot.traffic.vehicles.every(v => v.isProtected) : true,
+    });
+    return Object.freeze({
+      version: PHASE7_AUDIO_TRAFFIC_BRIDGE_VERSION,
+      checks,
+      passed: Object.values(checks).every(Boolean),
+    });
+  },
+
+  getSnapshot() {
+    const live = this.syncFromLegacy();
+    return Object.freeze({
+      version: PHASE7_AUDIO_TRAFFIC_BRIDGE_VERSION,
+      attached: Boolean(phase7AudioAuthority && phase7TrafficAuthority),
+      audio: phase7AudioAuthority ? phase7AudioAuthority.getSnapshot() : null,
+      traffic: phase7TrafficAuthority ? phase7TrafficAuthority.getSnapshot() : null,
+      live,
+    });
+  },
+};
+
+globalThis.__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__ = phase7AudioTrafficBridge;
+// [SW:ARCH:PHASE7_AUDIO_TRAFFIC_BRIDGE:END]
 </script>
 </body>
 </html>

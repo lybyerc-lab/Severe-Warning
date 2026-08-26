@@ -87,6 +87,7 @@ Docs/NO_DRIFT_POLICY.md
 Docs/PHASE5_PRESENTATION_SOURCE_MAP.md
 Docs/PHASE5_VISUAL_BASELINE.md
 Docs/PHASE6_UI_SOURCE_MAP.md
+Docs/PHASE7_AUDIO_TRAFFIC_SOURCE_MAP.md
 Docs/PRODUCTION_PLAN.md
 Docs/PRODUCT_VISION_AND_ROADMAP.md
 Docs/QA4_MOBILE_INPUT_INCIDENT.md
@@ -305,6 +306,7 @@ scripts/qa-modernization-phase3-input-abilities.mjs
 scripts/qa-modernization-phase4-scoring-campaign.mjs
 scripts/qa-modernization-phase5-presentation-world.mjs
 scripts/qa-modernization-phase6-ui.mjs
+scripts/qa-modernization-phase7-audio-traffic.mjs
 scripts/qa-play-full-round.mjs
 scripts/qa-v500-world-tour.mjs
 scripts/qa-v510-production-slice.mjs
@@ -318,6 +320,7 @@ scripts/verify-modernization-phase3-input-abilities.mjs
 scripts/verify-modernization-phase4-scoring-campaign.mjs
 scripts/verify-modernization-phase5-presentation-world.mjs
 scripts/verify-modernization-phase6-ui.mjs
+scripts/verify-modernization-phase7-audio-traffic.mjs
 scripts/verify-qa-package.mjs
 scripts/verify-v500-campaign.mjs
 scripts/verify-v510-production-slice.mjs
@@ -326,6 +329,8 @@ src/abilities/ability-system.ts
 src/app/bootstrap.ts
 src/app/game-app.ts
 src/app/game-context.ts
+src/audio/audio-contracts.ts
+src/audio/audio-system.ts
 src/core/clocks.ts
 src/core/lifecycle.ts
 src/gameplay/campaign/campaign-contracts.ts
@@ -339,6 +344,9 @@ src/gameplay/economy/economy-system.test.ts
 src/gameplay/economy/economy-system.ts
 src/gameplay/scoring/scoring-contracts.ts
 src/gameplay/scoring/scoring-system.ts
+src/gameplay/traffic/traffic-contracts.ts
+src/gameplay/traffic/traffic-system.test.ts
+src/gameplay/traffic/traffic-system.ts
 src/input/input-system.ts
 src/legacy/legacy-runtime-adapter.ts
 src/main.ts

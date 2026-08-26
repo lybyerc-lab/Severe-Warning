@@ -18,6 +18,8 @@ import type { TornadoPresentationSystem } from '../presentation/tornado/tornado-
 import type { WorldSystem } from '../world/world-system';
 import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system';
 import type { UISubsystem } from '../ui/ui-system';
+import type { AudioSystem } from '../audio/audio-system';
+import type { TrafficSystem } from '../gameplay/traffic/traffic-system';
 import type {
   QaScenarioId,
   QaSnapshot,
@@ -147,6 +149,22 @@ interface LegacyUiBridge {
   getSnapshot(): LegacyUiBridgeSnapshot;
 }
 
+export interface LegacyAudioTrafficBridgeSnapshot {
+  readonly version: string;
+  readonly attached: boolean;
+  readonly audio: unknown;
+  readonly traffic: unknown;
+}
+
+interface LegacyAudioTrafficBridge {
+  readonly version: string;
+  attach(audioAuthority: AudioSystem, trafficAuthority: TrafficSystem): boolean;
+  syncFromLegacy(): unknown;
+  reset(): void;
+  runContractProbe(): unknown;
+  getSnapshot(): LegacyAudioTrafficBridgeSnapshot;
+}
+
 interface LegacyRuntimeGlobals {
   __SW_PRODUCTION_SLICE_READY__?: boolean;
   __SW_V510_UPDATE__?: (deltaSeconds: number, nowMs: number, isMoving: boolean) => void;
@@ -156,6 +174,7 @@ interface LegacyRuntimeGlobals {
   __SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?: LegacyScoringCampaignBridge;
   __SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?: LegacyPresentationWorldBridge;
   __SW_PHASE6_UI_BRIDGE__?: LegacyUiBridge;
+  __SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__?: LegacyAudioTrafficBridge;
   triggerProductionSliceQa?: (mode?: string) => boolean;
   getProductionSliceQaState?: () => QaSnapshot;
 }
@@ -171,6 +190,7 @@ export interface LegacyRuntimeStatus {
   readonly hasScoringCampaignBridge: boolean;
   readonly hasPresentationWorldBridge: boolean;
   readonly hasUiBridge: boolean;
+  readonly hasAudioTrafficBridge: boolean;
 }
 
 export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
@@ -192,6 +212,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
       hasScoringCampaignBridge: this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.version === 'MODERNIZATION_PHASE4_SCORING_CAMPAIGN_V2',
       hasPresentationWorldBridge: this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.version === 'MODERNIZATION_PHASE5_PRESENTATION_WORLD_V2',
       hasUiBridge: this.#globals.__SW_PHASE6_UI_BRIDGE__?.version === 'MODERNIZATION_PHASE6_UI_V1',
+      hasAudioTrafficBridge: this.#globals.__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__?.version === 'MODERNIZATION_PHASE7_AUDIO_TRAFFIC_V1',
     });
   }
 
@@ -264,6 +285,12 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     if (attached !== true) throw new Error('Legacy runtime rejected the Phase 6 UI authority.');
   }
 
+  attachAudioTraffic(audio: AudioSystem, traffic: TrafficSystem): void {
+    this.assertRequiredContracts();
+    const attached = this.#globals.__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__?.attach(audio, traffic);
+    if (attached !== true) throw new Error('Legacy runtime rejected the Phase 7 Audio & Traffic authorities.');
+  }
+
   getRunState(): LegacyRunState {
     this.assertRequiredContracts();
     const state = this.#globals.__SW_PHASE2_CLOCK_BRIDGE__?.getLegacyRunState();
@@ -306,6 +333,13 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     return snapshot;
   }
 
+  getAudioTrafficBridgeSnapshot(): LegacyAudioTrafficBridgeSnapshot {
+    this.assertRequiredContracts();
+    const snapshot = this.#globals.__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__?.getSnapshot();
+    if (!snapshot) throw new Error('Legacy runtime returned no Audio & Traffic bridge snapshot.');
+    return snapshot;
+  }
+
   runPresentationWorldContractProbe(): unknown {
     this.assertRequiredContracts();
     return this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.runContractProbe();
@@ -314,6 +348,11 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
   runUiContractProbe(): unknown {
     this.assertRequiredContracts();
     return this.#globals.__SW_PHASE6_UI_BRIDGE__?.runContractProbe();
+  }
+
+  runAudioTrafficContractProbe(): unknown {
+    this.assertRequiredContracts();
+    return this.#globals.__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__?.runContractProbe();
   }
 
   latchPresentationFrame(timestamp = 1000): unknown {
@@ -341,6 +380,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.syncFromLegacy();
     this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.syncFromLegacy();
     this.#globals.__SW_PHASE6_UI_BRIDGE__?.syncFromLegacy();
+    this.#globals.__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__?.syncFromLegacy();
   }
 
   advance(milliseconds: number): void {
@@ -352,6 +392,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.#globals.__SW_V510_UPDATE__?.(milliseconds / 1000, now, false);
     this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.syncFromLegacy();
     this.#globals.__SW_PHASE6_UI_BRIDGE__?.syncFromLegacy();
+    this.#globals.__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__?.syncFromLegacy();
   }
 
   getSnapshot(): QaSnapshot {
@@ -368,6 +409,7 @@ export class LegacyRuntimeAdapter implements SevereWeatherQaBridge {
     this.#globals.__SW_PHASE4_SCORING_CAMPAIGN_BRIDGE__?.reset();
     this.#globals.__SW_PHASE5_PRESENTATION_WORLD_BRIDGE__?.reset();
     this.#globals.__SW_PHASE6_UI_BRIDGE__?.reset();
+    this.#globals.__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__?.reset();
     this.synchronizeClockFromLegacy();
   }
 

@@ -53,6 +53,7 @@ export class GameApp {
         this.#context.silo,
       );
       this.#context.legacy.attachUi(this.#context.ui);
+      this.#context.legacy.attachAudioTraffic(this.#context.audio, this.#context.traffic);
       this.#initializedAt = new Date().toISOString();
       this.transition('ready');
     } catch (error) {

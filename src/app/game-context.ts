@@ -1,6 +1,6 @@
 // ============================================================================
 // [SW:ARCH:GAME_CONTEXT]
-// Shared Phase 6 ownership for presentation, world, UI, and legacy boundary.
+// Shared Phase 7 ownership for presentation, world, UI, audio, and traffic.
 // ============================================================================
 
 import type { AbilitySystem } from '../abilities/ability-system';
@@ -18,6 +18,8 @@ import type { TornadoPresentationSystem } from '../presentation/tornado/tornado-
 import type { WorldSystem } from '../world/world-system';
 import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system';
 import type { UISubsystem } from '../ui/ui-system';
+import type { AudioSystem } from '../audio/audio-system';
+import type { TrafficSystem } from '../gameplay/traffic/traffic-system';
 import type { LegacyRuntimeAdapter } from '../legacy/legacy-runtime-adapter';
 
 export interface BuildIdentity {
@@ -26,7 +28,7 @@ export interface BuildIdentity {
   readonly label: string;
   readonly renderer: 'Three.js r128';
   readonly architecture: 'modern-shell-v1';
-  readonly modernizationPhase: 'phase-5-rendering-world' | 'phase-6-hud-ui';
+  readonly modernizationPhase: 'phase-5-rendering-world' | 'phase-6-hud-ui' | 'phase-7-audio-traffic';
 }
 
 export interface GameContext {
@@ -47,6 +49,8 @@ export interface GameContext {
   readonly hartFarm: DestructibleSetpieceSystem;
   readonly silo: DestructibleSetpieceSystem;
   readonly ui: UISubsystem;
+  readonly audio: AudioSystem;
+  readonly traffic: TrafficSystem;
   readonly legacy: LegacyRuntimeAdapter;
   readonly document: Document;
   readonly window: Window;
@@ -70,6 +74,8 @@ export function createGameContext(
   hartFarm: DestructibleSetpieceSystem,
   silo: DestructibleSetpieceSystem,
   ui: UISubsystem,
+  audio: AudioSystem,
+  traffic: TrafficSystem,
   version: string,
   label: string,
 ): GameContext {
@@ -98,6 +104,8 @@ export function createGameContext(
     hartFarm,
     silo,
     ui,
+    audio,
+    traffic,
     legacy,
     document,
     window,
