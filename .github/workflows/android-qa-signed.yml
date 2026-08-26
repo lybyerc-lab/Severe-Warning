@@ -10,18 +10,6 @@ on:
         required: true
         default: qa
         type: string
-  push:
-    branches:
-      - qa
-    paths:
-      - '.github/workflows/android-qa-signed.yml'
-      - 'MechanicsLab/**'
-      - 'android/**'
-      - 'assets/**'
-      - 'scripts/**'
-      - 'capacitor.config.json'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
