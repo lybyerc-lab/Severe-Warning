@@ -11,9 +11,14 @@ on:
       - 'MechanicsLab/**'
       - 'assets/**'
       - 'scripts/**'
+      - 'src/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - 'vite.prelude.config.ts'
+      - 'FILE_INVENTORY.txt'
 
 permissions:
   contents: write
