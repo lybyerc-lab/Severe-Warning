@@ -3883,12 +3883,30 @@ function spawnActorChunks(target, count) {
   if (!meshData || !meshData.modelActor) return;
   const footprint = meshData.footprint || 5;
   const size = THREE.MathUtils.clamp(footprint * 0.11, 0.7, 1.8);
-  const geometry = new THREE.BoxGeometry(size, size, size);
-  const material = new THREE.MeshStandardMaterial({
-    color: meshData.modelActor.chunkColor, roughness: 0.7, metalness: 0.05
-  });
+  const primaryColor = meshData.modelActor.chunkColor || target.color || '#94a3b8';
+  
+  // Building-specific material palette (wall, roof trim, timber/steel framing)
+  const palette = [
+    primaryColor,
+    '#475569', // Foundation mortar/stone
+    '#78350f', // Structural wood beam
+    '#cbd5e1'  // Galvanized steel trim
+  ];
+
   const groundY = terrainHeightAt(target.x, target.z);
   for (let i = 0; i < count; i++) {
+    const color = palette[i % palette.length];
+    const isPlank = i % 3 === 0;
+    const isPanel = i % 3 === 1;
+    const geometry = isPlank
+      ? new THREE.BoxGeometry(size * 1.5, size * 0.35, size * 0.35)
+      : (isPanel ? new THREE.BoxGeometry(size * 1.2, size * 0.18, size * 1.2) : new THREE.BoxGeometry(size, size, size));
+    const material = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.75,
+      metalness: color === '#cbd5e1' ? 0.45 : 0.08
+    });
+
     const chunk = new THREE.Mesh(geometry, material);
     chunk.position.set(
       target.x + (Math.random() - 0.5) * footprint * 0.7,

@@ -101,6 +101,9 @@ Nothing blocking. The board is clear.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- Building-Specific Debris FX & Color Mapping:
+  - Enhanced `spawnActorChunks` with building-specific color palettes (primary wall paint, foundation stone/mortar, structural wood timber, and galvanized metal trim).
+  - Added varied fragment geometries (elongated structural planks, flat wall panels, and shattered blocks).
 - Revived MOO-LAH Economy & Storm Upgrades:
   - Ported parked MOO-LAH destruction economy and Storm Triangle upgrade loadout (`pull`, `gust`, `gridZap`) into `src/gameplay/economy/` (`MoolahSystem`, `moolah-contracts.ts`).
   - Added unit test suite `src/gameplay/economy/moolah-system.test.ts` (100% pass).
