@@ -96,8 +96,8 @@
   .district-challenge.done { border-color: rgba(74,222,128,0.55); background: rgba(20,83,45,0.28); color: var(--green); }
 
   /* Radar Widget */
-  .radar-box { position: relative; width: 145px; height: 145px; border-radius: 50%; border: 2px solid var(--green); overflow: hidden; background: #021206; box-shadow: 0 0 20px rgba(74, 222, 128, 0.4); }
-  .radar-box canvas { width: 100%; height: 100%; }
+  .radar-box { position: relative; width: 145px; height: 145px; border-radius: 50%; border: 2px solid var(--green); overflow: hidden; background: #021206; box-shadow: 0 0 20px rgba(74, 222, 128, 0.4); padding: 0 !important; box-sizing: border-box; }
+  .radar-box canvas { width: 100%; height: 100%; display: block; }
   /* The label sits inside a circle with overflow hidden, so the usable width at
      the bottom is the chord, not the diameter. At the phone breakpoint the box
      is 85px across and the full string needs about 104px: it wrapped, and the
@@ -219,39 +219,727 @@
     .storm-card h3 { font-size: 12px; }
   }
 
-  /* Main Menu & Pause Overlays */
-  #mainMenu { position: absolute; inset: 0; z-index: 99999 !important; background: radial-gradient(circle at center, rgba(15,23,42,0.92), rgba(3,7,18,0.98)); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; color: white; overflow-y: auto; pointer-events: auto !important; touch-action: manipulation; }
+  /* V500_CAMPAIGN_FOUNDATION_V1: Main Menu & Retro CRT TV Console Overlay */
+  #mainMenu {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    width: 100dvw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 99999 !important;
+    background: #000000;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    margin: 0;
+    color: white;
+    overflow: hidden;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+  }
   #mainMenu.hidden { display: none !important; }
-  .menu-card { width: min(680px, 94vw); max-height: calc(100vh - 20px); overflow-y: auto; background: rgba(15,23,42,0.96); border: 2px solid rgba(251,191,36,0.75); border-radius: 20px; padding: 24px; text-align: center; box-shadow: 0 0 60px rgba(0,0,0,0.9); backdrop-filter: blur(14px); pointer-events: auto !important; touch-action: manipulation; }
-  .menu-title { font: 900 34px/1 Outfit, sans-serif; color: var(--gold); letter-spacing: 0.08em; text-shadow: 0 0 24px rgba(251,191,36,0.5); margin: 0; }
-  .menu-sub { font-size: 12px; color: var(--cyan); letter-spacing: 0.14em; font-weight: 800; margin: 4px 0 16px; }
+
+  /* Authentic 1980s Walnut Woodgrain TV Cabinet Chassis (Full-Screen Edge-to-Edge) */
+  .tv-cabinet-chassis {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #451a03 0%, #291002 45%, #170700 100%);
+    border: clamp(2px, 0.6vmin, 5px) solid #5c2406;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  /* Curved Phosphor CRT Glass Screen with Glass Glare Sheen */
+  .tv-screen-glass {
+    background: radial-gradient(ellipse at 50% 50%, #0d274c 0%, #07152d 65%, #020817 100%);
+    border: clamp(2px, 0.5vmin, 4px) solid #1e293b;
+    border-radius: clamp(6px, 1.2vmin, 14px);
+    margin: clamp(2px, 0.6vmin, 6px) clamp(4px, 1vmin, 8px) clamp(2px, 0.4vmin, 4px) clamp(4px, 1vmin, 8px);
+    padding: max(3px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(3px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.9), 0 0 20px rgba(14, 165, 233, 0.18);
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+
+  .tv-glass-glare {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(125deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 28%, transparent 55%);
+    z-index: 6;
+  }
+
+  /* Retro Phosphor Scanlines */
+  .tv-scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 2px, transparent 2px, transparent 4px);
+    z-index: 5;
+  }
+
+  /* Broadcast Top Hazard Bar & News Header */
+  .tv-hazard-stripe {
+    height: clamp(2px, 0.6vmin, 4px);
+    width: 100%;
+    background: repeating-linear-gradient(-45deg, #eab308, #eab308 10px, #18181b 10px, #18181b 20px);
+    border-radius: 2px;
+    margin-bottom: clamp(2px, 0.5vmin, 4px);
+    position: relative;
+    z-index: 7;
+    flex-shrink: 0;
+  }
+
+  .tv-broadcast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1.5px solid rgba(56, 189, 248, 0.45);
+    padding-bottom: clamp(2px, 0.5vmin, 4px);
+    margin-bottom: clamp(2px, 0.5vmin, 5px);
+    position: relative;
+    z-index: 7;
+    flex-shrink: 0;
+  }
+  .tv-live-bug {
+    color: #38bdf8;
+    font: 900 clamp(10px, 2.2vmin, 13px)/1 'Outfit', sans-serif;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-shadow: 0 0 10px rgba(56,189,248,0.6);
+  }
+  .live-dot {
+    color: #ef4444;
+    animation: liveBlink 1s infinite alternate;
+  }
+  @keyframes liveBlink { 0% { opacity: 1; filter: drop-shadow(0 0 6px #ef4444); } 100% { opacity: 0.3; } }
+  .tv-sponsor-bug {
+    color: #fde047;
+    font: 800 clamp(7.5px, 1.6vmin, 9px)/1 'Inter', sans-serif;
+    letter-spacing: 0.06em;
+    background: rgba(120, 53, 15, 0.6);
+    padding: clamp(2px, 0.4vmin, 3px) clamp(5px, 1vw, 8px);
+    border-radius: 4px;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+  }
+
+  /* Two-Card Dispatch Grid (Responsive Full-Screen Landscape) */
+  .tv-dispatch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(6px, 1.2vw, 12px);
+    margin: clamp(1px, 0.3vmin, 3px) 0 clamp(2px, 0.5vmin, 5px);
+    position: relative;
+    z-index: 7;
+    flex: 1;
+    min-height: 0;
+  }
+  .tv-dispatch-card {
+    background: rgba(10, 25, 47, 0.92);
+    border: 1.5px solid rgba(56, 189, 248, 0.4);
+    border-radius: clamp(8px, 1.5vmin, 12px);
+    padding: clamp(6px, 1.2vmin, 10px) clamp(8px, 1.5vw, 12px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 0 16px rgba(56,189,248,0.06);
+    backdrop-filter: blur(8px);
+    min-height: 0;
+  }
+  .tv-dispatch-card.amber-glow {
+    border-color: rgba(245, 158, 11, 0.45);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 0 16px rgba(245,158,11,0.06);
+  }
+  .tv-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    padding-bottom: clamp(1px, 0.3vmin, 3px);
+    margin-bottom: clamp(2px, 0.4vmin, 4px);
+    flex-shrink: 0;
+  }
+  .tv-card-header h4 {
+    margin: 0;
+    font: 900 clamp(9.5px, 2vmin, 11.5px)/1 'Outfit', sans-serif;
+    color: #fde047;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .tv-card-badge {
+    font: 800 clamp(7px, 1.4vmin, 8.5px)/1 'Inter', sans-serif;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.18);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  .tv-card-main-title {
+    font: 900 clamp(13px, 3vmin, 17px)/1.1 'Outfit', sans-serif;
+    color: #ffffff;
+    letter-spacing: 0.04em;
+    margin-bottom: 1px;
+    text-shadow: 0 0 12px rgba(255,255,255,0.3);
+  }
+  .tv-card-sub {
+    font: 700 clamp(7.5px, 1.6vmin, 9px)/1.2 'Inter', sans-serif;
+    color: #38bdf8;
+    margin-bottom: clamp(1px, 0.3vmin, 3px);
+  }
+  .tv-card-gag {
+    font: 600 clamp(7px, 1.5vmin, 8.5px)/1.25 'Georgia', serif;
+    color: #cbd5e1;
+    font-style: italic;
+    margin-bottom: clamp(2px, 0.4vmin, 4px);
+  }
+  .tv-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font: 800 clamp(8px, 1.8vmin, 9.5px)/1 'Inter', sans-serif;
+    color: #cbd5e1;
+    margin-bottom: clamp(2px, 0.5vmin, 5px);
+    background: rgba(0,0,0,0.35);
+    padding: clamp(2px, 0.5vmin, 4px) clamp(4px, 1vw, 6px);
+    border-radius: 5px;
+  }
+  .tv-stars-badge { color: #facc15; font-size: clamp(9px, 2vmin, 11px); }
+  .tv-best-score { color: #22c55e; font-family: monospace; font-size: clamp(9px, 2vmin, 10.5px); }
   
-  .storm-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
-  .storm-card { background: rgba(3,7,18,0.85); border: 2px solid rgba(255,255,255,0.18); border-radius: 14px; padding: 12px 8px; cursor: pointer; transition: all 0.2s ease; text-align: center; pointer-events: auto !important; touch-action: manipulation; }
-  .storm-card:hover, .storm-card.selected { border-color: var(--gold); background: rgba(251,191,36,0.18); transform: translateY(-3px); box-shadow: 0 0 20px rgba(251,191,36,0.4); }
-  .storm-card h3 { margin: 4px 0 2px; font-size: 14px; color: white; }
-  .storm-card p { margin: 0; font-size: 10px; color: #94a3b8; line-height: 1.25; }
-  .storm-card .hi-score { font-size: 10px; color: var(--gold); font-weight: 800; margin-top: 6px; }
+  .tv-card-action-btn {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff;
+    border: 1px solid #38bdf8;
+    border-radius: 7px;
+    padding: clamp(5px, 1.1vmin, 8px) clamp(8px, 1.5vw, 12px);
+    font: 900 clamp(9px, 1.9vmin, 11px)/1 'Outfit', sans-serif;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.4), inset 0 1px rgba(255,255,255,0.25);
+    transition: transform 0.15s ease, background 0.15s ease;
+    flex-shrink: 0;
+  }
+  .tv-card-action-btn:hover { background: #0284c7; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(56, 189, 248, 0.6); }
+  .tv-card-action-btn.amber {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    border-color: #f59e0b;
+    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.4), inset 0 1px rgba(255,255,255,0.25);
+  }
+  .tv-card-action-btn.amber:hover { background: #d97706; box-shadow: 0 5px 14px rgba(245, 158, 11, 0.6); }
 
-  .menu-options { display: flex; gap: 10px; justify-content: center; align-items: center; margin: 12px 0; flex-wrap: wrap; }
-  .opt-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s ease; pointer-events: auto !important; touch-action: manipulation; }
-  .opt-btn:hover { background: rgba(255,255,255,0.22); }
-  .opt-btn.active { border-color: var(--cyan); color: var(--cyan); }
-  .start-btn { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; border: none; padding: 14px 44px; border-radius: 12px; font: 900 18px/1 Outfit, sans-serif; letter-spacing: 0.08em; cursor: pointer; box-shadow: 0 0 35px rgba(245,158,11,0.7); transition: transform 0.15s ease; margin-top: 6px; pointer-events: auto !important; touch-action: manipulation; }
-  .start-btn:active { transform: scale(0.94); }
+  /* Animated Breaking News Ticker */
+  .tv-marquee-container {
+    background: #060c18;
+    border: 1.5px solid rgba(56, 189, 248, 0.35);
+    border-radius: 6px;
+    padding: clamp(2px, 0.4vmin, 3px) 0;
+    overflow: hidden;
+    position: relative;
+    z-index: 7;
+    margin: clamp(2px, 0.4vmin, 4px) 0;
+    display: flex;
+    align-items: center;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    flex-shrink: 0;
+  }
+  .tv-marquee-label {
+    background: #dc2626;
+    color: #ffffff;
+    font: 900 clamp(7.5px, 1.6vmin, 9px)/1 'Outfit', sans-serif;
+    padding: clamp(2px, 0.4vmin, 3px) clamp(5px, 1vw, 8px);
+    border-radius: 4px;
+    margin: 0 clamp(4px, 1vw, 8px) 0 4px;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    z-index: 8;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.6);
+  }
+  .tv-marquee-scroller {
+    overflow: hidden;
+    flex: 1;
+    white-space: nowrap;
+    position: relative;
+  }
+  .tv-marquee-track {
+    display: inline-block;
+    color: #bae6fd;
+    font: 800 clamp(8px, 1.8vmin, 9.5px)/1 'Inter', sans-serif;
+    letter-spacing: 0.05em;
+    animation: tvTickerScroll 24s linear infinite;
+  }
+  @keyframes tvTickerScroll {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
 
-  /* V500_CAMPAIGN_FOUNDATION_V1: compact TV-weather-map campaign navigation. */
-  .campaign-map { margin: 12px 0 8px; padding: 10px; border: 1px solid rgba(56,189,248,0.42); border-radius: 14px; background: linear-gradient(145deg, rgba(8,47,73,0.7), rgba(15,23,42,0.88)); text-align: left; }
-  .campaign-map-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; color: #e0f2fe; }
-  .campaign-map-head strong { font: 900 12px/1 Outfit, sans-serif; letter-spacing: 0.08em; }
-  #campaignStarTotal { color: var(--gold); font: 900 11px/1 Inter, sans-serif; }
-  .campaign-map-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
-  .campaign-stop { min-height: 70px; border: 1px solid rgba(148,163,184,0.34); border-radius: 10px; padding: 7px; background: rgba(3,7,18,0.72); color: #e2e8f0; text-align: left; cursor: pointer; touch-action: manipulation; }
-  .campaign-stop strong { display: block; color: inherit; font: 900 10px/1.1 Outfit, sans-serif; letter-spacing: 0.03em; }
-  .campaign-stop small { display: block; margin-top: 4px; color: #94a3b8; font: 700 8px/1.2 Inter, sans-serif; }
-  .campaign-stop .campaign-stars { margin-top: 5px; color: var(--gold); font-size: 9px; letter-spacing: 0.05em; }
-  .campaign-stop.selected { border-color: var(--gold); background: rgba(120,53,15,0.62); box-shadow: 0 0 16px rgba(251,191,36,0.24); }
-  .campaign-stop.locked { opacity: 0.42; filter: grayscale(0.75); cursor: not-allowed; }
+  /* Bottom Shelf Settings */
+  .tv-bottom-shelf {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 7;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: clamp(2px, 0.4vmin, 3px);
+    flex-shrink: 0;
+  }
+  .tv-shop-btn {
+    background: linear-gradient(135deg, #ca8a04, #a16207);
+    color: #ffffff;
+    border: 1.5px solid #fde047;
+    border-radius: 6px;
+    padding: clamp(3px, 0.8vmin, 5px) clamp(6px, 1.2vw, 10px);
+    font: 900 clamp(8.5px, 1.8vmin, 10px)/1 'Outfit', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(202, 138, 4, 0.4), inset 0 1px rgba(255,255,255,0.3);
+  }
+  .tv-quick-settings { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tv-opt-chip {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #e2e8f0;
+    padding: clamp(3px, 0.7vmin, 4px) clamp(5px, 1vw, 7px);
+    border-radius: 5px;
+    font: 800 clamp(7.5px, 1.6vmin, 8.5px)/1 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .tv-opt-chip:hover { background: rgba(255,255,255,0.18); border-color: #38bdf8; }
+
+  /* TV Chassis Bottom Bezel with Dials & Big Tactile Power Switch */
+  .tv-chassis-bezel {
+    background: linear-gradient(180deg, #1f0c03 0%, #120600 100%);
+    padding: clamp(4px, 1vh, 7px) max(12px, env(safe-area-inset-right)) clamp(4px, 1vh, 7px) max(12px, env(safe-area-inset-left));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px solid #381503;
+    flex-shrink: 0;
+    height: clamp(36px, 8.5vh, 46px);
+    box-sizing: border-box;
+  }
+  .tv-dial-cluster {
+    display: flex;
+    align-items: center;
+    gap: clamp(4px, 1vw, 8px);
+  }
+  .tv-rotary-knob {
+    width: clamp(20px, 4vmin, 24px);
+    height: clamp(20px, 4vmin, 24px);
+    border-radius: 50%;
+    background: radial-gradient(circle, #57534e 0%, #1c1917 100%);
+    border: 2px solid #a8a29e;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,255,255,0.4);
+    position: relative;
+    cursor: pointer;
+  }
+  .knob-line {
+    width: 2px;
+    height: 7px;
+    background: #facc15;
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .tv-knob-label {
+    font: 900 clamp(7.5px, 1.6vmin, 9px)/1 'Outfit', sans-serif;
+    color: #d6d3d1;
+    letter-spacing: 0.05em;
+  }
+  .tv-brand-plate {
+    font: 900 clamp(7px, 1.4vmin, 8.5px)/1 'Inter', sans-serif;
+    color: #ca8a04;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: rgba(0,0,0,0.5);
+    padding: 2px clamp(4px, 1vw, 7px);
+    border-radius: 4px;
+    border: 1px solid rgba(202, 138, 4, 0.4);
+  }
+  .tv-power-btn {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    color: #ffffff;
+    border: 2px solid #fecaca;
+    border-radius: 8px;
+    font: 900 clamp(10px, 2.2vmin, 12.5px)/1 'Outfit', sans-serif;
+    padding: clamp(5px, 1vh, 8px) clamp(10px, 2vw, 18px);
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.65), inset 0 1px rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .tv-power-btn:hover { transform: scale(1.03); box-shadow: 0 0 28px rgba(239, 68, 68, 0.85); }
+  .tv-power-btn:active { transform: scale(0.95); }
+  .power-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+    animation: ledPulse 1.2s infinite alternate;
+  }
+  @keyframes ledPulse { 0% { opacity: 0.7; } 100% { opacity: 1; box-shadow: 0 0 12px #22c55e; } }
+
+  /* CRT Power-Off Screen Collapse Animation */
+  @keyframes crtCollapseAnim {
+    0% { transform: scale(1, 1); filter: brightness(1); }
+    35% { transform: scale(1, 0.005); filter: brightness(3.5); }
+    70% { transform: scale(0.006, 0.005); filter: brightness(6); }
+    100% { transform: scale(0, 0); filter: brightness(0); opacity: 0; }
+  }
+  .tv-screen-glass.crt-collapsing {
+    animation: crtCollapseAnim 0.38s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+
+  /* CRT Channel Static Burst & Bloom Transition */
+  .tv-static-burst {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    background: repeating-radial-gradient(circle, rgba(255,255,255,0.7) 0, rgba(0,0,0,0.85) 2px, rgba(255,255,255,0.7) 4px);
+    background-size: 10px 10px;
+    mix-blend-mode: screen;
+    transition: opacity 60ms linear;
+  }
+  .tv-static-burst.active {
+    opacity: 0.88;
+    animation: staticNoiseFlicker 0.14s steps(4) infinite;
+  }
+  @keyframes staticNoiseFlicker {
+    0% { background-position: 0 0; }
+    25% { background-position: 25px 45px; }
+    50% { background-position: -35px 15px; }
+    75% { background-position: 55px -25px; }
+    100% { background-position: 0 0; }
+  }
+  .crt-channel-bloom {
+    animation: crtChannelBloomAnim 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes crtChannelBloomAnim {
+    0% {
+      transform: scale(0.04, 0.005);
+      filter: brightness(3.5) contrast(1.5);
+      opacity: 0.3;
+    }
+    45% {
+      transform: scale(1, 0.04);
+      filter: brightness(2.2);
+      opacity: 0.9;
+    }
+    100% {
+      transform: scale(1, 1);
+      filter: brightness(1);
+      opacity: 1;
+    }
+  }
+
+  /* TV Channel Views */
+  .tv-channel-view {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 7;
+  }
+  .tv-channel-view.hidden, .tv-channel-view[hidden] { display: none !important; }
+
+  /* Sub-Channel Header */
+  .tv-subchannel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1.5px solid rgba(56, 189, 248, 0.45);
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+  }
+  .tv-subchannel-title {
+    color: #38bdf8;
+    font: 900 13px/1 'Outfit', sans-serif;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-shadow: 0 0 10px rgba(56,189,248,0.6);
+  }
+  .tv-subchannel-back-btn {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.45));
+    border: 1px solid #ef4444;
+    color: #fecaca;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font: 900 9px/1 'Outfit', sans-serif;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: background 0.15s ease;
+  }
+  .tv-subchannel-back-btn:hover { background: #ef4444; color: white; }
+
+  /* Geographic Territory Map Layout for Region View (Risk Theme) */
+  .tv-radar-map-wrapper {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    background: radial-gradient(circle at 50% 50%, #0c2b4d 0%, #07192f 60%, #030c18 100%);
+    border: 2px solid rgba(56, 189, 248, 0.5);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 2px 0 4px 0;
+    box-shadow: inset 0 0 35px rgba(0,0,0,0.85);
+  }
+  .tv-risk-map-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: auto;
+  }
+  .risk-territory {
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+  }
+  .risk-territory-shape {
+    transition: stroke 0.15s ease, stroke-width 0.15s ease, filter 0.15s ease;
+  }
+  .risk-territory:hover .risk-territory-shape {
+    filter: brightness(1.2) drop-shadow(0 0 10px rgba(250, 204, 21, 0.7));
+    stroke: #facc15;
+    stroke-width: 4.5px;
+  }
+  .risk-territory.selected .risk-territory-shape {
+    filter: brightness(1.3) drop-shadow(0 0 16px rgba(250, 204, 21, 0.95));
+    stroke: #fde047;
+    stroke-width: 5.5px;
+  }
+  .risk-territory.locked {
+    opacity: 0.55;
+    filter: grayscale(0.65);
+    cursor: not-allowed;
+  }
+  .risk-territory-label {
+    font: 900 11.5px/1 'Outfit', sans-serif;
+    fill: #ffffff;
+    text-anchor: middle;
+    letter-spacing: 0.05em;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.95));
+    pointer-events: none;
+  }
+  .risk-station-label {
+    font: 800 8.5px/1 'Inter', sans-serif;
+    fill: #fef08a;
+    text-anchor: middle;
+    letter-spacing: 0.04em;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.9));
+    pointer-events: none;
+  }
+
+  /* Region Map Stops Grid Overlay (Risk Badges) */
+  .campaign-map-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .campaign-stop {
+    position: absolute;
+    pointer-events: auto;
+    border: 2px solid rgba(255,255,255,0.95);
+    border-radius: 999px;
+    width: 52px;
+    height: 24px;
+    background: rgba(15, 23, 42, 0.95);
+    color: #e2e8f0;
+    text-align: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.85);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+  }
+  .campaign-stop:hover {
+    border-color: #facc15;
+    transform: translate(-50%, -50%) scale(1.15);
+    background: rgba(30, 41, 59, 0.98);
+    box-shadow: 0 0 14px rgba(250,204,21,0.8);
+  }
+  .campaign-stop.selected {
+    border-color: #facc15;
+    background: linear-gradient(135deg, #d97706, #92400e);
+    box-shadow: 0 0 16px rgba(251,191,36,0.9);
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  .campaign-stop.locked {
+    opacity: 0.6;
+    filter: grayscale(0.75);
+    cursor: not-allowed;
+  }
+  .campaign-stop strong { display: none; }
+  .campaign-stop small { display: none; }
+  .campaign-stop .campaign-stars { color: #facc15; font: 900 10px/1 'Outfit', sans-serif; letter-spacing: 0.05em; display: inline-block; }
+
+  /* Integrated Cartography Map Cartouche Legend Box */
+  .tv-site-popup {
+    position: absolute;
+    bottom: clamp(6px, 1.2vmin, 10px);
+    left: clamp(8px, 1.5vw, 14px);
+    right: auto;
+    width: auto;
+    max-width: 260px;
+    height: auto;
+    background: rgba(10, 24, 48, 0.92);
+    border: 1.5px solid rgba(56, 189, 248, 0.65);
+    border-radius: 8px;
+    padding: 4px 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.8), inset 0 0 10px rgba(56,189,248,0.12);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+  .tv-site-popup-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .tv-site-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 1px;
+  }
+  .tv-site-popup-title {
+    font: 900 clamp(10px, 2.2vmin, 12px)/1 'Outfit', sans-serif;
+    color: #ffffff;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .tv-site-popup-meta {
+    font: 700 clamp(7px, 1.5vmin, 8.5px)/1.1 'Inter', sans-serif;
+    color: #38bdf8;
+    margin-bottom: 0px;
+    white-space: nowrap;
+  }
+  .tv-site-popup-brief {
+    display: none;
+  }
+  .tv-cartouche-hint {
+    font: 900 8px/1 'Outfit', sans-serif;
+    color: #fde047;
+    letter-spacing: 0.04em;
+    background: rgba(161, 98, 7, 0.5);
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    padding: 3px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    box-shadow: 0 0 14px rgba(34, 197, 94, 0.5);
+    white-space: nowrap;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .tv-deploy-btn:hover { transform: scale(1.03); }
+
+  /* Region Navigation Tabs */
+  .tv-region-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: clamp(2px, 0.4vmin, 4px);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .tv-region-tab {
+    background: rgba(3, 7, 18, 0.7);
+    border: 1px solid #475569;
+    color: #94a3b8;
+    border-radius: 5px;
+    padding: clamp(2px, 0.5vmin, 4px) clamp(6px, 1.2vw, 9px);
+    font: 800 clamp(8px, 1.8vmin, 9.5px)/1 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+    transition: all 0.15s ease;
+  }
+  .tv-region-tab.active {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(56,189,248,0.4);
+  }
+  .tv-region-tab.locked { opacity: 0.45; cursor: not-allowed; }
+
+  /* Storm Dossier Grid inside TV screen (Full-Screen Edge-to-Edge Responsive) */
+  .tv-storm-dossier-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: clamp(6px, 1.2vw, 10px);
+    flex: 1;
+    min-height: 0;
+    margin: clamp(2px, 0.4vmin, 4px) 0;
+  }
+  .tv-storm-dossier-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: rgba(10, 25, 47, 0.88);
+    border: 1.5px solid #475569;
+    border-radius: clamp(8px, 1.5vmin, 12px);
+    padding: clamp(6px, 1.2vmin, 10px);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    min-height: 0;
+  }
+  .tv-storm-dossier-card:hover {
+    border-color: #38bdf8;
+    background: rgba(2, 132, 199, 0.16);
+    transform: translateY(-1px);
+  }
+  .tv-storm-dossier-card.selected {
+    border-color: #facc15;
+    background: rgba(202, 138, 4, 0.22);
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.35);
+  }
+  .dossier-icon { font-size: clamp(20px, 4.5vmin, 28px); display: flex; align-items: center; justify-content: center; margin-bottom: 2px; }
+  .dossier-info h3 { margin: 0 0 1px; font: 900 clamp(11px, 2.4vmin, 14px)/1 'Outfit', sans-serif; color: #ffffff; }
+  .dossier-tag { font: 800 clamp(7.5px, 1.6vmin, 8.5px)/1 'Inter', sans-serif; color: #38bdf8; letter-spacing: 0.05em; display: block; margin-bottom: 2px; }
+  .dossier-info p { margin: 0 0 clamp(2px, 0.4vmin, 4px); font: 600 clamp(7.5px, 1.6vmin, 9px)/1.25 'Inter', sans-serif; color: #cbd5e1; }
+  .dossier-verbs { font: 900 clamp(8px, 1.8vmin, 9.5px)/1 'Inter', sans-serif; color: #fde047; margin-bottom: 2px; }
+  .dossier-score { font: 900 clamp(8px, 1.8vmin, 9.5px)/1 'Inter', sans-serif; color: #22c55e; font-family: monospace; }
+  .campaign-stop:hover { border-color: #facc15; }
+  .campaign-stop strong { display: none; }
+  .campaign-stop small { display: none; }
+  .campaign-stop .campaign-stars { color: #facc15; font: 900 10.5px/1 'Outfit', sans-serif; }
   #campaignBrief { min-height: 28px; margin-top: 8px; color: #bae6fd; font: 700 9px/1.35 Inter, sans-serif; }
   .campaign-hud-chip { margin: 4px 0 0; color: #fde68a; font: 900 9px/1.2 Inter, sans-serif; letter-spacing: 0.07em; }
   .campaign-result { margin: 9px 0 0; padding: 8px 10px; border: 1px solid rgba(56,189,248,0.4); border-radius: 9px; background: rgba(8,47,73,0.35); color: #e0f2fe; font: 800 11px/1.35 Inter, sans-serif; }
@@ -460,7 +1148,82 @@
     #cowCamOverlay { align-items: center; padding: 0 8px; }
     .cow-cam-frame { min-width: min(360px, 70vw); padding: 6px 12px; }
     .cow-cam-title { font-size: 17px; }
+  /* [SW:UI:NEWS_CHOPPER_CAM] */
+  #chopperCamOverlay {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 68px);
+    right: calc(env(safe-area-inset-right) + 16px);
+    z-index: 1540;
+    pointer-events: none;
+    display: none;
   }
+  #chopperCamOverlay.active {
+    display: block !important;
+  }
+  .chopper-cam-crt {
+    width: 220px;
+    background: rgba(3, 7, 18, 0.9);
+    border: 2px solid #38bdf8;
+    border-radius: 8px;
+    padding: 6px 8px;
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.45);
+    font-family: 'Inter', sans-serif;
+    color: #e0f2fe;
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+  }
+  .chopper-cam-crt::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 2px, transparent 2px, transparent 4px);
+    pointer-events: none;
+  }
+  .chopper-cam-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8px;
+    font-weight: 900;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.4);
+    padding-bottom: 3px;
+    margin-bottom: 4px;
+  }
+  .rec-dot { color: #ef4444; }
+  .chopper-callsign { color: #fde047; letter-spacing: 0.05em; }
+  .chopper-reticle {
+    height: 60px;
+    border: 1px dashed rgba(56, 189, 248, 0.35);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 0;
+    background: rgba(56, 189, 248, 0.04);
+  }
+  .reticle-crosshair {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid rgba(56, 189, 248, 0.85);
+    border-radius: 50%;
+  }
+  .chopper-subject {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    font-size: 7.5px;
+    font-weight: 800;
+    color: #38bdf8;
+  }
+  .chopper-cam-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 7.5px;
+    font-weight: 800;
+    color: #94a3b8;
+  }
+  .chopper-bonus { color: #22c55e; }
 </style>
 <!-- V510_THREEJS_PRODUCTION_SLICE_V1: authored visual-density, atmosphere, tornado, barn, and Cow 17 pass. -->
 <style id="v510ProductionSliceStyles">
@@ -520,47 +1283,256 @@
 <body>
 <div id="productionSliceBadge">SEVERE WEATHER WARNING · 3D PRODUCTION</div>
 
-<!-- MAIN TITLE MENU OVERLAY -->
+<!-- RETRO 1980s CRT TELEVISION & LIVE BROADCAST MAIN MENU -->
 <div id="mainMenu">
-  <div class="menu-card">
-    <h1 class="menu-title">🌪️ SEVERE WEATHER WARNING</h1>
-    <div class="menu-sub">ARCADE DISASTER SIMULATOR v5.1.0</div>
+  <div class="tv-cabinet-chassis">
+    <!-- Curved Phosphor CRT Glass Screen -->
+    <div class="tv-screen-glass" id="tvScreenGlass">
+      <!-- CRT Channel Change Static Noise Burst Overlay -->
+      <div class="tv-static-burst" id="tvStaticBurst"></div>
+      <div class="tv-glass-glare"></div>
+      <div class="tv-scanlines"></div>
+      
+      <!-- ========================================================= -->
+      <!-- CHANNEL 8: LIVE ACTION WEATHER DISPATCH (MAIN OVERVIEW)   -->
+      <!-- ========================================================= -->
+      <div class="tv-channel-view" id="tvViewMain">
+        <!-- Top Emergency Hazard Stripe -->
+        <div class="tv-hazard-stripe"></div>
 
-    <section class="campaign-map" aria-label="Heartland campaign map">
-      <div class="campaign-map-head"><strong>LIVE WEATHER MAP: HEARTLAND TOUR</strong><span id="campaignStarTotal">0/12 STARS</span></div>
-      <div class="campaign-map-grid" id="campaignMapGrid"></div>
-      <div id="campaignBrief">Select a county broadcast to begin.</div>
-    </section>
+        <!-- Broadcast Top Bug & Masthead -->
+        <div class="tv-broadcast-header">
+          <div class="tv-live-bug">
+            <span class="live-dot">🔴</span> LIVE ON AIR · KSWX ACTION WEATHER 8
+          </div>
+          <div class="tv-sponsor-bug">
+            ☕ MOO BREW COFFEE · "PROUDLY RELOCATING LIVESTOCK SINCE 1978"
+          </div>
+        </div>
 
-    <div class="storm-select-grid">
-      <div class="storm-card selected" id="menuCardTornado" onclick="selectMenuStorm('tornado')">
-        <div style="font-size:24px;">🌪️</div>
-        <h3>TORNADO</h3>
-        <p>High mobility, serpentine funnel, vortex suction pull & launch verbs.</p>
-        <div class="hi-score" id="hiScoreTornado">BEST: 0</div>
+        <!-- Main Two-Card Dispatch Hub (0-Scroll Landscape Design) -->
+        <div class="tv-dispatch-grid">
+          <!-- Card 1: Regional County Assignment Wire -->
+          <div class="tv-dispatch-card" id="tvCountyAssignmentCard">
+            <div class="tv-card-header">
+              <h4>📍 COUNTY DISPATCH TARGET</h4>
+              <span class="tv-card-badge">KSWX 8 LIVE</span>
+            </div>
+            <div class="tv-card-body">
+              <div class="tv-card-main-title" id="tvActiveCountyName">LINCOLN COUNTY</div>
+              <div class="tv-card-sub" id="tvActiveCountyStation">KSWX 8 · SUBURB & FARMSTEAD</div>
+              <div class="tv-card-gag">"100% chance of roof adjustments and flying livestock."</div>
+              <div class="tv-card-meta">
+                <span id="tvActiveCountyTarget">🎯 TARGET: 45,000 PTS</span>
+                <span class="tv-stars-badge" id="tvActiveCountyStars">★★★ 0/3</span>
+              </div>
+            </div>
+            <button type="button" class="tv-card-action-btn" id="btnOpenCampaignModal" onclick="openCampaignMapModal()">🗺️ BROWSE REGION MAP [CH 4]</button>
+          </div>
+
+          <!-- Card 2: Doppler Radar Storm Classification -->
+          <div class="tv-dispatch-card amber-glow" id="tvStormProfileCard">
+            <div class="tv-card-header">
+              <h4>🛰️ DOPPLER RADAR CLASSIFIER</h4>
+              <span class="tv-card-badge" style="color:#fde047;background:rgba(245,158,11,0.2);">CLASS I</span>
+            </div>
+            <div class="tv-card-body">
+              <div class="tv-card-main-title" id="tvActiveStormName">🌪️ TORNADO</div>
+              <div class="tv-card-sub" id="tvActiveStormSubtitle">CLASSIC RANKINE VORTEX</div>
+              <div class="tv-card-gag">"Serpentine funnel · Rankine suction · 0% insurance coverage."</div>
+              <div class="tv-card-meta">
+                <span id="tvActiveStormVerbs" style="color:#facc15;">VERBS: PULL & LAUNCH</span>
+                <span class="tv-best-score" id="tvActiveStormBest">🏆 BEST: 0 PTS</span>
+              </div>
+            </div>
+            <button type="button" class="tv-card-action-btn amber" id="btnOpenStormModal" onclick="openStormSelectModal()">⚡ CHANGE STORM FORM [CH 6]</button>
+          </div>
+        </div>
+
+        <!-- Live Emergency Marquee News Ticker -->
+        <div class="tv-marquee-container">
+          <span class="tv-marquee-label">BREAKING</span>
+          <div class="tv-marquee-scroller">
+            <div class="tv-marquee-track">
+              🚨 NOAA BULLETIN: "COW 17" HAS REPORTEDLY EXCEEDED LOCAL SPEED LIMITS &nbsp;·&nbsp; LOCAL INSURANCE ADJUSTER RETIRES EFFECTIVE IMMEDIATELY &nbsp;·&nbsp; MOO BREW REMINDS RESIDENTS: DO NOT ATTEMPT TO ROPE THE TORNADO &nbsp;·&nbsp; MAXIMUM DEBRIS VELOCITY DETECTED IN DISTRICT 2 &nbsp;·&nbsp; 🚨 NOAA BULLETIN: "COW 17" HAS REPORTEDLY EXCEEDED LOCAL SPEED LIMITS &nbsp;·&nbsp; LOCAL INSURANCE ADJUSTER RETIRES EFFECTIVE IMMEDIATELY &nbsp;·&nbsp; MOO BREW REMINDS RESIDENTS: DO NOT ATTEMPT TO ROPE THE TORNADO &nbsp;·&nbsp; MAXIMUM DEBRIS VELOCITY DETECTED IN DISTRICT 2 &nbsp;·&nbsp;
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Ticker & Sub-Controls -->
+        <div class="tv-bottom-shelf">
+          <button type="button" class="tv-shop-btn" id="btnOpenShopMenu" onclick="openSwShopModal('upgrades')">🏬 UDDER VALUE OUTFITTERS</button>
+          
+          <div class="tv-quick-settings">
+            <button type="button" class="tv-opt-chip production-quality-btn" id="btnProductionQuality" data-quality="BALANCED" onclick="cycleProductionQuality()">VISUALS: BALANCED</button>
+            <button type="button" class="tv-opt-chip" id="btnTimeOfDay" onclick="cycleTimeOfDay()">TIME: DAY ☀️</button>
+            <button type="button" class="tv-opt-chip" id="btnToggleNeonMenu" onclick="toggleNeonCosmetic()">NEON: OFF</button>
+            <button type="button" class="tv-opt-chip" id="btnToggleFramingMenu" onclick="toggleStormFraming()">FRAMING: CLASSIC</button>
+            <button type="button" class="tv-opt-chip" id="btnToggleAudioMenu" onclick="toggleAudioMute()">AUDIO: ON 🔊</button>
+          </div>
+        </div>
       </div>
-      <div class="storm-card" id="menuCardSupercell" onclick="selectMenuStorm('supercell')">
-        <div style="font-size:24px;">🌩️</div>
-        <h3>SUPERCELL</h3>
-        <p>Mesocyclone wall cloud, hail corridors & cloud-to-ground lightning bolts.</p>
-        <div class="hi-score" id="hiScoreSupercell">BEST: 0</div>
+
+      <!-- ========================================================= -->
+      <!-- CHANNEL 4: REGION WEATHER RADAR MAP (MAP + SITE POPUP)    -->
+      <!-- ========================================================= -->
+      <div class="tv-channel-view hidden" id="campaignMapModal" hidden aria-hidden="true">
+        <div class="tv-subchannel-header">
+          <div class="tv-subchannel-title">
+            <span>🗺️</span> REGION · KSWX ACTION DOPPLER 4
+          </div>
+          <button type="button" class="tv-subchannel-back-btn" onclick="closeCampaignMapModal()">⮌ CH 8: RETURN</button>
+        </div>
+
+        <div class="tv-region-tabs">
+          <button type="button" class="tv-region-tab active">★ 1. HEARTLAND TOUR</button>
+          <button type="button" class="tv-region-tab locked" onclick="showGagToast('COASTAL BAYOU UNLOCKS AFTER HEARTLAND FINALE')">🔒 2. COASTAL BAYOU</button>
+          <button type="button" class="tv-region-tab locked" onclick="showGagToast('METRO ROW UNLOCKS AFTER HEARTLAND FINALE')">🔒 3. METRO ROW</button>
+        </div>
+
+        <!-- Geographic Territory Map Screen (Risk Style) -->
+        <div class="tv-radar-map-wrapper">
+          <svg class="tv-risk-map-svg" viewBox="0 0 880 250" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="riskGradLincoln" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ea580c"/>
+                <stop offset="100%" stop-color="#9a3412"/>
+              </linearGradient>
+              <linearGradient id="riskGradPrairie" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#eab308"/>
+                <stop offset="100%" stop-color="#a16207"/>
+              </linearGradient>
+              <linearGradient id="riskGradGrain" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#16a34a"/>
+                <stop offset="100%" stop-color="#14532d"/>
+              </linearGradient>
+              <linearGradient id="riskGradStateFair" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9333ea"/>
+                <stop offset="100%" stop-color="#581c87"/>
+              </linearGradient>
+              <filter id="riskShadow" x="-10%" y="-10%" width="130%" height="130%">
+                <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.75"/>
+              </filter>
+            </defs>
+
+            <!-- Grid & Compass -->
+            <path d="M 0 60 L 880 60 M 0 125 L 880 125 M 0 190 L 880 190 M 220 0 L 220 250 M 440 0 L 440 250 M 660 0 L 660 250" stroke="rgba(56, 189, 248, 0.12)" stroke-width="1" stroke-dasharray="4,4"/>
+
+            <!-- Route Arrows / Dashed Highway Lines -->
+            <path d="M 160 70 Q 320 35 480 65 T 700 140 Q 500 180 300 160 Z" fill="none" stroke="#fef08a" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+
+            <!-- Territory 0: LINCOLN COUNTY -->
+            <g class="risk-territory selected" id="riskTerritory0" onclick="selectCampaignLevel(0)">
+              <path class="risk-territory-shape" d="M 25 25 C 120 15, 230 15, 330 25 C 345 70, 325 110, 300 135 C 210 145, 110 140, 30 110 Z" fill="url(#riskGradLincoln)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+              <text x="175" y="48" class="risk-territory-label">LINCOLN COUNTY</text>
+            </g>
+
+            <!-- Territory 1: PRAIRIE JUNCTION -->
+            <g class="risk-territory" id="riskTerritory1" onclick="selectCampaignLevel(1)">
+              <path class="risk-territory-shape" d="M 345 25 C 490 15, 630 15, 715 35 C 730 85, 700 125, 635 135 C 500 140, 365 130, 335 80 Z" fill="url(#riskGradPrairie)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+              <text x="525" y="48" class="risk-territory-label">PRAIRIE JUNCTION</text>
+            </g>
+
+            <!-- Territory 2: GRAIN BELT -->
+            <g class="risk-territory" id="riskTerritory2" onclick="selectCampaignLevel(2)">
+              <path class="risk-territory-shape" d="M 30 120 C 110 145, 215 150, 305 140 C 355 180, 330 235, 295 240 C 170 245, 55 230, 25 180 Z" fill="url(#riskGradGrain)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+              <text x="175" y="152" class="risk-territory-label">GRAIN BELT</text>
+            </g>
+
+            <!-- Territory 3: STATE FAIR -->
+            <g class="risk-territory" id="riskTerritory3" onclick="selectCampaignLevel(3)">
+              <path class="risk-territory-shape" d="M 320 140 C 470 140, 620 135, 700 135 C 840 140, 865 190, 845 240 C 620 245, 430 245, 325 235 Z" fill="url(#riskGradStateFair)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+              <text x="600" y="152" class="risk-territory-label">STATE FAIR</text>
+            </g>
+
+            <!-- Blue Creek / Heartland River -->
+            <path d="M 335 15 Q 350 70, 345 125 Q 355 180, 375 245" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+          </svg>
+
+          <!-- 4 Geographic Waypoints Grid Overlay (Risk Pill Badges) -->
+          <div class="campaign-map-grid" id="campaignMapGrid"></div>
+          
+          <!-- Integrated Cartouche Legend Box inside Map -->
+          <div class="tv-site-popup" id="tvSitePopup">
+            <div class="tv-site-popup-info">
+              <div class="tv-site-popup-header">
+                <span class="live-dot" style="font-size:8.5px;">🔴</span>
+                <span class="tv-site-popup-title" id="tvSitePopupName">LINCOLN COUNTY</span>
+                <span class="tv-card-badge" id="tvSitePopupStation">KSWX 8</span>
+              </div>
+              <div class="tv-site-popup-meta" id="tvSitePopupMeta">TARGET: 45,000 PTS · ★ 0/3</div>
+              <div id="campaignBrief" style="display:none;"></div>
+            </div>
+            <div class="tv-cartouche-hint">⚡ HIGHLIGHTED</div>
+          </div>
+        </div>
       </div>
-      <div class="storm-card" id="menuCardDerecho" onclick="selectMenuStorm('derecho')">
-        <div style="font-size:24px;">💨</div>
-        <h3>DERECHO</h3>
-        <p>Bow echo wind shelf, high-speed microburst gale blasts & structural sweep.</p>
-        <div class="hi-score" id="hiScoreDerecho">BEST: 0</div>
+
+      <!-- ========================================================= -->
+      <!-- CHANNEL 6: STORM CLASSIFICATION DOSSIER                  -->
+      <!-- ========================================================= -->
+      <div class="tv-channel-view hidden" id="stormSelectModal" hidden aria-hidden="true">
+        <div class="tv-subchannel-header">
+          <div class="tv-subchannel-title">
+            <span>⚡</span> STORM CLASSIFICATION · BUREAU CHANNEL 6
+          </div>
+          <button type="button" class="tv-subchannel-back-btn" onclick="closeStormSelectModal()">⮌ CH 8: RETURN</button>
+        </div>
+
+        <div class="tv-storm-dossier-grid">
+          <div class="tv-storm-dossier-card selected" id="dossierCardTornado" onclick="selectDossierStorm('tornado')">
+            <div class="dossier-icon">🌪️</div>
+            <div class="dossier-info">
+              <h3>CLASS I: TORNADO</h3>
+              <span class="dossier-tag">THE CLASSIC VORTEX</span>
+              <p>Serpentine condensation funnel, high ground mobility, Rankine inward suction pull & ballistic launch.</p>
+              <div class="dossier-verbs">VERBS: <b>SPACE (PULL / LAUNCH)</b></div>
+              <div class="dossier-score" id="dossierScoreTornado">BEST: 0 PTS</div>
+            </div>
+          </div>
+
+          <div class="tv-storm-dossier-card" id="dossierCardSupercell" onclick="selectDossierStorm('supercell')">
+            <div class="dossier-icon">🌩️</div>
+            <div class="dossier-info">
+              <h3>CLASS II: SUPERCELL</h3>
+              <span class="dossier-tag">MESOCYCLONE HEAVYWEIGHT</span>
+              <p>Rotating wall cloud, localized downbursts, 800-particle hail shimmer corridor & lightning bolts.</p>
+              <div class="dossier-verbs">VERBS: <b>E (LIGHTNING ZAP)</b></div>
+              <div class="dossier-score" id="dossierScoreSupercell">BEST: 0 PTS</div>
+            </div>
+          </div>
+
+          <div class="tv-storm-dossier-card" id="dossierCardDerecho" onclick="selectDossierStorm('derecho')">
+            <div class="dossier-icon">💨</div>
+            <div class="dossier-info">
+              <h3>CLASS III: DERECHO</h3>
+              <span class="dossier-tag">STRAIGHT-LINE WIND SHELF</span>
+              <p>Wide bow echo wind shelf, high-speed microburst gale blasts & multi-block structural sweep.</p>
+              <div class="dossier-verbs">VERBS: <b>Q (GUST BLAST)</b></div>
+              <div class="dossier-score" id="dossierScoreDerecho">BEST: 0 PTS</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:4px;">
+          <button type="button" class="tv-action-btn primary" onclick="closeStormSelectModal()">CONFIRM STORM FORM & RETURN</button>
+        </div>
       </div>
     </div>
 
-    <div class="menu-options">
-      <button class="opt-btn production-quality-btn" id="btnProductionQuality" data-quality="BALANCED" onclick="cycleProductionQuality()">VISUALS: BALANCED</button>
-      <button class="opt-btn" id="btnToggleNeonMenu" onclick="toggleNeonCosmetic()">NEON FUNNEL: OFF</button>
-      <button class="opt-btn" id="btnToggleFramingMenu" onclick="toggleStormFraming()">FRAMING: CLASSIC</button>
-      <button class="opt-btn" id="btnToggleAudioMenu" onclick="toggleAudioMute()">AUDIO: ON 🔊</button>
+    <!-- Retro TV Bottom Bezel with Dials & Big Red Tactile Power Button -->
+    <div class="tv-chassis-bezel">
+      <div class="tv-dial-cluster">
+        <div class="tv-rotary-knob" id="tvChannelKnob" title="Channel Knob" onclick="cycleTvChannel()"><div class="knob-line"></div></div>
+        <span class="tv-knob-label" id="tvKnobChannelLabel">CH 8</span>
+        <div class="tv-rotary-knob" title="Volume Knob" onclick="toggleAudioMute()"><div class="knob-line"></div></div>
+        <span class="tv-knob-label">VOL 🔊</span>
+      </div>
+      <div class="tv-brand-plate">★ KSWX-TV 1982 SOLID STATE COLOR MASTER ★</div>
+      <button type="button" class="tv-power-btn" id="btnTvPower" onclick="triggerTvPowerLaunch()">
+        <span class="power-led"></span> ⏻ GO LIVE ON AIR / UNLEASH RUN ⚡
+      </button>
     </div>
-
-    <button class="start-btn" id="btnStartMenu" onclick="startRunFromMenu()">UNLEASH STORM ⚡</button>
   </div>
 </div>
 
@@ -728,6 +1700,25 @@
     <div class="cow-cam-title">COW-CAM ACTIVATED</div>
     <div class="cow-cam-detail" id="cowCamDetail">COW 17 • ALTITUDE OFFICIALLY UNNECESSARY</div>
     <div class="cow-cam-sponsor">THIS AIRBORNE LIVESTOCK UPDATE BROUGHT TO YOU BY MOO BREW</div>
+  </div>
+</div>
+
+<!-- Sky-Cam News Chopper CRT Viewfinder -->
+<div id="chopperCamOverlay" class="chopper-cam-overlay" role="status" aria-live="polite">
+  <div class="chopper-cam-crt">
+    <div class="chopper-cam-header">
+      <span class="rec-dot">🔴 REC</span>
+      <span class="chopper-callsign">ACTION CHOPPER 8 · SKY-CAM</span>
+      <span class="chopper-alt" id="chopperAltDisplay">ALT: 52M</span>
+    </div>
+    <div class="chopper-reticle">
+      <div class="reticle-crosshair"></div>
+      <div class="chopper-subject" id="chopperSubject">TRACKING: AIRBORNE SPECTACLE</div>
+    </div>
+    <div class="chopper-cam-footer">
+      <span>LIVE SATELLITE FEED</span>
+      <span class="chopper-bonus" id="chopperBonus">+350 PTS AERIAL SCOOP</span>
+    </div>
   </div>
 </div>
 
@@ -2102,6 +3093,7 @@ document.addEventListener('visibilitychange', () => {
 let gameStarted = false;
 let isPaused = false;
 let highScores = { tornado: 0, supercell: 0, derecho: 0 };
+let currentStorm = 'tornado';
 
 function loadHighScores() {
   try {
@@ -2111,6 +3103,7 @@ function loadHighScores() {
   setUI('hiScoreTornado', `BEST: ${highScores.tornado}`);
   setUI('hiScoreSupercell', `BEST: ${highScores.supercell}`);
   setUI('hiScoreDerecho', `BEST: ${highScores.derecho}`);
+  if (typeof updateTvMenuDisplays === 'function') updateTvMenuDisplays();
 }
 
 function updateHighScore(stormType, score) {
@@ -2123,6 +3116,147 @@ function updateHighScore(stormType, score) {
   }
 }
 
+function updateTvMenuDisplays() {
+  if (typeof HEARTLAND_CAMPAIGN !== 'undefined' && typeof getActiveCampaignLevel === 'function') {
+    const activeLevel = getActiveCampaignLevel();
+    if (activeLevel) {
+      const stars = typeof getCampaignStars === 'function' ? getCampaignStars(activeLevel.id) : 0;
+      setUI('tvActiveCountyName', activeLevel.name);
+      setUI('tvActiveCountyStation', `${activeLevel.station} · ${activeLevel.districts && activeLevel.districts[0] ? activeLevel.districts[0][0] : 'COUNTY LOCAL'}`);
+      setUI('tvActiveCountyTarget', `🎯 TARGET: ${activeLevel.scoreTarget.toLocaleString()} PTS`);
+      setUI('tvActiveCountyStars', '★'.repeat(stars) + '☆'.repeat(3 - stars) + ` (${stars}/3)`);
+    }
+  }
+
+  const stormMeta = {
+    tornado: { name: '🌪️ TORNADO', sub: 'CLASSIC RANKINE VORTEX', verbs: 'VERBS: PULL & LAUNCH' },
+    supercell: { name: '🌩️ SUPERCELL', sub: 'MESOCYCLONE HEAVYWEIGHT', verbs: 'VERBS: LIGHTNING ZAP (E)' },
+    derecho: { name: '💨 DERECHO', sub: 'STRAIGHT-LINE WIND SHELF', verbs: 'VERBS: GUST BLAST (Q)' }
+  };
+  const stormKey = typeof currentStorm !== 'undefined' ? currentStorm : 'tornado';
+  const activeStormData = stormMeta[stormKey] || stormMeta.tornado;
+  setUI('tvActiveStormName', activeStormData.name);
+  setUI('tvActiveStormSubtitle', activeStormData.sub);
+  setUI('tvActiveStormVerbs', activeStormData.verbs);
+  const bestScore = highScores[stormKey] || 0;
+  setUI('tvActiveStormBest', `🏆 BEST: ${bestScore.toLocaleString()} PTS`);
+
+  // Update dossier card high scores & selection
+  ['tornado', 'supercell', 'derecho'].forEach(st => {
+    const dCard = document.getElementById(`dossierCard${st.charAt(0).toUpperCase() + st.slice(1)}`);
+    if (dCard) {
+      dCard.classList.toggle('selected', st === stormKey);
+    }
+    const dScore = document.getElementById(`dossierScore${st.charAt(0).toUpperCase() + st.slice(1)}`);
+    if (dScore) {
+      dScore.textContent = `BEST: ${(highScores[st] || 0).toLocaleString()} PTS`;
+    }
+  });
+}
+
+let currentTvChannel = 'CH 8';
+
+function switchTvChannel(targetViewId, channelTag) {
+  initAudio();
+  playSound('click');
+  currentTvChannel = channelTag;
+
+  const staticBurst = document.getElementById('tvStaticBurst');
+  if (staticBurst) {
+    staticBurst.classList.add('active');
+  }
+
+  const knob = document.getElementById('tvChannelKnob');
+  if (knob) {
+    const angles = { 'CH 8': '0deg', 'CH 4': '-55deg', 'CH 6': '55deg' };
+    knob.style.transform = `rotate(${angles[channelTag] || '0deg'})`;
+  }
+  const knobLabel = document.getElementById('tvKnobChannelLabel');
+  if (knobLabel) {
+    knobLabel.textContent = channelTag;
+  }
+
+  setTimeout(() => {
+    ['tvViewMain', 'campaignMapModal', 'stormSelectModal'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (id === targetViewId) {
+        el.hidden = false;
+        el.setAttribute('aria-hidden', 'false');
+        el.classList.remove('hidden');
+        el.classList.add('crt-channel-bloom');
+        setTimeout(() => el.classList.remove('crt-channel-bloom'), 320);
+      } else {
+        el.hidden = true;
+        el.setAttribute('aria-hidden', 'true');
+        el.classList.add('hidden');
+      }
+    });
+
+    if (staticBurst) {
+      setTimeout(() => staticBurst.classList.remove('active'), 90);
+    }
+    updateTvMenuDisplays();
+  }, 70);
+}
+
+function cycleTvChannel() {
+  if (currentTvChannel === 'CH 8') {
+    openCampaignMapModal();
+  } else if (currentTvChannel === 'CH 4') {
+    openStormSelectModal();
+  } else {
+    closeStormSelectModal();
+  }
+}
+
+function openCampaignMapModal() {
+  switchTvChannel('campaignMapModal', 'CH 4');
+  if (typeof renderCampaignMap === 'function') {
+    renderCampaignMap();
+  }
+}
+
+function closeCampaignMapModal() {
+  switchTvChannel('tvViewMain', 'CH 8');
+}
+
+function openStormSelectModal() {
+  switchTvChannel('stormSelectModal', 'CH 6');
+}
+
+function closeStormSelectModal() {
+  switchTvChannel('tvViewMain', 'CH 8');
+}
+
+function selectDossierStorm(stormType) {
+  selectMenuStorm(stormType);
+  closeStormSelectModal();
+}
+
+function triggerTvPowerLaunch() {
+  const tvGlass = document.getElementById('tvScreenGlass');
+  if (tvGlass) {
+    tvGlass.classList.add('crt-collapsing');
+    initAudio();
+    playSound('zap');
+    setTimeout(() => {
+      startRunFromMenu();
+      tvGlass.classList.remove('crt-collapsing');
+    }, 380);
+  } else {
+    startRunFromMenu();
+  }
+}
+
+globalThis.openCampaignMapModal = openCampaignMapModal;
+globalThis.closeCampaignMapModal = closeCampaignMapModal;
+globalThis.openStormSelectModal = openStormSelectModal;
+globalThis.closeStormSelectModal = closeStormSelectModal;
+globalThis.selectDossierStorm = selectDossierStorm;
+globalThis.triggerTvPowerLaunch = triggerTvPowerLaunch;
+globalThis.updateTvMenuDisplays = updateTvMenuDisplays;
+
 function selectMenuStorm(stormType) {
   initAudio();
   playSound('click');
@@ -2134,6 +3268,7 @@ function selectMenuStorm(stormType) {
     }
   });
   selectStormClass(stormType);
+  updateTvMenuDisplays();
 }
 
 function startRunFromMenu() {
@@ -2152,6 +3287,11 @@ function startRunFromMenu() {
   setPauseOverlayActive(false);
   resetStormAudioState();
   resetWarningRun();
+
+  // [SW:CINEMATIC:PLAYABLE_OPENING_V1] Play Moo Brew opening sequence on first run start
+  if (typeof startOpeningCinematic === 'function') {
+    startOpeningCinematic();
+  }
 }
 
 function setPauseOverlayActive(active) {
@@ -2263,6 +3403,9 @@ function setupMenuEventListeners() {
   bindClick('menuCardTornado', () => selectMenuStorm('tornado'));
   bindClick('menuCardSupercell', () => selectMenuStorm('supercell'));
   bindClick('menuCardDerecho', () => selectMenuStorm('derecho'));
+  bindClick('btnOpenCampaignModal', openCampaignMapModal);
+  bindClick('btnOpenStormModal', openStormSelectModal);
+  bindClick('btnTvPower', triggerTvPowerLaunch);
   bindClick('btnToggleNeonMenu', toggleNeonCosmetic);
   bindClick('btnToggleFramingMenu', toggleStormFraming);
   bindClick('btnToggleAudioMenu', toggleAudioMute);
@@ -2282,9 +3425,6 @@ if (isBotMode) {
   armTitleCardAutoCollapse();
 }
 
-loadHighScores();
-
-// ============================================================================
 // [SW:CAMPAIGN:HEARTLAND]
 // Purpose: Own reusable Heartland level contracts, unlocks, stars, and saves.
 // Invariants:
@@ -2366,7 +3506,12 @@ function loadCampaignProgress() {
     campaignProgress = normalizeCampaignProgress({});
   }
   selectedCampaignIndex = Math.min(campaignProgress.selectedLevel, campaignProgress.unlockedLevel);
+  if (typeof updateTvMenuDisplays === 'function') updateTvMenuDisplays();
+  if (typeof renderCampaignMap === 'function') renderCampaignMap();
 }
+
+loadCampaignProgress();
+loadHighScores();
 
 function saveCampaignProgress() {
   campaignProgress.selectedLevel = selectedCampaignIndex;
@@ -2391,19 +3536,42 @@ function renderCampaignMap() {
   const brief = document.getElementById('campaignBrief');
   const total = document.getElementById('campaignStarTotal');
   if (!grid) return;
+  const positions = [
+    'left: 20%; top: 38%;',
+    'left: 60%; top: 36%;',
+    'left: 20%; top: 66%;',
+    'left: 68%; top: 66%;'
+  ];
   grid.innerHTML = HEARTLAND_CAMPAIGN.map((level, index) => {
     const locked = index > campaignProgress.unlockedLevel;
     const selected = index === selectedCampaignIndex;
     const stars = getCampaignStars(level.id);
-    return '<button type="button" class="campaign-stop' + (selected ? ' selected' : '') + (locked ? ' locked' : '') + '" ' +
+
+    // Sync SVG territory class
+    const terr = document.getElementById('riskTerritory' + index);
+    if (terr) {
+      terr.classList.toggle('selected', selected);
+      terr.classList.toggle('locked', locked);
+    }
+
+    const pos = positions[index] || 'left: 50%; top: 50%;';
+    const badgeText = locked ? '🔒' : ('★ ' + stars + '/3');
+    return '<button type="button" class="campaign-stop' + (selected ? ' selected' : '') + (locked ? ' locked' : '') + '" style="' + pos + '" ' +
       'onclick="selectCampaignLevel(' + index + ')" aria-disabled="' + locked + '">' +
       '<strong>' + (locked ? '🔒 ' : '') + level.name + '</strong>' +
       '<small>' + level.station + ' · TARGET ' + level.scoreTarget.toLocaleString() + '</small>' +
-      '<span class="campaign-stars">' + '★'.repeat(stars) + '☆'.repeat(3 - stars) + '</span></button>';
+      '<span class="campaign-stars">' + badgeText + '</span></button>';
   }).join('');
   const active = getActiveCampaignLevel();
   if (brief) brief.textContent = active.station + ': ' + active.brief;
   if (total) total.textContent = getCampaignTotalStars() + '/12 STARS';
+
+  // Update integrated cartouche legend on map
+  setUI('tvSitePopupName', active.name);
+  setUI('tvSitePopupStation', active.station);
+  const activeStars = typeof getCampaignStars === 'function' ? getCampaignStars(active.id) : 0;
+  setUI('tvSitePopupMeta', 'TARGET: ' + active.scoreTarget.toLocaleString() + ' PTS · ' + '★'.repeat(activeStars) + '☆'.repeat(3 - activeStars) + ' (' + activeStars + '/3)');
+  if (typeof updateTvMenuDisplays === 'function') updateTvMenuDisplays();
 }
 
 function selectCampaignLevel(index) {
@@ -2415,6 +3583,7 @@ function selectCampaignLevel(index) {
   selectedCampaignIndex = index;
   saveCampaignProgress();
   renderCampaignMap();
+  if (typeof updateTvMenuDisplays === 'function') updateTvMenuDisplays();
   initAudio();
   playSound('click');
   return true;
@@ -4686,7 +5855,7 @@ window.addEventListener('resize', () => {
 });
 
 // [SW:STATE:RUN] --- GAME, MISSION & TELEMETRY STAGE STATE ---
-let currentStorm = 'tornado';
+currentStorm = 'tornado';
 let currentStage = 1; // 1: Neighborhood, 2: Landmarks, 3: Finale
 let destructionScore = 0;
 let baseScore = 0;
@@ -5625,6 +6794,9 @@ function activateCowCam(cow, forced = false) {
   document.body.classList.add('cow-cam-active');
   publishMediaHeadline(`COW-CAM: COW ${cow.id} IS APPROACHING THE COUNTY LINE. MOO BREW HAS THE PICTURES.`, 4.2);
   playSound('moo');
+  if (typeof triggerNewsChopperLiveFeed === 'function') {
+    triggerNewsChopperLiveFeed(`Cow ${cow.id}`, cow.altitude);
+  }
   return true;
 }
 
@@ -6746,8 +7918,13 @@ function createComedyPropMesh(kind) {
   if (modelName) {
     instantiateActorModel(modelName, { damageable: true }).then(model => {
       if (!model) return;
+      model.name = modelName;
       if (procBody.parent) group.remove(procBody);
       group.add(model);
+      if (typeof landmarkAnimationState !== 'undefined') {
+        if (kind === 'ferris') landmarkAnimationState.ferrisWheelMesh = model;
+        if (kind === 'carousel') landmarkAnimationState.carouselMesh = model;
+      }
     });
   }
 
@@ -8129,7 +9306,7 @@ function spawnChainSetpieces() {
     { kind: 'gas', stage: 1, x: 40, z: -200, name: 'LAST CHANCE GAS', gag: 'LAST CHANCE GAS BECOMES FIRST CHANCE FIRE.' },
     { kind: 'carwash', stage: 2, x: -40, z: -200, name: 'TWISTER SHINE CAR WASH', gag: 'FREE UNDERCARRIAGE CLEANING EXTENDED TO THE ENTIRE COUNTY.' },
     { kind: 'propane', stage: 2, x: -200, z: 120, name: 'HANKS PROPANE', gag: 'HANKS PROPANE INTRODUCES SAME-DAY AIR DELIVERY.' },
-    { kind: 'fireworks', stage: 3, x: 200, z: 200, name: 'TOTALLY LEGAL FIREWORKS', gag: 'THE COUNTY FAIR ADDS AN UNPLANNED NIGHT SHOW.' }
+    { kind: 'fireworks', stage: 3, x: 240, z: 160, name: 'TOTALLY LEGAL FIREWORKS', gag: 'THE COUNTY FAIR ADDS AN UNPLANNED NIGHT SHOW.' }
   ];
   definitions.forEach((definition, index) => {
     const meshData = createChainSetpieceMesh(definition.kind);
@@ -8281,7 +9458,8 @@ function buildLivingCounty() {
   const centers = [-200, -120, -40, 40, 120, 200];
   const reserved = [
     [-145, -110], [-60, -60], [-110, 100], [120, 120], [155, 135],
-    [40, -200], [-40, -200], [-200, 120], [200, 200]
+    [40, -200], [-40, -200], [-200, 120], [240, 160], [200, 200], [-200, 200],
+    [-200, -200], [200, -200], [-120, -120], [-290, -220]
   ];
   const lotOffsets = [[-18, -18], [18, -18], [-18, 18], [18, 18]];
   // [SW:VISUAL:TOWN_ASYMMETRY]
@@ -9711,6 +10889,9 @@ function animate(now) {
             destroyedSubstationsCount++;
             addScore(350);
             triggerSubstationBlackoutEvent();
+            if (typeof triggerDistrictBlackout === 'function') {
+              triggerDistrictBlackout(destroyedSubstationsCount - 1);
+            }
             explodeStructure(sub.x, sub.z, sub.meshData.color, false, false, 10, sub.meshData.wreck || 'substation-wreck');
           }
         }
@@ -9858,8 +11039,20 @@ function animate(now) {
   updateObjectives();
   renderRadar();
 
+  if (typeof updateOpeningCinematic === 'function' && typeof openingCinematicState !== 'undefined' && openingCinematicState.active) {
+    updateOpeningCinematic(dt);
+  }
+
   if (typeof updateLandmarkAnimations === 'function') {
     updateLandmarkAnimations(dt);
+  }
+
+  if (typeof updateSatelliteVortex === 'function') {
+    updateSatelliteVortex(dt);
+  }
+
+  if (typeof updateProductionNewsChopper === 'function') {
+    updateProductionNewsChopper(dt);
   }
 
   setUI('fpsVal', fps || 60);
@@ -10437,6 +11630,28 @@ function createProductionDressing() {
   );
   productionSliceRoot.add(parkingLines);
 
+  // [SW:WORLD:PARKING_DRESSING] Populate parking lot stalls with diverse parked vehicles
+  const vehicleModelChoices = ['sedan', 'pickup-truck', 'suv', 'station-wagon', 'van', 'coupe'];
+  const vehicleColorPalette = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#64748b', '#f8fafc', '#1e293b', '#8b5cf6', '#06b6d4', '#ec4899'];
+  for (let i = 0; i < 24; i++) {
+    if (i === 4 || i === 11 || i === 19) continue; // Realistic empty stalls
+    const x = -145 + (i % 8) * 9.2;
+    const z = -205 + Math.floor(i / 8) * 17;
+    const modelName = vehicleModelChoices[i % vehicleModelChoices.length];
+    const color = vehicleColorPalette[i % vehicleColorPalette.length];
+    const carGroup = new THREE.Group();
+    carGroup.position.set(x, roadSurfaceHeightAt(x, z), z);
+    carGroup.rotation.y = (Math.floor(i / 8) % 2 === 0 ? 0 : Math.PI);
+    productionSliceRoot.add(carGroup);
+
+    const procCar = addProductionPart(carGroup, new THREE.BoxGeometry(2.4, 1.1, 4.4), color, 0, 0.6, 0, { roughness: 0.4, metalness: 0.4 });
+    instantiateActorModel(modelName, { damageable: false }).then(model => {
+      if (!model) return;
+      if (procCar.parent) carGroup.remove(procCar);
+      carGroup.add(model);
+    });
+  }
+
   const mailboxTransforms = [];
   for (let i = 0; i < 14; i++) {
     const x = 18 + (i % 7) * 22;
@@ -10470,15 +11685,15 @@ function createProductionDressing() {
 // ============================================================================
 // [SW:WORLD:SIGNATURE_BARN]
 // Authored five-state destruction: intact, damaged, exposed, partial collapse,
-// and readable wreckage. It is an additive setpiece and does not gate progress.
+// and readable wreckage. Integrated directly with the rural farmstead perimeter.
 // ============================================================================
 function createProductionBarn() {
   const campaignIndex = Math.max(0, Math.min(3, Number(selectedCampaignIndex) || 0));
   const positions = [
-    { x: -280, z: 120, rotation: 0.04 },
-    { x: -280, z: -120, rotation: -0.08 },
-    { x: -280, z: 40, rotation: 0.03 },
-    { x: -200, z: 200, rotation: -0.12 }
+    { x: -290, z: -220, rotation: 0.04 },
+    { x: -290, z: -220, rotation: -0.08 },
+    { x: -290, z: -220, rotation: 0.03 },
+    { x: -290, z: -220, rotation: -0.12 }
   ];
   const placement = positions[campaignIndex];
   const group = new THREE.Group();
@@ -11607,7 +12822,7 @@ let phase5LatchedTimestamp = 0;
 let phase5LatchedFrameId = 0;
 
 globalThis.isPhase5PresentationLatched = function isPhase5PresentationLatched() {
-  return phase5PresentationLatched;
+  return phase5PresentationLatched || Boolean(typeof openingCinematicState !== 'undefined' && openingCinematicState.active);
 };
 
 globalThis.getPhase5LatchedTimestamp = function getPhase5LatchedTimestamp() {
@@ -12307,7 +13522,8 @@ const SW_RPG_ACTIVE_SLOTS = Object.freeze(['pull', 'gust', 'gridZap']);
 const SW_RPG_UPGRADES = Object.freeze({
   pull: { key: 'pull', label: 'PULL VORTEX', cost: 150, base: 2.2, upgraded: 3.4, unit: 's' },
   gust: { key: 'gust', label: 'GUST BURST', cost: 175, base: 180, upgraded: 260, unit: ' DMG' },
-  gridZap: { key: 'gridZap', label: 'GRID ZAP', cost: 200, base: 6, upgraded: 10, unit: ' NODES' }
+  gridZap: { key: 'gridZap', label: 'GRID ZAP', cost: 200, base: 6, upgraded: 10, unit: ' NODES' },
+  twinFunnel: { key: 'twinFunnel', label: 'TWIN TWISTER', cost: 350, base: 0, upgraded: 1, unit: ' SATELLITE' }
 });
 
 const SW_RPG_SKINS = Object.freeze({
@@ -12494,10 +13710,104 @@ function installNewspaperStyles() {
   const style = document.createElement('style');
   style.id = 'swNewspaperStyles';
   style.textContent = `
+    #mainMenu .menu-card.newspaper-theme {
+      background: #fbf8f1 !important;
+      color: #1c1917 !important;
+      border: 3px double #292524 !important;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.65), inset 0 0 40px rgba(120,53,15,0.06) !important;
+    }
+    .newspaper-header-masthead {
+      border-bottom: 3px double #1c1917;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .newspaper-meta-bar {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Georgia', serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #44403c;
+      border-bottom: 1px solid #78716c;
+      padding-bottom: 3px;
+      margin-bottom: 6px;
+    }
+    .newspaper-main-title {
+      font-family: 'Georgia', serif;
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #0f172a;
+      margin: 2px 0 4px 0;
+      text-transform: uppercase;
+    }
+    .newspaper-kicker-banner {
+      font-family: 'Georgia', serif;
+      font-size: 12px;
+      font-weight: 900;
+      color: #b91c1c;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    #mainMenu .menu-card.newspaper-theme .campaign-map {
+      background: rgba(0,0,0,0.03) !important;
+      border: 1px solid #a8a29e !important;
+      color: #1c1917 !important;
+    }
+    #mainMenu .menu-card.newspaper-theme .campaign-map-head strong {
+      color: #1c1917 !important;
+      font-family: 'Georgia', serif;
+    }
+    #mainMenu .menu-card.newspaper-theme .campaign-map-chip {
+      background: #f5f0e6 !important;
+      border: 1px solid #78716c !important;
+      color: #1c1917 !important;
+    }
+    #mainMenu .menu-card.newspaper-theme .campaign-map-chip.selected {
+      background: #b91c1c !important;
+      color: #ffffff !important;
+      border-color: #7f1d1d !important;
+    }
+    #mainMenu .menu-card.newspaper-theme .storm-card {
+      background: #fdfbf7 !important;
+      border: 1.5px solid #a8a29e !important;
+      color: #1c1917 !important;
+    }
+    #mainMenu .menu-card.newspaper-theme .storm-card h3 {
+      font-family: 'Georgia', serif;
+      color: #0f172a !important;
+      font-weight: 900;
+    }
+    #mainMenu .menu-card.newspaper-theme .storm-card p {
+      color: #44403c !important;
+      font-size: 11px;
+    }
+    #mainMenu .menu-card.newspaper-theme .storm-card.selected {
+      border: 2px solid #b91c1c !important;
+      box-shadow: 0 0 12px rgba(185,28,28,0.25) !important;
+      background: #fff5f5 !important;
+    }
+    #mainMenu .menu-card.newspaper-theme .opt-btn {
+      background: #f5f0e6 !important;
+      border: 1px solid #a8a29e !important;
+      color: #292524 !important;
+      font-weight: 800;
+    }
+    #mainMenu .menu-card.newspaper-theme .start-btn {
+      background: linear-gradient(135deg, #b91c1c, #991b1b) !important;
+      color: #ffffff !important;
+      border: 2px solid #7f1d1d !important;
+      box-shadow: 0 4px 14px rgba(185,28,28,0.4) !important;
+      font-family: 'Georgia', serif;
+      font-weight: 900;
+    }
     .newspaper-masthead { font-family: 'Georgia', serif; text-align: center; color: #1e293b; border-bottom: 2px solid #334155; margin-bottom: 8px; padding-bottom: 4px; }
     .newspaper-subhead { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
     .newspaper-kicker { font-family: 'Georgia', serif; font-size: 14px; font-weight: 900; color: #dc2626; margin: 4px 0; }
-    .newspaper-lead { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; color: #334155; margin: 6px 0; }
+    .newspaper-lead { font-family: 'Georgia', serif; font-size: 12px; font-weight: 700; color: #334155; margin: 6px 0; text-align: center; }
     .newspaper-results-masthead { font-family: 'Georgia', serif; font-size: 18px; font-weight: 900; text-align: center; color: #0f172a; border-bottom: 2px double #334155; padding-bottom: 4px; margin-bottom: 6px; }
     .newspaper-results-headline { font-family: 'Georgia', serif; font-size: 16px; font-weight: 900; color: #b91c1c; text-align: center; margin: 6px 0; }
     .newspaper-results-copy { font-family: 'Georgia', serif; font-size: 12px; color: #334155; line-height: 1.4; margin: 6px 0; }
@@ -12509,20 +13819,42 @@ function installNewspaperStyles() {
 
 function decorateNewspaperMenu() {
   installNewspaperStyles();
-  const card = document.querySelector('#mainMenu .menu-card') || document.getElementById('mainMenu');
+  const card = document.querySelector('#mainMenu .menu-card');
   if (!card) return false;
+  card.classList.add('newspaper-theme');
+
+  if (!document.getElementById('newspaperMastheadBox')) {
+    const mastheadBox = document.createElement('div');
+    mastheadBox.id = 'newspaperMastheadBox';
+    mastheadBox.className = 'newspaper-header-masthead';
+    mastheadBox.innerHTML = `
+      <div class="newspaper-meta-bar">
+        <span>VOL. LXXVIII NO. 24</span>
+        <span>THE HEARTLAND MORNING DISPATCH</span>
+        <span>FIVE CENTS</span>
+      </div>
+      <h1 class="newspaper-main-title">THE DAILY WARNING</h1>
+      <div class="newspaper-kicker-banner">🚨 NOAA ISSUES COUNTY-WIDE ROTATION BULLETIN · ARCADE DISASTER SIMULATOR v5.1.0</div>
+    `;
+    card.insertBefore(mastheadBox, card.firstChild);
+    const oldTitle = card.querySelector('.menu-title');
+    const oldSub = card.querySelector('.menu-sub');
+    if (oldTitle) oldTitle.style.display = 'none';
+    if (oldSub) oldSub.style.display = 'none';
+  }
+
   if (!document.getElementById('newspaperLead')) {
     const lead = document.createElement('div');
     lead.id = 'newspaperLead';
     lead.className = 'newspaper-lead';
-    lead.innerHTML = '<b>LEAD FORECAST:</b> Select a storm file. The county has prepared an official weather bulletin.';
+    lead.innerHTML = '<b>WEATHER BUREAU DISPATCH:</b> Select storm classification below. Emergency crews stand ready across all districts.';
     const grid = card.querySelector('.storm-select-grid') || card.querySelector('.menu-buttons');
     if (grid) grid.insertAdjacentElement('beforebegin', lead);
   }
   const startBtn = document.getElementById('btnStartMenu');
   if (startBtn && !startBtn.dataset.newspaperStyled) {
     startBtn.dataset.newspaperStyled = 'true';
-    startBtn.innerHTML = '<small style="display:block;font-size:10px;letter-spacing:0.05em;color:#fde047;">EXTRA! EXTRA! ISSUE THE WARNING!</small>UNLEASH STORM';
+    startBtn.innerHTML = '<small style="display:block;font-size:10px;letter-spacing:0.06em;color:#fef08a;">EXTRA! EXTRA! PRINT THE FRONT PAGE!</small>UNLEASH WARNING RUN ⚡';
   }
   return true;
 }
@@ -12968,15 +14300,28 @@ const landmarkAnimationState = {
 };
 
 function initLandmarkAnimations() {
-  // Locate Ferris wheel and Carousel instances in scene
-  scene.traverse(child => {
-    if (child.name === 'ferris-wheel' || (child.parent && child.parent.name === 'ferris-wheel')) {
-      landmarkAnimationState.ferrisWheelMesh = child;
-    }
-    if (child.name === 'carousel' || (child.parent && child.parent.name === 'carousel')) {
-      landmarkAnimationState.carouselMesh = child;
-    }
-  });
+  const ferrisProp = typeof comedyProps !== 'undefined' && comedyProps.find(p => (p.kind === 'ferris' || p.kind === 'ferris-wheel') && !p.destroyed);
+  if (ferrisProp && ferrisProp.meshData && ferrisProp.meshData.group) {
+    landmarkAnimationState.ferrisWheelMesh = ferrisProp.meshData.group;
+  }
+  const carouselProp = typeof comedyProps !== 'undefined' && comedyProps.find(p => p.kind === 'carousel' && !p.destroyed);
+  if (carouselProp && carouselProp.meshData && carouselProp.meshData.group) {
+    landmarkAnimationState.carouselMesh = carouselProp.meshData.group;
+  }
+  const ferrisLandmark = typeof landmarks !== 'undefined' && landmarks.find(l => l.name === 'FERRIS WHEEL' || l.icon === '🎡');
+  if (ferrisLandmark && ferrisLandmark.meshData && ferrisLandmark.meshData.group) {
+    landmarkAnimationState.ferrisWheelMesh = ferrisLandmark.meshData.group;
+  }
+  if (typeof scene !== 'undefined') {
+    scene.traverse(child => {
+      if (!landmarkAnimationState.ferrisWheelMesh && (child.name === 'ferris-wheel' || child.name === 'ferris')) {
+        landmarkAnimationState.ferrisWheelMesh = child;
+      }
+      if (!landmarkAnimationState.carouselMesh && child.name === 'carousel') {
+        landmarkAnimationState.carouselMesh = child;
+      }
+    });
+  }
 }
 
 function updateLandmarkAnimations(dt) {
@@ -12991,6 +14336,7 @@ function updateLandmarkAnimations(dt) {
   // 1. Ferris Wheel Continuous Mechanical Rotation
   landmarkAnimationState.ferrisWheelAngle = (landmarkAnimationState.ferrisWheelAngle + clampedDt * 0.22) % (Math.PI * 2);
   if (landmarkAnimationState.ferrisWheelMesh) {
+    // If it has children (like the wheel rim or imported scene), rotate
     landmarkAnimationState.ferrisWheelMesh.rotation.z = landmarkAnimationState.ferrisWheelAngle;
   }
 
@@ -13383,6 +14729,410 @@ globalThis.__SW_SHOP_QA__ = {
   render() { renderShopModal(); }
 };
 // [SW:UI:SHOP_MODAL_V1:END]
+
+// [SW:SOURCE:sw-feature-trilogy-v1.js]
+// ============================================================================
+// [SW:VORTEX:SATELLITE_TWIN_TORNADO_V1]
+// Orbiting secondary vortex with suction physics, vapor ribbon, and lightning arcs.
+// ============================================================================
+const SW_SATELLITE_VORTEX_MARKER = 'SW_SATELLITE_TWIN_TORNADO_V1';
+
+const satelliteVortexState = {
+  unlocked: false,
+  active: false,
+  angle: 0,
+  orbitRadius: 22.0,
+  orbitSpeed: 1.75,
+  suctionRadius: 16.0,
+  damageRadius: 11.0,
+  damageRate: 150.0,
+  worldX: 0,
+  worldZ: 0,
+  meshGroup: null,
+  arcLineMesh: null
+};
+
+function createProductionSatelliteVortex() {
+  if (satelliteVortexState.meshGroup) return satelliteVortexState.meshGroup;
+  const group = new THREE.Group();
+  group.name = 'SatelliteTwinTornadoGroup';
+
+  const middleShell = new THREE.Mesh(
+    new THREE.CylinderGeometry(9.5, 1.0, 24, 20, 8, true),
+    new THREE.MeshBasicMaterial({ color: '#334155', transparent: true, opacity: 0.55, side: THREE.DoubleSide, wireframe: false })
+  );
+  middleShell.position.y = 12.0;
+  group.add(middleShell);
+
+  const coreShell = new THREE.Mesh(
+    new THREE.CylinderGeometry(6.5, 0.5, 22, 16, 6, true),
+    new THREE.MeshBasicMaterial({ color: '#0f172a', transparent: true, opacity: 0.82, side: THREE.DoubleSide })
+  );
+  coreShell.position.y = 11.0;
+  group.add(coreShell);
+
+  const suctionRing = new THREE.Mesh(
+    new THREE.RingGeometry(1.2, 7.5, 24),
+    new THREE.MeshBasicMaterial({ color: '#64748b', transparent: true, opacity: 0.65, side: THREE.DoubleSide })
+  );
+  suctionRing.rotation.x = -Math.PI / 2;
+  suctionRing.position.y = 0.3;
+  group.add(suctionRing);
+
+  // Lightning link arc
+  const arcGeom = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 8, 0),
+    new THREE.Vector3(0, 8, 0)
+  ]);
+  const arcLine = new THREE.Line(arcGeom, new THREE.LineBasicMaterial({ color: '#38bdf8', linewidth: 2, transparent: true, opacity: 0.85 }));
+  scene.add(arcLine);
+  satelliteVortexState.arcLineMesh = arcLine;
+
+  group.visible = false;
+  scene.add(group);
+  satelliteVortexState.meshGroup = group;
+  return group;
+}
+
+function updateSatelliteVortex(dt) {
+  const isUnlocked = Boolean(typeof swRpgStore !== 'undefined' && swRpgStore.upgrades && swRpgStore.upgrades.twinFunnel);
+  const efNumber = (typeof currentEfRating === 'string' && currentEfRating.startsWith('EF-'))
+    ? parseInt(currentEfRating.replace('EF-', ''), 10) || 0
+    : 0;
+
+  satelliteVortexState.active = isUnlocked || (efNumber >= 3);
+  if (!satelliteVortexState.meshGroup && typeof scene !== 'undefined') {
+    createProductionSatelliteVortex();
+  }
+
+  if (satelliteVortexState.meshGroup) {
+    satelliteVortexState.meshGroup.visible = satelliteVortexState.active;
+  }
+  if (satelliteVortexState.arcLineMesh) {
+    satelliteVortexState.arcLineMesh.visible = satelliteVortexState.active;
+  }
+
+  if (!satelliteVortexState.active || !storm || !storm.pos) return;
+
+  const clampedDt = Math.max(0, Math.min(0.1, dt));
+  satelliteVortexState.angle = (satelliteVortexState.angle + satelliteVortexState.orbitSpeed * clampedDt) % (Math.PI * 2);
+
+  const posX = storm.pos.x + Math.cos(satelliteVortexState.angle) * satelliteVortexState.orbitRadius;
+  const posZ = storm.pos.z + Math.sin(satelliteVortexState.angle) * satelliteVortexState.orbitRadius;
+  const posY = terrainHeightAt(posX, posZ);
+
+  satelliteVortexState.worldX = posX;
+  satelliteVortexState.worldZ = posZ;
+  if (satelliteVortexState.meshGroup) {
+    satelliteVortexState.meshGroup.position.set(posX, posY, posZ);
+    satelliteVortexState.meshGroup.rotation.y = (satelliteVortexState.meshGroup.rotation.y + clampedDt * 4.5) % (Math.PI * 2);
+  }
+
+  // Update inter-funnel lightning arc
+  if (satelliteVortexState.arcLineMesh) {
+    const points = [
+      new THREE.Vector3(storm.pos.x, storm.pos.y + 12 + Math.sin(Date.now() * 0.02) * 2, storm.pos.z),
+      new THREE.Vector3(posX + (Math.random() - 0.5) * 3, posY + 10 + (Math.random() - 0.5) * 3, posZ + (Math.random() - 0.5) * 3)
+    ];
+    satelliteVortexState.arcLineMesh.geometry.setFromPoints(points);
+  }
+
+  // Satellite vortex damage and suction loop
+  if (typeof buildings !== 'undefined' && Array.isArray(buildings)) {
+    buildings.forEach(b => {
+      if (!b || b.destroyed) return;
+      const dx = b.x - posX;
+      const dz = b.z - posZ;
+      const dist = Math.hypot(dx, dz);
+      if (dist <= satelliteVortexState.damageRadius) {
+        const dmg = clampedDt * satelliteVortexState.damageRate;
+        b.health = Math.max(0, b.health - dmg);
+        if (b.health <= 0) {
+          b.destroyed = true;
+          destructionScore += (b.points || 120);
+          if (typeof spawnScorePopup === 'function') {
+            spawnScorePopup(b.x, b.y + 6, b.z, '+120 TWIN TWISTER', '#38bdf8');
+          }
+          if (typeof spawnBuildingDestructionParticles === 'function') {
+            spawnBuildingDestructionParticles(b.x, b.y, b.z, b.color || '#94a3b8');
+          }
+        }
+      }
+    });
+  }
+}
+
+// ============================================================================
+// [SW:MEDIA:NEWS_CHOPPER_V1]
+// Action Chopper 8 AI broadcast helicopter with searchlight & live CRT feed.
+// ============================================================================
+const SW_NEWS_CHOPPER_MARKER = 'SW_NEWS_CHOPPER_V1';
+
+const newsChopperState = {
+  active: true,
+  x: 0,
+  y: 54,
+  z: 0,
+  flightAngle: 0,
+  orbitRadius: 52.0,
+  orbitSpeed: 0.35,
+  mainRotorAngle: 0,
+  tailRotorAngle: 0,
+  liveFeedActive: false,
+  liveFeedTimer: 0,
+  totalScoops: 0,
+  meshGroup: null,
+  mainRotorMesh: null,
+  tailRotorMesh: null,
+  spotlightMesh: null
+};
+
+function createProductionNewsChopper() {
+  if (newsChopperState.meshGroup) return newsChopperState.meshGroup;
+  const group = new THREE.Group();
+  group.name = 'ActionChopper8Root';
+
+  // Fuselage
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(3.2, 2.4, 7.5),
+    new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.3, metalness: 0.2 })
+  );
+  body.position.y = 1.2;
+  group.add(body);
+
+  // Blue Broadcast Stripe
+  const stripe = new THREE.Mesh(
+    new THREE.BoxGeometry(3.25, 0.8, 7.55),
+    new THREE.MeshStandardMaterial({ color: '#0284c7', roughness: 0.4 })
+  );
+  stripe.position.y = 1.2;
+  group.add(stripe);
+
+  // Cockpit Glass Canopy
+  const canopy = new THREE.Mesh(
+    new THREE.BoxGeometry(2.8, 1.6, 2.8),
+    new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.1, metalness: 0.8 })
+  );
+  canopy.position.set(0, 1.4, -2.4);
+  group.add(canopy);
+
+  // Tail Boom
+  const boom = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.8, 8.0),
+    new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.3 })
+  );
+  boom.position.set(0, 1.4, 6.0);
+  group.add(boom);
+
+  // Landing Skids
+  const skidLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 7.0), new THREE.MeshStandardMaterial({ color: '#334155' }));
+  skidLeft.rotation.x = Math.PI / 2;
+  skidLeft.position.set(-1.6, -0.2, 0);
+  group.add(skidLeft);
+
+  const skidRight = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 7.0), new THREE.MeshStandardMaterial({ color: '#334155' }));
+  skidRight.rotation.x = Math.PI / 2;
+  skidRight.position.set(1.6, -0.2, 0);
+  group.add(skidRight);
+
+  // Main Rotor Blades
+  const mainRotor = new THREE.Mesh(
+    new THREE.BoxGeometry(16.0, 0.1, 0.6),
+    new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.2 })
+  );
+  mainRotor.position.set(0, 2.9, 0);
+  group.add(mainRotor);
+  newsChopperState.mainRotorMesh = mainRotor;
+
+  // Tail Rotor
+  const tailRotor = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1, 3.2, 0.4),
+    new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.2 })
+  );
+  tailRotor.position.set(0.6, 1.8, 9.8);
+  group.add(tailRotor);
+  newsChopperState.tailRotorMesh = tailRotor;
+
+  // Searchlight Cone
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(8.5, 36.0, 16, 1, true),
+    new THREE.MeshBasicMaterial({ color: '#fef08a', transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false })
+  );
+  cone.position.set(0, -18.0, -1.0);
+  cone.rotation.x = Math.PI;
+  group.add(cone);
+  newsChopperState.spotlightMesh = cone;
+
+  scene.add(group);
+  newsChopperState.meshGroup = group;
+  return group;
+}
+
+function triggerNewsChopperLiveFeed(subjectName = 'AIRBORNE BOVINE', altitude = 24) {
+  newsChopperState.liveFeedActive = true;
+  newsChopperState.liveFeedTimer = 4.5;
+  newsChopperState.totalScoops += 1;
+  mediaMoments += 1;
+  destructionScore += 350;
+
+  const overlay = document.getElementById('chopperCamOverlay');
+  if (overlay) {
+    overlay.classList.add('active');
+    overlay.hidden = false;
+    const subj = document.getElementById('chopperSubject');
+    if (subj) subj.textContent = `TRACKING: ${subjectName.toUpperCase()}`;
+    const altEl = document.getElementById('chopperAltDisplay');
+    if (altEl) altEl.textContent = `ALT: ${Math.round(altitude)}M`;
+  }
+
+  if (typeof spawnScorePopup === 'function') {
+    spawnScorePopup(storm.pos.x, storm.pos.y + 16, storm.pos.z, '+350 AERIAL SCOOP', '#38bdf8');
+  }
+  showGagToast('🚁 ACTION CHOPPER 8 HAS THE SCOOP!');
+}
+
+function updateProductionNewsChopper(dt) {
+  if (!newsChopperState.active || !storm || !storm.pos) return;
+  if (!newsChopperState.meshGroup && typeof scene !== 'undefined') createProductionNewsChopper();
+
+  const clampedDt = Math.max(0, Math.min(0.1, dt));
+  newsChopperState.flightAngle = (newsChopperState.flightAngle + newsChopperState.orbitSpeed * clampedDt) % (Math.PI * 2);
+
+  const cx = storm.pos.x + Math.cos(newsChopperState.flightAngle) * newsChopperState.orbitRadius;
+  const cy = newsChopperState.y + Math.sin(newsChopperState.flightAngle * 2.2) * 2.0;
+  const cz = storm.pos.z + Math.sin(newsChopperState.flightAngle) * newsChopperState.orbitRadius;
+
+  newsChopperState.x = cx;
+  newsChopperState.z = cz;
+  if (newsChopperState.meshGroup) {
+    newsChopperState.meshGroup.position.set(cx, cy, cz);
+    newsChopperState.meshGroup.rotation.y = newsChopperState.flightAngle + Math.PI / 2;
+    newsChopperState.meshGroup.rotation.z = 0.12;
+    newsChopperState.meshGroup.rotation.x = 0.06;
+  }
+
+  // Spin rotors
+  newsChopperState.mainRotorAngle = (newsChopperState.mainRotorAngle + clampedDt * 45) % (Math.PI * 2);
+  newsChopperState.tailRotorAngle = (newsChopperState.tailRotorAngle + clampedDt * 75) % (Math.PI * 2);
+  if (newsChopperState.mainRotorMesh) newsChopperState.mainRotorMesh.rotation.y = newsChopperState.mainRotorAngle;
+  if (newsChopperState.tailRotorMesh) newsChopperState.tailRotorMesh.rotation.x = newsChopperState.tailRotorAngle;
+
+  // Aim searchlight at storm
+  if (newsChopperState.spotlightMesh) {
+    newsChopperState.spotlightMesh.lookAt(storm.pos.x, 0, storm.pos.z);
+  }
+
+  // Handle live feed timer
+  if (newsChopperState.liveFeedActive) {
+    newsChopperState.liveFeedTimer -= clampedDt;
+    if (newsChopperState.liveFeedTimer <= 0) {
+      newsChopperState.liveFeedActive = false;
+      const overlay = document.getElementById('chopperCamOverlay');
+      if (overlay) {
+        overlay.classList.remove('active');
+        overlay.hidden = true;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// [SW:WORLD:NIGHT_BLACKOUT_V1]
+// Night lighting atmosphere and cascading district blackouts.
+// ============================================================================
+const SW_NIGHT_BLACKOUT_MARKER = 'SW_NIGHT_BLACKOUT_V1';
+
+const timeOfDayState = {
+  mode: 'DAY', // 'DAY', 'STORM', 'NIGHT'
+  districtBlackouts: [false, false, false, false]
+};
+
+function cycleTimeOfDay() {
+  const modes = ['DAY', 'STORM', 'NIGHT'];
+  const curIdx = modes.indexOf(timeOfDayState.mode);
+  timeOfDayState.mode = modes[(curIdx + 1) % modes.length];
+
+  const btn = document.getElementById('btnTimeOfDay');
+  if (btn) {
+    const icons = { DAY: 'DAY ☀️', STORM: 'STORM 🌩️', NIGHT: 'NIGHT 🌙' };
+    btn.textContent = `TIME: ${icons[timeOfDayState.mode] || timeOfDayState.mode}`;
+  }
+
+  applyTimeOfDayAtmosphere();
+}
+
+function applyTimeOfDayAtmosphere() {
+  if (typeof scene === 'undefined' || typeof renderer === 'undefined' || !scene || !renderer) return;
+
+  if (timeOfDayState.mode === 'NIGHT') {
+    if (scene.fog) {
+      scene.fog.color.set('#090e1c');
+      scene.fog.density = 0.0038;
+    }
+    if (renderer) renderer.setClearColor('#070b16');
+    if (typeof ambientLight !== 'undefined' && ambientLight) {
+      ambientLight.color.set('#1e293b');
+      ambientLight.intensity = 0.35;
+    }
+    if (typeof skyLight !== 'undefined' && skyLight) {
+      skyLight.color.set('#38bdf8');
+      skyLight.groundColor.set('#030712');
+      skyLight.intensity = 0.42;
+    }
+    if (typeof dirLight !== 'undefined' && dirLight) {
+      dirLight.color.set('#60a5fa');
+      dirLight.intensity = 0.48;
+    }
+  } else if (timeOfDayState.mode === 'STORM') {
+    if (scene.fog) {
+      scene.fog.color.set('#334155');
+      scene.fog.density = 0.0032;
+    }
+    if (renderer) renderer.setClearColor('#1e293b');
+    if (typeof ambientLight !== 'undefined' && ambientLight) ambientLight.intensity = 0.65;
+    if (typeof skyLight !== 'undefined' && skyLight) skyLight.intensity = 0.75;
+    if (typeof dirLight !== 'undefined' && dirLight) dirLight.intensity = 0.95;
+  } else {
+    // DAY
+    if (scene.fog) {
+      scene.fog.color.set('#94a3b8');
+      scene.fog.density = 0.0024;
+    }
+    if (renderer) renderer.setClearColor('#cbd5e1');
+    if (typeof ambientLight !== 'undefined' && ambientLight) ambientLight.intensity = 0.95;
+    if (typeof skyLight !== 'undefined' && skyLight) skyLight.intensity = 1.15;
+    if (typeof dirLight !== 'undefined' && dirLight) dirLight.intensity = 1.45;
+  }
+}
+
+function triggerDistrictBlackout(districtIndex = 0) {
+  if (timeOfDayState.districtBlackouts[districtIndex]) return;
+  timeOfDayState.districtBlackouts[districtIndex] = true;
+
+  const flash = document.getElementById('powerFlashOverlay');
+  if (flash) {
+    flash.style.opacity = '0.92';
+    setTimeout(() => { flash.style.opacity = '0'; }, 180);
+  }
+
+  showGagToast('⚡ DISTRICT BLACKOUT! SUBSTATION BLOWOUT!');
+  if (typeof spawnScorePopup === 'function') {
+    spawnScorePopup(storm.pos.x, storm.pos.y + 14, storm.pos.z, '+500 BLACKOUT', '#eab308');
+  }
+  destructionScore += 500;
+
+  if (typeof productionSliceRoot !== 'undefined' && productionSliceRoot) {
+    productionSliceRoot.traverse(child => {
+      if (child.isMesh && child.material && child.material.emissive) {
+        child.material.emissive.set('#000000');
+      }
+    });
+  }
+}
+
+globalThis.cycleTimeOfDay = cycleTimeOfDay;
+globalThis.triggerDistrictBlackout = triggerDistrictBlackout;
+globalThis.triggerNewsChopperLiveFeed = triggerNewsChopperLiveFeed;
 </script>
 </body>
 </html>
