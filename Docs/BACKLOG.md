@@ -27,8 +27,7 @@ All current batch requests completed. Open for next director requests.
 
 ## Next up — Code & Modernization
 
-1. **County Fair & Industrial Landmark Animations.** Ferris wheel / Carousel continuous rotation with glowing light trails and 32m Foundry stack smoke plume particles.
-2. **Reviving Parked MOO-LAH Economy & Storm Upgrades.** Port the persistent storm currency, upgrade shop, and cosmetic funnel skins into modern shell.
+1. **Reviving Parked MOO-LAH Economy & Storm Upgrades.** Port the persistent storm currency, upgrade shop, and cosmetic funnel skins into modern shell.
 
 ## Decisions open
 
@@ -37,6 +36,15 @@ Nothing blocking. The board is clear.
 ---
 
 ## Landed
+
+- County Fair & Industrial Landmark Animations:
+  - Added continuous Ferris wheel mechanical rotation (`speed: 0.22`) with counter-rotating gondolas and festive lighting in District 3.
+  - Added carousel rotation (`speed: 0.45`) with vertical sinusoidal galloping horse oscillation.
+  - Added active rising industrial smoke plume particle systems to the 32m twin smelting chimneys on the Foundry in District 2.
+  - Added pulsating thermal crucible glow to the Foundry interior.
+  - Created type contracts and implementation under `src/world/animations/` (`landmark-animation-system.ts`, `landmark-animation.test.ts`).
+  - Inlined `[SW:SOURCE:sw-anim-001-landmark-animations.js]` into `MechanicsLab/SevereWeather_Warning.html` with marker `SW_ANIM_001_LANDMARK_ANIMATIONS_V1`.
+  - Added automated verification `scripts/verify-landmark-animations.mjs` (9/9 checks pass).
 
 - Canonical Source HTML Renaming:
   - Renamed primary gameplay source file to `MechanicsLab/SevereWeather_Warning.html`.

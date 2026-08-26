@@ -317,6 +317,7 @@ scripts/serve-www.mjs
 scripts/setup-qa-signing.sh
 scripts/stamp-qa-artifact.mjs
 scripts/stamp-qa-pages.mjs
+scripts/verify-landmark-animations.mjs
 scripts/verify-modernization-phase2-clocks.mjs
 scripts/verify-modernization-phase3-input-abilities.mjs
 scripts/verify-modernization-phase4-scoring-campaign.mjs
@@ -396,6 +397,9 @@ src/ui/transitions/district-transition-contracts.ts
 src/ui/transitions/district-transition-system.ts
 src/ui/ui-contracts.ts
 src/ui/ui-system.ts
+src/world/animations/landmark-animation-contracts.ts
+src/world/animations/landmark-animation-system.ts
+src/world/animations/landmark-animation.test.ts
 src/world/setpieces/destructible-setpiece-contracts.ts
 src/world/setpieces/destructible-setpiece-system.ts
 src/world/setpieces/hart-farm-definition.ts

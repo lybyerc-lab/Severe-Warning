@@ -9857,6 +9857,10 @@ function animate(now) {
   updateObjectives();
   renderRadar();
 
+  if (typeof updateLandmarkAnimations === 'function') {
+    updateLandmarkAnimations(dt);
+  }
+
   setUI('fpsVal', fps || 60);
   setUI('scoreVal', destructionScore);
   setUI('footageVal', mediaMoments);
@@ -12900,6 +12904,97 @@ globalThis.__SW_CINEMATIC_QA__ = {
   skip() { skipOpeningCinematic(); }
 };
 // [SW:CINEMATIC:PLAYABLE_OPENING_V1:END]
+
+// [SW:SOURCE:sw-anim-001-landmark-animations.js]
+// [SW:ANIMATION:LANDMARK_ANIMATIONS_V1:START]
+const SW_ANIM_001_MARKER = 'SW_ANIM_001_LANDMARK_ANIMATIONS_V1';
+
+const landmarkAnimationState = {
+  active: true,
+  elapsed: 0,
+  ferrisWheelAngle: 0,
+  carouselAngle: 0,
+  foundrySmokeParticles: [],
+  crucibleGlowIntensity: 0.8,
+  ferrisWheelMesh: null,
+  carouselMesh: null,
+  foundryMesh: null
+};
+
+function initLandmarkAnimations() {
+  // Locate Ferris wheel and Carousel instances in scene
+  scene.traverse(child => {
+    if (child.name === 'ferris-wheel' || (child.parent && child.parent.name === 'ferris-wheel')) {
+      landmarkAnimationState.ferrisWheelMesh = child;
+    }
+    if (child.name === 'carousel' || (child.parent && child.parent.name === 'carousel')) {
+      landmarkAnimationState.carouselMesh = child;
+    }
+  });
+}
+
+function updateLandmarkAnimations(dt) {
+  if (!landmarkAnimationState.active) return;
+  const clampedDt = Math.max(0, Math.min(0.1, dt));
+  landmarkAnimationState.elapsed += clampedDt;
+
+  if ((!landmarkAnimationState.ferrisWheelMesh || !landmarkAnimationState.carouselMesh) && typeof scene !== 'undefined') {
+    initLandmarkAnimations();
+  }
+
+  // 1. Ferris Wheel Continuous Mechanical Rotation
+  landmarkAnimationState.ferrisWheelAngle = (landmarkAnimationState.ferrisWheelAngle + clampedDt * 0.22) % (Math.PI * 2);
+  if (landmarkAnimationState.ferrisWheelMesh) {
+    landmarkAnimationState.ferrisWheelMesh.rotation.z = landmarkAnimationState.ferrisWheelAngle;
+  }
+
+  // 2. Carousel Continuous Rotation & Galloping Oscillation
+  landmarkAnimationState.carouselAngle = (landmarkAnimationState.carouselAngle + clampedDt * 0.45) % (Math.PI * 2);
+  if (landmarkAnimationState.carouselMesh) {
+    landmarkAnimationState.carouselMesh.rotation.y = landmarkAnimationState.carouselAngle;
+  }
+
+  // 3. Foundry Thermal Glow Pulsation
+  landmarkAnimationState.crucibleGlowIntensity = 0.7 + Math.sin(landmarkAnimationState.elapsed * 2.8) * 0.3;
+
+  // 4. Foundry 32m Twin Smokestack Particulate Plume
+  if (Math.random() < clampedDt * 14) {
+    if (landmarkAnimationState.foundrySmokeParticles.length < 60) {
+      landmarkAnimationState.foundrySmokeParticles.push({
+        x: -140 + (Math.random() < 0.5 ? -2.5 : 2.5),
+        y: 32.0,
+        z: 90,
+        vy: 4.5 + Math.random() * 1.5,
+        life: 0,
+        maxLife: 4.0
+      });
+    }
+  }
+
+  for (let i = landmarkAnimationState.foundrySmokeParticles.length - 1; i >= 0; i--) {
+    const p = landmarkAnimationState.foundrySmokeParticles[i];
+    if (!p) continue;
+    p.life += clampedDt;
+    if (p.life >= p.maxLife) {
+      landmarkAnimationState.foundrySmokeParticles.splice(i, 1);
+      continue;
+    }
+    p.y += p.vy * clampedDt;
+  }
+}
+
+globalThis.getLandmarkAnimationQaState = function getLandmarkAnimationQaState() {
+  return Object.freeze({
+    marker: SW_ANIM_001_MARKER,
+    active: landmarkAnimationState.active,
+    elapsed: Number(landmarkAnimationState.elapsed.toFixed(2)),
+    ferrisWheelAngle: Number(landmarkAnimationState.ferrisWheelAngle.toFixed(3)),
+    carouselAngle: Number(landmarkAnimationState.carouselAngle.toFixed(3)),
+    foundrySmokeCount: landmarkAnimationState.foundrySmokeParticles.length,
+    crucibleGlowIntensity: Number(landmarkAnimationState.crucibleGlowIntensity.toFixed(2))
+  });
+};
+// [SW:ANIMATION:LANDMARK_ANIMATIONS_V1:END]
 </script>
 </body>
 </html>
