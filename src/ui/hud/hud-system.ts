@@ -4,7 +4,9 @@ import type {
   HudObjectiveProgress
 } from './hud-contracts.ts';
 
-const EF_COLORS: Record<string, string> = {
+export type EfRating = 'EF-0' | 'EF-1' | 'EF-2' | 'EF-3' | 'EF-4' | 'EF-5';
+
+const EF_COLORS: Record<EfRating, string> = {
   'EF-0': '#22c55e',
   'EF-1': '#38bdf8',
   'EF-2': '#eab308',
@@ -12,6 +14,10 @@ const EF_COLORS: Record<string, string> = {
   'EF-4': '#ef4444',
   'EF-5': '#a855f7'
 };
+
+function isEfRating(val: string): val is EfRating {
+  return Object.prototype.hasOwnProperty.call(EF_COLORS, val);
+}
 
 export class HudSystem implements HudSystemContract {
   private snapshot: HudStateSnapshot;
@@ -55,7 +61,7 @@ export class HudSystem implements HudSystemContract {
   }
 
   public updateScore(score: number, combo: number, decayProgress: number, efRating: string): void {
-    const validEf = (efRating in EF_COLORS) ? efRating : 'EF-0';
+    const validEf: EfRating = isEfRating(efRating) ? efRating : 'EF-0';
     this.snapshot.score = {
       score: Math.max(0, Math.floor(score)),
       comboMultiplier: Math.max(1.0, Number(combo.toFixed(2))),
