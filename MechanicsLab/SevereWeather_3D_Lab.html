@@ -12563,7 +12563,7 @@ globalThis.getNewspaperPresentationQaState = function getNewspaperPresentationQa
 // [SW:SOURCE:sw-cinematic-003-moo-brew.js]
 // ============================================================================
 // [SW:CINEMATIC:PLAYABLE_OPENING_V1]
-// Moo Brew Touchdown opening cutscene controller with seamless camera spline.
+// Full Articulated Bipedal Cow 17 & Chickens Moo Brew Opening Cinematic
 // ============================================================================
 const SW_CIN_003_MARKER = 'SW_CIN_003_PLAYABLE_OPENING_V1';
 const SW_CINEMATIC_DURATION = 12.4;
@@ -12572,20 +12572,154 @@ let openingCinematicState = {
   active: false,
   elapsed: 0,
   completed: false,
-  cinematicGroup: null
+  cinematicGroup: null,
+  cow: null,
+  chickenA: null,
+  chickenB: null
 };
+
+function createCinematicPart(parent, geometry, material, name, position = [0, 0, 0], scale = [1, 1, 1], rotation = [0, 0, 0]) {
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = name;
+  mesh.position.set(...position);
+  mesh.scale.set(...scale);
+  mesh.rotation.set(...rotation);
+  parent.add(mesh);
+  return mesh;
+}
+
+function createCinematicPivot(parent, name, position = [0, 0, 0]) {
+  const group = new THREE.Group();
+  group.name = name;
+  group.position.set(...position);
+  parent.add(group);
+  return group;
+}
+
+function buildArticulatedBipedalCow17(root) {
+  const geoBox = new THREE.BoxGeometry(1, 1, 1);
+  const geoCyl = new THREE.CylinderGeometry(1, 1, 1, 16);
+  const geoSph = new THREE.SphereGeometry(1, 16, 16);
+  const geoCone = new THREE.ConeGeometry(1, 1, 16);
+
+  const matWhite = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.88 });
+  const matPatch = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.9 });
+  const matHoof = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.6 });
+  const matCup = new THREE.MeshStandardMaterial({ color: '#b45309', roughness: 0.4 });
+  const matTag = new THREE.MeshBasicMaterial({ color: '#fbbf24' });
+
+  const cowGroup = new THREE.Group();
+  cowGroup.name = 'ArticulatedBipedalCow17';
+
+  // Hips
+  const hips = createCinematicPivot(cowGroup, 'cow17-hips', [0, 2.53, -0.48]);
+  createCinematicPart(hips, geoBox, matWhite, 'cow17-hips-mass', [0, 0, 0], [1.4, 0.8, 1.1]);
+  createCinematicPart(hips, geoBox, matPatch, 'cow17-hip-patch', [0.38, -0.05, 0.46], [0.65, 0.65, 0.25]);
+
+  // Torso
+  const torso = createCinematicPivot(hips, 'cow17-torso', [0, 0.75, 0]);
+  createCinematicPart(torso, geoBox, matWhite, 'cow17-torso-mass', [0, 0.6, 0], [1.6, 1.4, 1.2]);
+  createCinematicPart(torso, geoBox, matPatch, 'cow17-chest-patch', [-0.42, 0.65, 0.52], [0.72, 0.85, 0.22]);
+
+  // Head
+  const head = createCinematicPivot(torso, 'cow17-head', [0, 1.55, 0.25]);
+  createCinematicPart(head, geoBox, matWhite, 'cow17-head-mass', [0, 0.25, 0.35], [1.1, 1.0, 1.15]);
+  createCinematicPart(head, geoBox, matPatch, 'cow17-face-patch', [0.28, 0.38, 0.84], [0.48, 0.52, 0.2]);
+  createCinematicPart(head, geoBox, matWhite, 'cow17-muzzle', [0, 0.05, 0.96], [0.82, 0.52, 0.62]);
+
+  // Tag #17
+  createCinematicPart(head, geoBox, matTag, 'cow17-ear-tag-17', [-0.62, 0.52, 0.35], [0.28, 0.42, 0.06]);
+
+  // Ears & Horns
+  const leftEar = createCinematicPivot(head, 'cow17-left-ear', [-0.58, 0.62, 0.2]);
+  createCinematicPart(leftEar, geoBox, matPatch, 'cow17-left-ear-mesh', [-0.22, 0, 0], [0.48, 0.22, 0.18], [0, 0, -0.2]);
+  const rightEar = createCinematicPivot(head, 'cow17-right-ear', [0.58, 0.62, 0.2]);
+  createCinematicPart(rightEar, geoBox, matPatch, 'cow17-right-ear-mesh', [0.22, 0, 0], [0.48, 0.22, 0.18], [0, 0, 0.2]);
+
+  createCinematicPart(head, geoCone, matHoof, 'cow17-left-horn', [-0.45, 0.82, 0.18], [0.15, 0.42, 0.15], [-0.3, 0, -0.4]);
+  createCinematicPart(head, geoCone, matHoof, 'cow17-right-horn', [0.45, 0.82, 0.18], [0.15, 0.42, 0.15], [-0.3, 0, 0.4]);
+
+  // Left Arm (Planted casually on top fence rail)
+  const leftArm = createCinematicPivot(torso, 'cow17-left-shoulder', [-0.95, 1.15, 0]);
+  createCinematicPart(leftArm, geoBox, matWhite, 'cow17-left-upper-arm', [0, -0.45, 0], [0.45, 1.0, 0.45]);
+  const leftForeleg = createCinematicPivot(leftArm, 'cow17-left-foreleg', [0, -0.9, 0.15]);
+  createCinematicPart(leftForeleg, geoBox, matWhite, 'cow17-left-lower-arm', [0, -0.45, 0.15], [0.42, 0.9, 0.42]);
+  createCinematicPart(leftForeleg, geoBox, matHoof, 'cow17-left-resting-hoof', [0, -0.95, 0.35], [0.55, 0.3, 0.6]);
+
+  // Right Arm (Holding steaming Moo Brew cup)
+  const rightArm = createCinematicPivot(torso, 'cow17-right-shoulder', [0.95, 1.15, 0]);
+  createCinematicPart(rightArm, geoBox, matWhite, 'cow17-right-upper-arm', [0, -0.45, 0], [0.45, 1.0, 0.45]);
+  const rightForeleg = createCinematicPivot(rightArm, 'cow17-right-foreleg', [0, -0.65, 0.15]);
+  createCinematicPart(rightForeleg, geoBox, matWhite, 'cow17-right-lower-arm', [0, -0.45, 0.15], [0.42, 0.85, 0.42]);
+  const rightHoof = createCinematicPart(rightForeleg, geoBox, matHoof, 'cow17-right-cup-hoof', [0, -0.88, 0.32], [0.55, 0.3, 0.6]);
+
+  // Moo Brew Coffee Cup
+  const cup = createCinematicPivot(rightForeleg, 'cow17-moo-brew-cup', [0, -1.15, 0.65]);
+  createCinematicPart(cup, geoCyl, matCup, 'cup-body', [0, 0, 0], [0.24, 0.55, 0.24]);
+  createCinematicPart(cup, geoCyl, matWhite, 'cup-lid', [0, 0.3, 0], [0.26, 0.08, 0.26]);
+
+  // Bipedal Legs & Boot-Hooves
+  const leftLeg = createCinematicPivot(hips, 'cow17-left-leg', [-0.45, -0.45, 0]);
+  createCinematicPart(leftLeg, geoBox, matWhite, 'cow17-left-thigh', [0, -0.65, 0], [0.5, 1.3, 0.55]);
+  createCinematicPart(leftLeg, geoBox, matHoof, 'cow17-left-boot-hoof', [0, -1.45, 0.18], [0.65, 0.32, 0.8]);
+
+  const rightLeg = createCinematicPivot(hips, 'cow17-right-leg', [0.45, -0.45, 0]);
+  createCinematicPart(rightLeg, geoBox, matWhite, 'cow17-right-thigh', [0, -0.65, 0], [0.5, 1.3, 0.55]);
+  createCinematicPart(rightLeg, geoBox, matHoof, 'cow17-right-boot-hoof', [0, -1.45, 0.18], [0.65, 0.32, 0.8]);
+
+  // Tail
+  const tail = createCinematicPivot(hips, 'cow17-tail', [0, 0.05, -0.55]);
+  createCinematicPart(tail, geoCyl, matWhite, 'cow17-tail-bone', [0, -0.45, -0.1], [0.08, 0.9, 0.08], [0.35, 0, 0]);
+  createCinematicPart(tail, geoSph, matPatch, 'cow17-tail-tuft', [0, -0.95, -0.3], [0.22, 0.28, 0.22]);
+
+  root.add(cowGroup);
+
+  return {
+    root: cowGroup,
+    hips, torso, head, leftEar, rightEar, leftArm, leftForeleg, rightArm, rightForeleg, rightHoof, cup, leftLeg, rightLeg, tail
+  };
+}
+
+function buildCinematicChicken(root, id, side) {
+  const chickenGroup = new THREE.Group();
+  chickenGroup.name = `CinematicChicken-${id}`;
+
+  const matFeather = new THREE.MeshStandardMaterial({ color: '#fef08a', roughness: 0.8 });
+  const matComb = new THREE.MeshStandardMaterial({ color: '#ef4444', roughness: 0.6 });
+  const matBeak = new THREE.MeshStandardMaterial({ color: '#f97316', roughness: 0.5 });
+  const matLeg = new THREE.MeshStandardMaterial({ color: '#d97706', roughness: 0.7 });
+
+  const body = createCinematicPivot(chickenGroup, `chicken-${id}-body`, [0, 0.75, 0]);
+  createCinematicPart(body, new THREE.SphereGeometry(1, 12, 12), matFeather, 'chicken-body-mesh', [0, 0, 0], [0.65, 0.55, 0.75]);
+
+  const head = createCinematicPivot(body, `chicken-${id}-head`, [0, 0.55, 0.35]);
+  createCinematicPart(head, new THREE.SphereGeometry(1, 10, 10), matFeather, 'chicken-head-mesh', [0, 0, 0], [0.38, 0.4, 0.38]);
+  createCinematicPart(head, new THREE.ConeGeometry(0.15, 0.3, 8), matBeak, 'chicken-beak', [0, -0.05, 0.42], [1, 1, 1], [Math.PI / 2, 0, 0]);
+  createCinematicPart(head, new THREE.ConeGeometry(0.12, 0.3, 8), matComb, 'chicken-comb', [0, 0.42, 0], [1, 1, 1]);
+
+  const leftWing = createCinematicPivot(body, `chicken-${id}-left-wing`, [-0.55, 0, 0]);
+  createCinematicPart(leftWing, new THREE.BoxGeometry(0.12, 0.45, 0.6), matFeather, 'left-wing-mesh', [0, -0.1, 0]);
+  const rightWing = createCinematicPivot(body, `chicken-${id}-right-wing`, [0.55, 0, 0]);
+  createCinematicPart(rightWing, new THREE.BoxGeometry(0.12, 0.45, 0.6), matFeather, 'right-wing-mesh', [0, -0.1, 0]);
+
+  [-0.2, 0.2].forEach((lx, idx) => {
+    createCinematicPart(chickenGroup, new THREE.CylinderGeometry(0.05, 0.05, 0.4, 6), matLeg, `leg-${idx}`, [lx, 0.2, 0]);
+  });
+
+  root.add(chickenGroup);
+  return { root: chickenGroup, body, head, leftWing, rightWing };
+}
 
 function startOpeningCinematic() {
   if (openingCinematicState.active) return;
   openingCinematicState.active = true;
   openingCinematicState.elapsed = 0;
   openingCinematicState.completed = false;
-  
-  // Create cinematic actor staging group at Hart Farm apron
+
   const group = new THREE.Group();
   group.name = 'MooBrewOpeningCinematicGroup';
-  
-  // 3-post fence
+
+  // 3-Post Wood Fence
   const fenceMat = new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.85 });
   [-2.2, 0, 2.2].forEach(fx => {
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.6, 0.35), fenceMat);
@@ -12598,52 +12732,25 @@ function startOpeningCinematic() {
   const rail2 = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.22, 0.15), fenceMat);
   rail2.position.set(0, 2.1, 0);
   group.add(rail2);
-  
-  // Cow 17 leaning at the fence with Moo Brew cup
-  const cowRig = new THREE.Group();
-  cowRig.name = 'CinematicCow17';
-  const cowMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9 });
-  const patchMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.9 });
-  const coffeeCupMat = new THREE.MeshStandardMaterial({ color: '#b45309', roughness: 0.4 });
-  
-  // Cow Body
-  const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.0, 1.8), cowMat);
-  body.position.set(0, 2.2, -1.0);
-  cowRig.add(body);
-  const patch = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.2), patchMat);
-  patch.position.set(0.4, 2.4, -0.05);
-  cowRig.add(patch);
-  
-  // Head & Tag 17
-  const head = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), cowMat);
-  head.position.set(0, 3.4, -0.4);
-  cowRig.add(head);
-  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.08), new THREE.MeshBasicMaterial({ color: '#fbbf24' }));
-  tag.position.set(-0.75, 3.6, -0.4);
-  cowRig.add(tag);
-  
-  // Moo Brew Cup
-  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.6, 12), coffeeCupMat);
-  cup.position.set(0.6, 2.4, 0.2);
-  cowRig.add(cup);
-  
-  cowRig.position.set(0, 0, 0);
-  group.add(cowRig);
-  
-  // 2 Chickens pecking ground
-  const chickenMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.8 });
-  [-1.5, 1.5].forEach((cx, idx) => {
-    const chicken = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.7, 6), chickenMat);
-    chicken.position.set(cx, 0.35, 1.2 + idx * 0.4);
-    chicken.rotation.x = 0.4;
-    group.add(chicken);
-  });
-  
+
+  // Build the bipedal Cow 17 and Chickens
+  const cow = buildArticulatedBipedalCow17(group);
+  const chickenA = buildCinematicChicken(group, 1, -1);
+  const chickenB = buildCinematicChicken(group, 2, 1);
+
+  chickenA.root.position.set(-2.4, 0, 1.2);
+  chickenB.root.position.set(2.4, 0, 1.4);
+
   group.position.set(15, terrainHeightAt(15, 15), 15);
   scene.add(group);
+
   openingCinematicState.cinematicGroup = group;
-  
-  // Hide in-game HUD during cinematic
+  openingCinematicState.cow = cow;
+  openingCinematicState.chickenA = chickenA;
+  openingCinematicState.chickenB = chickenB;
+
+  const menu = document.getElementById('mainMenu');
+  if (menu) menu.style.display = 'none';
   const hud = document.getElementById('hud');
   if (hud) hud.style.opacity = '0';
 }
@@ -12652,41 +12759,96 @@ function updateOpeningCinematic(dt) {
   if (!openingCinematicState.active || openingCinematicState.completed) return;
   openingCinematicState.elapsed += dt;
   const time = openingCinematicState.elapsed;
-  
+  const t = Math.min(12, Math.max(0, time));
+
+  const cow = openingCinematicState.cow;
+  const cA = openingCinematicState.chickenA;
+  const cB = openingCinematicState.chickenB;
+
+  if (cow && cA && cB) {
+    const clampE = v => Math.min(1, Math.max(0, v));
+    const ease = v => { const x = clampE(v); return x * x * (3 - 2 * x); };
+
+    const notice = ease((t - 2.55) / 1.7);
+    const doubleTake = ease((t - 5.9) / 2.0);
+    const lastSip = ease((t - 8.15) / 1.8);
+    const escape = ease((t - 10.15) / 2.0);
+
+    // Bipedal Cow 17 poses & gestures
+    cow.hips.position.x = -0.16 * notice + 0.24 * doubleTake + 0.55 * escape;
+    cow.hips.position.y = 2.53 + 0.1 * doubleTake;
+    cow.hips.rotation.z = -0.16 + 0.3 * doubleTake - 0.18 * escape;
+    cow.torso.rotation.z = -0.24 + 0.32 * doubleTake;
+    cow.torso.rotation.y = 0.16 * notice - 0.28 * doubleTake;
+
+    // Double take & final sip head gestures
+    cow.head.rotation.y = -0.34 + 0.2 * notice + 1.18 * doubleTake;
+    cow.head.rotation.z = -0.04 - 0.22 * doubleTake + 0.14 * escape;
+    cow.head.rotation.x = -0.04 - 0.15 * lastSip + 0.2 * escape;
+
+    cow.leftEar.rotation.z = -0.12 - 0.42 * doubleTake;
+    cow.rightEar.rotation.z = 0.16 + 0.52 * doubleTake;
+
+    // Cow arm lifting Moo Brew cup to muzzle
+    cow.rightArm.rotation.z = 0.36 - 0.74 * lastSip + 0.35 * escape;
+    cow.rightForeleg.rotation.x = -0.34 - 0.98 * lastSip;
+    cow.rightForeleg.position.y = -0.65 + 0.18 * lastSip;
+    cow.cup.position.set(0, -1.15 + 1.65 * lastSip, 0.65 + 0.18 * lastSip);
+    cow.cup.rotation.x = -0.18 - 0.58 * lastSip;
+
+    // Legs & tail
+    cow.leftLeg.rotation.z = 0.13 - 0.32 * doubleTake - 0.22 * escape;
+    cow.rightLeg.rotation.z = -0.12 + 0.36 * doubleTake + 0.27 * escape;
+    cow.tail.rotation.z = 0.12 + 0.48 * doubleTake + Math.sin(t * 5.0) * 0.15;
+
+    // Chickens pecking, flapping wings and scattering
+    cA.body.position.y = 0.75 + Math.sin(t * 7.2) * 0.04;
+    cA.head.rotation.x = -0.28 - 0.3 * notice + Math.sin(t * 9.5) * 0.12;
+    cA.leftWing.rotation.z = -0.12 - 0.72 * doubleTake;
+    cA.rightWing.rotation.z = 0.12 + 0.72 * doubleTake;
+    cA.root.position.x = -2.4 - 2.5 * escape;
+
+    cB.body.position.y = 0.75 + Math.sin(t * 6.3 + 1.5) * 0.05;
+    cB.head.rotation.x = -0.22 - 0.18 * notice + Math.sin(t * 8.2 + 1.2) * 0.13;
+    cB.leftWing.rotation.z = -0.08 - 0.48 * doubleTake;
+    cB.rightWing.rotation.z = 0.08 + 0.48 * doubleTake;
+    cB.root.position.x = 2.4 + 2.8 * escape;
+  }
+
+  // Cinematic Camera Spline
   if (time < 5.9) {
     if (camera) {
       camera.position.set(27.4, terrainHeightAt(15, 15) + 8.1, 32.6);
       camera.lookAt(15.2, terrainHeightAt(15, 15) + 3.3, 15.2);
     }
   } else if (time < 8.15) {
-    const t = (time - 5.9) / (8.15 - 5.9);
+    const s = (time - 5.9) / (8.15 - 5.9);
     if (camera) {
       camera.position.set(
-        27.4 + (25.8 - 27.4) * t,
-        terrainHeightAt(15, 15) + 8.1 + (7.3 - 8.1) * t,
-        32.6 + (30.2 - 32.6) * t
+        27.4 + (25.8 - 27.4) * s,
+        terrainHeightAt(15, 15) + 8.1 + (7.3 - 8.1) * s,
+        32.6 + (30.2 - 32.6) * s
       );
-      camera.lookAt(15.2 + (0.15 - 0.2) * t, terrainHeightAt(15, 15) + 3.3 + (4.1 - 3.3) * t, 15.2);
+      camera.lookAt(15.2 + (0.15 - 0.2) * s, terrainHeightAt(15, 15) + 3.3 + (4.1 - 3.3) * s, 15.2);
     }
   } else if (time < 10.15) {
-    const t = (time - 8.15) / (10.15 - 8.15);
+    const s = (time - 8.15) / (10.15 - 8.15);
     if (camera) {
       camera.position.set(
-        25.8 + (22.1 - 25.8) * t,
-        terrainHeightAt(15, 15) + 7.3 + (6.0 - 7.3) * t,
-        30.2 + (26.5 - 30.2) * t
+        25.8 + (22.1 - 25.8) * s,
+        terrainHeightAt(15, 15) + 7.3 + (6.0 - 7.3) * s,
+        30.2 + (26.5 - 30.2) * s
       );
-      camera.lookAt(15.15 + 0.7 * t, terrainHeightAt(15, 15) + 4.1 + 0.35 * t, 15.2);
+      camera.lookAt(15.15 + 0.7 * s, terrainHeightAt(15, 15) + 4.1 + 0.35 * s, 15.2);
     }
   } else if (time < SW_CINEMATIC_DURATION) {
-    // Seamless 1.5s cubic blend into Player Follow Camera
-    const t = (time - 10.15) / (SW_CINEMATIC_DURATION - 10.15);
-    const easeT = t * t * (3 - 2 * t);
+    const s = (time - 10.15) / (SW_CINEMATIC_DURATION - 10.15);
+    const easeS = s * s * (3 - 2 * s);
     if (camera) {
       camera.position.set(
-        22.1 + (storm.pos.x - 22.1) * easeT,
-        terrainHeightAt(15, 15) + 6.0 + (35 - 6.0) * easeT,
-        26.5 + (storm.pos.z + 45 - 26.5) * easeT
+        22.1 + (storm.pos.x - 22.1) * easeS,
+        terrainHeightAt(15, 15) + 6.0 + (35 - 6.0) * easeS,
+        26.5 + (storm.pos.z + 45 - 26.5) * easeS
       );
       camera.lookAt(storm.pos.x, 0, storm.pos.z);
     }
@@ -12727,7 +12889,8 @@ globalThis.getOpeningCinematicQaState = function getOpeningCinematicQaState() {
     marker: SW_CIN_003_MARKER,
     active: openingCinematicState.active,
     elapsed: Number(openingCinematicState.elapsed.toFixed(2)),
-    completed: openingCinematicState.completed
+    completed: openingCinematicState.completed,
+    isBipedalCow17: Boolean(openingCinematicState.cow)
   });
 };
 
