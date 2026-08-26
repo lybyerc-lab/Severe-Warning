@@ -96,7 +96,8 @@ export class NightBlackoutSystem {
   }
 
   public getDistrictState(districtIndex: number): Readonly<DistrictGridState> | null {
-    return this.districts[districtIndex] ? { ...this.districts[districtIndex] } : null;
+    const d = this.districts[districtIndex];
+    return d ? { ...d } : null;
   }
 
   public getAllDistricts(): ReadonlyArray<DistrictGridState> {

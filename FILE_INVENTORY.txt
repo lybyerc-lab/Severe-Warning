@@ -363,6 +363,9 @@ src/gameplay/scoring/scoring-system.ts
 src/gameplay/traffic/traffic-contracts.ts
 src/gameplay/traffic/traffic-system.test.ts
 src/gameplay/traffic/traffic-system.ts
+src/gameplay/vortex/satellite-vortex-contracts.ts
+src/gameplay/vortex/satellite-vortex-system.ts
+src/gameplay/vortex/satellite-vortex.test.ts
 src/input/input-system.ts
 src/legacy/legacy-runtime-adapter.ts
 src/main.ts
@@ -375,6 +378,9 @@ src/presentation/camera/camera-system.ts
 src/presentation/cinematics/moo-brew-opening-cinematic.ts
 src/presentation/cinematics/opening-cinematic-contracts.ts
 src/presentation/cinematics/opening-cinematic.test.ts
+src/presentation/media/news-chopper-contracts.ts
+src/presentation/media/news-chopper-system.ts
+src/presentation/media/news-chopper.test.ts
 src/presentation/renderer/renderer-contracts.ts
 src/presentation/renderer/renderer-system.ts
 src/presentation/scene/scene-contracts.ts
@@ -404,6 +410,9 @@ src/ui/ui-system.ts
 src/world/animations/landmark-animation-contracts.ts
 src/world/animations/landmark-animation-system.ts
 src/world/animations/landmark-animation.test.ts
+src/world/lighting/night-blackout-contracts.ts
+src/world/lighting/night-blackout-system.ts
+src/world/lighting/night-blackout.test.ts
 src/world/setpieces/destructible-setpiece-contracts.ts
 src/world/setpieces/destructible-setpiece-system.ts
 src/world/setpieces/hart-farm-definition.ts

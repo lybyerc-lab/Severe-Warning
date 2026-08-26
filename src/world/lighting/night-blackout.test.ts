@@ -10,8 +10,10 @@ describe('NightBlackoutSystem', () => {
 
     const districts = system.getAllDistricts();
     assert.equal(districts.length, 4);
-    assert.equal(districts[0].isBlackedOut, false);
-    assert.equal(districts[0].substationIntact, true);
+    const d0 = districts[0];
+    assert.ok(d0);
+    assert.equal(d0.isBlackedOut, false);
+    assert.equal(d0.substationIntact, true);
   });
 
   test('switches time of day mode', () => {
