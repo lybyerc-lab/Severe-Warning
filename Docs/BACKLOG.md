@@ -27,10 +27,9 @@ All current batch requests completed. Open for next director requests.
 
 ## Next up — Code & Modernization
 
-1. **County Fair & Industrial Landmark Animations.** Ferris wheel / Carousel continuous rotation with glowing light trails and 32m Foundry stack smoke plume particles.
-2. **Reviving Parked MOO-LAH Economy & Storm Upgrades.** Port the persistent storm currency, upgrade shop, and cosmetic funnel skins into modern shell.
-
-Nothing else is queued. Say the word and this fills up.
+1. **Source HTML File Renaming.** Transition source HTML file name from `MechanicsLab/SevereWeather_3D_Lab.html` to canonical `SevereWeather_Warning.html`, updating all build pipelines, verification scripts, and CI paths cleanly.
+2. **County Fair & Industrial Landmark Animations.** Ferris wheel / Carousel continuous rotation with glowing light trails and 32m Foundry stack smoke plume particles.
+3. **Reviving Parked MOO-LAH Economy & Storm Upgrades.** Port the persistent storm currency, upgrade shop, and cosmetic funnel skins into modern shell.
 
 ## Decisions open
 
