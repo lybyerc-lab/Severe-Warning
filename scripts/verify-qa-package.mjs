@@ -159,6 +159,7 @@ const requiredMarkers = [
   ['newspaper presentation system', 'SW_UI_001_NEWSPAPER_PRESENTATION_V1'],
   ['playable opening cinematic', 'SW_CIN_003_PLAYABLE_OPENING_V1'],
   ['landmark animations system', 'SW_ANIM_001_LANDMARK_ANIMATIONS_V1'],
+  ['shop storefront modal', 'SW_UI_002_SHOP_MODAL_V1'],
   ['modern bridge: clock sample is authoritative', 'modernClockSample.runDeltaMs / 1000'],
   // [SW:ARCH:ECONOMY_PRELUDE] The extracted, unit-tested economy has to be inlined
   // AND actually called. The gameplay keeps literal fallbacks so a missing prelude

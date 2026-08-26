@@ -328,6 +328,7 @@ scripts/verify-modernization-phase8-engine.mjs
 scripts/verify-moolah-economy.mjs
 scripts/verify-newspaper-opening.mjs
 scripts/verify-qa-package.mjs
+scripts/verify-shop-system.mjs
 scripts/verify-v500-campaign.mjs
 scripts/verify-v510-production-slice.mjs
 scripts/visual-regression-gate.mjs
@@ -393,6 +394,9 @@ src/ui/newspaper/newspaper-presentation-system.ts
 src/ui/newspaper/newspaper-presentation.test.ts
 src/ui/results/results-contracts.ts
 src/ui/results/results-system.ts
+src/ui/shop/shop-contracts.ts
+src/ui/shop/shop-system.test.ts
+src/ui/shop/shop-system.ts
 src/ui/transitions/district-transition-contracts.ts
 src/ui/transitions/district-transition-system.ts
 src/ui/ui-contracts.ts

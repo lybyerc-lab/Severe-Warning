@@ -13040,6 +13040,348 @@ globalThis.getLandmarkAnimationQaState = function getLandmarkAnimationQaState() 
   });
 };
 // [SW:ANIMATION:LANDMARK_ANIMATIONS_V1:END]
+
+// [SW:SOURCE:sw-ui-002-shop.js]
+// [SW:UI:SHOP_MODAL_V1:START]
+const SW_SHOP_002_MARKER = 'SW_UI_002_SHOP_MODAL_V1';
+
+const shopModalState = {
+  isOpen: false,
+  activeTab: 'upgrades' // 'upgrades' | 'skins'
+};
+
+function installShopModalStyles() {
+  if (document.getElementById('swShopStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'swShopStyles';
+  style.textContent = `
+    .sw-shop-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      font-family: 'Outfit', -apple-system, sans-serif;
+    }
+    .sw-shop-modal-card {
+      background: #0f172a;
+      border: 2px solid #38bdf8;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.3);
+      color: #f8fafc;
+      overflow: hidden;
+    }
+    .sw-shop-header {
+      padding: 16px 20px;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sw-shop-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sw-shop-balance {
+      background: #0f172a;
+      border: 1px solid #fbbf24;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      color: #fbbf24;
+      font-size: 0.95rem;
+    }
+    .sw-shop-tabs {
+      display: flex;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+    }
+    .sw-shop-tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .sw-shop-tab-btn.active {
+      color: #38bdf8;
+      border-bottom-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .sw-shop-content {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sw-shop-item-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .sw-shop-item-info h4 {
+      margin: 0 0 4px 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .sw-shop-item-info p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+    .sw-shop-action-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .sw-shop-btn-buy {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .sw-shop-btn-buy:hover {
+      background: #0369a1;
+    }
+    .sw-shop-btn-equip {
+      background: #22c55e;
+      color: #ffffff;
+    }
+    .sw-shop-btn-equipped {
+      background: #334155;
+      color: #94a3b8;
+      cursor: default;
+    }
+    .sw-shop-btn-active {
+      background: #334155;
+      color: #4ade80;
+      cursor: default;
+    }
+    .sw-shop-footer {
+      padding: 12px 20px;
+      background: #1e293b;
+      border-top: 1px solid #334155;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .sw-shop-close-btn {
+      background: #334155;
+      color: #f8fafc;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function applyFunnelSkinMaterials(skinKey) {
+  const skin = (typeof SW_RPG_SKINS !== 'undefined' && SW_RPG_SKINS[skinKey]) || null;
+  if (!skin) return;
+
+  // Apply colors to vapor ribbons and suction rings if present
+  if (typeof productionVaporRibbons !== 'undefined' && Array.isArray(productionVaporRibbons)) {
+    productionVaporRibbons.forEach(ribbon => {
+      if (ribbon.material) {
+        ribbon.material.color.set(skin.coreColor);
+      }
+    });
+  }
+  if (typeof productionSuctionRings !== 'undefined' && Array.isArray(productionSuctionRings)) {
+    productionSuctionRings.forEach(ring => {
+      if (ring.material) {
+        ring.material.color.set(skin.suctionGlow);
+      }
+    });
+  }
+}
+
+function renderShopModal() {
+  installShopModalStyles();
+  let modal = document.getElementById('swShopModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'swShopModal';
+    modal.className = 'sw-shop-modal-backdrop';
+    document.body.appendChild(modal);
+  }
+
+  const moolah = typeof swRpgStore !== 'undefined' ? swRpgStore.moolah : 0;
+  const activeSkin = typeof swRpgStore !== 'undefined' ? swRpgStore.activeSkin : 'default-classic';
+  const unlockedSkins = typeof swRpgStore !== 'undefined' ? swRpgStore.unlockedSkins : ['default-classic'];
+
+  modal.innerHTML = `
+    <div class="sw-shop-modal-card">
+      <div class="sw-shop-header">
+        <div class="sw-shop-title">🏬 UDDER VALUE · STORM OUTFITTERS</div>
+        <div class="sw-shop-balance">🪙 ${moolah} MOO-LAH</div>
+      </div>
+      <div class="sw-shop-tabs">
+        <button id="swShopTabUpgrades" class="sw-shop-tab-btn ${shopModalState.activeTab === 'upgrades' ? 'active' : ''}">⚡ STORM UPGRADES</button>
+        <button id="swShopTabSkins" class="sw-shop-tab-btn ${shopModalState.activeTab === 'skins' ? 'active' : ''}">🌪️ FUNNEL SKINS</button>
+      </div>
+      <div id="swShopItemList" class="sw-shop-content">
+        <!-- Item cards injected below -->
+      </div>
+      <div class="sw-shop-footer">
+        <button id="swShopCloseBtn" class="sw-shop-close-btn">DONE</button>
+      </div>
+    </div>
+  `;
+
+  const listEl = document.getElementById('swShopItemList');
+  if (shopModalState.activeTab === 'upgrades') {
+    Object.values(SW_RPG_UPGRADES).forEach(up => {
+      const owned = swRpgUpgradeActive(up.key);
+      const card = document.createElement('div');
+      card.className = 'sw-shop-item-card';
+      card.innerHTML = `
+        <div class="sw-shop-item-info">
+          <h4>${up.label}</h4>
+          <p>Boost: ${up.base}${up.unit} -> ${up.upgraded}${up.unit}</p>
+        </div>
+        <div>
+          ${owned 
+            ? `<button class="sw-shop-action-btn sw-shop-btn-active" disabled>ACTIVE</button>`
+            : `<button class="sw-shop-action-btn sw-shop-btn-buy" onclick="purchaseSwRpgUpgrade('${up.key}'); renderShopModal();">BUY (${up.cost})</button>`
+          }
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  } else {
+    Object.values(SW_RPG_SKINS).forEach(skin => {
+      const owned = unlockedSkins.includes(skin.key);
+      const isEquipped = activeSkin === skin.key;
+      const card = document.createElement('div');
+      card.className = 'sw-shop-item-card';
+      card.innerHTML = `
+        <div class="sw-shop-item-info">
+          <h4 style="color: ${skin.accentColor}">${skin.label}</h4>
+          <p>Core: ${skin.coreColor} · Suction: ${skin.suctionGlow}</p>
+        </div>
+        <div>
+          ${isEquipped 
+            ? `<button class="sw-shop-action-btn sw-shop-btn-equipped" disabled>EQUIPPED</button>`
+            : (owned 
+                ? `<button class="sw-shop-action-btn sw-shop-btn-equip" onclick="equipSwRpgSkin('${skin.key}'); applyFunnelSkinMaterials('${skin.key}'); renderShopModal();">EQUIP</button>`
+                : `<button class="sw-shop-action-btn sw-shop-btn-buy" onclick="purchaseSwRpgSkin('${skin.key}'); applyFunnelSkinMaterials('${skin.key}'); renderShopModal();">BUY (${skin.cost})</button>`
+              )
+          }
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  }
+
+  document.getElementById('swShopTabUpgrades').onclick = () => {
+    shopModalState.activeTab = 'upgrades';
+    renderShopModal();
+  };
+  document.getElementById('swShopTabSkins').onclick = () => {
+    shopModalState.activeTab = 'skins';
+    renderShopModal();
+  };
+  document.getElementById('swShopCloseBtn').onclick = closeSwShopModal;
+}
+
+function openSwShopModal(tab = 'upgrades') {
+  shopModalState.isOpen = true;
+  shopModalState.activeTab = tab;
+  renderShopModal();
+  const modal = document.getElementById('swShopModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeSwShopModal() {
+  shopModalState.isOpen = false;
+  const modal = document.getElementById('swShopModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function decorateShopButtons() {
+  // Add Shop entry button on Main Menu
+  const menu = document.getElementById('mainMenu');
+  if (menu && !document.getElementById('btnOpenShopMenu')) {
+    const shopBtn = document.createElement('button');
+    shopBtn.id = 'btnOpenShopMenu';
+    shopBtn.className = 'newspaper-button';
+    shopBtn.style.background = '#0284c7';
+    shopBtn.style.color = '#ffffff';
+    shopBtn.style.marginTop = '8px';
+    shopBtn.textContent = '🏬 UDDER VALUE · OUTFITTERS';
+    shopBtn.onclick = () => openSwShopModal('upgrades');
+    menu.querySelector('.menu-card')?.appendChild(shopBtn);
+  }
+
+  // Add Shop entry button on Results Card
+  const resultsCard = document.getElementById('resultsOverlay')?.querySelector('.results-card');
+  if (resultsCard && !document.getElementById('btnOpenShopResults')) {
+    const shopBtn = document.createElement('button');
+    shopBtn.id = 'btnOpenShopResults';
+    shopBtn.className = 'newspaper-button';
+    shopBtn.style.background = '#0284c7';
+    shopBtn.style.color = '#ffffff';
+    shopBtn.style.marginTop = '8px';
+    shopBtn.textContent = '🏬 SPEND MOO-LAH IN SHOP';
+    shopBtn.onclick = () => openSwShopModal('skins');
+    resultsCard.appendChild(shopBtn);
+  }
+}
+
+setTimeout(decorateShopButtons, 300);
+
+globalThis.openSwShopModal = openSwShopModal;
+globalThis.closeSwShopModal = closeSwShopModal;
+
+globalThis.getShopQaState = function getShopQaState() {
+  return Object.freeze({
+    marker: SW_SHOP_002_MARKER,
+    isOpen: shopModalState.isOpen,
+    activeTab: shopModalState.activeTab,
+    moolahBalance: typeof swRpgStore !== 'undefined' ? swRpgStore.moolah : 0,
+    activeSkin: typeof swRpgStore !== 'undefined' ? swRpgStore.activeSkin : 'default-classic',
+    hasShopModalElement: Boolean(document.getElementById('swShopModal'))
+  });
+};
+
+globalThis.__SW_SHOP_QA__ = {
+  open(tab) { openSwShopModal(tab); },
+  close() { closeSwShopModal(); },
+  render() { renderShopModal(); }
+};
+// [SW:UI:SHOP_MODAL_V1:END]
 </script>
 </body>
 </html>

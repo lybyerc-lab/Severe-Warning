@@ -38,7 +38,13 @@ Nothing blocking. The board is clear.
 
 ---
 
-## Landed
+- Interactive In-Game MOO-LAH & Funnel Skin Storefront ("Udder Value Outfitters"):
+  - Added in-game storefront modal (`#swShopModal`) with responsive arcade/newspaper UI, tabs for Storm Upgrades and Funnel Skins, and MOO-LAH balance tracking.
+  - Connected live 3D storm funnel skin styling (`applyFunnelSkinMaterials`) to update Three.js vapor ribbons and suction ring colors in real time.
+  - Added shop entry buttons to the Morning Edition Main Menu and Evening Edition Results broadsheets.
+  - Implemented modular architecture in `src/ui/shop/` (`shop-contracts.ts`, `shop-system.ts`, `shop-system.test.ts`) integrated into `UISubsystem`.
+  - Inlined `[SW:SOURCE:sw-ui-002-shop.js]` in `MechanicsLab/SevereWeather_Warning.html` with marker `SW_UI_002_SHOP_MODAL_V1`.
+  - Added automated verification `scripts/verify-shop-system.mjs` (10/10 checks pass).
 
 - Revived MOO-LAH Economy, Storm Upgrades & Cosmetic Funnel Skins:
   - Revived persistent storm currency (MOO-LAH) and Storm Triangle ability upgrades (`pull`, `gust`, `gridZap`) with local-first persistent storage.
