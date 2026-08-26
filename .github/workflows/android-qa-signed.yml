@@ -85,18 +85,32 @@ jobs:
           echo "Version name: $version_name"
 
       - name: Verify signing secrets are configured
+        id: check_secrets
         shell: bash
         env:
           QA_KEYSTORE_BASE64: ${{ secrets.SEVERE_WEATHER_QA_KEYSTORE_BASE64 }}
+          SEVERE_WEATHER_QA_KEYSTORE_PASSWORD: ${{ secrets.SEVERE_WEATHER_QA_KEYSTORE_PASSWORD }}
+          SEVERE_WEATHER_QA_KEY_ALIAS: ${{ secrets.SEVERE_WEATHER_QA_KEY_ALIAS }}
+          SEVERE_WEATHER_QA_KEY_PASSWORD: ${{ secrets.SEVERE_WEATHER_QA_KEY_PASSWORD }}
         run: |
           missing=0
           for name in QA_KEYSTORE_BASE64 SEVERE_WEATHER_QA_KEYSTORE_PASSWORD SEVERE_WEATHER_QA_KEY_ALIAS SEVERE_WEATHER_QA_KEY_PASSWORD; do
             if [[ -z "${!name:-}" ]]; then
-              echo "Missing required repository secret: $name" >&2
+              echo "Missing repository secret: $name" >&2
               missing=1
             fi
           done
-          exit "$missing"
+          if [[ "$missing" -eq 1 ]]; then
+            if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+              echo "::error::Signed QA APK requires repository secrets on workflow_dispatch."
+              exit 1
+            else
+              echo "::warning::Repository signing secrets not configured for automated push; assembling test APK."
+              echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
@@ -186,6 +200,7 @@ jobs:
           echo "asset sync verified: $(find www -type f | wc -l) file(s)"
 
       - name: Restore persistent QA signing key
+        if: steps.check_secrets.outputs.has_secrets == 'true'
         shell: bash
         env:
           QA_KEYSTORE_BASE64: ${{ secrets.SEVERE_WEATHER_QA_KEYSTORE_BASE64 }}
@@ -199,30 +214,44 @@ jobs:
             -storepass "$SEVERE_WEATHER_QA_KEYSTORE_PASSWORD" \
             -alias "$SEVERE_WEATHER_QA_KEY_ALIAS" >/dev/null
 
-      - name: Assemble signed QA release APK
+      - name: Assemble QA APK
         shell: bash
         run: |
           chmod +x android/gradlew
           cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          if [ "${{ steps.check_secrets.outputs.has_secrets }}" = "true" ]; then
+            ./gradlew assembleRelease --no-daemon --stacktrace
+          else
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          fi
 
       - name: Verify identity, signer, and checksum
         id: package
         shell: bash
         run: |
-          source_apk="android/app/build/outputs/apk/release/app-release.apk"
+          if [ "${{ steps.check_secrets.outputs.has_secrets }}" = "true" ]; then
+            source_apk="android/app/build/outputs/apk/release/app-release.apk"
+            metadata="android/app/build/outputs/apk/release/output-metadata.json"
+          else
+            source_apk="android/app/build/outputs/apk/debug/app-debug.apk"
+            metadata="android/app/build/outputs/apk/debug/output-metadata.json"
+          fi
           output_dir="dist/android-qa"
           output_apk="$output_dir/Severe-Weather-v${SEVERE_WEATHER_BASE_VERSION}-QA-${GITHUB_RUN_NUMBER}.apk"
-          metadata="android/app/build/outputs/apk/release/output-metadata.json"
 
           test -s "$source_apk"
           test -s "$metadata"
           mkdir -p "$output_dir"
           cp "$source_apk" "$output_apk"
 
-          apksigner_bin="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          test -x "$apksigner_bin"
-          "$apksigner_bin" verify --verbose --print-certs "$output_apk" | tee "$output_dir/apksigner-report.txt"
+          if [ "${{ steps.check_secrets.outputs.has_secrets }}" = "true" ]; then
+            apksigner_bin="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+            test -x "$apksigner_bin"
+            "$apksigner_bin" verify --verbose --print-certs "$output_apk" | tee "$output_dir/apksigner-report.txt"
+            cert_sha256="$(awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' "$output_dir/apksigner-report.txt")"
+          else
+            cert_sha256="ephemeral-debug-signer"
+          fi
 
           actual_application_id="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('$metadata','utf8')); process.stdout.write(m.applicationId || '')")"
           actual_version_code="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('$metadata','utf8')); process.stdout.write(String(m.elements?.[0]?.versionCode ?? ''))")"
@@ -242,13 +271,11 @@ jobs:
             identity_ok=0
           fi
           if (( identity_ok == 0 )); then
-            echo "::error::Signed QA APK identity does not match package.json. Refusing to publish a mislabelled artifact."
+            echo "::error::QA APK identity does not match package.json. Refusing to publish a mislabelled artifact."
             exit 1
           fi
 
           sha256sum "$output_apk" | tee "$output_apk.sha256"
-          cert_sha256="$(awk -F': ' '/certificate SHA-256 digest:/ { print $NF; exit }' "$output_dir/apksigner-report.txt")"
-          test -n "$cert_sha256"
 
           cat > "$output_dir/package-manifest.json" <<EOF
           {
@@ -267,7 +294,7 @@ jobs:
           echo "apk_path=$output_apk" >> "$GITHUB_OUTPUT"
           echo "artifact_name=severe-weather-v${SEVERE_WEATHER_BASE_VERSION}-qa-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload signed QA package
+      - name: Upload QA package
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.package.outputs.artifact_name }}
