@@ -13,7 +13,7 @@ function startServer(port = 8126) {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
       let reqPath = decodeURI(req.url.split('?')[0]);
-      if (reqPath === '/') reqPath = '/MechanicsLab/SevereWeather_3D_Lab.html';
+      if (reqPath === '/') reqPath = '/MechanicsLab/SevereWeather_Warning.html';
       if (reqPath.startsWith('/MechanicsLab/models/')) {
         reqPath = reqPath.replace('/MechanicsLab/models/', '/assets/models/');
       }
@@ -124,7 +124,7 @@ async function runPhase7Qa() {
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
 
-  await cdp.send('Page.navigate', { url: `http://127.0.0.1:${port}/MechanicsLab/SevereWeather_3D_Lab.html` });
+  await cdp.send('Page.navigate', { url: `http://127.0.0.1:${port}/MechanicsLab/SevereWeather_Warning.html` });
   await new Promise(r => setTimeout(r, 3000));
 
   console.log('Testing Phase 7 Audio & Traffic Bridge via CDP...');

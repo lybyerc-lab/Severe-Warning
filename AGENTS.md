@@ -44,7 +44,7 @@ Use these terms precisely:
 
 ## Gameplay source is flat
 
-`MechanicsLab/SevereWeather_3D_Lab.html` is the game and is edited directly.
+`MechanicsLab/SevereWeather_Warning.html` is the game and is edited directly.
 
 It used to be a frozen older base that 24 `scripts/apply-*.mjs` patches rewrote on
 every build. That chain has been flattened away: there is no `patch:*` npm script,

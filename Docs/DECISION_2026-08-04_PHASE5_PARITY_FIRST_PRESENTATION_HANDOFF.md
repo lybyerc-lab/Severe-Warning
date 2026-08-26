@@ -14,7 +14,7 @@ Antigravity will work on its own descendant branch and open a draft PR against t
 
 ## Required execution laws
 
-1. `MechanicsLab/SevereWeather_3D_Lab.html` remains unchanged in the branch diff.
+1. `MechanicsLab/SevereWeather_Warning.html` remains unchanged in the branch diff.
 2. The accepted game is rebuilt by replaying the historical patch chain.
 3. A clean-source provenance guard runs before TypeScript and browser QA.
 4. Exact source mapping precedes implementation.

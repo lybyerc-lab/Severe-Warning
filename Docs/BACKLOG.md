@@ -27,13 +27,20 @@ All current batch requests completed. Open for next director requests.
 
 ## Next up — Code & Modernization
 
-1. **Source HTML File Renaming.** Transition source HTML file name from `MechanicsLab/SevereWeather_3D_Lab.html` to canonical `SevereWeather_Warning.html`, updating all build pipelines, verification scripts, and CI paths cleanly.
-2. **County Fair & Industrial Landmark Animations.** Ferris wheel / Carousel continuous rotation with glowing light trails and 32m Foundry stack smoke plume particles.
-3. **Reviving Parked MOO-LAH Economy & Storm Upgrades.** Port the persistent storm currency, upgrade shop, and cosmetic funnel skins into modern shell.
+1. **County Fair & Industrial Landmark Animations.** Ferris wheel / Carousel continuous rotation with glowing light trails and 32m Foundry stack smoke plume particles.
+2. **Reviving Parked MOO-LAH Economy & Storm Upgrades.** Port the persistent storm currency, upgrade shop, and cosmetic funnel skins into modern shell.
 
 ## Decisions open
 
 Nothing blocking. The board is clear.
+
+---
+
+## Landed
+
+- Canonical Source HTML Renaming:
+  - Renamed primary gameplay source file to `MechanicsLab/SevereWeather_Warning.html`.
+  - Updated all build pipelines (`scripts/build-web.mjs`), inlined region extraction (`scripts/lib/inlined-regions.mjs`), verification test suites, and documentation.
 
 ---
 
@@ -104,7 +111,7 @@ Newest first. Kept for the reasoning, not the changelog.
   - Created type-safe opening cinematic subsystem (`src/presentation/cinematics/`) with Cow 17 actor rig, Moo Brew coffee cup, chickens, fence staging, and a 1.5s cubic-smooth camera spline blend to player follow camera.
   - Created broadsheet newspaper presentation system (`src/ui/newspaper/`) with morning lead forecast kicker, period launch styling (`EXTRA! EXTRA! ISSUE THE WARNING!`), and evening edition results dispatch with integrated MOO-LAH shop.
   - Added unit test suites `src/presentation/cinematics/opening-cinematic.test.ts` and `src/ui/newspaper/newspaper-presentation.test.ts` (100% pass across 31 total tests).
-  - Inlined `[SW:UI:NEWSPAPER_PRESENTATION_V1]` and `[SW:CINEMATIC:PLAYABLE_OPENING_V1]` in `MechanicsLab/SevereWeather_3D_Lab.html`.
+  - Inlined `[SW:UI:NEWSPAPER_PRESENTATION_V1]` and `[SW:CINEMATIC:PLAYABLE_OPENING_V1]` in `MechanicsLab/SevereWeather_Warning.html`.
   - Added `scripts/verify-newspaper-opening.mjs` verification suite.
 - CI Hardening & TypeScript Hygiene:
   - Cleaned up unused imports across test suites and systems ensuring strict `tsc --noEmit` adherence (`noUnusedLocals`).
@@ -115,7 +122,7 @@ Newest first. Kept for the reasoning, not the changelog.
 - Revived MOO-LAH Economy & Storm Upgrades:
   - Ported parked MOO-LAH destruction economy and Storm Triangle upgrade loadout (`pull`, `gust`, `gridZap`) into `src/gameplay/economy/` (`MoolahSystem`, `moolah-contracts.ts`).
   - Added unit test suite `src/gameplay/economy/moolah-system.test.ts` (100% pass).
-  - Inlined `[SW:GAME:RPG_V1]` in `MechanicsLab/SevereWeather_3D_Lab.html` with persistent LocalStorage schema (`severe_weather_rpg_v1`).
+  - Inlined `[SW:GAME:RPG_V1]` in `MechanicsLab/SevereWeather_Warning.html` with persistent LocalStorage schema (`severe_weather_rpg_v1`).
   - Added `scripts/verify-moolah-economy.mjs` verification suite.
 - County Fair & Industrial Landmark Animations:
   - Added continuous Ferris wheel mechanical rotation (`speed: 0.22`) for authored and procedural wheel models in District 3.
@@ -126,18 +133,18 @@ Newest first. Kept for the reasoning, not the changelog.
   - Implemented `CollisionDetectionSystem` enforcing the `damageTarget` chokepoint, multi-stage structure degradation, and First Law invariant protection.
   - Created `ParticleSystem` (`src/presentation/vfx/`) and `GameLoopController` (`src/gameplay/loop/`).
   - Added unit test suite `src/gameplay/physics/tornado-physics-system.test.ts` (100% pass across all 27 unit tests).
-  - Inlined `[SW:ARCH:PHASE8_ENGINE_BRIDGE]` in `MechanicsLab/SevereWeather_3D_Lab.html` with marker `MODERNIZATION_PHASE8_ENGINE_V1`.
+  - Inlined `[SW:ARCH:PHASE8_ENGINE_BRIDGE]` in `MechanicsLab/SevereWeather_Warning.html` with marker `MODERNIZATION_PHASE8_ENGINE_V1`.
   - Added automated structural verification (`verify-modernization-phase8-engine.mjs` - 19/19 checks pass) and live headless Chrome CDP probe (`qa-modernization-phase8-engine.mjs`).
 - Phase 7 Audio & Traffic Subsystems Modularization:
   - Created type-safe audio subsystem under `src/audio/` (`AudioSystem`, `audio-contracts.ts`) managing master/sfx/ambient/ui gain mix, sprite cue playback, and synthesizer fallback.
   - Connected generated 41-clip audio sprite (`assets/audio/storm-feel-sprite.wav` and `assets/audio/storm-feel-manifest.json`) resolving audio load errors and warning logs.
   - Created type-safe ambient traffic subsystem under `src/gameplay/traffic/` (`TrafficSystem`, `traffic-contracts.ts`, `traffic-system.test.ts`) spawning all 4 authored vehicles (`town-car`, `pickup-truck`, `news-van`, `storm-chaser-vehicle`) with waypoint route navigation and panic flee behaviors enforcing the First Law invariant.
-  - Inlined `[SW:ARCH:PHASE7_AUDIO_TRAFFIC_BRIDGE]` in `MechanicsLab/SevereWeather_3D_Lab.html` with marker `MODERNIZATION_PHASE7_AUDIO_TRAFFIC_V1`.
+  - Inlined `[SW:ARCH:PHASE7_AUDIO_TRAFFIC_BRIDGE]` in `MechanicsLab/SevereWeather_Warning.html` with marker `MODERNIZATION_PHASE7_AUDIO_TRAFFIC_V1`.
   - Added verification test suite (`verify-modernization-phase7-audio-traffic.mjs` - 22/22 checks pass) and headless Chrome CDP probe (`qa-modernization-phase7-audio-traffic.mjs`).
 - Phase 6 HUD & UI TypeScript Modularization:
   - Created type-safe TypeScript UI subsystem under `src/ui/` (`HudSystem`, `RampageFeedbackSystem`, `DistrictTransitionSystem`, `ResultsSystem`, and master `UISubsystem`).
   - Added unit test suite `src/ui/hud/hud-system.test.ts` (100% pass across all 20 test cases).
-  - Inlined `[SW:ARCH:PHASE6_UI_BRIDGE]` / `[SW:SOURCE:modernization-phase6-ui.js]` in `MechanicsLab/SevereWeather_3D_Lab.html` with marker `MODERNIZATION_PHASE6_UI_V1`.
+  - Inlined `[SW:ARCH:PHASE6_UI_BRIDGE]` / `[SW:SOURCE:modernization-phase6-ui.js]` in `MechanicsLab/SevereWeather_Warning.html` with marker `MODERNIZATION_PHASE6_UI_V1`.
   - Added automated structural verification (`verify-modernization-phase6-ui.mjs` - 40/40 checks pass) and live headless Chrome CDP probe (`qa-modernization-phase6-ui.mjs`).
 - County-Wide High-Detail Model Overhaul (Residential, Commercial, Landmarks & Vehicles):
   - Upgraded 24+ primary models and wrecks (`ranch-house`, `ranch-house-garage`, `craftsman-house`, `craftsman-house-garage`, `split-level-house`, `district-barn`, `grocery-store`, `car-dealership`, `discount-store`, `commercial-shop`, `commercial-shop-gable`, `commercial-shop-mansard`, `commercial-shop-deco`, `courthouse`, `gas-station`, `substation`, `farm-windmill`, `grain-bin`, `water-tower`, `coffee-cup`, `lot-car`) with authentic structural geometry, multi-layer siding, stone foundations, window mullions, shutters, porches, and rooftop HVAC machinery.

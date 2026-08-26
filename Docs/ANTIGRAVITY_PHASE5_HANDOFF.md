@@ -146,7 +146,7 @@ The first Antigravity Phase 4 submission contained useful structure but also dan
 Mandatory corrections carried forward as rules:
 
 1. **Never commit generated V5.1 output over the historical source.**
-2. `MechanicsLab/SevereWeather_3D_Lab.html` must remain byte-for-byte identical to the handoff baseline in the branch diff.
+2. `MechanicsLab/SevereWeather_Warning.html` must remain byte-for-byte identical to the handoff baseline in the branch diff.
 3. Add a workflow provenance guard before TypeScript, patching, or browser QA.
 4. Build the accepted game by replaying the complete patch chain.
 5. Map exact legacy behavior before creating contracts.
@@ -161,7 +161,7 @@ Before every push, this command or an equivalent must succeed:
 ```bash
 git diff --exit-code \
   origin/agent/phase4-knowledge-antigravity-handoff -- \
-  MechanicsLab/SevereWeather_3D_Lab.html
+  MechanicsLab/SevereWeather_Warning.html
 ```
 
 Any committed diff to that file is an automatic rejection unless the technical lead explicitly authorizes a source-baseline change.

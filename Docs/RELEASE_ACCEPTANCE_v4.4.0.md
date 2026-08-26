@@ -3,7 +3,7 @@
 Date: 2026-07-31
 Release: `4.4.0 Illustrated Storm Feedback`
 Target device: Galaxy S26 Ultra
-Active source: `MechanicsLab/SevereWeather_3D_Lab.html`
+Active source: `MechanicsLab/SevereWeather_Warning.html`
 Android packaging: Capacitor 8.5.0
 
 ## Gameplay and Grid Zap acceptance

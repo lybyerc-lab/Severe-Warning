@@ -34,7 +34,7 @@ const BASELINE_PORT = Number(process.env.VISUAL_BASELINE_PORT || 4184);
 // - when it grew a new requirement, rebuilding an older commit with the current
 // build-web failed outright, which is how this list was found to be incomplete.
 const RENDER_INPUTS = [
-  'MechanicsLab/SevereWeather_3D_Lab.html',
+  'MechanicsLab/SevereWeather_Warning.html',
   'src',
   'scripts/build-web.mjs',
   'scripts/lib',

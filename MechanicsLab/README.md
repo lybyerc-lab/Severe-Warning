@@ -4,7 +4,7 @@ The HTML/WebGL build is the active gameplay source and the planned foundation fo
 
 ## Current build
 
-- `SevereWeather_3D_Lab.html`
+- `SevereWeather_Warning.html`
 - Version: `4.0.0 Living County Edition`
 - Runtime: self-contained Three.js/WebGL game with locally bundled fonts
 - Primary target: Android landscape through the Capacitor project in `../android/`

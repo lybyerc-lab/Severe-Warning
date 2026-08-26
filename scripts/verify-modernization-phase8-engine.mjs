@@ -20,7 +20,7 @@ function assert(condition, message) {
   }
 }
 
-const htmlPath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const htmlPath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_Warning.html');
 const adapterPath = path.join(projectRoot, 'src', 'legacy', 'legacy-runtime-adapter.ts');
 const physicsContractsPath = path.join(projectRoot, 'src', 'gameplay', 'physics', 'tornado-physics-contracts.ts');
 const physicsSystemPath = path.join(projectRoot, 'src', 'gameplay', 'physics', 'tornado-physics-system.ts');

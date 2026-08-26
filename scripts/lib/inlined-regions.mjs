@@ -24,7 +24,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const GAMEPLAY_SOURCE = path.join('MechanicsLab', 'SevereWeather_3D_Lab.html');
+export const GAMEPLAY_SOURCE = path.join('MechanicsLab', 'SevereWeather_Warning.html');
 
 /** The Three.js production slice, in the order it appears in the source. */
 export const PRODUCTION_SLICE_REGIONS = Object.freeze([

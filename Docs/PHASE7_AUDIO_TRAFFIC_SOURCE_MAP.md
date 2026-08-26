@@ -38,5 +38,5 @@ src/
 ## 3. Bridge Contract (`__SW_PHASE7_AUDIO_TRAFFIC_BRIDGE__`)
 
 * **Marker:** `MODERNIZATION_PHASE7_AUDIO_TRAFFIC_V1`
-* **Inlined Region:** `[SW:ARCH:PHASE7_AUDIO_TRAFFIC_BRIDGE]` in `MechanicsLab/SevereWeather_3D_Lab.html`.
+* **Inlined Region:** `[SW:ARCH:PHASE7_AUDIO_TRAFFIC_BRIDGE]` in `MechanicsLab/SevereWeather_Warning.html`.
 * **Adapter Integration:** Attached via `LegacyRuntimeAdapter.attachAudioTraffic(audio, traffic)`.

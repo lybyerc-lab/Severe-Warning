@@ -50,5 +50,5 @@ src/
 ## 3. Bridge Contract (`__SW_PHASE8_ENGINE_BRIDGE__`)
 
 * **Marker:** `MODERNIZATION_PHASE8_ENGINE_V1`
-* **Inlined Region:** `[SW:ARCH:PHASE8_ENGINE_BRIDGE]` in `MechanicsLab/SevereWeather_3D_Lab.html`.
+* **Inlined Region:** `[SW:ARCH:PHASE8_ENGINE_BRIDGE]` in `MechanicsLab/SevereWeather_Warning.html`.
 * **Adapter Integration:** Attached via `LegacyRuntimeAdapter.attachEngine(physics, vfx, loop)`.

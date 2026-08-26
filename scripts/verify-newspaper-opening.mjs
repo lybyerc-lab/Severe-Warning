@@ -20,7 +20,7 @@ function assert(condition, message) {
   }
 }
 
-const htmlPath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const htmlPath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_Warning.html');
 const cinematicContractPath = path.join(projectRoot, 'src', 'presentation', 'cinematics', 'opening-cinematic-contracts.ts');
 const cinematicImplPath = path.join(projectRoot, 'src', 'presentation', 'cinematics', 'moo-brew-opening-cinematic.ts');
 const newspaperContractPath = path.join(projectRoot, 'src', 'ui', 'newspaper', 'newspaper-contracts.ts');

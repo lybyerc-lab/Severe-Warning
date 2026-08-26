@@ -223,7 +223,7 @@ try {
   // Comparing the packaged page against the gameplay source catches a stale or
   // half-built bundle, which comparing it against a third copy never could.
   const authoredRegions = extractInlinedRegions(
-    await readFile(path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html'), 'utf8'),
+    await readFile(path.join(projectRoot, 'MechanicsLab', 'SevereWeather_Warning.html'), 'utf8'),
   );
   for (const region of [...PRODUCTION_SLICE_REGIONS, ...MODERNIZATION_BRIDGE_REGIONS]) {
     const packaged = packagedRegions.get(region);

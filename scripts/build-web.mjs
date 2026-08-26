@@ -12,7 +12,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
 const sourceHtml = process.env.SEVERE_WEATHER_SOURCE_PATH
   ? path.resolve(process.env.SEVERE_WEATHER_SOURCE_PATH)
-  : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+  : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_Warning.html');
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const sourceAudioDir = path.join(projectRoot, 'assets', 'audio');
 const sourceModelsDir = path.join(projectRoot, 'assets', 'models');

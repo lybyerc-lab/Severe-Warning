@@ -20,7 +20,7 @@ function assert(condition, message) {
   }
 }
 
-const htmlPath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const htmlPath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_Warning.html');
 const adapterPath = path.join(projectRoot, 'src', 'legacy', 'legacy-runtime-adapter.ts');
 const audioContractsPath = path.join(projectRoot, 'src', 'audio', 'audio-contracts.ts');
 const audioSystemPath = path.join(projectRoot, 'src', 'audio', 'audio-system.ts');

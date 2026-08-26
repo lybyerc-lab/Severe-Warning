@@ -2,7 +2,7 @@
 
 **This code does not ship and is not built by CI.** It is kept for reference.
 
-The production game is `MechanicsLab/SevereWeather_3D_Lab.html` (Three.js r128),
+The production game is `MechanicsLab/SevereWeather_Warning.html` (Three.js r128),
 packaged for Android with Capacitor. See `CURRENT_STATUS.md` for the canonical
 active-source declaration.
 
@@ -18,6 +18,6 @@ Background: `Docs/GODOT_MIGRATION_CHECKPOINT_2026-07-30.md`.
 
 ## If you are looking for the live game
 
-- Gameplay source: `MechanicsLab/SevereWeather_3D_Lab.html`
+- Gameplay source: `MechanicsLab/SevereWeather_Warning.html`
 - Modern layers: `src/`
 - Build and packaging: `scripts/`, `.github/workflows/`

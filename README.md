@@ -2,7 +2,7 @@
 
 **Severe Weather Warning** is a mobile-first, single-player arcade destruction game in which the player directly controls the storm.
 
-The active production game is the Three.js/WebGL build rooted at `MechanicsLab/SevereWeather_3D_Lab.html`. Capacitor packages the same offline web build for Android landscape play. Unity, Godot, and Babylon.js work remain preserved as experiments or historical evidence and are not the active production path.
+The active production game is the Three.js/WebGL build rooted at `MechanicsLab/SevereWeather_Warning.html`. Capacitor packages the same offline web build for Android landscape play. Unity, Godot, and Babylon.js work remain preserved as experiments or historical evidence and are not the active production path.
 
 ## Canonical identity
 

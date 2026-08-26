@@ -20,7 +20,7 @@ function assert(condition, message) {
   }
 }
 
-const htmlPath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+const htmlPath = path.join(projectRoot, 'MechanicsLab', 'SevereWeather_Warning.html');
 const contractsPath = path.join(projectRoot, 'src', 'gameplay', 'economy', 'moolah-contracts.ts');
 const systemPath = path.join(projectRoot, 'src', 'gameplay', 'economy', 'moolah-system.ts');
 

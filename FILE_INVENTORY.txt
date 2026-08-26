@@ -118,9 +118,9 @@ Godot/scenes/main.tscn
 Godot/scripts/main.gd
 MechanicsLab/Model_Viewer.html
 MechanicsLab/README.md
-MechanicsLab/SevereWeather_3D_Lab.html
 MechanicsLab/SevereWeather_MechanicsLab_v0.7.1.html
 MechanicsLab/SevereWeather_MechanicsLab_v0.8.0.html
+MechanicsLab/SevereWeather_Warning.html
 MechanicsLab/three.min.js
 Packages/manifest.json
 ProjectSettings/ProjectVersion.txt

@@ -48,5 +48,5 @@ src/ui/
 ## 3. Bridge Contract (`__SW_PHASE6_UI_BRIDGE__`)
 
 * **Marker:** `MODERNIZATION_PHASE6_UI_V1`
-* **Inlined Region:** `[SW:ARCH:PHASE6_UI_BRIDGE]` in `MechanicsLab/SevereWeather_3D_Lab.html`.
+* **Inlined Region:** `[SW:ARCH:PHASE6_UI_BRIDGE]` in `MechanicsLab/SevereWeather_Warning.html`.
 * **Adapter Integration:** Attached via `LegacyRuntimeAdapter.attachUi(ui)`.

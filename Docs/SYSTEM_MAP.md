@@ -5,7 +5,7 @@
 ### Gameplay source
 
 Primary source:
-- `MechanicsLab/SevereWeather_3D_Lab.html`
+- `MechanicsLab/SevereWeather_Warning.html`
 
 Responsibilities:
 - Three.js world rendering

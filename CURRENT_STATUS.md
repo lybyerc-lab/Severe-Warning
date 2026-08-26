@@ -4,7 +4,7 @@
 **Repository:** `lybyerc-lab/Severe-Warning`  
 **Production renderer:** Three.js r128  
 **Primary target:** single-player Android landscape  
-**Active gameplay source:** `MechanicsLab/SevereWeather_3D_Lab.html` plus the verified modernization bridge layers  
+**Active gameplay source:** `MechanicsLab/SevereWeather_Warning.html` plus the verified modernization bridge layers  
 **Android packaging:** Capacitor 8.5.0 with offline local assets
 
 ## Canonical identity

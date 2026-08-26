@@ -351,7 +351,7 @@ Commit `80f2f14` is the latest proven compile/package baseline. The Build #5.2 p
 
 ### Source and artifact
 
-- Active gameplay source: `MechanicsLab/SevereWeather_3D_Lab.html`
+- Active gameplay source: `MechanicsLab/SevereWeather_Warning.html`
 - Edition: `3.2.0 Live Coverage Edition`
 - Commit: `d2b8fde67b76e7d5d5faa7991f9984801586836b`
 - GitHub Actions run: `30653818627`
@@ -382,7 +382,7 @@ The local Capacitor wrapper is the accepted Android packaging strategy. The HTML
 ## 2026-07-31 - HTML/Capacitor v4.1.0 Serpentine Funnel Verification
 
 ### Source and artifact
-- Active gameplay source: `MechanicsLab/SevereWeather_3D_Lab.html`
+- Active gameplay source: `MechanicsLab/SevereWeather_Warning.html`
 - Edition: `4.1.0 Serpentine Funnel Edition`
 - Commit: `8c4e91d`
 - Verified: User physical mobile screenshot + WebGL browser verification @ 61 FPS
@@ -401,7 +401,7 @@ The local Capacitor wrapper is the accepted Android packaging strategy. The HTML
 
 ### Source and artifact
 
-- Active gameplay source: `MechanicsLab/SevereWeather_3D_Lab.html`
+- Active gameplay source: `MechanicsLab/SevereWeather_Warning.html`
 - Release: `4.3.1 Mobile Comfort & Identity`
 - Tested commit: `5ef95e1e774cf80d9612c25fe780b1db81ea73bb`
 - GitHub Actions run: `30680592594` (`Build Android Debug APK #21`)

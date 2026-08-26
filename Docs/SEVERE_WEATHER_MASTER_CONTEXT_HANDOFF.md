@@ -78,7 +78,7 @@ The intended contrast is serious storm cinematography paired with professional l
 
 The active production game is the Three.js/WebGL build rooted at:
 
-`MechanicsLab/SevereWeather_3D_Lab.html`
+`MechanicsLab/SevereWeather_Warning.html`
 
 Capacitor packages the same offline web build for Android.
 

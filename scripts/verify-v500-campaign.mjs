@@ -6,7 +6,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
 const sourcePath = process.env.SEVERE_WEATHER_SOURCE_PATH
   ? path.resolve(process.env.SEVERE_WEATHER_SOURCE_PATH)
-  : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_3D_Lab.html');
+  : path.join(projectRoot, 'MechanicsLab', 'SevereWeather_Warning.html');
 
 const html = await readFile(sourcePath, 'utf8');
 

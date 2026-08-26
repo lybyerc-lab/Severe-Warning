@@ -4,7 +4,7 @@ Last updated: 2026-08-03
 
 ## Evidence scope
 
-The active playable is `MechanicsLab/SevereWeather_3D_Lab.html`. This report separates browser validation, repository integrity, Android packaging, and physical-device acceptance. Passing one gate does not imply the others.
+The active playable is `MechanicsLab/SevereWeather_Warning.html`. This report separates browser validation, repository integrity, Android packaging, and physical-device acceptance. Passing one gate does not imply the others.
 
 ## v5.0.0 authored-world candidate
 

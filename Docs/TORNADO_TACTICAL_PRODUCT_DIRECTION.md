@@ -2,7 +2,7 @@
 
 Status: LOCKED PRODUCT DIRECTION
 Decision date: 2026-07-29
-Authoritative gameplay reference: `MechanicsLab/SevereWeather_3D_Lab.html` at HTML Lab v2.5.0
+Authoritative gameplay reference: `MechanicsLab/SevereWeather_Warning.html` at HTML Lab v2.5.0
 Reference commit: `9b856fd2586bc0c70e3ee95da02fe1dfe0162f74`
 Production engine: Unity 6000.3.0f1
 

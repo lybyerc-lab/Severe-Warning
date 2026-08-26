@@ -16,7 +16,7 @@ Drop a contract-valid `.glb` in `assets/models/`, regenerate
 Read this before proposing changes to the contract; each rule is load-bearing.
 
 **Three.js r128, inlined by hand.** Three is not an npm dependency. It is pasted
-into `MechanicsLab/SevereWeather_3D_Lab.html`. `GLTFLoader` is vendored
+into `MechanicsLab/SevereWeather_Warning.html`. `GLTFLoader` is vendored
 separately at `vendor/three-gltfloader-r128.js` -- the legacy `examples/js`
 build, which is an IIFE assigning `THREE.GLTFLoader` onto the global. The
 `examples/jsm` variant is ES modules and cannot be used here.
@@ -181,7 +181,7 @@ The failure message now names the drift and prints the fix command.
 ## Using a model in gameplay
 
 Landmarks are already wired. For anything else, the API is in
-`MechanicsLab/SevereWeather_3D_Lab.html`:
+`MechanicsLab/SevereWeather_Warning.html`:
 
 | Symbol | Line | Purpose |
 |---|---:|---|

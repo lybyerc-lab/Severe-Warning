@@ -28,7 +28,7 @@ npm run build
 npm run cap:sync
 ```
 
-`scripts/build-web.mjs` creates the ignored `www/` directory from `MechanicsLab/SevereWeather_3D_Lab.html`, copies only local font resources, rejects external script or stylesheet URLs, and writes build provenance to `www/build-info.json`.
+`scripts/build-web.mjs` creates the ignored `www/` directory from `MechanicsLab/SevereWeather_Warning.html`, copies only local font resources, rejects external script or stylesheet URLs, and writes build provenance to `www/build-info.json`.
 
 ## Compile a debug APK
 
