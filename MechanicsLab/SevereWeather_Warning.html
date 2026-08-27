@@ -15064,93 +15064,122 @@ function createCinematicPivot(parent, name, position = [0, 0, 0]) {
 }
 
 function buildArticulatedBipedalCow17(root) {
-  const matWhite = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.75 });
-  const matPatch = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.8 });
-  const matSnout = new THREE.MeshStandardMaterial({ color: '#fda4af', roughness: 0.6 });
-  const matHoof = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.5 });
-  const matCup = new THREE.MeshStandardMaterial({ color: '#b45309', roughness: 0.4 });
-  const matTag = new THREE.MeshBasicMaterial({ color: '#fbbf24' });
-  const matHorn = new THREE.MeshStandardMaterial({ color: '#e2e8f0', roughness: 0.4 });
+  const matWhite = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.72 });
+  const matBlack = new THREE.MeshStandardMaterial({ color: '#18181b', roughness: 0.75 });
+  const matMuzzle = new THREE.MeshStandardMaterial({ color: '#fda4af', roughness: 0.55 });
+  const matHoof = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.45 });
+  const matCup = new THREE.MeshStandardMaterial({ color: '#b45309', roughness: 0.35 });
+  const matTag = new THREE.MeshBasicMaterial({ color: '#facc15' });
+  const matHorn = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.35 });
+  const matHornTip = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.4 });
+  const matEyeWhite = new THREE.MeshBasicMaterial({ color: '#ffffff' });
+  const matPupil = new THREE.MeshBasicMaterial({ color: '#09090b' });
+  const matUdder = new THREE.MeshStandardMaterial({ color: '#fca5a5', roughness: 0.6 });
 
   const cowGroup = new THREE.Group();
-  cowGroup.name = 'ArticulatedBipedalCow17';
+  cowGroup.name = 'HeroCow17CinematicRoot';
 
-  // Hips
-  const hips = createCinematicPivot(cowGroup, 'cow17-hips', [0, 2.53, -0.48]);
-  createCinematicPart(hips, new THREE.CylinderGeometry(0.82, 0.72, 0.95, 12), matWhite, 'cow17-hips-mass', [0, 0, 0]);
-  createCinematicPart(hips, new THREE.SphereGeometry(0.42, 10, 10), matPatch, 'cow17-hip-patch', [0.45, -0.05, 0.38], [1, 1, 0.4]);
+  // Base Root / Hips Pivot
+  const hips = createCinematicPivot(cowGroup, 'cow17-hips', [0, 1.85, 0]);
 
-  // Torso
-  const torso = createCinematicPivot(hips, 'cow17-torso', [0, 0.75, 0]);
-  createCinematicPart(torso, new THREE.CylinderGeometry(0.92, 0.82, 1.45, 12), matWhite, 'cow17-torso-mass', [0, 0.65, 0]);
-  createCinematicPart(torso, new THREE.SphereGeometry(0.55, 10, 10), matPatch, 'cow17-chest-patch', [-0.45, 0.75, 0.45], [1, 1.2, 0.4]);
+  // Rounded Barrel Torso (Horizontal bovine posture with cute stylized curve)
+  const torso = createCinematicPivot(hips, 'cow17-torso', [0, 0, 0]);
+  
+  // Main Barrel Body Mesh (Smooth rounded form)
+  createCinematicPart(torso, new THREE.BoxGeometry(1.65, 1.45, 2.65), matWhite, 'cow17-barrel-body', [0, 0, 0]);
+  // Flank & Rump Rounded Patches
+  createCinematicPart(torso, new THREE.SphereGeometry(0.65, 12, 10), matBlack, 'cow17-flank-patch-l', [-0.75, 0.25, 0.4], [0.4, 0.9, 1.2]);
+  createCinematicPart(torso, new THREE.SphereGeometry(0.72, 12, 10), matBlack, 'cow17-rump-patch-r', [0.72, 0.22, -0.65], [0.4, 1.0, 1.1]);
+  createCinematicPart(torso, new THREE.SphereGeometry(0.55, 10, 10), matBlack, 'cow17-top-spine-patch', [0.15, 0.72, -0.2], [1.1, 0.35, 1.2]);
 
-  // Head
-  const head = createCinematicPivot(torso, 'cow17-head', [0, 1.55, 0.25]);
-  createCinematicPart(head, new THREE.BoxGeometry(1.05, 0.95, 1.05), matWhite, 'cow17-head-mass', [0, 0.25, 0.25]);
-  createCinematicPart(head, new THREE.BoxGeometry(0.95, 0.52, 0.68), matSnout, 'cow17-snout', [0, 0.05, 0.85]);
-  createCinematicPart(head, new THREE.SphereGeometry(0.38, 8, 8), matPatch, 'cow17-eye-patch', [0.32, 0.38, 0.68], [1, 1, 0.4]);
+  // Cute Pink Udder with 4 Teats Under Belly
+  const udderPivot = createCinematicPivot(torso, 'cow17-udder', [0, -0.65, -0.45]);
+  createCinematicPart(udderPivot, new THREE.SphereGeometry(0.35, 10, 8), matUdder, 'cow17-udder-sac', [0, 0, 0], [1.1, 0.75, 1.1]);
+  [-0.14, 0.14].forEach(tx => [-0.14, 0.14].forEach(tz => {
+    createCinematicPart(udderPivot, new THREE.CylinderGeometry(0.04, 0.05, 0.18, 6), matUdder, `cow17-teat-${tx}-${tz}`, [tx, -0.22, tz]);
+  }));
 
-  // Nostrils & Eyes
-  createCinematicPart(head, new THREE.SphereGeometry(0.08, 6, 6), matPatch, 'cow17-nostril-l', [-0.22, 0.05, 1.18]);
-  createCinematicPart(head, new THREE.SphereGeometry(0.08, 6, 6), matPatch, 'cow17-nostril-r', [0.22, 0.05, 1.18]);
-  const matEyeWhite = new THREE.MeshBasicMaterial({ color: '#ffffff' });
-  const matPupil = new THREE.MeshBasicMaterial({ color: '#0f172a' });
-  [-0.36, 0.36].forEach((ex, idx) => {
-    const eye = createCinematicPart(head, new THREE.SphereGeometry(0.14, 8, 8), matEyeWhite, `cow17-eye-${idx}`, [ex, 0.45, 0.72]);
-    createCinematicPart(eye, new THREE.SphereGeometry(0.08, 6, 6), matPupil, `cow17-pupil-${idx}`, [0, 0, 0.08]);
+  // Neck & Shoulders
+  const neck = createCinematicPivot(torso, 'cow17-neck', [0, 0.45, 1.25]);
+  createCinematicPart(neck, new THREE.CylinderGeometry(0.55, 0.72, 0.95, 10), matWhite, 'cow17-neck-mesh', [0, 0.25, 0.2], [1, 1, 1], [0.55, 0, 0]);
+  createCinematicPart(neck, new THREE.SphereGeometry(0.42, 8, 8), matBlack, 'cow17-neck-patch', [0.32, 0.3, 0.15], [0.5, 0.9, 0.8]);
+
+  // Head Pivot
+  const head = createCinematicPivot(neck, 'cow17-head', [0, 0.62, 0.55]);
+  createCinematicPart(head, new THREE.BoxGeometry(0.95, 0.88, 1.15), matWhite, 'cow17-head-cranium', [0, 0.15, 0.2]);
+
+  // Soft Pink Muzzle & Dark Nostrils
+  createCinematicPart(head, new THREE.BoxGeometry(0.85, 0.52, 0.65), matMuzzle, 'cow17-snout', [0, -0.12, 0.88]);
+  createCinematicPart(head, new THREE.SphereGeometry(0.08, 6, 6), matBlack, 'cow17-nostril-l', [-0.22, -0.06, 1.22]);
+  createCinematicPart(head, new THREE.SphereGeometry(0.08, 6, 6), matBlack, 'cow17-nostril-r', [0.22, -0.06, 1.22]);
+
+  // Black Eye Patch (Right Eye)
+  createCinematicPart(head, new THREE.SphereGeometry(0.38, 10, 8), matBlack, 'cow17-eye-patch', [0.38, 0.25, 0.45], [0.5, 1.1, 1.1]);
+
+  // Expressive Cow Eyes (With Highlights)
+  [-0.42, 0.42].forEach((ex, idx) => {
+    const eyeWhite = createCinematicPart(head, new THREE.SphereGeometry(0.15, 10, 8), matEyeWhite, `cow17-eye-white-${idx}`, [ex, 0.28, 0.48], [0.6, 1.1, 1.0]);
+    createCinematicPart(eyeWhite, new THREE.SphereGeometry(0.09, 8, 8), matPupil, `cow17-pupil-${idx}`, [0, 0, 0.1]);
+    createCinematicPart(eyeWhite, new THREE.SphereGeometry(0.035, 6, 6), matEyeWhite, `cow17-eye-highlight-${idx}`, [0.03, 0.04, 0.14]);
   });
 
-  // Tag #17
-  createCinematicPart(head, new THREE.BoxGeometry(0.28, 0.42, 0.06), matTag, 'cow17-ear-tag-17', [-0.62, 0.52, 0.35]);
+  // Horns (Ivory with Dark Tips)
+  [-1, 1].forEach(side => {
+    const horn = createCinematicPivot(head, `cow17-horn-${side}`, [side * 0.42, 0.62, 0.15]);
+    createCinematicPart(horn, new THREE.ConeGeometry(0.12, 0.55, 8), matHorn, `horn-base-${side}`, [0, 0.22, 0], [1, 1, 1], [-0.25, 0, side * 0.45]);
+    createCinematicPart(horn, new THREE.ConeGeometry(0.07, 0.22, 8), matHornTip, `horn-tip-${side}`, [side * 0.12, 0.48, -0.04], [1, 1, 1], [-0.25, 0, side * 0.55]);
+  });
 
-  // Ears & Horns
-  const leftEar = createCinematicPivot(head, 'cow17-left-ear', [-0.58, 0.58, 0.15]);
-  createCinematicPart(leftEar, new THREE.ConeGeometry(0.22, 0.65, 8), matPatch, 'cow17-left-ear-mesh', [-0.2, 0, 0], [1, 1, 1], [0, 0, Math.PI / 2 + 0.2]);
-  const rightEar = createCinematicPivot(head, 'cow17-right-ear', [0.58, 0.58, 0.15]);
-  createCinematicPart(rightEar, new THREE.ConeGeometry(0.22, 0.65, 8), matPatch, 'cow17-right-ear-mesh', [0.2, 0, 0], [1, 1, 1], [0, 0, -Math.PI / 2 - 0.2]);
+  // Floppy Cow Ears & Golden #17 Livestock Ear Tag
+  const leftEar = createCinematicPivot(head, 'cow17-left-ear', [-0.52, 0.42, 0.1]);
+  createCinematicPart(leftEar, new THREE.BoxGeometry(0.65, 0.24, 0.15), matWhite, 'ear-mesh-l', [-0.3, 0, 0], [1, 1, 1], [0, 0, 0.35]);
+  createCinematicPart(leftEar, new THREE.BoxGeometry(0.24, 0.38, 0.04), matTag, 'cow17-tag-17', [-0.48, -0.18, 0.05], [1, 1, 1], [0, 0, 0.1]);
+  
+  const rightEar = createCinematicPivot(head, 'cow17-right-ear', [0.52, 0.42, 0.1]);
+  createCinematicPart(rightEar, new THREE.BoxGeometry(0.65, 0.24, 0.15), matBlack, 'ear-mesh-r', [0.3, 0, 0], [1, 1, 1], [0, 0, -0.35]);
 
-  createCinematicPart(head, new THREE.ConeGeometry(0.12, 0.52, 8), matHorn, 'cow17-left-horn', [-0.42, 0.82, 0.15], [1, 1, 1], [-0.3, 0, -0.4]);
-  createCinematicPart(head, new THREE.ConeGeometry(0.12, 0.52, 8), matHorn, 'cow17-right-horn', [0.42, 0.82, 0.15], [1, 1, 1], [-0.3, 0, 0.4]);
+  // Hind Legs (Sturdy, realistic bovine stance)
+  const leftHind = createCinematicPivot(hips, 'cow17-hind-l', [-0.58, -0.35, -0.85]);
+  createCinematicPart(leftHind, new THREE.CylinderGeometry(0.24, 0.2, 0.85, 8), matWhite, 'hind-thigh-l', [0, -0.35, 0]);
+  createCinematicPart(leftHind, new THREE.CylinderGeometry(0.18, 0.16, 0.75, 8), matWhite, 'hind-shin-l', [0, -1.0, 0.05]);
+  createCinematicPart(leftHind, new THREE.BoxGeometry(0.36, 0.24, 0.48), matHoof, 'hind-hoof-l', [0, -1.45, 0.12]);
 
-  // Left Arm (Planted casually on top fence rail)
-  const leftArm = createCinematicPivot(torso, 'cow17-left-shoulder', [-0.95, 1.15, 0]);
-  createCinematicPart(leftArm, new THREE.CylinderGeometry(0.22, 0.2, 0.95, 8), matWhite, 'cow17-left-upper-arm', [0, -0.45, 0]);
-  const leftForeleg = createCinematicPivot(leftArm, 'cow17-left-foreleg', [0, -0.9, 0.15]);
-  createCinematicPart(leftForeleg, new THREE.CylinderGeometry(0.2, 0.18, 0.85, 8), matWhite, 'cow17-left-lower-arm', [0, -0.45, 0.15]);
-  createCinematicPart(leftForeleg, new THREE.BoxGeometry(0.48, 0.28, 0.55), matHoof, 'cow17-left-resting-hoof', [0, -0.92, 0.32]);
+  const rightHind = createCinematicPivot(hips, 'cow17-hind-r', [0.58, -0.35, -0.85]);
+  createCinematicPart(rightHind, new THREE.CylinderGeometry(0.24, 0.2, 0.85, 8), matWhite, 'hind-thigh-r', [0, -0.35, 0]);
+  createCinematicPart(rightHind, new THREE.CylinderGeometry(0.18, 0.16, 0.75, 8), matWhite, 'hind-shin-r', [0, -1.0, 0.05]);
+  createCinematicPart(rightHind, new THREE.BoxGeometry(0.36, 0.24, 0.48), matHoof, 'hind-hoof-r', [0, -1.45, 0.12]);
 
-  // Right Arm (Holding steaming Moo Brew cup)
-  const rightArm = createCinematicPivot(torso, 'cow17-right-shoulder', [0.95, 1.15, 0]);
-  createCinematicPart(rightArm, new THREE.CylinderGeometry(0.22, 0.2, 0.95, 8), matWhite, 'cow17-right-upper-arm', [0, -0.45, 0]);
-  const rightForeleg = createCinematicPivot(rightArm, 'cow17-right-foreleg', [0, -0.65, 0.15]);
-  createCinematicPart(rightForeleg, new THREE.CylinderGeometry(0.2, 0.18, 0.85, 8), matWhite, 'cow17-right-lower-arm', [0, -0.45, 0.15]);
-  const rightHoof = createCinematicPart(rightForeleg, new THREE.BoxGeometry(0.48, 0.28, 0.55), matHoof, 'cow17-right-cup-hoof', [0, -0.85, 0.3]);
+  // Front Left Leg (Planted on ground)
+  const leftFore = createCinematicPivot(torso, 'cow17-fore-l', [-0.62, -0.35, 0.95]);
+  createCinematicPart(leftFore, new THREE.CylinderGeometry(0.22, 0.18, 0.85, 8), matWhite, 'fore-shoulder-l', [0, -0.35, 0]);
+  createCinematicPart(leftFore, new THREE.CylinderGeometry(0.17, 0.15, 0.75, 8), matWhite, 'fore-shin-l', [0, -0.98, 0.05]);
+  createCinematicPart(leftFore, new THREE.BoxGeometry(0.36, 0.24, 0.48), matHoof, 'fore-hoof-l', [0, -1.45, 0.12]);
+
+  // Front Right Leg / Arm (Holding Moo Brew coffee cup!)
+  const rightFore = createCinematicPivot(torso, 'cow17-fore-r', [0.62, -0.15, 0.95]);
+  createCinematicPart(rightFore, new THREE.CylinderGeometry(0.22, 0.18, 0.85, 8), matWhite, 'fore-shoulder-r', [0, -0.35, 0]);
+  const rightForeleg = createCinematicPivot(rightFore, 'cow17-fore-shin-r', [0, -0.75, 0.05]);
+  createCinematicPart(rightForeleg, new THREE.CylinderGeometry(0.17, 0.15, 0.75, 8), matWhite, 'fore-lower-r', [0, -0.35, 0.1]);
+  const rightHoof = createCinematicPart(rightForeleg, new THREE.BoxGeometry(0.38, 0.25, 0.48), matHoof, 'fore-hoof-r', [0, -0.75, 0.22]);
 
   // Moo Brew Coffee Cup
-  const cup = createCinematicPivot(rightForeleg, 'cow17-moo-brew-cup', [0, -1.12, 0.62]);
-  createCinematicPart(cup, new THREE.CylinderGeometry(0.22, 0.18, 0.52, 12), matCup, 'cup-body', [0, 0, 0]);
+  const cup = createCinematicPivot(rightForeleg, 'cow17-moo-brew-cup', [0, -0.75, 0.55]);
+  createCinematicPart(cup, new THREE.CylinderGeometry(0.22, 0.17, 0.52, 12), matCup, 'cup-body', [0, 0, 0]);
   createCinematicPart(cup, new THREE.CylinderGeometry(0.24, 0.24, 0.08, 12), matWhite, 'cup-lid', [0, 0.28, 0]);
 
-  // Bipedal Legs & Boot-Hooves
-  const leftLeg = createCinematicPivot(hips, 'cow17-left-leg', [-0.45, -0.45, 0]);
-  createCinematicPart(leftLeg, new THREE.CylinderGeometry(0.24, 0.22, 1.25, 8), matWhite, 'cow17-left-thigh', [0, -0.62, 0]);
-  createCinematicPart(leftLeg, new THREE.BoxGeometry(0.55, 0.3, 0.75), matHoof, 'cow17-left-boot-hoof', [0, -1.35, 0.15]);
-
-  const rightLeg = createCinematicPivot(hips, 'cow17-right-leg', [0.45, -0.45, 0]);
-  createCinematicPart(rightLeg, new THREE.CylinderGeometry(0.24, 0.22, 1.25, 8), matWhite, 'cow17-right-thigh', [0, -0.62, 0]);
-  createCinematicPart(rightLeg, new THREE.BoxGeometry(0.55, 0.3, 0.75), matHoof, 'cow17-right-boot-hoof', [0, -1.35, 0.15]);
-
-  // Tail
-  const tail = createCinematicPivot(hips, 'cow17-tail', [0, 0.05, -0.55]);
-  createCinematicPart(tail, new THREE.CylinderGeometry(0.06, 0.06, 0.85, 6), matWhite, 'cow17-tail-bone', [0, -0.42, -0.1], [1, 1, 1], [0.35, 0, 0]);
-  createCinematicPart(tail, new THREE.SphereGeometry(0.18, 8, 8), matPatch, 'cow17-tail-tuft', [0, -0.88, -0.28]);
+  // Swishing Tail with Fluffy Tuft
+  const tail = createCinematicPivot(hips, 'cow17-tail', [0, 0.55, -1.35]);
+  createCinematicPart(tail, new THREE.CylinderGeometry(0.06, 0.05, 1.1, 6), matWhite, 'tail-strand', [0, -0.55, -0.15], [1, 1, 1], [0.25, 0, 0]);
+  createCinematicPart(tail, new THREE.SphereGeometry(0.22, 8, 8), matBlack, 'tail-tuft', [0, -1.15, -0.35], [0.8, 1.4, 0.8]);
 
   root.add(cowGroup);
 
   return {
     root: cowGroup,
-    hips, torso, head, leftEar, rightEar, leftArm, leftForeleg, rightArm, rightForeleg, rightHoof, cup, leftLeg, rightLeg, tail
+    hips, torso, neck, head, leftEar, rightEar,
+    leftArm: leftFore, leftForeleg: leftFore,
+    rightArm: rightFore, rightForeleg, rightHoof,
+    cup, leftLeg: leftHind, rightLeg: rightHind, tail
   };
 }
 
@@ -16177,15 +16206,44 @@ function createProductionNewsChopper() {
   // Searchlight Gimbal & Volumetric Light Cone
   const lightGroup = new THREE.Group();
   lightGroup.position.set(0, 0.45, -2.4);
-  const cone = new THREE.Mesh(
-    new THREE.ConeGeometry(8.5, 36.0, 16, 1, true),
-    new THREE.MeshBasicMaterial({ color: '#fef08a', transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false })
+  
+  const gimbalSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 8, 8),
+    new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.4 })
   );
-  cone.position.set(0, -18.0, 0);
-  cone.rotation.x = Math.PI;
+  lightGroup.add(gimbalSphere);
+
+  const coneGeo = new THREE.ConeGeometry(8.5, 60.0, 18, 1, true);
+  const coneMat = new THREE.MeshBasicMaterial({
+    color: '#fff7ed',
+    transparent: true,
+    opacity: 0.12,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const cone = new THREE.Mesh(coneGeo, coneMat);
+  cone.position.set(0, 0, 30.0);
+  cone.rotation.x = -Math.PI / 2;
   lightGroup.add(cone);
   group.add(lightGroup);
   newsChopperState.spotlightMesh = lightGroup;
+  newsChopperState.spotlightCone = cone;
+
+  // Ground Spotlight Decal / Illumination Pool
+  const groundSpotGeo = new THREE.RingGeometry(0.2, 9.5, 24);
+  const groundSpotMat = new THREE.MeshBasicMaterial({
+    color: '#fef08a',
+    transparent: true,
+    opacity: 0.22,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const groundSpot = new THREE.Mesh(groundSpotGeo, groundSpotMat);
+  groundSpot.rotation.x = -Math.PI / 2;
+  scene.add(groundSpot);
+  newsChopperState.groundSpotMesh = groundSpot;
 
   // Flashing Red Tail Strobe Beacon
   const strobe = new THREE.Mesh(
@@ -16252,6 +16310,39 @@ function updateProductionNewsChopper(dt) {
     newsChopperState.meshGroup.rotation.y = newsChopperState.flightAngle + Math.PI / 2;
     newsChopperState.meshGroup.rotation.z = 0.12;
     newsChopperState.meshGroup.rotation.x = 0.06;
+  }
+
+  // Dynamic searchlight gimbal tracking & beam scaling
+  if (newsChopperState.spotlightMesh && typeof storm !== 'undefined' && storm.pos) {
+    let targetX = storm.pos.x;
+    let targetZ = storm.pos.z;
+    let targetY = terrainHeightAt(targetX, targetZ);
+
+    if (typeof bovineCowCam !== 'undefined' && bovineCowCam.active && bovineCowCam.cow) {
+      targetX = bovineCowCam.cow.x;
+      targetZ = bovineCowCam.cow.z;
+      targetY = bovineCowCam.cow.groundY + bovineCowCam.cow.altitude;
+    }
+
+    const chopperWorldPos = new THREE.Vector3(cx, cy + 0.45, cz);
+    const targetWorldPos = new THREE.Vector3(targetX, targetY, targetZ);
+    const beamDistance = chopperWorldPos.distanceTo(targetWorldPos);
+
+    // Orient gimbal to point directly at the storm/ground touchdown
+    newsChopperState.spotlightMesh.lookAt(targetWorldPos);
+
+    // Scale volumetric cone to match distance precisely
+    if (newsChopperState.spotlightCone) {
+      const scaleZ = beamDistance / 60.0;
+      newsChopperState.spotlightCone.scale.set(Math.max(0.6, scaleZ), scaleZ, Math.max(0.6, scaleZ));
+      newsChopperState.spotlightCone.position.set(0, 0, beamDistance / 2);
+    }
+
+    // Position ground illumination spot
+    if (newsChopperState.groundSpotMesh) {
+      newsChopperState.groundSpotMesh.position.set(targetX, targetY + 0.18, targetZ);
+      newsChopperState.groundSpotMesh.visible = true;
+    }
   }
 
   // Spin rotors

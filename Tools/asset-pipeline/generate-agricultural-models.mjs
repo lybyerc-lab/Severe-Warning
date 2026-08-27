@@ -192,11 +192,79 @@ export async function generateFarmWindmill() {
   await saveGlb('farm-windmill-wreck.glb', bw);
 }
 
+// 5. COW-17 & COW-17-WRECK
+export async function generateCow17() {
+  const b = new GlbBuilder();
+  // Main Barrel Torso (Soft rounded horizontal body)
+  b.addBox([0, 1.4, 0], [1.5, 1.35, 2.4], '#ffffff');
+  // Rounded Holstein Patches
+  b.addSphere([-0.72, 1.6, 0.4], 0.55, 10, '#18181b');
+  b.addSphere([0.72, 1.55, -0.6], 0.6, 10, '#18181b');
+  b.addSphere([0, 2.05, -0.2], 0.5, 10, '#18181b');
+
+  // Pink Udder with 4 Teats Under Belly
+  b.addSphere([0, 0.75, -0.4], 0.3, 8, '#fca5a5');
+  [-0.12, 0.12].forEach(tx => [-0.12, 0.12].forEach(tz => {
+    b.addCylinder([tx, 0.55, -0.4 + tz], 0.04, 0.04, 0.16, 6, '#fca5a5');
+  }));
+
+  // 4 Sturdy Legs with Cloven Hooves
+  [-0.55, 0.55].forEach(lx => {
+    b.addCylinder([lx, 0.7, 0.75], 0.18, 0.14, 1.4, 8, '#ffffff'); // Front legs
+    b.addBox([lx, 0.12, 0.8], [0.32, 0.24, 0.42], '#0f172a'); // Front hooves
+    b.addCylinder([lx, 0.7, -0.75], 0.2, 0.15, 1.4, 8, '#ffffff'); // Hind legs
+    b.addBox([lx, 0.12, -0.7], [0.32, 0.24, 0.42], '#0f172a'); // Hind hooves
+  });
+
+  // Sculpted Neck & Cranium
+  b.addCylinder([0, 1.8, 1.15], 0.45, 0.6, 0.85, 8, '#ffffff', [0.55, 0, 0]);
+  b.addBox([0, 2.15, 1.6], [0.85, 0.78, 1.05], '#ffffff');
+  b.addBox([0, 1.9, 2.15], [0.75, 0.45, 0.55], '#fda4af'); // Soft pink muzzle
+  b.addSphere([-0.18, 1.95, 2.42], 0.06, 6, '#18181b'); // Nostril L
+  b.addSphere([0.18, 1.95, 2.42], 0.06, 6, '#18181b'); // Nostril R
+  b.addSphere([0.32, 2.25, 1.8], 0.32, 8, '#18181b'); // Eye patch
+
+  // Expressive Eyes with Highlights
+  [-0.38, 0.38].forEach((ex) => {
+    b.addSphere([ex, 2.28, 1.85], 0.12, 8, '#ffffff');
+    b.addSphere([ex + (ex > 0 ? 0.02 : -0.02), 2.28, 1.94], 0.07, 6, '#09090b');
+  });
+
+  // Ivory Horns with Dark Tips
+  [-0.35, 0.35].forEach(hx => {
+    b.addCone([hx, 2.65, 1.6], 0.1, 0.45, 8, '#f8fafc', [-0.2, 0, hx > 0 ? 0.45 : -0.45]);
+    b.addCone([hx > 0 ? hx + 0.12 : hx - 0.12, 2.85, 1.55], 0.06, 0.2, 8, '#334155', [-0.2, 0, hx > 0 ? 0.55 : -0.55]);
+  });
+
+  // Floppy Ears & Golden #17 Livestock Ear Tag
+  b.addBox([-0.65, 2.4, 1.55], [0.55, 0.2, 0.12], '#ffffff', [0, 0, 0.35]);
+  b.addBox([-0.85, 2.25, 1.6], [0.22, 0.32, 0.04], '#facc15'); // #17 Tag
+  b.addBox([0.65, 2.4, 1.55], [0.55, 0.2, 0.12], '#18181b', [0, 0, -0.35]);
+
+  // Tail with Fur Tuft
+  b.addCylinder([0, 1.8, -1.2], 0.05, 0.04, 0.95, 6, '#ffffff', [0.25, 0, 0]);
+  b.addSphere([0, 1.3, -1.35], 0.18, 8, '#18181b');
+
+  await saveGlb('cow-17.glb', b);
+
+  // Comedic Airborne / Flying Cow 17 Model
+  const bw = new GlbBuilder();
+  bw.addBox([0, 1.4, 0], [1.5, 1.35, 2.4], '#ffffff', [0.25, 0.15, -0.35]);
+  bw.addSphere([-0.72, 1.6, 0.4], 0.55, 10, '#18181b');
+  bw.addSphere([0.72, 1.55, -0.6], 0.6, 10, '#18181b');
+  [-0.55, 0.55].forEach(lx => {
+    bw.addCylinder([lx, 1.1, 0.75], 0.18, 0.14, 1.4, 8, '#ffffff', [0.65, 0, 0.45]);
+    bw.addCylinder([lx, 1.1, -0.75], 0.2, 0.15, 1.4, 8, '#ffffff', [-0.65, 0, -0.45]);
+  });
+  await saveGlb('cow-17-wreck.glb', bw);
+}
+
 export async function run() {
   await generateDistrictBarn();
   await generateHartBarn();
   await generateGrainBin();
   await generateFarmWindmill();
+  await generateCow17();
 }
 
 if (process.argv[1]?.endsWith('generate-agricultural-models.mjs')) {
