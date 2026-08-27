@@ -203,8 +203,75 @@ addClip('hail_1', clicks(0.72, 18, 620, 0.8));
 addClip('hail_2', clicks(0.82, 24, 740, 0.7));
 addClip('splash_1', envelope(mix({ signal: lowpass(noise(0.85), 900), gain: 0.65 }, { signal: tone(0.85, 110, 55), gain: 0.25 }), 0.002, 0.72));
 addClip('splash_2', envelope(mix({ signal: lowpass(noise(0.95), 1200), gain: 0.58 }, { signal: tone(0.95, 145, 62), gain: 0.32 }), 0.002, 0.78));
-addClip('siren_1', envelope(mix({ signal: tone(1.2, 420, 760, 'saw'), gain: 0.55 }, { signal: tone(1.2, 760, 420, 'saw'), gain: 0.45 }), 0.02, 0.28), 0.62);
-addClip('moo_1', envelope(mix({ signal: tone(0.72, 205, 135, 'saw'), gain: 0.55 }, { signal: tone(0.72, 102, 74), gain: 0.30 }), 0.03, 0.28), 0.62);
+function bovineVocal(duration = 0.95, startPitch = 125, endPitch = 82) {
+  const len = lengthFor(duration);
+  const out = new Float64Array(len);
+  let phase = 0;
+  
+  // 1. Glottal Pulse Waveform with subharmonics and aspiration breath
+  const rawGlottal = new Float64Array(len);
+  for (let i = 0; i < len; i++) {
+    const t = i / sampleRate;
+    const progress = t / duration;
+    // Pitch inflection: initial rise then steady gentle downward glide
+    const pitchCurve = progress < 0.15 ? (startPitch * 0.92 + startPitch * 0.08 * (progress / 0.15)) : (startPitch - (startPitch - endPitch) * ((progress - 0.15) / 0.85));
+    const dt = pitchCurve / sampleRate;
+    phase = (phase + dt) % 1.0;
+    
+    // Rosenberg glottal flow model pulse: N1 rise (sine), N2 decay (cosine)
+    let glottal = 0;
+    if (phase < 0.42) {
+      glottal = Math.sin((phase / 0.42) * (Math.PI / 2));
+    } else if (phase < 0.72) {
+      glottal = Math.cos(((phase - 0.42) / 0.30) * (Math.PI / 2));
+    } else {
+      glottal = 0;
+    }
+    // Add warm subharmonic and subtle pitch jitter
+    const subharmonic = Math.sin(phase * Math.PI) * 0.22;
+    const aspiration = (random() * 2 - 1) * 0.06;
+    rawGlottal[i] = glottal + subharmonic + aspiration;
+  }
+  
+  // 2. Resonant Formant Filter (2nd-order BPF resonators for F1, F2, F3)
+  function resonator(signal, freq, bandwidth) {
+    const resOut = new Float64Array(signal.length);
+    const r = Math.exp(-Math.PI * bandwidth / sampleRate);
+    const theta = 2 * Math.PI * freq / sampleRate;
+    const a1 = 2 * r * Math.cos(theta);
+    const a2 = -r * r;
+    const b0 = (1 - r) * Math.sin(theta);
+    let y1 = 0, y2 = 0;
+    for (let i = 0; i < signal.length; i++) {
+      const y0 = b0 * signal[i] + a1 * y1 + a2 * y2;
+      y2 = y1;
+      y1 = y0;
+      resOut[i] = y0;
+    }
+    return resOut;
+  }
+  
+  // Bovine acoustic tract formant resonances: F1=270Hz (pharyngeal), F2=710Hz (oral), F3=1320Hz (nasal/lip)
+  const f1 = resonator(rawGlottal, 270, 65);
+  const f2 = resonator(rawGlottal, 710, 95);
+  const f3 = resonator(rawGlottal, 1320, 140);
+  
+  for (let i = 0; i < len; i++) {
+    const mixed = f1[i] * 1.0 + f2[i] * 0.65 + f3[i] * 0.32;
+    const t = i / sampleRate;
+    let env = 1.0;
+    if (t < 0.06) {
+      env = t / 0.06;
+    } else if (t > duration - 0.18) {
+      env = Math.max(0, (duration - t) / 0.18);
+    }
+    out[i] = mixed * env * 0.90;
+  }
+  return out;
+}
+
+addClip('moo_1', bovineVocal(0.92, 128, 86));
+addClip('moo_2', bovineVocal(1.10, 142, 92));
 addClip('click_1', envelope(tone(0.065, 680, 430), 0.001, 0.05), 0.48);
 
 function materialWood(duration, variant) {

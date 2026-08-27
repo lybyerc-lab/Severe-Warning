@@ -369,6 +369,7 @@ src/audio/audio-system.ts
 src/core/clocks.ts
 src/core/lifecycle.ts
 src/gameplay/campaign/campaign-contracts.ts
+src/gameplay/campaign/campaign-system.test.ts
 src/gameplay/campaign/campaign-system.ts
 src/gameplay/campaign/heartland-definitions.ts
 src/gameplay/districts/district-contracts.ts

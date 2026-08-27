@@ -38,7 +38,7 @@ for (const [name, marker] of [
   ['campaign completion', 'function completeCampaignRun'],
   ['campaign next stop', 'function startNextCampaignLevel'],
   ['campaign presentation', 'function applyCampaignPresentation'],
-  ['campaign score modifier', 'campaignScoreMultiplier()'],
+  ['campaign score modifier', 'function campaignScoreMultiplier'],
   ['real-time run clock', 'V500_REALTIME_RUN_CLOCK_V1'],
   ['run clock stable anchor', '[SW:GAMEPLAY:RUN_CLOCK]'],
   ['world tour marker', 'V500_WORLD_TOUR_V1'],
@@ -92,7 +92,7 @@ check('campaign scenery animates', html.includes('updateCampaignScenery(dt);'));
 check('campaign challenges replace generic pool', html.includes('campaignChallengeFor(stage, pool[index])'));
 check('Cow 17 is density-safe first spawn', html.includes('const id = index === 0 ? 17'));
 check('cow motion uses frame delta', html.includes('cow.orbitAngle += 5.4 * dt * cowMotionScale'));
-check('rejected synthetic moo remains disabled', html.includes('disabled-synthetic-source'));
+check('bovine vocal audio enabled', html.includes('moo_1') && !html.includes('disabled-synthetic-source'));
 check('bovine result finalizes before campaign result', html.includes('finalizeBovineRun();\n  updateHighScore'));
 
 const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]

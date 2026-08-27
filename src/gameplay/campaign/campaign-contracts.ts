@@ -3,7 +3,20 @@
 // Exact contracts for the accepted Heartland campaign and save semantics.
 // ============================================================================
 
-export type StopId = 'lincoln-county' | 'prairie-junction' | 'grain-belt' | 'state-fair-finale';
+export type HeartlandStopId = 'lincoln-county' | 'prairie-junction' | 'grain-belt' | 'state-fair-finale';
+export type CoastalStopId = 'bayou-bend' | 'pelican-key' | 'port-delta';
+export type MetroStopId = 'downtown-core' | 'rail-terminal' | 'broadcast-heights';
+
+export type StopId = HeartlandStopId | CoastalStopId | MetroStopId;
+export type RegionId = 'heartland' | 'coastal' | 'metro';
+
+export interface RegionalModifierDefinition {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly targetCategory: string;
+  readonly bonusMultiplier: number;
+}
 
 export interface CampaignDistrictDefinition {
   readonly title: string;
@@ -13,6 +26,7 @@ export interface CampaignDistrictDefinition {
 export interface CampaignStopDefinition {
   readonly id: StopId;
   readonly index: number;
+  readonly regionId?: RegionId;
   readonly title: string;
   readonly shortTitle: string;
   readonly station: string;
@@ -22,11 +36,14 @@ export interface CampaignStopDefinition {
   readonly durationSeconds: number;
   readonly districts: readonly CampaignDistrictDefinition[];
   readonly defaultNextStopId: StopId | null;
+  readonly regionalModifier?: RegionalModifierDefinition;
 }
 
 export interface CampaignDefinition {
-  readonly id: 'heartland-v1';
-  readonly title: 'Heartland Campaign';
+  readonly id: string;
+  readonly regionId: RegionId;
+  readonly title: string;
+  readonly regionalModifier: RegionalModifierDefinition;
   readonly stops: readonly CampaignStopDefinition[];
 }
 

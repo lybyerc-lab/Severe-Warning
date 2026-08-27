@@ -3599,7 +3599,12 @@ function playSound(type) {
     return;
   }
   if (type === 'moo') {
-    recordAudioEvent({ clip: 'moo_1', trigger: 'legacy:moo', gain: 0, pan: 0, bus: 'effects', status: 'disabled-synthetic-source' });
+    playStormClip(Math.random() < 0.5 ? 'moo_1' : 'moo_2', {
+      gain: 0.65,
+      priority: 3,
+      bus: 'effects',
+      trigger: 'legacy:moo'
+    });
     return;
   }
   if (type === 'easAlert') {
@@ -4270,8 +4275,26 @@ function selectCampaignLevel(index) {
   return true;
 }
 
-function campaignScoreMultiplier() {
-  return getActiveCampaignLevel().scoreMultiplier || 1;
+function campaignScoreMultiplier(targetCategory = null) {
+  const level = getActiveCampaignLevel();
+  let mult = level.scoreMultiplier || 1;
+  if (selectedCampaignRegion === 1) {
+    // Coastal Bayou: +15% score on marine craft, shrimp docks, piers, and water targets
+    if (targetCategory === 'marine' || targetCategory === 'water' || targetCategory === 'boat' || targetCategory === 'pier') {
+      mult *= 1.15;
+    }
+  } else if (selectedCampaignRegion === 2) {
+    // Metro Row: +20% chain multiplier on utility lines, transformers, and commercial skyscrapers
+    if (targetCategory === 'utility' || targetCategory === 'power' || targetCategory === 'skyscraper' || targetCategory === 'grid') {
+      mult *= 1.20;
+    }
+  } else {
+    // Heartland: +10% score on agricultural structures, barns, and silo banks
+    if (targetCategory === 'agricultural' || targetCategory === 'farm' || targetCategory === 'barn' || targetCategory === 'silo') {
+      mult *= 1.10;
+    }
+  }
+  return mult;
 }
 
 // ============================================================================
@@ -4354,8 +4377,8 @@ const COASTAL_WORLD_BLUEPRINTS = {
       { id: 'pier-pandemonium', text: 'PIER PANDEMONIUM: Launch 4 boardwalk props', tags: ['fair'], target: 4 }
     ],
     landmarks: [
-      { type: 'water-tower', name: 'BAYOU BEND WATER TOWER', icon: 'WATER', x: -145, z: -110, health: 320 },
-      { type: 'courthouse', name: 'PELICAN HARBOR MASTER', icon: 'CLOCK', x: 155, z: 135, health: 360 }
+      { kind: 'water-tower', name: 'BAYOU BEND WATER TOWER', icon: 'WATER', x: -145, z: -110, health: 320 },
+      { kind: 'courthouse', name: 'PELICAN HARBOR MASTER', icon: 'CLOCK', x: 155, z: 135, health: 360 }
     ]
   },
   'pelican-key': {
@@ -4368,8 +4391,8 @@ const COASTAL_WORLD_BLUEPRINTS = {
       { id: 'arcade-avalanche', text: 'ARCADE AVALANCHE: Wreck 2 pier attractions', tags: ['fair'], target: 2 }
     ],
     landmarks: [
-      { type: 'ferris-wheel', name: 'PELICAN PIER WHEEL', icon: 'WHEEL', x: -145, z: -110, health: 400 },
-      { type: 'grandstand', name: 'BOARDWALK PAVILION', icon: 'STADIUM', x: 155, z: 135, health: 440 }
+      { kind: 'ferris-wheel', name: 'PELICAN PIER WHEEL', icon: 'WHEEL', x: -145, z: -110, health: 400 },
+      { kind: 'grandstand', name: 'BOARDWALK PAVILION', icon: 'STADIUM', x: 155, z: 135, health: 440 }
     ]
   },
   'port-delta': {
@@ -4382,8 +4405,8 @@ const COASTAL_WORLD_BLUEPRINTS = {
       { id: 'refinery-rupture', text: 'REFINERY RUPTURE: Overload 2 power nodes', tags: ['fair'], target: 2 }
     ],
     landmarks: [
-      { type: 'silo-bank', name: 'DELTA FUEL STORAGE', icon: 'GRAIN', x: -145, z: -110, health: 460 },
-      { type: 'foundry', name: 'PORT DELTA TURBINE PLANT', icon: 'FOUNDRY', x: 155, z: 135, health: 500 }
+      { kind: 'silo-bank', name: 'DELTA FUEL STORAGE', icon: 'GRAIN', x: -145, z: -110, health: 460 },
+      { kind: 'foundry', name: 'PORT DELTA TURBINE PLANT', icon: 'FOUNDRY', x: 155, z: 135, health: 500 }
     ]
   }
 };
@@ -4399,8 +4422,8 @@ const METRO_WORLD_BLUEPRINTS = {
       { id: 'transit-toss', text: 'TRANSIT TOSS: Launch 4 city vehicles', tags: ['fair'], target: 4 }
     ],
     landmarks: [
-      { type: 'silo-bank', name: 'METRO TOWER A', icon: 'GRAIN', x: -145, z: -110, health: 480 },
-      { type: 'foundry', name: 'PLAZA CENTER ATRIUM', icon: 'FOUNDRY', x: 155, z: 135, health: 520 }
+      { kind: 'skyscraper', name: 'METRO TOWER A', icon: 'TOWER', x: -145, z: -110, health: 480 },
+      { kind: 'foundry', name: 'PLAZA CENTER ATRIUM', icon: 'FOUNDRY', x: 155, z: 135, health: 520 }
     ]
   },
   'rail-terminal': {
@@ -4413,8 +4436,8 @@ const METRO_WORLD_BLUEPRINTS = {
       { id: 'freight-fury', text: 'FREIGHT FURY: Wreck 2 freight assets', tags: ['fair'], target: 2 }
     ],
     landmarks: [
-      { type: 'grain-elevator', name: 'GRAND CENTRAL TOWER', icon: 'GRAIN', x: -145, z: -110, health: 490 },
-      { type: 'courthouse', name: 'TERMINAL CONCOURSE', icon: 'CLOCK', x: 155, z: 135, health: 540 }
+      { kind: 'grain-elevator', name: 'GRAND CENTRAL TOWER', icon: 'GRAIN', x: -145, z: -110, health: 490 },
+      { kind: 'courthouse', name: 'TERMINAL CONCOURSE', icon: 'CLOCK', x: 155, z: 135, health: 540 }
     ]
   },
   'broadcast-heights': {
@@ -4427,8 +4450,8 @@ const METRO_WORLD_BLUEPRINTS = {
       { id: 'broadcast-mayhem', text: 'BROADCAST MAYHEM: Launch 4 station vehicles', tags: ['fair'], target: 4 }
     ],
     landmarks: [
-      { type: 'water-tower', name: 'SUMMIT RADIO MAST', icon: 'WATER', x: -145, z: -110, health: 550 },
-      { type: 'grandstand', name: 'NETWORK BROADCAST HUB', icon: 'STADIUM', x: 155, z: 135, health: 600 }
+      { kind: 'radio-tower', name: 'SUMMIT RADIO MAST', icon: 'WATER', x: -145, z: -110, health: 550 },
+      { kind: 'grandstand', name: 'NETWORK BROADCAST HUB', icon: 'STADIUM', x: 155, z: 135, health: 600 }
     ]
   }
 };
@@ -4916,9 +4939,11 @@ function rebuildCampaignTerrainSurface() {
 }
 
 function prepareCampaignWorld() {
-  globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__ = selectedCampaignIndex;
+  const level = getActiveCampaignLevel();
+  const world = getCampaignWorldBlueprint(level);
+  globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__ = typeof world.profile === 'number' ? world.profile : selectedCampaignIndex;
   rebuildCampaignTerrainSurface();
-  if (typeof ridgeRocks !== 'undefined') ridgeRocks.visible = selectedCampaignIndex === 0;
+  if (typeof ridgeRocks !== 'undefined') ridgeRocks.visible = globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__ === 0;
 }
 
 function applyCampaignWorldIdentity(level) {
@@ -5519,15 +5544,9 @@ function campaignTerrainProfile(x, z, baseHeight) {
   const profile = Number.isInteger(globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__)
     ? globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__
     : 0;
-  // [SW:AREA:TERRAIN_ROADS] These landforms used to be multiplied by a mask that
-  // faded them out within 15 units of every road. That held each road corridor at
-  // one height while the parcel interiors sat 2.6 to 9.1 units lower, so every
-  // road read as a raised causeway with the fields sunk between them - roughly
-  // fifty times the 0.16 road lift, which is why adjusting that lift never
-  // touched it. The landscape is continuous now: roads conform to it and climb
-  // it like roads do. Creek crossings are handled by the deck in terrainHeightAt.
   const parcelMask = 1;
 
+  // Region 1: Heartland (Tornado Alley)
   if (profile === 1) {
     const prairieRoll = 0.9 * Math.sin(x * 0.012) + 0.55 * Math.cos(z * 0.016);
     return baseHeight * 0.22 + prairieRoll * parcelMask;
@@ -5543,28 +5562,77 @@ function campaignTerrainProfile(x, z, baseHeight) {
     const grandstandRim = 7.0 * Math.exp(-((radius - 245) ** 2) / 1800);
     return baseHeight * 0.32 + (fairBowl + grandstandRim) * parcelMask;
   }
+
+  // Region 2: Coastal Bayou (Gulf Coast - MS, AL, LA, FL)
+  if (profile === 4) {
+    // Bayou Bend Marina: Low marsh basin with tidal creek channels and stilt pier shallows
+    const marshLow = -2.2 * Math.exp(-(((z + 240) ** 2) / 18000));
+    const tidalRoll = 1.1 * Math.sin(x * 0.024) * Math.cos(z * 0.02);
+    return baseHeight * 0.25 + marshLow + tidalRoll * parcelMask;
+  }
+  if (profile === 5) {
+    // Pelican Key Boardwalk: Sand dune bluff transitioning into open ocean water on the perimeter
+    const beachSlope = -3.2 * THREE.MathUtils.clamp((z + 180) / 360, 0, 1);
+    const duneRidge = 2.8 * Math.exp(-(((x - 40) ** 2) / 22000 + ((z + 50) ** 2) / 14000));
+    return baseHeight * 0.30 + beachSlope + duneRidge * parcelMask;
+  }
+  if (profile === 6) {
+    // Port Delta Refinery: Level industrial shipping apron with deepwater shipping berths
+    const harborDitch = -3.8 * Math.exp(-(((x + 200) ** 2) / 12000 + ((z + 220) ** 2) / 16000));
+    const seawallPad = 1.2 * Math.exp(-(((x - 100) ** 2) / 32000));
+    return baseHeight * 0.20 + harborDitch + seawallPad * parcelMask;
+  }
+
+  // Region 3: Metro Row (NYC / Metropolitan Megalopolis)
+  if (profile === 7) {
+    // Skyline Plaza: Dense urban concrete canyon grid with level foundations and highway rises
+    const avenueRise = 1.4 * Math.sin(x * 0.015) * Math.cos(z * 0.015);
+    return baseHeight * 0.15 + avenueRise * parcelMask;
+  }
+  if (profile === 8) {
+    // Grand Central Terminal: Sunken multi-track rail ditch and raised terminal viaduct
+    const railCutting = -2.8 * Math.exp(-(((x - 20) ** 2) / 9500 + ((z - 40) ** 2) / 54000));
+    const viaductRise = 3.2 * Math.exp(-(((x + 180) ** 2) / 14000 + ((z + 120) ** 2) / 18000));
+    return baseHeight * 0.22 + railCutting + viaductRise * parcelMask;
+  }
+  if (profile === 9) {
+    // Broadcast Heights: Mountain transmitter summit ridge
+    const summitRidge = 18.5 * Math.exp(-(((x - 60) ** 2) / 35000 + ((z - 80) ** 2) / 32000));
+    const cliffFalloff = 4.2 * Math.sin((x + z) * 0.014);
+    return baseHeight * 0.40 + summitRidge + cliffFalloff * parcelMask;
+  }
+
+  // Profile 0 (Lincoln County default)
   const woodedRidge = 2.4 * Math.exp(-(((x - 220) ** 2) / 18000 + ((z + 225) ** 2) / 24000));
   return baseHeight + woodedRidge * parcelMask;
 }
 
 function campaignGroundPalette(color, x, z, height) {
   const profile = Number.isInteger(globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__)
-    ? globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__
+    ? Math.max(0, Math.min(9, globalThis.__SW_ACTIVE_CAMPAIGN_WORLD__))
     : 0;
-  // Alternating parcels read as crop variation in farm country, which is the
-  // right idea, but the pairs used to span green-to-sand and were applied at
-  // nearly half strength - so every other 80-unit parcel turned into a bright
-  // sand patch and the map looked like it was covered in dry lakes. Each pair is
-  // now close in hue and value, and the blend is roughly a third of what it was.
-  const palette = [
+
+  const palettes = [
+    // Heartland (Profiles 0-3): Pasture greens, prairie gold, harvest loam
     ['#2c4a33', '#41583a'],
     ['#6b8b4f', '#849455'],
     ['#75633a', '#8e7742'],
-    ['#5c4a52', '#7d6647']
-  ][profile];
+    ['#5c4a52', '#7d6647'],
+    // Coastal Bayou (Profiles 4-6): Marsh teal, dune sand, wet coastal silt
+    ['#0f766e', '#115e59'],
+    ['#0284c7', '#0369a1'],
+    ['#312e81', '#1e1b4b'],
+    // Metro Row (Profiles 7-9): Dark asphalt, wet concrete, neon reflections
+    ['#1e293b', '#0f172a'],
+    ['#27272a', '#18181b'],
+    ['#1e3a8a', '#172554']
+  ];
+
+  const palette = palettes[profile] || palettes[0];
   const tint = new THREE.Color(((Math.floor((x + 400) / 80) + Math.floor((z + 400) / 80)) & 1) ? palette[0] : palette[1]);
-  const amount = profile === 0 ? 0.13 : 0.17;
-  return color.lerp(tint, amount).lerp(new THREE.Color('#cbd5a1'), THREE.MathUtils.clamp(height / 35, 0, 0.12));
+  const amount = profile >= 7 ? 0.22 : (profile >= 4 ? 0.20 : (profile === 0 ? 0.13 : 0.17));
+  const highlight = profile >= 7 ? new THREE.Color('#38bdf8') : (profile >= 4 ? new THREE.Color('#2dd4bf') : new THREE.Color('#cbd5a1'));
+  return color.lerp(tint, amount).lerp(highlight, THREE.MathUtils.clamp(height / 35, 0, 0.12));
 }
 
 function terrainHeightAt(x, z) {
