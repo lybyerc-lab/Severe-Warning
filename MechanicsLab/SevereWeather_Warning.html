@@ -1101,19 +1101,19 @@
     left: clamp(8px, 1.5vw, 14px);
     right: auto;
     width: auto;
-    max-width: 260px;
+    max-width: clamp(260px, 45vw, 340px);
     height: auto;
-    background: rgba(10, 24, 48, 0.92);
-    border: 1.5px solid rgba(56, 189, 248, 0.65);
+    background: rgba(10, 24, 48, 0.94);
+    border: 1.5px solid rgba(56, 189, 248, 0.75);
     border-radius: 8px;
-    padding: 4px 10px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.8), inset 0 0 10px rgba(56,189,248,0.12);
+    padding: 5px 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.85), inset 0 0 10px rgba(56,189,248,0.15);
     backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     gap: 8px;
     z-index: 10;
-    pointer-events: none;
+    pointer-events: auto;
     box-sizing: border-box;
   }
   .tv-site-popup-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
@@ -1138,15 +1138,26 @@
   .tv-site-popup-brief {
     display: none;
   }
-  .tv-cartouche-hint {
-    font: 900 8px/1 'Outfit', sans-serif;
-    color: #fde047;
-    letter-spacing: 0.04em;
-    background: rgba(161, 98, 7, 0.5);
-    border: 1px solid rgba(250, 204, 21, 0.4);
-    padding: 3px 6px;
-    border-radius: 4px;
+  .tv-cartouche-launch-btn {
+    font: 900 clamp(8.5px, 1.8vmin, 10.5px)/1 'Outfit', sans-serif;
+    color: #0f172a;
+    background: linear-gradient(135deg, #fde047 0%, #f97316 100%);
+    border: 1.5px solid #fef08a;
+    padding: 6px 12px;
+    border-radius: 6px;
     white-space: nowrap;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.6);
+    transition: transform 0.1s ease, filter 0.1s ease;
+    pointer-events: auto;
+  }
+  .tv-cartouche-launch-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(1.15);
+  }
+  .tv-cartouche-launch-btn:active {
+    transform: scale(0.95);
   }
     letter-spacing: 0.05em;
     cursor: pointer;
@@ -1870,7 +1881,7 @@
             -->
             <g id="svgRegionGroup0">
               <!-- Territory 0: LINCOLN COUNTY (top-left) -->
-              <g class="risk-territory selected" id="riskTerritory0" onclick="selectCampaignLevel(0)">
+              <g class="risk-territory selected" id="riskTerritory0" onclick="handleTerritoryClick(0)">
                 <path class="risk-territory-shape" d="
                   M 15,12 C 180,5  350,8  420,18
                   C 430,55  415,90  425,130
@@ -1881,7 +1892,7 @@
               </g>
 
               <!-- Territory 1: PRAIRIE JUNCTION (top-right) -->
-              <g class="risk-territory" id="riskTerritory1" onclick="selectCampaignLevel(1)">
+              <g class="risk-territory" id="riskTerritory1" onclick="handleTerritoryClick(1)">
                 <path class="risk-territory-shape" d="
                   M 420,18 C 510,6  670,4  855,15
                   L 855,125
@@ -1893,7 +1904,7 @@
               </g>
 
               <!-- Territory 2: GRAIN BELT (bottom-left) -->
-              <g class="risk-territory" id="riskTerritory2" onclick="selectCampaignLevel(2)">
+              <g class="risk-territory" id="riskTerritory2" onclick="handleTerritoryClick(2)">
                 <path class="risk-territory-shape" d="
                   M 15,125 C 100,118  220,122  320,130 C 360,133  395,131  425,130
                   C 435,165  418,200  420,235
@@ -1904,7 +1915,7 @@
               </g>
 
               <!-- Territory 3: STATE FAIR (bottom-right) -->
-              <g class="risk-territory" id="riskTerritory3" onclick="selectCampaignLevel(3)">
+              <g class="risk-territory" id="riskTerritory3" onclick="handleTerritoryClick(3)">
                 <path class="risk-territory-shape" d="
                   M 425,130 C 480,128  580,124  660,128 C 730,132  800,130  855,125
                   L 855,248
@@ -1924,19 +1935,19 @@
             <!-- COASTAL BAYOU TERRITORIES -->
             <g id="svgRegionGroup1" style="display:none;">
               <!-- Territory 0: BAYOU BEND MARINA -->
-              <g class="risk-territory selected" id="riskCoastalTerritory0" onclick="selectCampaignLevel(0)">
+              <g class="risk-territory selected" id="riskCoastalTerritory0" onclick="handleTerritoryClick(0)">
                 <path class="risk-territory-shape" d="M 35 25 C 135 15, 245 20, 345 30 C 365 75, 340 120, 295 135 C 205 145, 105 140, 35 110 Z" fill="url(#riskGradBayou)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
                 <text x="190" y="48" class="risk-territory-label">BAYOU BEND MARINA</text>
               </g>
 
               <!-- Territory 1: PELICAN KEY BOARDWALK -->
-              <g class="risk-territory" id="riskCoastalTerritory1" onclick="selectCampaignLevel(1)">
+              <g class="risk-territory" id="riskCoastalTerritory1" onclick="handleTerritoryClick(1)">
                 <path class="risk-territory-shape" d="M 360 25 C 500 15, 640 15, 725 35 C 740 85, 710 125, 645 135 C 510 140, 380 130, 350 80 Z" fill="url(#riskGradPelican)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
                 <text x="540" y="48" class="risk-territory-label">PELICAN KEY BOARDWALK</text>
               </g>
 
               <!-- Territory 2: PORT DELTA REFINERY -->
-              <g class="risk-territory" id="riskCoastalTerritory2" onclick="selectCampaignLevel(2)">
+              <g class="risk-territory" id="riskCoastalTerritory2" onclick="handleTerritoryClick(2)">
                 <path class="risk-territory-shape" d="M 80 130 C 260 145, 480 140, 680 145 C 780 155, 800 200, 750 240 C 530 245, 310 245, 80 235 Z" fill="url(#riskGradPortDelta)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
                 <text x="420" y="162" class="risk-territory-label">PORT DELTA REFINERY</text>
               </g>
@@ -1949,19 +1960,19 @@
             <!-- METRO ROW TERRITORIES -->
             <g id="svgRegionGroup2" style="display:none;">
               <!-- Territory 0: SKYLINE PLAZA -->
-              <g class="risk-territory selected" id="riskMetroTerritory0" onclick="selectCampaignLevel(0)">
+              <g class="risk-territory selected" id="riskMetroTerritory0" onclick="handleTerritoryClick(0)">
                 <path class="risk-territory-shape" d="M 40 25 C 150 15, 260 20, 360 30 C 375 80, 350 125, 305 135 C 215 145, 115 140, 40 110 Z" fill="url(#riskGradSkyline)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
                 <text x="200" y="48" class="risk-territory-label">SKYLINE PLAZA</text>
               </g>
 
               <!-- Territory 1: GRAND CENTRAL TERMINAL -->
-              <g class="risk-territory" id="riskMetroTerritory1" onclick="selectCampaignLevel(1)">
+              <g class="risk-territory" id="riskMetroTerritory1" onclick="handleTerritoryClick(1)">
                 <path class="risk-territory-shape" d="M 380 25 C 520 15, 660 15, 745 35 C 760 85, 730 125, 665 135 C 530 140, 400 130, 370 80 Z" fill="url(#riskGradRail)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
                 <text x="560" y="48" class="risk-territory-label">GRAND CENTRAL</text>
               </g>
 
               <!-- Territory 2: BROADCAST HEIGHTS -->
-              <g class="risk-territory" id="riskMetroTerritory2" onclick="selectCampaignLevel(2)">
+              <g class="risk-territory" id="riskMetroTerritory2" onclick="handleTerritoryClick(2)">
                 <path class="risk-territory-shape" d="M 80 130 C 260 145, 480 140, 680 145 C 780 155, 800 200, 750 240 C 530 245, 310 245, 80 235 Z" fill="url(#riskGradBroadcast)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
                 <text x="420" y="162" class="risk-territory-label">BROADCAST HEIGHTS</text>
               </g>
@@ -1986,7 +1997,7 @@
               <div class="tv-site-popup-meta" id="tvSitePopupMeta">TARGET: 45,000 PTS · ★ 0/3</div>
               <div id="campaignBrief" style="display:none;"></div>
             </div>
-            <div class="tv-cartouche-hint">HIGHLIGHTED</div>
+            <button type="button" class="tv-cartouche-launch-btn" id="btnLaunchFromMap" onclick="triggerTvPowerLaunch()">⚡ UNLEASH</button>
           </div>
         </div>
       </div>
@@ -4292,6 +4303,21 @@ function renderCampaignMap() {
   const activeStars = typeof getCampaignStars === 'function' ? getCampaignStars(active.id) : 0;
   setUI('tvSitePopupMeta', 'TARGET: ' + targetScoreVal.toLocaleString() + ' PTS · ' + '★'.repeat(activeStars) + '☆'.repeat(3 - activeStars) + ' (' + activeStars + '/3)');
   if (typeof updateTvMenuDisplays === 'function') updateTvMenuDisplays();
+}
+
+let lastTerritoryClickIndex = -1;
+let lastTerritoryClickTime = 0;
+
+function handleTerritoryClick(index) {
+  const now = performance.now();
+  const isSecondClick = (lastTerritoryClickIndex === index) && (now - lastTerritoryClickTime < 650);
+  lastTerritoryClickIndex = index;
+  lastTerritoryClickTime = now;
+
+  const success = selectCampaignLevel(index);
+  if (success && isSecondClick) {
+    triggerTvPowerLaunch();
+  }
 }
 
 function selectCampaignLevel(index) {
@@ -12052,7 +12078,8 @@ function animate(now) {
   const qaCameraParked = typeof productionQaPrepared !== 'undefined' && productionQaPrepared;
   const presentationLatched = typeof globalThis.isPhase5PresentationLatched === 'function'
     && globalThis.isPhase5PresentationLatched();
-  if (!qaCameraParked && !presentationLatched) {
+  const cinematicActive = typeof openingCinematicState !== 'undefined' && openingCinematicState.active;
+  if (!qaCameraParked && !presentationLatched && !cinematicActive) {
     if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {
       const cow = bovineCowCam.cow;
       const cinematicX = cow.x + 23;
@@ -15799,10 +15826,22 @@ function finishOpeningCinematic() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (openingCinematicState.active && (e.code === 'Space' || e.code === 'Escape')) {
+  if (openingCinematicState.active) {
     skipOpeningCinematic();
   }
 });
+
+window.addEventListener('pointerdown', (e) => {
+  if (openingCinematicState.active && openingCinematicState.elapsed > 0.15) {
+    skipOpeningCinematic();
+  }
+}, { capture: true });
+
+window.addEventListener('touchstart', (e) => {
+  if (openingCinematicState.active && openingCinematicState.elapsed > 0.15) {
+    skipOpeningCinematic();
+  }
+}, { capture: true });
 
 globalThis.getOpeningCinematicQaState = function getOpeningCinematicQaState() {
   return Object.freeze({
