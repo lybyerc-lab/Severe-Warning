@@ -3,7 +3,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const PORT = 8094;
+const PORT = 8097;
 const ROOT = path.resolve('.');
 
 const server = http.createServer((req, res) => {
@@ -31,8 +31,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, async () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
-  
   const chromePaths = [
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
@@ -42,7 +40,7 @@ server.listen(PORT, async () => {
 
   const chromeProc = spawn(chromeExe, [
     '--headless=new',
-    '--remote-debugging-port=9227',
+    '--remote-debugging-port=9230',
     '--disable-gpu-sandbox',
     '--enable-webgl',
     '--window-size=1280,720',
@@ -52,7 +50,7 @@ server.listen(PORT, async () => {
 
   await new Promise(r => setTimeout(r, 1200));
 
-  const targets = await (await fetch('http://127.0.0.1:9227/json/list')).json();
+  const targets = await (await fetch('http://127.0.0.1:9230/json/list')).json();
   const pageTarget = targets.find(t => t.type === 'page');
   const ws = new WebSocket(pageTarget.webSocketDebuggerUrl);
 
@@ -96,79 +94,51 @@ server.listen(PORT, async () => {
   await send('Page.navigate', { url: `http://localhost:${PORT}/MechanicsLab/SevereWeather_Warning.html` });
   await new Promise(r => setTimeout(r, 2500));
 
-  // Directly start gameplay and skip cutscene
-  console.log('Starting gameplay & skipping cutscene...');
+  // Start run to enter cutscene
   await evaluate(`
     if (typeof startRunFromMenu === 'function') startRunFromMenu();
-    if (typeof skipOpeningCinematic === 'function') skipOpeningCinematic();
   `);
-  await new Promise(r => setTimeout(r, 2500));
-
-  // 1. Snapshot: Lincoln County Farm Area
-  await snap('gameplay_01_farm.png', 'Tornado in Farmstead with Silos & Barn');
-
-  // Move storm to town center
-  await evaluate(`
-    if (typeof storm !== 'undefined' && storm.pos) {
-      storm.pos.x = 60;
-      storm.pos.z = 20;
-    }
-    if (typeof camera !== 'undefined' && camera.position) {
-      camera.position.set(60, 48, 85);
-      camera.lookAt(60, 4, 20);
-    }
-  `);
-  await new Promise(r => setTimeout(r, 2000));
-
-  // 2. Snapshot: Lincoln County Town Center with Commercial Buildings
-  await snap('gameplay_02_town.png', 'Tornado in Lincoln County Town Center');
-
-  // Trigger Pull ability
-  await evaluate(`
-    if (typeof activateStormAbility === 'function') activateStormAbility('pull');
-  `);
-  await new Promise(r => setTimeout(r, 1200));
-  await snap('gameplay_03_ability_pull.png', 'Pull Ability Active');
-
-  // 3. Switch to Supercell
-  await evaluate(`
-    if (typeof selectStormClass === 'function') selectStormClass('supercell');
-    if (typeof activateStormAbility === 'function') activateStormAbility('zap');
-  `);
-  await new Promise(r => setTimeout(r, 1200));
-  await snap('gameplay_04_supercell_zap.png', 'Supercell Lightning Strike');
-
-  // 4. Switch to Action Chopper 8 View
-  await evaluate(`
-    if (typeof triggerNewsChopperLiveFeed === 'function') {
-      triggerNewsChopperLiveFeed('Lincoln County Water Tower', 54);
-    }
-  `);
-  await new Promise(r => setTimeout(r, 1200));
-  await snap('gameplay_05_chopper_feed.png', 'Action Chopper 8 Live Feed');
-
-  // 5. Switch to Coastal Bayou (Pelican Key Boardwalk)
-  await evaluate(`
-    if (typeof switchCampaignRegion === 'function') switchCampaignRegion(1);
-    if (typeof selectCampaignLevel === 'function') selectCampaignLevel(1);
-    if (typeof resetWarningRun === 'function') resetWarningRun();
-    if (typeof skipOpeningCinematic === 'function') skipOpeningCinematic();
-  `);
-  await new Promise(r => setTimeout(r, 2500));
-  await snap('gameplay_06_coastal_boardwalk.png', 'Pelican Key Boardwalk View');
-
-  // 6. Switch to Metro Row (Skyline Plaza)
-  await evaluate(`
-    if (typeof switchCampaignRegion === 'function') switchCampaignRegion(2);
-    if (typeof selectCampaignLevel === 'function') selectCampaignLevel(0);
-    if (typeof resetWarningRun === 'function') resetWarningRun();
-    if (typeof skipOpeningCinematic === 'function') skipOpeningCinematic();
-  `);
-  await new Promise(r => setTimeout(r, 2500));
-  await snap('gameplay_07_metro_skyline.png', 'Metro Row Skyline Plaza View');
-
-  console.log('\nAll gameplay views captured successfully!');
   
+  // Advance cutscene to Beat 1: Casual Coffee Morning (t = 1.5s)
+  await evaluate(`
+    if (typeof openingCinematicState !== 'undefined') {
+      openingCinematicState.elapsed = 1.5;
+      updateOpeningCinematic(0);
+    }
+  `);
+  await new Promise(r => setTimeout(r, 500));
+  await snap('cinematic_beat1_morning.png', 'Beat 1: Casual Morning Coffee');
+
+  // Advance cutscene to Beat 2: Double Take at Horizon (t = 6.8s)
+  await evaluate(`
+    if (typeof openingCinematicState !== 'undefined') {
+      openingCinematicState.elapsed = 6.8;
+      updateOpeningCinematic(0);
+    }
+  `);
+  await new Promise(r => setTimeout(r, 500));
+  await snap('cinematic_beat2_doubletake.png', 'Beat 2: Double Take at Horizon');
+
+  // Advance cutscene to Beat 3: Final Sip of Moo Brew (t = 9.2s)
+  await evaluate(`
+    if (typeof openingCinematicState !== 'undefined') {
+      openingCinematicState.elapsed = 9.2;
+      updateOpeningCinematic(0);
+    }
+  `);
+  await new Promise(r => setTimeout(r, 500));
+  await snap('cinematic_beat3_finalsip.png', 'Beat 3: Final Sip to Mouth');
+
+  // Advance cutscene to Beat 4: Cow 17 Duck & Cover (t = 11.2s)
+  await evaluate(`
+    if (typeof openingCinematicState !== 'undefined') {
+      openingCinematicState.elapsed = 11.2;
+      updateOpeningCinematic(0);
+    }
+  `);
+  await new Promise(r => setTimeout(r, 500));
+  await snap('cinematic_beat4_duck.png', 'Beat 4: Cow 17 Ducking');
+
   chromeProc.kill();
   server.close();
   process.exit(0);
