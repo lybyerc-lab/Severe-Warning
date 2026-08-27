@@ -140,6 +140,29 @@ All three top priority modernization tasks have successfully landed:
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- **The visual regression gate blamed the picture for its own failure to run.**
+  With the play round finally passing, the full-round workflow reached its last
+  step and failed there. Its message was
+  "the rendered picture moved further than this harness's own measured noise" --
+  but two lines above it said `Scenarios with enough agreeing measurements:
+  0 of 0`. Nothing had been measured. The real fault was that the **baseline**
+  build (the previous commit) was from before the boot-crash fix, so its capture
+  threw `Deterministic boot did not reach QA readiness` with `shellReady: false`
+  and there was nothing to compare against.
+
+  Proven, not assumed: running the gate's own comparison with the current build
+  on both sides passes all six scenarios at 0.0000% difference, so the frozen
+  boot path and the gate are both healthy — it was purely the poisoned baseline.
+
+  Two defects fixed, both of which cost real time here:
+  - The two failure modes are now reported apart. "Moved" and "proved nothing"
+    are opposite claims and were printing the same sentence.
+  - **`[visual-change]` no longer waives an inconclusive gate.** The marker means
+    "I meant to change the picture", which nobody can claim about a comparison
+    that never ran; it was previously enough to wave through a build nothing had
+    looked at. The inconclusive branch is checked first and exits non-zero
+    regardless of the marker.
+
 - **CI round two: the checks were pinned to a UI and an audio design that had
   both moved on.** Getting past the build blockers only exposed the next layer.
   1. **The modern shell crashed at boot.** The Hart Farm barn destruction rework

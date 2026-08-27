@@ -277,10 +277,22 @@ try {
   }
 
   if (moved.length > 0) {
-    throw new Error(`${moved.length} scenario(s) moved consistently across attempts.`);
+    const error = new Error(`${moved.length} scenario(s) moved consistently across attempts.`);
+    // A real, measured visual change: the acknowledgement marker may waive it.
+    error.pictureMoved = true;
+    throw error;
   }
   if (measured === 0) {
-    throw new Error(`No scenario could be measured twice in ${attempts} attempts; this gate proved nothing.`);
+    // NOT the same failure, and it must not be reported as one. Reaching here
+    // means the harness never got a usable measurement -- most often because the
+    // BASELINE build fails to boot, which says nothing about the candidate. This
+    // gate reported that case as "the rendered picture moved further than this
+    // harness's own measured noise", sending the reader looking for a visual
+    // change that was never measured. Costly: it hid a baseline whose modern
+    // shell crashed on startup behind a message about pixels.
+    const error = new Error(`No scenario could be measured twice in ${attempts} attempts; this gate proved nothing.`);
+    error.provedNothing = true;
+    throw error;
   }
 } catch (error) {
   failure = error;
@@ -292,6 +304,20 @@ try {
 }
 
 if (failure) {
+  if (failure.provedNothing) {
+    // Deliberately ahead of the acknowledgement check: ACK_MARKER means "I meant
+    // to change the picture", which is not a claim anyone can make about a
+    // comparison that never ran. Letting it pass here would wave through a build
+    // nothing had looked at.
+    console.error(`\nVisual regression gate INCONCLUSIVE against ${shortRef}.`);
+    console.error(failure.message);
+    console.error('This is NOT a report that the picture changed - nothing was measured.');
+    console.error(`Usual cause: the baseline build (${shortRef}) fails to boot, so its`);
+    console.error('capture throws and there is nothing to compare against. The capture');
+    console.error('errors above name the actual fault; the candidate build is not implicated.');
+    console.error(`${ACK_MARKER} does not apply to this and will not pass it.`);
+    process.exit(1);
+  }
   if (changeIsAcknowledged()) {
     console.log(`\nThe picture moved against ${shortRef}, and this commit says that was intended`);
     console.log(`(its message carries ${ACK_MARKER}). Recording the change and passing.`);
