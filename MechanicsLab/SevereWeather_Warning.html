@@ -5264,7 +5264,7 @@ const skyDomeUniforms = {
   uCloudCover: { value: 0.70 }
 };
 const skyDome = new THREE.Mesh(
-  new THREE.SphereGeometry(760, 32, 20),
+  new THREE.SphereGeometry(1400, 32, 20),
   new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
@@ -5321,7 +5321,7 @@ skyDome.frustumCulled = false;
 scene.add(skyDome);
 scene.fog = new THREE.FogExp2('#030712', 0.0014);
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 3500);
 applyStormFraming();
 const isMobileDevice = (window.innerWidth < 850 || window.innerHeight < 540);
 const mobileFactor = isMobileDevice ? 1.22 : 1.0;
@@ -12251,6 +12251,11 @@ function animate(now) {
 
   if (typeof updateProductionNewsChopper === 'function') {
     updateProductionNewsChopper(dt);
+  }
+
+  if (skyDome) {
+    skyDome.position.copy(camera.position);
+    if (skyDomeUniforms && skyDomeUniforms.uTime) skyDomeUniforms.uTime.value = now * 0.001;
   }
 
   setUI('fpsVal', fps || 60);
