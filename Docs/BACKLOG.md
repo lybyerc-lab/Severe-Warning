@@ -140,6 +140,41 @@ All three top priority modernization tasks have successfully landed:
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- **The visual gate's real cost had never been paid, and it did not fit.**
+  With the baseline finally able to boot, the gate ran its true comparison for
+  the first time — and overran the job. Measured on the CI runner: **one attempt
+  is ~20 minutes** (18 software-rendered captures of a 2110-object scene) and it
+  runs **two** attempts for its agreement rule, against a 30-minute job budget
+  that also has to cover the play round and the world-tour sweep. The run was
+  killed mid-second-attempt, taking the sweep and the evidence commit with it.
+  It had never been caught because the gate had always died early first.
+
+  Attempt 1 passed all six scenarios at 0.0000% before the kill, which is the
+  result that mattered: the picture is unchanged.
+
+  Two changes, and one deliberate refusal:
+  - **The gate now skips when the render inputs are byte-identical to the
+    baseline.** `resolveBaselineRef` walks back to the last commit that touched
+    a render input, so script-only, workflow-only and Docs-only commits arrive
+    with nothing to compare — the build is bit-for-bit the same and the result
+    can only be 0.0000%. It was paying ~40 minutes to prove that. No coverage is
+    lost: identical inputs cannot render differently, and anything touching a
+    render input still renders and still compares.
+  - Job timeout 30 → 60 minutes, for the runs that genuinely do render.
+  - **Refused: cutting the two attempts to save time.** The agreement rule is
+    what separates a real change from renderer flake, and this script's own
+    comments record CI producing a spurious 19.9% diff between builds differing
+    only in test scripts. Trading it for speed reintroduces exactly the failure
+    it exists to prevent.
+
+  **A bug in the first cut of that skip, caught by testing it:** `git diff
+  <a> <b>` compares two commits and ignores the working tree, so on the
+  dirty-tree path — where the baseline is `HEAD` *because* there are uncommitted
+  render-input edits — it compared HEAD against itself and skipped the change
+  under test. A false pass, worse than the slowness being fixed. A single-ref
+  `git diff <ref>` compares the working tree and is correct on both paths.
+  Verified in both directions after the fix.
+
 - **The visual regression gate blamed the picture for its own failure to run.**
   With the play round finally passing, the full-round workflow reached its last
   step and failed there. Its message was

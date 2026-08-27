@@ -31,7 +31,19 @@ jobs:
   play-full-round:
     name: Play full QA round
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # 30 was never tested against a visual gate that actually runs. Measured on
+    # this runner: the play round is ~3.5 min, the world-tour sweep ~1 min, and
+    # ONE attempt of the visual comparison is ~20 min (18 software-rendered
+    # captures of a 2110-object scene); the gate runs two attempts for its
+    # agreement rule. Until now the gate had always died early -- first because
+    # the play round failed before reaching it, then because a baseline that
+    # could not boot made it abort in ~5 min -- so its real cost had never been
+    # paid. The first run that got that far was killed mid-second-attempt, which
+    # also lost the world-tour sweep and the evidence commit that follow it.
+    # Most commits now skip the comparison outright (see the render-input check
+    # in scripts/visual-regression-gate.mjs); this budget is for the ones that
+    # genuinely render.
+    timeout-minutes: 60
 
     steps:
       - name: Check out exact QA branch

@@ -134,6 +134,39 @@ if (!baselineRef) {
 }
 
 const shortRef = baselineRef.slice(0, 7);
+
+// Nothing to render when the render inputs are byte-identical to the baseline.
+//
+// resolveBaselineRef deliberately walks back to the last commit that touched a
+// render input, so a commit that changed only scripts, workflows or Docs lands
+// here with HEAD's inputs equal to the baseline's. The build is then bit-for-bit
+// the same on both sides and the comparison can only ever report 0.0000%.
+//
+// It was still paying full price to prove that: measured on CI, one attempt of
+// the comparison is about 20 minutes (18 software-rendered captures of a
+// 2110-object scene), and the gate runs two attempts for its agreement rule. So
+// a script-only commit spent ~40 minutes rendering a foregone conclusion, and
+// overran the job's timeout doing it -- taking the world-tour sweep and the
+// evidence commit down with it, since those run afterwards.
+//
+// This costs no coverage: identical inputs cannot produce a different picture.
+// Anything that does change a render input still renders and still compares.
+const unchangedInputs = (() => {
+  try {
+    return git('diff', '--quiet', baselineRef, '--', ...RENDER_INPUTS) === '';
+  } catch {
+    // git diff --quiet exits 1 when there IS a difference, which execFileSync
+    // throws on. That is the "inputs changed" answer, not an error.
+    return false;
+  }
+})();
+if (unchangedInputs) {
+  console.log(`Visual regression gate: render inputs are identical to ${shortRef}; `
+    + 'the build is unchanged and there is nothing to measure. Skipping.');
+  console.log(`Inputs compared: ${RENDER_INPUTS.join(', ')}`);
+  process.exit(0);
+}
+
 console.log(`Visual regression gate: comparing HEAD against ${shortRef}`);
 
 const visualDir = process.env.SEVERE_WEATHER_VISUAL_DIR
