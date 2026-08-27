@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "testedCommit": "4edd53792ce816d38448e7814e2b82d0fe7ba069",
-  "workflowRun": "82",
-  "startedAt": "2026-08-25T14:33:59.336Z",
-  "finishedAt": "2026-08-25T14:34:40.958Z",
+  "testedCommit": "39ee86b4a4c6982016286b43e46c62150fbeee5d",
+  "workflowRun": "145",
+  "startedAt": "2026-08-27T21:53:04.022Z",
+  "finishedAt": "2026-08-27T21:53:59.126Z",
   "url": "http://127.0.0.1:4173/",
   "mode": "mobile-landscape four-stop authored-world sweep",
   "checks": {
@@ -24,6 +24,7 @@
     "roadsFollowGroundAtEveryStop": true,
     "noPageErrors": true,
     "noConsoleErrors": true,
+    "noFailedRequests": true,
     "harnessCompletedWithoutException": true
   },
   "states": [
@@ -177,7 +178,7 @@
       "biome": "HARVEST SHELVES + INDUSTRIAL SKYLINE",
       "broadcast": "THE HARVEST CHANNEL",
       "sceneryCount": 11,
-      "animatedCount": 1,
+      "animatedCount": 2,
       "landmarks": [
         "NORTH SILO BANK",
         "HEARTLAND FOUNDRY"
@@ -317,6 +318,7 @@
     }
   ],
   "consoleErrors": [],
+  "failedRequests": [],
   "pageErrors": [],
   "harnessError": null
 }

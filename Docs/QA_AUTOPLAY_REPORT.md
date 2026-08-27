@@ -1,11 +1,11 @@
 # QA Automated Full-Round Report
 
-- Tested commit: `4edd53792ce816d38448e7814e2b82d0fe7ba069`
-- Workflow run: `82`
+- Tested commit: `39ee86b4a4c6982016286b43e46c62150fbeee5d`
+- Workflow run: `145`
 - Mode: normal-audio scripted full round
-- Started: 2026-08-25T14:08:14.362Z
-- Finished: 2026-08-25T14:12:46.259Z
-- Runtime: 255 seconds
+- Started: 2026-08-27T21:49:25.177Z
+- Finished: 2026-08-27T21:53:03.575Z
+- Runtime: 195 seconds
 
 ## Checks
 
@@ -14,6 +14,7 @@
 | roundCompleted | PASS |
 | noPageErrors | PASS |
 | noConsoleErrors | PASS |
+| noFailedRequests | PASS |
 | districtProgressionMonotonic | PASS |
 | reachedDistrictThree | PASS |
 | popupCapObserved | PASS |
@@ -27,14 +28,14 @@
 
 - Final district: 3
 - Time remaining: 0
-- Destruction score: 18728
-- Base score: 6428
+- Destruction score: 14593
+- Base score: 5006
 - Maximum combo: 3.5
-- Maximum simultaneous visible popups: 1
+- Maximum simultaneous visible popups: 0
 - Music low/high decoded energy: 0.159472 / 0.077905
 - Music events observed: 9
-- Moo events observed: 7
-- Glass events observed: 7
+- Moo events observed: 10
+- Glass events observed: 48
 - Final active voices: 7
 
 ## Errors
