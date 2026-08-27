@@ -12747,6 +12747,18 @@ function createProductionBarn() {
   const leftWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', -10.65, 5.3, 0, { roughness: 0.84, map: surfaceMap('plank', 3, 2) });
   const rightWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', 10.65, 5.3, 0, { roughness: 0.84, map: surfaceMap('plank', 3, 2) });
 
+  // [SW:WORLD:BARN_GABLES] Front and Rear Triangular Gable Walls under the pitched roof
+  const gableShape = new THREE.Shape();
+  gableShape.moveTo(-11.0, 0);
+  gableShape.lineTo(0, 6.25);
+  gableShape.lineTo(11.0, 0);
+  gableShape.lineTo(-11.0, 0);
+  const gableGeo = new THREE.ExtrudeGeometry(gableShape, { depth: 0.75, bevelEnabled: false });
+  gableGeo.center();
+
+  const frontGable = addProductionPart(group, gableGeo, '#a43d32', 0, 13.425, -8.55, { material: bodyMaterial });
+  const backGable = addProductionPart(group, gableGeo.clone(), '#8c342d', 0, 13.425, 8.55, { material: bodyMaterial.clone() });
+
   const roofMaterial = productionMaterial('#27313d', { roughness: 0.68, metalness: 0.08, map: surfaceMap('shingle', 3, 4) });
   const roofLeft = addProductionPart(group, new THREE.BoxGeometry(13.3, 0.62, 19), '#27313d', -5.1, 13.2, 0, { material: roofMaterial, rotation: { z: 0.55 } });
   const roofRight = addProductionPart(group, new THREE.BoxGeometry(13.3, 0.62, 19), '#27313d', 5.1, 13.2, 0, { material: roofMaterial.clone(), rotation: { z: -0.55 } });
@@ -12862,7 +12874,9 @@ function createProductionBarn() {
     destroyed: false,
     foundation,
     frontWall,
+    frontGable,
     backWall,
+    backGable,
     leftWall,
     rightWall,
     roofLeft,
@@ -12952,6 +12966,7 @@ function setProductionBarnStage(stage) {
   } else if (stage === 3) {
     detachProductionBarnPart(productionBarn.loftDoor, 0.8);
     productionBarn.frontWall.rotation.z = 0.14;
+    if (productionBarn.frontGable) productionBarn.frontGable.rotation.z = 0.14;
     productionBarn.rightWall.rotation.z = 0.1;
     productionBarn.ridge.rotation.x = 0.2;
     spawnProductionDustBurst(productionBarn.x, groundY + 7, productionBarn.z - 8, '#8b6d4f', 14);
@@ -12961,6 +12976,8 @@ function setProductionBarnStage(stage) {
     productionBarn.beacon.visible = false;
     detachProductionBarnPart(productionBarn.roofRight, 1.18);
     detachProductionBarnPart(productionBarn.frontWall, 0.72);
+    if (productionBarn.frontGable) detachProductionBarnPart(productionBarn.frontGable, 0.75);
+    if (productionBarn.backGable) detachProductionBarnPart(productionBarn.backGable, 0.68);
     detachProductionBarnPart(productionBarn.rightWall, 0.65);
     productionBarn.backWall.rotation.x = 1.24;
     productionBarn.leftWall.rotation.z = -1.18;

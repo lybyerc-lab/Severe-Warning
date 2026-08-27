@@ -70,28 +70,45 @@ export async function generateDistrictBarn() {
 // 2. HART-BARN
 export async function generateHartBarn() {
   const b = new GlbBuilder();
-  b.addBox([0, 0.35, 0], [11.6, 0.7, 13.6], '#475569');
+  // Fieldstone Plinth
+  b.addBox([0, 0.35, 0], [12.0, 0.7, 14.0], '#475569');
   
-  // Weathered Cedar Timber Barn Body
-  b.addBox([0, 3.2, 0], [10.8, 5.0, 12.8], '#78350f');
+  // Traditional Red Board-and-Batten Timber Barn Body
+  b.addBox([0, 3.2, 0], [11.0, 5.0, 13.0], '#a43d32');
   
   // Attached Lean-To Shed on East Wall
-  b.addBox([6.6, 2.0, 0], [2.6, 3.2, 10.4], '#92400e');
-  b.addWedge([6.6, 3.9, 0], [2.8, 0.9, 10.8], '#451a03');
+  b.addBox([6.6, 2.0, 0], [2.6, 3.2, 10.4], '#8c342d');
+  b.addWedge([6.6, 3.9, 0], [2.8, 0.9, 10.8], '#1e293b');
   
-  // Main Gable Roof (Rusted Corrugated Metal)
-  b.addWedge([0, 6.8, 0], [11.6, 3.0, 13.4], '#b45309');
+  // Main Gable Roof (Standing Seam Dark Shingle with Solid Gables)
+  b.addWedge([0, 6.8, 0], [11.8, 3.0, 13.6], '#27313d');
   
-  // White Trimmed Sliding Doors
-  b.addBox([0, 2.1, 6.45], [4.2, 3.6, 0.15], '#ffffff');
-  b.addBox([0, 2.1, 6.55], [3.8, 3.2, 0.1], '#78350f');
+  // White Trimmed Double Sliding Doors (Front & Back)
+  [6.55, -6.55].forEach(dz => {
+    const sgn = dz > 0 ? 1 : -1;
+    b.addBox([0, 2.1, dz], [4.4, 3.6, 0.15], '#ffffff');
+    b.addBox([0, 2.1, dz + sgn * 0.08], [4.0, 3.2, 0.1], '#991b1b');
+    b.addBox([0, 2.1, dz + sgn * 0.12], [4.0, 0.35, 0.06], '#ffffff', [0, 0, Math.PI/4]);
+    b.addBox([0, 2.1, dz + sgn * 0.12], [4.0, 0.35, 0.06], '#ffffff', [0, 0, -Math.PI/4]);
+  });
   
+  // Upper Loft Door & Hart Farm Sign Plaque
+  b.addBox([0, 5.2, 6.55], [2.2, 1.8, 0.1], '#ffffff');
+  b.addBox([0, 5.2, 6.62], [1.8, 1.4, 0.08], '#991b1b');
+  b.addBox([0, 6.8, 6.65], [4.2, 1.0, 0.15], '#f6c453'); // HART FARM Sign Plaque
+  
+  // Rooftop Cupola & Rooster Weathervane
+  b.addBox([0, 8.8, 0], [1.8, 1.1, 1.8], '#ffffff');
+  b.addWedge([0, 9.7, 0], [2.1, 0.7, 2.1], '#1e293b');
+  b.addCylinder([0, 10.4, 0], 0.04, 0.04, 0.9, 6, '#fbbf24');
+  b.addBox([0, 10.7, 0], [0.6, 0.45, 0.04], '#fbbf24');
+
   await saveGlb('hart-barn.glb', b);
 
   const bw = new GlbBuilder();
-  bw.addBox([0, 0.35, 0], [11.6, 0.7, 13.6], '#475569');
-  bw.addWedge([0, 1.4, 0], [10.0, 1.8, 11.0], '#b45309', [0.25, 0.1, -0.3]);
-  bw.addBox([2, 1.0, 0], [5.0, 1.5, 8.0], '#78350f', [-0.2, 0.3, 0.1]);
+  bw.addBox([0, 0.35, 0], [12.0, 0.7, 14.0], '#475569');
+  bw.addWedge([0, 1.4, 0], [10.0, 1.8, 11.0], '#27313d', [0.25, 0.1, -0.3]);
+  bw.addBox([2, 1.0, 0], [5.0, 1.5, 8.0], '#a43d32', [-0.2, 0.3, 0.1]);
   await saveGlb('hart-barn-wreck.glb', bw);
 }
 
