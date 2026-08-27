@@ -5491,7 +5491,7 @@ const skyEnvironment = {
   // per-material costs less than nothing by comparison. That margin matters,
   // because any frame over one second contributes ZERO to the real-time run
   // clock, so steady fill cost on a slow device silently steals run time.
-  METAL_THRESHOLD: 0.15,
+  METAL_THRESHOLD: 0.08,
   apply() {
     if (!this.texture) return;
     const seen = new Set();
@@ -5500,7 +5500,7 @@ const skyEnvironment = {
       for (const material of list) {
         if (!material || !material.isMeshStandardMaterial || seen.has(material.uuid)) continue;
         seen.add(material.uuid);
-        const wants = (material.metalness ?? 0) >= this.METAL_THRESHOLD;
+        const wants = (material.metalness ?? 0) >= this.METAL_THRESHOLD || (material.roughness ?? 1) < 0.65;
         const next = wants ? this.texture : null;
         if (material.envMap !== next) {
           material.envMap = next;
@@ -5628,6 +5628,8 @@ function districtGroundColor(x, z, height) {
   const drainageMix = THREE.MathUtils.clamp(1 - Math.abs(x - 255) / 42, 0, 0.24);
   color.lerp(new THREE.Color('#879b69'), elevationMix);
   color.lerp(new THREE.Color('#315f4a'), drainageMix);
+  const microNoise = (Math.sin(x * 0.18) * Math.cos(z * 0.18) + Math.sin(x * 0.47 + z * 0.31)) * 0.035;
+  color.offsetHSL(0, 0, microNoise);
   return campaignGroundPalette(color, x, z, height);
 }
 
@@ -6131,7 +6133,7 @@ function surfaceMap(kind, repeatX, repeatY) {
   return texture;
 }
 
-const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', map: surfaceMap('asphalt', 3, 150), roughness: 0.58, metalness: 0.12, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -2 });
+const roadMat = new THREE.MeshStandardMaterial({ color: '#202b3b', map: surfaceMap('asphalt', 3, 150), roughness: 0.46, metalness: 0.22, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -2 });
 const shoulderMat = new THREE.MeshStandardMaterial({ color: '#64748b', map: surfaceMap('gravel', 4, 190), roughness: 0.88, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -1 });
 const laneMat = new THREE.MeshBasicMaterial({ color: '#f8d568' });
 const powerPoles = [];
@@ -6201,7 +6203,7 @@ function createTerrainRoad(width, length, centerX, centerZ, isEastWest, material
 }
 
 // A shallow creek cuts through the east side; roads render afterward as bridges.
-const creekMat = new THREE.MeshStandardMaterial({ color: '#164e63', roughness: 0.3, metalness: 0.08, transparent: true, opacity: 0.88, depthWrite: false, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -1 });
+const creekMat = new THREE.MeshStandardMaterial({ color: '#164e63', roughness: 0.08, metalness: 0.50, transparent: true, opacity: 0.90, depthWrite: false, polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -1 });
 // [SW:AREA:TERRAIN_ROADS] Surface lifts are measured, not guessed. The tornado
 // touchdown sits at terrainHeightAt() + 0.50, so every ground layer has to stay
 // clear underneath that line or the road ends up slicing the funnel in half. The
@@ -7401,7 +7403,7 @@ derechoGroup.add(derechoWindLines);
 const rainCurtainUniforms = {
   uTime: { value: 0 },
   uColor: { value: new THREE.Color('#7f92ab') },
-  uOpacity: { value: 0.42 }
+  uOpacity: { value: 0.52 }
 };
 const rainCurtain = new THREE.Mesh(
   new THREE.PlaneGeometry(760, 210, 1, 1),
