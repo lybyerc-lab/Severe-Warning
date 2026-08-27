@@ -40,6 +40,30 @@ assert(html.includes('__SW_CINEMATIC_QA__'), 'HTML exposes __SW_CINEMATIC_QA__')
 assert(html.includes('MooBrewOpeningCinematicGroup'), 'HTML contains MooBrewOpeningCinematicGroup');
 assert(html.includes('buildArticulatedBipedalCow17'), 'HTML contains buildArticulatedBipedalCow17');
 
+// The evening headline must scale with the run. It used to open with
+// 'A VERY EVENTFUL AFTERNOON' as the default and only branch upward, so every
+// failed run printed celebratory copy over 0/3 objectives and a grade of F.
+// Exercise the real mapping rather than asserting a string is present: this
+// evaluates the shipped function and checks the actual outcomes.
+assert(html.includes('function resolveNewspaperHeadline'), 'HTML defines resolveNewspaperHeadline()');
+const headlineSource = html.match(/function resolveNewspaperHeadline[\s\S]*?\n}/);
+assert(Boolean(headlineSource), 'resolveNewspaperHeadline() is extractable for testing');
+if (headlineSource) {
+  // eslint-disable-next-line no-eval
+  const resolveNewspaperHeadline = eval(`(${headlineSource[0]})`);
+  const headlineFor = (grade, score, title = 'WARNING RUN') =>
+    resolveNewspaperHeadline({ title, grade, score });
+  const CELEBRATORY = /EVENTFUL|FRONT-PAGE|REASSESSING|UDDER CHAOS|EMERGENCY/;
+
+  assert(!CELEBRATORY.test(headlineFor('F', 172)), 'a failed run does not print celebratory copy');
+  assert(!CELEBRATORY.test(headlineFor('C', 900)), 'a weak run does not print celebratory copy');
+  assert(CELEBRATORY.test(headlineFor('S+', 9000)), 'a top run still prints celebratory copy');
+  assert(headlineFor('S+', 9000) !== headlineFor('F', 172), 'best and worst runs print different headlines');
+  // The fair lane had the same fault and needs the same guarantee.
+  assert(!CELEBRATORY.test(headlineFor('F', 150, 'COUNTY FAIR FINALE')), 'a failed fair run does not print celebratory copy');
+  assert(CELEBRATORY.test(headlineFor('UDDER CHAOS', 12000, 'COUNTY FAIR FINALE')), 'a triumphant fair run still prints celebratory copy');
+}
+
 console.log(`\nNewspaper & Opening Cinematic verification: ${passedChecks}/${totalChecks} checks passed.`);
 if (passedChecks !== totalChecks) {
   process.exit(1);

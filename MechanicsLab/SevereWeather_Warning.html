@@ -15303,6 +15303,38 @@ function decorateNewspaperResults() {
   return true;
 }
 
+// [SW:UI:NEWSPAPER_HEADLINE] The evening paper's headline, as a pure function of
+// how the run actually went.
+//
+// It used to open with 'A VERY EVENTFUL AFTERNOON' as the DEFAULT and only
+// branch upward -- S+, or a score over 4500. So every wipe printed the cheerful
+// line: a run that scored 172 with 0/3 objectives, 0 landmarks and a grade of F
+// got a paper congratulating it on an eventful afternoon. The gag was landing
+// backwards. The funniest copy for a total failure is a small-town paper being
+// unimpressed, not delighted.
+//
+// Ordered worst-first so a bad run cannot fall through to celebratory copy.
+// Grades are S+ / A / B / C / F (see the ladder near setUI('resGrade')), plus
+// UDDER CHAOS on the fair stops.
+function resolveNewspaperHeadline({ title, grade, score }) {
+  const numericScore = Number(String(score).replace(/[^0-9.-]/g, '')) || 0;
+  const isFair = /MOO|FAIR/i.test(String(title || ''));
+  const triumphant = grade === 'S+' || grade === 'UDDER CHAOS';
+
+  if (isFair) {
+    if (triumphant) return 'FAIR BOARD DECLARES TOTAL UDDER CHAOS';
+    if (grade === 'F') return 'FAIR BOARD THANKS STORM FOR ITS RESTRAINT';
+    if (grade === 'C') return 'FAIR REOPENS AFTER BRIEF ATMOSPHERIC FUSS';
+    return 'COUNTY FAIR FILES BOVINE EMERGENCY UPDATE';
+  }
+  if (grade === 'F') return 'COUNTY DECLINES TO COMMENT ON ALLEGED TORNADO';
+  if (grade === 'C') return 'WEATHER DESK RECORDS A LARGELY ORDINARY AFTERNOON';
+  if (triumphant) return 'LOCAL STORM EARNS FRONT-PAGE DISRUPTION';
+  if (numericScore >= 4500) return 'COUNTY REASSESSING STRUCTURAL EXPECTATIONS';
+  return 'WEATHER DESK REPORTS A VERY EVENTFUL AFTERNOON';
+}
+globalThis.resolveNewspaperHeadline = resolveNewspaperHeadline;
+
 function refreshNewspaperResults() {
   decorateNewspaperResults();
   const title = document.getElementById('resStormTitle')?.textContent || 'WEATHER WARNING RUN';
@@ -15312,17 +15344,7 @@ function refreshNewspaperResults() {
   const copyEl = document.getElementById('newspaperStoryCopy');
   
   if (headlineEl) {
-    let headline = 'WEATHER DESK REPORTS A VERY EVENTFUL AFTERNOON';
-    if (/MOO|FAIR/i.test(title)) {
-      headline = grade === 'S+' || grade === 'UDDER CHAOS'
-        ? 'FAIR BOARD DECLARES TOTAL UDDER CHAOS'
-        : 'COUNTY FAIR FILES BOVINE EMERGENCY UPDATE';
-    } else if (grade === 'S+') {
-      headline = 'LOCAL STORM EARNS FRONT-PAGE DISRUPTION';
-    } else if (Number(String(score).replace(/[^0-9.-]/g, '')) >= 4500) {
-      headline = 'COUNTY REASSESSING STRUCTURAL EXPECTATIONS';
-    }
-    headlineEl.textContent = headline;
+    headlineEl.textContent = resolveNewspaperHeadline({ title, grade, score });
   }
   
   if (copyEl) {
