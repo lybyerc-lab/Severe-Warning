@@ -7126,52 +7126,38 @@ function createStormCloudMaterial({ base, top, opacity, gradient, edge = 0.5, ch
   return material;
 }
 
-// Overhead Mesocyclone Storm Cloud Canopy Base
+// Overhead Mesocyclone Storm Cloud Canopy Base (Elevated spinning ceiling)
 const mesoCloudGroup = new THREE.Group();
-mesoCloudGroup.position.y = 34;
-// Opacity is up from the old flat 0.58 because the view-facing term now takes
-// most of it back at the rim; the centre of a lobe should still read as solid.
+mesoCloudGroup.position.y = 35;
 const mesoCloudMat = createStormCloudMaterial({
-  base: '#2b3750', top: '#4d5b76', opacity: 0.80,
+  base: '#1e293b', top: '#475569', opacity: 0.82,
   gradient: 0.052, edge: 0.55, churn: 1.1, density: 1.0, speed: 1.0
 });
-for (let i = 0; i < 15; i++) {
-  const angle = (i / 15) * Math.PI * 2 + (i % 2) * 0.32;
-  const ring = i < 6 ? 5 : (i < 11 ? 13 : 20);
-  const rad = (i < 6 ? 13.5 : (i < 11 ? 11 : 8)) + Math.random() * 3.5;
+for (let i = 0; i < 16; i++) {
+  const angle = (i / 16) * Math.PI * 2 + (i % 2) * 0.25;
+  const ring = i < 6 ? 6 : (i < 11 ? 15 : 24);
+  const rad = (i < 6 ? 14 : (i < 11 ? 12 : 9)) + Math.random() * 2.5;
   const cloudLobe = new THREE.Mesh(new THREE.DodecahedronGeometry(rad, 2), mesoCloudMat);
   cloudLobe.position.set(
     Math.cos(angle) * ring,
-    (i < 6 ? 7.0 : (i < 11 ? 1.0 : -4.5)) + (Math.random() - 0.5) * 2.6,
+    (i < 6 ? 6.0 : (i < 11 ? 4.0 : 2.0)) + (Math.random() - 0.5) * 1.5,
     Math.sin(angle) * ring
   );
-  cloudLobe.scale.set(1, 0.66 + Math.random() * 0.2, 1);
+  cloudLobe.scale.set(1.1, 0.45 + Math.random() * 0.15, 1.1);
   mesoCloudGroup.add(cloudLobe);
 }
-// The base disc is seen almost entirely from underneath, so its cap faces the
-// camera and keeps full alpha; only the thin rim fades. churn stays at 0 - a
-// 3.2-unit disc has no room to swell without punching through the lobes above.
 const cloudBaseMat = createStormCloudMaterial({
-  base: '#222c44', top: '#39445f', opacity: 0.88,
+  base: '#1e293b', top: '#334155', opacity: 0.90,
   gradient: 0.31, edge: 0.34, churn: 0.0, density: 0.75, speed: 0.7
 });
-const cloudBase = new THREE.Mesh(new THREE.CylinderGeometry(25, 19.5, 3.2, 30), cloudBaseMat);
-cloudBase.position.y = -5.2;
+const cloudBase = new THREE.Mesh(new THREE.CylinderGeometry(28, 22, 3.2, 32), cloudBaseMat);
+cloudBase.position.y = 0;
 mesoCloudGroup.add(cloudBase);
 
 tornadoGroup.add(mesoCloudGroup);
 
 // [SW:VISUAL:FUNNEL_SHADER]
-// The funnel shells are a ShaderMaterial rather than translucent standard
-// material. Two stacked semi-transparent cylinders read as a static cone no
-// matter how fast the group is rotated, because a flat-shaded surface of one
-// colour has nothing on it for the eye to see turning. Banding the surface in
-// the shader gives the rotation something to carry, and it costs one draw call
-// each, the same as before.
-//
-// Fog chunks are included deliberately: the funnel is 37 units tall in a scene
-// with FogExp2, and a custom material that skips fog stops matching the world it
-// stands in as the camera pulls back.
+// Custom shader material with soft vertical alpha falloff and rotational banding
 const productionFunnelMaterials = [];
 function createProductionFunnelMaterial({ core, vapor, opacity, bands, spin, sway = 1.0 }) {
   const material = new THREE.ShaderMaterial({
@@ -7220,7 +7206,7 @@ function createProductionFunnelMaterial({ core, vapor, opacity, bands, spin, swa
       '  float bands = (bandA * 0.6 + bandB * 0.4) * 0.5 + 0.5;',
       '  vec3 col = mix(uColorCore, uColorVapor, pow(vUv.y, 0.7));',
       '  col = mix(col, uColorVapor, bands * 0.45);',
-      '  float shape = smoothstep(0.0, 0.10, vUv.y) * smoothstep(1.0, 0.72, vUv.y);',
+      '  float shape = smoothstep(0.0, 0.18, vUv.y) * smoothstep(1.0, 0.78, vUv.y);',
       '  float alpha = uOpacity * shape * (0.55 + bands * 0.45);',
       '  gl_FragColor = vec4(col, alpha);',
       '  #include <fog_fragment>',
@@ -7235,25 +7221,26 @@ function createProductionFunnelMaterial({ core, vapor, opacity, bands, spin, swa
   return material;
 }
 
-
-// Multi-Segmented Inner Heavy Condensation Funnel Core (Top radius 22, Bottom radius 2.2, Height 34, 16 Height Segments)
+// Multi-Segmented Inner Heavy Condensation Funnel Core
 const funnelGeo = new THREE.CylinderGeometry(22, 2.2, 34, 32, 16, true);
 const funnelMat = createProductionFunnelMaterial({
-  core: '#141d2c', vapor: '#9fb4cd', opacity: 0.52, bands: 24.0, spin: 1.0, sway: 0.0
+  core: '#0f172a', vapor: '#94a3b8', opacity: 0.62, bands: 24.0, spin: 1.0, sway: 0.0
 });
 const funnelMesh = new THREE.Mesh(funnelGeo, funnelMat);
 funnelMesh.position.y = 17.5;
 tornadoGroup.add(funnelMesh);
 
-// Store original vertex position buffer for dynamic serpentine wave deformation
+// Store original vertex position buffer for dynamic serpentine wave & wedge deformation
 const funnelPosAttr = funnelGeo.attributes.position;
 const baseFunnelPos = new Float32Array(funnelPosAttr.array);
 
-// Multi-Segmented Outer Vapor & Dust Condensation Sheath
-const outerFunnelGeo = new THREE.CylinderGeometry(28, 4.5, 36, 24, 16, true);
-const outerFunnelMat = new THREE.MeshBasicMaterial({ color: '#9fb0c8', transparent: true, opacity: 0.24, side: THREE.DoubleSide, depthWrite: false, blending: THREE.NormalBlending });
+// Multi-Segmented Outer Vapor & Dust Condensation Sheath (Soft shader envelope, no hard skirt rim)
+const outerFunnelGeo = new THREE.CylinderGeometry(25, 4.8, 36, 32, 16, true);
+const outerFunnelMat = createProductionFunnelMaterial({
+  core: '#1e293b', vapor: '#64748b', opacity: 0.36, bands: 16.0, spin: -0.8, sway: 0.0
+});
 const outerFunnelMesh = new THREE.Mesh(outerFunnelGeo, outerFunnelMat);
-outerFunnelMesh.position.y = 18.5;
+outerFunnelMesh.position.y = 18.0;
 tornadoGroup.add(outerFunnelMesh);
 
 const outerPosAttr = outerFunnelGeo.attributes.position;
@@ -7271,8 +7258,6 @@ for (let i = 0; i < 8; i++) {
   const pAngle = (i / 8) * Math.PI * 2;
   const pDist = 4.0 + Math.random() * 4.0;
   pMesh.position.set(Math.cos(pAngle) * pDist, (Math.random() - 0.5) * 1.5, Math.sin(pAngle) * pDist);
-  // Flattened so the skirt spreads outward along the ground instead of hanging
-  // below it; the lowest point stays above the 0.30 road lift at every EF scale.
   pMesh.scale.set(1, 0.4, 1);
   dustBowlGroup.add(pMesh);
   dustPuffs.push({ mesh: pMesh, angle: pAngle, dist: pDist, rotSpeed: 0.04 + Math.random() * 0.05, baseSize: pSize });
@@ -7320,10 +7305,12 @@ const particleSystem = new THREE.Points(particleGeo, particleMat);
 tornadoGroup.add(particleSystem);
 
 function applyUnlockedCosmetic() {
-  if (neonFunnelUnlocked) {
-    outerFunnelMat.color.set('#22d3ee');
-  } else {
-    outerFunnelMat.color.set('#334155');
+  const vaporColor = neonFunnelUnlocked ? '#22d3ee' : '#94a3b8';
+  if (funnelMat && funnelMat.uniforms && funnelMat.uniforms.uColorVapor) {
+    funnelMat.uniforms.uColorVapor.value.set(vaporColor);
+  }
+  if (outerFunnelMat && outerFunnelMat.uniforms && outerFunnelMat.uniforms.uColorVapor) {
+    outerFunnelMat.uniforms.uColorVapor.value.set(vaporColor);
   }
 }
 
@@ -11843,30 +11830,39 @@ function animate(now) {
   supercellGroup.position.copy(storm.pos);
   derechoGroup.position.copy(storm.pos);
 
-  // DYNAMIC ORGANIC TORNADO SERPENTINE TWISTING & DUST BOWL ANIMATION
+  // DYNAMIC ORGANIC TORNADO SERPENTINE TWISTING, WEDGE MORPHOLOGY & DUST BOWL ANIMATION
   const tTime = now * 0.0035;
   
-  // 1. Serpentine Wave Deformation for Inner Funnel Mesh
+  // Dynamic Tornado Wedge Profile (EF-0 slender rope -> EF-3 stovepipe -> EF-5 massive roaring wedge)
+  const isEf5 = (typeof efRating === 'string' && efRating === 'EF-5') || (typeof currentEfRating === 'string' && currentEfRating === 'EF-5');
+  const isEf4 = (typeof efRating === 'string' && efRating === 'EF-4') || (typeof currentEfRating === 'string' && currentEfRating === 'EF-4');
+  const isEf3 = (typeof efRating === 'string' && efRating === 'EF-3') || (typeof currentEfRating === 'string' && currentEfRating === 'EF-3');
+  const wedgeBaseMultiplier = isEf5 ? 3.4 : (isEf4 ? 2.2 : (isEf3 ? 1.6 : 1.0));
+  const wedgeTopMultiplier = isEf5 ? 1.25 : 1.0;
+
+  // 1. Serpentine Wave & Wedge Deformation for Inner Funnel Mesh
   const fPositions = funnelMesh.geometry.attributes.position;
   for (let i = 0; i < fPositions.count; i++) {
     const vy = baseFunnelPos[i * 3 + 1];
     const factor = ((vy + 17.0) / 34.0); // 0 at the touchdown, 1 at the cloud base
-    const waveX = Math.sin(tTime * 4 + vy * 0.22) * (factor * 3.8);
-    const waveZ = Math.cos(tTime * 3.2 + vy * 0.22) * (factor * 3.8);
-    fPositions.setX(i, baseFunnelPos[i * 3] + waveX);
-    fPositions.setZ(i, baseFunnelPos[i * 3 + 2] + waveZ);
+    const baseExpansion = THREE.MathUtils.lerp(wedgeBaseMultiplier, wedgeTopMultiplier, factor);
+    const waveX = Math.sin(tTime * 4 + vy * 0.22) * (factor * 2.8);
+    const waveZ = Math.cos(tTime * 3.2 + vy * 0.22) * (factor * 2.8);
+    fPositions.setX(i, baseFunnelPos[i * 3] * baseExpansion + waveX);
+    fPositions.setZ(i, baseFunnelPos[i * 3 + 2] * baseExpansion + waveZ);
   }
   fPositions.needsUpdate = true;
 
-  // 2. Serpentine Wave Deformation for Outer Condensation Sheath
+  // 2. Serpentine Wave & Wedge Deformation for Outer Condensation Sheath
   const oPositions = outerFunnelMesh.geometry.attributes.position;
   for (let i = 0; i < oPositions.count; i++) {
     const vy = baseOuterPos[i * 3 + 1];
     const factor = ((vy + 18.0) / 36.0);
-    const waveX = Math.sin(tTime * 3.5 - vy * 0.18) * (factor * 4.4);
-    const waveZ = Math.cos(tTime * 2.8 - vy * 0.18) * (factor * 4.4);
-    oPositions.setX(i, baseOuterPos[i * 3] + waveX);
-    oPositions.setZ(i, baseOuterPos[i * 3 + 2] + waveZ);
+    const baseExpansion = THREE.MathUtils.lerp(wedgeBaseMultiplier, wedgeTopMultiplier, factor);
+    const waveX = Math.sin(tTime * 3.5 - vy * 0.18) * (factor * 3.2);
+    const waveZ = Math.cos(tTime * 2.8 - vy * 0.18) * (factor * 3.2);
+    oPositions.setX(i, baseOuterPos[i * 3] * baseExpansion + waveX);
+    oPositions.setZ(i, baseOuterPos[i * 3 + 2] * baseExpansion + waveZ);
   }
   oPositions.needsUpdate = true;
 
@@ -11874,14 +11870,13 @@ function animate(now) {
   mesoCloudGroup.rotation.y += 0.04;
 
   // 4. Ground Touchdown Dust Bowl Churning
-  // [SW:VISUAL:DUST_SKIRT] Single churn for the touchdown debris skirt.
-  // Y stays flattened so the skirt spreads along the ground rather than hanging
-  // below it, which at the 23 degree camera was visible under the road lip.
+  const dustDistMult = isEf5 ? 2.2 : (isEf4 ? 1.6 : 1.0);
   dustPuffs.forEach(p => {
     p.angle += p.rotSpeed * 3.5;
-    p.mesh.position.set(Math.cos(p.angle) * p.dist, 0.8 + Math.sin(p.angle * 2) * 0.4, Math.sin(p.angle) * p.dist);
+    const curDist = p.dist * dustDistMult;
+    p.mesh.position.set(Math.cos(p.angle) * curDist, 0.8 + Math.sin(p.angle * 2) * 0.4, Math.sin(p.angle) * curDist);
     p.mesh.rotation.y += 0.16;
-    const pulseScale = 1.0 + Math.sin(tTime * 6 + p.angle) * 0.2;
+    const pulseScale = (1.0 + Math.sin(tTime * 6 + p.angle) * 0.2) * (isEf5 ? 1.7 : 1.0);
     p.mesh.scale.set(pulseScale, pulseScale * 0.4, pulseScale);
   });
 
