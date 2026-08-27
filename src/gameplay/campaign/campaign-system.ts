@@ -178,7 +178,7 @@ export class CampaignSystem {
       exactStopIds: this.definition.stops.map((stop) => stop.id).join('|')
         === 'lincoln-county|prairie-junction|grain-belt|state-fair-finale',
       exactScoreTargets: this.definition.stops.map((stop) => stop.scoreTarget).join('|')
-        === '8000|12000|18000|26000',
+        === '8000|14000|22000|28000',
       exactScoreMultipliers: this.definition.stops.map((stop) => stop.scoreMultiplier).join('|')
         === '1|1.1|1.15|1.25',
       oneStarAtSixtyPercent: oneStar === 1,

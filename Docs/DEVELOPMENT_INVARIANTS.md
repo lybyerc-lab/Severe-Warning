@@ -1,4 +1,4 @@
-﻿# Severe Warning — Development Invariants & CI Guidelines
+# Severe Warning — Development Invariants & CI Guidelines
 
 This document defines critical repository invariants enforced by CI workflows and local build scripts.
 

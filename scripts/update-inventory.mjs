@@ -1,4 +1,4 @@
-﻿import { execSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
