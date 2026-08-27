@@ -105,7 +105,10 @@ async function generateNewsChopper() {
   console.log(`✓ Generated news-chopper-wreck.glb (${(wreckBuffer.length / 1024).toFixed(1)} KB)`);
 }
 
-generateNewsChopper().catch(err => {
-  console.error('Error generating chopper model:', err);
-  process.exit(1);
-});
+export async function run() {
+  await generateNewsChopper();
+}
+
+if (process.argv[1]?.endsWith('generate-chopper-model.mjs')) {
+  run().catch(console.error);
+}

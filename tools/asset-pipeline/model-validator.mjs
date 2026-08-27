@@ -37,7 +37,7 @@ function parseGlbHeader(buffer) {
   return { magic, version, length, json: jsonChunk, binChunkLength };
 }
 
-async function validateModels() {
+export async function validateModels() {
   console.log('='.repeat(70));
   console.log('  SEVERE WEATHER WARNING — 3D ASSET VALIDATOR & PIPELINE AUDITOR');
   console.log('='.repeat(70));
@@ -127,7 +127,9 @@ async function validateModels() {
   console.log('='.repeat(70) + '\n');
 }
 
-validateModels().catch(err => {
-  console.error('Validation error:', err);
-  process.exit(1);
-});
+if (process.argv[1]?.endsWith('model-validator.mjs')) {
+  validateModels().catch(err => {
+    console.error('Validation error:', err);
+    process.exit(1);
+  });
+}

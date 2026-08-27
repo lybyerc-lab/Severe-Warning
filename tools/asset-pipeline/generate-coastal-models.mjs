@@ -163,7 +163,7 @@ async function generateChannelBuoy() {
   await saveGlb('channel-buoy-wreck.glb', bw);
 }
 
-async function run() {
+export async function run() {
   console.log('Generating procedural models...');
   await generateCow17Wreck();
   await generateShrimpBoat();
@@ -174,7 +174,6 @@ async function run() {
   console.log('All coastal & wreck models generated successfully!\n');
 }
 
-run().catch(err => {
-  console.error('Error generating models:', err);
-  process.exit(1);
-});
+if (process.argv[1]?.endsWith('generate-coastal-models.mjs')) {
+  run().catch(console.error);
+}

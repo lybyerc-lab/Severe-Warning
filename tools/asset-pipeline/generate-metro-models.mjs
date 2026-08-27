@@ -118,7 +118,7 @@ async function generateCommuterBus() {
   await saveGlb('commuter-bus-wreck.glb', bw);
 }
 
-async function run() {
+export async function run() {
   console.log('Generating Region 3 (Metro Row) 3D Models & Wreck Pairs...\n');
   await generateSkyscraper();
   await generateConstructionCrane();
@@ -127,7 +127,6 @@ async function run() {
   console.log('\nAll Metro Row models successfully generated!');
 }
 
-run().catch(err => {
-  console.error('Error generating Metro Row models:', err);
-  process.exit(1);
-});
+if (process.argv[1]?.endsWith('generate-metro-models.mjs')) {
+  run().catch(console.error);
+}

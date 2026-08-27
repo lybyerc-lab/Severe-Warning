@@ -222,7 +222,7 @@ async function upgradePowerPole() {
   await saveGlb('power-pole-wreck.glb', bw);
 }
 
-async function run() {
+export async function run() {
   console.log('Upgrading hero models and creating missing wreck pairs...');
   await upgradeNewsVan();
   await upgradeStormChaser();
@@ -233,7 +233,6 @@ async function run() {
   console.log('All hero models successfully upgraded!\n');
 }
 
-run().catch(err => {
-  console.error('Error upgrading hero models:', err);
-  process.exit(1);
-});
+if (process.argv[1]?.endsWith('upgrade-hero-models.mjs')) {
+  run().catch(console.error);
+}
