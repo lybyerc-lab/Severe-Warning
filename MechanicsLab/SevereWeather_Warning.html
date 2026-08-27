@@ -1852,39 +1852,73 @@
             </defs>
 
             <!-- Grid & Compass -->
-            <path d="M 0 60 L 880 60 M 0 125 L 880 125 M 0 190 L 880 190 M 220 0 L 220 250 M 440 0 L 440 250 M 660 0 L 660 250" stroke="rgba(56, 189, 248, 0.12)" stroke-width="1" stroke-dasharray="4,4"/>
+            <path d="M 0 65 L 880 65 M 0 130 L 880 130 M 0 195 L 880 195 M 175 0 L 175 260 M 440 0 L 440 260 M 700 0 L 700 260" stroke="rgba(56, 189, 248, 0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
 
             <!-- Route Arrows / Dashed Highway Lines -->
-            <path id="svgMapRoutes" d="M 160 70 Q 320 35 480 65 T 700 140 Q 500 180 300 160 Z" fill="none" stroke="#fef08a" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+            <path id="svgMapRoutes" d="M 100 55 Q 260 25, 420 55 Q 580 85, 740 55 M 100 200 Q 300 175, 500 200 Q 700 225, 840 200" fill="none" stroke="#fef08a" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.45"/>
 
-            <!-- HEARTLAND TERRITORIES -->
+            <!-- HEARTLAND TERRITORIES — Tessellating County Map
+                 Shared borders:
+                   TOP-EDGE:    M 15,12 C 180,5  350,8  420,18 C 510,6  670,4  855,15
+                   BOTTOM-EDGE: M 15,248 C 120,242  280,238  420,235 C 560,238  720,242  855,248
+                   RIVER (vertical shared border):
+                     420,18 C 430,55  415,90  425,130 C 435,165  418,200  420,235
+                   MIDLINE (horizontal shared border, left side):
+                     15,125 C 100,118  220,122  320,130 C 360,133  395,131  425,130
+                   MIDLINE (horizontal shared border, right side):
+                     425,130 C 480,128  580,124  660,128 C 730,132  800,130  855,125
+            -->
             <g id="svgRegionGroup0">
-              <!-- Territory 0: LINCOLN COUNTY -->
+              <!-- Territory 0: LINCOLN COUNTY (top-left) -->
               <g class="risk-territory selected" id="riskTerritory0" onclick="selectCampaignLevel(0)">
-                <path class="risk-territory-shape" d="M 25 25 C 120 15, 230 15, 330 25 C 345 70, 325 110, 300 135 C 210 145, 110 140, 30 110 Z" fill="url(#riskGradLincoln)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
-                <text x="175" y="48" class="risk-territory-label">LINCOLN COUNTY</text>
+                <path class="risk-territory-shape" d="
+                  M 15,12 C 180,5  350,8  420,18
+                  C 430,55  415,90  425,130
+                  C 395,131  360,133  320,130 C 220,122  100,118  15,125
+                  Z
+                " fill="url(#riskGradLincoln)" stroke="#0f172a" stroke-width="2.5" filter="url(#riskShadow)"/>
+                <text x="210" y="72" class="risk-territory-label">LINCOLN COUNTY</text>
               </g>
 
-              <!-- Territory 1: PRAIRIE JUNCTION -->
+              <!-- Territory 1: PRAIRIE JUNCTION (top-right) -->
               <g class="risk-territory" id="riskTerritory1" onclick="selectCampaignLevel(1)">
-                <path class="risk-territory-shape" d="M 345 25 C 490 15, 630 15, 715 35 C 730 85, 700 125, 635 135 C 500 140, 365 130, 335 80 Z" fill="url(#riskGradPrairie)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
-                <text x="525" y="48" class="risk-territory-label">PRAIRIE JUNCTION</text>
+                <path class="risk-territory-shape" d="
+                  M 420,18 C 510,6  670,4  855,15
+                  L 855,125
+                  C 800,130  730,132  660,128 C 580,124  480,128  425,130
+                  C 415,90  430,55  420,18
+                  Z
+                " fill="url(#riskGradPrairie)" stroke="#0f172a" stroke-width="2.5" filter="url(#riskShadow)"/>
+                <text x="640" y="72" class="risk-territory-label">PRAIRIE JUNCTION</text>
               </g>
 
-              <!-- Territory 2: GRAIN BELT -->
+              <!-- Territory 2: GRAIN BELT (bottom-left) -->
               <g class="risk-territory" id="riskTerritory2" onclick="selectCampaignLevel(2)">
-                <path class="risk-territory-shape" d="M 30 120 C 110 145, 215 150, 305 140 C 355 180, 330 235, 295 240 C 170 245, 55 230, 25 180 Z" fill="url(#riskGradGrain)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
-                <text x="175" y="152" class="risk-territory-label">GRAIN BELT</text>
+                <path class="risk-territory-shape" d="
+                  M 15,125 C 100,118  220,122  320,130 C 360,133  395,131  425,130
+                  C 435,165  418,200  420,235
+                  C 280,238  120,242  15,248
+                  Z
+                " fill="url(#riskGradGrain)" stroke="#0f172a" stroke-width="2.5" filter="url(#riskShadow)"/>
+                <text x="210" y="185" class="risk-territory-label">GRAIN BELT</text>
               </g>
 
-              <!-- Territory 3: STATE FAIR -->
+              <!-- Territory 3: STATE FAIR (bottom-right) -->
               <g class="risk-territory" id="riskTerritory3" onclick="selectCampaignLevel(3)">
-                <path class="risk-territory-shape" d="M 320 140 C 470 140, 620 135, 700 135 C 840 140, 865 190, 845 240 C 620 245, 430 245, 325 235 Z" fill="url(#riskGradStateFair)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
-                <text x="600" y="152" class="risk-territory-label">STATE FAIR</text>
+                <path class="risk-territory-shape" d="
+                  M 425,130 C 480,128  580,124  660,128 C 730,132  800,130  855,125
+                  L 855,248
+                  C 720,242  560,238  420,235
+                  C 418,200  435,165  425,130
+                  Z
+                " fill="url(#riskGradStateFair)" stroke="#0f172a" stroke-width="2.5" filter="url(#riskShadow)"/>
+                <text x="640" y="185" class="risk-territory-label">STATE FAIR</text>
               </g>
 
-              <!-- Blue Creek / Heartland River -->
-              <path d="M 335 15 Q 350 70, 345 125 Q 355 180, 375 245" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+              <!-- Blue Creek / Heartland River (follows the vertical shared border) -->
+              <path d="M 420,18 C 430,55  415,90  425,130 C 435,165  418,200  420,235" fill="none" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round" opacity="0.85"/>
+              <!-- Tributary creek (feeds from northwest into the river) -->
+              <path d="M 120,45 Q 220,65  320,80 Q 370,95  420,108" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
             </g>
 
             <!-- COASTAL BAYOU TERRITORIES -->
@@ -4222,7 +4256,7 @@ function renderCampaignMap() {
     ? ['left: 24%; top: 38%;', 'left: 64%; top: 38%;', 'left: 44%; top: 68%;']
     : (selectedCampaignRegion === 1
       ? ['left: 22%; top: 38%;', 'left: 62%; top: 38%;', 'left: 48%; top: 68%;']
-      : ['left: 20%; top: 38%;', 'left: 60%; top: 36%;', 'left: 20%; top: 66%;', 'left: 68%; top: 66%;']);
+      : ['left: 22%; top: 32%;', 'left: 70%; top: 32%;', 'left: 22%; top: 72%;', 'left: 70%; top: 72%;']);
 
   grid.innerHTML = currentList.map((level, index) => {
     const locked = selectedCampaignRegion === 0 ? (index > campaignProgress.unlockedLevel) : false;
