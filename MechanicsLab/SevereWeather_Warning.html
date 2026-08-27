@@ -173,8 +173,8 @@
     100% { opacity: 0; transform: translate(-50%, -72%) scale(1.02); }
   }
 
-  /* RESPONSIVE MOBILE LAYOUT OVERRIDES */
-  @media (max-height: 540px), (max-width: 850px) {
+  /* RESPONSIVE MOBILE & WIDESCREEN LAYOUT OVERRIDES */
+  @media (max-height: 760px), (max-width: 1400px), (orientation: landscape) and (pointer: coarse) {
     #hud { padding: calc(27px + var(--safe-top)) calc(10px + var(--safe-right)) calc(8px + var(--safe-bottom)) calc(10px + var(--safe-left)); }
     #easBanner { font-size: 8px; padding: calc(2px + var(--safe-top)) calc(8px + var(--safe-right)) 2px calc(8px + var(--safe-left)); letter-spacing: 0.045em; box-shadow: 0 2px 10px rgba(153, 27, 27, 0.55); }
     #easBanner > div:last-child { display: none; }
@@ -198,7 +198,7 @@
     .telemetry .fps-telemetry { display: none; }
     
     .touch-controls { gap: 6px; }
-    .action-btn { width: 50px; height: 50px; font-size: 9px; }
+    .action-btn { width: 52px; height: 52px; font: 900 8.5px/1.1 'Outfit', sans-serif; letter-spacing: 0.02em; padding: 2px; text-align: center; text-transform: uppercase; }
     
     #joystickZone { bottom: calc(42px + var(--safe-bottom)); left: calc(14px + var(--safe-left)); width: 100px; height: 100px; }
     #joystickThumb { width: 36px; height: 36px; }
@@ -1151,8 +1151,8 @@
   /* [SW:UI:NEWS_CHOPPER_CAM] */
   #chopperCamOverlay {
     position: fixed;
-    top: calc(env(safe-area-inset-top) + 68px);
-    right: calc(env(safe-area-inset-right) + 16px);
+    top: calc(env(safe-area-inset-top) + 102px);
+    right: calc(env(safe-area-inset-right) + 14px);
     z-index: 1540;
     pointer-events: none;
     display: none;
@@ -10606,9 +10606,9 @@ function selectStormClass(type) {
     setUI('stormIconHead', '🌩️');
     if (typeof supercellGroup !== 'undefined' && supercellGroup) supercellGroup.visible = true;
     storm.speed = 36; storm.radius = 26;
-    setUI('lblBtn1', 'HAIL'); setUI('lblBtn2', 'DOWNBURST'); setUI('lblBtn3', 'LIGHTNING');
+    setUI('lblBtn1', 'HAIL'); setUI('lblBtn2', 'BLAST'); setUI('lblBtn3', 'BOLT');
     setUI('verbSpace', 'SPACE: Hail Corridor (Raining Barrage)');
-    setUI('verbQ', 'Q: Downburst (Directional Forward Blast)');
+    setUI('verbQ', 'Q: Downburst Blast (Directional Shockwave)');
     setUI('verbE', 'E: Targeted Lightning Super-Strike');
   } else if (type === 'derecho') {
     const tab = getCachedEl('tabDerecho');
@@ -10616,10 +10616,10 @@ function selectStormClass(type) {
     setUI('stormIconHead', '💨');
     if (typeof derechoGroup !== 'undefined' && derechoGroup) derechoGroup.visible = true;
     storm.speed = 54; storm.radius = 34;
-    setUI('lblBtn1', 'SWEEP'); setUI('lblBtn2', 'MICROBURST'); setUI('lblBtn3', 'DUST');
+    setUI('lblBtn1', 'SWEEP'); setUI('lblBtn2', 'BURST'); setUI('lblBtn3', 'GALE');
     setUI('verbSpace', 'SPACE: Wind Wall Sweep (80m Mega Surge)');
     setUI('verbQ', 'Q: Microburst (High-Damage Blast Ring)');
-    setUI('verbE', 'E: Dust Cloud Surge (Structure Weakening)');
+    setUI('verbE', 'E: Dust Gale Surge (Structure Weakening)');
   }
 
   if (gameStarted) {
