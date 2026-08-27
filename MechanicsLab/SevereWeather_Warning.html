@@ -12891,109 +12891,155 @@ function createProductionBarn() {
   group.rotation.y = placement.rotation;
   productionSliceRoot.add(group);
 
-  const foundation = addProductionPart(group, new THREE.BoxGeometry(24, 0.7, 18), '#7a746c', 0, 0.35, 0, { roughness: 0.95 });
-  // [SW:VISUAL:SURFACE_TEXTURES] Board-and-batten on the walls, staggered courses
-  // on the roof. The barn is what the camera is pointed at for most of a run, so
-  // it is the surface where flat untextured colour showed most.
-  const bodyMaterial = productionMaterial(campaignIndex === 3 ? '#7a2f56' : '#a43d32', { roughness: 0.82, map: surfaceMap('plank', 4, 2) });
-  const frontWall = addProductionPart(group, new THREE.BoxGeometry(22, 10, 0.75), '#a43d32', 0, 5.3, -8.55, { material: bodyMaterial });
-  const backWall = addProductionPart(group, new THREE.BoxGeometry(22, 10, 0.75), '#8c342d', 0, 5.3, 8.55, { material: bodyMaterial.clone() });
-  const leftWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', -10.65, 5.3, 0, { roughness: 0.84, map: surfaceMap('plank', 3, 2) });
-  const rightWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', 10.65, 5.3, 0, { roughness: 0.84, map: surfaceMap('plank', 3, 2) });
+  // 1. Concrete Fieldstone Plinth Foundation (Always anchored to terrain)
+  const foundation = addProductionPart(group, new THREE.BoxGeometry(24, 0.7, 18), '#475569', 0, 0.35, 0, { roughness: 0.95 });
 
-  // [SW:WORLD:BARN_GABLES] Front and Rear Triangular Gable Walls under the pitched roof
+  const bodyMaterial = productionMaterial(campaignIndex === 3 ? '#7a2f56' : '#b91c1c', { roughness: 0.82 });
+  const doorTrimMat = productionMaterial('#ffffff', { roughness: 0.6 });
+  const roofMaterial = productionMaterial('#334155', { roughness: 0.68, metalness: 0.1 });
+
+  // 2. Left Wall Assembly (West)
+  const leftWallGroup = new THREE.Group();
+  leftWallGroup.name = 'barn-left-wall-group';
+  leftWallGroup.position.set(-10.65, 5.3, 0);
+  addProductionPart(leftWallGroup, new THREE.BoxGeometry(0.75, 10, 16.5), '#991b1b', 0, 0, 0, { material: bodyMaterial });
+  for (let z = -7.0; z <= 7.0; z += 2.0) {
+    addProductionPart(leftWallGroup, new THREE.BoxGeometry(0.12, 10, 0.15), '#7f1d1d', -0.4, 0, z);
+  }
+  group.add(leftWallGroup);
+
+  // 3. Right Wall Assembly (East)
+  const rightWallGroup = new THREE.Group();
+  rightWallGroup.name = 'barn-right-wall-group';
+  rightWallGroup.position.set(10.65, 5.3, 0);
+  addProductionPart(rightWallGroup, new THREE.BoxGeometry(0.75, 10, 16.5), '#991b1b', 0, 0, 0, { material: bodyMaterial });
+  for (let z = -7.0; z <= 7.0; z += 2.0) {
+    addProductionPart(rightWallGroup, new THREE.BoxGeometry(0.12, 10, 0.15), '#7f1d1d', 0.4, 0, z);
+  }
+  group.add(rightWallGroup);
+
+  // 4. Front Wall Assembly (North Facade + Gable + Sliding Doors + Sign + Trims)
+  const frontWallGroup = new THREE.Group();
+  frontWallGroup.name = 'barn-front-wall-group';
+  frontWallGroup.position.set(0, 5.3, -8.25);
+
+  // Main Wall Panel
+  addProductionPart(frontWallGroup, new THREE.BoxGeometry(22, 10, 0.75), '#b91c1c', 0, 0, 0, { material: bodyMaterial });
+
+  // Triangular Front Gable
   const gableShape = new THREE.Shape();
   gableShape.moveTo(-11.0, 0);
   gableShape.lineTo(0, 6.25);
   gableShape.lineTo(11.0, 0);
   gableShape.lineTo(-11.0, 0);
-  const gableGeo = new THREE.ExtrudeGeometry(gableShape, { depth: 0.75, bevelEnabled: false });
-  gableGeo.center();
+  const frontGableGeo = new THREE.ExtrudeGeometry(gableShape, { depth: 0.75, bevelEnabled: false });
+  frontGableGeo.center();
+  addProductionPart(frontWallGroup, frontGableGeo, '#b91c1c', 0, 8.125, 0, { material: bodyMaterial });
 
-  const frontGable = addProductionPart(group, gableGeo, '#a43d32', 0, 13.425, -8.55, { material: bodyMaterial });
-  const backGable = addProductionPart(group, gableGeo.clone(), '#8c342d', 0, 13.425, 8.55, { material: bodyMaterial.clone() });
+  // Double Sliding Barn Doors with White X-Braces
+  const bigDoorLeft = new THREE.Group();
+  bigDoorLeft.position.set(-3.6, -1.4, -0.45);
+  addProductionPart(bigDoorLeft, new THREE.BoxGeometry(5.4, 6.8, 0.25), '#991b1b', 0, 0, 0, { material: bodyMaterial });
+  addProductionPart(bigDoorLeft, new THREE.BoxGeometry(5.6, 0.4, 0.08), '#ffffff', 0, 3.2, -0.15, { material: doorTrimMat });
+  addProductionPart(bigDoorLeft, new THREE.BoxGeometry(5.6, 0.4, 0.08), '#ffffff', 0, -3.2, -0.15, { material: doorTrimMat });
+  addProductionPart(bigDoorLeft, new THREE.BoxGeometry(0.4, 6.8, 0.08), '#ffffff', -2.6, 0, -0.15, { material: doorTrimMat });
+  addProductionPart(bigDoorLeft, new THREE.BoxGeometry(0.4, 6.8, 0.08), '#ffffff', 2.6, 0, -0.15, { material: doorTrimMat });
+  addProductionPart(bigDoorLeft, new THREE.BoxGeometry(0.38, 8.4, 0.08), '#ffffff', 0, 0, -0.15, { material: doorTrimMat, rotation: { z: 0.68 } });
+  addProductionPart(bigDoorLeft, new THREE.BoxGeometry(0.38, 8.4, 0.08), '#ffffff', 0, 0, -0.15, { material: doorTrimMat, rotation: { z: -0.68 } });
+  frontWallGroup.add(bigDoorLeft);
 
-  const roofMaterial = productionMaterial('#27313d', { roughness: 0.68, metalness: 0.08, map: surfaceMap('shingle', 3, 4) });
-  const roofLeft = addProductionPart(group, new THREE.BoxGeometry(13.3, 0.62, 19), '#27313d', -5.1, 13.2, 0, { material: roofMaterial, rotation: { z: 0.55 } });
-  const roofRight = addProductionPart(group, new THREE.BoxGeometry(13.3, 0.62, 19), '#27313d', 5.1, 13.2, 0, { material: roofMaterial.clone(), rotation: { z: -0.55 } });
-  const ridge = addProductionPart(group, new THREE.BoxGeometry(0.75, 0.8, 19.4), '#18202b', 0, 16.55, 0, { roughness: 0.7 });
+  const bigDoorRight = new THREE.Group();
+  bigDoorRight.position.set(3.6, -1.4, -0.45);
+  addProductionPart(bigDoorRight, new THREE.BoxGeometry(5.4, 6.8, 0.25), '#991b1b', 0, 0, 0, { material: bodyMaterial });
+  addProductionPart(bigDoorRight, new THREE.BoxGeometry(5.6, 0.4, 0.08), '#ffffff', 0, 3.2, -0.15, { material: doorTrimMat });
+  addProductionPart(bigDoorRight, new THREE.BoxGeometry(5.6, 0.4, 0.08), '#ffffff', 0, -3.2, -0.15, { material: doorTrimMat });
+  addProductionPart(bigDoorRight, new THREE.BoxGeometry(0.4, 6.8, 0.08), '#ffffff', -2.6, 0, -0.15, { material: doorTrimMat });
+  addProductionPart(bigDoorRight, new THREE.BoxGeometry(0.4, 6.8, 0.08), '#ffffff', 2.6, 0, -0.15, { material: doorTrimMat });
+  addProductionPart(bigDoorRight, new THREE.BoxGeometry(0.38, 8.4, 0.08), '#ffffff', 0, 0, -0.15, { material: doorTrimMat, rotation: { z: 0.68 } });
+  addProductionPart(bigDoorRight, new THREE.BoxGeometry(0.38, 8.4, 0.08), '#ffffff', 0, 0, -0.15, { material: doorTrimMat, rotation: { z: -0.68 } });
+  frontWallGroup.add(bigDoorRight);
 
-  // Front Facade (North)
-  const bigDoorLeft = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#991b1b', -3.6, 3.9, -9.02, { material: bodyMaterial });
-  const bigDoorRight = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#991b1b', 3.6, 3.9, -9.02, { material: bodyMaterial.clone() });
-  const loftDoor = addProductionPart(group, new THREE.BoxGeometry(4.6, 3.5, 0.42), '#991b1b', 0, 10.35, -9.0, { material: bodyMaterial.clone() });
+  // Upper Hayloft Door with White X-Brace
+  const loftDoor = new THREE.Group();
+  loftDoor.position.set(0, 5.05, -0.45);
+  addProductionPart(loftDoor, new THREE.BoxGeometry(4.0, 3.4, 0.2), '#991b1b', 0, 0, 0, { material: bodyMaterial });
+  addProductionPart(loftDoor, new THREE.BoxGeometry(4.2, 0.35, 0.08), '#ffffff', 0, 1.55, -0.12, { material: doorTrimMat });
+  addProductionPart(loftDoor, new THREE.BoxGeometry(4.2, 0.35, 0.08), '#ffffff', 0, -1.55, -0.12, { material: doorTrimMat });
+  addProductionPart(loftDoor, new THREE.BoxGeometry(0.35, 3.4, 0.08), '#ffffff', -1.9, 0, -0.12, { material: doorTrimMat });
+  addProductionPart(loftDoor, new THREE.BoxGeometry(0.35, 3.4, 0.08), '#ffffff', 1.9, 0, -0.12, { material: doorTrimMat });
+  addProductionPart(loftDoor, new THREE.BoxGeometry(0.32, 4.8, 0.08), '#ffffff', 0, 0, -0.12, { material: doorTrimMat, rotation: { z: 0.58 } });
+  addProductionPart(loftDoor, new THREE.BoxGeometry(0.32, 4.8, 0.08), '#ffffff', 0, 0, -0.12, { material: doorTrimMat, rotation: { z: -0.58 } });
+  frontWallGroup.add(loftDoor);
+
+  // HART FARM Signboard Attached to Front Wall
   const sign = addProductionPart(
-    group,
+    frontWallGroup,
     new THREE.BoxGeometry(8.5, 1.9, 0.35),
     '#f6c453',
     0,
-    14.1,
-    -9.15,
+    8.8,
+    -0.55,
     { material: createSignMaterial('HART FARM|SINCE 1947', '#7c2d12', '#fff7ed') }
   );
 
-  // Rear Facade (South) - Matching architectural dressing for full 360-degree hero presence
-  const rearDoorLeft = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#991b1b', -3.6, 3.9, 9.02, { material: bodyMaterial.clone() });
-  const rearDoorRight = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#991b1b', 3.6, 3.9, 9.02, { material: bodyMaterial.clone() });
-  const rearLoftDoor = addProductionPart(group, new THREE.BoxGeometry(4.6, 3.5, 0.42), '#991b1b', 0, 10.35, 9.0, { material: bodyMaterial.clone() });
-  const rearSign = addProductionPart(
-    group,
-    new THREE.BoxGeometry(8.5, 1.9, 0.35),
-    '#f6c453',
-    0,
-    14.1,
-    9.15,
-    { material: createSignMaterial('HART FARM|SINCE 1947', '#7c2d12', '#fff7ed') }
-  );
-
-  // White perimeter trim and X-cross braces on all barn doors
-  const doorTrimMat = productionMaterial('#ffffff', { roughness: 0.6 });
-  [-9.28, 9.28].forEach(dz => {
-    [-3.6, 3.6].forEach(dx => {
-      // Door frame borders
-      addProductionPart(group, new THREE.BoxGeometry(6.6, 0.45, 0.15), '#ffffff', dx, 0.5, dz, { material: doorTrimMat });
-      addProductionPart(group, new THREE.BoxGeometry(6.6, 0.45, 0.15), '#ffffff', dx, 7.3, dz, { material: doorTrimMat.clone() });
-      addProductionPart(group, new THREE.BoxGeometry(0.45, 7.2, 0.15), '#ffffff', dx - 3.1, 3.9, dz, { material: doorTrimMat.clone() });
-      addProductionPart(group, new THREE.BoxGeometry(0.45, 7.2, 0.15), '#ffffff', dx + 3.1, 3.9, dz, { material: doorTrimMat.clone() });
-      // X-braces
-      addProductionPart(group, new THREE.BoxGeometry(0.42, 8.8, 0.15), '#ffffff', dx, 3.9, dz, { material: doorTrimMat.clone(), rotation: { z: 0.58 } });
-      addProductionPart(group, new THREE.BoxGeometry(0.42, 8.8, 0.15), '#ffffff', dx, 3.9, dz, { material: doorTrimMat.clone(), rotation: { z: -0.58 } });
-    });
-    // Loft door trim and X-brace
-    addProductionPart(group, new THREE.BoxGeometry(4.4, 0.35, 0.15), '#ffffff', 0, 8.8, dz, { material: doorTrimMat.clone() });
-    addProductionPart(group, new THREE.BoxGeometry(4.4, 0.35, 0.15), '#ffffff', 0, 11.9, dz, { material: doorTrimMat.clone() });
-    addProductionPart(group, new THREE.BoxGeometry(0.35, 3.4, 0.15), '#ffffff', -2.1, 10.35, dz, { material: doorTrimMat.clone() });
-    addProductionPart(group, new THREE.BoxGeometry(0.35, 3.4, 0.15), '#ffffff', 2.1, 10.35, dz, { material: doorTrimMat.clone() });
-    addProductionPart(group, new THREE.BoxGeometry(0.32, 4.8, 0.15), '#ffffff', 0, 10.35, dz, { material: doorTrimMat.clone(), rotation: { z: 0.56 } });
-    addProductionPart(group, new THREE.BoxGeometry(0.32, 4.8, 0.15), '#ffffff', 0, 10.35, dz, { material: doorTrimMat.clone(), rotation: { z: -0.56 } });
+  // White Cornerboards & Trim
+  [-10.6, 10.6].forEach(cx => {
+    addProductionPart(frontWallGroup, new THREE.BoxGeometry(0.45, 10.2, 0.25), '#ffffff', cx, 0, -0.38, { material: doorTrimMat });
   });
+  group.add(frontWallGroup);
 
-  // White architectural trims on both facades
-  const trimMaterial = productionMaterial('#f3eee3', { roughness: 0.74 });
-  [-9.0, 9.0].forEach(dz => {
-    [-10.2, 0, 10.2].forEach(x => addProductionPart(group, new THREE.BoxGeometry(0.36, 10.6, 0.32), '#f3eee3', x, 5.45, dz, { material: trimMaterial }));
-    addProductionPart(group, new THREE.BoxGeometry(21.1, 0.36, 0.32), '#f3eee3', 0, 9.9, dz, { material: trimMaterial.clone() });
+  // 5. Rear Wall Assembly (South Facade + Rear Gable + Doors)
+  const backWallGroup = new THREE.Group();
+  backWallGroup.name = 'barn-back-wall-group';
+  backWallGroup.position.set(0, 5.3, 8.25);
+  addProductionPart(backWallGroup, new THREE.BoxGeometry(22, 10, 0.75), '#8c342d', 0, 0, 0, { material: bodyMaterial });
+  const backGableGeo = frontGableGeo.clone();
+  addProductionPart(backWallGroup, backGableGeo, '#8c342d', 0, 8.125, 0, { material: bodyMaterial });
+
+  // Rear Doors
+  [-3.6, 3.6].forEach(rx => {
+    addProductionPart(backWallGroup, new THREE.BoxGeometry(5.4, 6.8, 0.25), '#8c342d', rx, -1.4, 0.45, { material: bodyMaterial });
+    addProductionPart(backWallGroup, new THREE.BoxGeometry(5.6, 0.4, 0.08), '#ffffff', rx, 1.8, 0.58, { material: doorTrimMat });
+    addProductionPart(backWallGroup, new THREE.BoxGeometry(5.6, 0.4, 0.08), '#ffffff', rx, -4.6, 0.58, { material: doorTrimMat });
   });
+  group.add(backWallGroup);
 
-  // Rooftop Cupola & Weathervane
+  // 6. Left Roof Wing (West Slope)
+  const roofLeftGroup = new THREE.Group();
+  roofLeftGroup.name = 'barn-roof-left-group';
+  roofLeftGroup.position.set(-5.3, 13.4, 0);
+  addProductionPart(roofLeftGroup, new THREE.BoxGeometry(13.2, 0.55, 18.5), '#334155', 0, 0, 0, { material: roofMaterial, rotation: { z: 0.52 } });
+  group.add(roofLeftGroup);
+
+  // 7. Right Roof Wing + Ridge + Cupola & Weathervane (East Slope)
+  const roofRightGroup = new THREE.Group();
+  roofRightGroup.name = 'barn-roof-right-group';
+  roofRightGroup.position.set(5.3, 13.4, 0);
+  addProductionPart(roofRightGroup, new THREE.BoxGeometry(13.2, 0.55, 18.5), '#334155', 0, 0, 0, { material: roofMaterial, rotation: { z: -0.52 } });
+
+  // Ridge Cap
+  const ridge = addProductionPart(roofRightGroup, new THREE.BoxGeometry(0.75, 0.8, 18.8), '#1e293b', -5.3, 3.15, 0);
+
+  // Rooftop Cupola & Golden Rooster Weathervane
   const cupolaMat = productionMaterial('#ffffff', { roughness: 0.5 });
   const cupolaRoofMat = productionMaterial('#1e293b', { roughness: 0.4 });
   const goldMat = new THREE.MeshStandardMaterial({ color: '#fbbf24', roughness: 0.3, metalness: 0.8 });
 
-  addProductionPart(group, new THREE.BoxGeometry(3.2, 2.2, 3.2), '#ffffff', 0, 17.6, 0, { material: cupolaMat });
-  const cupolaRoof = addProductionPart(group, new THREE.ConeGeometry(2.6, 1.8, 4), '#1e293b', 0, 19.5, 0, { material: cupolaRoofMat, rotation: { y: Math.PI / 4 } });
-  const vanePole = addProductionPart(group, new THREE.CylinderGeometry(0.08, 0.08, 1.8), '#fbbf24', 0, 21.0, 0, { material: goldMat });
-  const rooster = addProductionPart(group, new THREE.BoxGeometry(0.9, 0.7, 0.12), '#fbbf24', 0, 21.6, 0, { material: goldMat.clone() });
+  addProductionPart(roofRightGroup, new THREE.BoxGeometry(3.2, 2.2, 3.2), '#ffffff', -5.3, 4.2, 0, { material: cupolaMat });
+  addProductionPart(roofRightGroup, new THREE.ConeGeometry(2.6, 1.8, 4), '#1e293b', -5.3, 6.1, 0, { material: cupolaRoofMat, rotation: { y: Math.PI / 4 } });
+  addProductionPart(roofRightGroup, new THREE.CylinderGeometry(0.08, 0.08, 1.8), '#fbbf24', -5.3, 7.6, 0, { material: goldMat });
+  addProductionPart(roofRightGroup, new THREE.BoxGeometry(0.9, 0.7, 0.12), '#fbbf24', -5.3, 8.2, 0, { material: goldMat });
 
   const beacon = new THREE.Mesh(
     new THREE.TorusGeometry(4.2, 0.16, 6, 40),
     new THREE.MeshBasicMaterial({ color: '#f6c453', transparent: true, opacity: 0.62, depthWrite: false })
   );
   beacon.rotation.x = Math.PI / 2;
-  beacon.position.y = 22.2;
-  group.add(beacon);
+  beacon.position.set(-5.3, 8.8, 0);
+  roofRightGroup.add(beacon);
+  group.add(roofRightGroup);
 
-  // [SW:VISUAL:ACTOR_MODELS] Parked tractor, farmhouse, grain bin, and propane tank setpiece dressing
+  // Setpiece dressing: Tractor, Farmhouse, Grain Bin, Propane Tank
   instantiateActorModel('tractor', { damageable: false }).then(tractor => {
     if (!tractor) return;
     tractor.position.set(-16, 0, 12);
@@ -13027,15 +13073,12 @@ function createProductionBarn() {
     stage: 0,
     destroyed: false,
     foundation,
-    frontWall,
-    frontGable,
-    backWall,
-    backGable,
-    leftWall,
-    rightWall,
-    roofLeft,
-    roofRight,
-    ridge,
+    frontWallGroup,
+    backWallGroup,
+    leftWallGroup,
+    rightWallGroup,
+    roofLeftGroup,
+    roofRightGroup,
     bigDoorLeft,
     bigDoorRight,
     loftDoor,
@@ -13102,41 +13145,38 @@ function setProductionBarnStage(stage) {
   productionBarn.stage = stage;
   const groundY = terrainHeightAt(productionBarn.x, productionBarn.z);
   if (stage === 1) {
-    productionBarn.sign.rotation.z = -0.16;
-    productionBarn.frontWall.material.color.offsetHSL(0, -0.04, -0.11);
-    productionBarn.bigDoorLeft.rotation.y = -0.16;
-    productionBarn.bigDoorRight.rotation.y = 0.12;
+    if (productionBarn.sign) productionBarn.sign.rotation.z = -0.16;
+    if (productionBarn.bigDoorLeft) productionBarn.bigDoorLeft.rotation.y = -0.22;
+    if (productionBarn.bigDoorRight) productionBarn.bigDoorRight.rotation.y = 0.18;
     spawnProductionDustBurst(productionBarn.x, groundY + 9, productionBarn.z - 8, '#c5a27a', 8);
     awardProductionBarnStage(1, 140, 'DAMAGED');
     showGagToast('HART FARM HAS ENTERED THE CLAIMS PROCESS.');
   } else if (stage === 2) {
-    detachProductionBarnPart(productionBarn.roofLeft, 1.05);
-    productionBarn.leftWall.rotation.z = -0.08;
-    productionBarn.loftDoor.rotation.x = 0.38;
+    if (productionBarn.roofLeftGroup) detachProductionBarnPart(productionBarn.roofLeftGroup, 1.1);
+    if (productionBarn.leftWallGroup) productionBarn.leftWallGroup.rotation.z = -0.15;
     spawnProductionDustBurst(productionBarn.x - 5, groundY + 13, productionBarn.z, '#a88562', 12);
     awardProductionBarnStage(2, 210, 'ROOF PEEL');
     showGagToast('HART FARM ROOF FILES A FLIGHT PLAN.');
     publishMediaHeadline('LIVE FARM CAM: ROOF DEPARTURE CONFIRMED. NO BOARDING PASS FOUND.', 3.8);
   } else if (stage === 3) {
-    detachProductionBarnPart(productionBarn.loftDoor, 0.8);
-    productionBarn.frontWall.rotation.z = 0.14;
-    if (productionBarn.frontGable) productionBarn.frontGable.rotation.z = 0.14;
-    productionBarn.rightWall.rotation.z = 0.1;
-    productionBarn.ridge.rotation.x = 0.2;
+    if (productionBarn.roofRightGroup) detachProductionBarnPart(productionBarn.roofRightGroup, 1.25);
+    if (productionBarn.rightWallGroup) productionBarn.rightWallGroup.rotation.z = 0.15;
+    if (productionBarn.frontWallGroup) productionBarn.frontWallGroup.rotation.x = -0.18;
     spawnProductionDustBurst(productionBarn.x, groundY + 7, productionBarn.z - 8, '#8b6d4f', 14);
     awardProductionBarnStage(3, 280, 'EXPOSED');
   } else if (stage === 4) {
     productionBarn.destroyed = true;
-    productionBarn.beacon.visible = false;
-    detachProductionBarnPart(productionBarn.roofRight, 1.18);
-    detachProductionBarnPart(productionBarn.frontWall, 0.72);
-    if (productionBarn.frontGable) detachProductionBarnPart(productionBarn.frontGable, 0.75);
-    if (productionBarn.backGable) detachProductionBarnPart(productionBarn.backGable, 0.68);
-    detachProductionBarnPart(productionBarn.rightWall, 0.65);
-    productionBarn.backWall.rotation.x = 1.24;
-    productionBarn.leftWall.rotation.z = -1.18;
-    productionBarn.bigDoorLeft.rotation.x = 1.1;
-    productionBarn.bigDoorRight.rotation.x = 1.34;
+    if (productionBarn.beacon) productionBarn.beacon.visible = false;
+    if (productionBarn.frontWallGroup) detachProductionBarnPart(productionBarn.frontWallGroup, 0.95);
+    if (productionBarn.backWallGroup) detachProductionBarnPart(productionBarn.backWallGroup, 0.85);
+    if (productionBarn.leftWallGroup) {
+      productionBarn.leftWallGroup.rotation.z = -1.35;
+      productionBarn.leftWallGroup.position.y = 0.8;
+    }
+    if (productionBarn.rightWallGroup) {
+      productionBarn.rightWallGroup.rotation.z = 1.35;
+      productionBarn.rightWallGroup.position.y = 0.8;
+    }
     spawnProductionDustBurst(productionBarn.x, groundY + 5, productionBarn.z, '#806044', 20);
     awardProductionBarnStage(4, 720, 'BARN DOWN');
     addCameraShake(1.7);
