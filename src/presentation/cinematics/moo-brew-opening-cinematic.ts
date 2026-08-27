@@ -22,13 +22,13 @@ export class MooBrewOpeningCinematic implements OpeningCinematicContract {
   private isCompleted = false;
 
   private currentCamera: CinematicCameraPosition = {
-    x: 12.4,
-    y: 8.1,
-    z: 17.6,
-    targetX: 0.2,
-    targetY: 3.3,
-    targetZ: 0.2,
-    fov: 37
+    x: -238.5,
+    y: 7.5,
+    z: -175.5,
+    targetX: -249.8,
+    targetY: 4.8,
+    targetZ: -189.8,
+    fov: 38
   };
 
   public start(): void {
@@ -60,53 +60,56 @@ export class MooBrewOpeningCinematic implements OpeningCinematicContract {
   }
 
   private updateCameraForTime(time: number): void {
+    const farmX = -280;
+    const farmZ = -210;
+
     if (time < 5.9) {
-      // Beat 1 & 2: Relaxed wide shot of fence conversation
+      // Beat 1 & 2: Wide establishing shot of open pasture, red barn, silo, and fence conversation
       this.currentCamera = {
-        x: 12.4,
-        y: 8.1,
-        z: 17.6,
-        targetX: 0.2,
-        targetY: 3.3,
-        targetZ: 0.2,
-        fov: 37
+        x: farmX + 2.5,
+        y: 7.2,
+        z: farmZ + 11.5,
+        targetX: farmX - 0.5,
+        targetY: 4.8,
+        targetZ: farmZ - 2.5,
+        fov: 40
       };
     } else if (time < 8.15) {
       // Beat 3: Over-the-shoulder double-take
       const t = (time - 5.9) / (8.15 - 5.9);
       this.currentCamera = {
-        x: 12.4 + (10.8 - 12.4) * t,
-        y: 8.1 + (7.3 - 8.1) * t,
-        z: 17.6 + (15.2 - 17.6) * t,
-        targetX: 0.2 + (0.15 - 0.2) * t,
-        targetY: 3.3 + (4.1 - 3.3) * t,
-        targetZ: 0.2 + (0.45 - 0.2) * t,
-        fov: 37 + (33 - 37) * t
+        x: farmX + 2.5 + (1.6 - 2.5) * t,
+        y: 7.2 + (6.2 - 7.2) * t,
+        z: farmZ + 11.5 + (6.8 - 11.5) * t,
+        targetX: farmX - 0.5 + ((-0.2) - (-0.5)) * t,
+        targetY: 4.8 + (5.2 - 4.8) * t,
+        targetZ: farmZ - 2.5 + ((-0.5) - (-2.5)) * t,
+        fov: 40 + (35 - 40) * t
       };
     } else if (time < 10.15) {
       // Beat 4: Close up on Moo Brew cup & final sip
       const t = (time - 8.15) / (10.15 - 8.15);
       this.currentCamera = {
-        x: 10.8 + (7.1 - 10.8) * t,
-        y: 7.3 + (6.0 - 7.3) * t,
-        z: 15.2 + (11.5 - 15.2) * t,
-        targetX: 0.15 + (0.85 - 0.15) * t,
-        targetY: 4.1 + (4.45 - 4.1) * t,
-        targetZ: 0.45 + (0.92 - 0.45) * t,
-        fov: 33 + (30 - 33) * t
+        x: farmX + 1.6 + (0.95 - 1.6) * t,
+        y: 6.2 + (5.4 - 6.2) * t,
+        z: farmZ + 6.8 + (3.8 - 6.8) * t,
+        targetX: farmX - 0.2 + (0.15 - (-0.2)) * t,
+        targetY: 5.2 + (4.9 - 5.2) * t,
+        targetZ: farmZ - 0.5 + (0.5 - (-0.5)) * t,
+        fov: 35 + (32 - 35) * t
       };
     } else {
       // Beat 5: Touchdown & 1.5s seamless blend into Player Follow Camera
       const t = (time - 10.15) / (12.4 - 10.15);
       const easeT = t * t * (3 - 2 * t);
       this.currentCamera = {
-        x: 7.1 + (0 - 7.1) * easeT,
-        y: 6.0 + (35 - 6.0) * easeT,
-        z: 11.5 + (45 - 11.5) * easeT,
-        targetX: 0.85 + (0 - 0.85) * easeT,
-        targetY: 4.45 + (0 - 4.45) * easeT,
-        targetZ: 0.92 + (0 - 0.92) * easeT,
-        fov: 30 + (48 - 30) * easeT
+        x: (farmX + 0.95) + (0 - (farmX + 0.95)) * easeT,
+        y: 5.4 + (35 - 5.4) * easeT,
+        z: (farmZ + 3.8) + (45 - (farmZ + 3.8)) * easeT,
+        targetX: (farmX + 0.15) + (0 - (farmX + 0.15)) * easeT,
+        targetY: 4.9 + (0 - 4.9) * easeT,
+        targetZ: (farmZ + 0.5) + (0 - (farmZ + 0.5)) * easeT,
+        fov: 32 + (48 - 32) * easeT
       };
     }
   }

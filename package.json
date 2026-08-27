@@ -6,6 +6,7 @@
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
+    "models:validate": "node tools/asset-pipeline/model-validator.mjs",
     "audio:generate": "node scripts/generate-storm-audio.mjs && node scripts/apply-recorded-storm-effects.mjs && node scripts/append-rampage-music.mjs",
     "modern:typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test \"src/**/*.test.ts\"",

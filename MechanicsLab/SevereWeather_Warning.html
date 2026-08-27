@@ -1238,50 +1238,163 @@
     left: 50%;
     z-index: 1550;
     transform: translateX(-50%);
-    padding: 4px 10px;
-    border: 1px solid var(--production-line);
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(8, 21, 37, 0.9), rgba(5, 12, 22, 0.74));
-    color: #dbeafe;
-    font: 800 8px/1 Inter, sans-serif;
-    letter-spacing: 0.12em;
-    pointer-events: none;
-    box-shadow: 0 7px 24px rgba(0, 0, 0, 0.34);
+    display: none !important;
   }
-  body.production-run #productionSliceBadge { opacity: 0.78; }
+  body.production-run #productionSliceBadge { display: none !important; }
   .panel {
-    background: linear-gradient(150deg, rgba(10, 21, 37, 0.88), rgba(5, 12, 23, 0.72));
-    border-color: rgba(151, 197, 255, 0.24);
-    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34), inset 0 1px rgba(255, 255, 255, 0.035);
+    background: linear-gradient(150deg, rgba(10, 21, 37, 0.92), rgba(5, 12, 23, 0.85));
+    border: 1px solid rgba(151, 197, 255, 0.28);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px rgba(255, 255, 255, 0.06);
   }
-  .telemetry { backdrop-filter: blur(10px); }
+  .telemetry {
+    backdrop-filter: blur(12px);
+    background: linear-gradient(90deg, rgba(8, 20, 38, 0.94), rgba(4, 12, 24, 0.98)) !important;
+    border: 1px solid rgba(147, 197, 253, 0.35) !important;
+    border-radius: 12px;
+    padding: 6px 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    font: 800 11px/1.2 monospace;
+    color: #94a3b8;
+  }
+  .telemetry b { color: #38bdf8; font-weight: 900; }
+  #timerVal { color: #facc15 !important; font-size: 13px; font-weight: 900; }
+  .combo-badge { color: #f59e0b !important; font-weight: 900; padding: 2px 6px; background: rgba(245, 158, 11, 0.2); border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.4); }
+  .footage-badge { color: #ec4899 !important; font-weight: 900; }
+  
   .action-btn {
-    background: radial-gradient(circle at 35% 28%, rgba(42, 61, 82, 0.96), rgba(7, 15, 27, 0.94));
-    border-color: rgba(246, 196, 83, 0.9);
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.52), inset 0 1px rgba(255, 255, 255, 0.08);
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, #1e293b 0%, #090e17 100%);
+    border: 2.5px solid var(--production-warm);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.7), 0 0 14px rgba(246, 196, 83, 0.25);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    user-select: none;
+    touch-action: manipulation;
   }
-  .action-btn:active, .action-btn.active { box-shadow: 0 0 22px rgba(246, 196, 83, 0.7); }
+  .action-btn .btn-icon { font-size: 20px; line-height: 1; pointer-events: none; }
+  .action-btn .btn-name { font: 900 9px/1 Outfit, sans-serif; letter-spacing: 0.06em; color: var(--production-warm); margin-top: 2px; pointer-events: none; }
+  .action-btn:active, .action-btn.active {
+    background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+    transform: scale(0.92);
+    box-shadow: 0 0 24px rgba(246, 196, 83, 0.85);
+  }
+  .action-btn:active .btn-name, .action-btn.active .btn-name { color: #0f172a; }
+  
   #joystickZone {
-    background: radial-gradient(circle, rgba(28, 48, 70, 0.38), rgba(4, 10, 18, 0.24));
-    border-color: rgba(190, 219, 255, 0.26);
-    box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.28);
+    position: absolute;
+    bottom: calc(18px + var(--safe-bottom));
+    left: calc(18px + var(--safe-left));
+    width: 108px;
+    height: 108px;
+    border-radius: 50%;
+    border: 2px solid rgba(246, 196, 83, 0.45);
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.65) 0%, rgba(2, 6, 23, 0.85) 100%);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6), inset 0 0 20px rgba(246, 196, 83, 0.15);
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    touch-action: none;
   }
-  #joystickThumb { background: #f6c453; box-shadow: 0 0 18px rgba(246, 196, 83, 0.68); }
+  #joystickThumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fef08a 0%, #f59e0b 60%, #b45309 100%);
+    box-shadow: 0 0 16px rgba(246, 196, 83, 0.75), inset 0 1px 2px rgba(255,255,255,0.6);
+    border: 1.5px solid #ffffff;
+    transform: translate(0, 0);
+    pointer-events: none;
+  }
   .production-quality-btn { border-color: rgba(96, 165, 250, 0.72) !important; color: #dbeafe !important; }
   .production-quality-btn[data-quality="SHOWCASE"] { border-color: #f6c453 !important; color: #fde68a !important; }
   @media (max-height: 540px), (max-width: 850px) {
-    #productionSliceBadge { top: calc(env(safe-area-inset-top) + 22px); padding: 3px 8px; font-size: 7px; }
     #hud { padding-top: calc(25px + var(--safe-top)); }
     .radar-box, .radar-box canvas { width: 78px; height: 78px; }
-    .touch-controls { gap: 8px; }
-    .action-btn { width: 52px; height: 52px; }
-    #joystickZone { bottom: calc(40px + var(--safe-bottom)); left: calc(14px + var(--safe-left)); }
-    .telemetry { max-width: 54vw; overflow: hidden; white-space: nowrap; }
+    .touch-controls { gap: 10px; }
+    .action-btn { width: 56px; height: 56px; }
+    .action-btn .btn-icon { font-size: 17px; }
+    .action-btn .btn-name { font-size: 8px; }
+    .telemetry { max-width: 58vw; overflow: hidden; white-space: nowrap; font-size: 9.5px; padding: 5px 10px; gap: 8px; }
+  }
+  /* [SW:CINEMATIC:LETTERBOX_V1] */
+  #cinematicLetterbox {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 99990;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: opacity 0.3s ease;
+  }
+  #cinematicLetterbox.active {
+    display: flex !important;
+  }
+  .cin-bar {
+    width: 100%;
+    height: 48px;
+    background: #030712;
+    border-bottom: 2px solid rgba(246, 196, 83, 0.4);
+    display: flex;
+    align-items: center;
+    padding: 0 calc(env(safe-area-inset-left) + 20px);
+    box-sizing: border-box;
+  }
+  .cin-bar.bottom {
+    border-bottom: none;
+    border-top: 2px solid rgba(246, 196, 83, 0.4);
+    justify-content: center;
+    padding: 0 calc(env(safe-area-inset-right) + 20px);
+    height: 52px;
+  }
+  .cin-loc {
+    font: 900 11px/1 'Outfit', sans-serif;
+    color: #fbbf24;
+    letter-spacing: 0.12em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+  .cin-subtitle {
+    font: 800 12.5px/1.3 'Outfit', sans-serif;
+    color: #fef08a;
+    text-align: center;
+    letter-spacing: 0.04em;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+    background: rgba(15, 23, 42, 0.85);
+    padding: 5px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    max-width: 80vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>
 </head>
 <body>
 <div id="productionSliceBadge">SEVERE WEATHER WARNING · 3D PRODUCTION</div>
+
+<!-- CINEMATIC WIDESCREEN LETTERBOX & CAPTIONS -->
+<div id="cinematicLetterbox" aria-hidden="true">
+  <div class="cin-bar top">
+    <div class="cin-loc">📍 HART FAMILY FARMSTEAD · 06:42 AM</div>
+  </div>
+  <div class="cin-bar bottom">
+    <div class="cin-subtitle" id="cinSubtitle">☕ MOO BREW FARMS: Another peaceful morning in Lincoln County...</div>
+  </div>
+</div>
 
 <!-- RETRO 1980s CRT TELEVISION & LIVE BROADCAST MAIN MENU -->
 <div id="mainMenu">
@@ -1385,9 +1498,9 @@
         </div>
 
         <div class="tv-region-tabs">
-          <button type="button" class="tv-region-tab active">★ 1. HEARTLAND TOUR</button>
-          <button type="button" class="tv-region-tab locked" onclick="showGagToast('COASTAL BAYOU UNLOCKS AFTER HEARTLAND FINALE')">🔒 2. COASTAL BAYOU</button>
-          <button type="button" class="tv-region-tab locked" onclick="showGagToast('METRO ROW UNLOCKS AFTER HEARTLAND FINALE')">🔒 3. METRO ROW</button>
+          <button type="button" class="tv-region-tab active" id="tvRegionTab0" onclick="switchCampaignRegion(0)">★ 1. HEARTLAND TOUR</button>
+          <button type="button" class="tv-region-tab" id="tvRegionTab1" onclick="switchCampaignRegion(1)">★ 2. COASTAL BAYOU</button>
+          <button type="button" class="tv-region-tab" id="tvRegionTab2" onclick="switchCampaignRegion(2)">★ 3. METRO ROW</button>
         </div>
 
         <!-- Geographic Territory Map Screen (Risk Style) -->
@@ -1410,6 +1523,30 @@
                 <stop offset="0%" stop-color="#9333ea"/>
                 <stop offset="100%" stop-color="#581c87"/>
               </linearGradient>
+              <linearGradient id="riskGradBayou" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0d9488"/>
+                <stop offset="100%" stop-color="#115e59"/>
+              </linearGradient>
+              <linearGradient id="riskGradPelican" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="100%" stop-color="#0369a1"/>
+              </linearGradient>
+              <linearGradient id="riskGradPortDelta" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#6366f1"/>
+                <stop offset="100%" stop-color="#312e81"/>
+              </linearGradient>
+              <linearGradient id="riskGradSkyline" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+              <linearGradient id="riskGradRail" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#d97706"/>
+                <stop offset="100%" stop-color="#18181b"/>
+              </linearGradient>
+              <linearGradient id="riskGradBroadcast" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#2563eb"/>
+                <stop offset="100%" stop-color="#1e1b4b"/>
+              </linearGradient>
               <filter id="riskShadow" x="-10%" y="-10%" width="130%" height="130%">
                 <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.75"/>
               </filter>
@@ -1419,34 +1556,87 @@
             <path d="M 0 60 L 880 60 M 0 125 L 880 125 M 0 190 L 880 190 M 220 0 L 220 250 M 440 0 L 440 250 M 660 0 L 660 250" stroke="rgba(56, 189, 248, 0.12)" stroke-width="1" stroke-dasharray="4,4"/>
 
             <!-- Route Arrows / Dashed Highway Lines -->
-            <path d="M 160 70 Q 320 35 480 65 T 700 140 Q 500 180 300 160 Z" fill="none" stroke="#fef08a" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+            <path id="svgMapRoutes" d="M 160 70 Q 320 35 480 65 T 700 140 Q 500 180 300 160 Z" fill="none" stroke="#fef08a" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
 
-            <!-- Territory 0: LINCOLN COUNTY -->
-            <g class="risk-territory selected" id="riskTerritory0" onclick="selectCampaignLevel(0)">
-              <path class="risk-territory-shape" d="M 25 25 C 120 15, 230 15, 330 25 C 345 70, 325 110, 300 135 C 210 145, 110 140, 30 110 Z" fill="url(#riskGradLincoln)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
-              <text x="175" y="48" class="risk-territory-label">LINCOLN COUNTY</text>
+            <!-- HEARTLAND TERRITORIES -->
+            <g id="svgRegionGroup0">
+              <!-- Territory 0: LINCOLN COUNTY -->
+              <g class="risk-territory selected" id="riskTerritory0" onclick="selectCampaignLevel(0)">
+                <path class="risk-territory-shape" d="M 25 25 C 120 15, 230 15, 330 25 C 345 70, 325 110, 300 135 C 210 145, 110 140, 30 110 Z" fill="url(#riskGradLincoln)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="175" y="48" class="risk-territory-label">LINCOLN COUNTY</text>
+              </g>
+
+              <!-- Territory 1: PRAIRIE JUNCTION -->
+              <g class="risk-territory" id="riskTerritory1" onclick="selectCampaignLevel(1)">
+                <path class="risk-territory-shape" d="M 345 25 C 490 15, 630 15, 715 35 C 730 85, 700 125, 635 135 C 500 140, 365 130, 335 80 Z" fill="url(#riskGradPrairie)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="525" y="48" class="risk-territory-label">PRAIRIE JUNCTION</text>
+              </g>
+
+              <!-- Territory 2: GRAIN BELT -->
+              <g class="risk-territory" id="riskTerritory2" onclick="selectCampaignLevel(2)">
+                <path class="risk-territory-shape" d="M 30 120 C 110 145, 215 150, 305 140 C 355 180, 330 235, 295 240 C 170 245, 55 230, 25 180 Z" fill="url(#riskGradGrain)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="175" y="152" class="risk-territory-label">GRAIN BELT</text>
+              </g>
+
+              <!-- Territory 3: STATE FAIR -->
+              <g class="risk-territory" id="riskTerritory3" onclick="selectCampaignLevel(3)">
+                <path class="risk-territory-shape" d="M 320 140 C 470 140, 620 135, 700 135 C 840 140, 865 190, 845 240 C 620 245, 430 245, 325 235 Z" fill="url(#riskGradStateFair)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="600" y="152" class="risk-territory-label">STATE FAIR</text>
+              </g>
+
+              <!-- Blue Creek / Heartland River -->
+              <path d="M 335 15 Q 350 70, 345 125 Q 355 180, 375 245" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
             </g>
 
-            <!-- Territory 1: PRAIRIE JUNCTION -->
-            <g class="risk-territory" id="riskTerritory1" onclick="selectCampaignLevel(1)">
-              <path class="risk-territory-shape" d="M 345 25 C 490 15, 630 15, 715 35 C 730 85, 700 125, 635 135 C 500 140, 365 130, 335 80 Z" fill="url(#riskGradPrairie)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
-              <text x="525" y="48" class="risk-territory-label">PRAIRIE JUNCTION</text>
+            <!-- COASTAL BAYOU TERRITORIES -->
+            <g id="svgRegionGroup1" style="display:none;">
+              <!-- Territory 0: BAYOU BEND MARINA -->
+              <g class="risk-territory selected" id="riskCoastalTerritory0" onclick="selectCampaignLevel(0)">
+                <path class="risk-territory-shape" d="M 35 25 C 135 15, 245 20, 345 30 C 365 75, 340 120, 295 135 C 205 145, 105 140, 35 110 Z" fill="url(#riskGradBayou)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="190" y="48" class="risk-territory-label">BAYOU BEND MARINA</text>
+              </g>
+
+              <!-- Territory 1: PELICAN KEY BOARDWALK -->
+              <g class="risk-territory" id="riskCoastalTerritory1" onclick="selectCampaignLevel(1)">
+                <path class="risk-territory-shape" d="M 360 25 C 500 15, 640 15, 725 35 C 740 85, 710 125, 645 135 C 510 140, 380 130, 350 80 Z" fill="url(#riskGradPelican)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="540" y="48" class="risk-territory-label">PELICAN KEY BOARDWALK</text>
+              </g>
+
+              <!-- Territory 2: PORT DELTA REFINERY -->
+              <g class="risk-territory" id="riskCoastalTerritory2" onclick="selectCampaignLevel(2)">
+                <path class="risk-territory-shape" d="M 80 130 C 260 145, 480 140, 680 145 C 780 155, 800 200, 750 240 C 530 245, 310 245, 80 235 Z" fill="url(#riskGradPortDelta)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="420" y="162" class="risk-territory-label">PORT DELTA REFINERY</text>
+              </g>
+
+              <!-- Coastal Water Channels & Intracoastal Waterway -->
+              <path d="M 30 90 Q 200 110, 360 85 Q 520 60, 730 85" fill="none" stroke="#2dd4bf" stroke-width="5" stroke-linecap="round" opacity="0.85"/>
+              <path d="M 20 180 Q 250 160, 480 190 Q 650 210, 850 180" fill="none" stroke="#0284c7" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
             </g>
 
-            <!-- Territory 2: GRAIN BELT -->
-            <g class="risk-territory" id="riskTerritory2" onclick="selectCampaignLevel(2)">
-              <path class="risk-territory-shape" d="M 30 120 C 110 145, 215 150, 305 140 C 355 180, 330 235, 295 240 C 170 245, 55 230, 25 180 Z" fill="url(#riskGradGrain)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
-              <text x="175" y="152" class="risk-territory-label">GRAIN BELT</text>
-            </g>
+            <!-- METRO ROW TERRITORIES -->
+            <g id="svgRegionGroup2" style="display:none;">
+              <!-- Territory 0: SKYLINE PLAZA -->
+              <g class="risk-territory selected" id="riskMetroTerritory0" onclick="selectCampaignLevel(0)">
+                <path class="risk-territory-shape" d="M 40 25 C 150 15, 260 20, 360 30 C 375 80, 350 125, 305 135 C 215 145, 115 140, 40 110 Z" fill="url(#riskGradSkyline)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="200" y="48" class="risk-territory-label">SKYLINE PLAZA</text>
+              </g>
 
-            <!-- Territory 3: STATE FAIR -->
-            <g class="risk-territory" id="riskTerritory3" onclick="selectCampaignLevel(3)">
-              <path class="risk-territory-shape" d="M 320 140 C 470 140, 620 135, 700 135 C 840 140, 865 190, 845 240 C 620 245, 430 245, 325 235 Z" fill="url(#riskGradStateFair)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
-              <text x="600" y="152" class="risk-territory-label">STATE FAIR</text>
-            </g>
+              <!-- Territory 1: GRAND CENTRAL TERMINAL -->
+              <g class="risk-territory" id="riskMetroTerritory1" onclick="selectCampaignLevel(1)">
+                <path class="risk-territory-shape" d="M 380 25 C 520 15, 660 15, 745 35 C 760 85, 730 125, 665 135 C 530 140, 400 130, 370 80 Z" fill="url(#riskGradRail)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="560" y="48" class="risk-territory-label">GRAND CENTRAL</text>
+              </g>
 
-            <!-- Blue Creek / Heartland River -->
-            <path d="M 335 15 Q 350 70, 345 125 Q 355 180, 375 245" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+              <!-- Territory 2: BROADCAST HEIGHTS -->
+              <g class="risk-territory" id="riskMetroTerritory2" onclick="selectCampaignLevel(2)">
+                <path class="risk-territory-shape" d="M 80 130 C 260 145, 480 140, 680 145 C 780 155, 800 200, 750 240 C 530 245, 310 245, 80 235 Z" fill="url(#riskGradBroadcast)" stroke="#0f172a" stroke-width="3.5" filter="url(#riskShadow)"/>
+                <text x="420" y="162" class="risk-territory-label">BROADCAST HEIGHTS</text>
+              </g>
+
+              <!-- Metro Transit Highway & Light Rail Tracks -->
+              <path d="M 40 85 Q 220 105, 380 80 Q 540 55, 750 80" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+              <path d="M 30 175 Q 260 155, 490 185 Q 660 205, 860 175" fill="none" stroke="#facc15" stroke-width="5" stroke-dasharray="8,6" stroke-linecap="round" opacity="0.85"/>
+            </g>
           </svg>
 
           <!-- 4 Geographic Waypoints Grid Overlay (Risk Pill Badges) -->
@@ -1676,15 +1866,18 @@
 
     <div class="touch-controls">
       <button class="action-btn" id="btnAbility1" onclick="triggerAbility('primary')">
-        <span id="lblBtn1">PULL</span><span style="font-size:8px;opacity:0.7">SPACE</span>
+        <span class="btn-icon">🌀</span>
+        <span class="btn-name" id="lblBtn1">PULL</span>
         <div class="cd-overlay" id="cd1"></div>
       </button>
       <button class="action-btn" id="btnAbility2" onclick="triggerAbility('secondary')">
-        <span id="lblBtn2">GUST</span><span style="font-size:8px;opacity:0.7">Q</span>
+        <span class="btn-icon">💨</span>
+        <span class="btn-name" id="lblBtn2">GUST</span>
         <div class="cd-overlay" id="cd2"></div>
       </button>
       <button class="action-btn" id="btnAbility3" onclick="triggerAbility('tertiary')">
-        <span id="lblBtn3">ZAP</span><span style="font-size:8px;opacity:0.7">E</span>
+        <span class="btn-icon">⚡</span>
+        <span class="btn-name" id="lblBtn3">ZAP</span>
         <div class="cd-overlay" id="cd3"></div>
       </button>
     </div>
@@ -3011,11 +3204,49 @@ function playMaterialSound(family, x = storm.pos.x, z = storm.pos.z, intensity =
   });
 }
 
+function triggerHaptic(type = 'light') {
+  if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+  try {
+    switch (type) {
+      case 'light':
+      case 'tap':
+      case 'click':
+        navigator.vibrate(12);
+        break;
+      case 'medium':
+      case 'pull':
+        navigator.vibrate(28);
+        break;
+      case 'heavy':
+      case 'collapse':
+      case 'demolish':
+        navigator.vibrate([24, 30, 48]);
+        break;
+      case 'zap':
+        navigator.vibrate([14, 12, 38]);
+        break;
+      case 'gust':
+        navigator.vibrate([18, 18, 28, 18, 45]);
+        break;
+      case 'level_up':
+      case 'ef_up':
+        navigator.vibrate([40, 30, 60, 30, 90]);
+        break;
+    }
+  } catch (_) {}
+}
+globalThis.triggerHaptic = triggerHaptic;
+
 function playAbilitySound(type) {
+  triggerHaptic(type);
+  if (!audioCtx || isBotMode || isAudioMuted) return;
+  if (!stormAudioReady) {
+    loadStormAudioAssets();
+    return;
+  }
   if (type === 'zap') {
-    playStormClip(chooseAudioVariant(AUDIO_VARIANTS.zap), { gain: 0.82, priority: 6, trigger: 'ability:grid-zap' });
-    setTimeout(() => playStormClip(chooseAudioVariant(['grid_crackle_1', 'grid_crackle_2']), { gain: 0.66, priority: 5, trigger: 'ability:grid-zap-tail' }), 70);
-    setTimeout(() => playStormClip('thunder_tail_1', { gain: 0.56, priority: 5, playbackRate: 0.92 + Math.random() * 0.08, trigger: 'ability:grid-zap-thunder' }), 230);
+    playStormClip(chooseAudioVariant(AUDIO_VARIANTS.zap), { gain: 0.94, priority: 7, playbackRate: 0.98 + Math.random() * 0.05, trigger: 'ability:zap' });
+    setTimeout(() => playMaterialSound('glass', storm.pos.x, storm.pos.z, 0.65, { gain: 0.45, priority: 3, trigger: 'ability:zap-spark' }), 120);
   } else if (type === 'gust') {
     playStormClip(chooseAudioVariant(AUDIO_VARIANTS.gust), { gain: 0.86, priority: 6, playbackRate: 0.97 + Math.random() * 0.07, trigger: 'ability:gust' });
     setTimeout(() => playMaterialSound('tree', storm.pos.x + 8, storm.pos.z, 0.55, { gain: 0.40, priority: 3, trigger: 'ability:gust-tree' }), 150);
@@ -3027,6 +3258,7 @@ function playAbilitySound(type) {
 }
 
 function playSound(type) {
+  triggerHaptic(type === 'click' ? 'click' : (type === 'collapse' || type === 'explode' ? 'collapse' : 'light'));
   if (!audioCtx || isBotMode || isAudioMuted) return;
   if (!stormAudioReady) {
     loadStormAudioAssets();
@@ -3123,7 +3355,8 @@ function updateTvMenuDisplays() {
       const stars = typeof getCampaignStars === 'function' ? getCampaignStars(activeLevel.id) : 0;
       setUI('tvActiveCountyName', activeLevel.name);
       setUI('tvActiveCountyStation', `${activeLevel.station} · ${activeLevel.districts && activeLevel.districts[0] ? activeLevel.districts[0][0] : 'COUNTY LOCAL'}`);
-      setUI('tvActiveCountyTarget', `🎯 TARGET: ${activeLevel.scoreTarget.toLocaleString()} PTS`);
+      const targetVal = activeLevel.scoreTarget || activeLevel.targetPoints || 50000;
+      setUI('tvActiveCountyTarget', `🎯 TARGET: ${targetVal.toLocaleString()} PTS`);
       setUI('tvActiveCountyStars', '★'.repeat(stars) + '☆'.repeat(3 - stars) + ` (${stars}/3)`);
     }
   }
@@ -3484,6 +3717,85 @@ const HEARTLAND_CAMPAIGN = [
   }
 ];
 
+const COASTAL_CAMPAIGN = [
+  {
+    id: 'bayou-bend', name: 'BAYOU BEND MARINA', shortName: 'BAYOU BEND', station: 'KSWX COASTAL 6',
+    brief: 'Stilt fish houses, wooden docks and water craft meeting atmospheric uplift.',
+    targetPoints: 55000, scoreMultiplier: 1.10, durationSeconds: 180,
+    skyColor: '#0b2e36', fogColor: '#0f3d47', terrainTint: '#a7f3d0', sunColor: '#6ee7b7',
+    spawn: { x: -80, z: -80 },
+    coastalDistricts: [
+      ['PELICAN ROW', 'Stilt cabins and shrimp docks with waterspout potential.'],
+      ['SHRIMP SHACK REACH', 'Bait shops and marina docks taking high-velocity spray.'],
+      ['BAYOU HARBOR', 'Pier finale. The channel buoys are airborne.']
+    ]
+  },
+  {
+    id: 'pelican-key', name: 'PELICAN KEY BOARDWALK', shortName: 'PELICAN KEY', station: 'BAYOU ACTION 13',
+    brief: 'Coastal amusement pier and palm-lined boulevard with tropical gale force.',
+    targetPoints: 75000, scoreMultiplier: 1.20, durationSeconds: 180,
+    skyColor: '#0c4a6e', fogColor: '#075985', terrainTint: '#bae6fd', sunColor: '#38bdf8',
+    spawn: { x: 100, z: -75 },
+    coastalDistricts: [
+      ['BOARDWALK MILE', 'Arcade piers, souvenir shacks and flying umbrellas.'],
+      ['PALM BLVD', 'Tropical storefronts and swaying palm trees in 100mph gusts.'],
+      ['SEAFOOD WHARF', 'Wharf finale. The live crab tanks are taking flight.']
+    ]
+  },
+  {
+    id: 'port-delta', name: 'PORT DELTA REFINERY', shortName: 'PORT DELTA', station: 'GULF NETWORK LIVE',
+    brief: 'Industrial deepwater terminal. Massive fuel tanks, crane gantries and lightning grid.',
+    targetPoints: 110000, scoreMultiplier: 1.35, durationSeconds: 180,
+    skyColor: '#1e1b4b', fogColor: '#312e81', terrainTint: '#c7d2fe', sunColor: '#818cf8',
+    spawn: { x: 90, z: 90 },
+    coastalDistricts: [
+      ['TANK FARM', 'Heavy industrial storage spheres and chemical cooling towers.'],
+      ['GANTRY DOCKS', 'Cargo cranes and container stacks with maximum chain potential.'],
+      ['DEEPWATER GRID', 'High-voltage coastal substation and industrial transformer finale.']
+    ]
+  }
+];
+
+const METRO_CAMPAIGN = [
+  {
+    id: 'downtown-core', name: 'SKYLINE PLAZA', shortName: 'DOWNTOWN', station: 'METRO 4 NEWS',
+    brief: 'High-density commercial core. Skyscraper towers and bustling transit corridors.',
+    targetPoints: 85000, scoreMultiplier: 1.25, durationSeconds: 180,
+    skyColor: '#090d16', fogColor: '#1e293b', terrainTint: '#cbd5e1', sunColor: '#38bdf8',
+    spawn: { x: -60, z: -60 },
+    metroDistricts: [
+      ['FINANCIAL ROW', 'Glazed corporate headquarters taking high-altitude sheer.'],
+      ['TRANSIT CONCOURSE', 'Commuter buses and elevated light rail in 110mph gusts.'],
+      ['TOWER PLAZA', 'Skyscraper climax. Rooftop broadcast antennas are taking flight.']
+    ]
+  },
+  {
+    id: 'rail-terminal', name: 'GRAND CENTRAL TERMINAL', shortName: 'RAIL TERMINAL', station: 'ACTION 9 METRO',
+    brief: 'Industrial switching yard, signal gantries and multi-track freight corridors.',
+    targetPoints: 115000, scoreMultiplier: 1.40, durationSeconds: 180,
+    skyColor: '#18181b', fogColor: '#27272a', terrainTint: '#e4e4e7', sunColor: '#fbbf24',
+    spawn: { x: 75, z: -85 },
+    metroDistricts: [
+      ['SWITCHING YARDS', 'Locomotives and multi-tier freight stacks taking impact.'],
+      ['GANTRY CROSSING', 'Overhead rail electrical masts and high-voltage feeder grids.'],
+      ['CENTRAL DEPOT', 'Historic terminal hall with glass concourse skylights.']
+    ]
+  },
+  {
+    id: 'broadcast-heights', name: 'BROADCAST HEIGHTS', shortName: 'TRANSMITTER ROW', station: 'NETWORK HEADQUARTERS',
+    brief: 'Metro communications summit. Massive broadcast lattice towers and antenna arrays.',
+    targetPoints: 150000, scoreMultiplier: 1.60, durationSeconds: 180,
+    skyColor: '#172554', fogColor: '#1e3a8a', terrainTint: '#93c5fd', sunColor: '#60a5fa',
+    spawn: { x: 95, z: 95 },
+    metroDistricts: [
+      ['DISH RIDGE', 'Satellite earth stations and microwave relay masts.'],
+      ['TOWER SUMMIT', '300-foot guyed broadcast masts with high-voltage warning lights.'],
+      ['BROADCAST PEAK', 'Live television headquarters during a Category 5 touchdown.']
+    ]
+  }
+];
+
+let selectedCampaignRegion = 0;
 let campaignProgress = { schema: 1, unlockedLevel: 0, selectedLevel: 0, levels: {} };
 let selectedCampaignIndex = 0;
 
@@ -3518,7 +3830,35 @@ function saveCampaignProgress() {
   try { localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(campaignProgress)); } catch (_) {}
 }
 
+function switchCampaignRegion(regionIndex) {
+  if (regionIndex < 0 || regionIndex > 2) return;
+  selectedCampaignRegion = regionIndex;
+  selectedCampaignIndex = 0;
+  const tab0 = document.getElementById('tvRegionTab0');
+  const tab1 = document.getElementById('tvRegionTab1');
+  const tab2 = document.getElementById('tvRegionTab2');
+  if (tab0) tab0.classList.toggle('active', regionIndex === 0);
+  if (tab1) tab1.classList.toggle('active', regionIndex === 1);
+  if (tab2) tab2.classList.toggle('active', regionIndex === 2);
+  const grp0 = document.getElementById('svgRegionGroup0');
+  const grp1 = document.getElementById('svgRegionGroup1');
+  const grp2 = document.getElementById('svgRegionGroup2');
+  if (grp0) grp0.style.display = regionIndex === 0 ? 'block' : 'none';
+  if (grp1) grp1.style.display = regionIndex === 1 ? 'block' : 'none';
+  if (grp2) grp2.style.display = regionIndex === 2 ? 'block' : 'none';
+  renderCampaignMap();
+  if (typeof updateTvMenuDisplays === 'function') updateTvMenuDisplays();
+  initAudio();
+  playSound('click');
+}
+
 function getActiveCampaignLevel() {
+  if (selectedCampaignRegion === 2) {
+    return METRO_CAMPAIGN[selectedCampaignIndex] || METRO_CAMPAIGN[0];
+  }
+  if (selectedCampaignRegion === 1) {
+    return COASTAL_CAMPAIGN[selectedCampaignIndex] || COASTAL_CAMPAIGN[0];
+  }
   return HEARTLAND_CAMPAIGN[selectedCampaignIndex] || HEARTLAND_CAMPAIGN[0];
 }
 
@@ -3536,19 +3876,22 @@ function renderCampaignMap() {
   const brief = document.getElementById('campaignBrief');
   const total = document.getElementById('campaignStarTotal');
   if (!grid) return;
-  const positions = [
-    'left: 20%; top: 38%;',
-    'left: 60%; top: 36%;',
-    'left: 20%; top: 66%;',
-    'left: 68%; top: 66%;'
-  ];
-  grid.innerHTML = HEARTLAND_CAMPAIGN.map((level, index) => {
-    const locked = index > campaignProgress.unlockedLevel;
+
+  const currentList = selectedCampaignRegion === 2 ? METRO_CAMPAIGN : (selectedCampaignRegion === 1 ? COASTAL_CAMPAIGN : HEARTLAND_CAMPAIGN);
+  const positions = selectedCampaignRegion === 2
+    ? ['left: 24%; top: 38%;', 'left: 64%; top: 38%;', 'left: 44%; top: 68%;']
+    : (selectedCampaignRegion === 1
+      ? ['left: 22%; top: 38%;', 'left: 62%; top: 38%;', 'left: 48%; top: 68%;']
+      : ['left: 20%; top: 38%;', 'left: 60%; top: 36%;', 'left: 20%; top: 66%;', 'left: 68%; top: 66%;']);
+
+  grid.innerHTML = currentList.map((level, index) => {
+    const locked = selectedCampaignRegion === 0 ? (index > campaignProgress.unlockedLevel) : false;
     const selected = index === selectedCampaignIndex;
     const stars = getCampaignStars(level.id);
 
     // Sync SVG territory class
-    const terr = document.getElementById('riskTerritory' + index);
+    const terrId = selectedCampaignRegion === 2 ? ('riskMetroTerritory' + index) : (selectedCampaignRegion === 1 ? ('riskCoastalTerritory' + index) : ('riskTerritory' + index));
+    const terr = document.getElementById(terrId);
     if (terr) {
       terr.classList.toggle('selected', selected);
       terr.classList.toggle('locked', locked);
@@ -3556,13 +3899,16 @@ function renderCampaignMap() {
 
     const pos = positions[index] || 'left: 50%; top: 50%;';
     const badgeText = locked ? '🔒' : ('★ ' + stars + '/3');
+    const targetScoreVal = level.scoreTarget || level.targetPoints || 50000;
     return '<button type="button" class="campaign-stop' + (selected ? ' selected' : '') + (locked ? ' locked' : '') + '" style="' + pos + '" ' +
       'onclick="selectCampaignLevel(' + index + ')" aria-disabled="' + locked + '">' +
       '<strong>' + (locked ? '🔒 ' : '') + level.name + '</strong>' +
-      '<small>' + level.station + ' · TARGET ' + level.scoreTarget.toLocaleString() + '</small>' +
+      '<small>' + level.station + ' · TARGET ' + targetScoreVal.toLocaleString() + '</small>' +
       '<span class="campaign-stars">' + badgeText + '</span></button>';
   }).join('');
+
   const active = getActiveCampaignLevel();
+  const targetScoreVal = active.scoreTarget || active.targetPoints || 50000;
   if (brief) brief.textContent = active.station + ': ' + active.brief;
   if (total) total.textContent = getCampaignTotalStars() + '/12 STARS';
 
@@ -3570,13 +3916,14 @@ function renderCampaignMap() {
   setUI('tvSitePopupName', active.name);
   setUI('tvSitePopupStation', active.station);
   const activeStars = typeof getCampaignStars === 'function' ? getCampaignStars(active.id) : 0;
-  setUI('tvSitePopupMeta', 'TARGET: ' + active.scoreTarget.toLocaleString() + ' PTS · ' + '★'.repeat(activeStars) + '☆'.repeat(3 - activeStars) + ' (' + activeStars + '/3)');
+  setUI('tvSitePopupMeta', 'TARGET: ' + targetScoreVal.toLocaleString() + ' PTS · ' + '★'.repeat(activeStars) + '☆'.repeat(3 - activeStars) + ' (' + activeStars + '/3)');
   if (typeof updateTvMenuDisplays === 'function') updateTvMenuDisplays();
 }
 
 function selectCampaignLevel(index) {
-  if (!Number.isInteger(index) || index < 0 || index >= HEARTLAND_CAMPAIGN.length) return false;
-  if (index > campaignProgress.unlockedLevel) {
+  const currentList = selectedCampaignRegion === 2 ? METRO_CAMPAIGN : (selectedCampaignRegion === 1 ? COASTAL_CAMPAIGN : HEARTLAND_CAMPAIGN);
+  if (!Number.isInteger(index) || index < 0 || index >= currentList.length) return false;
+  if (selectedCampaignRegion === 0 && index > campaignProgress.unlockedLevel) {
     showGagToast('FORECAST LOCKED: CLEAR THE PREVIOUS COUNTY FIRST.');
     return false;
   }
@@ -3662,6 +4009,96 @@ const HEARTLAND_WORLD_BLUEPRINTS = {
   }
 };
 
+const COASTAL_WORLD_BLUEPRINTS = {
+  'bayou-bend': {
+    profile: 4, biome: 'COASTAL MARSH + MARINA DOCKS', broadcast: 'KSWX COASTAL 6',
+    fogDensity: 0.0025, accent: '#2dd4bf', targetTint: '#115e59', animalLimit: 20,
+    media: ['PELICAN 6', 'COASTAL EYE', 'BAYOU ONE', 'PIER CAM', 'TIDE DESK', 'WAVE TRUCK', 'GULF CHASER'],
+    challenges: [
+      { id: 'dock-dive', text: 'DOCK DIVE: Launch 3 marina props', tags: ['yard'], target: 3 },
+      { id: 'sign-splash', text: 'SIGN SPLASH: Flatten 2 coastal road signs', tags: ['sign'], target: 2 },
+      { id: 'pier-pandemonium', text: 'PIER PANDEMONIUM: Launch 4 boardwalk props', tags: ['fair'], target: 4 }
+    ],
+    landmarks: [
+      { type: 'water-tower', name: 'BAYOU BEND WATER TOWER', icon: 'WATER', x: -145, z: -110, health: 320 },
+      { type: 'courthouse', name: 'PELICAN HARBOR MASTER', icon: 'CLOCK', x: 155, z: 135, health: 360 }
+    ]
+  },
+  'pelican-key': {
+    profile: 5, biome: 'BOARDWALK PIER + TROPICAL SHORE', broadcast: 'BAYOU ACTION 13',
+    fogDensity: 0.0022, accent: '#38bdf8', targetTint: '#0369a1', animalLimit: 16,
+    media: ['SURF 13', 'PALM EYE', 'BOARDWALK 1', 'BEACH TRUCK', 'GALE DESK', 'KEY LIVE', 'SHORE PATROL'],
+    challenges: [
+      { id: 'umbrella-uplift', text: 'UMBRELLA UPLIFT: Launch 3 beach props', tags: ['yard'], target: 3 },
+      { id: 'wharf-wind', text: 'WHARF WIND: Remove 3 storefront signs', tags: ['sign'], target: 3 },
+      { id: 'arcade-avalanche', text: 'ARCADE AVALANCHE: Wreck 2 pier attractions', tags: ['fair'], target: 2 }
+    ],
+    landmarks: [
+      { type: 'ferris-wheel', name: 'PELICAN PIER WHEEL', icon: 'WHEEL', x: -145, z: -110, health: 400 },
+      { type: 'grandstand', name: 'BOARDWALK PAVILION', icon: 'STADIUM', x: 155, z: 135, health: 440 }
+    ]
+  },
+  'port-delta': {
+    profile: 6, biome: 'DEEPWATER REFINERY + INDUSTRIAL PORT', broadcast: 'GULF NETWORK LIVE',
+    fogDensity: 0.0028, accent: '#818cf8', targetTint: '#4338ca', animalLimit: 10,
+    media: ['PORT 4', 'REFINERY EYE', 'DELTA CHASER', 'GULF NETWORK', 'POWER WATCH', 'CRANE CAM'],
+    challenges: [
+      { id: 'tank-tumbler', text: 'TANK TUMBLER: Launch 3 industrial barrels', tags: ['yard'], target: 3 },
+      { id: 'gantry-gale', text: 'GANTRY GALE: Flatten 3 hazard signs', tags: ['sign'], target: 3 },
+      { id: 'refinery-rupture', text: 'REFINERY RUPTURE: Overload 2 power nodes', tags: ['fair'], target: 2 }
+    ],
+    landmarks: [
+      { type: 'silo-bank', name: 'DELTA FUEL STORAGE', icon: 'GRAIN', x: -145, z: -110, health: 460 },
+      { type: 'foundry', name: 'PORT DELTA TURBINE PLANT', icon: 'FOUNDRY', x: 155, z: 135, health: 500 }
+    ]
+  }
+};
+
+const METRO_WORLD_BLUEPRINTS = {
+  'downtown-core': {
+    profile: 7, biome: 'COMMERCIAL SKYSCRAPERS + URBAN CORRIDORS', broadcast: 'METRO 4 NEWS',
+    fogDensity: 0.0021, accent: '#38bdf8', targetTint: '#1e293b', animalLimit: 8,
+    media: ['METRO 4', 'SKYLINE EYE', 'DOWNTOWN CHASER', 'TOWER DESK', 'COMMUTER CAM', 'CITY LIVE'],
+    challenges: [
+      { id: 'plaza-panic', text: 'PLAZA PANIC: Launch 3 streetscape props', tags: ['yard'], target: 3 },
+      { id: 'billboard-blast', text: 'BILLBOARD BLAST: Flatten 2 neon signs', tags: ['sign'], target: 2 },
+      { id: 'transit-toss', text: 'TRANSIT TOSS: Launch 4 city vehicles', tags: ['fair'], target: 4 }
+    ],
+    landmarks: [
+      { type: 'silo-bank', name: 'METRO TOWER A', icon: 'GRAIN', x: -145, z: -110, health: 480 },
+      { type: 'foundry', name: 'PLAZA CENTER ATRIUM', icon: 'FOUNDRY', x: 155, z: 135, health: 520 }
+    ]
+  },
+  'rail-terminal': {
+    profile: 8, biome: 'RAIL SWITCHING YARDS + FREIGHT CORRIDORS', broadcast: 'ACTION 9 METRO',
+    fogDensity: 0.0024, accent: '#fbbf24', targetTint: '#27272a', animalLimit: 6,
+    media: ['ACTION 9', 'RAIL EYE', 'TERMINAL 1', 'FREIGHT CHASER', 'POWER GRID', 'DEPOT CAM'],
+    challenges: [
+      { id: 'switching-havoc', text: 'SWITCHING HAVOC: Launch 3 yard props', tags: ['yard'], target: 3 },
+      { id: 'gantry-gale', text: 'GANTRY GALE: Remove 3 rail signs', tags: ['sign'], target: 3 },
+      { id: 'freight-fury', text: 'FREIGHT FURY: Wreck 2 freight assets', tags: ['fair'], target: 2 }
+    ],
+    landmarks: [
+      { type: 'grain-elevator', name: 'GRAND CENTRAL TOWER', icon: 'GRAIN', x: -145, z: -110, health: 490 },
+      { type: 'courthouse', name: 'TERMINAL CONCOURSE', icon: 'CLOCK', x: 155, z: 135, health: 540 }
+    ]
+  },
+  'broadcast-heights': {
+    profile: 9, biome: 'TELECOMMUNICATIONS SUMMIT + RADIO RIDGE', broadcast: 'NETWORK HEADQUARTERS',
+    fogDensity: 0.0027, accent: '#60a5fa', targetTint: '#1e3a8a', animalLimit: 4,
+    media: ['NETWORK EYE', 'TRANSMITTER 1', 'HEIGHTS LIVE', 'DISH DESK', 'BROADCAST TRUCK', 'SUMMIT CAM'],
+    challenges: [
+      { id: 'dish-displacement', text: 'DISH DISPLACEMENT: Launch 3 rooftop antennas', tags: ['yard'], target: 3 },
+      { id: 'beacon-blast', text: 'BEACON BLAST: Flatten 2 tower warning signs', tags: ['sign'], target: 2 },
+      { id: 'broadcast-mayhem', text: 'BROADCAST MAYHEM: Launch 4 station vehicles', tags: ['fair'], target: 4 }
+    ],
+    landmarks: [
+      { type: 'water-tower', name: 'SUMMIT RADIO MAST', icon: 'WATER', x: -145, z: -110, health: 550 },
+      { type: 'grandstand', name: 'NETWORK BROADCAST HUB', icon: 'STADIUM', x: 155, z: 135, health: 600 }
+    ]
+  }
+};
+
 let campaignSceneryGroup = null;
 let campaignAnimatedMeshes = [];
 
@@ -3674,7 +4111,7 @@ function ensureCampaignSceneryGroup() {
 }
 
 function getCampaignWorldBlueprint(level = getActiveCampaignLevel()) {
-  return HEARTLAND_WORLD_BLUEPRINTS[level.id] || HEARTLAND_WORLD_BLUEPRINTS['lincoln-county'];
+  return (typeof METRO_WORLD_BLUEPRINTS !== 'undefined' && METRO_WORLD_BLUEPRINTS[level.id]) || (typeof COASTAL_WORLD_BLUEPRINTS !== 'undefined' && COASTAL_WORLD_BLUEPRINTS[level.id]) || HEARTLAND_WORLD_BLUEPRINTS[level.id] || HEARTLAND_WORLD_BLUEPRINTS['lincoln-county'];
 }
 
 function campaignChallengeFor(stage, fallback) {
@@ -3781,7 +4218,7 @@ function spawnCampaignScenery(level) {
     campaignGroundPart(new THREE.BoxGeometry(170, 3, 5), '#92400e', -190, 300, 28, { rotation: { z: -0.12 }, metalness: 0.45 });
     const roofTurbine = campaignGroundPart(new THREE.TorusGeometry(6, 1.1, 7, 18), '#f59e0b', 235, 300, 24, { rotation: { x: Math.PI / 2 }, metalness: 0.68 });
     campaignAnimatedMeshes.push({ mesh: roofTurbine, axis: 'y', speed: 0.48 });
-  } else {
+  } else if (world.profile === 3) {
     const neon = ['#f472b6', '#38bdf8', '#fbbf24', '#a78bfa'];
     for (let i = 0; i < 12; i++) {
       const angle = (i / 12) * Math.PI * 2;
@@ -3793,6 +4230,163 @@ function spawnCampaignScenery(level) {
     for (let i = -3; i <= 3; i++) {
       campaignGroundPart(new THREE.BoxGeometry(42, 0.22, 8), neon[(i + 4) % neon.length], i * 52, 285, 0.25, { emissive: neon[(i + 4) % neon.length], emissiveIntensity: 0.2, castShadow: false });
     }
+  } else if (world.profile === 4) {
+    // BAYOU BEND MARINA: Authored shrimp boats, channel buoys, palm trees, wooden stilt piers, and marsh canals
+    const waterBlue = '#0e7490';
+    for (let i = 0; i < 12; i++) {
+      const x = -320 + i * 58;
+      const z = -270 + (i % 3) * 18;
+      campaignGroundPart(new THREE.BoxGeometry(45, 0.4, 18), '#78350f', x, z, 0.8, { roughness: 0.9 });
+      campaignGroundPart(new THREE.BoxGeometry(42, 0.1, 16), waterBlue, x, z - 12, 0.2, { metalness: 0.4, roughness: 0.2 });
+    }
+    // Authored Coastal Shrimp Boats moored at marina piers
+    [[-240, -250, 0.2], [-120, -260, -0.4], [60, -250, 0.3], [180, -260, -0.15]].forEach(([bx, bz, rotY]) => {
+      instantiateActorModel('shrimp-boat', { damageable: true }).then(boat => {
+        if (!boat) return;
+        boat.position.set(bx, terrainHeightAt(bx, bz) + 0.3, bz);
+        boat.rotation.y = rotY;
+        campaignSceneryGroup.add(boat);
+      });
+    });
+    // Authored Channel Marker Buoys in waterways
+    [[-180, -290], [0, -290], [140, -290], [280, -270]].forEach(([cx, cz]) => {
+      instantiateActorModel('channel-buoy', { damageable: true }).then(buoy => {
+        if (!buoy) return;
+        buoy.position.set(cx, terrainHeightAt(cx, cz) + 0.2, cz);
+        campaignSceneryGroup.add(buoy);
+      });
+    });
+    // Authored Coastal Palm Trees lining the shore
+    for (let i = 0; i < 8; i++) {
+      const px = -280 + i * 75;
+      const pz = 240 + (i % 2) * 35;
+      instantiateActorModel('palm-tree', { damageable: true }).then(tree => {
+        if (!tree) return;
+        tree.position.set(px, terrainHeightAt(px, pz), pz);
+        tree.rotation.y = (i * 0.78);
+        campaignSceneryGroup.add(tree);
+      });
+    }
+  } else if (world.profile === 5) {
+    // PELICAN KEY BOARDWALK: Tropical palm promenade, coastal trawlers, beach pavilions
+    const boardwalk = '#d97706';
+    for (let i = -4; i <= 4; i++) {
+      campaignGroundPart(new THREE.BoxGeometry(32, 0.5, 90), boardwalk, i * 44, 270, 0.35, { roughness: 0.85 });
+    }
+    // Authored Palm Trees along boardwalk
+    for (let i = -4; i <= 4; i++) {
+      const px = i * 44 + 12;
+      const pz = 290;
+      instantiateActorModel('palm-tree', { damageable: true }).then(tree => {
+        if (!tree) return;
+        tree.position.set(px, terrainHeightAt(px, pz), pz);
+        tree.rotation.y = (i * 0.5);
+        campaignSceneryGroup.add(tree);
+      });
+    }
+    // Authored Shrimp Boats off the beach
+    [[-200, -270, 0.35], [40, -275, -0.2], [220, -265, 0.5]].forEach(([bx, bz, rotY]) => {
+      instantiateActorModel('shrimp-boat', { damageable: true }).then(boat => {
+        if (!boat) return;
+        boat.position.set(bx, terrainHeightAt(bx, bz) + 0.2, bz);
+        boat.rotation.y = rotY;
+        campaignSceneryGroup.add(boat);
+      });
+    });
+    for (let i = 0; i < 6; i++) {
+      campaignGroundPart(new THREE.BoxGeometry(18, 5, 14), i % 2 ? '#38bdf8' : '#fb7185', -240 + i * 85, -280, 2.5, { roughness: 0.7 });
+    }
+  } else if (world.profile === 6) {
+    // PORT DELTA REFINERY: Authored fuel storage tanks, flare stacks, and cargo trawlers
+    [[-260, -250], [-170, -260], [-80, -250], [10, -260]].forEach(([tx, tz]) => {
+      instantiateActorModel('refinery-tank', { damageable: true }).then(tank => {
+        if (!tank) return;
+        tank.position.set(tx, terrainHeightAt(tx, tz), tz);
+        campaignSceneryGroup.add(tank);
+      });
+    });
+    // Authored Flare Stacks with active animated flame plumes
+    [[180, 260], [240, 255], [300, 265]].forEach(([fx, fz]) => {
+      instantiateActorModel('flare-stack', { damageable: true }).then(flare => {
+        if (!flare) return;
+        flare.position.set(fx, terrainHeightAt(fx, fz), fz);
+        campaignSceneryGroup.add(flare);
+      });
+      const flame = campaignGroundPart(new THREE.ConeGeometry(2.5, 6, 6), '#f97316', fx, fz, 16.5, { emissive: '#ef4444', emissiveIntensity: 0.9 });
+      campaignAnimatedMeshes.push({ mesh: flame, axis: 'y', speed: 0.8 });
+    });
+    // Authored Industrial Cargo Trawler
+    instantiateActorModel('shrimp-boat', { damageable: true }).then(boat => {
+      if (!boat) return;
+      boat.position.set(120, terrainHeightAt(120, -280) + 0.3, -280);
+      boat.rotation.y = -0.45;
+      campaignSceneryGroup.add(boat);
+    });
+  } else if (world.profile === 7) {
+    // DOWNTOWN CORE / SKYLINE PLAZA: High-rise skyscrapers, construction cranes, commuter buses
+    [[-240, -240], [-150, -250], [180, -240], [260, -250]].forEach(([sx, sz]) => {
+      instantiateActorModel('skyscraper', { damageable: true }).then(tower => {
+        if (!tower) return;
+        tower.position.set(sx, terrainHeightAt(sx, sz), sz);
+        campaignSceneryGroup.add(tower);
+      });
+    });
+    [[-200, 240], [220, 250]].forEach(([cx, cz]) => {
+      instantiateActorModel('construction-crane', { damageable: true }).then(crane => {
+        if (!crane) return;
+        crane.position.set(cx, terrainHeightAt(cx, cz), cz);
+        campaignSceneryGroup.add(crane);
+      });
+    });
+    [[-100, 220, 0], [120, 230, Math.PI]].forEach(([bx, bz, rotY]) => {
+      instantiateActorModel('commuter-bus', { damageable: true }).then(bus => {
+        if (!bus) return;
+        bus.position.set(bx, terrainHeightAt(bx, bz), bz);
+        bus.rotation.y = rotY;
+        campaignSceneryGroup.add(bus);
+      });
+    });
+  } else if (world.profile === 8) {
+    // RAIL TERMINAL / GRAND CENTRAL: Signal cranes, commuter transit buses, communication towers
+    [[-220, -250], [220, -250]].forEach(([rx, rz]) => {
+      instantiateActorModel('radio-tower', { damageable: true }).then(tower => {
+        if (!tower) return;
+        tower.position.set(rx, terrainHeightAt(rx, rz), rz);
+        campaignSceneryGroup.add(tower);
+      });
+    });
+    [[-140, 250], [140, 250]].forEach(([cx, cz]) => {
+      instantiateActorModel('construction-crane', { damageable: true }).then(crane => {
+        if (!crane) return;
+        crane.position.set(cx, terrainHeightAt(cx, cz), cz);
+        campaignSceneryGroup.add(crane);
+      });
+    });
+    for (let b = -2; b <= 2; b++) {
+      const bx = b * 60;
+      const bz = 220;
+      instantiateActorModel('commuter-bus', { damageable: true }).then(bus => {
+        if (!bus) return;
+        bus.position.set(bx, terrainHeightAt(bx, bz), bz);
+        campaignSceneryGroup.add(bus);
+      });
+    }
+  } else if (world.profile === 9) {
+    // BROADCAST HEIGHTS: Telecommunication broadcast towers, high-altitude radio towers & skyscraper transmitters
+    [[-240, -240], [-120, -260], [120, -260], [240, -240]].forEach(([rx, rz]) => {
+      instantiateActorModel('radio-tower', { damageable: true }).then(tower => {
+        if (!tower) return;
+        tower.position.set(rx, terrainHeightAt(rx, rz), rz);
+        campaignSceneryGroup.add(tower);
+      });
+    });
+    [[-180, 250], [180, 250]].forEach(([sx, sz]) => {
+      instantiateActorModel('skyscraper', { damageable: true }).then(tower => {
+        if (!tower) return;
+        tower.position.set(sx, terrainHeightAt(sx, sz), sz);
+        campaignSceneryGroup.add(tower);
+      });
+    });
   }
 }
 
@@ -3892,7 +4486,13 @@ function createCampaignLandmarkMesh(kind, accent) {
     campaignPart(group, new THREE.BoxGeometry(18, 8, 1.5), '#0f172a', 0, 15, -5, { emissive: accent, emissiveIntensity: 0.22 });
   }
 
-  const beacon = campaignPart(group, new THREE.OctahedronGeometry(2.2), accent, 0, 31, 0, { material: new THREE.MeshBasicMaterial({ color: accent, wireframe: true }) });
+  const beacon = new THREE.Mesh(
+    new THREE.TorusGeometry(2.8, 0.22, 8, 32),
+    new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.75, depthWrite: false })
+  );
+  beacon.rotation.x = Math.PI / 2;
+  beacon.position.set(0, 31, 0);
+  group.add(beacon);
   const meshData = { group, base, beacon, color: accent };
 
   // Swap the procedural body for an authored model when one exists for this
@@ -3933,7 +4533,7 @@ function replaceCampaignLandmarks(level) {
   landmarks.length = 0;
   const world = getCampaignWorldBlueprint(level);
   world.landmarks.forEach(contract => {
-    const meshData = createCampaignLandmarkMesh(contract.kind, world.accent);
+    const meshData = createCampaignLandmarkMesh(contract.kind || contract.type, world.accent);
     meshData.group.position.set(contract.x, terrainHeightAt(contract.x, contract.z), contract.z);
     scene.add(meshData.group);
     landmarks.push({
@@ -3992,7 +4592,8 @@ function applyCampaignWorldIdentity(level) {
     scene.remove(animal.mesh);
   }
 
-  setUI('campaignHud', 'HEARTLAND TOUR | ' + level.name + ' | ' + world.broadcast + ' | SCORE x' + level.scoreMultiplier.toFixed(2));
+  const regionPrefix = selectedCampaignRegion === 2 ? 'METRO ROW' : (selectedCampaignRegion === 1 ? 'COASTAL BAYOU' : 'HEARTLAND TOUR');
+  setUI('campaignHud', regionPrefix + ' | ' + level.name + ' | ' + world.broadcast + ' | SCORE x' + level.scoreMultiplier.toFixed(2));
 }
 
 function updateCampaignScenery(dt) {
@@ -4028,7 +4629,8 @@ window.getCampaignWorldQaState = function getCampaignWorldQaState() {
 
 function applyCampaignPresentation() {
   const level = getActiveCampaignLevel();
-  level.districts.forEach((district, index) => {
+  const districtList = level.districts || level.coastalDistricts || level.metroDistricts || [];
+  districtList.forEach((district, index) => {
     DISTRICTS[index + 1].name = district[0];
     DISTRICTS[index + 1].subtitle = district[1];
   });
@@ -4039,10 +4641,12 @@ function applyCampaignPresentation() {
   if (countyApron && countyApron.material) countyApron.material.color.set(level.terrainTint);
   if (dirLight) dirLight.color.set(level.sunColor);
   storm.pos.set(level.spawn.x, terrainHeightAt(level.spawn.x, level.spawn.z), level.spawn.z);
-  setUI('campaignHud', 'HEARTLAND TOUR · ' + level.name + ' · SCORE x' + level.scoreMultiplier.toFixed(2));
+  const regionPrefix = selectedCampaignRegion === 2 ? 'METRO ROW' : (selectedCampaignRegion === 1 ? 'COASTAL BAYOU' : 'HEARTLAND TOUR');
+  setUI('campaignHud', regionPrefix + ' · ' + level.name + ' · SCORE x' + level.scoreMultiplier.toFixed(2));
   applyCampaignWorldIdentity(level);
-  setUI('districtTitle', level.districts[0][0]);
-  setUI('districtSubtitle', level.districts[0][1]);
+  const firstDist = districtList[0] || ['PINE RIDGE', 'Neighborhood touchdown'];
+  setUI('districtTitle', firstDist[0]);
+  setUI('districtSubtitle', firstDist[1]);
 }
 
 function completeCampaignRun(grade, score, objectivesDone) {
@@ -6117,7 +6721,7 @@ for (let i = 0; i < 15; i++) {
   const angle = (i / 15) * Math.PI * 2 + (i % 2) * 0.32;
   const ring = i < 6 ? 5 : (i < 11 ? 13 : 20);
   const rad = (i < 6 ? 13.5 : (i < 11 ? 11 : 8)) + Math.random() * 3.5;
-  const cloudLobe = new THREE.Mesh(new THREE.DodecahedronGeometry(rad, 1), mesoCloudMat);
+  const cloudLobe = new THREE.Mesh(new THREE.DodecahedronGeometry(rad, 2), mesoCloudMat);
   cloudLobe.position.set(
     Math.cos(angle) * ring,
     (i < 6 ? 7.0 : (i < 11 ? 1.0 : -4.5)) + (Math.random() - 0.5) * 2.6,
@@ -7671,10 +8275,11 @@ function createLandmarkMesh(icon) {
   base.castShadow = true; base.receiveShadow = true;
   group.add(base);
 
-  // 3D Rotating Beacon Pointer
-  const beaconGeo = new THREE.OctahedronGeometry(2.6);
-  const beaconMat = new THREE.MeshBasicMaterial({ color: icon === '💧' ? '#38bdf8' : '#fbbf24', wireframe: true });
+  // 3D Rotating Beacon Pointer (Glowing Halo Waypoint Ring)
+  const beaconGeo = new THREE.TorusGeometry(3.0, 0.22, 8, 32);
+  const beaconMat = new THREE.MeshBasicMaterial({ color: icon === '💧' ? '#38bdf8' : '#fbbf24', transparent: true, opacity: 0.75, depthWrite: false });
   const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+  beacon.rotation.x = Math.PI / 2;
   beacon.position.y = 21;
   group.add(beacon);
 
@@ -7697,15 +8302,16 @@ function createSubstationMesh() {
   const trans = new THREE.Mesh(transGeo, transMat); trans.position.y = 2.8;
   procBody.add(trans);
 
-  const sparkRingGeo = new THREE.TorusGeometry(2.2, 0.3, 8, 20);
-  const sparkRingMat = new THREE.MeshBasicMaterial({ color: '#38bdf8', wireframe: true });
+  const sparkRingGeo = new THREE.TorusGeometry(2.2, 0.2, 8, 32);
+  const sparkRingMat = new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.7, depthWrite: false });
   const sparkRing = new THREE.Mesh(sparkRingGeo, sparkRingMat);
   sparkRing.rotation.x = Math.PI / 2; sparkRing.position.y = 5.2;
   group.add(sparkRing);
 
-  const beaconGeo = new THREE.OctahedronGeometry(2.0);
-  const beaconMat = new THREE.MeshBasicMaterial({ color: '#38bdf8', wireframe: true });
+  const beaconGeo = new THREE.TorusGeometry(2.0, 0.2, 8, 32);
+  const beaconMat = new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.75, depthWrite: false });
   const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+  beacon.rotation.x = Math.PI / 2;
   beacon.position.y = 9.0;
   group.add(beacon);
 
@@ -7938,19 +8544,26 @@ function spawnTownComedyProps() {
   activeGagProps.length = 0;
 
   const definitions = [
-    { kind: 'trampoline', x: 62, z: -64, stage: 1, tags: ['yard','lawn'], gag: 'TRAMPOLINE ACHIEVES LOW EARTH ORBIT.' },
-    { kind: 'flamingo', x: 115, z: -62, stage: 1, tags: ['yard','lawn'], gag: 'LAWN FLAMINGO MIGRATION BEGINS EARLY.' },
-    { kind: 'mailbox', x: 135, z: -105, stage: 1, tags: ['yard'], gag: 'SPECIAL DELIVERY: SOMEWHERE ELSE.' },
-    { kind: 'grill', x: 55, z: -125, stage: 1, tags: ['yard'], gag: 'THE COOKOUT HAS BEEN RESCHEDULED.' },
+    // District 1: Pine Ridge Neighborhood (Residential Lawns z = -250 to -140)
+    { kind: 'trampoline', x: 62, z: -184, stage: 1, tags: ['yard','lawn'], gag: 'TRAMPOLINE ACHIEVES LOW EARTH ORBIT.' },
+    { kind: 'flamingo', x: 115, z: -162, stage: 1, tags: ['yard','lawn'], gag: 'LAWN FLAMINGO MIGRATION BEGINS EARLY.' },
+    { kind: 'mailbox', x: 135, z: -205, stage: 1, tags: ['yard'], gag: 'SPECIAL DELIVERY: SOMEWHERE ELSE.' },
+    { kind: 'grill', x: 55, z: -225, stage: 1, tags: ['yard'], gag: 'THE COOKOUT HAS BEEN RESCHEDULED.' },
+    { kind: 'trampoline', x: -65, z: -175, stage: 1, tags: ['yard','lawn'], gag: 'BACKYARD FLIGHT SCHOOL ENROLLING NOW.' },
+    { kind: 'grill', x: -115, z: -215, stage: 1, tags: ['yard'], gag: 'PROPANE TANK & CHARCOAL ARE NOW AIRBORNE.' },
+
+    // District 2: Main Street Commercial District (z = -120 to +100)
     { kind: 'billboard', x: -105, z: -62, stage: 2, tags: ['main','sign'], gag: 'STORM-PROOF ROOFING REQUESTS A RETRACTION.' },
     { kind: 'coffee', x: -45, z: -105, stage: 2, tags: ['main','sign','moo-brew'], gag: 'MOO BREW EXPRESS: COFFEE TO GO. EXTREMELY TO GO.' },
     { kind: 'mascot', x: -135, z: -55, stage: 2, tags: ['main','sign'], gag: 'INFLATABLE MAYOR LEAVES THE CAMPAIGN TRAIL.' },
     { kind: 'carts', x: -35, z: -55, stage: 2, tags: ['main'], gag: 'CART RETURN NOW LOCATED THREE COUNTIES EAST.' },
-    { kind: 'ferris', x: 145, z: 145, stage: 3, tags: ['fair','ride'], gag: 'FERRIS WHEEL UPGRADES TO FREQUENT FLYER.' },
-    { kind: 'carousel', x: 125, z: 105, stage: 3, tags: ['fair','ride'], gag: 'CAROUSEL HORSES FINALLY MAKE A BREAK FOR IT.' },
-    { kind: 'foodcart', x: 155, z: 125, stage: 3, tags: ['fair','food'], gag: 'FUNNEL CAKES MEET AN ACTUAL FUNNEL.' },
-    { kind: 'corndog', x: 105, z: 148, stage: 3, tags: ['fair','food'], gag: 'WORLD\'S LARGEST CORN DOG: NOW AIRBORNE.' },
-    { kind: 'porta', x: 62, z: 145, stage: 3, tags: ['fair'], gag: 'THE BLUE BOOTH HAS LEFT THE CHAT.' }
+
+    // District 3: County Fairgrounds Midway (Strictly z >= 210)
+    { kind: 'ferris', x: 85, z: 245, stage: 3, tags: ['fair','ride'], gag: 'FERRIS WHEEL UPGRADES TO FREQUENT FLYER.' },
+    { kind: 'carousel', x: 145, z: 225, stage: 3, tags: ['fair','ride'], gag: 'CAROUSEL HORSES FINALLY MAKE A BREAK FOR IT.' },
+    { kind: 'foodcart', x: 45, z: 235, stage: 3, tags: ['fair','food'], gag: 'FUNNEL CAKES MEET AN ACTUAL FUNNEL.' },
+    { kind: 'corndog', x: 15, z: 248, stage: 3, tags: ['fair','food'], gag: 'WORLD\'S LARGEST CORN DOG: NOW AIRBORNE.' },
+    { kind: 'porta', x: -25, z: 245, stage: 3, tags: ['fair'], gag: 'THE BLUE BOOTH HAS LEFT THE CHAT.' }
   ];
 
   definitions.forEach((definition, index) => {
@@ -11447,20 +12060,20 @@ function createProductionTornadoLayers() {
     productionVaporRibbons.push(ribbon);
   }
 
-  const ringColors = ['#d7c2a1', '#9b7a56', '#dbeafe'];
+  const ringColors = ['#5a4632', '#7c6346', '#94a3b8'];
   [7.5, 11.5, 15.5].forEach((radius, index) => {
     const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(radius, 0.16 + index * 0.04, 6, 48),
+      new THREE.RingGeometry(radius - 1.4, radius + 1.4, 36),
       new THREE.MeshBasicMaterial({
         color: ringColors[index],
         transparent: true,
-        opacity: index === 2 ? 0.16 : 0.28,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
+        opacity: index === 2 ? 0.12 : (index === 1 ? 0.22 : 0.32),
+        side: THREE.DoubleSide,
+        depthWrite: false
       })
     );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.45 + index * 0.38;
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.22 + index * 0.12;
     productionTornadoRoot.add(ring);
     productionSuctionRings.push(ring);
   });
@@ -11708,7 +12321,7 @@ function createProductionBarn() {
   // it is the surface where flat untextured colour showed most.
   const bodyMaterial = productionMaterial(campaignIndex === 3 ? '#7a2f56' : '#a43d32', { roughness: 0.82, map: surfaceMap('plank', 4, 2) });
   const frontWall = addProductionPart(group, new THREE.BoxGeometry(22, 10, 0.75), '#a43d32', 0, 5.3, -8.55, { material: bodyMaterial });
-  const backWall = addProductionPart(group, new THREE.BoxGeometry(22, 10, 0.75), '#8c342d', 0, 5.3, 8.55, { roughness: 0.84, map: surfaceMap('plank', 4, 2) });
+  const backWall = addProductionPart(group, new THREE.BoxGeometry(22, 10, 0.75), '#8c342d', 0, 5.3, 8.55, { material: bodyMaterial.clone() });
   const leftWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', -10.65, 5.3, 0, { roughness: 0.84, map: surfaceMap('plank', 3, 2) });
   const rightWall = addProductionPart(group, new THREE.BoxGeometry(0.75, 10, 16.5), '#97372f', 10.65, 5.3, 0, { roughness: 0.84, map: surfaceMap('plank', 3, 2) });
 
@@ -11717,9 +12330,10 @@ function createProductionBarn() {
   const roofRight = addProductionPart(group, new THREE.BoxGeometry(13.3, 0.62, 19), '#27313d', 5.1, 13.2, 0, { material: roofMaterial.clone(), rotation: { z: -0.55 } });
   const ridge = addProductionPart(group, new THREE.BoxGeometry(0.75, 0.8, 19.4), '#18202b', 0, 16.55, 0, { roughness: 0.7 });
 
-  const bigDoorLeft = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#f2e7d5', -3.6, 3.9, -9.02, { roughness: 0.8 });
-  const bigDoorRight = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#f2e7d5', 3.6, 3.9, -9.02, { roughness: 0.8 });
-  const loftDoor = addProductionPart(group, new THREE.BoxGeometry(4.6, 3.5, 0.42), '#f2e7d5', 0, 10.35, -9.0, { roughness: 0.8 });
+  // Front Facade (North)
+  const bigDoorLeft = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#991b1b', -3.6, 3.9, -9.02, { material: bodyMaterial });
+  const bigDoorRight = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#991b1b', 3.6, 3.9, -9.02, { material: bodyMaterial.clone() });
+  const loftDoor = addProductionPart(group, new THREE.BoxGeometry(4.6, 3.5, 0.42), '#991b1b', 0, 10.35, -9.0, { material: bodyMaterial.clone() });
   const sign = addProductionPart(
     group,
     new THREE.BoxGeometry(8.5, 1.9, 0.35),
@@ -11730,16 +12344,65 @@ function createProductionBarn() {
     { material: createSignMaterial('HART FARM|SINCE 1947', '#7c2d12', '#fff7ed') }
   );
 
+  // Rear Facade (South) - Matching architectural dressing for full 360-degree hero presence
+  const rearDoorLeft = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#991b1b', -3.6, 3.9, 9.02, { material: bodyMaterial.clone() });
+  const rearDoorRight = addProductionPart(group, new THREE.BoxGeometry(6.8, 7.2, 0.45), '#991b1b', 3.6, 3.9, 9.02, { material: bodyMaterial.clone() });
+  const rearLoftDoor = addProductionPart(group, new THREE.BoxGeometry(4.6, 3.5, 0.42), '#991b1b', 0, 10.35, 9.0, { material: bodyMaterial.clone() });
+  const rearSign = addProductionPart(
+    group,
+    new THREE.BoxGeometry(8.5, 1.9, 0.35),
+    '#f6c453',
+    0,
+    14.1,
+    9.15,
+    { material: createSignMaterial('HART FARM|SINCE 1947', '#7c2d12', '#fff7ed') }
+  );
+
+  // White perimeter trim and X-cross braces on all barn doors
+  const doorTrimMat = productionMaterial('#ffffff', { roughness: 0.6 });
+  [-9.28, 9.28].forEach(dz => {
+    [-3.6, 3.6].forEach(dx => {
+      // Door frame borders
+      addProductionPart(group, new THREE.BoxGeometry(6.6, 0.45, 0.15), '#ffffff', dx, 0.5, dz, { material: doorTrimMat });
+      addProductionPart(group, new THREE.BoxGeometry(6.6, 0.45, 0.15), '#ffffff', dx, 7.3, dz, { material: doorTrimMat.clone() });
+      addProductionPart(group, new THREE.BoxGeometry(0.45, 7.2, 0.15), '#ffffff', dx - 3.1, 3.9, dz, { material: doorTrimMat.clone() });
+      addProductionPart(group, new THREE.BoxGeometry(0.45, 7.2, 0.15), '#ffffff', dx + 3.1, 3.9, dz, { material: doorTrimMat.clone() });
+      // X-braces
+      addProductionPart(group, new THREE.BoxGeometry(0.42, 8.8, 0.15), '#ffffff', dx, 3.9, dz, { material: doorTrimMat.clone(), rotation: { z: 0.58 } });
+      addProductionPart(group, new THREE.BoxGeometry(0.42, 8.8, 0.15), '#ffffff', dx, 3.9, dz, { material: doorTrimMat.clone(), rotation: { z: -0.58 } });
+    });
+    // Loft door trim and X-brace
+    addProductionPart(group, new THREE.BoxGeometry(4.4, 0.35, 0.15), '#ffffff', 0, 8.8, dz, { material: doorTrimMat.clone() });
+    addProductionPart(group, new THREE.BoxGeometry(4.4, 0.35, 0.15), '#ffffff', 0, 11.9, dz, { material: doorTrimMat.clone() });
+    addProductionPart(group, new THREE.BoxGeometry(0.35, 3.4, 0.15), '#ffffff', -2.1, 10.35, dz, { material: doorTrimMat.clone() });
+    addProductionPart(group, new THREE.BoxGeometry(0.35, 3.4, 0.15), '#ffffff', 2.1, 10.35, dz, { material: doorTrimMat.clone() });
+    addProductionPart(group, new THREE.BoxGeometry(0.32, 4.8, 0.15), '#ffffff', 0, 10.35, dz, { material: doorTrimMat.clone(), rotation: { z: 0.56 } });
+    addProductionPart(group, new THREE.BoxGeometry(0.32, 4.8, 0.15), '#ffffff', 0, 10.35, dz, { material: doorTrimMat.clone(), rotation: { z: -0.56 } });
+  });
+
+  // White architectural trims on both facades
   const trimMaterial = productionMaterial('#f3eee3', { roughness: 0.74 });
-  [-10.2, 0, 10.2].forEach(x => addProductionPart(group, new THREE.BoxGeometry(0.36, 10.6, 0.32), '#f3eee3', x, 5.45, -9.0, { material: trimMaterial }));
-  addProductionPart(group, new THREE.BoxGeometry(21.1, 0.36, 0.32), '#f3eee3', 0, 9.9, -9.0, { material: trimMaterial.clone() });
+  [-9.0, 9.0].forEach(dz => {
+    [-10.2, 0, 10.2].forEach(x => addProductionPart(group, new THREE.BoxGeometry(0.36, 10.6, 0.32), '#f3eee3', x, 5.45, dz, { material: trimMaterial }));
+    addProductionPart(group, new THREE.BoxGeometry(21.1, 0.36, 0.32), '#f3eee3', 0, 9.9, dz, { material: trimMaterial.clone() });
+  });
+
+  // Rooftop Cupola & Weathervane
+  const cupolaMat = productionMaterial('#ffffff', { roughness: 0.5 });
+  const cupolaRoofMat = productionMaterial('#1e293b', { roughness: 0.4 });
+  const goldMat = new THREE.MeshStandardMaterial({ color: '#fbbf24', roughness: 0.3, metalness: 0.8 });
+
+  addProductionPart(group, new THREE.BoxGeometry(3.2, 2.2, 3.2), '#ffffff', 0, 17.6, 0, { material: cupolaMat });
+  const cupolaRoof = addProductionPart(group, new THREE.ConeGeometry(2.6, 1.8, 4), '#1e293b', 0, 19.5, 0, { material: cupolaRoofMat, rotation: { y: Math.PI / 4 } });
+  const vanePole = addProductionPart(group, new THREE.CylinderGeometry(0.08, 0.08, 1.8), '#fbbf24', 0, 21.0, 0, { material: goldMat });
+  const rooster = addProductionPart(group, new THREE.BoxGeometry(0.9, 0.7, 0.12), '#fbbf24', 0, 21.6, 0, { material: goldMat.clone() });
 
   const beacon = new THREE.Mesh(
     new THREE.TorusGeometry(4.2, 0.16, 6, 40),
     new THREE.MeshBasicMaterial({ color: '#f6c453', transparent: true, opacity: 0.62, depthWrite: false })
   );
   beacon.rotation.x = Math.PI / 2;
-  beacon.position.y = 19.2;
+  beacon.position.y = 22.2;
   group.add(beacon);
 
   // [SW:VISUAL:ACTOR_MODELS] Parked tractor, farmhouse, grain bin, and propane tank setpiece dressing
@@ -13979,80 +14642,87 @@ function createCinematicPivot(parent, name, position = [0, 0, 0]) {
 }
 
 function buildArticulatedBipedalCow17(root) {
-  const geoBox = new THREE.BoxGeometry(1, 1, 1);
-  const geoCyl = new THREE.CylinderGeometry(1, 1, 1, 16);
-  const geoSph = new THREE.SphereGeometry(1, 16, 16);
-  const geoCone = new THREE.ConeGeometry(1, 1, 16);
-
-  const matWhite = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.88 });
-  const matPatch = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.9 });
-  const matHoof = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.6 });
+  const matWhite = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.75 });
+  const matPatch = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.8 });
+  const matSnout = new THREE.MeshStandardMaterial({ color: '#fda4af', roughness: 0.6 });
+  const matHoof = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.5 });
   const matCup = new THREE.MeshStandardMaterial({ color: '#b45309', roughness: 0.4 });
   const matTag = new THREE.MeshBasicMaterial({ color: '#fbbf24' });
+  const matHorn = new THREE.MeshStandardMaterial({ color: '#e2e8f0', roughness: 0.4 });
 
   const cowGroup = new THREE.Group();
   cowGroup.name = 'ArticulatedBipedalCow17';
 
   // Hips
   const hips = createCinematicPivot(cowGroup, 'cow17-hips', [0, 2.53, -0.48]);
-  createCinematicPart(hips, geoBox, matWhite, 'cow17-hips-mass', [0, 0, 0], [1.4, 0.8, 1.1]);
-  createCinematicPart(hips, geoBox, matPatch, 'cow17-hip-patch', [0.38, -0.05, 0.46], [0.65, 0.65, 0.25]);
+  createCinematicPart(hips, new THREE.CylinderGeometry(0.82, 0.72, 0.95, 12), matWhite, 'cow17-hips-mass', [0, 0, 0]);
+  createCinematicPart(hips, new THREE.SphereGeometry(0.42, 10, 10), matPatch, 'cow17-hip-patch', [0.45, -0.05, 0.38], [1, 1, 0.4]);
 
   // Torso
   const torso = createCinematicPivot(hips, 'cow17-torso', [0, 0.75, 0]);
-  createCinematicPart(torso, geoBox, matWhite, 'cow17-torso-mass', [0, 0.6, 0], [1.6, 1.4, 1.2]);
-  createCinematicPart(torso, geoBox, matPatch, 'cow17-chest-patch', [-0.42, 0.65, 0.52], [0.72, 0.85, 0.22]);
+  createCinematicPart(torso, new THREE.CylinderGeometry(0.92, 0.82, 1.45, 12), matWhite, 'cow17-torso-mass', [0, 0.65, 0]);
+  createCinematicPart(torso, new THREE.SphereGeometry(0.55, 10, 10), matPatch, 'cow17-chest-patch', [-0.45, 0.75, 0.45], [1, 1.2, 0.4]);
 
   // Head
   const head = createCinematicPivot(torso, 'cow17-head', [0, 1.55, 0.25]);
-  createCinematicPart(head, geoBox, matWhite, 'cow17-head-mass', [0, 0.25, 0.35], [1.1, 1.0, 1.15]);
-  createCinematicPart(head, geoBox, matPatch, 'cow17-face-patch', [0.28, 0.38, 0.84], [0.48, 0.52, 0.2]);
-  createCinematicPart(head, geoBox, matWhite, 'cow17-muzzle', [0, 0.05, 0.96], [0.82, 0.52, 0.62]);
+  createCinematicPart(head, new THREE.BoxGeometry(1.05, 0.95, 1.05), matWhite, 'cow17-head-mass', [0, 0.25, 0.25]);
+  createCinematicPart(head, new THREE.BoxGeometry(0.95, 0.52, 0.68), matSnout, 'cow17-snout', [0, 0.05, 0.85]);
+  createCinematicPart(head, new THREE.SphereGeometry(0.38, 8, 8), matPatch, 'cow17-eye-patch', [0.32, 0.38, 0.68], [1, 1, 0.4]);
+
+  // Nostrils & Eyes
+  createCinematicPart(head, new THREE.SphereGeometry(0.08, 6, 6), matPatch, 'cow17-nostril-l', [-0.22, 0.05, 1.18]);
+  createCinematicPart(head, new THREE.SphereGeometry(0.08, 6, 6), matPatch, 'cow17-nostril-r', [0.22, 0.05, 1.18]);
+  const matEyeWhite = new THREE.MeshBasicMaterial({ color: '#ffffff' });
+  const matPupil = new THREE.MeshBasicMaterial({ color: '#0f172a' });
+  [-0.36, 0.36].forEach((ex, idx) => {
+    const eye = createCinematicPart(head, new THREE.SphereGeometry(0.14, 8, 8), matEyeWhite, `cow17-eye-${idx}`, [ex, 0.45, 0.72]);
+    createCinematicPart(eye, new THREE.SphereGeometry(0.08, 6, 6), matPupil, `cow17-pupil-${idx}`, [0, 0, 0.08]);
+  });
 
   // Tag #17
-  createCinematicPart(head, geoBox, matTag, 'cow17-ear-tag-17', [-0.62, 0.52, 0.35], [0.28, 0.42, 0.06]);
+  createCinematicPart(head, new THREE.BoxGeometry(0.28, 0.42, 0.06), matTag, 'cow17-ear-tag-17', [-0.62, 0.52, 0.35]);
 
   // Ears & Horns
-  const leftEar = createCinematicPivot(head, 'cow17-left-ear', [-0.58, 0.62, 0.2]);
-  createCinematicPart(leftEar, geoBox, matPatch, 'cow17-left-ear-mesh', [-0.22, 0, 0], [0.48, 0.22, 0.18], [0, 0, -0.2]);
-  const rightEar = createCinematicPivot(head, 'cow17-right-ear', [0.58, 0.62, 0.2]);
-  createCinematicPart(rightEar, geoBox, matPatch, 'cow17-right-ear-mesh', [0.22, 0, 0], [0.48, 0.22, 0.18], [0, 0, 0.2]);
+  const leftEar = createCinematicPivot(head, 'cow17-left-ear', [-0.58, 0.58, 0.15]);
+  createCinematicPart(leftEar, new THREE.ConeGeometry(0.22, 0.65, 8), matPatch, 'cow17-left-ear-mesh', [-0.2, 0, 0], [1, 1, 1], [0, 0, Math.PI / 2 + 0.2]);
+  const rightEar = createCinematicPivot(head, 'cow17-right-ear', [0.58, 0.58, 0.15]);
+  createCinematicPart(rightEar, new THREE.ConeGeometry(0.22, 0.65, 8), matPatch, 'cow17-right-ear-mesh', [0.2, 0, 0], [1, 1, 1], [0, 0, -Math.PI / 2 - 0.2]);
 
-  createCinematicPart(head, geoCone, matHoof, 'cow17-left-horn', [-0.45, 0.82, 0.18], [0.15, 0.42, 0.15], [-0.3, 0, -0.4]);
-  createCinematicPart(head, geoCone, matHoof, 'cow17-right-horn', [0.45, 0.82, 0.18], [0.15, 0.42, 0.15], [-0.3, 0, 0.4]);
+  createCinematicPart(head, new THREE.ConeGeometry(0.12, 0.52, 8), matHorn, 'cow17-left-horn', [-0.42, 0.82, 0.15], [1, 1, 1], [-0.3, 0, -0.4]);
+  createCinematicPart(head, new THREE.ConeGeometry(0.12, 0.52, 8), matHorn, 'cow17-right-horn', [0.42, 0.82, 0.15], [1, 1, 1], [-0.3, 0, 0.4]);
 
   // Left Arm (Planted casually on top fence rail)
   const leftArm = createCinematicPivot(torso, 'cow17-left-shoulder', [-0.95, 1.15, 0]);
-  createCinematicPart(leftArm, geoBox, matWhite, 'cow17-left-upper-arm', [0, -0.45, 0], [0.45, 1.0, 0.45]);
+  createCinematicPart(leftArm, new THREE.CylinderGeometry(0.22, 0.2, 0.95, 8), matWhite, 'cow17-left-upper-arm', [0, -0.45, 0]);
   const leftForeleg = createCinematicPivot(leftArm, 'cow17-left-foreleg', [0, -0.9, 0.15]);
-  createCinematicPart(leftForeleg, geoBox, matWhite, 'cow17-left-lower-arm', [0, -0.45, 0.15], [0.42, 0.9, 0.42]);
-  createCinematicPart(leftForeleg, geoBox, matHoof, 'cow17-left-resting-hoof', [0, -0.95, 0.35], [0.55, 0.3, 0.6]);
+  createCinematicPart(leftForeleg, new THREE.CylinderGeometry(0.2, 0.18, 0.85, 8), matWhite, 'cow17-left-lower-arm', [0, -0.45, 0.15]);
+  createCinematicPart(leftForeleg, new THREE.BoxGeometry(0.48, 0.28, 0.55), matHoof, 'cow17-left-resting-hoof', [0, -0.92, 0.32]);
 
   // Right Arm (Holding steaming Moo Brew cup)
   const rightArm = createCinematicPivot(torso, 'cow17-right-shoulder', [0.95, 1.15, 0]);
-  createCinematicPart(rightArm, geoBox, matWhite, 'cow17-right-upper-arm', [0, -0.45, 0], [0.45, 1.0, 0.45]);
+  createCinematicPart(rightArm, new THREE.CylinderGeometry(0.22, 0.2, 0.95, 8), matWhite, 'cow17-right-upper-arm', [0, -0.45, 0]);
   const rightForeleg = createCinematicPivot(rightArm, 'cow17-right-foreleg', [0, -0.65, 0.15]);
-  createCinematicPart(rightForeleg, geoBox, matWhite, 'cow17-right-lower-arm', [0, -0.45, 0.15], [0.42, 0.85, 0.42]);
-  const rightHoof = createCinematicPart(rightForeleg, geoBox, matHoof, 'cow17-right-cup-hoof', [0, -0.88, 0.32], [0.55, 0.3, 0.6]);
+  createCinematicPart(rightForeleg, new THREE.CylinderGeometry(0.2, 0.18, 0.85, 8), matWhite, 'cow17-right-lower-arm', [0, -0.45, 0.15]);
+  const rightHoof = createCinematicPart(rightForeleg, new THREE.BoxGeometry(0.48, 0.28, 0.55), matHoof, 'cow17-right-cup-hoof', [0, -0.85, 0.3]);
 
   // Moo Brew Coffee Cup
-  const cup = createCinematicPivot(rightForeleg, 'cow17-moo-brew-cup', [0, -1.15, 0.65]);
-  createCinematicPart(cup, geoCyl, matCup, 'cup-body', [0, 0, 0], [0.24, 0.55, 0.24]);
-  createCinematicPart(cup, geoCyl, matWhite, 'cup-lid', [0, 0.3, 0], [0.26, 0.08, 0.26]);
+  const cup = createCinematicPivot(rightForeleg, 'cow17-moo-brew-cup', [0, -1.12, 0.62]);
+  createCinematicPart(cup, new THREE.CylinderGeometry(0.22, 0.18, 0.52, 12), matCup, 'cup-body', [0, 0, 0]);
+  createCinematicPart(cup, new THREE.CylinderGeometry(0.24, 0.24, 0.08, 12), matWhite, 'cup-lid', [0, 0.28, 0]);
 
   // Bipedal Legs & Boot-Hooves
   const leftLeg = createCinematicPivot(hips, 'cow17-left-leg', [-0.45, -0.45, 0]);
-  createCinematicPart(leftLeg, geoBox, matWhite, 'cow17-left-thigh', [0, -0.65, 0], [0.5, 1.3, 0.55]);
-  createCinematicPart(leftLeg, geoBox, matHoof, 'cow17-left-boot-hoof', [0, -1.45, 0.18], [0.65, 0.32, 0.8]);
+  createCinematicPart(leftLeg, new THREE.CylinderGeometry(0.24, 0.22, 1.25, 8), matWhite, 'cow17-left-thigh', [0, -0.62, 0]);
+  createCinematicPart(leftLeg, new THREE.BoxGeometry(0.55, 0.3, 0.75), matHoof, 'cow17-left-boot-hoof', [0, -1.35, 0.15]);
 
   const rightLeg = createCinematicPivot(hips, 'cow17-right-leg', [0.45, -0.45, 0]);
-  createCinematicPart(rightLeg, geoBox, matWhite, 'cow17-right-thigh', [0, -0.65, 0], [0.5, 1.3, 0.55]);
-  createCinematicPart(rightLeg, geoBox, matHoof, 'cow17-right-boot-hoof', [0, -1.45, 0.18], [0.65, 0.32, 0.8]);
+  createCinematicPart(rightLeg, new THREE.CylinderGeometry(0.24, 0.22, 1.25, 8), matWhite, 'cow17-right-thigh', [0, -0.62, 0]);
+  createCinematicPart(rightLeg, new THREE.BoxGeometry(0.55, 0.3, 0.75), matHoof, 'cow17-right-boot-hoof', [0, -1.35, 0.15]);
 
   // Tail
   const tail = createCinematicPivot(hips, 'cow17-tail', [0, 0.05, -0.55]);
-  createCinematicPart(tail, geoCyl, matWhite, 'cow17-tail-bone', [0, -0.45, -0.1], [0.08, 0.9, 0.08], [0.35, 0, 0]);
-  createCinematicPart(tail, geoSph, matPatch, 'cow17-tail-tuft', [0, -0.95, -0.3], [0.22, 0.28, 0.22]);
+  createCinematicPart(tail, new THREE.CylinderGeometry(0.06, 0.06, 0.85, 6), matWhite, 'cow17-tail-bone', [0, -0.42, -0.1], [1, 1, 1], [0.35, 0, 0]);
+  createCinematicPart(tail, new THREE.SphereGeometry(0.18, 8, 8), matPatch, 'cow17-tail-tuft', [0, -0.88, -0.28]);
 
   root.add(cowGroup);
 
@@ -14101,40 +14771,95 @@ function startOpeningCinematic() {
   const group = new THREE.Group();
   group.name = 'MooBrewOpeningCinematicGroup';
 
-  // 3-Post Wood Fence
+  // 3-Rail Rustic Wooden Pasture Fence
   const fenceMat = new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.85 });
-  [-2.2, 0, 2.2].forEach(fx => {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.6, 0.35), fenceMat);
-    post.position.set(fx, 1.3, 0);
+  for (let i = -3; i <= 3; i++) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 2.6, 6), fenceMat);
+    post.position.set(i * 2.4, 1.3, 0);
     group.add(post);
-  });
-  const rail1 = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.22, 0.15), fenceMat);
-  rail1.position.set(0, 1.1, 0);
-  group.add(rail1);
-  const rail2 = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.22, 0.15), fenceMat);
-  rail2.position.set(0, 2.1, 0);
-  group.add(rail2);
+  }
+  for (let r = 0; r < 2; r++) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(16, 0.16, 0.12), fenceMat);
+    rail.position.set(0, 1.0 + r * 0.95, 0);
+    group.add(rail);
+  }
 
   // Build the bipedal Cow 17 and Chickens
   const cow = buildArticulatedBipedalCow17(group);
   const chickenA = buildCinematicChicken(group, 1, -1);
   const chickenB = buildCinematicChicken(group, 2, 1);
 
-  chickenA.root.position.set(-2.4, 0, 1.2);
-  chickenB.root.position.set(2.4, 0, 1.4);
+  chickenA.root.position.set(-2.0, 0, 1.2);
+  chickenB.root.position.set(2.0, 0, 1.4);
 
-  group.position.set(15, terrainHeightAt(15, 15), 15);
+  // Steaming Coffee Cup Particles
+  const steamMat = new THREE.MeshBasicMaterial({ color: '#f8fafc', transparent: true, opacity: 0.45 });
+  const steamPuffs = [];
+  for (let s = 0; s < 4; s++) {
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(0.06 + s * 0.02, 6, 6), steamMat);
+    puff.position.set(0, 0.4 + s * 0.18, 0);
+    if (cow && cow.cup) cow.cup.add(puff);
+    steamPuffs.push(puff);
+  }
+
+  // Attach authored Moo Brew coffee cup model
+  if (typeof instantiateActorModel === 'function') {
+    instantiateActorModel('coffee-cup', { damageable: false }).then(cup => {
+      if (!cup || !openingCinematicState.active || openingCinematicState.cinematicGroup !== group) return;
+      cup.scale.setScalar(0.28);
+      if (cow && cow.cup) cow.cup.add(cup);
+    });
+  }
+
+  // Golden Hay Bales
+  const hayMat = new THREE.MeshStandardMaterial({ color: '#eab308', roughness: 0.9 });
+  for (let h = 0; h < 3; h++) {
+    const bale = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1.6, 12), hayMat);
+    bale.rotation.z = Math.PI / 2;
+    bale.position.set(-4.5 + h * 1.8, 0.8, 1.8);
+    group.add(bale);
+  }
+
+  const farmX = -290;
+  const farmZ = -196;
+  group.position.set(farmX, terrainHeightAt(farmX, farmZ), farmZ);
   scene.add(group);
 
   openingCinematicState.cinematicGroup = group;
   openingCinematicState.cow = cow;
   openingCinematicState.chickenA = chickenA;
   openingCinematicState.chickenB = chickenB;
+  openingCinematicState.steamPuffs = steamPuffs;
+  openingCinematicState.playedCues = new Set();
+
+  let skipBtn = document.getElementById('cinematicSkipBtn');
+  if (!skipBtn) {
+    skipBtn = document.createElement('button');
+    skipBtn.id = 'cinematicSkipBtn';
+    skipBtn.type = 'button';
+    skipBtn.innerHTML = '⏭ SKIP';
+    skipBtn.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top) + 16px);right:calc(env(safe-area-inset-right) + 18px);z-index:99999;background:rgba(15,23,42,0.85);border:1.5px solid #f6c453;color:#fde68a;font:900 12px/1 Outfit,sans-serif;padding:8px 16px;border-radius:999px;cursor:pointer;letter-spacing:0.08em;backdrop-filter:blur(8px);box-shadow:0 4px 16px rgba(0,0,0,0.6);transition:transform 0.1s ease;';
+    skipBtn.onclick = (e) => { e.stopPropagation(); skipOpeningCinematic(); };
+    document.body.appendChild(skipBtn);
+  }
+  skipBtn.style.display = 'block';
+  skipBtn.style.opacity = '1';
+
+  const letterbox = document.getElementById('cinematicLetterbox');
+  if (letterbox) letterbox.classList.add('active');
 
   const menu = document.getElementById('mainMenu');
   if (menu) menu.style.display = 'none';
   const hud = document.getElementById('hud');
   if (hud) hud.style.opacity = '0';
+  const districtOverlay = document.getElementById('districtOverlay');
+  if (districtOverlay) districtOverlay.style.display = 'none';
+  const joyZone = document.getElementById('joystickZone');
+  if (joyZone) joyZone.style.display = 'none';
+  const touchCtrls = document.querySelector('.touch-controls');
+  if (touchCtrls) touchCtrls.style.display = 'none';
+  const easBanner = document.getElementById('easBanner');
+  if (easBanner) easBanner.style.display = 'none';
 }
 
 function updateOpeningCinematic(dt) {
@@ -14146,6 +14871,45 @@ function updateOpeningCinematic(dt) {
   const cow = openingCinematicState.cow;
   const cA = openingCinematicState.chickenA;
   const cB = openingCinematicState.chickenB;
+  const puffs = openingCinematicState.steamPuffs || [];
+  const farmX = -290;
+  const farmZ = -196;
+  const farmY = terrainHeightAt(farmX, farmZ);
+
+  // Animate rising coffee steam
+  puffs.forEach((puff, idx) => {
+    const cycle = (time * 1.8 + idx * 0.25) % 1.0;
+    puff.position.y = 0.35 + cycle * 0.55;
+    puff.position.x = Math.sin(time * 3.0 + idx) * 0.05;
+    const sc = 0.8 + cycle * 1.2;
+    puff.scale.set(sc, sc, sc);
+    if (puff.material) puff.material.opacity = Math.max(0, 0.45 * (1 - cycle));
+  });
+
+  // Sound cues on beats
+  const cues = openingCinematicState.playedCues;
+  if (cues) {
+    if (t >= 0.1 && !cues.has('start')) { cues.add('start'); playSound('click'); }
+    if (t >= 5.9 && !cues.has('doubletake')) { cues.add('doubletake'); playSound('warning'); }
+    if (t >= 8.15 && !cues.has('sip')) { cues.add('sip'); playSound('click'); }
+    if (t >= 10.15 && !cues.has('touchdown')) { cues.add('touchdown'); playSound('collapse'); }
+  }
+
+  // Update Letterbox Subtitles
+  const subEl = document.getElementById('cinSubtitle');
+  if (subEl) {
+    if (t < 2.55) {
+      subEl.innerHTML = '☕ <b>MOO BREW FARMS</b>: Another peaceful morning in Lincoln County...';
+    } else if (t < 5.9) {
+      subEl.innerHTML = '👀 <b>COW 17</b>: <i>"Wait... is that a supercell rotation on the horizon?"</i>';
+    } else if (t < 8.15) {
+      subEl.innerHTML = '⚡ <b>NOAA EAS WARNING</b>: <b>EF-0 TOUCHDOWN CONFIRMED! TAKE IMMEDIATE SHELTER!</b>';
+    } else if (t < 10.15) {
+      subEl.innerHTML = '☕ <b>COW 17</b>: <i>*Takes final sip of Moo Brew*</i> <b>"Not before my morning coffee."</b>';
+    } else {
+      subEl.innerHTML = '🌪️ <b>STAGE 1 WARNING: UNLEASH THE STORM!</b>';
+    }
+  }
 
   if (cow && cA && cB) {
     const clampE = v => Math.min(1, Math.max(0, v));
@@ -14188,51 +14952,55 @@ function updateOpeningCinematic(dt) {
     cA.head.rotation.x = -0.28 - 0.3 * notice + Math.sin(t * 9.5) * 0.12;
     cA.leftWing.rotation.z = -0.12 - 0.72 * doubleTake;
     cA.rightWing.rotation.z = 0.12 + 0.72 * doubleTake;
-    cA.root.position.x = -2.4 - 2.5 * escape;
+    cA.root.position.x = -2.0 - 2.5 * escape;
 
     cB.body.position.y = 0.75 + Math.sin(t * 6.3 + 1.5) * 0.05;
     cB.head.rotation.x = -0.22 - 0.18 * notice + Math.sin(t * 8.2 + 1.2) * 0.13;
     cB.leftWing.rotation.z = -0.08 - 0.48 * doubleTake;
     cB.rightWing.rotation.z = 0.08 + 0.48 * doubleTake;
-    cB.root.position.x = 2.4 + 2.8 * escape;
+    cB.root.position.x = 2.0 + 2.8 * escape;
   }
 
-  // Cinematic Camera Spline
+  // Cinematic Camera Spline overlooking peaceful pasture & distant tornado touchdown
   if (time < 5.9) {
     if (camera) {
-      camera.position.set(27.4, terrainHeightAt(15, 15) + 8.1, 32.6);
-      camera.lookAt(15.2, terrainHeightAt(15, 15) + 3.3, 15.2);
+      camera.position.set(farmX + 3.8, farmY + 6.2, farmZ + 15.0);
+      camera.lookAt(farmX - 0.5, farmY + 4.0, farmZ - 3.5);
     }
   } else if (time < 8.15) {
     const s = (time - 5.9) / (8.15 - 5.9);
     if (camera) {
       camera.position.set(
-        27.4 + (25.8 - 27.4) * s,
-        terrainHeightAt(15, 15) + 8.1 + (7.3 - 8.1) * s,
-        32.6 + (30.2 - 32.6) * s
+        farmX + 3.8 + (2.0 - 3.8) * s,
+        farmY + 6.2 + (5.2 - 6.2) * s,
+        farmZ + 15.0 + (7.5 - 15.0) * s
       );
-      camera.lookAt(15.2 + (0.15 - 0.2) * s, terrainHeightAt(15, 15) + 3.3 + (4.1 - 3.3) * s, 15.2);
+      camera.lookAt(farmX - 0.5 + (0.1 - (-0.5)) * s, farmY + 4.0 + (4.0 - 4.0) * s, farmZ - 3.5 + (0.2 - (-3.5)) * s);
     }
   } else if (time < 10.15) {
     const s = (time - 8.15) / (10.15 - 8.15);
     if (camera) {
       camera.position.set(
-        25.8 + (22.1 - 25.8) * s,
-        terrainHeightAt(15, 15) + 7.3 + (6.0 - 7.3) * s,
-        30.2 + (26.5 - 30.2) * s
+        farmX + 2.0 + (0.95 - 2.0) * s,
+        farmY + 5.2 + (4.6 - 5.2) * s,
+        farmZ + 7.5 + (3.8 - 7.5) * s
       );
-      camera.lookAt(15.15 + 0.7 * s, terrainHeightAt(15, 15) + 4.1 + 0.35 * s, 15.2);
+      camera.lookAt(farmX + 0.1 + (0.1 - 0.1) * s, farmY + 4.0 + (4.2 - 4.0) * s, farmZ + 0.2 + (0.5 - 0.2) * s);
     }
   } else if (time < SW_CINEMATIC_DURATION) {
     const s = (time - 10.15) / (SW_CINEMATIC_DURATION - 10.15);
     const easeS = s * s * (3 - 2 * s);
     if (camera) {
       camera.position.set(
-        22.1 + (storm.pos.x - 22.1) * easeS,
-        terrainHeightAt(15, 15) + 6.0 + (35 - 6.0) * easeS,
-        26.5 + (storm.pos.z + 45 - 26.5) * easeS
+        (farmX + 0.95) + (storm.pos.x - (farmX + 0.95)) * easeS,
+        farmY + 4.6 + (35 - (farmY + 4.6)) * easeS,
+        (farmZ + 3.8) + (storm.pos.z + 45 - (farmZ + 3.8)) * easeS
       );
-      camera.lookAt(storm.pos.x, 0, storm.pos.z);
+      camera.lookAt(
+        farmX + (storm.pos.x - farmX) * easeS,
+        (farmY + 4.2) * (1 - easeS),
+        farmZ + (storm.pos.z - farmZ) * easeS
+      );
     }
   } else {
     finishOpeningCinematic();
@@ -14251,17 +15019,24 @@ function finishOpeningCinematic() {
     scene.remove(openingCinematicState.cinematicGroup);
     openingCinematicState.cinematicGroup = null;
   }
+  const letterbox = document.getElementById('cinematicLetterbox');
+  if (letterbox) letterbox.classList.remove('active');
+  const skipBtn = document.getElementById('cinematicSkipBtn');
+  if (skipBtn) skipBtn.style.display = 'none';
   const hud = document.getElementById('hud');
   if (hud) hud.style.opacity = '1';
+  const districtOverlay = document.getElementById('districtOverlay');
+  if (districtOverlay) districtOverlay.style.display = '';
+  const joyZone = document.getElementById('joystickZone');
+  if (joyZone) joyZone.style.display = '';
+  const touchCtrls = document.querySelector('.touch-controls');
+  if (touchCtrls) touchCtrls.style.display = '';
+  const easBanner = document.getElementById('easBanner');
+  if (easBanner) easBanner.style.display = '';
 }
 
 window.addEventListener('keydown', (e) => {
   if (openingCinematicState.active && (e.code === 'Space' || e.code === 'Escape')) {
-    skipOpeningCinematic();
-  }
-});
-window.addEventListener('pointerdown', () => {
-  if (openingCinematicState.active && openingCinematicState.elapsed > 0.5) {
     skipOpeningCinematic();
   }
 });
