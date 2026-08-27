@@ -209,69 +209,90 @@ export async function generateFarmWindmill() {
   await saveGlb('farm-windmill-wreck.glb', bw);
 }
 
-// 5. COW-17 & COW-17-WRECK
+// 5. COW-17 & COW-17-WRECK (Hero Bipedal Cartoon Mascot)
 export async function generateCow17() {
   const b = new GlbBuilder();
-  // Main Barrel Torso (Soft rounded horizontal body)
-  b.addBox([0, 1.4, 0], [1.5, 1.35, 2.4], '#ffffff');
-  // Rounded Holstein Patches
-  b.addSphere([-0.72, 1.6, 0.4], 0.55, 10, '#18181b');
-  b.addSphere([0.72, 1.55, -0.6], 0.6, 10, '#18181b');
-  b.addSphere([0, 2.05, -0.2], 0.5, 10, '#18181b');
-
-  // Pink Udder with 4 Teats Under Belly
-  b.addSphere([0, 0.75, -0.4], 0.3, 8, '#fca5a5');
-  [-0.12, 0.12].forEach(tx => [-0.12, 0.12].forEach(tz => {
-    b.addCylinder([tx, 0.55, -0.4 + tz], 0.04, 0.04, 0.16, 6, '#fca5a5');
-  }));
-
-  // 4 Sturdy Legs with Cloven Hooves
-  [-0.55, 0.55].forEach(lx => {
-    b.addCylinder([lx, 0.7, 0.75], 0.18, 0.14, 1.4, 8, '#ffffff'); // Front legs
-    b.addBox([lx, 0.12, 0.8], [0.32, 0.24, 0.42], '#0f172a'); // Front hooves
-    b.addCylinder([lx, 0.7, -0.75], 0.2, 0.15, 1.4, 8, '#ffffff'); // Hind legs
-    b.addBox([lx, 0.12, -0.7], [0.32, 0.24, 0.42], '#0f172a'); // Hind hooves
+  // 1. Lower Body: Bipedal Legs & Cloven Hooves
+  [-0.45, 0.45].forEach(lx => {
+    b.addCylinder([lx, 0.9, 0], 0.22, 0.18, 0.8, 8, '#ffffff'); // Thigh
+    b.addCylinder([lx, 0.35, 0.02], 0.18, 0.15, 0.7, 8, '#ffffff'); // Shin
+    b.addBox([lx, 0.1, 0.1], [0.36, 0.2, 0.48], '#0f172a'); // Hoof
   });
+  b.addBox([0, 1.25, 0], [1.25, 0.65, 1.0], '#ffffff'); // Hips
 
-  // Sculpted Neck & Cranium
-  b.addCylinder([0, 1.8, 1.15], 0.45, 0.6, 0.85, 8, '#ffffff', [0.55, 0, 0]);
-  b.addBox([0, 2.15, 1.6], [0.85, 0.78, 1.05], '#ffffff');
-  b.addBox([0, 1.9, 2.15], [0.75, 0.45, 0.55], '#fda4af'); // Soft pink muzzle
-  b.addSphere([-0.18, 1.95, 2.42], 0.06, 6, '#18181b'); // Nostril L
-  b.addSphere([0.18, 1.95, 2.42], 0.06, 6, '#18181b'); // Nostril R
-  b.addSphere([0.32, 2.25, 1.8], 0.32, 8, '#18181b'); // Eye patch
+  // 2. Upright Plump Pear-Shaped Torso & Belly
+  b.addCylinder([0, 1.9, 0], 0.65, 0.8, 1.15, 12, '#ffffff'); // Torso
+  b.addSphere([0, 1.8, 0.25], 0.6, 12, '#ffffff'); // Plump belly
+  b.addSphere([-0.55, 2.0, 0.15], 0.45, 10, '#18181b'); // Left spot
+  b.addSphere([0.5, 1.75, -0.2], 0.5, 10, '#18181b'); // Right back spot
+  b.addSphere([0.15, 2.15, 0.4], 0.3, 8, '#18181b'); // Chest spot
+
+  // Cowbell Necklace
+  b.addTorus([0, 2.45, 0.1], 0.58, 0.05, 8, 16, '#7c2d12', [Math.PI/2, 0, 0]);
+  b.addBox([0, 2.15, 0.62], [0.22, 0.28, 0.18], '#eab308');
+
+  // 3. Left Arm (Leaning Casually Forward)
+  b.addCylinder([-0.72, 2.1, 0.25], 0.16, 0.14, 0.6, 8, '#ffffff', [0.65, 0, -0.35]);
+  b.addCylinder([-0.65, 1.75, 0.55], 0.15, 0.13, 0.6, 8, '#ffffff', [-0.85, 0, 0.2]);
+  b.addBox([-0.65, 1.5, 0.72], [0.28, 0.2, 0.35], '#0f172a'); // Left Hoof resting on rail
+
+  // 4. Right Arm (Holding Moo Brew Coffee Mug in Front of Chest)
+  b.addCylinder([0.72, 2.1, 0.2], 0.16, 0.14, 0.6, 8, '#ffffff', [0.45, 0, 0.35]);
+  b.addCylinder([0.58, 2.05, 0.52], 0.15, 0.13, 0.55, 8, '#ffffff', [-1.15, 0, -0.35]);
+  b.addBox([0.45, 2.15, 0.65], [0.28, 0.2, 0.35], '#0f172a'); // Right Hoof
+  
+  // Moo Brew Coffee Cup
+  b.addCylinder([0.45, 2.35, 0.78], 0.2, 0.16, 0.45, 12, '#9a3412'); // Cup
+  b.addCylinder([0.45, 2.35, 0.78], 0.205, 0.185, 0.22, 12, '#ffffff'); // White band
+  b.addCylinder([0.45, 2.55, 0.78], 0.18, 0.18, 0.04, 12, '#3e2723'); // Coffee liquid
+  b.addTorus([0.65, 2.35, 0.78], 0.12, 0.03, 6, 10, '#9a3412'); // Handle
+
+  // 5. Neck & Cartoon Sculpted Head
+  b.addCylinder([0, 2.55, 0.1], 0.42, 0.5, 0.5, 8, '#ffffff');
+  b.addSphere([0, 2.95, 0.1], 0.58, 12, '#ffffff'); // Cranium
+  b.addBox([0, 2.85, 0.2], [0.78, 0.68, 0.78], '#ffffff');
+  
+  // Muzzle with Smirk & Nostrils
+  b.addBox([0, 2.75, 0.65], [0.75, 0.44, 0.5], '#fda4af');
+  b.addSphere([-0.18, 2.82, 0.88], 0.065, 6, '#18181b'); // Nostril L
+  b.addSphere([0.18, 2.82, 0.88], 0.065, 6, '#18181b'); // Nostril R
+  b.addSphere([0.25, 3.05, 0.45], 0.38, 8, '#18181b'); // Eye patch
 
   // Expressive Eyes with Highlights
-  [-0.38, 0.38].forEach((ex) => {
-    b.addSphere([ex, 2.28, 1.85], 0.12, 8, '#ffffff');
-    b.addSphere([ex + (ex > 0 ? 0.02 : -0.02), 2.28, 1.94], 0.07, 6, '#09090b');
+  [-0.28, 0.28].forEach((ex) => {
+    b.addSphere([ex, 3.05, 0.48], 0.14, 8, '#ffffff');
+    b.addSphere([ex + (ex > 0 ? 0.02 : -0.02), 3.05, 0.58], 0.08, 6, '#09090b');
+    b.addSphere([ex + (ex > 0 ? 0.04 : -0.01), 3.09, 0.62], 0.035, 6, '#ffffff'); // Catchlight
   });
 
-  // Ivory Horns with Dark Tips
-  [-0.35, 0.35].forEach(hx => {
-    b.addCone([hx, 2.65, 1.6], 0.1, 0.45, 8, '#f8fafc', [-0.2, 0, hx > 0 ? 0.45 : -0.45]);
-    b.addCone([hx > 0 ? hx + 0.12 : hx - 0.12, 2.85, 1.55], 0.06, 0.2, 8, '#334155', [-0.2, 0, hx > 0 ? 0.55 : -0.55]);
+  // Curved Ivory Horns with Dark Tips
+  [-0.4, 0.4].forEach(hx => {
+    b.addCone([hx, 3.42, 0.12], 0.1, 0.55, 8, '#fef3c7', [-0.25, 0, hx > 0 ? 0.5 : -0.5]);
+    b.addCone([hx > 0 ? hx + 0.18 : hx - 0.18, 3.65, 0.16], 0.055, 0.22, 8, '#334155', [-0.35, 0, hx > 0 ? 0.7 : -0.7]);
   });
 
-  // Floppy Ears & Golden #17 Livestock Ear Tag
-  b.addBox([-0.65, 2.4, 1.55], [0.55, 0.2, 0.12], '#ffffff', [0, 0, 0.35]);
-  b.addBox([-0.85, 2.25, 1.6], [0.22, 0.32, 0.04], '#facc15'); // #17 Tag
-  b.addBox([0.65, 2.4, 1.55], [0.55, 0.2, 0.12], '#18181b', [0, 0, -0.35]);
+  // Floppy Ears & Golden #17 Ear Tag
+  b.addBox([-0.65, 3.15, 0.1], [0.6, 0.2, 0.1], '#ffffff', [0, 0, 0.35]);
+  b.addBox([-0.82, 3.0, 0.12], [0.22, 0.34, 0.04], '#facc15'); // #17 Tag
+  b.addBox([0.65, 3.15, 0.1], [0.6, 0.2, 0.1], '#18181b', [0, 0, -0.35]);
 
-  // Tail with Fur Tuft
-  b.addCylinder([0, 1.8, -1.2], 0.05, 0.04, 0.95, 6, '#ffffff', [0.25, 0, 0]);
-  b.addSphere([0, 1.3, -1.35], 0.18, 8, '#18181b');
+  // Tail
+  b.addCylinder([0, 1.45, -0.5], 0.045, 0.035, 0.85, 6, '#ffffff', [0.35, 0, 0]);
+  b.addSphere([0, 1.0, -0.65], 0.16, 8, '#18181b');
 
   await saveGlb('cow-17.glb', b);
 
-  // Comedic Airborne / Flying Cow 17 Model
+  // Comedic Airborne / Flying Bipedal Cow 17 Model
   const bw = new GlbBuilder();
-  bw.addBox([0, 1.4, 0], [1.5, 1.35, 2.4], '#ffffff', [0.25, 0.15, -0.35]);
-  bw.addSphere([-0.72, 1.6, 0.4], 0.55, 10, '#18181b');
-  bw.addSphere([0.72, 1.55, -0.6], 0.6, 10, '#18181b');
-  [-0.55, 0.55].forEach(lx => {
-    bw.addCylinder([lx, 1.1, 0.75], 0.18, 0.14, 1.4, 8, '#ffffff', [0.65, 0, 0.45]);
-    bw.addCylinder([lx, 1.1, -0.75], 0.2, 0.15, 1.4, 8, '#ffffff', [-0.65, 0, -0.45]);
+  bw.addCylinder([0, 1.6, 0], 0.65, 0.8, 1.15, 12, '#ffffff', [0.45, 0.25, -0.35]);
+  bw.addSphere([0, 1.5, 0.25], 0.6, 12, '#ffffff');
+  bw.addSphere([0, 2.4, 0.4], 0.55, 10, '#ffffff'); // Head tilted back
+  bw.addBox([0, 2.2, 0.9], [0.7, 0.4, 0.45], '#fda4af'); // Muzzle
+  bw.addCylinder([-0.8, 1.9, 0], 0.16, 0.14, 0.9, 8, '#ffffff', [0.8, 0, -0.8]); // Splayed arms
+  bw.addCylinder([0.8, 1.9, 0], 0.16, 0.14, 0.9, 8, '#ffffff', [-0.8, 0, 0.8]);
+  bw.addCylinder([0.95, 2.5, 0.2], 0.18, 0.15, 0.4, 10, '#9a3412'); // Flying cup!
+  [-0.45, 0.45].forEach(lx => {
+    bw.addCylinder([lx, 0.8, -0.3], 0.2, 0.16, 1.1, 8, '#ffffff', [-0.65, 0, lx > 0 ? 0.45 : -0.45]);
   });
   await saveGlb('cow-17-wreck.glb', bw);
 }
