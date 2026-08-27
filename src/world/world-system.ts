@@ -3,7 +3,7 @@
 // Passive mirror of live world population and production dressing.
 // ============================================================================
 
-import type { WorldPopulationSnapshot } from './world-contracts';
+import type { WorldPopulationSnapshot } from './world-contracts.ts';
 
 export class WorldSystem {
   private snapshot: WorldPopulationSnapshot | null = null;

@@ -8,7 +8,7 @@ import {
   createDefaultSave,
   validateCampaignSave,
   type ValidatedCampaignSave,
-} from './campaign-save-schema';
+} from './campaign-save-schema.ts';
 
 export interface StorageLike {
   getItem(key: string): string | null;
@@ -25,11 +25,19 @@ export class CampaignStore {
   private inMemorySave: ValidatedCampaignSave = createDefaultSave();
   private readonly storage: StorageLike | null;
 
+  // Declared as a field and assigned in the body rather than as a constructor
+  // parameter property. `pnpm test` runs node --experimental-strip-types, which
+  // only removes type syntax; a parameter property emits a real assignment, so
+  // the loader rejects the file outright. tsc supports them fully, which is why
+  // the typecheck stayed green while the test run died.
+  private readonly storageKey: string;
+
   constructor(
-    private readonly storageKey: string = CAMPAIGN_STORAGE_KEY,
+    storageKey: string = CAMPAIGN_STORAGE_KEY,
     isolateQa = false,
     storageOverride?: StorageLike | null,
   ) {
+    this.storageKey = storageKey;
     this.storage = isolateQa
       ? null
       : storageOverride === undefined

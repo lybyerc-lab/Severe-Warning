@@ -18,7 +18,7 @@ import {
   resolveEfRating,
   resolveGrade,
   resolveStars,
-} from './economy-system';
+} from './economy-system.ts';
 
 const economy = Object.freeze({
   version: 'SW_ECONOMY_V1',

@@ -3,7 +3,7 @@
 // Passive mirror of the live production tornado presentation.
 // ============================================================================
 
-import type { TornadoPresentationSnapshot } from './tornado-presentation-contracts';
+import type { TornadoPresentationSnapshot } from './tornado-presentation-contracts.ts';
 
 export class TornadoPresentationSystem {
   private snapshot: TornadoPresentationSnapshot | null = null;

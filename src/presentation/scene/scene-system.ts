@@ -3,7 +3,7 @@
 // Passive mirror of the live legacy Three.js scene.
 // ============================================================================
 
-import type { SceneSnapshot } from './scene-contracts';
+import type { SceneSnapshot } from './scene-contracts.ts';
 
 export class SceneSystem {
   private snapshot: SceneSnapshot | null = null;

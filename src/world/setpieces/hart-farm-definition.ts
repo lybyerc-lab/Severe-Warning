@@ -4,7 +4,7 @@
 // damageProductionBarn(). No thresholds, score values, or audio are invented.
 // ============================================================================
 
-import type { SetpieceDefinition } from './destructible-setpiece-contracts';
+import type { SetpieceDefinition } from './destructible-setpiece-contracts.ts';
 
 export const HART_FARM_SETPIECE_DEFINITION: SetpieceDefinition = Object.freeze({
   id: 'hart-farm-barn',

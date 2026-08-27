@@ -3,7 +3,7 @@
 // Vite/TypeScript entrypoint for the modern shell through Phase 5.
 // ============================================================================
 
-import { bootstrapSevereWeather } from './app/bootstrap';
+import { bootstrapSevereWeather } from './app/bootstrap.ts';
 
 declare global {
   var __SEVERE_WEATHER__: Awaited<ReturnType<typeof bootstrapSevereWeather>> | undefined;

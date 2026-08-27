@@ -15361,6 +15361,13 @@ globalThis.getNewspaperPresentationQaState = function getNewspaperPresentationQa
 // ============================================================================
 const SW_CIN_003_MARKER = 'SW_CIN_003_PLAYABLE_OPENING_V1';
 const SW_CINEMATIC_DURATION = 12.4;
+// Farm anchor for the opening cutscene. These live at module scope because both
+// startOpeningCinematic (which places the set) and updateOpeningCinematic (which
+// flies the camera around it) need them; they used to be locals inside start(),
+// so every update frame threw ReferenceError: farmX is not defined and the
+// cutscene camera never moved.
+const SW_CINEMATIC_FARM_X = -290;
+const SW_CINEMATIC_FARM_Z = -196;
 
 let openingCinematicState = {
   active: false,
@@ -15608,8 +15615,8 @@ function startOpeningCinematic() {
     group.add(bale);
   }
 
-  const farmX = -290;
-  const farmZ = -196;
+  const farmX = SW_CINEMATIC_FARM_X;
+  const farmZ = SW_CINEMATIC_FARM_Z;
   group.position.set(farmX, terrainHeightAt(farmX, farmZ), farmZ);
   scene.add(group);
 
@@ -15660,6 +15667,14 @@ function updateOpeningCinematic(dt) {
   const cA = openingCinematicState.chickenA;
   const cB = openingCinematicState.chickenB;
   const puffs = openingCinematicState.steamPuffs || [];
+
+  // Camera anchor: read it back off the group we actually placed, so the flight
+  // path can never drift from the set. Falls back to the constants if the group
+  // failed to build.
+  const farmAnchor = openingCinematicState.cinematicGroup && openingCinematicState.cinematicGroup.position;
+  const farmX = farmAnchor ? farmAnchor.x : SW_CINEMATIC_FARM_X;
+  const farmZ = farmAnchor ? farmAnchor.z : SW_CINEMATIC_FARM_Z;
+  const farmY = farmAnchor ? farmAnchor.y : terrainHeightAt(SW_CINEMATIC_FARM_X, SW_CINEMATIC_FARM_Z);
 
   // Animate rising coffee steam
   puffs.forEach((puff, idx) => {

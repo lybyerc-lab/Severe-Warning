@@ -97,7 +97,13 @@ async function runMasterAudit() {
   const projectRoot = path.resolve('.');
   const server = await startServer(port, projectRoot);
 
-  const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  // Honour CHROME_BIN / QA_PLAY_BROWSER before falling back to the Windows
+  // install path. Hardcoding that path made this script unrunnable anywhere but
+  // one machine: on Linux and in CI it died with ENOENT before checking
+  // anything, which is indistinguishable from passing if nobody reads the exit
+  // code closely.
+  const chromePath = process.env.CHROME_BIN || process.env.QA_PLAY_BROWSER
+    || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
   const cdpPort = 9491;
 
   const chromeProc = spawn(chromePath, [

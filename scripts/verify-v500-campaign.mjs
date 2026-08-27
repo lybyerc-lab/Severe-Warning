@@ -85,7 +85,18 @@ check('countdown pauses with gameplay', html.includes('if (runActive && !isPause
 check('countdown rejects simulation delta', !html.includes('runTimeRemaining - dt'));
 check('world prepared before target spawn', html.includes('prepareCampaignWorld();\n  init3DWorld();\n  applyCampaignPresentation();'));
 check('four authored world contracts', (html.match(/'(?:lincoln-county|prairie-junction|grain-belt|state-fair-finale)': \{/g) || []).length === 4);
-check('eight signature landmark contracts', (html.match(/kind: '(?:water-tower|courthouse|grain-elevator|windmill|silo-bank|foundry|ferris-wheel|grandstand)'/g) || []).length === 8);
+// Counted kinds, not occurrences. This asserted exactly eight matches, which
+// was the same thing back when the campaign was one region placing each
+// signature landmark once. The three-region expansion reuses them across
+// worlds - eighteen occurrences at the time of writing - and the check started
+// failing for growth rather than for breakage. What it is actually guarding is
+// that none of the eight signature kinds has gone missing, so count the set.
+const signatureLandmarkKinds = ['water-tower', 'courthouse', 'grain-elevator', 'windmill', 'silo-bank', 'foundry', 'ferris-wheel', 'grandstand'];
+const presentLandmarkKinds = signatureLandmarkKinds.filter(kind => html.includes(`kind: '${kind}'`));
+check(
+  `eight signature landmark kinds present (${presentLandmarkKinds.length}/8)`,
+  presentLandmarkKinds.length === signatureLandmarkKinds.length
+);
 check('four distinct terrain profiles', (html.match(/profile: [0-3], biome:/g) || []).length === 4);
 check('campaign scenery is lazy initialized', html.includes('let campaignSceneryGroup = null;') && html.includes('function ensureCampaignSceneryGroup'));
 check('campaign scenery animates', html.includes('updateCampaignScenery(dt);'));

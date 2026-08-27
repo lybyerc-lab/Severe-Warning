@@ -128,7 +128,13 @@ const normGeneratedHtml = generatedHtml.replaceAll('\r\n', '\n');
 // moment the QA flag was fixed to read its lexical binding rather than a
 // globalThis property it never had. Assert the two conditions and the single
 // guard instead, so a refactor of the same intent does not read as a regression.
-const cameraGuardMarker = 'if (!qaCameraParked && !presentationLatched) {';
+// Matched by the conditions it consults rather than by an exact literal. The
+// comment above says a refactor of the same intent must not read as a
+// regression, but an exact string cannot honour that: the opening cutscene
+// added `&& !cinematicActive` to the same guard and the check failed even
+// though both original conditions were still there. This tolerates further
+// conditions being added and still fails if either original one is dropped.
+const cameraGuardPattern = /if \(![^)]*\bqaCameraParked\b[^)]*&&[^)]*!\s*presentationLatched\b[^)]*\) \{/g;
 const unguardedCameraAnchor = [
   '  if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {',
   '    const cow = bovineCowCam.cow;',
@@ -147,7 +153,11 @@ const unguardedCameraAnchor = [
   '  }',
 ].join('\n');
 
-check('generated output contains camera latch guard exactly once', normGeneratedHtml.split(cameraGuardMarker).length === 2);
+const cameraGuardMatches = normGeneratedHtml.match(cameraGuardPattern) || [];
+check(
+  `generated output contains camera latch guard exactly once (${cameraGuardMatches.length})`,
+  cameraGuardMatches.length === 1
+);
 check(
   'camera latch guard still consults the Phase 5 presentation latch',
   normGeneratedHtml.includes("const presentationLatched = typeof globalThis.isPhase5PresentationLatched === 'function'"),

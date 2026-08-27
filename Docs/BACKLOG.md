@@ -16,8 +16,10 @@ Rules for keeping it alive:
 - Numbers in here are measured, not estimated. If a figure cannot be measured
   right now, say so instead of guessing.
 
-State at last update: 103 models, 1.20 MB of the ~2 MB budget (60%). 3 branches,
-0 open PRs, 127 archive tags. `qa` is the default and the working branch.
+State at last update: 128 models, 1.93 MB of the ~2 MB budget (**97% — the
+model budget is effectively spent**; the next batch has to displace something or
+the cap has to move). 3 branches, 0 open PRs, 127 archive tags. `qa` is the
+default and the working branch.
 
 ---
 
@@ -34,7 +36,14 @@ All three top priority modernization tasks have successfully landed:
 
 ## Decisions open
 
-Nothing blocking. The board is clear.
+- **The model budget is at 97%.** 128 models, 1.93 MB against a ~2 MB cap. Any
+  further AG batch either displaces existing models or needs the cap raised.
+  Measured, not estimated: `du -sb assets/models` = 2,026,182 bytes.
+
+- **Nothing watches CI.** Two of the three workflows were red for at least ten
+  consecutive commits and nobody noticed, because the only workflow anyone reads
+  the badge for is Validate project, which stayed green throughout. Either the
+  red workflows need to gate merges, or someone has to own reading them.
 
 ---
 
@@ -130,6 +139,49 @@ Nothing blocking. The board is clear.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **CI restored: Android APK and QA Full Round were red for 10+ commits.**
+  Five separate faults, only one of which was a broken check:
+  1. `--experimental-strip-types` (what `npm test` uses) cannot compile
+     TypeScript **parameter properties** — they emit real code, so stripping
+     types breaks them. `tsc` compiles them fine, which is why typecheck stayed
+     green and hid the problem. Five files used them; only `campaign-system.ts`
+     surfaced, because only it had a test importing it. All five converted to an
+     explicit field plus a body assignment.
+  2. Underneath that: 96 extensionless relative imports across 21 files in
+     `src/`. Node ESM requires the extension. All given `.ts` (the tsconfig
+     already sets `allowImportingTsExtensions` with `moduleResolution: Bundler`).
+  3. `verify-v500-campaign` asserted the string `kind: '` appeared **exactly 8
+     times**. The 3-region expansion made it 18, with all 8 signature kinds still
+     present. Rewritten to check the set of kinds, not the count.
+  4. `verify-phase4` pinned four literal score targets. The campaign was retuned
+     and the numbers moved. Rewritten to assert targets ascend per region, which
+     is the property that actually matters.
+  5. `verify-phase5` matched the literal source line
+     `if (!qaCameraParked && !presentationLatched) {`. The cutscene added
+     `&& !cinematicActive`. Rewritten as a regex that tolerates added conditions.
+  All three rewritten checks were proven against negative controls (delete
+  `windmill` → 7/8 FAIL; make a target descend → FAIL; drop `presentationLatched`
+  → FAIL). Results: 49/49 tests, typecheck PASS, vite build PASS, v500 66/66,
+  phase4 70/70, phase5 104/104.
+
+- **The opening cutscene threw on every frame; nobody could see it.**
+  `updateOpeningCinematic` reads `farmX`/`farmY`/`farmZ` for the whole camera
+  spline, but `farmX`/`farmZ` were `const` **locals inside
+  `startOpeningCinematic`** and `farmY` was never declared anywhere. So the
+  first update frame threw `ReferenceError: farmX is not defined`, before the
+  camera moved and before the subtitles advanced past beat 1.
+  It went unseen because the only check that exercises the cutscene lives in
+  `verify-full-diligence-audit.mjs`, which hardcoded a Windows Chrome path and
+  so died with ENOENT on Linux and in CI — indistinguishable from passing unless
+  you read the exit code. That script and `verify-master-audit.mjs` now honour
+  `CHROME_BIN` / `QA_PLAY_BROWSER` before falling back to the Windows path.
+  Fix: the farm anchor is now module-scope (`SW_CINEMATIC_FARM_X/Z`), and
+  `update` reads the anchor back off the group it actually placed, so the flight
+  path cannot drift from the set. Full diligence audit now 20/20; master audit
+  8/8.
+  **The lesson, worth more than the fix:** a check that cannot run on the machine
+  that runs CI is not a check.
 
 - Broadsheet Newspaper Presentation & "Moo Brew Touchdown" Opening Cutscene:
   - Created type-safe opening cinematic subsystem (`src/presentation/cinematics/`) with Cow 17 actor rig, Moo Brew coffee cup, chickens, fence staging, and a 1.5s cubic-smooth camera spline blend to player follow camera.

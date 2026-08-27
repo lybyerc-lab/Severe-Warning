@@ -8,7 +8,7 @@ import type {
   CampaignLevelProgress,
   CampaignSaveSnapshot,
   StopId,
-} from '../../gameplay/campaign/campaign-contracts';
+} from '../../gameplay/campaign/campaign-contracts.ts';
 
 export const CAMPAIGN_STORAGE_KEY = 'severe_weather_campaign_v1';
 export const CAMPAIGN_SCHEMA_VERSION = 1 as const;

@@ -11,7 +11,7 @@ import {
   type DistrictSnapshot,
   type DistrictStage,
   type DistrictTransitionEvent,
-} from './district-contracts';
+} from './district-contracts.ts';
 
 function normalizeStage(value: number): DistrictStage {
   if (value >= 3) return 3;
@@ -26,7 +26,15 @@ export class DistrictSystem {
   private readonly transitions: DistrictTransitionEvent[] = [];
   private rejectedRegressionsValue = 0;
 
-  constructor(private readonly definitions: readonly DistrictDefinition[] = HEARTLAND_DISTRICT_DEFINITIONS) {
+  // Declared as a field and assigned in the body rather than as a constructor
+  // parameter property. `pnpm test` runs node --experimental-strip-types, which
+  // only removes type syntax; a parameter property emits a real assignment, so
+  // the loader rejects the file outright. tsc supports them fully, which is why
+  // the typecheck stayed green while the test run died.
+  private readonly definitions: readonly DistrictDefinition[];
+
+  constructor(definitions: readonly DistrictDefinition[] = HEARTLAND_DISTRICT_DEFINITIONS) {
+    this.definitions = definitions;
     if (definitions.length !== 3) throw new Error('DistrictSystem requires the accepted three-stage contract.');
   }
 

@@ -1,4 +1,4 @@
-import type { CampaignDefinition, CampaignStopDefinition, RegionalModifierDefinition } from './campaign-contracts';
+import type { CampaignDefinition, CampaignStopDefinition, RegionalModifierDefinition } from './campaign-contracts.ts';
 
 export const HEARTLAND_REGIONAL_MODIFIER: RegionalModifierDefinition = Object.freeze({
   id: 'heartland-homestead-surge',

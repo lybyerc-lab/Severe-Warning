@@ -11,7 +11,7 @@ import {
   type ScoreSnapshot,
   type ScoringContractProbe,
   type ScoringRules,
-} from './scoring-contracts';
+} from './scoring-contracts.ts';
 
 function finiteNonNegative(value: number, fallback = 0): number {
   return Number.isFinite(value) ? Math.max(0, value) : fallback;
@@ -27,7 +27,16 @@ export class ScoringSystem {
   private state: LegacyScoreState = DEFAULT_LEGACY_SCORE_STATE;
   private readonly events: ScoreEvent[] = [];
 
-  constructor(private readonly rules: ScoringRules = DEFAULT_SCORING_RULES) {}
+  // Declared as a field and assigned in the body rather than as a constructor
+  // parameter property. `pnpm test` runs node --experimental-strip-types, which
+  // only removes type syntax; a parameter property emits a real assignment, so
+  // the loader rejects the file outright. tsc supports them fully, which is why
+  // the typecheck stayed green while the test run died.
+  private readonly rules: ScoringRules;
+
+  constructor(rules: ScoringRules = DEFAULT_SCORING_RULES) {
+    this.rules = rules;
+  }
 
   get score(): number {
     return this.state.destructionScore;

@@ -3,7 +3,7 @@
 // Passive mirror of the live tactical camera.
 // ============================================================================
 
-import type { CameraSnapshot } from './camera-contracts';
+import type { CameraSnapshot } from './camera-contracts.ts';
 
 export class CameraSystem {
   private snapshot: CameraSnapshot | null = null;

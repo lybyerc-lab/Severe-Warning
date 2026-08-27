@@ -4,7 +4,7 @@
 // a renderer and owns no presentation behavior.
 // ============================================================================
 
-import type { RendererSnapshot } from './renderer-contracts';
+import type { RendererSnapshot } from './renderer-contracts.ts';
 
 export class RendererSystem {
   private snapshot: RendererSnapshot | null = null;

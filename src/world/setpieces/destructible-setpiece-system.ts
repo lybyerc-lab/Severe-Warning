@@ -6,12 +6,20 @@
 import type {
   SetpieceDefinition,
   SetpieceStateSnapshot,
-} from './destructible-setpiece-contracts';
+} from './destructible-setpiece-contracts.ts';
 
 export class DestructibleSetpieceSystem {
   private snapshot: SetpieceStateSnapshot | null = null;
 
-  constructor(private readonly definition: SetpieceDefinition) {
+  // Declared as a field and assigned in the body rather than as a constructor
+  // parameter property. `pnpm test` runs node --experimental-strip-types, which
+  // only removes type syntax; a parameter property emits a real assignment, so
+  // the loader rejects the file outright. tsc supports them fully, which is why
+  // the typecheck stayed green while the test run died.
+  private readonly definition: SetpieceDefinition;
+
+  constructor(definition: SetpieceDefinition) {
+    this.definition = definition;
     if (!definition.stages.length) {
       throw new Error('DestructibleSetpieceSystem requires at least one accepted legacy stage.');
     }

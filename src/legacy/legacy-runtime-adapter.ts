@@ -3,31 +3,31 @@
 // The only modern module allowed to know legacy global names.
 // ============================================================================
 
-import type { AbilitySystem, AbilitySnapshot } from '../abilities/ability-system';
-import type { GameClocks, LegacyClockSample, LegacyClockSampleInput, ClockSnapshot } from '../core/clocks';
-import type { InputSystem, MovementVector, InputSnapshot } from '../input/input-system';
-import type { ScoringSystem } from '../gameplay/scoring/scoring-system';
-import type { DistrictSystem } from '../gameplay/districts/district-system';
-import type { CampaignSystem } from '../gameplay/campaign/campaign-system';
-import type { CampaignStore } from '../platform/persistence/campaign-store';
-import type { RendererSystem } from '../presentation/renderer/renderer-system';
-import type { SceneSystem } from '../presentation/scene/scene-system';
-import type { CameraSystem } from '../presentation/camera/camera-system';
-import type { AtmosphereSystem } from '../presentation/atmosphere/atmosphere-system';
-import type { TornadoPresentationSystem } from '../presentation/tornado/tornado-presentation-system';
-import type { WorldSystem } from '../world/world-system';
-import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system';
-import type { UISubsystem } from '../ui/ui-system';
-import type { AudioSystem } from '../audio/audio-system';
-import type { TrafficSystem } from '../gameplay/traffic/traffic-system';
-import type { TornadoPhysicsSystem } from '../gameplay/physics/tornado-physics-system';
-import type { ParticleSystem } from '../presentation/vfx/particle-system';
-import type { GameLoopController } from '../gameplay/loop/game-loop-controller';
+import type { AbilitySystem, AbilitySnapshot } from '../abilities/ability-system.ts';
+import type { GameClocks, LegacyClockSample, LegacyClockSampleInput, ClockSnapshot } from '../core/clocks.ts';
+import type { InputSystem, MovementVector, InputSnapshot } from '../input/input-system.ts';
+import type { ScoringSystem } from '../gameplay/scoring/scoring-system.ts';
+import type { DistrictSystem } from '../gameplay/districts/district-system.ts';
+import type { CampaignSystem } from '../gameplay/campaign/campaign-system.ts';
+import type { CampaignStore } from '../platform/persistence/campaign-store.ts';
+import type { RendererSystem } from '../presentation/renderer/renderer-system.ts';
+import type { SceneSystem } from '../presentation/scene/scene-system.ts';
+import type { CameraSystem } from '../presentation/camera/camera-system.ts';
+import type { AtmosphereSystem } from '../presentation/atmosphere/atmosphere-system.ts';
+import type { TornadoPresentationSystem } from '../presentation/tornado/tornado-presentation-system.ts';
+import type { WorldSystem } from '../world/world-system.ts';
+import type { DestructibleSetpieceSystem } from '../world/setpieces/destructible-setpiece-system.ts';
+import type { UISubsystem } from '../ui/ui-system.ts';
+import type { AudioSystem } from '../audio/audio-system.ts';
+import type { TrafficSystem } from '../gameplay/traffic/traffic-system.ts';
+import type { TornadoPhysicsSystem } from '../gameplay/physics/tornado-physics-system.ts';
+import type { ParticleSystem } from '../presentation/vfx/particle-system.ts';
+import type { GameLoopController } from '../gameplay/loop/game-loop-controller.ts';
 import type {
   QaScenarioId,
   QaSnapshot,
   SevereWeatherQaBridge,
-} from '../qa/bridge/severe-weather-qa-bridge';
+} from '../qa/bridge/severe-weather-qa-bridge.ts';
 
 interface LegacyRunState {
   readonly runActive: boolean;

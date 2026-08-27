@@ -5,7 +5,7 @@
 // behavior is invented.
 // ============================================================================
 
-import type { SetpieceDefinition } from './destructible-setpiece-contracts';
+import type { SetpieceDefinition } from './destructible-setpiece-contracts.ts';
 
 export const PRIMARY_LANDMARK_SETPIECE_DEFINITION: SetpieceDefinition = Object.freeze({
   id: 'primary-campaign-landmark',

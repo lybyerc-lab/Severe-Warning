@@ -3,9 +3,9 @@
 // Owns bootstrap and mirrors lifecycle from the authoritative run clock.
 // ============================================================================
 
-import type { RunClockState } from '../core/clocks';
-import type { GameLifecycleState, LifecycleStatus } from '../core/lifecycle';
-import type { GameContext } from './game-context';
+import type { RunClockState } from '../core/clocks.ts';
+import type { GameLifecycleState, LifecycleStatus } from '../core/lifecycle.ts';
+import type { GameContext } from './game-context.ts';
 
 export class GameApp {
   readonly #context: GameContext;

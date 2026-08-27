@@ -3,7 +3,7 @@
 // Passive mirror of live fog, exposure, and storm-light state.
 // ============================================================================
 
-import type { AtmosphereSnapshot } from './atmosphere-contracts';
+import type { AtmosphereSnapshot } from './atmosphere-contracts.ts';
 
 export class AtmosphereSystem {
   private snapshot: AtmosphereSnapshot | null = null;

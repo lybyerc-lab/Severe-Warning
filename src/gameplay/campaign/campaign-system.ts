@@ -3,9 +3,9 @@
 // Typed mirror and exact contract evaluator for the accepted Heartland campaign.
 // ============================================================================
 
-import { CampaignStore } from '../../platform/persistence/campaign-store';
-import { validateCampaignSave, type ValidatedCampaignSave } from '../../platform/persistence/campaign-save-schema';
-import { HEARTLAND_CAMPAIGN_DEFINITION } from './heartland-definitions';
+import { CampaignStore } from '../../platform/persistence/campaign-store.ts';
+import { validateCampaignSave, type ValidatedCampaignSave } from '../../platform/persistence/campaign-save-schema.ts';
+import { HEARTLAND_CAMPAIGN_DEFINITION } from './heartland-definitions.ts';
 import type {
   CampaignContractProbe,
   CampaignDefinition,
@@ -14,7 +14,7 @@ import type {
   RunResultSnapshot,
   StopId,
   StopProgress,
-} from './campaign-contracts';
+} from './campaign-contracts.ts';
 
 function clampScore(value: number): number {
   return Math.max(0, Math.round(Number(value) || 0));
@@ -27,10 +27,21 @@ function clampObjectives(value: number): number {
 export class CampaignSystem {
   private saveState: ValidatedCampaignSave;
 
+  // Declared as a field and assigned in the body rather than as a constructor
+  // parameter property. `pnpm test` runs node --experimental-strip-types, which
+  // only removes type syntax; a parameter property emits a real assignment, so
+  // the loader rejects the file outright. tsc supports them fully, which is why
+  // the typecheck stayed green while the test run died.
+  private readonly store: CampaignStore;
+
+  private readonly definition: CampaignDefinition;
+
   constructor(
-    private readonly store: CampaignStore = new CampaignStore(),
-    private readonly definition: CampaignDefinition = HEARTLAND_CAMPAIGN_DEFINITION,
+    store: CampaignStore = new CampaignStore(),
+    definition: CampaignDefinition = HEARTLAND_CAMPAIGN_DEFINITION,
   ) {
+    this.store = store;
+    this.definition = definition;
     this.saveState = this.store.getSnapshot();
   }
 
