@@ -258,6 +258,8 @@ assets/models/inflatable-mascot-wreck.glb
 assets/models/inflatable-mascot.glb
 assets/models/lot-car-wreck.glb
 assets/models/lot-car.glb
+assets/models/news-chopper-wreck.glb
+assets/models/news-chopper.glb
 assets/models/news-van-wreck.glb
 assets/models/news-van.glb
 assets/models/oak-tree-wreck.glb
@@ -446,6 +448,7 @@ src/world/setpieces/second-structure-definition.ts
 src/world/world-contracts.ts
 src/world/world-system.ts
 tools/asset-pipeline/README.md
+tools/asset-pipeline/generate-chopper-model.mjs
 tools/asset-pipeline/generate-coastal-models.mjs
 tools/asset-pipeline/generate-metro-models.mjs
 tools/asset-pipeline/glb-builder.mjs
