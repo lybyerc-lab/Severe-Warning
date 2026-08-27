@@ -25,14 +25,20 @@ default and the working branch.
 
 ## Next up — AG (assets)
 
-All current batch requests completed. Open for next director requests.
+Nothing queued. **Read the model budget note under Decisions open first** — at
+97% of the cap, the next batch has to displace something or the cap has to move,
+so a batch request needs that answered before it starts.
 
 ## Next up — Code & Modernization
 
-All three top priority modernization tasks have successfully landed:
-1. Source HTML File Renaming to `SevereWeather_Warning.html`
-2. County Fair & Industrial Landmark Animations
-3. Parked MOO-LAH Economy, Storm Triangle Upgrades & Cosmetic Funnel Skins
+- **Nobody has ever seen the opening cutscene work.** `updateOpeningCinematic`
+  threw on every frame from the moment it shipped, so the camera spline, Cow 17's
+  choreography, the chickens and the coffee steam have never actually played —
+  the fix landed this session but the result is unreviewed. Worth watching before
+  anything is built on top of it.
+- The three previous top-priority items all landed: the source HTML rename, the
+  county fair / industrial landmark animations, and the MOO-LAH economy with the
+  Storm Triangle upgrades and cosmetic funnel skins.
 
 ## Decisions open
 
@@ -79,16 +85,6 @@ All three top priority modernization tasks have successfully landed:
 
 ## Parked — do not lose, not being worked
 
-- **MOO-LAH — storm currency, upgrades and skins.**
-  Lives at tag `archive/agent/sw-rpg-001-moolah-storm-triangle`, commit
-  `ce1e47c`. 423 lines: a runtime module, a QA script, a verify script, wired
-  to the persistent scorekeeper.
-  **Catch:** it predates the patch-chain flattening, so it sits in `runtime/`
-  behind an `apply-*.mjs`. Reviving it means porting into the inlined game, not
-  checking the branch out. Budget for that, not for a merge.
-  The name is reserved: nothing else in the game may be called MOO-LAH, which
-  is why the discount store is UDDER VALUE.
-
 - **`fire-hydrant`, `fire-hydrant-wreck`.** Authored, welded, deliberately not
   placed. They render 5–8 pixels tall at the game's own cameras while costing
   308 triangles an instance, more than a street lamp at 252 or a signal at 300.
@@ -112,6 +108,12 @@ All three top priority modernization tasks have successfully landed:
   detaches `roofLeft`, `frontWall`, the ridge and both doors **by name** across
   four stages. Point a single-mesh model at it and every stage fires, every
   point is awarded, every gag toast prints, and nothing moves on screen.
+
+- **MOO-LAH is the in-game currency, and the name is reserved.** Nothing else
+  in the game may be called MOO-LAH, which is why the discount store is UDDER
+  VALUE. It is no longer parked: the economy, the Storm Triangle upgrades, the
+  funnel skins and the storefront are all wired and verified
+  (`verify-moolah-economy` 11/11, `verify-shop-system` 10/10).
 
 - **FRAMING keeps its toggle.** STORM is the better view and CLASSIC stays
   available; people like different views.
