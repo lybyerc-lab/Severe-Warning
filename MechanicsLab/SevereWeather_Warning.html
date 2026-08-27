@@ -2160,6 +2160,7 @@
       <div>COMBO: <b class="combo-badge" id="comboVal">1.0x</b></div>
       <div>SCORE: <b id="scoreVal">0</b></div>
       <div>FOOTAGE: <b class="footage-badge" id="footageVal">0</b></div>
+      <div>MOO-LAH: <b id="moolahVal" style="color:#fbbf24;font-weight:900;">0</b></div>
       <div class="fps-telemetry">FPS: <b id="fpsVal">60</b></div>
     </div>
 
@@ -9525,8 +9526,9 @@ function triggerGridZapCascade() {
     return;
   }
 
+  const maxNodes = (typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('gridZap')) ? 10 : 6;
   const selected = [candidates.shift().pole];
-  while (selected.length < 6 && candidates.length) {
+  while (selected.length < maxNodes && candidates.length) {
     const previous = selected[selected.length - 1];
     let bestIndex = -1;
     let bestDistance = Infinity;
@@ -10215,6 +10217,11 @@ function addScore(pts) {
   maxComboReached = Math.max(maxComboReached, comboMultiplier);
   comboDecayTimer = 4.5;
   baseScore += pts;
+
+  if (typeof swRpgAwardMoolah === 'function') {
+    const liveMoolah = Math.floor(awarded / 65);
+    if (liveMoolah > 0) swRpgAwardMoolah(liveMoolah, 'destruction');
+  }
   return awarded;
 }
 
@@ -11203,25 +11210,29 @@ function triggerAbility(slot) {
   if (currentStorm === 'tornado') {
     if (slot === 'primary') { // PULL VORTEX
       activePullVortex = true;
-      pullVortexTimer = 2.5;
+      pullVortexTimer = (typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('pull')) ? 3.8 : 2.5;
       playSound('pull');
       addCameraShake(1.4);
       triggerPullFeedback();
+      const pullDmg = (typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('pull')) ? 145 : 95;
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 3.2) damageLandmark(lm, 95);
+        if (dist < storm.radius * 3.4) damageLandmark(lm, pullDmg);
       });
     } else if (slot === 'secondary') { // GUST SHOCKWAVE
       playSound('explode');
       addCameraShake(1.8);
       triggerGustFeedback();
+      const gustLmDmg = (typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('gust')) ? 190 : 120;
+      const gustTgtDmg = (typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('gust')) ? 160 : 90;
+      const gustRadius = (typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('gust')) ? (storm.radius * 3.8) : (storm.radius * 3.2);
       landmarks.forEach(lm => {
         const dist = Math.hypot(lm.x - storm.pos.x, lm.z - storm.pos.z);
-        if (dist < storm.radius * 3.2) damageLandmark(lm, 120);
+        if (dist < gustRadius) damageLandmark(lm, gustLmDmg);
       });
       targets.forEach(t => {
         const dist = Math.hypot(t.x - storm.pos.x, t.z - storm.pos.z);
-        if (dist < storm.radius * 2.4) damageTarget(t, 90, 'gust');
+        if (dist < gustRadius * 0.75) damageTarget(t, gustTgtDmg, 'gust');
       });
     } else if (slot === 'tertiary') { // GRID ZAP CASCADE
       triggerGridZapCascade();
@@ -11501,12 +11512,25 @@ function finishRun() {
   finalizeBovineRun();
   updateHighScore(currentStorm, destructionScore);
   completeCampaignRun(grade, destructionScore, doneCount);
+
+  if (typeof swRpgAwardForAcceptedResult === 'function') {
+    swRpgAwardForAcceptedResult({
+      destructionScore,
+      baseScore,
+      maxComboReached,
+      currentStage,
+      grade,
+      doneCount
+    });
+  }
+
   const countyEl = document.getElementById('npCountyName');
   if (countyEl) {
     const lvl = getActiveCampaignLevel();
     countyEl.textContent = `${(lvl.name || 'COUNTY').toUpperCase()} CHRONICLE · AFTERMATH DISPATCH`;
   }
   if (typeof refreshNewspaperResults === 'function') refreshNewspaperResults();
+  if (typeof updateHudMoolah === 'function') updateHudMoolah();
   runActive = false;
   getCachedEl('resultsOverlay').classList.add('active');
 }
@@ -11542,9 +11566,12 @@ function resetWarningRun() {
   // [SW:RENDER:ENVIRONMENT] init3DWorld/rebuild create fresh materials; re-point
   // the metals at the environment now that they exist.
   if (typeof skyEnvironment !== 'undefined') skyEnvironment.apply();
-  selectStormClass(currentStorm);
   updateEFRating();
   renderObjectives();
+  if (typeof updateHudMoolah === 'function') updateHudMoolah();
+  if (typeof swRpgStore !== 'undefined' && swRpgStore.activeSkin && typeof applyFunnelSkinMaterials === 'function') {
+    applyFunnelSkinMaterials(swRpgStore.activeSkin);
+  }
   if (urlParams.get('cowcam') === '1' || urlParams.get('bovinereport') === '1') {
     setTimeout(runBovineQaScenario, 180);
   }
@@ -14897,6 +14924,7 @@ function purchaseSwRpgUpgrade(key) {
   swRpgStore.spent += upgrade.cost;
   swRpgStore.upgrades[key] = 1;
   const persisted = swRpgSaveStore();
+  if (typeof updateHudMoolah === 'function') updateHudMoolah();
   return Object.freeze({ purchased: true, key, cost: upgrade.cost, balance: swRpgStore.moolah, persisted });
 }
 
@@ -14910,6 +14938,8 @@ function purchaseSwRpgSkin(skinKey) {
   swRpgStore.unlockedSkins.push(skinKey);
   swRpgStore.activeSkin = skinKey;
   const persisted = swRpgSaveStore();
+  if (typeof updateHudMoolah === 'function') updateHudMoolah();
+  if (typeof applyFunnelSkinMaterials === 'function') applyFunnelSkinMaterials(skinKey);
   return Object.freeze({ purchased: true, skinKey, cost: skin.cost, balance: swRpgStore.moolah, persisted });
 }
 
@@ -14919,14 +14949,38 @@ function equipSwRpgSkin(skinKey) {
   }
   swRpgStore.activeSkin = skinKey;
   const persisted = swRpgSaveStore();
+  if (typeof updateHudMoolah === 'function') updateHudMoolah();
+  if (typeof applyFunnelSkinMaterials === 'function') applyFunnelSkinMaterials(skinKey);
   return Object.freeze({ equipped: true, activeSkin: swRpgStore.activeSkin, persisted });
+}
+
+function updateHudMoolah() {
+  const mVal = typeof swRpgStore !== 'undefined' ? swRpgStore.moolah : 0;
+  const hudEl = document.getElementById('moolahVal');
+  if (hudEl) hudEl.textContent = mVal.toLocaleString();
+  const shopBal = document.querySelector('.sw-shop-balance');
+  if (shopBal) shopBal.textContent = `${mVal.toLocaleString()} MOO-LAH`;
+  const resultsBal = document.getElementById('newspaperMoolahEarned');
+  if (resultsBal && typeof swRpgStore !== 'undefined' && swRpgStore.lastReward) {
+    resultsBal.textContent = `+${swRpgStore.lastReward.amount} MOO-LAH (BANK: ${mVal.toLocaleString()})`;
+  }
+}
+
+function swRpgAwardMoolah(amount, reason = 'score') {
+  if (!amount || amount <= 0 || typeof swRpgStore === 'undefined') return 0;
+  swRpgStore.moolah += amount;
+  swRpgStore.earned += amount;
+  swRpgSaveStore();
+  updateHudMoolah();
+  return amount;
 }
 
 function swRpgAwardForAcceptedResult(result) {
   if (!result) return null;
-  const base = Math.floor(((result.destructionScore || 0) + (result.baseScore || 0)) / 100);
-  const combo = Math.floor((result.maxComboReached || 1.0) * 15);
-  const amount = Math.max(15, base + combo);
+  const base = Math.floor(((result.destructionScore || 0) + (result.baseScore || 0)) / 60);
+  const combo = Math.floor((result.maxComboReached || 1.0) * 20);
+  const gradeBonus = (result.grade === 'S+' || result.grade === 'UDDER CHAOS') ? 150 : (result.grade === 'A' ? 90 : (result.grade === 'B' ? 50 : 25));
+  const amount = Math.max(35, base + combo + gradeBonus);
   const reward = {
     amount,
     reason: 'county-clear',
@@ -14937,6 +14991,7 @@ function swRpgAwardForAcceptedResult(result) {
   swRpgStore.lastReward = reward;
   swRpgLastReward = reward;
   swRpgSaveStore();
+  updateHudMoolah();
   return reward;
 }
 
@@ -16037,6 +16092,18 @@ function installShopModalStyles() {
 function applyFunnelSkinMaterials(skinKey) {
   const skin = (typeof SW_RPG_SKINS !== 'undefined' && SW_RPG_SKINS[skinKey]) || null;
   if (!skin) return;
+
+  if (typeof funnelMat !== 'undefined' && funnelMat && funnelMat.uniforms) {
+    if (funnelMat.uniforms.uColorCore) funnelMat.uniforms.uColorCore.value.set(skin.coreColor);
+    if (funnelMat.uniforms.uColorVapor) funnelMat.uniforms.uColorVapor.value.set(skin.accentColor);
+  }
+  if (typeof outerFunnelMat !== 'undefined' && outerFunnelMat && outerFunnelMat.uniforms) {
+    if (outerFunnelMat.uniforms.uColorCore) outerFunnelMat.uniforms.uColorCore.value.set(skin.accentColor);
+    if (outerFunnelMat.uniforms.uColorVapor) outerFunnelMat.uniforms.uColorVapor.value.set(skin.suctionGlow);
+  }
+  if (typeof vortexRing !== 'undefined' && vortexRing && vortexRing.material) {
+    vortexRing.material.color.set(skin.suctionGlow);
+  }
 
   // Apply colors to vapor ribbons and suction rings if present
   if (typeof productionVaporRibbons !== 'undefined' && Array.isArray(productionVaporRibbons)) {
