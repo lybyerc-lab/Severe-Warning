@@ -89,7 +89,10 @@ server.listen(PORT, async () => {
 
   async function evaluate(expr) {
     const res = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
-    return res.result?.value;
+    if (res.result?.exceptionDetails) {
+      console.error('EVAL EXCEPTION:', res.result.exceptionDetails);
+    }
+    return res.result?.result?.value ?? res.result?.value;
   }
 
   console.log('Navigating to game...');
@@ -167,7 +170,57 @@ server.listen(PORT, async () => {
   await new Promise(r => setTimeout(r, 2500));
   await snap('gameplay_07_metro_skyline.png', 'Metro Row Skyline Plaza View');
 
-  console.log('\nAll gameplay views captured successfully!');
+  // 7. Complete Warning Run & Inspect Aftermath Newspaper Broadsheet
+  const evalResult = await evaluate(`
+    (() => {
+      try {
+        destructionScore = 150548;
+        maxComboReached = 3.5;
+        clearedBlocksCount = 35;
+        chainReactionsCount = 4;
+        mediaMoments = 20;
+        footageBonus = 6277;
+        destroyedLandmarksCount = 2;
+        destroyedSubstationsCount = 3;
+        stage1Score = 44703;
+        stage2Score = 91013;
+        stage3Score = 150548;
+        missionObjectives[currentStorm].forEach(o => o.done = true);
+        bovineRound.cowsRelocated = 18;
+        bovineRound.combinedAirtime = 2139.4;
+        bovineRound.longestFlight = 17516;
+        bovineRound.hayLandings = 0;
+        completeWarningRun('S+');
+        return {
+          success: true,
+          overlayClass: document.getElementById('resultsOverlay').className,
+          resultsCardHtml: document.querySelector('.results-card').innerHTML.slice(0, 200)
+        };
+      } catch (err) {
+        return { success: false, error: err.message, stack: err.stack };
+      }
+    })()
+  `);
+  console.log('CompleteWarningRun evaluation:', evalResult);
+  await new Promise(r => setTimeout(r, 1500));
+  await snap('aftermath_newspaper_results.png', 'Evening Edition Aftermath Newspaper Results Screen');
+
+  const cardMetrics = await evaluate(`
+    (() => {
+      const card = document.querySelector('.results-card');
+      const overlay = document.getElementById('resultsOverlay');
+      return {
+        cardScrollHeight: card?.scrollHeight,
+        cardClientHeight: card?.clientHeight,
+        isOverflowing: card ? card.scrollHeight > card.clientHeight : null,
+        overlayHeight: overlay?.clientHeight,
+        cardWidth: card?.clientWidth
+      };
+    })()
+  `);
+  console.log('Results card metrics:', cardMetrics);
+
+  console.log('\nAll gameplay views and Aftermath Newspaper captured successfully!');
   
   chromeProc.kill();
   server.close();
