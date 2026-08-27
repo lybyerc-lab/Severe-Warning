@@ -42,8 +42,41 @@ await context.addInitScript(() => {
 const page = await context.newPage();
 const consoleErrors = [];
 const pageErrors = [];
+// See the same block in qa-play-full-round.mjs: the audio sprite is resolved by
+// probing three candidate paths, so a healthy packaged boot logs two 404s by
+// design. Chrome's console line for those carries no URL, so failing requests
+// are tracked by URL separately and the URL-less generic lines are dropped.
+const failedRequests = [];
+const BENIGN_PROBE_PATHS = [
+  '/assets/audio/storm-feel-manifest.json',
+  '/assets/audio/storm-feel-sprite.wav'
+];
+const isBenignProbeMiss = url => BENIGN_PROBE_PATHS.some(suffix => {
+  try {
+    return new URL(url).pathname.endsWith(suffix);
+  } catch {
+    return false;
+  }
+});
+const GENERIC_RESOURCE_ERROR = /^error: Failed to load resource:/;
+// Chrome refuses navigator.vibrate() until the frame has been tapped, and logs
+// an error for each refused call. Headless-only: on a device the player taps to
+// start, so the call lands. Deliberately NOT fixed by gating the game's haptics
+// on navigator.userActivation -- that silences this line but makes triggerHaptic
+// untestable without a gesture, which breaks the haptic waveform audit. The
+// harness is the right place to know this is an artifact of how it drives the
+// page.
+const BLOCKED_VIBRATE = /Blocked call to navigator\.vibrate/;
+
+page.on('response', response => {
+  if (response.status() < 400) return;
+  const url = response.url();
+  if (isBenignProbeMiss(url)) return;
+  failedRequests.push(`${response.status()} ${url}`);
+});
 page.on('console', message => {
-  if (message.type() === 'error') consoleErrors.push(`${message.type()}: ${message.text()}`);
+  const entry = `${message.type()}: ${message.text()}`;
+  if (message.type() === 'error' && !GENERIC_RESOURCE_ERROR.test(entry) && !BLOCKED_VIBRATE.test(entry)) consoleErrors.push(entry);
 });
 page.on('pageerror', error => pageErrors.push(String(error?.stack || error)));
 
@@ -52,7 +85,7 @@ let harnessError = null;
 
 try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 120000 });
-  await page.waitForSelector('#campaignMapGrid', { timeout: 60000 });
+  await page.waitForSelector('#campaignMapGrid', { timeout: 60000, state: 'attached' });
   await page.waitForFunction(() => typeof window.getCampaignWorldQaState === 'function', null, { timeout: 60000 });
 
   for (let index = 0; index < 4; index++) {
@@ -125,6 +158,7 @@ const checks = {
   roadsFollowGroundAtEveryStop: states.every(state => (state.groundAgreement?.maxLiftError ?? Infinity) < 0.01),
   noPageErrors: pageErrors.length === 0,
   noConsoleErrors: consoleErrors.length === 0,
+  noFailedRequests: failedRequests.length === 0,
   harnessCompletedWithoutException: harnessError === null
 };
 
@@ -139,6 +173,7 @@ const report = {
   checks,
   states,
   consoleErrors,
+  failedRequests,
   pageErrors,
   harnessError
 };

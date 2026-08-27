@@ -104,7 +104,7 @@ const requiredMarkers = [
   ['glass throttle', 'glass-throttled'],
   ['audio bus gains', 'AUDIO_BUS_BASE_GAINS'],
   ['audio mix target', 'effects: 0.68, music: 1.00'],
-  ['synthetic source disabled', 'disabled-synthetic-source'],
+  ['legacy moo routed to recorded clips', "trigger: 'legacy:moo'"],
   ['effect ducking', 'effectActivity >= 5 ? 0.54'],
   ['chain reaction feedback', 'CHAIN REACTION x'],
   ['combo threshold', 'comboMultiplier >= 3.5'],
@@ -172,6 +172,13 @@ const requiredMarkers = [
 ];
 
 for (const [name, marker] of requiredMarkers) record(name, html.includes(marker), marker);
+
+// The legacy 'moo' sound must resolve to sampled moo clips, not a synthesised
+// tone. Matched as a pattern rather than a literal line so reordering or
+// retuning the call does not fail the check, while replacing playStormClip with
+// an oscillator does.
+const mooRoutingPattern = /if \(type === 'moo'\)[\s\S]{0,400}?playStormClip\([\s\S]{0,120}?moo_\d+/;
+record('legacy moo plays a sampled clip', mooRoutingPattern.test(html), String(mooRoutingPattern));
 for (const region of PRODUCTION_SLICE_REGIONS) {
   const sourceMarker = `[SW:SOURCE:${region}]`;
   record(`bundled source marker ${region}`, html.includes(sourceMarker), sourceMarker);

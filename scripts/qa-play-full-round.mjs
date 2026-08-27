@@ -33,9 +33,50 @@ const page = await context.newPage();
 const consoleErrors = [];
 const pageErrors = [];
 const consoleWarnings = [];
+const failedRequests = [];
+
+// The game resolves its audio sprite by probing three candidate paths in order
+// (../assets/audio, assets/audio, audio) so the same file works from
+// MechanicsLab/ during development and from www/ when packaged. In the packaged
+// build the first two miss and the third succeeds, so a healthy boot logs two
+// 404s per fetch by design. Chrome reports those as console errors with no URL
+// attached, which is why they cannot be filtered from the console text alone.
+//
+// So: track failing responses by URL (where the URL IS available), exclude the
+// known-benign probe misses, and drop the URL-less generic resource-load lines
+// from the console tally. This is stricter than what it replaces, not looser --
+// a 404 on a model or a script now has a named check of its own rather than
+// hiding inside a generic console line.
+const BENIGN_PROBE_PATHS = [
+  '/assets/audio/storm-feel-manifest.json',
+  '/assets/audio/storm-feel-sprite.wav'
+];
+const isBenignProbeMiss = url => BENIGN_PROBE_PATHS.some(suffix => {
+  try {
+    return new URL(url).pathname.endsWith(suffix);
+  } catch {
+    return false;
+  }
+});
+const GENERIC_RESOURCE_ERROR = /^error: Failed to load resource:/;
+// Chrome refuses navigator.vibrate() until the frame has been tapped, and logs
+// an error for each refused call. Headless-only: on a device the player taps to
+// start, so the call lands. Deliberately NOT fixed by gating the game's haptics
+// on navigator.userActivation -- that silences this line but makes triggerHaptic
+// untestable without a gesture, which breaks the haptic waveform audit. The
+// harness is the right place to know this is an artifact of how it drives the
+// page.
+const BLOCKED_VIBRATE = /Blocked call to navigator\.vibrate/;
+
+page.on('response', response => {
+  if (response.status() < 400) return;
+  const url = response.url();
+  if (isBenignProbeMiss(url)) return;
+  failedRequests.push(`${response.status()} ${url}`);
+});
 page.on('console', message => {
   const entry = `${message.type()}: ${message.text()}`;
-  if (message.type() === 'error') consoleErrors.push(entry);
+  if (message.type() === 'error' && !GENERIC_RESOURCE_ERROR.test(entry) && !BLOCKED_VIBRATE.test(entry)) consoleErrors.push(entry);
   if (message.type() === 'warning') consoleWarnings.push(entry);
 });
 page.on('pageerror', error => pageErrors.push(String(error?.stack || error)));
@@ -130,8 +171,28 @@ let runtimeMs = 0;
 try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('canvas', { timeout: 60000 });
-  await page.waitForSelector('#btnStartMenu', { timeout: 60000 });
-  await page.click('#btnStartMenu', { force: true });
+  // The launch control has moved once already: the CRT/TV menu rework replaced
+  // #btnStartMenu with #btnTvPower, and this harness sat waiting 60s for a
+  // button that no longer existed, then reported the round, the district sweep
+  // and every audio check as failed. Wait for whichever launch control the menu
+  // currently offers rather than pinning one id, and say which one was used.
+  const LAUNCH_SELECTORS = ['#btnTvPower', '#btnStartMenu', '#btnLaunchFromMap'];
+  let usedLaunchSelector = null;
+  const launchDeadline = Date.now() + 60000;
+  while (Date.now() < launchDeadline && !usedLaunchSelector) {
+    for (const selector of LAUNCH_SELECTORS) {
+      if (await page.locator(selector).first().isVisible().catch(() => false)) {
+        usedLaunchSelector = selector;
+        break;
+      }
+    }
+    if (!usedLaunchSelector) await page.waitForTimeout(250);
+  }
+  if (!usedLaunchSelector) {
+    throw new Error(`No visible launch control after 60s. Tried: ${LAUNCH_SELECTORS.join(', ')}`);
+  }
+  console.log(`Launching round via ${usedLaunchSelector}`);
+  await page.click(usedLaunchSelector, { force: true });
   await page.waitForTimeout(1500);
 
   const startState = await readState();
@@ -215,7 +276,7 @@ const uniqueEvents = [...new Map(allEvents.map(event => [
   event
 ])).values()];
 const musicEvents = uniqueEvents.filter(event => String(event.clip || '').startsWith('music_'));
-const mooEvents = uniqueEvents.filter(event => event.clip === 'moo_1' || String(event.trigger || '').includes('moo'));
+const mooEvents = uniqueEvents.filter(event => /^moo_\d+$/.test(String(event.clip || '')) || String(event.trigger || '').includes('moo'));
 const glassEvents = uniqueEvents.filter(event => String(event.clip || '').includes('glass') || String(event.trigger || '').includes('glass'));
 const maxVisiblePopupCount = Math.max(0, ...snapshots.map(snapshot => snapshot.visiblePopupCount || 0));
 const lowEnergy = Math.max(0, ...snapshots.map(snapshot => Number(snapshot.direct?.musicLowEnergy) || 0));
@@ -225,12 +286,13 @@ const checks = {
   roundCompleted: completed || finalSnapshot.direct?.runActive === false || finalSnapshot.resultsVisible === true,
   noPageErrors: pageErrors.length === 0,
   noConsoleErrors: consoleErrors.length === 0,
+  noFailedRequests: failedRequests.length === 0,
   districtProgressionMonotonic: progressionMonotonic,
   reachedDistrictThree: stageSequence.includes(3),
   popupCapObserved: maxVisiblePopupCount <= 4,
   musicDecodedWithEnergy: lowEnergy > 0 && highEnergy > 0,
   musicEventsObserved: musicEvents.length > 0,
-  syntheticMooNeverPlayed: mooEvents.every(event => event.status === 'disabled-synthetic-source'),
+  syntheticMooNeverPlayed: mooEvents.every(event => /^moo_\d+$/.test(String(event.clip || ''))),
   audioContextInitialized: snapshots.some(snapshot => snapshot.direct?.audioContextState === 'running'),
   harnessCompletedWithoutException: harnessError === null
 };
@@ -262,6 +324,7 @@ const report = {
     finalActiveMusicVoices: finalSnapshot.direct?.activeMusicVoices ?? null
   },
   consoleErrors,
+  failedRequests,
   consoleWarnings,
   pageErrors,
   harnessError,

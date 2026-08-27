@@ -140,6 +140,54 @@ All three top priority modernization tasks have successfully landed:
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- **CI round two: the checks were pinned to a UI and an audio design that had
+  both moved on.** Getting past the build blockers only exposed the next layer.
+  1. **The modern shell crashed at boot.** The Hart Farm barn destruction rework
+     renamed `roofLeft` to `roofLeftGroup`; `getProductionSliceQaState` still read
+     `productionBarn.roofLeft`, so `.parent` on `undefined` threw and took the
+     whole modern-shell bootstrap down. A QA reporter must never be the thing
+     that stops the game booting, so it is defensive now as well as correct.
+  2. **The play harness waited 60s for a button that no longer exists.** The
+     CRT/TV menu rework replaced `#btnStartMenu` with `#btnTvPower`. That single
+     dead selector was reporting the round, the district sweep and every audio
+     check as failed. It now polls the known launch controls for the first
+     *visible* one — not a comma selector, which resolves in DOM order and picks
+     `#btnLaunchFromMap` inside the closed region-map modal.
+  3. **The world tour had the same fault waiting.** `#campaignMapGrid` moved
+     inside that modal too, so it is present but zero-size, and
+     `waitForSelector` waits for visibility by default. It waits for attachment
+     now; the real readiness gate is the `waitForFunction` on the next line.
+  4. **`synthetic source disabled` asserted a design that was deliberately
+     changed.** The moo used to be suppressed and logged as
+     `disabled-synthetic-source`; it now plays sampled `moo_1`/`moo_2` clips.
+     The marker is gone from the game, so the check could only fail — and its
+     sibling in the play harness could only pass by seeing zero moos, which is
+     exactly what it had been doing. Both re-expressed against the invariant
+     that still holds: **a moo is a recorded clip, never the synthesiser.**
+     Proven with a negative control (swap `playStormClip` for an oscillator →
+     FAIL).
+  5. **Console 404s were healthy behaviour counted as errors.** `fetchAudio`
+     probes three candidate paths so one file works from `MechanicsLab/` and
+     from `www/`; the packaged build misses twice and succeeds on the third by
+     design. Chrome logs those with no URL attached, so they cannot be filtered
+     from console text. Failing requests are now tracked by URL with the known
+     probe misses excluded, and there is a new `noFailedRequests` check. This is
+     **stricter** than what it replaced: a 404 on a model or a script used to
+     hide inside a generic console line and now has a named check.
+
+  Results: full round 11/12 and world tour 19/19 locally, the one gap being
+  `musicDecodedWithEnergy`, which needs three ffmpeg-generated music clips this
+  container cannot build. CI generates them and its own log confirms them
+  present.
+
+- **A near miss worth recording: do not bend the game to suit a check.**
+  Chrome refuses `navigator.vibrate()` before the frame is tapped and logs an
+  error per call. Gating the game's haptics on `navigator.userActivation`
+  silenced it — and made `triggerHaptic` untestable without a gesture, which
+  broke the haptic waveform audit outright. Reverted. The harness filters it as
+  the headless artifact it is. **A console line in a headless harness is not a
+  reason to change shipped behaviour.**
+
 - **CI restored: Android APK and QA Full Round were red for 10+ commits.**
   Five separate faults, only one of which was a broken check:
   1. `--experimental-strip-types` (what `npm test` uses) cannot compile
