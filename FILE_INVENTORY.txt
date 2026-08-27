@@ -74,6 +74,7 @@ Docs/DECISION_2026-08-03_PRODUCTION_DIRECTION.md
 Docs/DECISION_2026-08-04_PHASE5_PARITY_FIRST_PRESENTATION_HANDOFF.md
 Docs/DECISION_2026-08-04_RECOVERED_KNOWLEDGE_AND_AGENT_PROTOCOL.md
 Docs/DECISION_LOG.md
+Docs/DEVELOPMENT_INVARIANTS.md
 Docs/DEVICE_TEST_LOG.md
 Docs/Evidence/QA4_STAGE4_PASS_QA46_803f6fa.json
 Docs/GLB_PIPELINE_HANDOFF.md
@@ -324,6 +325,8 @@ qa-candidate.json
 scripts/append-rampage-music.mjs
 scripts/apply-recorded-storm-effects.mjs
 scripts/build-web.mjs
+scripts/check-hygiene.mjs
+scripts/check-inventory.mjs
 scripts/compare-phase5-visual-baseline-legacy.mjs
 scripts/compare-phase5-visual-baseline-v6.mjs
 scripts/compare-phase5-visual-baseline.mjs
@@ -350,6 +353,7 @@ scripts/setup-qa-signing.sh
 scripts/stamp-qa-artifact.mjs
 scripts/stamp-qa-pages.mjs
 scripts/test-cinematic-sip.mjs
+scripts/update-inventory.mjs
 scripts/verify-full-diligence-audit.mjs
 scripts/verify-landmark-animations.mjs
 scripts/verify-master-audit.mjs

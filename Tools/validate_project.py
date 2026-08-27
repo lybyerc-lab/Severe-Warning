@@ -90,6 +90,10 @@ for path in project_files:
         errors.append(f'Possible access token committed in {path.relative_to(root)}')
 
 inventory_path = root / 'FILE_INVENTORY.txt'
+if '--fix' in sys.argv:
+    inventory_path.write_text('\n'.join(project_rel_paths) + '\n', encoding='utf-8')
+    print('Automatically synchronized FILE_INVENTORY.txt with tracked project files.')
+
 if inventory_path.exists():
     try:
         listed = [line.strip() for line in inventory_path.read_text(encoding='utf-8-sig').splitlines() if line.strip()]
@@ -114,7 +118,7 @@ if inventory_path.exists():
             detail.append(f'    ... and {len(removed) - 10} more no longer tracked')
         if not added and not removed:
             detail.append('    same files, different order')
-        detail.append('    fix: git ls-files --cached --others --exclude-standard | LC_ALL=C sort > FILE_INVENTORY.txt')
+        detail.append('    fix: pnpm run inventory:update  OR  python3 Tools/validate_project.py --fix')
         errors.append('FILE_INVENTORY.txt does not match the tracked project file set\n' + '\n'.join(detail))
 
 if errors:
