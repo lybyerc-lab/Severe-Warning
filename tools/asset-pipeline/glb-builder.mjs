@@ -200,6 +200,34 @@ export class GlbBuilder {
     this.indices.push(startIndex + 1, startIndex + 5, startIndex + 2);
   }
 
+  addPyramid(center, size, colorHex, rotation = [0, 0, 0]) {
+    const [cx, cy, cz] = center;
+    const [sx, sy, sz] = [size[0] / 2, size[1] / 2, size[2] / 2];
+    const col = parseHexColor(colorHex);
+
+    const p = [
+      [-sx, -sy, -sz], [sx, -sy, -sz], [sx, -sy, sz], [-sx, -sy, sz], // Base vertices 0, 1, 2, 3
+      [0, sy, 0] // Apex 4
+    ];
+
+    const startIndex = this.positions.length / 3;
+    p.forEach(pt => {
+      const rot = rotateVector(pt, rotation);
+      this.positions.push(cx + rot[0], cy + rot[1], cz + rot[2]);
+      this.normals.push(0, 1, 0);
+      this.colors.push(col[0], col[1], col[2], 1.0);
+    });
+
+    // Base Quads
+    this.indices.push(startIndex + 0, startIndex + 2, startIndex + 1);
+    this.indices.push(startIndex + 0, startIndex + 3, startIndex + 2);
+    // 4 Triangular sides
+    this.indices.push(startIndex + 0, startIndex + 1, startIndex + 4);
+    this.indices.push(startIndex + 1, startIndex + 2, startIndex + 4);
+    this.indices.push(startIndex + 2, startIndex + 3, startIndex + 4);
+    this.indices.push(startIndex + 3, startIndex + 0, startIndex + 4);
+  }
+
   toGlbBuffer() {
     const posBuffer = Buffer.from(new Float32Array(this.positions).buffer);
     const normBuffer = Buffer.from(new Float32Array(this.normals).buffer);
@@ -247,8 +275,8 @@ export class GlbBuilder {
           name: "DefaultVertexColorMaterial",
           pbrMetallicRoughness: {
             baseColorFactor: [1, 1, 1, 1],
-            metallicFactor: 0.1,
-            roughnessFactor: 0.7
+            metallicFactor: 0.16,
+            roughnessFactor: 0.54
           }
         }
       ],
