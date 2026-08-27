@@ -25,9 +25,9 @@ default and the working branch.
 
 ## Next up — AG (assets)
 
-Nothing queued. **Read the model budget note under Decisions open first** — at
-97% of the cap, the next batch has to displace something or the cap has to move,
-so a batch request needs that answered before it starts.
+Nothing queued. **The budget rule is now settled: a new model must retire an
+existing one** (see Decisions open). Any batch request has to name what it
+displaces before work starts.
 
 ## Next up — Code & Modernization
 
@@ -42,9 +42,15 @@ so a batch request needs that answered before it starts.
 
 ## Decisions open
 
-- **The model budget is at 97%.** 128 models, 1.93 MB against a ~2 MB cap. Any
-  further AG batch either displaces existing models or needs the cap raised.
-  Measured, not estimated: `du -sb assets/models` = 2,026,182 bytes.
+- ~~The model budget is at 97%.~~ **Settled: displace before adding.** 128
+  models, 1.93 MB against a ~2 MB cap (measured: `du -sb assets/models` =
+  2,026,182 bytes). Director's call is that the cap holds — **a new model must
+  retire an existing one.** AG cannot start a batch by adding; the batch request
+  has to name what it displaces.
+  Known slack, both already parked and unplaced, so retiring them costs nothing
+  on screen: `fire-hydrant` / `fire-hydrant-wreck` (308 tris an instance, renders
+  5–8 px tall) and `hart-barn` / `hart-barn-wreck` (the hero barn is deliberately
+  not model-backed — see Standing rules). Measure before promising the space.
 
 - **Nothing watches CI.** Two of the three workflows were red for at least ten
   consecutive commits and nobody noticed, because the only workflow anyone reads
