@@ -10458,17 +10458,84 @@ function createSignatureStoreMesh(store) {
   return meshData;
 }
 
-function createLotCarMesh(color = '#dc2626') {
+function createLotCarMesh(color = '#dc2626', variant = 0) {
   const group = new THREE.Group();
   const damageParts = [];
   const procBody = new THREE.Group();
   group.add(procBody);
-  const body = addPropPart(procBody, new THREE.BoxGeometry(2.8, 1.2, 5.0), color, 0, 0.8, 0, { roughness: 0.4, metalness: 0.6 });
+
+  const isTruck = (variant % 3 === 1);
+  const isWagon = (variant % 3 === 2);
+  const modelName = isTruck ? 'pickup-truck' : (isWagon ? 'parked-car' : (variant % 2 === 0 ? 'lot-car' : 'town-car'));
+  const wreckName = `${modelName}-wreck`;
+
+  // --- High-Fidelity Procedural Vehicle Assembly (Sedans, Pickups, Wagons) ---
+  const bodyLen = isTruck ? 5.2 : (isWagon ? 4.8 : 4.4);
+  const bodyWidth = isTruck ? 2.3 : 2.1;
+  const bodyHeight = isTruck ? 0.75 : 0.65;
+  const body = addPropPart(procBody, new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyLen), color, 0, 0.75, 0, { roughness: 0.35, metalness: 0.5 });
   damageParts.push(body);
-  const modelName = 'lot-car';
-  const wreckName = 'lot-car-wreck';
+
+  if (isTruck) {
+    // Pickup Truck Cab + Open Cargo Bed
+    const cab = addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.15, 0.85, 2.2), color, 0, 1.45, 0.45, { roughness: 0.35, metalness: 0.5 });
+    damageParts.push(cab);
+    // Dark Tinted Glass Windshield & Windows
+    const glassMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.1, metalness: 0.85 });
+    addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.1, 0.65, 0.8), '#0f172a', 0, 1.45, 1.25, { material: glassMat, rotation: { x: -0.35 } });
+    addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.05, 0.55, 1.6), '#0f172a', 0, 1.45, 0.35, { material: glassMat });
+    // Truck Bed Side Rails and Tailgate
+    addPropPart(procBody, new THREE.BoxGeometry(0.18, 0.55, 2.2), color, -bodyWidth / 2 + 0.1, 1.25, -1.3);
+    addPropPart(procBody, new THREE.BoxGeometry(0.18, 0.55, 2.2), color, bodyWidth / 2 - 0.1, 1.25, -1.3);
+    addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.2, 0.55, 0.18), color, 0, 1.25, -2.4);
+    // Bed Liner
+    addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.4, 0.2, 2.1), '#18181b', 0, 0.95, -1.3);
+  } else {
+    // Sedan / Hatchback / Wagon Passenger Greenhouse
+    const cabLen = isWagon ? 2.7 : 2.2;
+    const cabZ = isWagon ? -0.25 : -0.15;
+    const cab = addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.2, 0.75, cabLen), color, 0, 1.35, cabZ, { roughness: 0.35, metalness: 0.5 });
+    damageParts.push(cab);
+    // Sloped Windshield, Rear Window & Side Windows
+    const glassMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.1, metalness: 0.85 });
+    addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.15, 0.65, 0.75), '#0f172a', 0, 1.35, cabZ + cabLen / 2 + 0.15, { material: glassMat, rotation: { x: -0.38 } });
+    addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.15, 0.65, 0.75), '#0f172a', 0, 1.35, cabZ - cabLen / 2 - 0.15, { material: glassMat, rotation: { x: 0.38 } });
+    addPropPart(procBody, new THREE.BoxGeometry(bodyWidth - 0.1, 0.55, cabLen - 0.4), '#0f172a', 0, 1.35, cabZ, { material: glassMat });
+  }
+
+  // Chrome Bumpers Front & Rear
+  const bumperMat = new THREE.MeshStandardMaterial({ color: '#cbd5e1', metalness: 0.75, roughness: 0.25 });
+  addPropPart(procBody, new THREE.BoxGeometry(bodyWidth + 0.1, 0.28, 0.2), '#cbd5e1', 0, 0.5, bodyLen / 2 + 0.08, { material: bumperMat });
+  addPropPart(procBody, new THREE.BoxGeometry(bodyWidth + 0.1, 0.28, 0.2), '#cbd5e1', 0, 0.5, -bodyLen / 2 - 0.08, { material: bumperMat.clone() });
+
+  // Front Projector Headlights & Rear Taillights
+  const hlMat = new THREE.MeshBasicMaterial({ color: '#fef08a' });
+  const tlMat = new THREE.MeshBasicMaterial({ color: '#ef4444' });
+  [-bodyWidth * 0.35, bodyWidth * 0.35].forEach(lx => {
+    addPropPart(procBody, new THREE.BoxGeometry(0.38, 0.22, 0.08), '#fef08a', lx, 0.82, bodyLen / 2 + 0.02, { material: hlMat });
+    addPropPart(procBody, new THREE.BoxGeometry(0.38, 0.22, 0.08), '#ef4444', lx, 0.82, -bodyLen / 2 - 0.02, { material: tlMat });
+  });
+
+  // 4 Rubber Tires with Silver Hubcaps
+  const wheelRadius = isTruck ? 0.46 : 0.38;
+  const wheelWidth = isTruck ? 0.32 : 0.26;
+  const wheelMat = new THREE.MeshStandardMaterial({ color: '#18181b', roughness: 0.85 });
+  const capMat = new THREE.MeshStandardMaterial({ color: '#cbd5e1', metalness: 0.8, roughness: 0.2 });
+  const wheelOffsets = [
+    [-bodyWidth / 2 - 0.05, wheelRadius, bodyLen * 0.28],
+    [bodyWidth / 2 + 0.05, wheelRadius, bodyLen * 0.28],
+    [-bodyWidth / 2 - 0.05, wheelRadius, -bodyLen * 0.28],
+    [bodyWidth / 2 + 0.05, wheelRadius, -bodyLen * 0.28]
+  ];
+  wheelOffsets.forEach(([wx, wy, wz]) => {
+    const wheel = addPropPart(procBody, new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelWidth, 12), '#18181b', wx, wy, wz, { material: wheelMat, rotation: { z: Math.PI / 2 } });
+    damageParts.push(wheel);
+    addPropPart(procBody, new THREE.CylinderGeometry(wheelRadius * 0.55, wheelRadius * 0.55, wheelWidth + 0.02, 8), '#cbd5e1', wx, wy, wz, { material: capMat, rotation: { z: Math.PI / 2 } });
+  });
+
   const meshData = { group, base: body, roof: null, color, damageParts,
-    footprint: 5.0, label: 'LOT CAR', points: 60, wreck: wreckName };
+    footprint: bodyLen, label: isTruck ? 'PICKUP TRUCK' : 'PARKED CAR', points: isTruck ? 75 : 60, wreck: wreckName };
+
   instantiateActorModel(modelName, { damageable: true }).then(model => {
     if (!model) return;
     if (procBody.parent) group.remove(procBody);
@@ -10621,8 +10688,9 @@ function buildLivingCounty() {
       const carPalette = ['#dc2626', '#2563eb', '#facc15', '#16a34a', '#475569', '#f8fafc', '#0f172a', '#9333ea'];
       for (let rowIdx = 0; rowIdx < 2; rowIdx++) {
         for (let colIdx = 0; colIdx < 4; colIdx++) {
-          const carColor = carPalette[(rowIdx * 4 + colIdx) % carPalette.length];
-          const carMesh = createLotCarMesh(carColor);
+          const carIdx = rowIdx * 4 + colIdx;
+          const carColor = carPalette[carIdx % carPalette.length];
+          const carMesh = createLotCarMesh(carColor, carIdx);
           const carX = store.x - 12.0 + colIdx * 8.0;
           const carZ = store.z + toward * (store.d / 2 + 5.5 + rowIdx * 7.5);
           carMesh.group.position.set(carX, terrainHeightAt(carX, carZ), carZ);
@@ -12666,25 +12734,16 @@ function createProductionDressing() {
   productionSliceRoot.add(parkingLines);
 
   // [SW:WORLD:PARKING_DRESSING] Populate parking lot stalls with diverse parked vehicles
-  const vehicleModelChoices = ['parked-car', 'lot-car', 'pickup-truck', 'town-car'];
   const vehicleColorPalette = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#64748b', '#f8fafc', '#1e293b', '#8b5cf6', '#06b6d4', '#ec4899'];
   for (let i = 0; i < 24; i++) {
     if (i === 4 || i === 11 || i === 19) continue; // Realistic empty stalls
     const x = -145 + (i % 8) * 9.2;
     const z = -205 + Math.floor(i / 8) * 17;
-    const modelName = vehicleModelChoices[i % vehicleModelChoices.length];
     const color = vehicleColorPalette[i % vehicleColorPalette.length];
-    const carGroup = new THREE.Group();
-    carGroup.position.set(x, roadSurfaceHeightAt(x, z), z);
-    carGroup.rotation.y = (Math.floor(i / 8) % 2 === 0 ? 0 : Math.PI);
-    productionSliceRoot.add(carGroup);
-
-    const procCar = addProductionPart(carGroup, new THREE.BoxGeometry(2.4, 1.1, 4.4), color, 0, 0.6, 0, { roughness: 0.4, metalness: 0.4 });
-    instantiateActorModel(modelName, { damageable: false }).then(model => {
-      if (!model) return;
-      if (procCar.parent) carGroup.remove(procCar);
-      carGroup.add(model);
-    });
+    const carMesh = createLotCarMesh(color, i);
+    carMesh.group.position.set(x, roadSurfaceHeightAt(x, z), z);
+    carMesh.group.rotation.y = (Math.floor(i / 8) % 2 === 0 ? 0 : Math.PI);
+    productionSliceRoot.add(carMesh.group);
   }
 
   const mailboxTransforms = [];

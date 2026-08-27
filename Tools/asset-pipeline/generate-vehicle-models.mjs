@@ -162,10 +162,63 @@ export async function generateParkedCar() {
   await saveGlb('parked-car-wreck.glb', bw);
 }
 
+// 4. PICKUP-TRUCK (Heavy-Duty 4x4 Off-Road Truck)
+export async function generatePickupTruck() {
+  const b = new GlbBuilder();
+  // Lower Chassis & Crimson Red Body
+  b.addBox([0, 0.75, 0], [2.35, 0.75, 5.2], '#b91c1c');
+  
+  // Cab with Sloped Windshield
+  b.addBox([0, 1.48, 0.45], [2.15, 0.85, 2.3], '#b91c1c');
+  b.addBox([0, 1.46, 1.35], [2.05, 0.75, 0.75], '#38bdf8', [-0.35, 0, 0]); // Windshield
+  b.addBox([0, 1.46, -0.68], [2.05, 0.75, 0.75], '#38bdf8', [0.15, 0, 0]); // Rear cab window
+  b.addBox([0, 1.5, 0.45], [2.18, 0.58, 1.75], '#38bdf8'); // Side windows
+  
+  // Open Cargo Bed with Side Walls and Tailgate
+  b.addBox([-1.05, 1.32, -1.35], [0.2, 0.55, 2.3], '#b91c1c'); // Left bed wall
+  b.addBox([1.05, 1.32, -1.35], [0.2, 0.55, 2.3], '#b91c1c'); // Right bed wall
+  b.addBox([0, 1.32, -2.45], [2.2, 0.55, 0.2], '#b91c1c'); // Tailgate
+  b.addBox([0, 0.95, -1.35], [1.95, 0.2, 2.1], '#18181b'); // Bed liner
+  
+  // Tubular Roll Bar & Off-Road Roof Lights
+  [-0.95, 0.95].forEach(rx => {
+    b.addCylinder([rx, 1.85, -0.65], 0.05, 0.05, 1.2, 8, '#334155');
+    b.addCylinder([rx, 1.55, -1.2], 0.04, 0.04, 1.4, 8, '#334155', [0.55, 0, 0]);
+  });
+  b.addCylinder([0, 2.4, -0.65], 0.05, 0.05, 1.9, 8, '#334155', [0, 0, Math.PI / 2]);
+  [-0.5, 0, 0.5].forEach(ox => {
+    b.addCylinder([ox, 2.55, -0.65], 0.12, 0.12, 0.1, 8, '#fef08a', [Math.PI / 2, 0, 0]);
+  });
+  
+  // Heavy-Duty Chrome Front Bumper & Projector Headlights
+  b.addBox([0, 0.5, 2.65], [2.38, 0.35, 0.22], '#cbd5e1');
+  b.addBox([0, 0.88, 2.62], [1.95, 0.42, 0.08], '#334155');
+  [-0.85, 0.85].forEach(hx => {
+    b.addBox([hx, 0.9, 2.64], [0.42, 0.25, 0.06], '#fef08a');
+    b.addBox([hx > 0 ? hx + 0.24 : hx - 0.24, 0.9, 2.62], [0.12, 0.22, 0.06], '#f59e0b');
+  });
+  
+  // 4x4 Off-Road Deep-Tread Wheels with Alloy Hubs
+  const wheelPos = [[-1.2, 0.46, 1.5], [1.2, 0.46, 1.5], [-1.2, 0.46, -1.5], [1.2, 0.46, -1.5]];
+  wheelPos.forEach(([wx, wy, wz]) => {
+    b.addCylinder([wx, wy, wz], 0.46, 0.46, 0.34, 16, '#0f172a', [0, 0, Math.PI / 2]);
+    b.addCylinder([wx + (wx > 0 ? 0.04 : -0.04), wy, wz], 0.26, 0.26, 0.35, 10, '#cbd5e1', [0, 0, Math.PI / 2]);
+  });
+  
+  await saveGlb('pickup-truck.glb', b);
+
+  const bw = new GlbBuilder();
+  bw.addBox([0, 0.65, 0], [2.35, 0.75, 4.8], '#b91c1c', [0.2, -0.15, 0.35]);
+  bw.addBox([0, 1.2, 0.4], [1.8, 0.5, 1.8], '#334155', [-0.3, 0.25, 0.1]);
+  bw.addCylinder([1.3, 0.3, 1.2], 0.46, 0.46, 0.34, 12, '#0f172a', [1.1, 0.4, 0.2]);
+  await saveGlb('pickup-truck-wreck.glb', bw);
+}
+
 export async function run() {
   await generateTownCar();
   await generateLotCar();
   await generateParkedCar();
+  await generatePickupTruck();
 }
 
 if (process.argv[1]?.endsWith('generate-vehicle-models.mjs')) {
