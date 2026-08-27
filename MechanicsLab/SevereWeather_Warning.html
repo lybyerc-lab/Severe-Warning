@@ -8904,18 +8904,113 @@ function createComedyPropMesh(kind) {
     [-2, 2].forEach(x => [-0.9, 0.9].forEach(z => addPropPart(procBody, new THREE.CylinderGeometry(0.4, 0.4, 0.3, 10), '#111827', x, 0.7, z, { rotation: { z: Math.PI / 2 } })));
   } else if (kind === 'ferris') {
     color = '#f472b6';
-    addPropPart(procBody, new THREE.TorusGeometry(6.5, 0.45, 10, 32), color, 0, 8.0, 0);
-    [-3.6, 3.6].forEach(x => addPropPart(procBody, new THREE.BoxGeometry(0.6, 9, 0.6), '#fbbf24', x, 4.5, 0, { rotation: { z: x < 0 ? -0.45 : 0.45 } }));
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2;
-      addPropPart(procBody, new THREE.BoxGeometry(1.4, 1.0, 1.2), ['#ef4444','#38bdf8','#4ade80'][i % 3], Math.cos(angle) * 6.5, 8 + Math.sin(angle) * 6.5, 0);
+    // 1. Stationary Ground Base & A-Frame Support Legs
+    addPropPart(procBody, new THREE.BoxGeometry(10.0, 0.45, 6.5), '#475569', 0, 0.22, 0);
+    [-3.8, 3.8].forEach(x => {
+      [-1.8, 1.8].forEach(z => {
+        addPropPart(procBody, new THREE.BoxGeometry(0.45, 9.5, 0.45), '#fbbf24', x * 0.5, 4.6, z, { rotation: { z: x < 0 ? -0.42 : 0.42, x: z < 0 ? -0.15 : 0.15 } });
+      });
+    });
+    // Stationary Center Axle Bearing
+    addPropPart(procBody, new THREE.CylinderGeometry(0.35, 0.35, 4.2, 8), '#334155', 0, 8.0, 0, { rotation: { x: Math.PI / 2 } });
+
+    // 2. Spinning Wheel Assembly (Spokes, Rim, Gondolas)
+    const wheelGroup = new THREE.Group();
+    wheelGroup.position.set(0, 8.0, 0);
+    wheelGroup.name = 'ferris-wheel-rotor';
+
+    // Dual Outer Rings
+    [-1.2, 1.2].forEach(rz => {
+      addPropPart(wheelGroup, new THREE.TorusGeometry(6.5, 0.25, 8, 32), color, 0, 0, rz);
+    });
+    // Center Hub Plates
+    [-1.25, 1.25].forEach(hz => {
+      addPropPart(wheelGroup, new THREE.CylinderGeometry(1.1, 1.1, 0.2, 12), '#f59e0b', 0, 0, hz, { rotation: { x: Math.PI / 2 } });
+    });
+
+    // 8 Radial Spokes
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      addPropPart(wheelGroup, new THREE.BoxGeometry(13.0, 0.18, 2.4), '#fde68a', 0, 0, 0, { rotation: { z: angle } });
     }
+
+    // 8 Swinging Passenger Gondolas
+    const gondolaPivots = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const gx = Math.cos(angle) * 6.5;
+      const gy = Math.sin(angle) * 6.5;
+      const gPivot = new THREE.Group();
+      gPivot.position.set(gx, gy, 0);
+      gPivot.name = `ferris-gondola-${i}`;
+
+      const gColor = ['#ef4444', '#38bdf8', '#4ade80', '#fbbf24', '#a855f7', '#f97316', '#ec4899', '#06b6d4'][i % 8];
+      addPropPart(gPivot, new THREE.BoxGeometry(1.6, 1.0, 1.8), gColor, 0, -0.6, 0);
+      addPropPart(gPivot, new THREE.ConeGeometry(1.3, 0.6, 4), '#ffffff', 0, 0.4, 0, { rotation: { y: Math.PI / 4 } });
+      [-0.8, 0.8].forEach(hx => {
+        addPropPart(gPivot, new THREE.CylinderGeometry(0.04, 0.04, 1.2, 6), '#64748b', hx, 0, 0);
+      });
+
+      wheelGroup.add(gPivot);
+      gondolaPivots.push(gPivot);
+    }
+
+    procBody.add(wheelGroup);
+    group.userData.wheelRotor = wheelGroup;
+    group.userData.gondolas = gondolaPivots;
   } else if (kind === 'carousel') {
     color = '#c084fc';
-    addPropPart(procBody, new THREE.CylinderGeometry(5.0, 5.0, 1.0, 24), '#fbbf24', 0, 0.6, 0);
-    addPropPart(procBody, new THREE.ConeGeometry(6.2, 3.0, 24), color, 0, 6.0, 0);
-    addPropPart(procBody, new THREE.CylinderGeometry(0.35, 0.35, 6.0, 10), '#f8fafc', 0, 3.3, 0);
-    [-3, 0, 3].forEach(x => addPropPart(procBody, new THREE.BoxGeometry(1.2, 1.0, 2.2), '#38bdf8', x, 2.0, 0));
+    // 1. Stationary Ground Pedestal
+    addPropPart(procBody, new THREE.CylinderGeometry(6.2, 6.4, 0.45, 24), '#475569', 0, 0.22, 0);
+    addPropPart(procBody, new THREE.CylinderGeometry(0.45, 0.45, 7.2, 12), '#f59e0b', 0, 3.6, 0);
+
+    // 2. Spinning Turntable Deck & Canopy Assembly
+    const carouselDeck = new THREE.Group();
+    carouselDeck.name = 'carousel-rotor';
+
+    // Rotating Platform Floor
+    addPropPart(carouselDeck, new THREE.CylinderGeometry(5.8, 5.8, 0.55, 24), '#fbbf24', 0, 0.55, 0);
+    addPropPart(carouselDeck, new THREE.CylinderGeometry(5.9, 5.9, 0.18, 24), '#b45309', 0, 0.72, 0);
+
+    // Decorative Striped Top Canopy
+    addPropPart(carouselDeck, new THREE.ConeGeometry(6.6, 2.6, 24), color, 0, 5.8, 0);
+    addPropPart(carouselDeck, new THREE.CylinderGeometry(6.7, 6.7, 0.45, 24), '#ffffff', 0, 4.4, 0);
+    addPropPart(carouselDeck, new THREE.SphereGeometry(0.45, 8, 8), '#fbbf24', 0, 7.3, 0);
+
+    // 8 Galloping Horses on Brass Poles
+    const horsePivots = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const radius = 4.2;
+      const hx = Math.cos(angle) * radius;
+      const hz = Math.sin(angle) * radius;
+
+      // Brass spiral pole
+      addPropPart(carouselDeck, new THREE.CylinderGeometry(0.06, 0.06, 4.0, 8), '#facc15', hx, 2.6, hz, { metalness: 0.8, roughness: 0.2 });
+
+      // Galloping Horse
+      const horseGroup = new THREE.Group();
+      horseGroup.position.set(hx, 2.2, hz);
+      horseGroup.rotation.y = angle + Math.PI / 2;
+      horseGroup.name = `carousel-horse-${i}`;
+
+      const horseColor = ['#ffffff', '#78350f', '#0f172a', '#ea580c', '#ffffff', '#92400e', '#38bdf8', '#f472b6'][i % 8];
+      addPropPart(horseGroup, new THREE.BoxGeometry(0.7, 0.8, 1.8), horseColor, 0, 0, 0);
+      addPropPart(horseGroup, new THREE.BoxGeometry(0.45, 0.9, 0.6), horseColor, 0, 0.55, 0.65, { rotation: { x: 0.35 } });
+      addPropPart(horseGroup, new THREE.BoxGeometry(0.4, 0.4, 0.7), '#fda4af', 0, 0.85, 0.95);
+      addPropPart(horseGroup, new THREE.BoxGeometry(0.75, 0.25, 0.9), ['#dc2626', '#2563eb', '#16a34a', '#9333ea'][i % 4], 0, 0.35, 0);
+      addPropPart(horseGroup, new THREE.BoxGeometry(0.2, 0.8, 0.2), horseColor, -0.25, -0.55, 0.6, { rotation: { x: 0.45 } });
+      addPropPart(horseGroup, new THREE.BoxGeometry(0.2, 0.8, 0.2), horseColor, 0.25, -0.55, 0.6, { rotation: { x: 0.25 } });
+      addPropPart(horseGroup, new THREE.BoxGeometry(0.2, 0.8, 0.2), horseColor, -0.25, -0.55, -0.6, { rotation: { x: -0.45 } });
+      addPropPart(horseGroup, new THREE.BoxGeometry(0.2, 0.8, 0.2), horseColor, 0.25, -0.55, -0.6, { rotation: { x: -0.25 } });
+
+      carouselDeck.add(horseGroup);
+      horsePivots.push({ mesh: horseGroup, baseHeight: 2.2, phase: i * (Math.PI / 4) });
+    }
+
+    procBody.add(carouselDeck);
+    group.userData.deckRotor = carouselDeck;
+    group.userData.horses = horsePivots;
   } else if (kind === 'foodcart') {
     color = '#ef4444';
     addPropPart(procBody, new THREE.BoxGeometry(5.2, 2.8, 3.2), '#f8fafc', 0, 1.8, 0);
@@ -8957,26 +9052,26 @@ function spawnTownComedyProps() {
   activeGagProps.length = 0;
 
   const definitions = [
-    // District 1: Pine Ridge Neighborhood (Residential Lawns z = -250 to -140)
-    { kind: 'trampoline', x: 62, z: -184, stage: 1, tags: ['yard','lawn'], gag: 'TRAMPOLINE ACHIEVES LOW EARTH ORBIT.' },
-    { kind: 'flamingo', x: 115, z: -162, stage: 1, tags: ['yard','lawn'], gag: 'LAWN FLAMINGO MIGRATION BEGINS EARLY.' },
-    { kind: 'mailbox', x: 135, z: -205, stage: 1, tags: ['yard'], gag: 'SPECIAL DELIVERY: SOMEWHERE ELSE.' },
-    { kind: 'grill', x: 55, z: -225, stage: 1, tags: ['yard'], gag: 'THE COOKOUT HAS BEEN RESCHEDULED.' },
-    { kind: 'trampoline', x: -65, z: -175, stage: 1, tags: ['yard','lawn'], gag: 'BACKYARD FLIGHT SCHOOL ENROLLING NOW.' },
+    // District 1: Pine Ridge Neighborhood (Residential Lawns - safely within block lawns)
+    { kind: 'trampoline', x: 55, z: -185, stage: 1, tags: ['yard','lawn'], gag: 'TRAMPOLINE ACHIEVES LOW EARTH ORBIT.' },
+    { kind: 'flamingo', x: 115, z: -175, stage: 1, tags: ['yard','lawn'], gag: 'LAWN FLAMINGO MIGRATION BEGINS EARLY.' },
+    { kind: 'mailbox', x: 125, z: -215, stage: 1, tags: ['yard'], gag: 'SPECIAL DELIVERY: SOMEWHERE ELSE.' },
+    { kind: 'grill', x: 45, z: -215, stage: 1, tags: ['yard'], gag: 'THE COOKOUT HAS BEEN RESCHEDULED.' },
+    { kind: 'trampoline', x: -55, z: -185, stage: 1, tags: ['yard','lawn'], gag: 'BACKYARD FLIGHT SCHOOL ENROLLING NOW.' },
     { kind: 'grill', x: -115, z: -215, stage: 1, tags: ['yard'], gag: 'PROPANE TANK & CHARCOAL ARE NOW AIRBORNE.' },
 
-    // District 2: Main Street Commercial District (z = -120 to +100)
-    { kind: 'billboard', x: -105, z: -62, stage: 2, tags: ['main','sign'], gag: 'STORM-PROOF ROOFING REQUESTS A RETRACTION.' },
-    { kind: 'coffee', x: -45, z: -105, stage: 2, tags: ['main','sign','moo-brew'], gag: 'MOO BREW EXPRESS: COFFEE TO GO. EXTREMELY TO GO.' },
-    { kind: 'mascot', x: -135, z: -55, stage: 2, tags: ['main','sign'], gag: 'INFLATABLE MAYOR LEAVES THE CAMPAIGN TRAIL.' },
-    { kind: 'carts', x: -35, z: -55, stage: 2, tags: ['main'], gag: 'CART RETURN NOW LOCATED THREE COUNTIES EAST.' },
+    // District 2: Main Street Commercial District (Inside commercial parking & plazas)
+    { kind: 'billboard', x: -115, z: -45, stage: 2, tags: ['main','sign'], gag: 'STORM-PROOF ROOFING REQUESTS A RETRACTION.' },
+    { kind: 'coffee', x: -45, z: -115, stage: 2, tags: ['main','sign','moo-brew'], gag: 'MOO BREW EXPRESS: COFFEE TO GO. EXTREMELY TO GO.' },
+    { kind: 'mascot', x: -125, z: -55, stage: 2, tags: ['main','sign'], gag: 'INFLATABLE MAYOR LEAVES THE CAMPAIGN TRAIL.' },
+    { kind: 'carts', x: -35, z: -45, stage: 2, tags: ['main'], gag: 'CART RETURN NOW LOCATED THREE COUNTIES EAST.' },
 
-    // District 3: County Fairgrounds Midway (Strictly z >= 210)
-    { kind: 'ferris', x: 85, z: 245, stage: 3, tags: ['fair','ride'], gag: 'FERRIS WHEEL UPGRADES TO FREQUENT FLYER.' },
-    { kind: 'carousel', x: 145, z: 225, stage: 3, tags: ['fair','ride'], gag: 'CAROUSEL HORSES FINALLY MAKE A BREAK FOR IT.' },
-    { kind: 'foodcart', x: 45, z: 235, stage: 3, tags: ['fair','food'], gag: 'FUNNEL CAKES MEET AN ACTUAL FUNNEL.' },
-    { kind: 'corndog', x: 15, z: 248, stage: 3, tags: ['fair','food'], gag: 'WORLD\'S LARGEST CORN DOG: NOW AIRBORNE.' },
-    { kind: 'porta', x: -25, z: 245, stage: 3, tags: ['fair'], gag: 'THE BLUE BOOTH HAS LEFT THE CHAT.' }
+    // District 3: County Fairgrounds Midway (Safely centered within block parcels, clear of all roads)
+    { kind: 'ferris', x: 115, z: 195, stage: 3, tags: ['fair','ride'], gag: 'FERRIS WHEEL UPGRADES TO FREQUENT FLYER.' },
+    { kind: 'carousel', x: 135, z: 210, stage: 3, tags: ['fair','ride'], gag: 'CAROUSEL HORSES FINALLY MAKE A BREAK FOR IT.' },
+    { kind: 'foodcart', x: 45, z: 195, stage: 3, tags: ['fair','food'], gag: 'FUNNEL CAKES MEET AN ACTUAL FUNNEL.' },
+    { kind: 'corndog', x: 35, z: 210, stage: 3, tags: ['fair','food'], gag: 'WORLD\'S LARGEST CORN DOG: NOW AIRBORNE.' },
+    { kind: 'porta', x: -35, z: 195, stage: 3, tags: ['fair'], gag: 'THE BLUE BOOTH HAS LEFT THE CHAT.' }
   ];
 
   definitions.forEach((definition, index) => {
@@ -15636,27 +15731,59 @@ function updateLandmarkAnimations(dt) {
   const clampedDt = Math.max(0, Math.min(0.1, dt));
   landmarkAnimationState.elapsed += clampedDt;
 
-  if ((!landmarkAnimationState.ferrisWheelMesh || !landmarkAnimationState.carouselMesh) && typeof scene !== 'undefined') {
-    initLandmarkAnimations();
+  // 1. Ferris Wheel Continuous Mechanical Rotation & Upright Gondola Suspension
+  landmarkAnimationState.ferrisWheelAngle = (landmarkAnimationState.ferrisWheelAngle + clampedDt * 0.35) % (Math.PI * 2);
+  if (typeof comedyProps !== 'undefined') {
+    comedyProps.forEach(prop => {
+      if (!prop.destroyed && (prop.kind === 'ferris' || prop.kind === 'ferris-wheel') && prop.meshData && prop.meshData.group) {
+        const group = prop.meshData.group;
+        if (group.userData && group.userData.wheelRotor) {
+          group.userData.wheelRotor.rotation.z = landmarkAnimationState.ferrisWheelAngle;
+          if (group.userData.gondolas) {
+            group.userData.gondolas.forEach(gondola => {
+              gondola.rotation.z = -landmarkAnimationState.ferrisWheelAngle;
+            });
+          }
+        } else {
+          group.rotation.z = landmarkAnimationState.ferrisWheelAngle;
+        }
+      }
+
+      // 2. Carousel Continuous Turntable Rotation & Galloping Horses Wave
+      if (!prop.destroyed && prop.kind === 'carousel' && prop.meshData && prop.meshData.group) {
+        const group = prop.meshData.group;
+        if (group.userData && group.userData.deckRotor) {
+          landmarkAnimationState.carouselAngle = (landmarkAnimationState.carouselAngle + clampedDt * 0.65) % (Math.PI * 2);
+          group.userData.deckRotor.rotation.y = landmarkAnimationState.carouselAngle;
+          if (group.userData.horses) {
+            group.userData.horses.forEach(horse => {
+              horse.mesh.position.y = horse.baseHeight + Math.sin(landmarkAnimationState.elapsed * 3.6 + horse.phase) * 0.35;
+            });
+          }
+        } else {
+          landmarkAnimationState.carouselAngle = (landmarkAnimationState.carouselAngle + clampedDt * 0.65) % (Math.PI * 2);
+          group.rotation.y = landmarkAnimationState.carouselAngle;
+        }
+      }
+    });
   }
 
-  // 1. Ferris Wheel Continuous Mechanical Rotation
-  landmarkAnimationState.ferrisWheelAngle = (landmarkAnimationState.ferrisWheelAngle + clampedDt * 0.22) % (Math.PI * 2);
-  if (landmarkAnimationState.ferrisWheelMesh) {
-    // If it has children (like the wheel rim or imported scene), rotate
-    landmarkAnimationState.ferrisWheelMesh.rotation.z = landmarkAnimationState.ferrisWheelAngle;
+  // 3. Campaign Scenery Animations (Blades, Turbines, Flairs)
+  if (typeof campaignAnimatedMeshes !== 'undefined' && campaignAnimatedMeshes.length > 0) {
+    campaignAnimatedMeshes.forEach(item => {
+      if (!item || !item.mesh) return;
+      if (item.update) {
+        item.update(clampedDt);
+      } else if (item.axis) {
+        item.mesh.rotation[item.axis] += clampedDt * (item.speed || 0.6);
+      }
+    });
   }
 
-  // 2. Carousel Continuous Rotation & Galloping Oscillation
-  landmarkAnimationState.carouselAngle = (landmarkAnimationState.carouselAngle + clampedDt * 0.45) % (Math.PI * 2);
-  if (landmarkAnimationState.carouselMesh) {
-    landmarkAnimationState.carouselMesh.rotation.y = landmarkAnimationState.carouselAngle;
-  }
-
-  // 3. Foundry Thermal Glow Pulsation
+  // 4. Foundry Thermal Glow Pulsation
   landmarkAnimationState.crucibleGlowIntensity = 0.7 + Math.sin(landmarkAnimationState.elapsed * 2.8) * 0.3;
 
-  // 4. Foundry 32m Twin Smokestack Particulate Plume
+  // 5. Foundry 32m Twin Smokestack Particulate Plume
   if (Math.random() < clampedDt * 14) {
     if (landmarkAnimationState.foundrySmokeParticles.length < 60) {
       landmarkAnimationState.foundrySmokeParticles.push({

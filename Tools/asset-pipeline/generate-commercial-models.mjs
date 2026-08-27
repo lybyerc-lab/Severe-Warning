@@ -326,6 +326,91 @@ export async function generateIndustrialWarehouseCurved() {
   await saveGlb('industrial-warehouse-curved-wreck.glb', bw);
 }
 
+// 10. FERRIS-WHEEL & WRECK
+export async function generateFerrisWheel() {
+  const b = new GlbBuilder();
+  // Concrete Base Pad
+  b.addBox([0, 0.22, 0], [10.0, 0.45, 6.5], '#475569');
+  
+  // A-Frame Support Legs
+  [-3.8, 3.8].forEach(x => {
+    [-1.8, 1.8].forEach(z => {
+      b.addBox([x * 0.5, 4.6, z], [0.45, 9.5, 0.45], '#fbbf24', [z < 0 ? -0.15 : 0.15, 0, x < 0 ? -0.42 : 0.42]);
+    });
+  });
+  
+  // Center Axle Hub
+  b.addCylinder([0, 8.0, 0], 0.35, 0.35, 4.2, 8, '#334155', [Math.PI/2, 0, 0]);
+  [-1.25, 1.25].forEach(hz => {
+    b.addCylinder([0, 8.0, hz], 1.1, 1.1, 0.2, 12, '#f59e0b', [Math.PI/2, 0, 0]);
+  });
+  
+  // Dual Outer Rings (Magenta)
+  [-1.2, 1.2].forEach(rz => {
+    b.addTorus([0, 8.0, rz], 6.5, 0.25, 8, 32, '#f472b6');
+  });
+  
+  // 8 Radiating Structural Spokes
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    b.addBox([0, 8.0, 0], [13.0, 0.18, 2.4], '#fde68a', [0, 0, angle]);
+  }
+  
+  // 8 Passenger Gondolas with Canopies
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const gx = Math.cos(angle) * 6.5;
+    const gy = 8.0 + Math.sin(angle) * 6.5;
+    const gColor = ['#ef4444', '#38bdf8', '#4ade80', '#fbbf24', '#a855f7', '#f97316', '#ec4899', '#06b6d4'][i % 8];
+    b.addBox([gx, gy - 0.6, 0], [1.6, 1.0, 1.8], gColor);
+    b.addCone([gx, gy + 0.4, 0], 1.3, 0.6, 4, '#ffffff', [0, Math.PI/4, 0]);
+    [-0.8, 0.8].forEach(hx => {
+      b.addCylinder([gx + hx, gy, 0], 0.04, 0.04, 1.2, 6, '#64748b');
+    });
+  }
+  
+  await saveGlb('ferris-wheel.glb', b);
+
+  const bw = new GlbBuilder();
+  bw.addBox([0, 0.22, 0], [10.0, 0.45, 6.5], '#475569');
+  bw.addBox([0, 3.5, 0], [9.0, 6.5, 5.0], '#fbbf24', [0.35, 0.15, -0.65]);
+  bw.addTorus([2.5, 2.0, 1.0], 5.5, 0.25, 8, 24, '#f472b6', [1.2, 0.3, 0.4]);
+  await saveGlb('ferris-wheel-wreck.glb', bw);
+}
+
+// 11. CAROUSEL & WRECK
+export async function generateCarousel() {
+  const b = new GlbBuilder();
+  // Stationary Round Pedestal Base
+  b.addCylinder([0, 0.22, 0], 6.2, 6.4, 0.45, 24, '#475569');
+  b.addCylinder([0, 0.55, 0], 5.8, 5.8, 0.55, 24, '#fbbf24');
+  b.addCylinder([0, 3.6, 0], 0.45, 0.45, 7.2, 12, '#f59e0b');
+  
+  // Conical Purple Canopy & Golden Finial
+  b.addCone([0, 5.8, 0], 6.6, 2.6, 24, '#c084fc');
+  b.addCylinder([0, 4.4, 0], 6.7, 6.7, 0.45, 24, '#ffffff');
+  b.addSphere([0, 7.3, 0], 0.45, 8, 8, '#fbbf24');
+  
+  // 8 Brass Spiral Poles & Horses
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const hx = Math.cos(angle) * 4.2;
+    const hz = Math.sin(angle) * 4.2;
+    b.addCylinder([hx, 2.6, hz], 0.06, 0.06, 4.0, 8, '#facc15');
+    const horseColor = ['#ffffff', '#78350f', '#0f172a', '#ea580c', '#ffffff', '#92400e', '#38bdf8', '#f472b6'][i % 8];
+    const horseElevation = 2.0 + (i % 2 === 0 ? 0.35 : -0.35);
+    b.addBox([hx, horseElevation, hz], [0.7, 0.8, 1.8], horseColor, [0, angle + Math.PI/2, 0]);
+  }
+  
+  await saveGlb('carousel.glb', b);
+
+  const bw = new GlbBuilder();
+  bw.addCylinder([0, 0.22, 0], 6.2, 6.4, 0.45, 24, '#475569');
+  bw.addCone([1.5, 1.8, 0.5], 5.8, 2.2, 16, '#c084fc', [0.45, 0.2, -0.6]);
+  bw.addBox([-2.0, 0.8, 1.0], [2.5, 1.2, 3.5], '#fbbf24', [-0.3, 0.4, 0.2]);
+  await saveGlb('carousel-wreck.glb', bw);
+}
+
 export async function run() {
   await generateCommercialShop();
   await generateCommercialShopDeco();
@@ -336,6 +421,8 @@ export async function run() {
   await generateDiscountStore();
   await generateIndustrialWarehouse();
   await generateIndustrialWarehouseCurved();
+  await generateFerrisWheel();
+  await generateCarousel();
 }
 
 if (process.argv[1]?.endsWith('generate-commercial-models.mjs')) {
