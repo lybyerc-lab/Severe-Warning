@@ -91,7 +91,10 @@ for path in project_files:
 
 inventory_path = root / 'FILE_INVENTORY.txt'
 if inventory_path.exists():
-    listed = [line.strip() for line in inventory_path.read_text(encoding='utf-8').splitlines() if line.strip()]
+    try:
+        listed = [line.strip() for line in inventory_path.read_text(encoding='utf-8-sig').splitlines() if line.strip()]
+    except UnicodeDecodeError:
+        listed = [line.strip() for line in inventory_path.read_text(encoding='utf-8', errors='replace').splitlines() if line.strip()]
     if listed != project_rel_paths:
         # Name the drift and the fix. This check fires on any commit that adds or
         # removes a tracked file without regenerating the inventory, which is easy

@@ -74,20 +74,20 @@
 
 <!-- NOAA EAS Warning Banner -->
 <div id="easBanner">
-  <div class="eas-ticker" id="easTicker">🚨 NOAA EAS WARNING: EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
+  <div class="eas-ticker" id="easTicker">NOAA EAS WARNING: EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY</div>
   <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 4px;">LIVE RADAR ACTIVE</div>
 </div>
 
 <div id="hud">
   <div class="header">
     <div class="panel title-card">
-      <h1>⚡ SEVERE WEATHER LAB <span class="ef-badge" id="efBadge">EF-0</span></h1>
+      <h1>SEVERE WEATHER LAB <span class="ef-badge" id="efBadge">EF-0</span></h1>
       <p id="stormDesc">Verified Outward Gust Blast & Storm Verbs</p>
       <div class="ability-indicator" id="abilityStatus">STATUS: IDLE (MOVE WITH WASD)</div>
       <div class="storm-tabs">
-        <button class="tab-btn active" id="tabTornado" onclick="setStorm('tornado')">🌪️ TORNADO [1]</button>
-        <button class="tab-btn" id="tabSupercell" onclick="setStorm('supercell')">🌩️ SUPERCELL [2]</button>
-        <button class="tab-btn" id="tabDerecho" onclick="setStorm('derecho')">💨 DERECHO [3]</button>
+        <button class="tab-btn active" id="tabTornado" onclick="setStorm('tornado')">TORNADO [1]</button>
+        <button class="tab-btn" id="tabSupercell" onclick="setStorm('supercell')">SUPERCELL [2]</button>
+        <button class="tab-btn" id="tabDerecho" onclick="setStorm('derecho')">DERECHO [3]</button>
       </div>
     </div>
 
@@ -204,7 +204,7 @@ let efRating = 'EF-0';
 let efMultiplier = 1.0;
 let cameraScale = 1.0;
 let targetScale = 1.0;
-let easNewsText = '🚨 NOAA EAS WARNING: EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY';
+let easNewsText = 'NOAA EAS WARNING: EF-0 TORNADO TOUCHDOWN IN LINCOLN COUNTY';
 
 const storm = {
   x: WORLD_WIDTH / 2,
@@ -255,19 +255,19 @@ function initWorld() {
   fuelStations.push({ x: 500, y: 350, width: 85, height: 55 });
 
   landmarks.push({
-    x: 550, y: 380, name: 'LINCOLN WATER TOWER', icon: '💧', width: 68, height: 68,
+    x: 550, y: 380, name: 'LINCOLN WATER TOWER', icon: 'water-tower', width: 68, height: 68,
     health: 220, maxHealth: 220, stage: 'Intact', destroyed: false
   });
   landmarks.push({
-    x: 1850, y: 1150, name: 'GRAIN ELEVATOR SILO', icon: '🌾', width: 75, height: 75,
+    x: 1850, y: 1150, name: 'GRAIN ELEVATOR SILO', icon: 'grain-silo', width: 75, height: 75,
     health: 260, maxHealth: 260, stage: 'Intact', destroyed: false
   });
   landmarks.push({
-    x: 1200, y: 280, name: 'COUNTY STADIUM BLEACHERS', icon: '🏟️', width: 100, height: 55,
+    x: 1200, y: 280, name: 'COUNTY STADIUM BLEACHERS', icon: 'stadium', width: 100, height: 55,
     health: 180, maxHealth: 180, stage: 'Intact', destroyed: false
   });
   landmarks.push({
-    x: 2100, y: 750, name: 'DOWNTOWN COMMERCIAL TOWER', icon: '🏢', width: 80, height: 80,
+    x: 2100, y: 750, name: 'DOWNTOWN COMMERCIAL TOWER', icon: 'tower', width: 80, height: 80,
     health: 300, maxHealth: 300, stage: 'Intact', destroyed: false
   });
 
@@ -281,7 +281,7 @@ function initWorld() {
     });
   }
 
-  const animalTypes = [{ icon: '🐄', label: 'MOOO!' }, { icon: '🐖', label: 'OINK!' }, { icon: '🐑', label: 'BAAA!' }];
+  const animalTypes = [{ icon: 'COW', label: 'MOOO!' }, { icon: 'PIG', label: 'OINK!' }, { icon: 'SHEEP', label: 'BAAA!' }];
   for (let i = 0; i < 35; i++) {
     const at = animalTypes[i % animalTypes.length];
     animals.push({
@@ -292,7 +292,7 @@ function initWorld() {
     });
   }
 
-  const propTypes = [{ icon: '🚽' }, { icon: '🤸' }, { icon: '🚜' }, { icon: '🦩' }];
+  const propTypes = [{ icon: 'PROP1' }, { icon: 'PROP2' }, { icon: 'PROP3' }, { icon: 'PROP4' }];
   for (let i = 0; i < 28; i++) {
     const pt = propTypes[i % propTypes.length];
     goofyProps.push({
@@ -463,13 +463,13 @@ function update() {
   const isSecondary = storm.activeSecondary || keys['KeyQ'] || keys['q'];
 
   if (isPrimary) {
-    if (currentStorm === 'tornado') setUI('abilityStatus', 'STATUS: 🌪️ PULL & INWARD ROTATIONAL SUCTION ACTIVE');
-    else if (currentStorm === 'supercell') setUI('abilityStatus', 'STATUS: 🌨️ HAIL SWATH CORRIDOR ACTIVE');
-    else if (currentStorm === 'derecho') setUI('abilityStatus', 'STATUS: 💨 WIND WALL SWEEP ACTIVE');
+    if (currentStorm === 'tornado') setUI('abilityStatus', 'STATUS: PULL & INWARD ROTATIONAL SUCTION ACTIVE');
+    else if (currentStorm === 'supercell') setUI('abilityStatus', 'STATUS: HAIL SWATH CORRIDOR ACTIVE');
+    else if (currentStorm === 'derecho') setUI('abilityStatus', 'STATUS: WIND WALL SWEEP ACTIVE');
   } else if (isSecondary) {
-    if (currentStorm === 'tornado') setUI('abilityStatus', 'STATUS: 💥 OUTWARD GUST SHOCKWAVE BLAST ACTIVE');
-    else if (currentStorm === 'supercell') setUI('abilityStatus', 'STATUS: 🌬️ GUST FRONT ARC ACTIVE');
-    else if (currentStorm === 'derecho') setUI('abilityStatus', 'STATUS: 💣 MICROBURST BLAST ACTIVE');
+    if (currentStorm === 'tornado') setUI('abilityStatus', 'STATUS: OUTWARD GUST SHOCKWAVE BLAST ACTIVE');
+    else if (currentStorm === 'supercell') setUI('abilityStatus', 'STATUS: GUST FRONT ARC ACTIVE');
+    else if (currentStorm === 'derecho') setUI('abilityStatus', 'STATUS: MICROBURST BLAST ACTIVE');
   } else {
     setUI('abilityStatus', 'STATUS: IDLE (USE WASD / TAP PULL, GUST, ZAP)');
   }
@@ -540,10 +540,10 @@ function update() {
         lm.destroyed = true;
         destroyedLandmarks++;
         triggerPowerFlash();
-        if (lm.icon === '💧') {
-          easNewsText = `🚨 DISASTER ALERT: ${lm.name} COLLAPSED! FLASH RUNOFF UNLEASHED!`;
-        } else if (lm.icon === '🌾') {
-          easNewsText = `🚨 DISASTER ALERT: ${lm.name} RUPTURED! GRAIN DUST WALL IN THE FUNNEL!`;
+        if (lm.icon === 'water-tower') {
+          easNewsText = `DISASTER ALERT: ${lm.name} COLLAPSED! FLASH RUNOFF UNLEASHED!`;
+        } else if (lm.icon === 'grain-silo') {
+          easNewsText = `DISASTER ALERT: ${lm.name} RUPTURED! GRAIN DUST WALL IN THE FUNNEL!`;
         }
       }
     }
@@ -560,7 +560,7 @@ function update() {
     if (Math.abs(tdx) < effectiveRadius && Math.abs(tdy) < effectiveRadius) {
       if (!cv.airborne) {
         cv.airborne = true;
-        easNewsText = `🚨 STORM CHASER RADIO: "TORDOP CHASER VAN IS AIRBORNE! WE ARE INSIDE THE EYE!"`;
+        easNewsText = `STORM CHASER RADIO: "TORDOP CHASER VAN IS AIRBORNE! WE ARE INSIDE THE EYE!"`;
       }
       cv.rot += 0.15;
       if (isSecondary) {
@@ -580,7 +580,7 @@ function update() {
     if (Math.abs(tdx) < effectiveRadius && Math.abs(tdy) < effectiveRadius) {
       if (!a.airborne) {
         a.airborne = true;
-        easNewsText = `🚨 STORM CHASER REPORT: "WE GOT COWS! ... WAIT, I THINK THAT WAS THE SAME COW!"`;
+        easNewsText = `STORM CHASER REPORT: "WE GOT COWS! ... WAIT, I THINK THAT WAS THE SAME COW!"`;
       }
       a.orbitAngle += 0.08;
       a.altitude = Math.min(60, a.altitude + 2);
@@ -774,10 +774,8 @@ function render() {
     const w = lm.width * cameraScale, h = lm.height * cameraScale;
 
     if (!lm.destroyed) {
-      ctx.fillStyle = lm.icon === '💧' ? '#0284c7' : lm.icon === '🌾' ? '#d97706' : '#64748b';
+      ctx.fillStyle = lm.icon === 'water-tower' ? '#0284c7' : lm.icon === 'grain-silo' ? '#d97706' : '#64748b';
       ctx.fillRect(sx - w/2, sy - h/2, w, h);
-      ctx.font = '26px Inter';
-      ctx.fillText(lm.icon, sx - 13, sy + 8);
       ctx.fillStyle = '#ffffff'; ctx.font = '10px Inter';
       ctx.fillText(lm.name, sx - w/2, sy - h/2 - 4);
     } else {
@@ -791,8 +789,8 @@ function render() {
     if (!isVisible(cv.x, cv.y)) return;
     const sx = camX + (cv.x - storm.x) * cameraScale;
     const sy = camY + (cv.y - storm.y) * cameraScale;
-    ctx.font = '20px Inter';
-    ctx.fillText('🚐', sx - 10, sy + 8);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(sx - 10, sy - 6, 20, 12);
   });
 
   // BUILDINGS & TARGETS
