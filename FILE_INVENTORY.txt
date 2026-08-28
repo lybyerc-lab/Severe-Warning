@@ -327,6 +327,7 @@ scripts/apply-recorded-storm-effects.mjs
 scripts/build-web.mjs
 scripts/check-hygiene.mjs
 scripts/check-inventory.mjs
+scripts/check-model-see-through.mjs
 scripts/compare-phase5-visual-baseline-legacy.mjs
 scripts/compare-phase5-visual-baseline-v6.mjs
 scripts/compare-phase5-visual-baseline.mjs

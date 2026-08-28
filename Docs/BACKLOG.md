@@ -25,9 +25,37 @@ default and the working branch.
 
 ## Next up — AG (assets)
 
-Nothing queued. **The budget rule is now settled: a new model must retire an
-existing one** (see Decisions open). Any batch request has to name what it
-displaces before work starts.
+**Three intact models can be seen through. Repairs, not additions — they do not
+touch the model budget** (the displace-before-adding rule is for new models; see
+Decisions open). Reproduce any of this with `pnpm models:seethrough`.
+
+1. **`industrial-warehouse-curved` — one end of the barrel vault is uncapped.**
+   16 edges belong to a single triangle each and trace a closed ring on the
+   plane **z = -6**, the mouth of the vault:
+   `[0,-4.50,-6] -> [2.30,-4.04,-6] ... [0,7.50,-6] ... ` 16 segments, closed.
+   The material is innocent — opaque, opacity 1, FrontSide — so nothing about it
+   explains the look. Front-face culling discards the faces pointing away, so
+   where the cap should be you see straight through the building. Rendered in
+   isolation it is a solid dome from one end and an almost invisible crescent
+   from the other. **Cap the z = -6 end and re-export.** 65.2% of its silhouette
+   is backface at the worst angle.
+
+2. **`farm-windmill` — a large inside-out sphere around the fan.** Rendered at
+   four yaw angles it is a normal windmill at 0/90/270 and grows a **solid white
+   ball swallowing the whole fan at 180**. A sphere whose faces point inward is
+   invisible from most angles and opaque from one; in play the windmill would
+   balloon into a white ball as the camera orbits past. **Fix the winding (or
+   drop the sphere if it is a leftover) and re-export.** 68.5%.
+
+3. **`tractor` — 31.5%, cause not established.** Flagged by the same check and
+   worth a look, but unlike the two above nobody has yet confirmed what is wrong
+   or that it is visible in play. Diagnose before changing anything.
+
+Wrecks are deliberately excluded from the failure list — a wreck is meant to be
+torn open and a torn edge legitimately shows its back. Eight are above the
+threshold and are printed as a note; `farm-windmill-wreck` at 86.9% probably
+carries the same inside-out sphere as its intact twin and is worth checking
+while that one is open.
 
 ## Next up — Code & Modernization
 
@@ -76,6 +104,15 @@ upgrades and cosmetic funnel skins.
   on screen: `fire-hydrant` / `fire-hydrant-wreck` (308 tris an instance, renders
   5–8 px tall) and `hart-barn` / `hart-barn-wreck` (the hero barn is deliberately
   not model-backed — see Standing rules). Measure before promising the space.
+
+- **Should `models:seethrough` gate the build?** It is an on-demand script right
+  now and deliberately not wired into `pnpm build` or CI, because it currently
+  FAILS on three models and CI was only just restored to green — turning it red
+  again the same day, for a pre-existing asset fault, would bury the signal.
+  Once AG has repaired `industrial-warehouse-curved`, `farm-windmill` and
+  `tractor`, it should become a build guard alongside the two in
+  `scripts/build-web.mjs`, so a model with a hole can never ship again. It adds
+  roughly a minute (128 models x 8 angles x 2 renders at 192px).
 
 - **Nothing watches CI.** Two of the three workflows were red for at least ten
   consecutive commits and nobody noticed, because the only workflow anyone reads
@@ -230,6 +267,45 @@ Newest first. Kept for the reasoning, not the changelog.
     that never ran; it was previously enough to wave through a build nothing had
     looked at. The inconclusive branch is checked first and exits non-zero
     regardless of the marker.
+
+- **`pnpm build` had never worked.** Found while running the suite after the
+  see-through work. Three scripts had every backtick and `${...}` stripped out,
+  leaving lines like `console.error(FAIL: File count mismatch: expected , got );`
+  — not a subtle bug, a **syntax error**: they could not parse, let alone run.
+  `check-inventory.mjs`, `check-hygiene.mjs`, `update-inventory.mjs`.
+  `pnpm build` runs `inventory:check && lint:hygiene` as its first two steps, so
+  the documented build command died immediately. It survived because CI never
+  calls `pnpm build` — the workflows run the individual steps — so the only
+  casualty was anyone building locally, and `cap:sync`, which is the local
+  Android path.
+  **Not caused by the BOM commit that last touched them**, which is where the
+  blame first landed: checking the introducing commit shows they were committed
+  broken in `8ff30b7` and have never once executed. Repaired and both proven to
+  work: hygiene passes clean and fails on a planted `vitest` import; inventory
+  reports 473/473 synchronized.
+
+- **Models you can see through, and the check that now catches them.**
+  Two barrel-vault warehouses in a play screenshot read as ghosts. Not
+  transparency: every material was opaque, opacity 1, FrontSide. The geometry
+  had a hole — one end of the vault was never capped — and front-face culling
+  did the rest.
+  Nothing could have caught it. `tools/asset-pipeline/model-validator.mjs` is
+  135 lines that parse the GLB header and count vertices, bytes and missing
+  wrecks. **Nothing in the pipeline had ever looked at a model.**
+  **A heuristic that was tried and thrown away, so nobody rebuilds it:** counting
+  unshared edges and judging them by size relative to the model. Measured across
+  all 128 models it gives no usable threshold — the largest benign hole is 0.448
+  of its model's diagonal and the smallest real one 0.464. A continuum, not a
+  gap. Plenty of models have holes that are completely fine because nothing can
+  ever see them: the open inner ends of `lot-car`'s wheel cylinders, ring joins
+  inside `district-barn`, the missing floor every building has.
+  What replaced it measures the symptom instead of guessing the cause:
+  `scripts/check-model-see-through.mjs` renders each model from eight angles
+  twice, once front-faces-only and once with backfaces drawn, and counts pixels
+  lit ONLY when backfaces are drawn — pixels where you were seeing through the
+  shell. A solid model scores zero however many hidden holes it has. Here the
+  populations separate for real: benign tops out at 9%, broken starts at 31%.
+  Run it with `pnpm models:seethrough`.
 
 - **The evening paper congratulated you for failing.**
   A run scoring 172 with 0/3 objectives, 0/2 landmarks and a grade of F printed

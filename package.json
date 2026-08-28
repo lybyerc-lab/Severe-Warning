@@ -38,7 +38,8 @@
     "qa:phase8": "node scripts/qa-modernization-phase8-engine.mjs",
     "cap:sync": "pnpm run build && node node_modules/@capacitor/cli/bin/capacitor sync android",
     "android:debug": "pnpm run cap:sync && cd android && gradlew.bat assembleDebug",
-    "android:open": "node node_modules/@capacitor/cli/bin/capacitor open android"
+    "android:open": "node node_modules/@capacitor/cli/bin/capacitor open android",
+    "models:seethrough": "node scripts/check-model-see-through.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.0",

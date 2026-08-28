@@ -20,4 +20,4 @@ const files = output
 
 const content = files.join('\n') + '\n';
 await writeFile(inventoryPath, content, { encoding: 'utf8' });
-console.log(Successfully synchronized FILE_INVENTORY.txt with  tracked files (UTF-8, Ordinal sort).);
+console.log(`Successfully synchronized FILE_INVENTORY.txt with ${files.length} tracked files (UTF-8, Ordinal sort).`);

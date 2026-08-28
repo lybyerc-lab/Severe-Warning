@@ -29,12 +29,12 @@ const htmlFiles = allFiles.filter(f => f.endsWith('.html'));
 for (const file of testFiles) {
   const content = await readFile(file, 'utf8');
   const rel = path.relative(projectRoot, file);
-  if (content.includes(from 'vitest') || content.includes('from vitest')) {
-    console.error(FAIL:  imports from 'vitest'. Must use 'node:test' and 'node:assert/strict'.);
+  if (content.includes("from 'vitest'") || content.includes('from vitest')) {
+    console.error(`FAIL: ${rel} imports from 'vitest'. Must use 'node:test' and 'node:assert/strict'.`);
     failures++;
   }
-  if (content.includes(from 'jest') || content.includes('from jest')) {
-    console.error(FAIL:  imports from 'jest'. Must use 'node:test' and 'node:assert/strict'.);
+  if (content.includes("from 'jest'") || content.includes('from jest')) {
+    console.error(`FAIL: ${rel} imports from 'jest'. Must use 'node:test' and 'node:assert/strict'.`);
     failures++;
   }
 }
@@ -45,14 +45,14 @@ for (const file of [...htmlFiles, ...testFiles]) {
   const content = await readFile(file, 'utf8');
   const rel = path.relative(projectRoot, file);
   if (emojiRegex.test(content)) {
-    console.error(FAIL:  contains surrogate-pair emoji characters. Must use clean retro typography.);
+    console.error(`FAIL: ${rel} contains surrogate-pair emoji characters. Must use clean retro typography.`);
     failures++;
   }
 }
 
 if (failures > 0) {
-  console.error(\nFAILED:  project hygiene violations found.);
+  console.error(`\nFAILED: ${failures} project hygiene violations found.`);
   process.exit(1);
 } else {
-  console.log(PASS: All test files, TypeScript imports, and typography meet strict project hygiene standards.);
+  console.log('PASS: All test files, TypeScript imports, and typography meet strict project hygiene standards.');
 }

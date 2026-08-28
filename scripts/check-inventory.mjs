@@ -22,7 +22,7 @@ let raw = '';
 try {
   raw = await readFile(inventoryPath, 'utf8');
 } catch (e) {
-  console.error(FAIL: FILE_INVENTORY.txt not found: );
+  console.error(`FAIL: FILE_INVENTORY.txt not found: ${e.message}`);
   process.exit(1);
 }
 
@@ -37,22 +37,21 @@ const currentFiles = raw
 
 let mismatch = false;
 if (expectedFiles.length !== currentFiles.length) {
-  console.error(FAIL: File count mismatch: expected , got );
+  console.error(`FAIL: File count mismatch: expected ${expectedFiles.length}, got ${currentFiles.length}`);
   mismatch = true;
 } else {
   for (let i = 0; i < expectedFiles.length; i++) {
     if (expectedFiles[i] !== currentFiles[i]) {
-      console.error(FAIL: Mismatch at line : expected ", got );
- mismatch = true;
- break;
- }
- }
+      console.error(`FAIL: Mismatch at line ${i + 1}: expected "${expectedFiles[i]}", got "${currentFiles[i]}"`);
+      mismatch = true;
+      break;
+    }
+  }
 }
 
 if (mismatch) {
- console.error('Run pnpm run inventory:update or 
-ode scripts/update-inventory.mjs to synchronize.');
- process.exit(1);
+  console.error('Run `pnpm run inventory:update` (or `node scripts/update-inventory.mjs`) to synchronize.');
+  process.exit(1);
 }
 
-console.log(PASS: FILE_INVENTORY.txt is 100% synchronized ( files).);
+console.log(`PASS: FILE_INVENTORY.txt is 100% synchronized (${currentFiles.length} files).`);
