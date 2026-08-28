@@ -1,9 +1,34 @@
 # Active Handoff
 
-Last updated: 2026-08-03 America/Chicago
+Last updated: 2026-08-28 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
-Current milestone: `v5.0.0 Heartland Campaign Foundation`
-Current build-train gate: Cow Signature CI and signed Android acceptance
+Working branch: **`qa`** — this is the default branch and where work lands.
+Current milestone: `v5.1.0 Three.js Production Slice`
+
+> **Read `Docs/BACKLOG.md` first.** It is the living work board and it is kept
+> current in the same commit as the work. Everything below the next section is
+> historical narrative from the v5.0.0 campaign push and is retained for the
+> reasoning, not as a description of the present.
+
+## Current state — 2026-08-28
+
+- **All three workflows are green.** Validate project, Build Signed Android QA
+  APK, and QA Automated Full Round. The latter two had been red for at least a
+  dozen consecutive commits and the Full Round had never passed in its recorded
+  history; both were restored on 2026-08-27. See the Landed section of
+  `Docs/BACKLOG.md` for what was actually wrong — most of it was checks that had
+  decayed against a moving codebase, not code going bad.
+- **128 models, 1.93 MB of a ~2 MB budget (97%).** Director's rule, settled: a
+  new model must **retire an existing one**, and a batch request has to name what
+  it displaces. Repairs do not count against it.
+- **Three intact models can be seen through** and are queued for AG in
+  `Docs/BACKLOG.md`: `industrial-warehouse-curved` (uncapped barrel vault end),
+  `farm-windmill` (inside-out sphere around the fan), `tractor` (cause not yet
+  established). Reproduce with `pnpm models:seethrough`.
+- The branches named further down (`agent/v500-heartland-campaign` and friends)
+  are archived. Do not look for them.
+
+## Historical — v5.0.0 campaign push (2026-08-03)
 
 ## V5 fast-track override
 

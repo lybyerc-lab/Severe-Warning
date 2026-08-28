@@ -1,6 +1,56 @@
 # QA Backlog
 
-Last updated: 2026-08-03
+Last updated: 2026-08-28
+
+**This is the defect register** — numbered defects with observed behaviour,
+correction and acceptance criteria. For "what should I build next", read
+`Docs/BACKLOG.md` instead; that is the living work board and it is the first
+required read in `AGENTS.md`.
+
+## Open — assets
+
+### ASSET-001: Three intact models can be seen through
+
+Status: open, assigned to the asset lane
+
+Observed:
+- Two barrel-vault warehouses read as ghosts in a play screenshot on 2026-08-27.
+- The cause is not transparency. Every material involved is `MeshStandardMaterial`
+  with `transparent: false`, `opacity: 1`, `side: FrontSide`.
+- `industrial-warehouse-curved`: one end of the barrel vault was never capped.
+  16 edges belong to a single triangle each and trace a closed ring on the plane
+  `z = -6` — the mouth of the vault. Front-face culling discards the faces
+  pointing away from the camera, so where the cap should be you look straight
+  through the building. Rendered in isolation it is a solid dome from one end and
+  an almost invisible crescent from the other. Worst angle: 65.2% backface.
+- `farm-windmill`: a large sphere around the fan whose faces point inward. It is
+  invisible from most angles and a solid white ball from one — rendered at four
+  yaw angles it is a normal windmill at 0/90/270 and a white ball at 180. In play
+  the windmill would balloon as the camera orbits past. Worst angle: 68.5%.
+- `tractor`: 31.5%. Flagged by the same check; the cause has **not** been
+  established and nobody has confirmed it is visible in play. Diagnose first.
+
+Correction:
+- cap the open end of the curved warehouse vault and re-export
+- fix the winding on the windmill sphere, or drop it if it is a leftover, and
+  re-export
+- diagnose the tractor before changing it
+
+Acceptance:
+- `pnpm models:seethrough` reports PASS with no intact model above the threshold
+- the repaired models render solid from all eight tested angles
+- these are **repairs, not new models**, so they do not consume the model budget
+
+Notes:
+- Wrecks are deliberately excluded from the failure list: a wreck is meant to be
+  torn open and a torn edge legitimately shows its back. Eight are above the
+  threshold and printed as a note. `farm-windmill-wreck` at 86.9% probably
+  carries the same inside-out sphere as its intact twin and is worth checking
+  while that one is open.
+- The check is not yet wired into the build, on purpose — it fails today and CI
+  was only just restored to green. It should become a build guard once these are
+  repaired.
+
 
 ## V5 campaign foundation
 

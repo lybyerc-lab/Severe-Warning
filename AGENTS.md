@@ -6,15 +6,35 @@ This repository is the durable project memory. Chat history is working context o
 
 Read these files in order:
 
-1. `Docs/ACTIVE_HANDOFF.md`
-2. `Docs/BUILD_TRAIN.md`
-3. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
-4. `Docs/ACCEPTED_BEHAVIOR.md`
-5. `Docs/QA_BACKLOG.md`
-6. `Docs/BUILD_LEDGER.md`
-7. `Docs/DECISIONS.md`
-8. `Docs/SYSTEM_MAP.md`
-9. `Docs/CODE_ANCHORS.md`
+1. `Docs/BACKLOG.md` — **start here.** The living board: what is queued for each
+   lane, what is parked and where it lives, the standing rules that are settled,
+   and what landed with the reasoning behind it.
+2. `Docs/ACTIVE_HANDOFF.md`
+3. `Docs/BUILD_TRAIN.md`
+4. `Docs/PRODUCT_VISION_AND_ROADMAP.md`
+5. `Docs/ACCEPTED_BEHAVIOR.md`
+6. `Docs/QA_BACKLOG.md`
+7. `Docs/BUILD_LEDGER.md`
+8. `Docs/DECISIONS.md`
+9. `Docs/SYSTEM_MAP.md`
+10. `Docs/CODE_ANCHORS.md`
+
+### Which backlog is which
+
+There are two, and they are not duplicates. Reading the wrong one is how an
+agent misses its own task list:
+
+- **`Docs/BACKLOG.md` — the living work board.** What to do next, per lane
+  (assets / code). Decisions that are open and blocking. Standing rules that are
+  settled and must not be relitigated. Parked work and exactly where it lives.
+  Update it in the same commit as the work it describes.
+- **`Docs/QA_BACKLOG.md` — the QA defect register.** Individual numbered defects
+  with observed behaviour, correction and acceptance criteria. A defect stays
+  open here until evidence closes it.
+
+If a task is "what should I build next", it is in `Docs/BACKLOG.md`. If it is
+"this specific thing is broken and here is how we will know it is fixed", it is
+in `Docs/QA_BACKLOG.md`.
 
 Then inspect the active branch, draft pull request, and latest successful QA build before proposing changes.
 
@@ -26,6 +46,8 @@ Then inspect the active branch, draft pull request, and latest successful QA bui
 - Follow the current stage in `Docs/BUILD_TRAIN.md`; do not skip ahead, widen scope, or request an APK early without explicit user approval.
 - Record every meaningful QA result in `Docs/BUILD_LEDGER.md`.
 - Record active defects and acceptance criteria in `Docs/QA_BACKLOG.md`.
+- Keep `Docs/BACKLOG.md` current in the **same commit** as the work it describes.
+  A backlog updated later is a backlog that is already wrong.
 - Update `Docs/ACTIVE_HANDOFF.md` whenever the active branch, build, milestone, build-train stage, or next action changes.
 - Record durable product or architecture decisions in `Docs/DECISIONS.md`.
 - Use stable searchable code anchors defined in `Docs/CODE_ANCHORS.md`.

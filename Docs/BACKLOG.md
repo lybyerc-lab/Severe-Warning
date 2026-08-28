@@ -1,5 +1,11 @@
 # Severe Warning — backlog
 
+**This is the living work board.** Named in `AGENTS.md` as the first required
+read. Not to be confused with `Docs/QA_BACKLOG.md`, which is the QA defect
+register — numbered defects with acceptance criteria. If the question is "what
+should I build next", it is answered here. If it is "this specific thing is
+broken and here is how we will know it is fixed", it is answered there.
+
 The living list. **This file is the source of truth**, not a chat message and not
 a published board. It lives in the repo so it survives container rewinds, agent
 handoffs and the gap between sessions, and so AG can read it without being told
