@@ -2,6 +2,27 @@
 
 This repository is the durable project memory. Chat history is working context only.
 
+## Read this before anything else: which branch
+
+**The working branch is `qa`. It is the default branch and it is where every
+current change lands.** Check out `qa` and read the documents below from `qa`.
+
+Other branches here are historical. Several carry hundreds of commits and look
+plausible, so an agent that picks one by name gets a coherent but months-out-of-
+date picture and will report finished work as if it were still queued. In
+particular `claude/pull-repo-cw2mn8` diverged on 2026-08-20: it is 281 commits
+behind `qa`, has 140 commits of its own that were never merged, and does **not**
+contain `Docs/BACKLOG.md` at all — so reading the backlog from there silently
+falls back to older documents and yields a v4-era task list.
+
+Confirm the branch before starting:
+
+```
+git fetch origin qa && git checkout qa && git pull --ff-only
+git log -1 --format='%h %ad %s' --date=short    # should be recent
+test -f Docs/BACKLOG.md && echo "on the right branch"
+```
+
 ## Required reading before changing code
 
 Read these files in order:

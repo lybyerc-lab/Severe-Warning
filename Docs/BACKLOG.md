@@ -111,6 +111,18 @@ upgrades and cosmetic funnel skins.
   5–8 px tall) and `hart-barn` / `hart-barn-wreck` (the hero barn is deliberately
   not model-backed — see Standing rules). Measure before promising the space.
 
+- **What happens to `claude/pull-repo-cw2mn8`?** It diverged from `qa` on
+  2026-08-20 and holds **140 commits that were never merged** — mostly Android
+  packaging and QA Pages publishing CI, but also a pause-state leak fix and a
+  paused wind-rumble fix that look like real gameplay repairs rather than
+  plumbing. It is simultaneously 281 commits behind.
+  It caused a concrete problem on 2026-08-28: an agent picked it by name, found
+  no `Docs/BACKLOG.md` on it, silently fell back to the older documents, and
+  reported long-since-landed v4-era items as the current backlog. `AGENTS.md` now
+  signposts the branch explicitly, but the branch itself is still there.
+  **Decide: cherry-pick what is still wanted and archive it, or leave it.** Do
+  not delete it casually — 140 commits of real history is not a stale copy.
+
 - **Should `models:seethrough` gate the build?** It is an on-demand script right
   now and deliberately not wired into `pnpm build` or CI, because it currently
   FAILS on three models and CI was only just restored to green — turning it red
