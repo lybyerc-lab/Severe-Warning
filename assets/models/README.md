@@ -19,7 +19,34 @@ leaves a hole in the world.
 | Axes | Y-up, metres, −Z forward, origin at the base/feet |
 | Materials | glTF PBR metallic-roughness. Vertex colours or flat untextured strongly preferred |
 | Triangles | ~1–3k per actor |
-| Total payload | Keep all models combined under ~2 MB |
+| Total payload | Keep all models combined under **4 MB** (see below) |
+
+### Where the 4 MB comes from
+
+The old number was ~2 MB and nothing in this repository ever said why. It was
+raised to 4 MB on 2026-08-28 after measuring what the payload actually costs,
+because a cap nobody can derive is a cap nobody can argue with.
+
+At today's 128 models / 2,248,570 bytes of raw `.glb`:
+
+| cost | measured |
+|---|---|
+| Added to the APK | **489 KB** -- assets are DEFLATE'd into the zip, so raw bytes are not install bytes |
+| Over the wire, gzipped | **407 KB** (18% of raw) |
+| JS heap, all 128 resident at once | **5.0 MB** |
+| Geometry, all 128 | 41,386 vertices / 45,736 triangles |
+| Parse time, all 128 | 2.03 s under software rendering; a real scene loads ~52 |
+
+Uncompressed float32 vertex data with no textures compresses about 5.5x, so the
+raw figure overstates every cost that actually matters by roughly that factor.
+4 MB of raw `.glb` is under 1 MB of install and under 10 MB of heap -- both
+comfortably inside a phone's budget, which is why the number moved rather than
+the library being cut.
+
+**Raw bytes are still the number to check** (`du -sb assets/models`) because it
+is the one anybody can measure in a second. It is a proxy, not the constraint.
+The real constraint is triangles drawn in one scene, and if that ever becomes
+the binding limit this table should be replaced rather than raised again.
 
 **Compression is a hard constraint, not a preference.** The renderer is three.js
 r128 with only `GLTFLoader` vendored (`vendor/three-gltfloader-r128.js`).

@@ -18,13 +18,16 @@ Current milestone: `v5.1.0 Three.js Production Slice`
   history; both were restored on 2026-08-27. See the Landed section of
   `Docs/BACKLOG.md` for what was actually wrong — most of it was checks that had
   decayed against a moving codebase, not code going bad.
-- **128 models, 1.93 MB of a ~2 MB budget (97%).** Director's rule, settled: a
+- **128 models, 2.14 MB of a 4 MB budget (56%).** The budget was re-derived
+  from measurement on 2026-08-28 (`assets/models/README.md`). Director's rule,
+  unchanged and still settled: a
   new model must **retire an existing one**, and a batch request has to name what
   it displaces. Repairs do not count against it.
-- **Three intact models can be seen through** and are queued for AG in
-  `Docs/BACKLOG.md`: `industrial-warehouse-curved` (uncapped barrel vault end),
-  `farm-windmill` (inside-out sphere around the fan), `tractor` (cause not yet
-  established). Reproduce with `pnpm models:seethrough`.
+- **See-through models: fixed and now gated.** `industrial-warehouse-curved`,
+  `farm-windmill` and `tractor` were repaired under ASSET-001; the library
+  passes 128/128. `pnpm models:seethrough` is no longer advisory -- it runs as
+  a step in the QA Automated Full Round workflow, so a model with a hole in it
+  cannot reach `qa` again.
 - The branches named further down (`agent/v500-heartland-campaign` and friends)
   are archived. Do not look for them.
 

@@ -22,10 +22,9 @@ Rules for keeping it alive:
 - Numbers in here are measured, not estimated. If a figure cannot be measured
   right now, say so instead of guessing.
 
-State at last update: 128 models, 1.93 MB of the ~2 MB budget (**97% — the
-model budget is effectively spent**; the next batch has to displace something or
-the cap has to move). 3 branches, 0 open PRs, 127 archive tags. `qa` is the
-default and the working branch.
+State at last update: 128 models, 2.14 MB of the 4 MB budget (**56%** — the cap
+was re-derived from measurement on 2026-08-28; see Landed). 3 branches, 0 open
+PRs, 127 archive tags. `qa` is the default and the working branch.
 
 ---
 
@@ -33,9 +32,10 @@ default and the working branch.
 
 Nothing queued. ASSET-001 is verified closed (see Landed).
 
-**Before the next batch, read the payload note under Decisions open** — the
-repairs took the model payload to 2.14 MB, past the ~2 MB cap, so the
-displace-before-adding rule now bites on the very next addition.
+The payload is no longer the blocker it was: the cap is 4 MB and the library
+sits at 2.14 MB (56%). Whether displace-before-adding still applies at that
+level is an open question under Decisions open — until the director rules, the
+rule stands and a batch request still has to name what it retires.
 
 ## Next up — Code & Modernization
 
@@ -84,15 +84,11 @@ upgrades and cosmetic funnel skins.
   a pointer: reading its defect list sent someone looking at post-run scoring and
   found a live bug by a different mechanism (below).
 
-- **The model payload is now 2.14 MB, past the ~2 MB cap.** The ASSET-001
-  repairs grew it from 1.93 MB (+222 KB) because sealing caps and fixing winding
-  genuinely adds geometry — `cow-17` +51 KB, `ferris-wheel` +39 KB, `carousel`
-  +26 KB, `pickup-truck` +22 KB. That was the right trade: the models were
-  visibly broken. But the displace-before-adding rule was written against a
-  ~2 MB ceiling that is now exceeded, so **the next addition has to displace more
-  than itself, or the cap has to move.** Measured: `du -sb assets/models` =
-  2,248,570 bytes. Worth deciding what the number actually costs on a phone
-  before picking a new one.
+- **Does displace-before-adding still apply at 56%?** The rule was set when the
+  budget was 97% spent. It is now 2.14 MB of 4 MB, so the premise is gone but
+  the rule has not been revoked — it still stands until the director says
+  otherwise. Worth a decision either way, because AG currently cannot open a
+  batch without naming something to retire.
 
 - **Nothing watches CI.** Two of the three workflows were red for at least ten
   consecutive commits and nobody noticed, because the only workflow anyone reads
@@ -189,6 +185,61 @@ upgrades and cosmetic funnel skins.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The build shipped every model twice, and the verifier checked the dead
+  copy.** Found while measuring the payload cap, which is the only reason anyone
+  looked. `build-web.mjs` wrote each `.glb` to both `www/models/` and
+  `www/assets/models/`, and recorded the first in `build-info.json`. The game
+  reads `ACTOR_MODEL_PATH = './assets/models/'`, so the manifest — and therefore
+  `verify-qa-package.mjs`, which follows it — was hashing the copy the game
+  never opens. A corrupted `www/assets/models/*` would have passed verification
+  clean.
+
+  Not deduced from reading the code: measured by recording every network request
+  the built bundle makes. The opening scene asks for `assets/models/` **52
+  times** and `www/models/` **zero**. One copy now, at `assets/models/`, and the
+  manifest names it, so the verifier and the game finally check the same bytes.
+
+  | | before | after |
+  |---|---|---|
+  | `www/` on disk | 7.55 MB | **5.41 MB** |
+  | zipped, i.e. APK-shaped | 2.86 MB | **2.39 MB** |
+  | models' share of the APK | ~978 KB | **489 KB** |
+
+  Verified after the change: 52/52 models load with zero page errors and zero
+  non-200 responses, `models:seethrough` still passes 128/128, and
+  `verify-qa-package.mjs` returns 511/518 — the identical count, with the
+  identical seven failures, that the unmodified build returns (they are the
+  missing Pages stamp and the ungenerated audio, both local-only). The control
+  was run, not assumed.
+
+- **The ~2 MB model cap was raised to 4 MB, and it is now derived.** The old
+  number appeared in five documents and was justified in none of them. What the
+  payload actually costs, measured at 128 models / 2,248,570 raw bytes:
+
+  | cost | measured |
+  |---|---|
+  | Added to the APK | **489 KB** — assets are DEFLATE'd into the zip |
+  | Over the wire, gzipped | **407 KB** (18% of raw) |
+  | JS heap, all 128 resident | **5.0 MB** |
+  | Geometry, all 128 | 41,386 verts / 45,736 tris |
+  | Parse, all 128 | 2.03 s under software rendering; a scene loads ~52 |
+
+  Untextured float32 vertex data compresses about 5.5x, so raw bytes overstate
+  every cost that matters by roughly that factor. 4 MB raw is under 1 MB of
+  install and under 10 MB of heap. The library was over a ceiling that was
+  costing half a megabyte to honour.
+
+  Raw bytes stay the number to check, because `du -sb assets/models` takes a
+  second. It is a proxy: the real constraint is triangles in one scene, and if
+  that ever binds, the table in `assets/models/README.md` should be replaced
+  rather than raised again.
+
+  **One thing could not be measured here:** whether GitHub Pages gzips
+  `model/gltf-binary` over the wire. The container's network policy blocks
+  `github.io`, so the 407 KB figure is what a compressing server would send, not
+  a confirmed observation of the QA site. It does not affect the Android build,
+  where the 489 KB is measured directly from a zip.
 
 - **The asset generators can run on Linux again, and they reproduce the shipped
   models byte for byte.** Five `generate-*.mjs` plus `build-all-assets.mjs`

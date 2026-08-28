@@ -3,8 +3,10 @@
 Everything needed to add, change or debug a `.glb` actor in this project.
 Written for someone picking this up cold.
 
-Current on `qa`. 101 models (46 intact+wreck pairs + 9 single actors),
-1,190,488 bytes (1.135 MB) against a ~2 MB budget (56%).
+Current on `qa`. 128 models (63 intact+wreck pairs + 2 single actors),
+2,248,570 bytes (2.14 MB) against a 4 MB budget (56%). The budget was ~2 MB
+until 2026-08-28, when it was measured and re-derived -- see "Where the 4 MB
+comes from" in `assets/models/README.md`.
 
 ## The one-sentence version
 
@@ -116,7 +118,7 @@ Measured across the wreck models in this repo:
     grandstand-wreck       432   1296   3.00       98.9   unwelded
 
 Those four unwelded files are 309 KB; welded they would be about 89 KB. That is
-215 KB of the ~2 MB budget spent on nothing.
+215 KB of the budget spent on nothing.
 
 **Self-check:** vertices divided by triangles. Around 0.5 is welded. Exactly
 3.00 means no vertex sharing at all -- every triangle is standalone.
@@ -235,7 +237,7 @@ eight colour variants with size variation. One model makes every house identical
 
 ## State
 
-Payload is 1,164,896 bytes across 93 models -- 53% of the ~2 MB budget. All
+Payload is 1,164,896 bytes across 93 models -- 29% of the 4 MB budget. All
 93 models are 100% welded with merge-by-distance and normalized with base minY at
 0.0000.
 
