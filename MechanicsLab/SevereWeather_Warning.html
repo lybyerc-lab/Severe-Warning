@@ -15394,7 +15394,14 @@ const SW_CINEMATIC_DURATION = 12.4;
 // so every update frame threw ReferenceError: farmX is not defined and the
 // cutscene camera never moved.
 const SW_CINEMATIC_FARM_X = -290;
-const SW_CINEMATIC_FARM_Z = -196;
+// Staged in FRONT of the hero barn, not behind it. The set used to sit at
+// z = -196, which is the barn's BACK side: the barn's front wall (both big
+// doors, the loft door, the gable and the trim) is at world z = -228.2 and its
+// blank back wall at z = -211.8, so every establishing shot framed a featureless
+// red slab and the barn never read as a barn. -242 puts the set about 13 units
+// clear of the front wall, on flat ground (terrainHeightAt = 0.01) with nothing
+// else within 22 units.
+const SW_CINEMATIC_FARM_Z = -242;
 
 let openingCinematicState = {
   active: false,
@@ -15645,6 +15652,10 @@ function startOpeningCinematic() {
   const farmX = SW_CINEMATIC_FARM_X;
   const farmZ = SW_CINEMATIC_FARM_Z;
   group.position.set(farmX, terrainHeightAt(farmX, farmZ), farmZ);
+  // The camera now watches from the -Z side so the barn's doors are the backdrop,
+  // so the whole set turns to meet it: Cow 17 faces the lens, and the chickens and
+  // hay bales fall in front of her rather than behind.
+  group.rotation.y = Math.PI;
   scene.add(group);
 
   openingCinematicState.cinematicGroup = group;
@@ -15794,30 +15805,35 @@ function updateOpeningCinematic(dt) {
   }
 
   // Cinematic Camera Spline overlooking peaceful pasture & distant tornado touchdown
+  // Camera lives on the -Z side and looks back toward +Z, so the barn's doors sit
+  // behind Cow 17. It also sits higher than it used to: at the old eye height the
+  // distant ground apron (a 760x210 plane about 168 units out) filled the left of
+  // frame as a shapeless green mass. Looking slightly down puts it back on the
+  // horizon where it belongs.
   if (time < 5.9) {
     if (camera) {
-      camera.position.set(farmX + 3.8, farmY + 6.2, farmZ + 15.0);
-      camera.lookAt(farmX - 0.5, farmY + 4.0, farmZ - 3.5);
+      camera.position.set(farmX + 5.5, farmY + 8.5, farmZ - 19.0);
+      camera.lookAt(farmX - 0.5, farmY + 3.6, farmZ + 5.0);
     }
   } else if (time < 8.15) {
     const s = (time - 5.9) / (8.15 - 5.9);
     if (camera) {
       camera.position.set(
-        farmX + 3.8 + (2.0 - 3.8) * s,
-        farmY + 6.2 + (5.2 - 6.2) * s,
-        farmZ + 15.0 + (7.5 - 15.0) * s
+        farmX + 5.5 + (3.0 - 5.5) * s,
+        farmY + 8.5 + (6.6 - 8.5) * s,
+        farmZ - 19.0 + (-11.0 - (-19.0)) * s
       );
-      camera.lookAt(farmX - 0.5 + (0.1 - (-0.5)) * s, farmY + 4.0 + (4.0 - 4.0) * s, farmZ - 3.5 + (0.2 - (-3.5)) * s);
+      camera.lookAt(farmX - 0.5 + (0.1 - (-0.5)) * s, farmY + 3.6 + (3.4 - 3.6) * s, farmZ + 5.0 + (1.0 - 5.0) * s);
     }
   } else if (time < 10.15) {
     const s = (time - 8.15) / (10.15 - 8.15);
     if (camera) {
       camera.position.set(
-        farmX + 2.0 + (0.95 - 2.0) * s,
-        farmY + 5.2 + (4.6 - 5.2) * s,
-        farmZ + 7.5 + (3.8 - 7.5) * s
+        farmX + 3.0 + (1.6 - 3.0) * s,
+        farmY + 6.6 + (5.4 - 6.6) * s,
+        farmZ - 11.0 + (-6.5 - (-11.0)) * s
       );
-      camera.lookAt(farmX + 0.1 + (0.1 - 0.1) * s, farmY + 4.0 + (4.2 - 4.0) * s, farmZ + 0.2 + (0.5 - 0.2) * s);
+      camera.lookAt(farmX + 0.1 + (0.1 - 0.1) * s, farmY + 3.4 + (3.6 - 3.4) * s, farmZ + 1.0 + (0.5 - 1.0) * s);
     }
   } else if (time < SW_CINEMATIC_DURATION) {
     const s = (time - 10.15) / (SW_CINEMATIC_DURATION - 10.15);

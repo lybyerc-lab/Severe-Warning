@@ -69,27 +69,13 @@ From a director's pass played on a 915x412 phone viewport. Ordered by cost to
 the player, not by ease of fixing. Each one says what was actually measured, so
 the next person does not have to re-derive it.
 
-1. **The opening cutscene's staging, now that it can be seen.** It runs clean —
-   zero page errors, subtitles advancing, letterbox and skip behaving — but it
-   had thrown on every frame since it shipped, so this is the first time anyone
-   has looked at the composition, and it needs work:
-   - The camera sits low and close, so the barn is a **flat red slab filling the
-     right half of frame** — no roof, no depth, two white rectangles for doors.
-   - **Cow 17 reads as a small white blob.** The articulated rig, the arms and
-     the Moo Brew cup are all in the code and none of it survives the framing.
-   - The pale green ellipsoid behind the barn **reads as a placeholder** — a
-     giant green pill rather than a hill or a tree.
-   "Another peaceful morning in Lincoln County" wants a wide, warm establishing
-   shot. It is currently a close-up of a wall. **This is framing work, not
-   assets** — worth doing before spending any displaced model budget.
-
-2. **The mesocyclone reads as a hard-edged ellipse.** From the play camera the
+1. **The mesocyclone reads as a hard-edged ellipse.** From the play camera the
    canopy above the funnel is a flattened disc with a distinct rim — closer to a
    saucer silhouette than a rotating wall cloud. The funnel itself is legible
    once the HUD folds away (see the note in Landed), so this is about the
    canopy's edge treatment, not the tornado's scale.
 
-3. **The town still flattens at play altitude.** Roofline and silhouette are all
+2. **The town still flattens at play altitude.** Roofline and silhouette are all
    that survive at the distance most of the game is actually played from, and
    there are wide flat pale-green gaps between roads in the foreground. The
    asymmetry and ground-dressing work helped; distance is the remaining problem.
@@ -296,6 +282,29 @@ Newest first. Kept for the reasoning, not the changelog.
     that never ran; it was previously enough to wave through a build nothing had
     looked at. The inconclusive branch is checked first and exits non-zero
     regardless of the marker.
+
+- **The opening cutscene was framing the back of the barn.**
+  With the every-frame crash fixed, the composition could finally be looked at,
+  and the establishing shot was a featureless red slab with a shapeless green
+  mass beside it. Both had specific causes, found by raycasting into the frame
+  rather than guessing:
+  - The slab is `barn-back-wall-group` on `HartFarmSignatureBarn`. The set was
+    staged at z = -196, which is the barn's **back** side; the front wall — both
+    big cross-braced doors, the loft door, the gable and the white trim — is at
+    world z = -228.2. The camera sat at `farmZ + 15` looking toward -Z, so it
+    could never see the doors. The barn had never once read as a barn.
+  - The green mass is not a placeholder: it is a **760 x 210 PlaneGeometry about
+    168 units out**, the distant ground apron, looming because the camera was low
+    enough to look along it rather than down at it.
+  Set restaged to z = -242, about 13 units clear of the front wall on flat ground
+  with nothing else within 22 units; the group turned 180 degrees so Cow 17 faces
+  the lens and the chickens and hay bales fall in front of her; the camera spline
+  mirrored to the -Z side and lifted so the apron sits on the horizon.
+  The barn now reads as a barn, the close-up reads as a character — snout, eyes,
+  ear tag, the Moo Brew cup — and the grain bin and farmhouse give real farm
+  context. Verified end to end: diligence audit 20/20, subtitles progressing,
+  zero page errors, and the handoff still clean (letterbox lifts, `runActive`
+  true).
 
 - **The chopper kept scoring after you quit.** Found by auditing the abandoned
   branch's defect list rather than by cherry-picking it. Quitting to the main
