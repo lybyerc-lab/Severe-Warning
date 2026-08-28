@@ -7853,6 +7853,11 @@ function beginBovineFlight(cow) {
 function activateCowCam(cow, forced = false) {
   if (!cow || bovineCowCam.active || (bovineCowCam.triggered && !forced)) return false;
   if (!forced && cow.id !== 17) return false;
+  // Refuse before any state is touched, the same way damageTarget does.
+  // Animals keep simulating after a run ends, so a cow still airborne when the
+  // player quits would land in the main menu and fire a whole media moment over
+  // it: the Cow-Cam overlay, a headline, a moo, and the chopper's +350 scoop.
+  if (!runActive) return false;
   bovineCowCam.active = true;
   bovineCowCam.timer = 1.85;
   bovineCowCam.triggered = true;
@@ -16697,6 +16702,12 @@ function createProductionNewsChopper() {
 }
 
 function triggerNewsChopperLiveFeed(subjectName = 'AIRBORNE BOVINE', altitude = 24) {
+  // Guarded independently of activateCowCam: this is exported on globalThis and
+  // writes destructionScore DIRECTLY rather than going through addScore, so it
+  // bypasses every guard addScore would otherwise apply. Measured before this
+  // fix: quitting to the main menu with a cow airborne awarded exactly +350 and
+  // an extra media moment, reproducibly, three runs out of three.
+  if (!runActive) return;
   newsChopperState.liveFeedActive = true;
   newsChopperState.liveFeedTimer = 4.5;
   newsChopperState.totalScoops += 1;

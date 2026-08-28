@@ -111,17 +111,28 @@ upgrades and cosmetic funnel skins.
   5–8 px tall) and `hart-barn` / `hart-barn-wreck` (the hero barn is deliberately
   not model-backed — see Standing rules). Measure before promising the space.
 
-- **What happens to `claude/pull-repo-cw2mn8`?** It diverged from `qa` on
-  2026-08-20 and holds **140 commits that were never merged** — mostly Android
-  packaging and QA Pages publishing CI, but also a pause-state leak fix and a
-  paused wind-rumble fix that look like real gameplay repairs rather than
-  plumbing. It is simultaneously 281 commits behind.
-  It caused a concrete problem on 2026-08-28: an agent picked it by name, found
-  no `Docs/BACKLOG.md` on it, silently fell back to the older documents, and
-  reported long-since-landed v4-era items as the current backlog. `AGENTS.md` now
-  signposts the branch explicitly, but the branch itself is still there.
-  **Decide: cherry-pick what is still wanted and archive it, or leave it.** Do
-  not delete it casually — 140 commits of real history is not a stale copy.
+- **`claude/pull-repo-cw2mn8` — audited 2026-08-28, nothing to salvage.**
+  Two earlier claims about it in this file were wrong and are corrected here.
+  It is **not** "140 unmerged commits": `qa` and that branch have **no common
+  ancestor at all** — `git merge-base` returns nothing. `qa` is 80 commits rooted
+  at "Verify exact Phase 4 legacy parity"; the branch is 140 rooted at
+  "Initialize Severe Weather Unity production starter" (2026-07-23). Two
+  unrelated histories in one repository, so "140 ahead" is just the branch's
+  entire life.
+  Only **6 files** exist there and not on `qa`, and none are wanted: four
+  `apply-v4xx-source-patch.mjs` patch-chain scripts (exactly what `qa`
+  deliberately flattened — reviving them undoes that), and two Pages workflows
+  superseded by `qa`'s own, one triggering on a branch that no longer exists.
+  Its two plausible gameplay fixes: the wind-rumble one patches
+  `updateWindRumble`, which does not exist in `qa` (the audio system was rewritten
+  around the sprite manifest). The seven-defect commit was tested rather than
+  trusted, each with a control proving live state advances before checking frozen
+  state — pause freezing timer/score/storm, abilities blocked while paused,
+  `quitToMainMenu` clearing the run, `damageTarget` guarding on `runActive` — all
+  **already fixed in `qa`**.
+  **Verdict: do not cherry-pick. Leave it as archaeology.** Its real value was as
+  a pointer: reading its defect list sent someone looking at post-run scoring and
+  found a live bug by a different mechanism (below).
 
 - **Should `models:seethrough` gate the build?** It is an on-demand script right
   now and deliberately not wired into `pnpm build` or CI, because it currently
@@ -285,6 +296,24 @@ Newest first. Kept for the reasoning, not the changelog.
     that never ran; it was previously enough to wave through a build nothing had
     looked at. The inconclusive branch is checked first and exits non-zero
     regardless of the marker.
+
+- **The chopper kept scoring after you quit.** Found by auditing the abandoned
+  branch's defect list rather than by cherry-picking it. Quitting to the main
+  menu with a cow still airborne awarded **exactly +350 and an extra media
+  moment, three trials out of three** — deterministic, not flake. It also popped
+  the Cow-Cam overlay, the chopper-cam overlay, a headline and a moo, over the
+  main menu.
+  It escaped every existing guard because it is neither damage nor a normal
+  award: cows are protected actors so they keep simulating after a run ends, and
+  `triggerNewsChopperLiveFeed` writes `destructionScore += 350` **directly**,
+  bypassing `addScore` entirely — while `damageTarget`'s `if (!runActive) return`
+  only ever covered damage. Grepping for the old commit's fix would not have
+  found this; the mechanism is different.
+  Guarded at both entry points (`activateCowCam` and
+  `triggerNewsChopperLiveFeed`) in the codebase's own "refuse before any state is
+  touched" style. Proven both ways: the scoop still awards +350 during a live run
+  (positive control — otherwise the fix is just deleting a feature), and the leak
+  is gone across three trials with no stray overlays.
 
 - **`pnpm build` had never worked.** Found while running the suite after the
   see-through work. Three scripts had every backtick and `${...}` stripped out,
