@@ -330,6 +330,8 @@ scripts/create-archive-tags.sh
 scripts/fix-v450-parser.mjs
 scripts/generate-storm-audio.mjs
 scripts/lib/inlined-regions.mjs
+scripts/lib/qa-visual-rig.mjs
+scripts/measure-scene-occlusion.mjs
 scripts/play-and-inspect.mjs
 scripts/qa-candidate-contract.mjs
 scripts/qa-modernization-phase2-clocks.mjs

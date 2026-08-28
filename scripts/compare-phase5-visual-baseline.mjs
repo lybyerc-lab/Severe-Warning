@@ -1,8 +1,8 @@
 import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { inflateSync } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { installQaFrameController, decodePng } from './lib/qa-visual-rig.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -55,144 +55,6 @@ const viewports = [
 const scenarios = ['initial', 'hero'];
 const results = [];
 let fatalError = null;
-
-function installQaFrameController(seed) {
-  let randomState = seed >>> 0;
-  Math.random = () => {
-    randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
-    return randomState / 0x100000000;
-  };
-
-  const nativeRaf = window.requestAnimationFrame.bind(window);
-  const nativeCancelRaf = window.cancelAnimationFrame.bind(window);
-  const nativePerformanceNow = performance.now.bind(performance);
-  const nativeDateNow = Date.now.bind(Date);
-
-  let frozen = true;
-  let simulatedTimestamp = 1000.0;
-  let nextCallbackId = 1;
-  let steppedFrameCount = 0;
-  const timestampSequence = [];
-  const queuedCallbacks = new Map();
-  const activeCallbacks = new Map();
-
-  performance.now = () => (frozen ? simulatedTimestamp : nativePerformanceNow());
-  Date.now = () => (frozen ? Math.round(simulatedTimestamp) : nativeDateNow());
-
-  window.requestAnimationFrame = (callback) => {
-    const id = nextCallbackId++;
-    if (frozen) {
-      queuedCallbacks.set(id, callback);
-      return id;
-    }
-    const nativeId = nativeRaf((timestamp) => {
-      activeCallbacks.delete(id);
-      simulatedTimestamp = timestamp;
-      callback(timestamp);
-    });
-    activeCallbacks.set(id, { nativeId, callback });
-    return id;
-  };
-
-  window.cancelAnimationFrame = (id) => {
-    queuedCallbacks.delete(id);
-    const active = activeCallbacks.get(id);
-    if (active) nativeCancelRaf(active.nativeId);
-    activeCallbacks.delete(id);
-  };
-
-  const getStatus = () => Object.freeze({
-    frozen,
-    queueSize: queuedCallbacks.size,
-    activeNativeRafCount: activeCallbacks.size,
-    steppedFrameCount,
-    simulatedTimestamp,
-    timestampSequence: [...timestampSequence],
-  });
-
-  globalThis.__SW_QA_TIME_CONTROLLER__ = {
-    freeze() {
-      if (frozen) return true;
-      frozen = true;
-      for (const [id, active] of activeCallbacks) {
-        nativeCancelRaf(active.nativeId);
-        queuedCallbacks.set(id, active.callback);
-      }
-      activeCallbacks.clear();
-      return true;
-    },
-    reset(seedOverride = seed) {
-      randomState = seedOverride >>> 0;
-      steppedFrameCount = 0;
-      simulatedTimestamp = 1000.0;
-      timestampSequence.length = 0;
-    },
-    stepFrame(timestamp) {
-      frozen = true;
-      simulatedTimestamp = timestamp;
-      steppedFrameCount += 1;
-      timestampSequence.push(timestamp);
-      const callbacks = Array.from(queuedCallbacks.values());
-      queuedCallbacks.clear();
-      for (const callback of callbacks) callback(timestamp);
-      return getStatus();
-    },
-    getStatus,
-  };
-}
-
-function decodePng(buffer) {
-  let offset = 8;
-  let width = 0;
-  let height = 0;
-  const idatChunks = [];
-
-  while (offset < buffer.length) {
-    const length = buffer.readUInt32BE(offset);
-    const type = buffer.toString('ascii', offset + 4, offset + 8);
-    if (type === 'IHDR') {
-      width = buffer.readUInt32BE(offset + 8);
-      height = buffer.readUInt32BE(offset + 12);
-    } else if (type === 'IDAT') {
-      idatChunks.push(buffer.subarray(offset + 8, offset + 8 + length));
-    }
-    offset += 12 + length;
-  }
-
-  if (!width || !height || idatChunks.length === 0) throw new Error('Invalid PNG capture.');
-  const decompressed = inflateSync(Buffer.concat(idatChunks));
-  const stride = width * 4 + 1;
-  const pixels = Buffer.alloc(width * height * 4);
-
-  for (let y = 0; y < height; y += 1) {
-    const rowStart = y * stride;
-    const filter = decompressed[rowStart];
-    const outRowStart = y * width * 4;
-    for (let x = 0; x < width * 4; x += 1) {
-      const raw = decompressed[rowStart + 1 + x];
-      const left = x >= 4 ? pixels[outRowStart + x - 4] : 0;
-      const up = y > 0 ? pixels[(y - 1) * width * 4 + x] : 0;
-      const upperLeft = x >= 4 && y > 0 ? pixels[(y - 1) * width * 4 + x - 4] : 0;
-      let value = raw;
-      if (filter === 1) value = (raw + left) & 0xff;
-      else if (filter === 2) value = (raw + up) & 0xff;
-      else if (filter === 3) value = (raw + Math.floor((left + up) / 2)) & 0xff;
-      else if (filter === 4) {
-        const estimate = left + up - upperLeft;
-        const distanceLeft = Math.abs(estimate - left);
-        const distanceUp = Math.abs(estimate - up);
-        const distanceUpperLeft = Math.abs(estimate - upperLeft);
-        const predictor = distanceLeft <= distanceUp && distanceLeft <= distanceUpperLeft
-          ? left
-          : (distanceUp <= distanceUpperLeft ? up : upperLeft);
-        value = (raw + predictor) & 0xff;
-      }
-      pixels[outRowStart + x] = value;
-    }
-  }
-
-  return { width, height, pixels };
-}
 
 function analyzeCaptureValidity(decoded) {
   const pixelCount = decoded.width * decoded.height;
