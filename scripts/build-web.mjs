@@ -1,4 +1,4 @@
-import { access, copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { access, copyFile, cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -208,10 +208,33 @@ for (const modelFile of modelSourceNames) {
 // got committed -- the symptom is identical and invisible. So the build now
 // reads the names the game actually asks for and refuses to produce a bundle
 // that cannot serve them.
+//
+// Skipping a candidate needs a real identity test, not a name comparison. On a
+// case-insensitive machine `Assets/models` IS `assets/models`, so the guard must
+// not report the legitimate 128 models as strays there. Comparing the paths
+// case-INSENSITIVELY fixes that on Windows and simultaneously blinds the guard
+// on Linux and in CI, where `Assets/models` is a genuinely different directory:
+// the names fold equal, the loop skips it, and the batch it exists to catch
+// sails straight through. Comparing device and inode asks the question actually
+// being asked -- "is this the same directory?" -- and answers it correctly on
+// both kinds of filesystem.
 const strayModelDirs = [];
+let sourceModelsIdentity = null;
+try {
+  const info = await stat(sourceModelsDir);
+  sourceModelsIdentity = `${info.dev}:${info.ino}`;
+} catch { /* no models dir yet; every candidate is then genuinely separate */ }
 for (const strayDir of ['Assets/models', 'Assets/Models', 'assets/Models']) {
   const absolute = path.join(projectRoot, strayDir);
-  if (path.resolve(absolute).toLowerCase() === path.resolve(sourceModelsDir).toLowerCase()) continue;
+  try {
+    const info = await stat(absolute);
+    // ino is 0 on filesystems that do not report one; fall back to refusing to
+    // skip, so an unknown case is loud rather than silently ignored.
+    if (sourceModelsIdentity && info.ino !== 0 && `${info.dev}:${info.ino}` === sourceModelsIdentity) continue;
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') continue;
+    throw error;
+  }
   try {
     const strays = (await readdir(absolute)).filter(name => name.toLowerCase().endsWith('.glb'));
     if (strays.length) strayModelDirs.push(`${strayDir} (${strays.length} .glb)`);

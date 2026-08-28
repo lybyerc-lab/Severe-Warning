@@ -31,7 +31,11 @@ default and the working branch.
 
 ## Next up — AG (assets)
 
-Nothing blocking. The board is clear. All three flagged see-through models (`industrial-warehouse-curved`, `farm-windmill`, `tractor`) have been repaired with watertight geometry and pass `pnpm models:seethrough` across all 128 models with 0% intact backface leakage.
+Nothing queued. ASSET-001 is verified closed (see Landed).
+
+**Before the next batch, read the payload note under Decisions open** — the
+repairs took the model payload to 2.14 MB, past the ~2 MB cap, so the
+displace-before-adding rule now bites on the very next addition.
 
 ## Next up — Code & Modernization
 
@@ -89,6 +93,28 @@ upgrades and cosmetic funnel skins.
   **Verdict: do not cherry-pick. Leave it as archaeology.** Its real value was as
   a pointer: reading its defect list sent someone looking at post-run scoring and
   found a live bug by a different mechanism (below).
+
+- **The model payload is now 2.14 MB, past the ~2 MB cap.** The ASSET-001
+  repairs grew it from 1.93 MB (+222 KB) because sealing caps and fixing winding
+  genuinely adds geometry — `cow-17` +51 KB, `ferris-wheel` +39 KB, `carousel`
+  +26 KB, `pickup-truck` +22 KB. That was the right trade: the models were
+  visibly broken. But the displace-before-adding rule was written against a
+  ~2 MB ceiling that is now exceeded, so **the next addition has to displace more
+  than itself, or the cap has to move.** Measured: `du -sb assets/models` =
+  2,248,570 bytes. Worth deciding what the number actually costs on a phone
+  before picking a new one.
+
+- **`Tools/` and `tools/` both exist, and the asset generators are split across
+  them.** Pre-existing, NOT introduced by AG's commit — both trees are present at
+  `a8e15ac`. `Tools/asset-pipeline/generate-*.mjs` import `./glb-builder.mjs`,
+  which lives only in `tools/asset-pipeline/`. On Windows these are one directory
+  and it works; on Linux it is a hard failure —
+  `Cannot find module '.../Tools/asset-pipeline/glb-builder.mjs'` — so **the
+  asset generators cannot run in CI or on this container at all.**
+  `Tools/validate_project.py` is legitimately capital-T and is invoked by
+  `validate-project.yml`, so the fix is to move the asset-pipeline generators
+  down into `tools/`, not to rename the whole tree. Same class as the
+  `Assets/` vs `assets/` incident.
 
 - **Should `models:seethrough` gate the build?** It is an on-demand script right
   now and deliberately not wired into `pnpm build` or CI, because it currently
@@ -259,6 +285,32 @@ Newest first. Kept for the reasoning, not the changelog.
     that never ran; it was previously enough to wave through a build nothing had
     looked at. The inconclusive branch is checked first and exits non-zero
     regardless of the marker.
+
+- **ASSET-001 closed: no intact model can be seen through.** AG's repair sealed
+  cylinder bottom caps and corrected sphere winding across **77 of the 128
+  models**, well beyond the three that were reported. Verified with
+  `pnpm models:seethrough`: **PASS**, worst intact model now 0.1% (`foundry`),
+  down from `farm-windmill` 68.5%, `industrial-warehouse-curved` 65.2% and
+  `tractor` 31.5%. The wrecks cleared too — `farm-windmill-wreck` was 86.9% and
+  no longer appears above the threshold at all, so the advisory list is empty.
+
+- **The build guard was quietly blinded, and is restored.** AG's commit changed
+  the stray-model guard's directory comparison to case-INSENSITIVE:
+  `path.resolve(absolute).toLowerCase() === path.resolve(sourceModelsDir).toLowerCase()`.
+  That fixes a real false positive on Windows, where `Assets/models` genuinely IS
+  `assets/models` and the guard would otherwise report all 128 legitimate models
+  as strays. On Linux and in CI it does the opposite of its job: the names fold
+  equal, the loop `continue`s, and the guard skips the exact directory it exists
+  to catch.
+  Proven side by side with one stray `.glb` planted in `Assets/models`:
+  the restored guard fails the build with
+  `Models found outside assets/models: Assets/models (1 .glb)`; AG's version
+  prints `Built offline web bundle` and packages none of them. That is the
+  failure that silently reverted 39 buildings to procedural boxes.
+  Fixed by asking the question actually being asked — *is this the same
+  directory?* — with a device+inode identity test instead of a name comparison.
+  Correct on both kinds of filesystem, and it refuses to skip when a filesystem
+  reports no inode, so an unknown case is loud rather than ignored.
 
 - **The opening cutscene was framing the back of the barn.**
   With the every-frame crash fixed, the composition could finally be looked at,
