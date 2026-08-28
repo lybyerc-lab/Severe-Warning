@@ -87,30 +87,51 @@ const server = http.createServer((req, res) => {
 });
 await new Promise(resolve => server.listen(PORT, '127.0.0.1', resolve));
 
-// The state to measure in: stage 3 at EF-5 with a skin equipped, which is where
-// the funnel complaint came from.
+// The state to measure in: stage 3 at EF-5, which is where the funnel complaint
+// came from. The skin is held constant across every exposure in a run, because
+// it tints the inner funnel and the suction rings as well as the outer sheath --
+// changing it mid-sweep would confound the thing being measured with two others.
+const SKIN = process.env.SW_OCCLUSION_SKIN || 'crimson-fury';
+
+// 'scene'     baseline is the scene as it ships; a measurement is how much a
+//             change moves the picture.
+// 'no-sheath' baseline has the outer sheath removed; a measurement is then the
+//             sheath's own FOOTPRINT -- how much of the frame it is occupying at
+//             that setting. This is the mode to compare two looks in.
+const BASELINE_MODE = process.env.SW_OCCLUSION_BASELINE || 'scene';
+
 function setupScene() {
   currentStage = 3;
   destructionScore = getActiveCampaignLevel().scoreTarget * 1.2;
   updateEFRating();
-  if (typeof applyFunnelSkinMaterials === 'function') applyFunnelSkinMaterials('crimson-fury');
+  const skin = globalThis.__SW_OCCLUSION_SKIN__;
+  if (typeof applyFunnelSkinMaterials === 'function' && skin) applyFunnelSkinMaterials(skin);
 }
 
-const NO_MUTATION = { label: 'baseline', apply: () => {} };
-const CONTROL = { label: 'CONTROL: whole tornado hidden', apply: () => { tornadoGroup.visible = false; } };
-
+const hideSheath = () => { outerFunnelMesh.visible = false; };
 const setOuterOpacity = value => { outerFunnelMat.uniforms.uOpacity.value = value; };
 
-const MUTATIONS = [
-  { label: 'outer sheath hidden', apply: () => { outerFunnelMesh.visible = false; } },
-  { label: 'inner funnel hidden', apply: () => { funnelMesh.visible = false; } },
-  { label: 'skin off (default slate)', apply: () => { applyFunnelSkinMaterials('default-classic'); } },
-  ...[0.30, 0.24, 0.18, 0.12].map(value => ({
-    label: `outer sheath opacity ${value.toFixed(2)}`,
+const BASELINE = BASELINE_MODE === 'no-sheath'
+  ? { label: 'baseline (outer sheath removed)', apply: hideSheath }
+  : { label: 'baseline (scene as shipped)', apply: () => {} };
+
+const CONTROL = { label: 'CONTROL: whole tornado hidden', apply: () => { tornadoGroup.visible = false; } };
+
+const MUTATIONS = BASELINE_MODE === 'no-sheath'
+  ? [0.36, 0.30, 0.24, 0.18, 0.12].map(value => ({
+    label: `sheath footprint at opacity ${value.toFixed(2)}`,
     apply: setOuterOpacity,
     arg: value
   }))
-];
+  : [
+    { label: 'outer sheath hidden', apply: hideSheath },
+    { label: 'inner funnel hidden', apply: () => { funnelMesh.visible = false; } },
+    ...[0.30, 0.24, 0.18, 0.12].map(value => ({
+      label: `outer sheath opacity ${value.toFixed(2)}`,
+      apply: setOuterOpacity,
+      arg: value
+    }))
+  ];
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROME_BIN || undefined,
@@ -124,6 +145,7 @@ const browser = await chromium.launch({
 async function expose({ apply, arg }) {
   const context = await browser.newContext({ viewport: { width: 915, height: 412 } });
   await context.addInitScript(installQaFrameController, SEED);
+  await context.addInitScript(skin => { globalThis.__SW_OCCLUSION_SKIN__ = skin; }, SKIN);
   const page = await context.newPage();
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(String(error)));
@@ -230,8 +252,8 @@ function differencePercent(a, b) {
   return changed / total * 100;
 }
 
-const baseline = await expose(NO_MUTATION);
-const repeat = await expose(NO_MUTATION);
+const baseline = await expose(BASELINE);
+const repeat = await expose(BASELINE);
 const floor = differencePercent(baseline.decoded, repeat.decoded);
 
 // A capture of one flat colour differences to zero against anything, and would
@@ -250,7 +272,8 @@ const controlPercent = differencePercent(baseline.decoded, control.decoded);
 console.log('='.repeat(68));
 console.log('  SCENE OCCLUSION — share of the frame a change is responsible for');
 console.log('='.repeat(68));
-console.log(`state: ${baseline.state.ef} stage ${baseline.state.stage}, funnel scale ${baseline.state.scale}`);
+console.log(`state: ${baseline.state.ef} stage ${baseline.state.stage}, funnel scale ${baseline.state.scale}, skin ${SKIN}`);
+console.log(`baseline: ${BASELINE.label}`);
 console.log(`frames per exposure: ${BOOT_FRAMES} boot + ${CINEMATIC_FRAMES} cinematic + ${SETTLE_FRAMES} settle + 1`);
 console.log(`baseline distinct colours: ${distinct.size > 256 ? '>256' : distinct.size}`);
 console.log(`noise floor (two independent runs, untouched): ${floor.toFixed(3)}%`);
