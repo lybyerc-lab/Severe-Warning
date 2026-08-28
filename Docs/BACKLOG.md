@@ -43,7 +43,41 @@ From a director's pass played on a 915x412 phone viewport. Ordered by cost to
 the player, not by ease of fixing. Each one says what was actually measured, so
 the next person does not have to re-derive it.
 
-1. **The town still flattens at play altitude.** Roofline and silhouette are all
+1. **The town still flattens at play altitude.** *(One investigation spent, no
+   fix — read this before starting, it will save you the same detour.)*
+
+   **Ruled out, with numbers:**
+   - **Fog is not the cause.** Density 0.0022, and the camera's centre of frame
+     hits ground at 167 units. `1 - exp(-(167 x 0.0022)^2)` = **12.6%** — far too
+     little to flatten anything.
+   - **Shadow `normalBias` is not the lever.** It looked like the answer:
+     `normalBias: 0.6` offsets the shadow lookup by 0.6 *world units*, which
+     should erase every contact shadow. Changing it 0.6 -> 0.12 and diffing two
+     real screenshots of the same frozen frame changes **0.35% of pixels**. It
+     does essentially nothing in the shipped render path.
+   - **Tightening the shadow frustum alone does nothing visible.** ±350 -> ±110
+     (2.93 -> 9.31 texels/unit) produced a visually identical frame. Note the
+     frustum is not a mistake: `[SW:RENDER:SHADOW_FIT]` fits it to every caster
+     in the county on purpose, and at ±350 a texel is 0.342 units, so
+     `normalBias: 0.6` is a deliberate ~1.8-texel acne guard, not an oversight.
+
+   **A measurement method that does NOT work here, and produced three
+   contradictory answers before it was caught:** calling `renderer.render()` plus
+   `domElement.toDataURL()` from inside the page to diff variants. The game's own
+   render loop is running at the same time, so the manual render does not
+   reflect what is on screen. That method reported the same normalBias change as
+   12.74%, then 65-82%, while the truth measured off real screenshots is 0.35%.
+   **Diff real screenshots, taken by the harness, from a frozen frame** — pause
+   genuinely freezes the sim (verified), so the camera holds still between
+   exposures.
+
+   **Still unexplained**, and where the next attempt should start: at play
+   altitude the buildings read as low-contrast shapes on a large, uniform,
+   pale-green ground, with no visible contact shadows anywhere in frame despite
+   490 of 764 meshes having `castShadow` set and the shadow map enabled. Worth
+   establishing FIRST, by screenshot diff, whether cast shadows appear in the
+   frame at all — if they do not, the question is why, and that is a different
+   problem from how sharp they are. Roofline and silhouette are all
    that survive at the distance most of the game is actually played from, and
    there are wide flat pale-green gaps between roads in the foreground. The
    asymmetry and ground-dressing work helped; distance is the remaining problem.
