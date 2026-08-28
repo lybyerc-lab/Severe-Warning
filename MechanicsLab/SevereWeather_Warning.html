@@ -5413,10 +5413,25 @@ scene.fog = new THREE.FogExp2('#0f172a', 0.0022);
 // Lighting
 // Storm light, not afternoon light: a dimmer, cooler fill so the directional key
 // actually models form. At 1.2 the ambient was washing the shading flat.
-const ambientLight = new THREE.AmbientLight('#2b3a4e', 0.86);
+// [SW:RENDER:FILL_LIGHT_SCALE]
+// One dial for how much flat fill the county gets. 1.0 is the original balance.
+//
+// Measured on a frozen play frame, diffing harness screenshots (NOT an in-page
+// renderer.render(), which races the game's own loop and gives nonsense): the
+// fill -- this ambient plus the hemisphere below -- accounted for 53.56% of the
+// rendered image while the shadowing accounted for 9.31%. Cast shadows were
+// rendering correctly the whole time; they were simply drowned, which is what
+// made the town read flat at play altitude.
+//
+// The fill is set from three places -- the per-frame stage lerp and the
+// NIGHT / STORM / DAY set-points -- so scaling only one of them gets pulled
+// back by the others. Every fill set-point goes through this constant.
+// To revert the look entirely, set this to 1.0; nothing else needs touching.
+const FILL_LIGHT_SCALE = 0.60;
+const ambientLight = new THREE.AmbientLight('#2b3a4e', 0.86 * FILL_LIGHT_SCALE);
 scene.add(ambientLight);
 
-const skyLight = new THREE.HemisphereLight('#8fb3d9', '#2f2a22', 0.42);
+const skyLight = new THREE.HemisphereLight('#8fb3d9', '#2f2a22', 0.42 * FILL_LIGHT_SCALE);
 scene.add(skyLight);
 
 const dirLight = new THREE.DirectionalLight('#dfe7f2', 1.62);
@@ -13482,8 +13497,8 @@ function updateProductionAtmosphere(dt) {
     }
   }
 
-  ambientLight.intensity = THREE.MathUtils.lerp(ambientLight.intensity, 0.52 - stageFactor * 0.14, Math.min(1, dt * 0.6));
-  skyLight.intensity = THREE.MathUtils.lerp(skyLight.intensity, 0.70 - stageFactor * 0.16, Math.min(1, dt * 0.6));
+  ambientLight.intensity = THREE.MathUtils.lerp(ambientLight.intensity, (0.52 - stageFactor * 0.14) * FILL_LIGHT_SCALE, Math.min(1, dt * 0.6));
+  skyLight.intensity = THREE.MathUtils.lerp(skyLight.intensity, (0.70 - stageFactor * 0.16) * FILL_LIGHT_SCALE, Math.min(1, dt * 0.6));
   // [SW:RENDER:STORM_LIGHT]
   // Each county authors a sunColor, and this used to lerp straight past it to one
   // of two hardcoded tints - so the four counties' authored light reached the
@@ -16873,12 +16888,12 @@ function applyTimeOfDayAtmosphere() {
     if (renderer) renderer.setClearColor('#070b16');
     if (typeof ambientLight !== 'undefined' && ambientLight) {
       ambientLight.color.set('#1e293b');
-      ambientLight.intensity = 0.35;
+      ambientLight.intensity = 0.35 * FILL_LIGHT_SCALE;
     }
     if (typeof skyLight !== 'undefined' && skyLight) {
       skyLight.color.set('#38bdf8');
       skyLight.groundColor.set('#030712');
-      skyLight.intensity = 0.42;
+      skyLight.intensity = 0.42 * FILL_LIGHT_SCALE;
     }
     if (typeof dirLight !== 'undefined' && dirLight) {
       dirLight.color.set('#60a5fa');
@@ -16890,8 +16905,8 @@ function applyTimeOfDayAtmosphere() {
       scene.fog.density = 0.0032;
     }
     if (renderer) renderer.setClearColor('#1e293b');
-    if (typeof ambientLight !== 'undefined' && ambientLight) ambientLight.intensity = 0.65;
-    if (typeof skyLight !== 'undefined' && skyLight) skyLight.intensity = 0.75;
+    if (typeof ambientLight !== 'undefined' && ambientLight) ambientLight.intensity = 0.65 * FILL_LIGHT_SCALE;
+    if (typeof skyLight !== 'undefined' && skyLight) skyLight.intensity = 0.75 * FILL_LIGHT_SCALE;
     if (typeof dirLight !== 'undefined' && dirLight) dirLight.intensity = 0.95;
   } else {
     // DAY
@@ -16900,8 +16915,8 @@ function applyTimeOfDayAtmosphere() {
       scene.fog.density = 0.0024;
     }
     if (renderer) renderer.setClearColor('#cbd5e1');
-    if (typeof ambientLight !== 'undefined' && ambientLight) ambientLight.intensity = 0.95;
-    if (typeof skyLight !== 'undefined' && skyLight) skyLight.intensity = 1.15;
+    if (typeof ambientLight !== 'undefined' && ambientLight) ambientLight.intensity = 0.95 * FILL_LIGHT_SCALE;
+    if (typeof skyLight !== 'undefined' && skyLight) skyLight.intensity = 1.15 * FILL_LIGHT_SCALE;
     if (typeof dirLight !== 'undefined' && dirLight) dirLight.intensity = 1.45;
   }
 }

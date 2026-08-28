@@ -43,53 +43,7 @@ From a director's pass played on a 915x412 phone viewport. Ordered by cost to
 the player, not by ease of fixing. Each one says what was actually measured, so
 the next person does not have to re-derive it.
 
-1. **The town still flattens at play altitude.** *(One investigation spent, no
-   fix — read this before starting, it will save you the same detour.)*
-
-   **Ruled out, with numbers:**
-   - **Fog is not the cause.** Density 0.0022, and the camera's centre of frame
-     hits ground at 167 units. `1 - exp(-(167 x 0.0022)^2)` = **12.6%** — far too
-     little to flatten anything.
-   - **Shadow `normalBias` is not the lever.** It looked like the answer:
-     `normalBias: 0.6` offsets the shadow lookup by 0.6 *world units*, which
-     should erase every contact shadow. Changing it 0.6 -> 0.12 and diffing two
-     real screenshots of the same frozen frame changes **0.35% of pixels**. It
-     does essentially nothing in the shipped render path.
-   - **Tightening the shadow frustum alone does nothing visible.** ±350 -> ±110
-     (2.93 -> 9.31 texels/unit) produced a visually identical frame. Note the
-     frustum is not a mistake: `[SW:RENDER:SHADOW_FIT]` fits it to every caster
-     in the county on purpose, and at ±350 a texel is 0.342 units, so
-     `normalBias: 0.6` is a deliberate ~1.8-texel acne guard, not an oversight.
-
-   **A measurement method that does NOT work here, and produced three
-   contradictory answers before it was caught:** calling `renderer.render()` plus
-   `domElement.toDataURL()` from inside the page to diff variants. The game's own
-   render loop is running at the same time, so the manual render does not
-   reflect what is on screen. That method reported the same normalBias change as
-   12.74%, then 65-82%, while the truth measured off real screenshots is 0.35%.
-   **Diff real screenshots, taken by the harness, from a frozen frame** — pause
-   genuinely freezes the sim (verified), so the camera holds still between
-   exposures.
-
-   **Answered since: cast shadows DO render.** Measured with a noise floor,
-   because the first attempt without one was meaningless — the storm shaders run
-   on the render clock, not the sim clock, so two *identical* exposures of a
-   paused frame already differ by **3.22%**. Against that floor, disabling the
-   shadow map changes **9.31%**, about 3x the noise. Visually confirmed with the
-   fill light removed so only the directional lights the scene: shadows ON puts
-   clear cast shapes on the ground beside every building; shadows OFF removes
-   them entirely. So shadows are present, correctly placed, and not the problem.
-
-   **The mechanism is that the fill light drowns them.** Same frame, same
-   method: the fill (AmbientLight 0.64 + HemisphereLight 0.60) accounts for
-   **53.56%** of the rendered image; the shadowing accounts for **9.31%**. The
-   town is lit almost flat and the shadows are a rounding error on top.
-
-   **The lever, and why it was not pulled:** scaling the fill to 60% and 40% was
-   captured and does visibly restore form — shaded sides and roof separation come
-   back at 40%. But it darkens the whole game, and how dark a dawn-lit county
-   should look is a director's call about the game's overall look, not a bug fix.
-   Frames are in the session; the decision is open.
+Nothing queued.
 
 Previously landed and cleared: the source HTML rename, the county fair /
 industrial landmark animations, and the MOO-LAH economy with Storm Triangle
@@ -321,6 +275,26 @@ Newest first. Kept for the reasoning, not the changelog.
     that never ran; it was previously enough to wave through a build nothing had
     looked at. The inconclusive branch is checked first and exits non-zero
     regardless of the marker.
+
+- **The town read flat because the fill light drowned the shadows.**
+  Two wrong leads first, both killed by measurement: fog is only 12.6% at the
+  167-unit play distance, and `normalBias` 0.6 -> 0.12 moves 0.35% of real
+  screenshot pixels. Cast shadows turned out to be rendering correctly the whole
+  time — proven against a **noise floor**, which the earlier attempt lacked: the
+  storm shaders run on the render clock, so two identical exposures of a paused
+  frame already differ by 3.22%, while disabling the shadow map changes 9.31%.
+  With the fill removed so only the sun lights the scene, shadows ON puts clear
+  cast shapes beside every building and OFF wipes them out.
+  The real ratio, same frame: **fill 53.56% of the image, shadowing 9.31%.** The
+  county was lit almost flat and the shadows were a rounding error on top.
+  Director's call: fill to 60%. Applied as `FILL_LIGHT_SCALE`, because the fill
+  is set from **three** places — the per-frame stage lerp and the NIGHT / STORM /
+  DAY set-points — so scaling one gets pulled back by the others. All nine
+  set-points route through the constant.
+  **To revert the look, set `FILL_LIGHT_SCALE` to 1.0 and nothing else.**
+  Result: ambient 0.64 -> 0.392, hemisphere 0.60 -> 0.354, directional untouched;
+  mean luminance -5.3 of 255 (about 2% darker) with visibly more form. Diligence
+  audit 20/20, zero page errors.
 
 - **The mesocyclone read as a saucer; the cause was not where it looked.**
   Two suspects were wrong before the right one turned up, and both were killed by
