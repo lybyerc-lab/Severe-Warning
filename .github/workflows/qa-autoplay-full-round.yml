@@ -101,6 +101,28 @@ jobs:
           node scripts/build-web.mjs
           node scripts/stamp-qa-pages.mjs
 
+      # [SW:QA:SEE_THROUGH_GATE] The asset validator parses GLB headers and
+      # counts vertices; it has never looked at a model. Three shipped with
+      # holes you could see straight through -- industrial-warehouse-curved,
+      # farm-windmill and tractor -- and every material property on them was
+      # innocent, so nothing upstream had a way to notice. This renders each
+      # packaged model from eight angles with and without backfaces and fails
+      # if any pixel lights up only when backfaces draw.
+      #
+      # It runs here rather than in `pnpm build` on purpose: it needs a browser,
+      # and this is the workflow that already installs one. Putting it in the
+      # build would make every local and Android build depend on Chromium.
+      #
+      # It reads www/models, so it has to follow the build step above, and it
+      # runs before the play round so a holed model fails in one minute rather
+      # than twenty-five. Measured at 56.6 s for 128 models.
+      - name: Gate on models you can see through
+        env:
+          # No CHROME_BIN: falls back to the Chromium `playwright install` put
+          # in place, same as the visual gate below.
+          SW_SEE_THROUGH_PORT: 4321
+        run: node scripts/check-model-see-through.mjs
+
       - name: Start local QA web server
         shell: bash
         run: |

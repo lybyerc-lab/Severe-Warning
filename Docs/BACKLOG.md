@@ -94,27 +94,6 @@ upgrades and cosmetic funnel skins.
   2,248,570 bytes. Worth deciding what the number actually costs on a phone
   before picking a new one.
 
-- **`Tools/` and `tools/` both exist, and the asset generators are split across
-  them.** Pre-existing, NOT introduced by AG's commit — both trees are present at
-  `a8e15ac`. `Tools/asset-pipeline/generate-*.mjs` import `./glb-builder.mjs`,
-  which lives only in `tools/asset-pipeline/`. On Windows these are one directory
-  and it works; on Linux it is a hard failure —
-  `Cannot find module '.../Tools/asset-pipeline/glb-builder.mjs'` — so **the
-  asset generators cannot run in CI or on this container at all.**
-  `Tools/validate_project.py` is legitimately capital-T and is invoked by
-  `validate-project.yml`, so the fix is to move the asset-pipeline generators
-  down into `tools/`, not to rename the whole tree. Same class as the
-  `Assets/` vs `assets/` incident.
-
-- **Should `models:seethrough` gate the build?** It is an on-demand script right
-  now and deliberately not wired into `pnpm build` or CI, because it currently
-  FAILS on three models and CI was only just restored to green — turning it red
-  again the same day, for a pre-existing asset fault, would bury the signal.
-  Once AG has repaired `industrial-warehouse-curved`, `farm-windmill` and
-  `tractor`, it should become a build guard alongside the two in
-  `scripts/build-web.mjs`, so a model with a hole can never ship again. It adds
-  roughly a minute (128 models x 8 angles x 2 renders at 192px).
-
 - **Nothing watches CI.** Two of the three workflows were red for at least ten
   consecutive commits and nobody noticed, because the only workflow anyone reads
   the badge for is Validate project, which stayed green throughout. Either the
@@ -210,6 +189,47 @@ upgrades and cosmetic funnel skins.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The asset generators can run on Linux again, and they reproduce the shipped
+  models byte for byte.** Five `generate-*.mjs` plus `build-all-assets.mjs`
+  lived in capital-`Tools/asset-pipeline/` while `glb-builder.mjs` and
+  `model-validator.mjs` lived in lowercase `tools/asset-pipeline/`. On Windows
+  those fold into one directory and it works; on Linux they are two, and the
+  pipeline was a hard `ERR_MODULE_NOT_FOUND` — reproduced before touching
+  anything, so the fix had something to prove itself against. Moved the five
+  generators down into `tools/` with `git mv`; `Tools/validate_project.py` stays
+  capital-T because `validate-project.yml` invokes it by that name.
+
+  Nothing else had to change: every generator resolves its output with
+  `path.resolve('assets/models')`, relative to the working directory rather than
+  to the script, so moving the file up one case does not move where models land.
+
+  The real payoff was the verification. `build-all-assets.mjs` was run with its
+  working directory pointed at a scratch tree, so the repo's own models were
+  never at risk of being overwritten — and all **80 models it generates came out
+  byte-identical to the 80 shipped in `assets/models`**. That says two things
+  worth keeping: the pipeline is deterministic, and AG's ASSET-001 repairs went
+  into the generators rather than into hand-edited GLBs, so regenerating cannot
+  silently undo them. The other 48 models in the library are authored outside
+  this pipeline and it neither writes nor deletes them.
+
+- **`models:seethrough` now gates CI.** It runs as its own step in
+  **QA Automated Full Round**, immediately after the build and before the play
+  round, so a model with a hole fails fast instead of 25 minutes downstream.
+
+  It is deliberately NOT in `pnpm build`, which is where the backlog originally
+  proposed it: the check needs a browser, and putting it in the build would make
+  every local build and every Android packaging run depend on Chromium. The
+  autoplay workflow already installs one for the visual gate, so the step is
+  free of new setup — no `CHROME_BIN`, same fallback the visual gate uses.
+
+  Verified passing before wiring, not after: 128/128 models, worst score 0.1%
+  (`foundry`) against a 20% threshold, in **56.6 s** measured on this container
+  — so the backlog's ~1 minute estimate holds and the 60-minute job budget is
+  not meaningfully touched. That the check can actually fail is not
+  assumed either — it is what caught `industrial-warehouse-curved`,
+  `farm-windmill` and `tractor` in the first place, which is the only reason
+  ASSET-001 exists.
 
 - **ASSET-001: Repaired all three see-through models and sealed geometry pipeline.**
   - `industrial-warehouse-curved`: Fixed uncapped barrel vault opening at $Z = -6$ and reversed cylinder cap winding so both front and rear circular vault ends are solid, sealed, and front-facing.
