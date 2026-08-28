@@ -158,7 +158,7 @@ async function upgradeTractor() {
   // Large Deep-Tread Rear Ag Wheels & Smaller Front Wheels
   [-1.25, 1.25].forEach(wx => {
     b.addCylinder([wx, 0.95, -0.8], 0.95, 0.95, 0.45, 16, '#0f172a', [0, 0, Math.PI / 2]); // Giant rear tire
-    b.addCylinder([wx + (wx > 0 ? 0.05 : -0.05), wy => 0.95, -0.8], 0.45, 0.45, 0.46, 8, '#facc15', [0, 0, Math.PI / 2]); // Yellow hub
+    b.addCylinder([wx + (wx > 0 ? 0.05 : -0.05), 0.95, -0.8], 0.45, 0.45, 0.46, 8, '#facc15', [0, 0, Math.PI / 2]); // Yellow hub
   });
   [-0.95, 0.95].forEach(wx => {
     b.addCylinder([wx, 0.45, 1.6], 0.45, 0.45, 0.3, 12, '#0f172a', [0, 0, Math.PI / 2]); // Front tire

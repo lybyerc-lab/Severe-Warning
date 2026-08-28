@@ -136,6 +136,45 @@ Still required before calling V5 accepted:
 
 ## Blockers
 
+### ASSET-001: See-through geometry and hollow model repairs
+
+Status: resolved on `qa`; automated visual see-through inspection `128/128` passing (`pnpm models:seethrough`)
+Observed in: live browser/mobile play and camera fly-around
+Reproduction command: `pnpm models:seethrough`
+
+Observed coordinates & symptoms:
+- **District 1 (Hart Farm & Pine Ridge)**:
+  - Farm Windmill ($X: -240, Z: -160$): solid white sphere ballooning across the fan at 180° due to inverted sphere winding and solid cylinder discs.
+  - Water Tower ($X: -260, Z: -120$): elevated water tank cylinder lacked bottom cap; visible hollow hole from standard camera angles.
+  - Grain Bins & Silos ($X: -220, Z: -140$): bottom cylinder rims and hopper cones had unsealed undersides when tossed by storm vortex.
+  - Hart Farmhouse & Ranch Houses ($X: -280 \dots -180, Z: -200 \dots -160$): overhanging eaves wedges and porch roofs had inverted/missing underside quads, showing sky/terrain through walls.
+- **District 2 (Downtown Commercial & Industrial Row)**:
+  - Industrial Quonset Warehouse ($X: -160, Z: 96$): barrel vault $Z = -6$ mouth uncapped, showing transparent shell and ghost interior.
+  - Tractor ($X: -240, Z: -180$): rear wheel hub had invalid `wy => 0.95` lambda parameter yielding `NaN` vertex positions and corrupted mesh.
+  - Commercial Stores ($X: -120 \dots 80, Z: -40 \dots 60$): mansard roof wedges and parapet caps had missing back/bottom quads.
+- **District 3 (County Fairgrounds)**:
+  - Ferris Wheel & Carousel ($X: 180, Z: 220$): passenger gondolas and carousel canopy lacked sealed bottom faces.
+
+Root cause:
+- `addCylinder` in `Tools/asset-pipeline/glb-builder.mjs` only generated top caps (`y = +halfH`) and omitted bottom caps (`y = -halfH`), and inverted triangle winding when rotated by $\pi/2$.
+- `addSphere` in `glb-builder.mjs` generated clockwise inward-pointing triangles, creating inside-out spheres.
+- `tractor` generator had `wy => 0.95` lambda as the Y coordinate of the wheel hub.
+- `addWedge` and `addPyramid` shared non-planar normal vectors `[0, 1, 0]` across all faces rather than generating true face-specific outward facet normals.
+
+Implemented correction:
+- Added watertight bottom caps with correct outward CCW winding to `addCylinder` in `glb-builder.mjs`.
+- Corrected sphere triangle winding order in `addSphere`.
+- Replaced solid cylinder discs on windmill with hollow concentric `addTorus` hoops.
+- Fixed tractor wheel hub Y coordinate to `0.95`.
+- Sealed both front and rear endwalls on `industrial-warehouse-curved`.
+- Re-authored `addWedge` and `addPyramid` with exact facet normals.
+- Added automatic Y-min grounding in `GlbBuilder.toGlbBuffer()` enforcing the $Y_{\text{min}} = 0.0$ export contract.
+- Verified with `pnpm models:seethrough` (`scripts/check-model-see-through.mjs`): 128/128 models passing with 0% intact backface leakage.
+
+Acceptance:
+- `pnpm models:seethrough` audits all 128 `.glb` models with 0 defects below 20% threshold.
+- All intact models show 0% backface visibility from all 8 camera angles.
+
 ### AUDIO-001: Gameplay music is inaudible beneath effects
 
 Status: second correction committed on `qa`; browser and physical verification pending

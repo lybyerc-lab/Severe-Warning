@@ -185,8 +185,8 @@ export async function generateFarmWindmill() {
   // 18-Blade Curved Galvanized Steel Rotor Wheel with Outer Concentric Rings
   const rotorZ = 0.85;
   b.addCylinder([0, towerHeight + 0.7, rotorZ], 0.35, 0.35, 0.3, 12, '#475569', [Math.PI/2, 0, 0]); // Hub
-  b.addCylinder([0, towerHeight + 0.7, rotorZ], 2.2, 2.2, 0.04, 16, '#cbd5e1', [Math.PI/2, 0, 0]); // Inner ring
-  b.addCylinder([0, towerHeight + 0.7, rotorZ], 3.8, 3.8, 0.04, 24, '#cbd5e1', [Math.PI/2, 0, 0]); // Outer ring
+  b.addTorus([0, towerHeight + 0.7, rotorZ], 2.2, 0.04, 6, 16, '#cbd5e1'); // Inner ring hoop
+  b.addTorus([0, towerHeight + 0.7, rotorZ], 3.8, 0.04, 6, 24, '#cbd5e1'); // Outer ring hoop
   
   // 18 Aerodynamic Curved Vane Blades
   for (let i = 0; i < 18; i++) {
@@ -205,7 +205,7 @@ export async function generateFarmWindmill() {
   const bw = new GlbBuilder();
   bw.addBox([0, 0.3, 0], [4.0, 0.6, 4.0], '#64748b');
   bw.addCylinder([1, 1.5, 0], 0.08, 0.08, 12.0, 6, '#cbd5e1', [0.4, 0.2, 1.4]); // Buckled tower legs
-  bw.addCylinder([3, 0.6, 2], 3.8, 3.8, 0.04, 16, '#cbd5e1', [1.2, 0.4, 0.2]); // Shattered rotor wheel
+  bw.addTorus([3, 0.6, 2], 3.8, 0.04, 6, 16, '#cbd5e1', [1.2, 0.4, 0.2]); // Shattered rotor ring
   await saveGlb('farm-windmill-wreck.glb', bw);
 }
 

@@ -211,7 +211,7 @@ for (const modelFile of modelSourceNames) {
 const strayModelDirs = [];
 for (const strayDir of ['Assets/models', 'Assets/Models', 'assets/Models']) {
   const absolute = path.join(projectRoot, strayDir);
-  if (path.resolve(absolute) === path.resolve(sourceModelsDir)) continue;
+  if (path.resolve(absolute).toLowerCase() === path.resolve(sourceModelsDir).toLowerCase()) continue;
   try {
     const strays = (await readdir(absolute)).filter(name => name.toLowerCase().endsWith('.glb'));
     if (strays.length) strayModelDirs.push(`${strayDir} (${strays.length} .glb)`);

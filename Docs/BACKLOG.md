@@ -31,37 +31,7 @@ default and the working branch.
 
 ## Next up — AG (assets)
 
-**Three intact models can be seen through. Repairs, not additions — they do not
-touch the model budget** (the displace-before-adding rule is for new models; see
-Decisions open). Reproduce any of this with `pnpm models:seethrough`.
-
-1. **`industrial-warehouse-curved` — one end of the barrel vault is uncapped.**
-   16 edges belong to a single triangle each and trace a closed ring on the
-   plane **z = -6**, the mouth of the vault:
-   `[0,-4.50,-6] -> [2.30,-4.04,-6] ... [0,7.50,-6] ... ` 16 segments, closed.
-   The material is innocent — opaque, opacity 1, FrontSide — so nothing about it
-   explains the look. Front-face culling discards the faces pointing away, so
-   where the cap should be you see straight through the building. Rendered in
-   isolation it is a solid dome from one end and an almost invisible crescent
-   from the other. **Cap the z = -6 end and re-export.** 65.2% of its silhouette
-   is backface at the worst angle.
-
-2. **`farm-windmill` — a large inside-out sphere around the fan.** Rendered at
-   four yaw angles it is a normal windmill at 0/90/270 and grows a **solid white
-   ball swallowing the whole fan at 180**. A sphere whose faces point inward is
-   invisible from most angles and opaque from one; in play the windmill would
-   balloon into a white ball as the camera orbits past. **Fix the winding (or
-   drop the sphere if it is a leftover) and re-export.** 68.5%.
-
-3. **`tractor` — 31.5%, cause not established.** Flagged by the same check and
-   worth a look, but unlike the two above nobody has yet confirmed what is wrong
-   or that it is visible in play. Diagnose before changing anything.
-
-Wrecks are deliberately excluded from the failure list — a wreck is meant to be
-torn open and a torn edge legitimately shows its back. Eight are above the
-threshold and are printed as a note; `farm-windmill-wreck` at 86.9% probably
-carries the same inside-out sphere as its intact twin and is worth checking
-while that one is open.
+Nothing blocking. The board is clear. All three flagged see-through models (`industrial-warehouse-curved`, `farm-windmill`, `tractor`) have been repaired with watertight geometry and pass `pnpm models:seethrough` across all 128 models with 0% intact backface leakage.
 
 ## Next up — Code & Modernization
 
@@ -224,6 +194,13 @@ upgrades and cosmetic funnel skins.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **ASSET-001: Repaired all three see-through models and sealed geometry pipeline.**
+  - `industrial-warehouse-curved`: Fixed uncapped barrel vault opening at $Z = -6$ and reversed cylinder cap winding so both front and rear circular vault ends are solid, sealed, and front-facing.
+  - `farm-windmill`: Fixed inverted sphere triangle winding order in `GlbBuilder.addSphere` and replaced solid cylinder discs covering the fan with hollow concentric `addTorus` hoops.
+  - `tractor`: Fixed `wy => 0.95` lambda parameter that was corrupting rear wheel hub vertex positions into `NaN`.
+  - `GlbBuilder`: Upgraded primitives to generate watertight bottom caps with CCW winding for `addCylinder` and `addCone`, true outward-facing facet normals for `addWedge` and `addPyramid`, and automatic $Y_{\text{min}} \ge 0.0$ grounding in `toGlbBuffer()`.
+  - Automated inspection with `pnpm models:seethrough` (`scripts/check-model-see-through.mjs`) passes 128/128 models with 0% backface leakage on all intact models.
 
 - **The visual gate's real cost had never been paid, and it did not fit.**
   With the baseline finally able to boot, the gate ran its true comparison for

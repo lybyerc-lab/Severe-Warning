@@ -315,8 +315,9 @@ export async function generateIndustrialWarehouseCurved() {
   b.addCylinder([0, 1.5, 0], 6.0, 6.0, 12.0, 16, '#94a3b8', [Math.PI/2, 0, 0]);
   b.addBox([0, 0.8, 0], [12.0, 1.2, 12.0], '#94a3b8');
   
-  // Endwall & Heavy Steel Roll-up Door
+  // Endwalls & Heavy Steel Roll-up Doors (both front and back)
   b.addBox([0, 2.0, 6.02], [4.0, 3.0, 0.1], '#475569');
+  b.addBox([0, 2.0, -6.02], [4.0, 3.0, 0.1], '#475569');
   
   await saveGlb('industrial-warehouse-curved.glb', b);
 

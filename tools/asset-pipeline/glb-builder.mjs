@@ -49,7 +49,7 @@ export class GlbBuilder {
     });
   }
 
-  addCylinder(center, radiusTop, radiusBottom, height, segments, colorHex, rotation = [0, 0, 0]) {
+  addCylinder(center, radiusTop, radiusBottom, height, segments, colorHex, rotation = [0, 0, 0], options = {}) {
     const [cx, cy, cz] = center;
     const halfH = height / 2;
     const col = parseHexColor(colorHex);
@@ -81,7 +81,7 @@ export class GlbBuilder {
     }
 
     // Top cap
-    if (radiusTop > 0) {
+    if (radiusTop > 0 && options.topCap !== false) {
       const topCenterIdx = this.positions.length / 3;
       const pCap = rotateVector([0, halfH, 0], rotation);
       const nCap = rotateVector([0, 1, 0], rotation);
@@ -92,12 +92,34 @@ export class GlbBuilder {
       for (let i = 0; i < segments; i++) {
         const idx = startIndex + i * 2 + 1;
         const nextIdx = startIndex + ((i + 1) % segments) * 2 + 1;
-        this.indices.push(topCenterIdx, idx, nextIdx);
+        this.indices.push(topCenterIdx, nextIdx, idx);
+      }
+    }
+
+    // Bottom cap
+    if (radiusBottom > 0 && options.bottomCap !== false) {
+      const botCenterIdx = this.positions.length / 3;
+      const pCap = rotateVector([0, -halfH, 0], rotation);
+      const nCap = rotateVector([0, -1, 0], rotation);
+      this.positions.push(cx + pCap[0], cy + pCap[1], cz + pCap[2]);
+      this.normals.push(nCap[0], nCap[1], nCap[2]);
+      this.colors.push(col[0], col[1], col[2], 1.0);
+
+      for (let i = 0; i < segments; i++) {
+        const idx = startIndex + i * 2;
+        const nextIdx = startIndex + ((i + 1) % segments) * 2;
+        this.indices.push(botCenterIdx, idx, nextIdx);
       }
     }
   }
 
-  addSphere(center, radius, segments, colorHex) {
+  addCone(center, radius, height, segments, colorHex, rotation = [0, 0, 0], options = {}) {
+    this.addCylinder(center, 0, radius, height, segments, colorHex, rotation, options);
+  }
+
+  addSphere(center, radius, arg3, arg4, arg5) {
+    const segments = typeof arg3 === 'number' && typeof arg4 === 'number' ? arg3 : (typeof arg3 === 'number' ? arg3 : 10);
+    const colorHex = typeof arg4 === 'string' ? arg4 : (typeof arg5 === 'string' ? arg5 : '#ffffff');
     const [cx, cy, cz] = center;
     const col = parseHexColor(colorHex);
     const startIndex = this.positions.length / 3;
@@ -126,8 +148,8 @@ export class GlbBuilder {
       for (let lon = 0; lon < segments; lon++) {
         const first = startIndex + (lat * (segments + 1)) + lon;
         const second = first + segments + 1;
-        this.indices.push(first, second, first + 1);
-        this.indices.push(second, second + 1, first + 1);
+        this.indices.push(first, first + 1, second);
+        this.indices.push(second, first + 1, second + 1);
       }
     }
   }
@@ -172,32 +194,35 @@ export class GlbBuilder {
     const [sx, sy, sz] = [size[0] / 2, size[1] / 2, size[2] / 2];
     const col = parseHexColor(colorHex);
 
-    // 5-sided triangular prism / roof wedge
-    const p = [
-      [-sx, -sy, sz], [sx, -sy, sz], [0, sy, sz],       // Front Triangle (0, 1, 2)
-      [-sx, -sy, -sz], [sx, -sy, -sz], [0, sy, -sz]    // Back Triangle (3, 4, 5)
-    ];
+    const addFacet = (pts, normal) => {
+      const idx = this.positions.length / 3;
+      const rotNorm = rotateVector(normal, rotation);
+      pts.forEach(pt => {
+        const rotPt = rotateVector(pt, rotation);
+        this.positions.push(cx + rotPt[0], cy + rotPt[1], cz + rotPt[2]);
+        this.normals.push(rotNorm[0], rotNorm[1], rotNorm[2]);
+        this.colors.push(col[0], col[1], col[2], 1.0);
+      });
+      if (pts.length === 3) {
+        this.indices.push(idx, idx + 1, idx + 2);
+      } else if (pts.length === 4) {
+        this.indices.push(idx, idx + 1, idx + 2);
+        this.indices.push(idx, idx + 2, idx + 3);
+      }
+    };
 
-    const startIndex = this.positions.length / 3;
-    p.forEach(pt => {
-      const rot = rotateVector(pt, rotation);
-      this.positions.push(cx + rot[0], cy + rot[1], cz + rot[2]);
-      this.normals.push(0, 1, 0); // basic normal
-      this.colors.push(col[0], col[1], col[2], 1.0);
-    });
-
-    // Front & Back Triangles
-    this.indices.push(startIndex + 0, startIndex + 1, startIndex + 2);
-    this.indices.push(startIndex + 4, startIndex + 3, startIndex + 5);
-    // Bottom Quad
-    this.indices.push(startIndex + 0, startIndex + 3, startIndex + 4);
-    this.indices.push(startIndex + 0, startIndex + 4, startIndex + 1);
-    // Left Slope Quad
-    this.indices.push(startIndex + 0, startIndex + 2, startIndex + 5);
-    this.indices.push(startIndex + 0, startIndex + 5, startIndex + 3);
-    // Right Slope Quad
-    this.indices.push(startIndex + 1, startIndex + 4, startIndex + 5);
-    this.indices.push(startIndex + 1, startIndex + 5, startIndex + 2);
+    // Front triangle (+Z)
+    addFacet([[-sx, -sy, sz], [sx, -sy, sz], [0, sy, sz]], [0, 0, 1]);
+    // Back triangle (-Z)
+    addFacet([[sx, -sy, -sz], [-sx, -sy, -sz], [0, sy, -sz]], [0, 0, -1]);
+    // Bottom quad (-Y)
+    addFacet([[-sx, -sy, -sz], [sx, -sy, -sz], [sx, -sy, sz], [-sx, -sy, sz]], [0, -1, 0]);
+    // Left slope quad
+    const leftSlopeNorm = normalizeVector([-sy, sx, 0]);
+    addFacet([[-sx, -sy, sz], [0, sy, sz], [0, sy, -sz], [-sx, -sy, -sz]], leftSlopeNorm);
+    // Right slope quad
+    const rightSlopeNorm = normalizeVector([sy, sx, 0]);
+    addFacet([[0, sy, sz], [sx, -sy, sz], [sx, -sy, -sz], [0, sy, -sz]], rightSlopeNorm);
   }
 
   addPyramid(center, size, colorHex, rotation = [0, 0, 0]) {
@@ -205,35 +230,33 @@ export class GlbBuilder {
     const [sx, sy, sz] = [size[0] / 2, size[1] / 2, size[2] / 2];
     const col = parseHexColor(colorHex);
 
-    const p = [
-      [-sx, -sy, -sz], [sx, -sy, -sz], [sx, -sy, sz], [-sx, -sy, sz], // Base vertices 0, 1, 2, 3
-      [0, sy, 0] // Apex 4
-    ];
+    const addFacet = (pts, normal) => {
+      const idx = this.positions.length / 3;
+      const rotNorm = rotateVector(normal, rotation);
+      pts.forEach(pt => {
+        const rotPt = rotateVector(pt, rotation);
+        this.positions.push(cx + rotPt[0], cy + rotPt[1], cz + rotPt[2]);
+        this.normals.push(rotNorm[0], rotNorm[1], rotNorm[2]);
+        this.colors.push(col[0], col[1], col[2], 1.0);
+      });
+      if (pts.length === 3) {
+        this.indices.push(idx, idx + 1, idx + 2);
+      } else if (pts.length === 4) {
+        this.indices.push(idx, idx + 1, idx + 2);
+        this.indices.push(idx, idx + 2, idx + 3);
+      }
+    };
 
-    const startIndex = this.positions.length / 3;
-    p.forEach(pt => {
-      const rot = rotateVector(pt, rotation);
-      this.positions.push(cx + rot[0], cy + rot[1], cz + rot[2]);
-      this.normals.push(0, 1, 0);
-      this.colors.push(col[0], col[1], col[2], 1.0);
-    });
-
-    // Base Quads
-    this.indices.push(startIndex + 0, startIndex + 2, startIndex + 1);
-    this.indices.push(startIndex + 0, startIndex + 3, startIndex + 2);
-    // 4 Triangular sides
-    this.indices.push(startIndex + 0, startIndex + 1, startIndex + 4);
-    this.indices.push(startIndex + 1, startIndex + 2, startIndex + 4);
-    this.indices.push(startIndex + 2, startIndex + 3, startIndex + 4);
-    this.indices.push(startIndex + 3, startIndex + 0, startIndex + 4);
+    // Bottom base quad (-Y)
+    addFacet([[-sx, -sy, sz], [sx, -sy, sz], [sx, -sy, -sz], [-sx, -sy, -sz]], [0, -1, 0]);
+    // 4 Triangular Slopes
+    addFacet([[-sx, -sy, sz], [0, sy, 0], [sx, -sy, sz]], normalizeVector([0, sz, sy])); // Front
+    addFacet([[sx, -sy, sz], [0, sy, 0], [sx, -sy, -sz]], normalizeVector([sy, sz, 0])); // Right
+    addFacet([[sx, -sy, -sz], [0, sy, 0], [-sx, -sy, -sz]], normalizeVector([0, sz, -sy])); // Back
+    addFacet([[-sx, -sy, -sz], [0, sy, 0], [-sx, -sy, sz]], normalizeVector([-sy, sz, 0])); // Left
   }
 
-  toGlbBuffer() {
-    const posBuffer = Buffer.from(new Float32Array(this.positions).buffer);
-    const normBuffer = Buffer.from(new Float32Array(this.normals).buffer);
-    const colBuffer = Buffer.from(new Float32Array(this.colors).buffer);
-    const idxBuffer = Buffer.from(new Uint32Array(this.indices).buffer);
-
+  toGlbBuffer(options = { autoGround: true }) {
     // Compute bounding box
     let minX = Infinity, minY = Infinity, minZ = Infinity;
     let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
@@ -245,6 +268,21 @@ export class GlbBuilder {
       if (y < minY) minY = y; if (y > maxY) maxY = y;
       if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
     }
+
+    // Auto-ground: ensure minY is exactly 0.0 (ground level) per export contract
+    if (options.autoGround && minY < 0 && minY > -100) {
+      const yShift = -minY;
+      for (let i = 1; i < this.positions.length; i += 3) {
+        this.positions[i] += yShift;
+      }
+      maxY += yShift;
+      minY = 0;
+    }
+
+    const posBuffer = Buffer.from(new Float32Array(this.positions).buffer);
+    const normBuffer = Buffer.from(new Float32Array(this.normals).buffer);
+    const colBuffer = Buffer.from(new Float32Array(this.colors).buffer);
+    const idxBuffer = Buffer.from(new Uint32Array(this.indices).buffer);
 
     const pad = (buf, align = 4) => {
       const rem = buf.length % align;
@@ -394,4 +432,9 @@ function rotateVector(v, r) {
     x = x1; y = y1;
   }
   return [x, y, z];
+}
+
+function normalizeVector(v) {
+  const len = Math.hypot(v[0], v[1], v[2]) || 1.0;
+  return [v[0] / len, v[1] / len, v[2] / len];
 }
