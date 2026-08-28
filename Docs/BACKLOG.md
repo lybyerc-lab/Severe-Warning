@@ -71,17 +71,25 @@ the next person does not have to re-derive it.
    genuinely freezes the sim (verified), so the camera holds still between
    exposures.
 
-   **Still unexplained**, and where the next attempt should start: at play
-   altitude the buildings read as low-contrast shapes on a large, uniform,
-   pale-green ground, with no visible contact shadows anywhere in frame despite
-   490 of 764 meshes having `castShadow` set and the shadow map enabled. Worth
-   establishing FIRST, by screenshot diff, whether cast shadows appear in the
-   frame at all — if they do not, the question is why, and that is a different
-   problem from how sharp they are. Roofline and silhouette are all
-   that survive at the distance most of the game is actually played from, and
-   there are wide flat pale-green gaps between roads in the foreground. The
-   asymmetry and ground-dressing work helped; distance is the remaining problem.
-   Any fix here should be measured from the storm camera, not from a low pass.
+   **Answered since: cast shadows DO render.** Measured with a noise floor,
+   because the first attempt without one was meaningless — the storm shaders run
+   on the render clock, not the sim clock, so two *identical* exposures of a
+   paused frame already differ by **3.22%**. Against that floor, disabling the
+   shadow map changes **9.31%**, about 3x the noise. Visually confirmed with the
+   fill light removed so only the directional lights the scene: shadows ON puts
+   clear cast shapes on the ground beside every building; shadows OFF removes
+   them entirely. So shadows are present, correctly placed, and not the problem.
+
+   **The mechanism is that the fill light drowns them.** Same frame, same
+   method: the fill (AmbientLight 0.64 + HemisphereLight 0.60) accounts for
+   **53.56%** of the rendered image; the shadowing accounts for **9.31%**. The
+   town is lit almost flat and the shadows are a rounding error on top.
+
+   **The lever, and why it was not pulled:** scaling the fill to 60% and 40% was
+   captured and does visibly restore form — shaded sides and roof separation come
+   back at 40%. But it darkens the whole game, and how dark a dawn-lit county
+   should look is a director's call about the game's overall look, not a bug fix.
+   Frames are in the session; the decision is open.
 
 Previously landed and cleared: the source HTML rename, the county fair /
 industrial landmark animations, and the MOO-LAH economy with Storm Triangle
