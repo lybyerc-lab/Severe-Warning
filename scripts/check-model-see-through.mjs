@@ -53,7 +53,7 @@ const server = http.createServer((req, res) => {
 });
 await new Promise(r => server.listen(PORT, '127.0.0.1', r));
 
-const models = fs.readdirSync(path.join(wwwDir, 'models')).filter(f => f.endsWith('.glb')).map(f => f.replace('.glb', '')).sort();
+const models = fs.readdirSync(path.join(wwwDir, 'assets', 'models')).filter(f => f.endsWith('.glb')).map(f => f.replace('.glb', '')).sort();
 const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN || undefined, headless: true, args: ['--use-angle=swiftshader'] });
 const page = await (await browser.newContext({ viewport: { width: 300, height: 300 } })).newPage();
 await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded' });
@@ -66,7 +66,7 @@ const scores = await page.evaluate(async (names) => {
   renderer.setSize(S, S); renderer.setClearColor(0x000000, 1);
   const results = {};
   for (const name of names) {
-    const src = await new Promise(res => new THREE.GLTFLoader().load(`models/${name}.glb`, g => res(g.scene), undefined, () => res(null)));
+    const src = await new Promise(res => new THREE.GLTFLoader().load(`assets/models/${name}.glb`, g => res(g.scene), undefined, () => res(null)));
     if (!src) { results[name] = null; continue; }
     const box = new THREE.Box3().setFromObject(src);
     const centre = box.getCenter(new THREE.Vector3());

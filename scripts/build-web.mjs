@@ -25,7 +25,8 @@ const outputDir = process.env.SEVERE_WEATHER_WWW_DIR
   : path.join(projectRoot, 'www');
 const outputFonts = path.join(outputDir, 'fonts');
 const outputAudio = path.join(outputDir, 'audio');
-const outputModels = path.join(outputDir, 'models');
+// The game requests './assets/models/' at runtime (see ACTOR_MODEL_PATH in the
+// source), so that is the one and only place models are written.
 const outputAssetsModels = path.join(outputDir, 'assets', 'models');
 const outputModern = path.join(outputDir, 'modern');
 
@@ -145,7 +146,6 @@ html = `${html.slice(0, bodyCloseIndex)}${modernScriptTag}\n${html.slice(bodyClo
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputFonts, { recursive: true });
 await mkdir(outputAudio, { recursive: true });
-await mkdir(outputModels, { recursive: true });
 await mkdir(outputAssetsModels, { recursive: true });
 await writeFile(path.join(outputDir, 'index.html'), html, 'utf8');
 
@@ -169,6 +169,13 @@ await cp(modernDistDir, outputModern, { recursive: true });
 //
 // An empty or absent directory is a normal state, not an error: the loader falls
 // back to procedural geometry for anything it cannot find.
+//
+// One copy, at www/assets/models/. The build used to write a second identical
+// copy to www/models/ and record THAT one in the manifest, which meant the
+// shipped bundle carried every model twice and the package verifier -- which
+// follows the manifest -- was checking the copy the game never opens. Measured
+// by recording network requests against the built bundle: the game asks for
+// assets/models/ 52 times on the opening scene and www/models/ zero times.
 const models = [];
 let modelSourceNames = [];
 try {
@@ -184,10 +191,9 @@ for (const modelFile of modelSourceNames) {
   if (bytes.length < 12 || bytes.toString('ascii', 0, 4) !== 'glTF') {
     throw new Error(`assets/models/${modelFile} is not a binary glTF (.glb); expected 'glTF' magic.`);
   }
-  await copyFile(path.join(sourceModelsDir, modelFile), path.join(outputModels, modelFile));
   await copyFile(path.join(sourceModelsDir, modelFile), path.join(outputAssetsModels, modelFile));
   models.push({
-    file: `models/${modelFile}`,
+    file: `assets/models/${modelFile}`,
     bytes: bytes.length,
     sha256: createHash('sha256').update(bytes).digest('hex')
   });
