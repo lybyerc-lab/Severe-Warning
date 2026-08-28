@@ -156,7 +156,7 @@ Observed coordinates & symptoms:
   - Ferris Wheel & Carousel ($X: 180, Z: 220$): passenger gondolas and carousel canopy lacked sealed bottom faces.
 
 Root cause:
-- `addCylinder` in `Tools/asset-pipeline/glb-builder.mjs` only generated top caps (`y = +halfH`) and omitted bottom caps (`y = -halfH`), and inverted triangle winding when rotated by $\pi/2$.
+- `addCylinder` in `tools/asset-pipeline/glb-builder.mjs` only generated top caps (`y = +halfH`) and omitted bottom caps (`y = -halfH`), and inverted triangle winding when rotated by $\pi/2$.
 - `addSphere` in `glb-builder.mjs` generated clockwise inward-pointing triangles, creating inside-out spheres.
 - `tractor` generator had `wy => 0.95` lambda as the Y coordinate of the wheel hub.
 - `addWedge` and `addPyramid` shared non-planar normal vectors `[0, 1, 0]` across all faces rather than generating true face-specific outward facet normals.

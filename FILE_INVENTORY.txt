@@ -128,11 +128,6 @@ ProjectSettings/ProjectVersion.txt
 README.md
 REPOSITORY_BOOTSTRAP.md
 SHA256SUMS.txt
-Tools/asset-pipeline/build-all-assets.mjs
-Tools/asset-pipeline/generate-agricultural-models.mjs
-Tools/asset-pipeline/generate-commercial-models.mjs
-Tools/asset-pipeline/generate-residential-models.mjs
-Tools/asset-pipeline/generate-vehicle-models.mjs
 Tools/validate_project.py
 VALIDATION_REPORT.md
 android/.gitignore
@@ -461,9 +456,14 @@ src/world/setpieces/second-structure-definition.ts
 src/world/world-contracts.ts
 src/world/world-system.ts
 tools/asset-pipeline/README.md
+tools/asset-pipeline/build-all-assets.mjs
+tools/asset-pipeline/generate-agricultural-models.mjs
 tools/asset-pipeline/generate-chopper-model.mjs
 tools/asset-pipeline/generate-coastal-models.mjs
+tools/asset-pipeline/generate-commercial-models.mjs
 tools/asset-pipeline/generate-metro-models.mjs
+tools/asset-pipeline/generate-residential-models.mjs
+tools/asset-pipeline/generate-vehicle-models.mjs
 tools/asset-pipeline/glb-builder.mjs
 tools/asset-pipeline/model-validator.mjs
 tools/asset-pipeline/upgrade-hero-models.mjs
