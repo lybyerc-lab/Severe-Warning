@@ -6958,6 +6958,13 @@ let currentStage = 1; // 1: Neighborhood, 2: Landmarks, 3: Finale
 let destructionScore = 0;
 let baseScore = 0;
 let efRating = 'EF-0';
+// [SW:GAMEPLAY:PEAK_EF] The worst the storm ever got, tracked like
+// maxComboReached beside it. efRating is the CURRENT rating and it can fall
+// during a run: the stage ceilings and score thresholds are re-evaluated per
+// stage, so an EF-2 finish to stage 1 becomes EF-1 at the start of stage 2.
+// The results paper reports this one, because a storm that reached EF-5 and
+// wound down was still an EF-5.
+let peakEfRating = 'EF-0';
 let efMultiplier = 1.0;
 let funnelScale = 1.0;
 let currentCamY = 78 * mobileFactor, targetCamY = 78 * mobileFactor;
@@ -11422,6 +11429,13 @@ function efScoreThreshold(rung) {
   return ({ ef1: 0.02, ef2: 0.06, ef3: 0.18, ef4: 0.40, ef5: 0.75 })[rung] * target;
 }
 
+// EF-0 .. EF-5 as a number, so peaks can be compared without string ordering.
+// Anything unparseable ranks below EF-0 and therefore never wins a comparison.
+function efRatingRank(label) {
+  const match = /EF-(\d)/.exec(String(label));
+  return match ? Number(match[1]) : -1;
+}
+
 function updateEFRating() {
   let badgeText = 'EF-0';
   let mult = 1.0;
@@ -11469,6 +11483,7 @@ function updateEFRating() {
   }
 
   efRating = badgeText;
+  if (efRatingRank(badgeText) > efRatingRank(peakEfRating)) peakEfRating = badgeText;
   efMultiplier = mult;
   setUI('efBadge', badgeText);
   if (mediaHeadlineTimer <= 0) setUI('easTicker', easNewsText);
@@ -11641,6 +11656,7 @@ function resetWarningRun() {
   baseScore = 0;
   comboMultiplier = 1.0;
   maxComboReached = 1.0;
+  peakEfRating = 'EF-0';
   runActive = true;
   currentStage = 1;
 
@@ -15390,8 +15406,21 @@ function refreshNewspaperResults() {
   if (gridEl) gridEl.textContent = document.getElementById('resSubstations')?.textContent || '0';
   const fieldEl = document.getElementById('newspaperFieldStat');
   if (fieldEl) fieldEl.textContent = document.getElementById('resMediaMoments')?.textContent || '0';
+  // [SW:GAMEPLAY:PEAK_EF] This read `#resEfRating`, an element that has never
+  // existed in this document. The optional chain returned undefined, `|| 'EF-0'`
+  // fired, and every paper ever printed reported EF-0 -- including EF-5 runs
+  // graded S+. Its five sibling lookups above all resolve; only this one was a
+  // phantom, which is exactly why nothing looked wrong.
+  //
+  // It now reports the run's PEAK, falling back to the live HUD badge if the
+  // gameplay scope has not published one yet.
   const rateEl = document.getElementById('newspaperRatingStat');
-  if (rateEl) rateEl.textContent = document.getElementById('resEfRating')?.textContent || 'EF-0';
+  if (rateEl) {
+    const peak = (typeof peakEfRating !== 'undefined' && peakEfRating)
+      || document.getElementById('efBadge')?.textContent
+      || 'EF-0';
+    rateEl.textContent = peak;
+  }
 }
 
 setTimeout(() => {
