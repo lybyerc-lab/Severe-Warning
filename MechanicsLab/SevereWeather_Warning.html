@@ -7192,7 +7192,7 @@ const mesoCloudGroup = new THREE.Group();
 mesoCloudGroup.position.y = 35;
 const mesoCloudMat = createStormCloudMaterial({
   base: '#1e293b', top: '#475569', opacity: 0.82,
-  gradient: 0.052, edge: 0.55, churn: 1.1, density: 1.0, speed: 1.0
+  gradient: 0.052, edge: 0.68, churn: 1.1, density: 1.0, speed: 1.0
 });
 for (let i = 0; i < 16; i++) {
   const angle = (i / 16) * Math.PI * 2 + (i % 2) * 0.25;
@@ -7201,17 +7201,30 @@ for (let i = 0; i < 16; i++) {
   const cloudLobe = new THREE.Mesh(new THREE.DodecahedronGeometry(rad, 2), mesoCloudMat);
   cloudLobe.position.set(
     Math.cos(angle) * ring,
-    (i < 6 ? 6.0 : (i < 11 ? 4.0 : 2.0)) + (Math.random() - 0.5) * 1.5,
+    (i < 6 ? 6.0 : (i < 11 ? 4.0 : 2.0)) + (Math.random() - 0.5) * 4.6,
     Math.sin(angle) * ring
   );
-  cloudLobe.scale.set(1.1, 0.45 + Math.random() * 0.15, 1.1);
+  // Vary the flattening as well as the height. With every lobe on the same
+  // 0.45-0.60 scale and only 1.5 units of height jitter, their undersides landed
+  // on one plane and the canopy read as a saucer rather than a cloud.
+  cloudLobe.scale.set(1.05 + Math.random() * 0.25, 0.34 + Math.random() * 0.34, 1.05 + Math.random() * 0.25);
   mesoCloudGroup.add(cloudLobe);
 }
+// Measured contribution to the rendered frame, by hiding each element and
+// counting changed pixels: canopy lobes 9.59%, this base 6.59%, meso wall 3.52%,
+// anvil 0.02%. So the hard elliptical underside is this base and the lobes -- not
+// the anvil, which is effectively invisible behind them.
+//
+// This was a CAPPED cylinder, and its flat bottom cap drew the straight
+// horizontal cut across the underside of the storm. openEnded removes the cap
+// entirely, and the wider edge value lets the remaining wall dissolve where it
+// turns away, which is what the lobes already do. Opacity comes down with it:
+// at 0.90 the wall was solid enough to draw a rim of its own.
 const cloudBaseMat = createStormCloudMaterial({
-  base: '#1e293b', top: '#334155', opacity: 0.90,
-  gradient: 0.31, edge: 0.34, churn: 0.0, density: 0.75, speed: 0.7
+  base: '#1e293b', top: '#334155', opacity: 0.72,
+  gradient: 0.31, edge: 0.62, churn: 0.35, density: 0.75, speed: 0.7
 });
-const cloudBase = new THREE.Mesh(new THREE.CylinderGeometry(28, 22, 3.2, 32), cloudBaseMat);
+const cloudBase = new THREE.Mesh(new THREE.CylinderGeometry(28, 22, 3.2, 32, 1, true), cloudBaseMat);
 cloudBase.position.y = 0;
 mesoCloudGroup.add(cloudBase);
 

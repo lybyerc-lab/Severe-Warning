@@ -43,13 +43,7 @@ From a director's pass played on a 915x412 phone viewport. Ordered by cost to
 the player, not by ease of fixing. Each one says what was actually measured, so
 the next person does not have to re-derive it.
 
-1. **The mesocyclone reads as a hard-edged ellipse.** From the play camera the
-   canopy above the funnel is a flattened disc with a distinct rim — closer to a
-   saucer silhouette than a rotating wall cloud. The funnel itself is legible
-   once the HUD folds away (see the note in Landed), so this is about the
-   canopy's edge treatment, not the tornado's scale.
-
-2. **The town still flattens at play altitude.** Roofline and silhouette are all
+1. **The town still flattens at play altitude.** Roofline and silhouette are all
    that survive at the distance most of the game is actually played from, and
    there are wide flat pale-green gaps between roads in the foreground. The
    asymmetry and ground-dressing work helped; distance is the remaining problem.
@@ -285,6 +279,41 @@ Newest first. Kept for the reasoning, not the changelog.
     that never ran; it was previously enough to wave through a build nothing had
     looked at. The inconclusive branch is checked first and exits non-zero
     regardless of the marker.
+
+- **The mesocyclone read as a saucer; the cause was not where it looked.**
+  Two suspects were wrong before the right one turned up, and both were killed by
+  measurement rather than argument. The `cloudBase` cylinder looked obviously
+  guilty (a capped disc at canopy height) and hiding it appeared to change
+  nothing; the anvil looked even guiltier (`CylinderGeometry(54, 38, 10, 32)`,
+  capped, and the only canopy element still on a **lit MeshStandardMaterial**
+  rather than the storm-cloud shader) and hiding that also looked identical.
+  So instead of eyeballing, each element was hidden in a frozen frame and the
+  changed pixels counted:
+
+  | element | changed | share |
+  |---|---|---|
+  | funnel | 48,059 | 12.75% |
+  | downdraft | 39,644 | 10.52% |
+  | canopy lobes | 36,163 | 9.59% |
+  | cloudBase | 24,828 | 6.59% |
+  | meso wall | 13,287 | 3.52% |
+  | anvil | 65 | **0.02%** |
+
+  That settled it. The **anvil is effectively invisible** — my prime suspect
+  contributes 65 pixels. And the eyeball verdict on `cloudBase` was simply wrong:
+  it changes 6.59% of the frame, too subtle to see at that size but far from
+  nothing. The hard elliptical underside was `cloudBase`'s **flat bottom cap**
+  plus lobes whose undersides all landed on one plane.
+  Fixed at those two: the base is `openEnded` now so there is no cap to draw a
+  rim, with a wider edge falloff and lower opacity; the lobes vary in both
+  flattening and height (jitter 1.5 -> 4.6) so their undersides no longer align;
+  and the lobe rim dissolve went 0.55 -> 0.68. The mass keeps a solid dark core
+  and loses the hard rim. Diligence audit 20/20, zero page errors.
+
+  **Left alone deliberately:** the anvil is dead weight — a 32-segment capped
+  cylinder of radius 54 on a lit material, drawing 0.02% of the frame. Removing
+  it is a free win but it is a change with no visual justification to verify
+  against, so it is recorded rather than done.
 
 - **ASSET-001 closed: no intact model can be seen through.** AG's repair sealed
   cylinder bottom caps and corrected sphere winding across **77 of the 128
