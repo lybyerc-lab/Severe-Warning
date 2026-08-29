@@ -120,7 +120,40 @@ layer 2 does not cover the case that actually bit us.
 - HEAD stale again at `8188a45`: the fix failed and the design in
   `sync-checkout.sh` is wrong. Record which, here.
 
-Until that has been run, treat this as an untested fix.
+### Result, 2026-08-29
+
+The test was run in a new session. It printed:
+
+    24d1aee
+    ## claude/git-status-reflog-aus2gg
+    24d1aee HEAD@{0}: checkout: moving from qa to claude/git-status-reflog-aus2gg
+    24d1aee HEAD@{1}: checkout: moving from 24d1aee12eec... to qa
+    24d1aee HEAD@{2}: end
+
+**HEAD was current** — `24d1aee`, the tip at the time. And the reflog held three
+entries, none from Aug 21, where the previous container's held thirty-nine going
+back to Aug 19. So this was **not** the old filesystem fast-forwarded; it was a
+fresh checkout. Saving the setup script invalidated the stale snapshot and the
+rebuild started clean.
+
+**This resolves the conflict in section 2.** Both documented statements are true
+at different times: a fresh environment build clones fresh, then the snapshot
+freezes that filesystem and later sessions restore it, accumulating whatever
+those sessions did. The exposure was never the first session after a rebuild —
+it is every session after the snapshot has been taken.
+
+**What it does NOT establish.** A fresh clone at tip needs no fast-forward, so
+the setup script's sync branch never executed. Layer 1 is confirmed only in its
+snapshot-invalidating role. The genuine test of the design comes days from now,
+when a session restores an aged snapshot: layer 2, the SessionStart hook, is what
+has to catch that, and it has still never been observed doing so.
+
+**It also found a defect.** The session was on `claude/git-status-reflog-aus2gg`,
+not `qa`. The script's original `git checkout -B qa origin/qa` for the
+"not on the branch" case would have dragged that session onto `qa`, at the start
+of every session. Fixed: a checkout on another branch is now reported and never
+rewritten. Verified — run against a worktree on `claude/probe-branch`, it left
+both the branch and the HEAD untouched.
 
 **Recorded for comparison across containers** (2026-08-29 03:3x UTC):
 

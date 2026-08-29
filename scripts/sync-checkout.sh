@@ -86,21 +86,38 @@ BEHIND="$(git rev-list --count "$LOCAL..$REMOTE" 2>/dev/null || echo '?')"
 AHEAD="$(git rev-list --count "$REMOTE..$LOCAL" 2>/dev/null || echo '?')"
 DIRTY="$(git status --porcelain | wc -l)"
 
-# A freshly provisioned container is clean and strictly behind. Fast-forwarding
-# it loses nothing, and it is the case this script exists for.
+CURRENT="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+
+# NEVER move a session off the branch it is working on.
+#
+# An earlier version of this did `git checkout -B qa origin/qa` whenever HEAD was
+# not on qa, which looked harmless until a real session was observed: sessions
+# are given their own working branch, e.g.
+#
+#   $ git status -sb | head -1
+#   ## claude/git-status-reflog-aus2gg
+#
+# On that session this script would have dragged the checkout onto qa, and the
+# SessionStart hook would have done it at the start of every session. Being
+# behind is a nuisance; being silently moved off your own branch mid-task is
+# worse than the problem this script exists to solve.
+#
+# So a checkout on some other branch is reported, never rewritten. It is not
+# necessarily stale -- a session branch legitimately diverges from the tip.
+if [ "$CURRENT" != "$BRANCH" ]; then
+  echo "sync-checkout: on '$CURRENT', not '$BRANCH'; leaving it alone."
+  echo "  origin/$BRANCH is $(git rev-parse --short "$REMOTE"); this checkout is $(git rev-parse --short HEAD)."
+  echo "  If this branch should be current, merge or rebase it yourself."
+  exit 0
+fi
+
+# On the target branch, clean, and strictly behind: fast-forwarding loses
+# nothing, and it is the case this script exists for.
 if [ "$DIRTY" -eq 0 ] && [ "$AHEAD" = "0" ]; then
-  CURRENT="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
-  if [ "$CURRENT" != "$BRANCH" ]; then
-    git checkout --quiet -B "$BRANCH" "origin/$BRANCH" || {
-      echo "sync-checkout: could not check out $BRANCH; leaving checkout alone."
-      exit 0
-    }
-  else
-    git merge --ff-only "origin/$BRANCH" >/dev/null 2>&1 || {
-      echo "sync-checkout: fast-forward refused; leaving checkout alone."
-      exit 0
-    }
-  fi
+  git merge --ff-only "origin/$BRANCH" >/dev/null 2>&1 || {
+    echo "sync-checkout: fast-forward refused; leaving checkout alone."
+    exit 0
+  }
   echo "sync-checkout: checkout was $BEHIND commit(s) behind origin/$BRANCH; now at $(git rev-parse --short HEAD)."
   exit 0
 fi
