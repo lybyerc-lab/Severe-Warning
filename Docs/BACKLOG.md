@@ -51,6 +51,26 @@ upgrades and cosmetic funnel skins.
 
 ## Decisions open
 
+- **The visual gate cannot see the funnel skins at all.** Its scenarios are
+  `['initial', 'hero']` and neither equips one, so the whole cosmetic system —
+  five skins that recolour the funnel, the outer sheath and the suction rings —
+  is outside its coverage. This was found the useful way: the sheath-opacity fix
+  was gated against the commit before it and passed at **0.0000% across all six
+  scenarios and both attempts**, which is correct (classic deliberately keeps
+  0.36, so the default look is untouched) and also proves the gate would not have
+  noticed if the fix had been wrong for every skinned player. Adding a
+  skin-equipped scenario costs one more render pair per viewport.
+
+- **A second push within ~40 minutes silently voids the first one's visual
+  comparison.** `qa-autoplay-full-round.yml` sets `cancel-in-progress: true`, and
+  the visual gate is the longest step in the job. Run #159 reached the gate on
+  the sheath commit, ran it for 11 minutes, and was cancelled when a docs commit
+  pushed behind it. Re-running does not recover it: the workflow checks out
+  `ref: qa`, the branch tip, not the SHA that triggered it — so a run's
+  `head_sha` does not tell you what was actually tested, and a re-run measures
+  today's tip. Either the gate stops being cancellable, or pushing inside its
+  window has to be treated as a decision to skip it.
+
 - ~~The model budget is at 97%.~~ **Settled: displace before adding.** 128
   models, 1.93 MB against a ~2 MB cap (measured: `du -sb assets/models` =
   2,026,182 bytes). Director's call is that the cap holds — **a new model must
@@ -185,6 +205,65 @@ upgrades and cosmetic funnel skins.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The screenshot decoder was scrambling every capture the visual gate has ever
+  compared, and there is now a rig that refuses to lie.** `decodePng` hardcoded
+  4 bytes per pixel; Chromium writes screenshots as colour type 2 — RGB, 3 bytes,
+  no alpha. Wrong stride means every row is read from the middle of the previous
+  one, so a brightly lit farmyard decoded with 92% of its red channel in the 0–31
+  bucket and sampled pixels reading `[0, 0, 0, 0]`. It hid because both sides of
+  every comparison were scrambled identically: matching builds still differenced
+  to 0.0000% and the gate looked healthy. Only an absolute question — "what
+  colour is this pixel?" — exposes it. Verified fixed against known content: the
+  red barn decodes `[92, 24, 32]`, sky `[50, 73, 101]`, mean luminance
+  15.0 → 105.7.
+
+  `scripts/measure-scene-occlusion.mjs` (`pnpm qa:occlusion`) came out of the
+  same work. It answers "how much of the frame is this responsible for?" and
+  refuses to answer unless four guards pass: a mandatory control (hiding the
+  whole tornado) must move real pixels, the noise floor must be near zero, the
+  run must actually be in gameplay, and the baseline must contain a real scene.
+  Every one of those exists because an earlier version failed it silently —
+  pausing the game stops the render loop, so a whole table of plausible numbers
+  came back describing a frozen canvas, and only hiding the entire tornado and
+  measuring 0.69% gave it away.
+
+  Two more traps are documented in the script: this world animates per FRAME, not
+  per millisecond, so exposures must be separate page lives stepped to identical
+  frame counts (holding one page at a fixed timestamp still gave a 16% floor);
+  and a run opens on the Hart Farm cinematic, so an unskipped rig measures a
+  farmyard with no tornado in it.
+
+- **The funnel sheath stopped reading as a wall under a skin.** The outer vapour
+  sheath is authored at 0.36 opacity for a desaturated slate that reads as haze;
+  a saturated skin colour through the same alpha reads as a wall. Measured
+  footprints at EF-5: classic 22.80%, crimson **30.74%** — same geometry, same
+  alpha, a third more screen. `SKINNED_SHEATH_OPACITY = 0.18` puts a skinned
+  sheath at 24.76%, within measurement noise of classic's own weight; 0.24 is far
+  too heavy at 27.04% and 0.12 is visibly lighter than classic.
+
+  Verified through `applyFunnelSkinMaterials` rather than by forcing the uniform,
+  which would have passed whether or not the fix was wired up, and the classic
+  round trip restores 0.36 so equipping a skin does not thin the storm forever.
+  Gated against the commit before it: 0.0000% across six scenarios, correct
+  because the default look is deliberately untouched.
+
+  Revert path: set `SKINNED_SHEATH_OPACITY` to `CLASSIC_SHEATH_OPACITY`.
+
+  **Precision caveat, learned the hard way:** the rig's 0.000% noise floor is
+  WITHIN one invocation. The same setting re-measured in a fresh process moved by
+  up to 1.4 points (0.18 read 23.36% then 24.76%), most likely async model loads
+  settling on different frames. Compare variants inside one invocation; treat
+  cross-invocation numbers as carrying a point and a half of slack.
+
+- **The results paper reported EF-0 for every run ever played.**
+  `decorateNewspaperResults` read `#resEfRating`, an element that has never
+  existed in the document; the optional chain returned undefined and `|| 'EF-0'`
+  fired every time. Its five sibling lookups all resolve — only that one was a
+  phantom, which is why nothing looked broken. It now prints the run's PEAK
+  rating, tracked beside `maxComboReached`, because EF genuinely falls mid-run
+  when the stage ceiling resets. Proved with a control that separates peak from
+  live: live EF-0, printed EF-5.
 
 - **The build shipped every model twice, and the verifier checked the dead
   copy.** Found while measuring the payload cap, which is the only reason anyone
