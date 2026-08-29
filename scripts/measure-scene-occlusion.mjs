@@ -118,11 +118,15 @@ const BASELINE = BASELINE_MODE === 'no-sheath'
 const CONTROL = { label: 'CONTROL: whole tornado hidden', apply: () => { tornadoGroup.visible = false; } };
 
 const MUTATIONS = BASELINE_MODE === 'no-sheath'
-  ? [0.36, 0.30, 0.24, 0.18, 0.12].map(value => ({
+  ? [
+    // No mutation at all: the sheath as the game itself configures it once the
+    // skin has been applied, which is the number the shipped look is judged on.
+    { label: 'sheath footprint AS SHIPPED', apply: () => {} },
+    ...[0.36, 0.30, 0.24, 0.18, 0.12].map(value => ({
     label: `sheath footprint at opacity ${value.toFixed(2)}`,
     apply: setOuterOpacity,
     arg: value
-  }))
+  }))]
   : [
     { label: 'outer sheath hidden', apply: hideSheath },
     { label: 'inner funnel hidden', apply: () => { funnelMesh.visible = false; } },

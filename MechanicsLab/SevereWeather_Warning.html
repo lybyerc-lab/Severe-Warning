@@ -16277,6 +16277,29 @@ function installShopModalStyles() {
   document.head.appendChild(style);
 }
 
+// [SW:VISUAL:SHEATH_OPACITY] The outer vapour sheath is authored at 0.36 for a
+// desaturated slate that reads as haze. Push a saturated skin colour through the
+// same alpha and it stops reading as vapour and starts reading as a wall: at
+// EF-5 the crimson sheath covered 30.74% of the frame against the classic
+// sheath's 22.80%, measured with scripts/measure-scene-occlusion.mjs in
+// SW_OCCLUSION_BASELINE=no-sheath mode, noise floor 0.000%.
+//
+// 0.18 was not chosen by eye. It is the setting at which a skinned sheath
+// occupies 23.36% of the frame -- the classic look's own weight, within half a
+// point -- from this measured sweep:
+//
+//   opacity   classic   skinned
+//     0.36     22.80%    30.74%
+//     0.30     21.89%    28.91%
+//     0.24     18.36%    27.04%
+//     0.18     15.17%    23.36%   <- matches classic at 0.36
+//     0.12     10.58%    19.14%
+//
+// To put the skins back exactly as they were, set SKINNED_SHEATH_OPACITY to
+// CLASSIC_SHEATH_OPACITY; nothing else needs touching.
+const CLASSIC_SHEATH_OPACITY = 0.36;
+const SKINNED_SHEATH_OPACITY = 0.18;
+
 function applyFunnelSkinMaterials(skinKey) {
   const skin = (typeof SW_RPG_SKINS !== 'undefined' && SW_RPG_SKINS[skinKey]) || null;
   if (!skin) return;
@@ -16288,6 +16311,13 @@ function applyFunnelSkinMaterials(skinKey) {
   if (typeof outerFunnelMat !== 'undefined' && outerFunnelMat && outerFunnelMat.uniforms) {
     if (outerFunnelMat.uniforms.uColorCore) outerFunnelMat.uniforms.uColorCore.value.set(skin.accentColor);
     if (outerFunnelMat.uniforms.uColorVapor) outerFunnelMat.uniforms.uColorVapor.value.set(skin.suctionGlow);
+    // Classic is already the desaturated slate the 0.36 was authored for, so it
+    // keeps it; every other skin is saturated and needs the thinner sheath.
+    if (outerFunnelMat.uniforms.uOpacity) {
+      outerFunnelMat.uniforms.uOpacity.value = skinKey === 'default-classic'
+        ? CLASSIC_SHEATH_OPACITY
+        : SKINNED_SHEATH_OPACITY;
+    }
   }
   if (typeof vortexRing !== 'undefined' && vortexRing && vortexRing.material) {
     vortexRing.material.color.set(skin.suctionGlow);
