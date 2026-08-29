@@ -1,68 +1,44 @@
 #!/bin/bash
 # Fail loudly if this container's checkout is not the branch tip.
 #
-# WHY THIS EXISTS
-# ---------------
-# Remote sessions are reclaimed after inactivity and re-provisioned from a
-# cached container image. That image carries a git checkout pinned to whatever
-# revision it was built at - NOT the current tip of the working branch. On
-# 2026-08-22 this session came back twice at 8188a45 while origin/qa was eight
-# commits ahead, and the second time it went unnoticed: an agent edited the
-# gameplay source, rebuilt, screenshotted, and spent several minutes reasoning
-# about a render that had been produced from a week-old build.
+# READ THIS BEFORE TRUSTING THIS HOOK
+# -----------------------------------
+# This hook cannot fix the problem it was written for, and it is important that
+# whoever finds it next knows that rather than assuming they are covered.
 #
-# The tell is subtle and easy to rationalise, so this checks mechanically. The
-# proof that it is re-provisioning rather than a stray `git reset` is the
-# reflog: none of the eight commits appear in it at all. They were made in a
-# different container.
+# Remote containers are provisioned from a cached image, and this project's
+# image carries a checkout pinned at 8188a45 (2026-08-21). This hook was added
+# afterwards, in 961fa35:
 #
-# Dependencies survive in the image, so this deliberately does not reinstall
-# anything. The checkout is the thing that goes stale.
+#   $ git cat-file -e 8188a45:.claude/hooks/session-start.sh
+#   fatal: path '.claude/hooks/session-start.sh' exists on disk,
+#          but not in '8188a45'
+#
+# So every re-provision restores a tree in which this file and its settings.json
+# DO NOT EXIST. The guard is deleted by the exact event it is meant to catch, and
+# no amount of care inside this file changes that. It has never fired on a stale
+# checkout, because it cannot: by the time there is something to catch, it is
+# gone. Anything else stored in the repository -- AGENTS.md, scripts/, a check
+# wired into the build -- has the same bootstrap problem for the same reason.
+#
+# The fix that does work runs from OUTSIDE the checkout: the environment's setup
+# script, stored server-side and run on every provision. scripts/sync-checkout.sh
+# is the body to paste there, and this hook calls the same script so there is one
+# implementation rather than two that can drift.
+# See https://code.claude.com/docs/en/claude-code-on-the-web
+#
+# What this hook is still good for: a session that resumes into a container whose
+# image IS current, where it catches ordinary drift. Treat it as a second line,
+# never as the reason to skip checking.
 set -uo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}" || exit 0
-git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
-BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
-[ -z "$BRANCH" ] || [ "$BRANCH" = "HEAD" ] && BRANCH="qa"
-
-git fetch --quiet origin "$BRANCH" 2>/dev/null || {
-  echo "session-start: could not reach origin; working offline against $(git rev-parse --short HEAD)"
-  exit 0
-}
-
-LOCAL="$(git rev-parse HEAD)"
-REMOTE="$(git rev-parse "origin/$BRANCH" 2>/dev/null)" || exit 0
-[ "$LOCAL" = "$REMOTE" ] && exit 0
-
-BEHIND="$(git rev-list --count "$LOCAL..$REMOTE" 2>/dev/null || echo '?')"
-AHEAD="$(git rev-list --count "$REMOTE..$LOCAL" 2>/dev/null || echo '?')"
-DIRTY="$(git status --porcelain | wc -l)"
-
-# Clean tree, strictly behind: fast-forwarding is safe and loses nothing.
-if [ "$DIRTY" -eq 0 ] && [ "$AHEAD" = "0" ]; then
-  git merge --ff-only "origin/$BRANCH" >/dev/null 2>&1 && {
-    echo "session-start: checkout was $BEHIND commit(s) behind origin/$BRANCH; fast-forwarded to $(git rev-parse --short HEAD)."
-    exit 0
-  }
+if [ -x scripts/sync-checkout.sh ]; then
+  SW_REPO_DIR="$PWD" bash scripts/sync-checkout.sh
+else
+  echo "session-start: scripts/sync-checkout.sh is missing, which usually means"
+  echo "this checkout predates it. Verify the tree before doing any work:"
+  echo "    git fetch origin qa && git status -sb"
 fi
-
-# Anything else needs a human: never discard uncommitted or unpushed work.
-echo "=============================================================="
-echo "session-start: THIS CHECKOUT IS NOT origin/$BRANCH"
-echo "  local  $(git rev-parse --short "$LOCAL")   behind:$BEHIND  ahead:$AHEAD  uncommitted:$DIRTY"
-echo "  remote $(git rev-parse --short "$REMOTE")  (origin/$BRANCH)"
-echo
-echo "  Do not edit, build, or screenshot until this is resolved -"
-echo "  you would be working against a stale tree."
-echo
-if [ "$AHEAD" != "0" ]; then
-  echo "  This checkout has $AHEAD commit(s) origin does not. Push or inspect them first:"
-  echo "    git log origin/$BRANCH..HEAD --oneline"
-elif [ "$DIRTY" -ne 0 ]; then
-  echo "  There are $DIRTY uncommitted change(s). Inspect, then sync:"
-  echo "    git status"
-  echo "    git stash && git merge --ff-only origin/$BRANCH && git stash pop"
-fi
-echo "=============================================================="
 exit 0

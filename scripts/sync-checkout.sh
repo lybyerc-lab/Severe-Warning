@@ -1,0 +1,94 @@
+#!/bin/bash
+# Bring this container's checkout up to the tip of its working branch.
+#
+# WHY THIS IS A SEPARATE, SELF-CONTAINED SCRIPT
+# ---------------------------------------------
+# Because the in-repo SessionStart hook cannot solve the problem it was written
+# for, and this is the proof:
+#
+#   $ git cat-file -e 8188a45:.claude/hooks/session-start.sh
+#   fatal: path '.claude/hooks/session-start.sh' exists on disk,
+#          but not in '8188a45'
+#
+# Remote containers are provisioned from a cached image, and this project's
+# image carries a checkout pinned at 8188a45 (2026-08-21). The hook was added
+# afterwards, in 961fa35. So every re-provision restores a tree in which the
+# hook and its settings file DO NOT EXIST -- the guard is deleted by the exact
+# event it is meant to catch, and no version of it, however well written, can
+# ever fire. On 2026-08-29 the container reverted mid-session and an edit was
+# applied to a 228-commit-old copy of the file being changed; the resulting
+# failure read as a real finding until the error was read properly.
+#
+# Anything that lives inside the repository has this bootstrap problem. AGENTS.md
+# at 8188a45 is the old AGENTS.md. scripts/ at 8188a45 is the old scripts/. The
+# fix has to run from OUTSIDE the checkout, which means the environment's setup
+# script -- configured in the Claude Code environment settings, stored
+# server-side, and run on every provision before any agent looks at anything.
+#
+# So paste the body of this file into that setting. It is kept here for version
+# control and review, not because being here makes it run.
+# See https://code.claude.com/docs/en/claude-code-on-the-web
+#
+# It is deliberately conservative: it fast-forwards a clean checkout and refuses
+# to touch anything else, because a container that has unpushed commits is a
+# container whose work would be destroyed by a reset.
+set -uo pipefail
+
+REPO="${SW_REPO_DIR:-/home/user/Severe-Warning}"
+BRANCH="${SW_BRANCH:-qa}"
+
+cd "$REPO" 2>/dev/null || { echo "sync-checkout: no repo at $REPO; nothing to do."; exit 0; }
+git rev-parse --git-dir >/dev/null 2>&1 || { echo "sync-checkout: $REPO is not a git checkout."; exit 0; }
+
+if ! git fetch --quiet origin "$BRANCH" 2>/dev/null; then
+  echo "sync-checkout: could not reach origin; leaving checkout at $(git rev-parse --short HEAD)."
+  exit 0
+fi
+
+LOCAL="$(git rev-parse HEAD)"
+REMOTE="$(git rev-parse "origin/$BRANCH" 2>/dev/null)" || {
+  echo "sync-checkout: origin/$BRANCH does not exist."
+  exit 0
+}
+
+if [ "$LOCAL" = "$REMOTE" ]; then
+  echo "sync-checkout: already at origin/$BRANCH ($(git rev-parse --short HEAD))."
+  exit 0
+fi
+
+BEHIND="$(git rev-list --count "$LOCAL..$REMOTE" 2>/dev/null || echo '?')"
+AHEAD="$(git rev-list --count "$REMOTE..$LOCAL" 2>/dev/null || echo '?')"
+DIRTY="$(git status --porcelain | wc -l)"
+
+# A freshly provisioned container is clean and strictly behind. Fast-forwarding
+# it loses nothing, and it is the case this script exists for.
+if [ "$DIRTY" -eq 0 ] && [ "$AHEAD" = "0" ]; then
+  CURRENT="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  if [ "$CURRENT" != "$BRANCH" ]; then
+    git checkout --quiet -B "$BRANCH" "origin/$BRANCH" || {
+      echo "sync-checkout: could not check out $BRANCH; leaving checkout alone."
+      exit 0
+    }
+  else
+    git merge --ff-only "origin/$BRANCH" >/dev/null 2>&1 || {
+      echo "sync-checkout: fast-forward refused; leaving checkout alone."
+      exit 0
+    }
+  fi
+  echo "sync-checkout: checkout was $BEHIND commit(s) behind origin/$BRANCH; now at $(git rev-parse --short HEAD)."
+  exit 0
+fi
+
+# Never destroy work. A container with unpushed commits or uncommitted edits is
+# reporting something a human needs to look at, not something to reset past.
+echo "=============================================================="
+echo "sync-checkout: THIS CHECKOUT IS NOT origin/$BRANCH AND WAS LEFT ALONE"
+echo "  local  $(git rev-parse --short "$LOCAL")   behind:$BEHIND  ahead:$AHEAD  uncommitted:$DIRTY"
+echo "  remote $(git rev-parse --short "$REMOTE")  (origin/$BRANCH)"
+echo
+echo "  Do not edit, build, or screenshot until this is resolved:"
+echo "  work done here would be against a stale tree."
+[ "$AHEAD" != "0" ] && echo "    git log origin/$BRANCH..HEAD --oneline    # $AHEAD unpushed commit(s)"
+[ "$DIRTY" -ne 0 ] && echo "    git status                                # $DIRTY uncommitted change(s)"
+echo "=============================================================="
+exit 0

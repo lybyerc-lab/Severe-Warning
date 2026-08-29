@@ -51,6 +51,51 @@ upgrades and cosmetic funnel skins.
 
 ## Decisions open
 
+- **ACTION FOR THE DIRECTOR: paste `scripts/sync-checkout.sh` into the
+  environment's setup script.** This is the only fix for the reverting checkout,
+  and it cannot be done from inside a session.
+
+  Root cause, proved rather than guessed: remote containers are provisioned from
+  a cached image, and this project's image carries a checkout pinned at
+  **8188a45 (2026-08-21)**. The SessionStart guard meant to catch staleness was
+  added afterwards in `961fa35`, so —
+
+      $ git cat-file -e 8188a45:.claude/hooks/session-start.sh
+      fatal: path '.claude/hooks/session-start.sh' exists on disk,
+             but not in '8188a45'
+
+  — every re-provision restores a tree in which the guard **does not exist**. It
+  is deleted by the exact event it exists to catch and has never once fired on a
+  stale checkout. Anything else kept in the repo (AGENTS.md, a build-time check)
+  fails identically and for the same reason: at 8188a45 it is the 8188a45
+  version, or absent.
+
+  It has bitten twice in one session. The second time the container reverted
+  mid-conversation and an edit landed on a **228-commit-old** copy of the very
+  file being changed; the resulting failure read as a real finding until the
+  error message was read properly. Everything survived only because it had been
+  pushed.
+
+  The fix must run from outside the checkout, which means the environment's setup
+  script — stored server-side, run on every provision, before any agent looks at
+  anything. `scripts/sync-checkout.sh` is that body, kept in the repo for review
+  and version control rather than because living here makes it run. It
+  fast-forwards a clean checkout and refuses to touch one that is dirty or ahead,
+  so it can never destroy unpushed work. Both paths are verified: it
+  fast-forwarded a worktree four commits behind, and refused this one while a new
+  file was uncommitted.
+
+  Environment: **Severe Weather Warning** (`env_01JPML8FqjauwA3tTMBHongV`).
+  Docs: https://code.claude.com/docs/en/claude-code-on-the-web
+
+  Worth doing at the same time: refresh the environment so its cached image
+  stops being pinned three weeks back. That alone would let the in-repo hook
+  work, but it decays again with the next image, which is why the setup script
+  is the real answer.
+
+  **Until it is set, the standing rule stands:** push early rather than batching,
+  and check `git status -sb` against origin before trusting any tree.
+
 - **A second push within ~40 minutes silently voids the first one's visual
   comparison.** `qa-autoplay-full-round.yml` sets `cancel-in-progress: true`, and
   the visual gate is the longest step in the job. Run #159 reached the gate on

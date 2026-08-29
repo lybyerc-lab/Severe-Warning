@@ -350,6 +350,7 @@ scripts/serve-www.mjs
 scripts/setup-qa-signing.sh
 scripts/stamp-qa-artifact.mjs
 scripts/stamp-qa-pages.mjs
+scripts/sync-checkout.sh
 scripts/test-cinematic-sip.mjs
 scripts/update-inventory.mjs
 scripts/verify-full-diligence-audit.mjs
