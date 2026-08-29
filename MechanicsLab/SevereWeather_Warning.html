@@ -6965,6 +6965,12 @@ let efRating = 'EF-0';
 // The results paper reports this one, because a storm that reached EF-5 and
 // wound down was still an EF-5.
 let peakEfRating = 'EF-0';
+// [SW:GAMEPLAY:EF_STEP] The clock the EF ladder is walked on. It accumulates the
+// run delta, so it does not advance while the game is paused and a time pickup
+// cannot rewind it -- runTimeRemaining does both, which is why this is its own
+// counter rather than a reading of the timer.
+let efRunClock = 0;
+let efBadgeChangedAt = 0;
 let efMultiplier = 1.0;
 let funnelScale = 1.0;
 let currentCamY = 78 * mobileFactor, targetCamY = 78 * mobileFactor;
@@ -11446,7 +11452,17 @@ function updateEFRating() {
   // through its three acts instead of topping out in the first one.
   const economy = globalThis.__SW_ECONOMY__;
   if (economy) {
-    const rating = economy.resolveEfRating(currentStage, destructionScore, getActiveCampaignLevel().scoreTarget);
+    const earned = economy.resolveEfRating(currentStage, destructionScore, getActiveCampaignLevel().scoreTarget);
+    // [SW:GAMEPLAY:EF_STEP] Show the ladder being climbed, one rung at a time.
+    // Without this the badge went EF-2 -> EF-4: stage 1 caps at EF-2 while the
+    // score keeps rising past it, so a competent run reaches the stage-2
+    // boundary already above the EF-4 gate and the ceiling lifts two rungs in
+    // one frame. stepEfRating holds the skipped rung -- badge, multiplier and
+    // funnel scale together -- for EF_PROMOTION_DWELL_SECONDS of run clock.
+    // Falls back to the earned rating if an older prelude has no stepper.
+    const rating = typeof economy.stepEfRating === 'function'
+      ? economy.stepEfRating(efRating, earned, Math.max(0, efRunClock - efBadgeChangedAt))
+      : earned;
     badgeText = rating.badge;
     mult = rating.multiplier;
     scaleVal = rating.funnelScale;
@@ -11482,7 +11498,12 @@ function updateEFRating() {
     easNewsText = `NOAA EAS STAGE ${currentStage} HIGH WIND WARNING: ${windLabel} WINDS (MULT: ${mult}x)`;
   }
 
+  if (badgeText !== efRating) efBadgeChangedAt = efRunClock;
   efRating = badgeText;
+  // Peak follows what was DISPLAYED, not what the score alone earned: the
+  // newspaper reports the storm the player watched. The cost is bounded by the
+  // dwell -- a rung crossed in the last couple of seconds of a run may not make
+  // the headline, which is the right call for a rating that was never sustained.
   if (efRatingRank(badgeText) > efRatingRank(peakEfRating)) peakEfRating = badgeText;
   efMultiplier = mult;
   setUI('efBadge', badgeText);
@@ -11657,6 +11678,8 @@ function resetWarningRun() {
   comboMultiplier = 1.0;
   maxComboReached = 1.0;
   peakEfRating = 'EF-0';
+  efRunClock = 0;
+  efBadgeChangedAt = 0;
   runActive = true;
   currentStage = 1;
 
@@ -11819,6 +11842,7 @@ function animate(now) {
   // Run Timer & Stage Transitions
   if (runActive && !isPaused) {
     runTimeRemaining = Math.max(0, runTimeRemaining - runClockDelta);
+    efRunClock += runClockDelta;
     const mins = Math.floor(runTimeRemaining / 60);
     const secs = Math.floor(runTimeRemaining % 60);
     const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;

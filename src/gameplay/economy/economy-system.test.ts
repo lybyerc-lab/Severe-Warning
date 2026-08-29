@@ -9,10 +9,13 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_SCORE_TARGET,
   EF_LADDER,
+  EF_PROMOTION_DWELL_SECONDS,
+  efRungRank,
   efScoreThreshold,
   resolveEfRating,
   resolveGrade,
   resolveStars,
+  stepEfRating,
 } from './economy-system.ts';
 
 const LINCOLN = 45_000;
@@ -70,6 +73,101 @@ describe('EF ladder', () => {
     assert.equal(efScoreThreshold('ef5', 0), 0.75 * DEFAULT_SCORE_TARGET);
     assert.equal(efScoreThreshold('ef5', Number.NaN), 0.75 * DEFAULT_SCORE_TARGET);
     assert.equal(resolveEfRating(3, Number.NaN, PRAIRIE).badge, 'EF-2');
+  });
+});
+
+describe('walking the ladder', () => {
+  const dwell = EF_PROMOTION_DWELL_SECONDS;
+
+  test('REGRESSION: the badge goes EF-2 -> EF-4 without ever showing EF-3', () => {
+    // Reported from play on 2026-08-29: "the tornado never hits EF-3, it goes
+    // from 2 to 4." This reproduces the cause with no stepper involved. A run
+    // that is past the EF-4 gate before the stage-2 boundary is handed EF-4 the
+    // frame the ceiling lifts, because resolveEfRating is a pure function of
+    // (stage, score) and nothing requires the climb to be walked.
+    const past4 = efScoreThreshold('ef4', LINCOLN) + 1;
+    assert.equal(resolveEfRating(1, past4, LINCOLN).badge, 'EF-2', 'capped by stage 1');
+    assert.equal(resolveEfRating(2, past4, LINCOLN).badge, 'EF-4', 'and EF-3 is skipped');
+    // The stepper is what closes it: the same boundary now shows EF-3 first.
+    const earned = resolveEfRating(2, past4, LINCOLN);
+    const shown = stepEfRating('EF-2', earned, 10);
+    assert.equal(shown.badge, 'EF-3', 'the skipped rung is displayed');
+    assert.equal(stepEfRating('EF-3', earned, dwell).badge, 'EF-4', 'then the climb continues');
+    assert.equal(stepEfRating('EF-3', earned, dwell - 0.01).badge, 'EF-3', 'and not before');
+  });
+
+  test('the skipped rung is held for the dwell, not for a frame', () => {
+    const earned = resolveEfRating(3, 10_000_000, LINCOLN);
+    assert.equal(earned.badge, 'EF-5');
+    assert.equal(stepEfRating('EF-3', earned, 0).badge, 'EF-3', 'held immediately after promoting');
+    assert.equal(stepEfRating('EF-3', earned, dwell - 0.01).badge, 'EF-3', 'still held a frame short');
+    assert.equal(stepEfRating('EF-3', earned, dwell).badge, 'EF-4', 'and released exactly on it');
+  });
+
+  test('multiplier and funnel scale follow the badge that is shown', () => {
+    // A ticker reading EF-3 while a 2.8x multiplier is paid would be its own bug.
+    const earned = resolveEfRating(2, efScoreThreshold('ef4', LINCOLN), LINCOLN);
+    const shown = stepEfRating('EF-2', earned, 10);
+    const ef3 = resolveEfRating(3, efScoreThreshold('ef3', LINCOLN), LINCOLN);
+    assert.equal(shown.multiplier, ef3.multiplier);
+    assert.equal(shown.funnelScale, ef3.funnelScale);
+  });
+
+  test('a rung earned in normal play is not delayed', () => {
+    // Rungs are tens of seconds apart in a real run, so the limit never binds.
+    const earned = resolveEfRating(3, efScoreThreshold('ef5', LINCOLN), LINCOLN);
+    assert.equal(stepEfRating('EF-4', earned, 30).badge, 'EF-5');
+  });
+
+  test('REGRESSION: the LAST rung of a climb is rate-limited too', () => {
+    // An earlier version exempted single-rung promotions. That made the step
+    // EF-3 -> EF-4 exempt the moment the ladder had reached EF-3, so the
+    // skipped rung was displayed for one frame. Live probe, 2026-08-29:
+    // EF-2 at t=4.22s -> EF-4 at t=5.72s, with EF-3 never sampled.
+    const earned = resolveEfRating(2, efScoreThreshold('ef4', LINCOLN) + 1, LINCOLN);
+    assert.equal(earned.badge, 'EF-4');
+    assert.equal(stepEfRating('EF-3', earned, 0).badge, 'EF-3', 'not on the next frame');
+    assert.equal(stepEfRating('EF-3', earned, dwell - 0.01).badge, 'EF-3');
+    assert.equal(stepEfRating('EF-3', earned, dwell).badge, 'EF-4', 'only after the dwell');
+  });
+
+  test('demotions are immediate, only promotions are stepped', () => {
+    const earned = resolveEfRating(2, 0, LINCOLN);
+    assert.equal(earned.badge, 'EF-1');
+    assert.equal(stepEfRating('EF-4', earned, 0).badge, 'EF-1');
+  });
+
+  test('an unreadable or absent badge shows what was earned', () => {
+    const earned = resolveEfRating(3, 10_000_000, LINCOLN);
+    assert.equal(stepEfRating('', earned, 0).badge, 'EF-5');
+    assert.equal(stepEfRating('EF-?', earned, 0).badge, 'EF-5');
+  });
+
+  test('every rung is displayed on the way up, whatever the score curve', () => {
+    // Drive the stepper the way the game does -- resolve, step, repeat -- for a
+    // run that outruns the ladder completely, and assert the displayed sequence
+    // never gains more than one rung at a time and misses none.
+    let shown = 'EF-0';
+    let held = 0;
+    const seen: string[] = [shown];
+    for (let frame = 0; frame < 1_800; frame++) {
+      const seconds = frame / 60;
+      const stage: 1 | 2 | 3 = seconds < 6 ? 1 : seconds < 12 ? 2 : 3;
+      // Scores far above every gate from the first frame: the worst case.
+      const next = stepEfRating(shown, resolveEfRating(stage, 10_000_000, LINCOLN), held);
+      held = next.badge === shown ? held + 1 / 60 : 0;
+      if (next.badge !== shown) seen.push(next.badge);
+      shown = next.badge;
+    }
+    assert.deepEqual(seen, ['EF-0', 'EF-1', 'EF-2', 'EF-3', 'EF-4', 'EF-5']);
+  });
+
+  test('efRungRank orders the rungs and rejects everything else', () => {
+    assert.equal(efRungRank('EF-0'), 0);
+    assert.equal(efRungRank('EF-5'), 5);
+    assert.ok(efRungRank('EF-4') > efRungRank('EF-3'));
+    assert.equal(efRungRank('EF-9'), -1, 'out of range');
+    assert.equal(efRungRank('nonsense'), -1);
   });
 });
 

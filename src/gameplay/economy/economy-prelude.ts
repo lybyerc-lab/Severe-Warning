@@ -14,20 +14,26 @@
 import {
   DEFAULT_SCORE_TARGET,
   EF_LADDER,
+  EF_PROMOTION_DWELL_SECONDS,
+  efRungRank,
   efScoreThreshold,
   resolveEfRating,
   resolveGrade,
   resolveStars,
+  stepEfRating,
 } from './economy-system.ts';
 
 const economy = Object.freeze({
   version: 'SW_ECONOMY_V1',
   DEFAULT_SCORE_TARGET,
   EF_LADDER,
+  EF_PROMOTION_DWELL_SECONDS,
+  efRungRank,
   efScoreThreshold,
   resolveEfRating,
   resolveGrade,
   resolveStars,
+  stepEfRating,
 });
 
 declare global {

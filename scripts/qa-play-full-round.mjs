@@ -114,6 +114,9 @@ async function readState() {
       gameStarted: typeof gameStarted !== 'undefined' ? gameStarted : null,
       currentStage: typeof currentStage !== 'undefined' ? currentStage : null,
       destructionScore: typeof destructionScore !== 'undefined' ? destructionScore : null,
+      efRating: typeof efRating !== 'undefined' ? efRating : null,
+      peakEfRating: typeof peakEfRating !== 'undefined' ? peakEfRating : null,
+      efMultiplier: typeof efMultiplier !== 'undefined' ? efMultiplier : null,
       baseScore: typeof baseScore !== 'undefined' ? baseScore : null,
       comboMultiplier: typeof comboMultiplier !== 'undefined' ? comboMultiplier : null,
       maxComboReached: typeof maxComboReached !== 'undefined' ? maxComboReached : null,
@@ -264,6 +267,32 @@ try {
   await browser.close();
 }
 
+// [SW:QA:EF_TIMELINE] Evidence, not a check.
+//
+// The EF ladder had two failures nothing here could have seen, because the run
+// was never sampled for it: absolute thresholds that a real run cleared in a
+// minute, and a badge that climbed EF-2 -> EF-4 without ever showing EF-3. This
+// records when each rung appeared, at what score and in which district, so the
+// next tuning argument starts from a curve instead of an anecdote.
+//
+// It is DELIBERATELY not a check. This harness's driver finishes a round near
+// 11,000 points against a 45,000 target, so it never reaches the upper rungs and
+// a "no rung was skipped" assertion over it could not fail. The guarantee lives
+// in the unit tests over stepEfRating, which are deterministic; this is here to
+// be read.
+const efTimeline = [];
+for (const snapshot of snapshots) {
+  const rating = snapshot.direct?.efRating;
+  if (!rating) continue;
+  if (efTimeline.length && efTimeline.at(-1).efRating === rating) continue;
+  efTimeline.push({
+    elapsedSeconds: snapshot.elapsedSeconds,
+    efRating: rating,
+    destructionScore: snapshot.direct?.destructionScore ?? null,
+    currentStage: snapshot.direct?.currentStage ?? null
+  });
+}
+
 const stageSequence = snapshots
   .map(snapshot => snapshot.direct?.currentStage)
   .filter(value => Number.isFinite(value));
@@ -321,8 +350,10 @@ const report = {
     mooEventCount: mooEvents.length,
     glassEventCount: glassEvents.length,
     finalActiveVoices: finalSnapshot.direct?.activeVoices ?? null,
-    finalActiveMusicVoices: finalSnapshot.direct?.activeMusicVoices ?? null
+    finalActiveMusicVoices: finalSnapshot.direct?.activeMusicVoices ?? null,
+    peakEfRating: finalSnapshot.direct?.peakEfRating ?? null
   },
+  efTimeline,
   consoleErrors,
   failedRequests,
   consoleWarnings,
@@ -366,6 +397,18 @@ ${Object.entries(checks).map(([name, value]) => `| ${name} | ${status(value)} |`
 - Moo events observed: ${report.summary.mooEventCount}
 - Glass events observed: ${report.summary.glassEventCount}
 - Final active voices: ${report.summary.finalActiveVoices ?? 'unknown'}
+- Peak EF rating: ${report.summary.peakEfRating ?? 'unknown'}
+
+## EF ladder (recorded, not asserted)
+
+Sampled every 5 seconds, so a rung held for less than that can be missed here.
+The driver finishes well below the county target, so the upper rungs are not
+expected to appear; the guarantee that no rung is skipped lives in the unit tests
+over \`stepEfRating\`.
+
+${efTimeline.length
+  ? `| At | Rung | Score | District |\n|---|---|---|---|\n${efTimeline.map(entry => `| ${entry.elapsedSeconds}s | ${entry.efRating} | ${entry.destructionScore ?? '?'} | ${entry.currentStage ?? '?'} |`).join('\n')}`
+  : 'No EF samples were captured.'}
 
 ## Errors
 

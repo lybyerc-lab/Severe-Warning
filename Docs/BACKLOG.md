@@ -170,9 +170,41 @@ upgrades and cosmetic funnel skins.
   state — pause freezing timer/score/storm, abilities blocked while paused,
   `quitToMainMenu` clearing the run, `damageTarget` guarding on `runActive` — all
   **already fixed in `qa`**.
-  **Verdict: do not cherry-pick. Leave it as archaeology.** Its real value was as
+  **Verdict: do not cherry-pick. Leave it as archaeology.** Confirmed by the
+  director, 2026-08-29 — the branch stays where it is. Its real value was as
   a pointer: reading its defect list sent someone looking at post-run scoring and
   found a live bug by a different mechanism (below).
+
+- **The EF score gates do not bind for a good player, and the district ceilings
+  are doing the work again.** This is the failure the ladder rewrite was written
+  against, back in a different form. The gates are fractions of the county target
+  (EF-4 at 40%, EF-5 at 75%), but a real run finishes far above target, so they
+  are all crossed early and each district opens at its own ceiling.
+  Three measured points, no estimates: the director's device run scored
+  **127,649** against Lincoln's 45,000 target (2.8x); the earlier device run in
+  the test file scored **149,669** against Prairie Junction's 65,000 (2.3x); the
+  autoplay driver finishes at **11,095** (0.25x). An 11x spread means no single
+  fraction fits both ends — a ladder tuned for the top makes the bot's run a flat
+  EF-0, one tuned for the bot is what we have.
+  What is NOT measured: **when** each gate is crossed in a strong run. That needs
+  a score-versus-time curve, and the EF timeline just added to the harness is the
+  start of one — but only for the bot. A device capture of score at 60s and 120s
+  would settle it in one round.
+  Not urgent: the stepper means the climb is at least seen. The question is
+  whether it should be earned later.
+
+- **Debris pulled off the models instead of authored wrecks?** Director's idea,
+  2026-08-29, alongside "the waste models are very good." Today the funnel's
+  orbiting debris is one shared `BoxGeometry(0.7, 0.28, 1.15)` in flat brown,
+  instanced 10-34 depending on quality tier — the same brown chip whether the
+  storm just ate a barn or a tractor. Taking the debris from what was actually
+  destroyed would tie the two together.
+  The cost to weigh before anyone starts: debris is one draw call today because
+  it is one geometry. Every distinct debris shape adds an InstancedMesh, so this
+  is a question of how many *families* (timber, sheet metal, masonry, glass), not
+  one of per-model chips. It also need not cost payload — the wreck models are
+  already loaded, so a family can be cut from geometry that is resident anyway.
+  Needs a decision on family count before it is worth scheduling.
 
 - **Nothing watches CI.** Two of the three workflows were red for at least ten
   consecutive commits and nobody noticed, because the only workflow anyone reads
@@ -284,6 +316,38 @@ upgrades and cosmetic funnel skins.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The tornado never showed EF-3; it went from EF-2 to EF-4.** Reported from
+  play on 2026-08-29 and reproduced in the packaged build before anything was
+  changed: with the score forced one point above the EF-4 gate, opening district
+  2 put the badge at EF-4 in a single frame, EF-3 never sampled.
+  The cause is structural, not a tuning slip. District 1 caps at EF-2 while the
+  score keeps climbing past it, so a competent run arrives at the district-2
+  boundary already above the EF-4 gate (40% of the county target — 18,000 of
+  45,000 at Lincoln). `resolveEfRating` is a pure function of (stage, score), the
+  ceiling lifts two rungs at once, and **nothing in the ladder ever required the
+  climb to be walked.** EF-3 was the only rung this could hit, which is exactly
+  what was reported.
+  Fixed in `stepEfRating` (`src/gameplay/economy/economy-system.ts`): the badge
+  climbs at most one rung per 2.5 seconds of run clock, carrying multiplier and
+  funnel scale with it, so every rung is displayed and legible. Demotions stay
+  immediate.
+  **The first version of the fix was wrong and the live probe caught it.** It
+  exempted single-rung promotions on the grounds that a naturally earned rung
+  should never be delayed — but once the ladder had stepped to EF-3 the remaining
+  climb to EF-4 *is* a single rung, so it fired on the next frame: EF-3 displayed
+  for about a tenth of a second, the same bug with extra steps. The rate limit now
+  covers every promotion; in real play rungs are tens of seconds apart and it
+  never binds. That path has its own regression test.
+  Verified three ways: 8 unit tests over the pure function, proven able to fail
+  (disabling the stepper fails 4); a live probe of the packaged build showing
+  EF-2 -> EF-3 -> EF-4 at 2.62s and 2.60s of run clock with multiplier and funnel
+  scale following; and the full-round harness re-run.
+  The harness now also records an **EF timeline** — when each rung appeared, at
+  what score, in which district — in `Docs/QA_AUTOPLAY_REPORT.*`. It is evidence,
+  not a check, and says so: the autoplay driver finishes near 11,000 against a
+  45,000 target, so it never reaches the upper rungs and an assertion over it
+  could not fail. The guarantee is in the unit tests.
 
 - **The visual gate can see the funnel skins now, and the scenario was proved
   before it was trusted.** Its scenarios were `['initial', 'hero']` and neither
@@ -559,6 +623,7 @@ Newest first. Kept for the reasoning, not the changelog.
   Result: ambient 0.64 -> 0.392, hemisphere 0.60 -> 0.354, directional untouched;
   mean luminance -5.3 of 255 (about 2% darker) with visibly more form. Diligence
   audit 20/20, zero page errors.
+  **Judged on device by the director, 2026-08-29: 60% is right. Closed.**
 
 - **The mesocyclone read as a saucer; the cause was not where it looked.**
   Two suspects were wrong before the right one turned up, and both were killed by

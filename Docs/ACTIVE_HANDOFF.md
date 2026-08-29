@@ -24,6 +24,14 @@ Current milestone: `v5.1.0 Three.js Production Slice`
   by adding, and nothing has to be retired to make room. The cap is what is
   left — if a batch would take the payload past 4,194,304 bytes it has to name
   what it retires and show the measurement. Repairs never count against it.
+- **The EF ladder is walked, not jumped.** The badge used to go EF-2 -> EF-4
+  with EF-3 never displayed: district 1 caps at EF-2 while the score climbs past
+  it, so a good run hits the district-2 boundary already above the EF-4 gate and
+  the ceiling lifted two rungs in one frame. `stepEfRating` now limits the climb
+  to one rung per 2.5 seconds of run clock, carrying multiplier and funnel scale
+  with it. Demotions stay immediate. Open question in `Docs/BACKLOG.md`: the
+  score gates themselves still do not bind for a strong run.
+
 - **See-through models: fixed and now gated.** `industrial-warehouse-curved`,
   `farm-windmill` and `tractor` were repaired under ASSET-001; the library
   passes 128/128. `pnpm models:seethrough` is no longer advisory -- it runs as
