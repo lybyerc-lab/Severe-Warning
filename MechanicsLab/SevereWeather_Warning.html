@@ -16285,8 +16285,7 @@ function installShopModalStyles() {
 // SW_OCCLUSION_BASELINE=no-sheath mode, noise floor 0.000%.
 //
 // 0.18 was not chosen by eye. It is the setting at which a skinned sheath
-// occupies 23.36% of the frame -- the classic look's own weight, within half a
-// point -- from this measured sweep:
+// occupies roughly the classic look's own weight, from this measured sweep:
 //
 //   opacity   classic   skinned
 //     0.36     22.80%    30.74%
@@ -16294,6 +16293,20 @@ function installShopModalStyles() {
 //     0.24     18.36%    27.04%
 //     0.18     15.17%    23.36%   <- matches classic at 0.36
 //     0.12     10.58%    19.14%
+//
+// Confirmed live afterwards: with the fix in the built bundle, the sheath AS THE
+// GAME CONFIGURES IT measured 24.76%, exactly equal to the harness forcing 0.18
+// in the same run. The fix reaches the material through applyFunnelSkinMaterials
+// rather than only when a harness pokes the uniform.
+//
+// One honest caveat on the precision. The rig's noise floor is 0.000% WITHIN a
+// run, but the same setting re-measured in a separate process moved by up to 1.4
+// points (0.18 read 23.36% then 24.76%; 0.12 read 19.14% then 20.51%) -- most
+// likely because model loads are async and settle at slightly different frames.
+// The classic and skinned columns came from different processes, so read this as
+// "0.18 lands within measurement noise of classic's 22.80%", not as a match to a
+// decimal place. It is still clearly the right rung: 0.24 is far too heavy at
+// 27.04% and 0.12 is visibly lighter than classic.
 //
 // To put the skins back exactly as they were, set SKINNED_SHEATH_OPACITY to
 // CLASSIC_SHEATH_OPACITY; nothing else needs touching.

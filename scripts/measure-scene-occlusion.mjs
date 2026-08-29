@@ -67,6 +67,14 @@ const SETTLE_FRAMES = 120;
 const CONTROL_MIN_PERCENT = 5.0;
 // Two identical runs must agree this closely, or the run is not reproducible and
 // no difference smaller than the disagreement means anything.
+//
+// This floor is WITHIN a single invocation, and it comes out at a clean 0.000%.
+// It does NOT cover process-to-process variation: the same setting measured in a
+// separate invocation has moved by up to 1.4 points, most likely because model
+// loads are async and settle on slightly different frames. So numbers from one
+// invocation can be compared to each other freely, and numbers from two
+// invocations carry roughly a point and a half of slack. Put every variant you
+// intend to compare in the SAME run where you can.
 const FLOOR_MAX_PERCENT = 0.5;
 
 if (!fs.existsSync(path.join(wwwDir, 'index.html'))) {
