@@ -47,12 +47,30 @@ const cpuThrottleRate = Number(process.env.SEVERE_WEATHER_VISUAL_CPU_THROTTLE ||
 
 await mkdir(outputDir, { recursive: true });
 
+// [SW:QA:SKIN_SCENARIO] 'hero-skinned' is 'hero' with a funnel skin equipped.
+//
+// It exists because this gate could not see the cosmetic system at all. Five
+// skins recolour the funnel, the outer vapour sheath and the suction rings, and
+// neither authored scenario equips one -- so when the sheath opacity was changed
+// for skinned storms specifically, the gate compared the two builds and reported
+// 0.0000% across every scenario. That was the correct answer for the default
+// look and told nobody anything about the change actually under test.
+//
+// It runs on ONE viewport rather than three, deliberately. A skin is a material
+// tint and does not interact with layout, so a second and third viewport would
+// re-measure the same thing at the cost of the job's remaining budget: captures
+// scale with viewports x scenarios x 3, and one attempt already runs ~20 minutes
+// on CI. mobile-915x412 is the phone the game ships to, so it is the one that
+// carries the scenario.
+const SKIN_SCENARIO = 'hero-skinned';
+const SKIN_SCENARIO_KEY = 'crimson-fury';
+
 const viewports = [
-  { name: 'desktop-1365x768', width: 1365, height: 768, isMobile: false },
-  { name: 'mobile-915x412', width: 915, height: 412, isMobile: true },
-  { name: 'wide-landscape-1280x540', width: 1280, height: 540, isMobile: false },
+  { name: 'desktop-1365x768', width: 1365, height: 768, isMobile: false, scenarios: ['initial', 'hero'] },
+  { name: 'mobile-915x412', width: 915, height: 412, isMobile: true, scenarios: ['initial', 'hero', SKIN_SCENARIO] },
+  { name: 'wide-landscape-1280x540', width: 1280, height: 540, isMobile: false, scenarios: ['initial', 'hero'] },
 ];
-const scenarios = ['initial', 'hero'];
+const expectedResultCount = viewports.reduce((total, viewport) => total + viewport.scenarios.length, 0);
 const results = [];
 let fatalError = null;
 
@@ -250,7 +268,7 @@ async function capture(browser, url, viewport, scenario, label) {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 60_000 });
     const boot = await advanceFrozenBoot(page);
 
-    const controllerStatus = await page.evaluate(async ({ scenarioName, seed, frameDuration, frameCount }) => {
+    const controllerStatus = await page.evaluate(async ({ scenarioName, seed, frameDuration, frameCount, skinScenario, skinKey }) => {
       const controller = globalThis.__SW_QA_TIME_CONTROLLER__;
       if (!controller) throw new Error('QA time controller is missing in page context.');
       controller.freeze();
@@ -300,8 +318,18 @@ async function capture(browser, url, viewport, scenario, label) {
       };
 
       normalizeCow17();
-      const prepared = globalThis.triggerProductionSliceQa(scenarioName === 'hero' ? 'hero' : 'initial');
+      // 'hero-skinned' uses the hero pose; only its materials differ.
+      const prepared = globalThis.triggerProductionSliceQa(scenarioName.startsWith('hero') ? 'hero' : 'initial');
       if (prepared !== true) throw new Error(`Failed to prepare ${scenarioName} visual scenario.`);
+      if (scenarioName === skinScenario) {
+        // Loud rather than silent. Skipping this would leave the scenario byte
+        // identical to plain hero, quietly asserting nothing -- which is the
+        // exact failure the scenario was added to end.
+        if (typeof applyFunnelSkinMaterials !== 'function') {
+          throw new Error(`${scenarioName} needs applyFunnelSkinMaterials, which this build does not have.`);
+        }
+        applyFunnelSkinMaterials(skinKey);
+      }
       normalizeCow17();
 
       const cow17 = typeof animals !== 'undefined'
@@ -411,6 +439,8 @@ async function capture(browser, url, viewport, scenario, label) {
       return controller.getStatus();
     }, {
       scenarioName: scenario,
+      skinScenario: SKIN_SCENARIO,
+      skinKey: SKIN_SCENARIO_KEY,
       seed: randomSeed,
       frameDuration: frameDurationMs,
       frameCount: scenarioFrameCount,
@@ -473,7 +503,7 @@ const browser = await chromium.launch({
 
 try {
   for (const viewport of viewports) {
-    for (const scenario of scenarios) {
+    for (const scenario of viewport.scenarios) {
       const baseA = await capture(browser, baseUrl, viewport, scenario, 'base-a');
       const baseB = await capture(browser, baseUrl, viewport, scenario, 'base-b');
       const candidate = await capture(browser, candidateUrl, viewport, scenario, 'candidate');
@@ -559,7 +589,7 @@ const report = {
   },
   fatalError,
   results,
-  passed: fatalError === null && results.length === viewports.length * scenarios.length && results.every((result) => result.passed),
+  passed: fatalError === null && results.length === expectedResultCount && results.every((result) => result.passed),
 };
 
 await writeFile(

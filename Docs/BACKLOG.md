@@ -51,16 +51,6 @@ upgrades and cosmetic funnel skins.
 
 ## Decisions open
 
-- **The visual gate cannot see the funnel skins at all.** Its scenarios are
-  `['initial', 'hero']` and neither equips one, so the whole cosmetic system —
-  five skins that recolour the funnel, the outer sheath and the suction rings —
-  is outside its coverage. This was found the useful way: the sheath-opacity fix
-  was gated against the commit before it and passed at **0.0000% across all six
-  scenarios and both attempts**, which is correct (classic deliberately keeps
-  0.36, so the default look is untouched) and also proves the gate would not have
-  noticed if the fix had been wrong for every skinned player. Adding a
-  skin-equipped scenario costs one more render pair per viewport.
-
 - **A second push within ~40 minutes silently voids the first one's visual
   comparison.** `qa-autoplay-full-round.yml` sets `cancel-in-progress: true`, and
   the visual gate is the longest step in the job. Run #159 reached the gate on
@@ -205,6 +195,41 @@ upgrades and cosmetic funnel skins.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The visual gate can see the funnel skins now, and the scenario was proved
+  before it was trusted.** Its scenarios were `['initial', 'hero']` and neither
+  equipped one, so five skins that recolour the funnel, the outer sheath and the
+  suction rings were entirely outside coverage. That was found the useful way:
+  the sheath-opacity fix was gated against the commit before it and passed at
+  0.0000% across all six scenarios — correct for the default look, and proof the
+  gate would not have noticed had the fix been wrong for every skinned player.
+
+  `hero-skinned` is the hero pose with `crimson-fury` equipped. Proved against
+  that same known change, and this is the whole point of it:
+
+      FAIL mobile-915x412 hero-skinned :: repeat=0.0000% candidate=5.3220%
+      FAIL mobile-915x412 hero-skinned :: repeat=0.0000% candidate=5.3220%
+
+  Both attempts, byte-identical, against a 0.0000% repeat floor, while all six
+  pre-existing scenarios held at 0.0000%. So the scenario detects a real skinned
+  change, agrees with itself across attempts, and is not merely noisy — a check
+  that had come back clean here would have been decorative and was going to be
+  binned rather than shipped.
+
+  **One viewport, not three, deliberately.** A skin is a material tint and does
+  not interact with layout, so extra viewports re-measure the same thing at real
+  cost: captures scale with viewports x scenarios x 3, so this adds 3 an attempt
+  rather than 9. `mobile-915x412` is the phone the game ships to.
+
+  A missing `applyFunnelSkinMaterials` throws rather than skipping. Skipping
+  would leave the scenario byte-identical to plain `hero` and quietly assert
+  nothing, which is the exact failure it exists to end.
+
+  Job timeout raised 60 -> 75. At the ~1.1 min a capture measures here, 18 -> 21
+  captures takes an attempt from ~20 to ~23 minutes and two from ~40 to ~47,
+  against ~6 minutes of build, play round and sweep. Sixty left about seven
+  minutes of headroom, and a run of this workflow has already been lost once to a
+  budget set before the gate's real cost was known.
 
 - **The screenshot decoder was scrambling every capture the visual gate has ever
   compared, and there is now a rig that refuses to lie.** `decodePng` hardcoded

@@ -43,7 +43,16 @@ jobs:
     # Most commits now skip the comparison outright (see the render-input check
     # in scripts/visual-regression-gate.mjs); this budget is for the ones that
     # genuinely render.
-    timeout-minutes: 60
+    #
+    # Raised from 60 when the 'hero-skinned' scenario was added. Captures scale
+    # with viewports x scenarios x 3 (base-a, base-b, candidate): 18 an attempt
+    # before, 21 now, which at the ~1.1 min a capture measured here takes one
+    # attempt from ~20 to ~23 minutes and two from ~40 to ~47. Against the old
+    # 60 that left roughly 7 minutes for the build, the play round and the sweep,
+    # which together run ~6. A run of this workflow has already been lost once to
+    # a budget set before the gate's real cost was known; 75 stops that being how
+    # we find out a second time.
+    timeout-minutes: 75
 
     steps:
       - name: Check out exact QA branch
