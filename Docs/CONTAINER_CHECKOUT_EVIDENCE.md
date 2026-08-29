@@ -155,6 +155,20 @@ of every session. Fixed: a checkout on another branch is now reported and never
 rewritten. Verified — run against a worktree on `claude/probe-branch`, it left
 both the branch and the HEAD untouched.
 
+### The hook has now been observed running, 2026-08-29
+
+The container was restarted mid-session and the SessionStart hook fired, printing:
+
+    sync-checkout: already at origin/qa (edad653).
+
+This is the first time layer 2 has been **seen to execute at all** — previously
+its existence was inferred from the settings file. It is worth being exact about
+what that does and does not show. The checkout was current, so the run exercised
+only the "already at the tip" path: it proves the hook is wired, reached, and
+able to read the repository, and nothing more. The case it exists for — a
+restored snapshot that predates the tip — still has not occurred since the fix,
+so the fast-forward branch remains unobserved.
+
 **Recorded for comparison across containers** (2026-08-29 03:3x UTC):
 
     CLAUDE_CODE_CONTAINER_ID=container_015qXayYTNPFmN5WcFGcVRkT--claude_code_remote--7512a2
