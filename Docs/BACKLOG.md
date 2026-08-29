@@ -105,6 +105,13 @@ upgrades and cosmetic funnel skins.
   the constraints — the script must exit zero or the session fails to start, and
   finish inside ~5 minutes. This one does both.
 
+  **This fix is untested.** It is reasoned from documented cache behaviour that
+  has not been observed in this environment, and the docs also contain a sentence
+  ("cloud sessions start from a fresh clone of your repository") that the reflog
+  here contradicts. `Docs/CONTAINER_CHECKOUT_EVIDENCE.md` separates what is
+  verified from what is inferred and gives the exact command to run at the start
+  of the next session to settle whether it worked.
+
   Environment: **Severe Weather Warning** (`env_01JPML8FqjauwA3tTMBHongV`).
   Docs: https://code.claude.com/docs/en/claude-code-on-the-web
 

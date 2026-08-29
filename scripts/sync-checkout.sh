@@ -14,10 +14,15 @@
 # image carries a checkout pinned at 8188a45 (2026-08-21). The hook was added
 # afterwards, in 961fa35. So every re-provision restores a tree in which the
 # hook and its settings file DO NOT EXIST -- the guard is deleted by the exact
-# event it is meant to catch, and no version of it, however well written, can
-# ever fire. On 2026-08-29 the container reverted mid-session and an edit was
-# applied to a 228-commit-old copy of the file being changed; the resulting
-# failure read as a real finding until the error was read properly.
+# event it is meant to catch, and cannot fire from that tree. On 2026-08-29 the
+# container reverted mid-session and an edit was applied to a 228-commit-old copy
+# of the file being changed; the resulting failure read as a real finding until
+# the error was read properly.
+#
+# Evidence, and an explicit account of what is proved versus inferred versus
+# still untested, is in Docs/CONTAINER_CHECKOUT_EVIDENCE.md. Read it before
+# trusting the design below: the two-layer fix is reasoned from documented cache
+# behaviour that has NOT been observed in this environment.
 #
 # Anything that lives inside the repository has this bootstrap problem. AGENTS.md
 # at 8188a45 is the old AGENTS.md. scripts/ at 8188a45 is the old scripts/. The
