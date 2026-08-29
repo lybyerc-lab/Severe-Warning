@@ -4,7 +4,11 @@ Everything needed to add, change or debug a `.glb` actor in this project.
 Written for someone picking this up cold.
 
 Current on `qa`. 128 models (63 intact+wreck pairs + 2 single actors),
-2,248,570 bytes (2.14 MB) against a 4 MB budget (56%). The budget was ~2 MB
+2,246,432 bytes against a 4 MB budget (54%), with about 1.86 MB of headroom.
+**A batch does not have to retire anything to make room** -- displace-before-
+adding was lifted by the director on 2026-08-29; the cap is the only constraint
+left, so check the payload against 4,194,304 bytes and name what you retire only
+if a batch would cross it. The budget was ~2 MB
 until 2026-08-28, when it was measured and re-derived -- see "Where the 4 MB
 comes from" in `assets/models/README.md`.
 

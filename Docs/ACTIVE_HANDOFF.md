@@ -18,11 +18,12 @@ Current milestone: `v5.1.0 Three.js Production Slice`
   history; both were restored on 2026-08-27. See the Landed section of
   `Docs/BACKLOG.md` for what was actually wrong — most of it was checks that had
   decayed against a moving codebase, not code going bad.
-- **128 models, 2.14 MB of a 4 MB budget (56%).** The budget was re-derived
-  from measurement on 2026-08-28 (`assets/models/README.md`). Director's rule,
-  unchanged and still settled: a
-  new model must **retire an existing one**, and a batch request has to name what
-  it displaces. Repairs do not count against it.
+- **128 models, 2,246,432 bytes of a 4 MB budget (54%).** The budget was
+  re-derived from measurement on 2026-08-28 (`assets/models/README.md`).
+  **Displace-before-adding is lifted** (director, 2026-08-29): a batch may open
+  by adding, and nothing has to be retired to make room. The cap is what is
+  left — if a batch would take the payload past 4,194,304 bytes it has to name
+  what it retires and show the measurement. Repairs never count against it.
 - **See-through models: fixed and now gated.** `industrial-warehouse-curved`,
   `farm-windmill` and `tractor` were repaired under ASSET-001; the library
   passes 128/128. `pnpm models:seethrough` is no longer advisory -- it runs as

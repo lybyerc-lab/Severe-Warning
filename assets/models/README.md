@@ -43,6 +43,12 @@ raw figure overstates every cost that actually matters by roughly that factor.
 comfortably inside a phone's budget, which is why the number moved rather than
 the library being cut.
 
+**Nothing has to be retired to make room.** Displace-before-adding — a new model
+must retire an existing one — was lifted by the director on 2026-08-29, once the
+re-derived cap put the library at 54%. The cap is the whole rule now: a batch
+that would cross 4,194,304 bytes has to name what it retires and show the
+measurement; below that, add freely.
+
 **Raw bytes are still the number to check** (`du -sb assets/models`) because it
 is the one anybody can measure in a second. It is a proxy, not the constraint.
 The real constraint is triangles drawn in one scene, and if that ever becomes

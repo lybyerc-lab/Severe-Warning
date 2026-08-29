@@ -22,9 +22,11 @@ Rules for keeping it alive:
 - Numbers in here are measured, not estimated. If a figure cannot be measured
   right now, say so instead of guessing.
 
-State at last update: 128 models, 2.14 MB of the 4 MB budget (**56%** — the cap
-was re-derived from measurement on 2026-08-28; see Landed). 3 branches, 0 open
-PRs, 127 archive tags. `qa` is the default and the working branch.
+State at last update: 128 models, 2,246,432 bytes of the 4 MB budget (**54%** —
+the cap was re-derived from measurement on 2026-08-28; see Landed).
+Displace-before-adding was lifted on 2026-08-29; see Standing rules.
+3 branches, 0 open PRs, 127 archive tags. `qa` is the default and the working
+branch.
 
 ---
 
@@ -32,10 +34,13 @@ PRs, 127 archive tags. `qa` is the default and the working branch.
 
 Nothing queued. ASSET-001 is verified closed (see Landed).
 
-The payload is no longer the blocker it was: the cap is 4 MB and the library
-sits at 2.14 MB (56%). Whether displace-before-adding still applies at that
-level is an open question under Decisions open — until the director rules, the
-rule stands and a batch request still has to name what it retires.
+The payload is no longer the blocker it was, and **displace-before-adding is
+lifted** (director, 2026-08-29 — see Standing rules). The library is 128 models
+/ 2,246,432 bytes of `.glb` measured today, 54% of the 4 MB cap, leaving about
+1.86 MB of headroom — roughly 110 more models at the current 17.5 KB average.
+A batch may now open by adding. What replaces the rule is the cap itself: a batch
+that would carry the payload past 4,194,304 bytes still has to name what it
+retires, and the measurement goes in the batch request.
 
 ## Next up — Code & Modernization
 
@@ -133,11 +138,14 @@ upgrades and cosmetic funnel skins.
   today's tip. Either the gate stops being cancellable, or pushing inside its
   window has to be treated as a decision to skip it.
 
-- ~~The model budget is at 97%.~~ **Settled: displace before adding.** 128
-  models, 1.93 MB against a ~2 MB cap (measured: `du -sb assets/models` =
-  2,026,182 bytes). Director's call is that the cap holds — **a new model must
-  retire an existing one.** AG cannot start a batch by adding; the batch request
-  has to name what it displaces.
+- ~~The model budget is at 97%.~~ ~~**Settled: displace before adding.**~~
+  **Superseded 2026-08-29: the rule is lifted** — see Standing rules. Kept here
+  for the reasoning. 128 models, 1.93 MB against a ~2 MB cap (measured:
+  `du -sb assets/models` = 2,026,182 bytes). The director's call was that the cap
+  holds — a new model must retire an existing one — because at 97% every
+  addition was an eviction whether or not anyone named it. Re-deriving the cap
+  from measurement moved it to 4 MB, which put the library at 54% and removed
+  the premise the rule rested on.
   Known slack, both already parked and unplaced, so retiring them costs nothing
   on screen: `fire-hydrant` / `fire-hydrant-wreck` (308 tris an instance, renders
   5–8 px tall) and `hart-barn` / `hart-barn-wreck` (the hero barn is deliberately
@@ -165,12 +173,6 @@ upgrades and cosmetic funnel skins.
   **Verdict: do not cherry-pick. Leave it as archaeology.** Its real value was as
   a pointer: reading its defect list sent someone looking at post-run scoring and
   found a live bug by a different mechanism (below).
-
-- **Does displace-before-adding still apply at 56%?** The rule was set when the
-  budget was 97% spent. It is now 2.14 MB of 4 MB, so the premise is gone but
-  the rule has not been revoked — it still stands until the director says
-  otherwise. Worth a decision either way, because AG currently cannot open a
-  batch without naming something to retire.
 
 - **Nothing watches CI.** Two of the three workflows were red for at least ten
   consecutive commits and nobody noticed, because the only workflow anyone reads
@@ -256,6 +258,21 @@ upgrades and cosmetic funnel skins.
   `instantiateActorModel`/`loadActorModel` that is not packaged fails it too.
   Both are proven against negative controls. If a batch lands and the build goes
   red with either message, that is the guard working, not a broken build.
+
+- **The 4 MB model cap is the constraint; displacement is not.**
+  Displace-before-adding was lifted by the director on 2026-08-29. It was set
+  when the library was at 97% of a ~2 MB cap that nobody could derive; the cap
+  was re-derived from measurement to 4 MB on 2026-08-28
+  (`assets/models/README.md`), and at 2,246,432 bytes the library is at 54%.
+  A batch may open by adding. The obligation that remains is arithmetic: check
+  the payload against 4,194,304 bytes, and if a batch would cross it, name what
+  it retires and show the measurement. Measure with `cat assets/models/*.glb |
+  wc -c` (2,246,432 today); `du -sb assets/models` is that plus this directory's
+  README, which is close enough to quote and worth knowing before two figures
+  disagree by 3 KB and someone goes looking for a lost model. Repairs never
+  count against the cap. Retiring `fire-hydrant` / `fire-hydrant-wreck` and `hart-barn` /
+  `hart-barn-wreck` is still free slack if it is ever needed — all four are
+  parked and unplaced — but nothing has to be retired to make room now.
 
 - **Town layout is deterministic on purpose.** Lot jitter, rotation and gaps are
   hashed from each lot's own coordinates, never `Math.random()`. The town is
