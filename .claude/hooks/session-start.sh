@@ -21,15 +21,19 @@
 # gone. Anything else stored in the repository -- AGENTS.md, scripts/, a check
 # wired into the build -- has the same bootstrap problem for the same reason.
 #
-# The fix that does work runs from OUTSIDE the checkout: the environment's setup
-# script, stored server-side and run on every provision. scripts/sync-checkout.sh
-# is the body to paste there, and this hook calls the same script so there is one
-# implementation rather than two that can drift.
-# See https://code.claude.com/docs/en/claude-code-on-the-web
+# The fix takes two layers, and this hook is the second of them.
 #
-# What this hook is still good for: a session that resumes into a container whose
-# image IS current, where it catches ordinary drift. Treat it as a second line,
-# never as the reason to skip checking.
+# The environment's setup script bootstraps: changing it forces the stale
+# snapshot to be rebuilt, so the new snapshot's checkout is recent enough to
+# contain this file at all. But a setup script does NOT run every provision -- it
+# runs once, is snapshotted, and re-runs only when it changes or when the cache
+# expires after roughly seven days -- so on its own it re-pins and drifts.
+#
+# This hook is what makes it stick. It runs on every session start and resume,
+# and once the snapshot contains it, it keeps every session current. It calls
+# scripts/sync-checkout.sh so there is one implementation rather than two that
+# can drift apart.
+# See https://code.claude.com/docs/en/cloud-environments#environment-caching
 set -uo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}" || exit 0

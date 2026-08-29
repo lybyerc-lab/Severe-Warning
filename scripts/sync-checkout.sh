@@ -21,13 +21,34 @@
 #
 # Anything that lives inside the repository has this bootstrap problem. AGENTS.md
 # at 8188a45 is the old AGENTS.md. scripts/ at 8188a45 is the old scripts/. The
-# fix has to run from OUTSIDE the checkout, which means the environment's setup
-# script -- configured in the Claude Code environment settings, stored
-# server-side, and run on every provision before any agent looks at anything.
+# fix has to bootstrap from OUTSIDE the checkout, which means the environment's
+# setup script -- configured in the Claude Code environment settings and stored
+# server-side, where a stale checkout cannot delete it.
 #
-# So paste the body of this file into that setting. It is kept here for version
-# control and review, not because being here makes it run.
-# See https://code.claude.com/docs/en/claude-code-on-the-web
+# IMPORTANT, AND NOT WHAT IT LOOKS LIKE: a setup script does NOT run on every
+# provision. Per the docs it "runs the first time you start a session in an
+# environment", then the filesystem is snapshotted and later sessions "skip the
+# setup script step". It runs again only "when you change the environment's setup
+# script or allowed network hosts, and when the cache reaches its expiry after
+# roughly seven days". That caching is the whole bug: the snapshot carries the
+# repository directory with it, which is why two sessions eight days apart both
+# came up at exactly 8188a45.
+#
+# So this script alone would fix nothing. It would sync once, be frozen into the
+# new snapshot, and drift again. It takes both layers:
+#
+#   1. THE SETUP SCRIPT (this file, pasted into the environment settings).
+#      Changing it forces the stale snapshot to be rebuilt, and guarantees the
+#      new snapshot's checkout is recent enough to contain .claude/ at all.
+#   2. THE SessionStart HOOK (.claude/hooks/session-start.sh), which runs on
+#      every session start and resume and calls this same script. Once step 1
+#      has put it into the snapshot, it keeps every later session current --
+#      including after each cache rebuild re-pins the snapshot.
+#
+# Neither is sufficient alone: the setup script re-pins weekly and drifts, and
+# the hook cannot bootstrap itself into a snapshot that predates it.
+#
+# See https://code.claude.com/docs/en/cloud-environments#environment-caching
 #
 # It is deliberately conservative: it fast-forwards a clean checkout and refuses
 # to touch anything else, because a container that has unpushed commits is a

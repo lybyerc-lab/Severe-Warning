@@ -76,14 +76,34 @@ upgrades and cosmetic funnel skins.
   error message was read properly. Everything survived only because it had been
   pushed.
 
-  The fix must run from outside the checkout, which means the environment's setup
-  script — stored server-side, run on every provision, before any agent looks at
-  anything. `scripts/sync-checkout.sh` is that body, kept in the repo for review
-  and version control rather than because living here makes it run. It
-  fast-forwards a clean checkout and refuses to touch one that is dirty or ahead,
-  so it can never destroy unpushed work. Both paths are verified: it
-  fast-forwarded a worktree four commits behind, and refused this one while a new
-  file was uncommitted.
+  **Correction to an earlier version of this entry:** it said the environment's
+  setup script "runs on every provision". It does not, and that mattered. The
+  docs are explicit — a setup script "runs the first time you start a session in
+  an environment", the filesystem is then snapshotted, and later sessions "skip
+  the setup script step"; it runs again only when the script or the allowed hosts
+  change, or when the cache expires "after roughly seven days". That caching IS
+  the bug: the snapshot carries the repository directory, which is why two
+  sessions eight days apart both came up at exactly 8188a45.
+
+  So the fix takes **two layers**, and neither works alone:
+
+  1. **The environment setup script** (`scripts/sync-checkout.sh`, pasted into
+     the **Setup script** field). Changing it forces the stale snapshot to be
+     rebuilt, and guarantees the new snapshot's checkout is recent enough to
+     contain `.claude/` at all. Alone it re-pins weekly and drifts again.
+  2. **The SessionStart hook**, which runs on every start and resume and calls
+     the same script. Alone it cannot bootstrap into a snapshot that predates it;
+     once layer 1 has put it there, it keeps every session current.
+
+  `scripts/sync-checkout.sh` fast-forwards a clean checkout and refuses to touch
+  one that is dirty or ahead, so it can never destroy unpushed work. Both paths
+  are verified: it fast-forwarded a worktree four commits behind, and refused
+  this one while a new file was uncommitted.
+
+  Where the field is: the cloud environment selector in the composer, hover the
+  environment, click its settings gear, and use the **Setup script** box. Note
+  the constraints — the script must exit zero or the session fails to start, and
+  finish inside ~5 minutes. This one does both.
 
   Environment: **Severe Weather Warning** (`env_01JPML8FqjauwA3tTMBHongV`).
   Docs: https://code.claude.com/docs/en/claude-code-on-the-web
