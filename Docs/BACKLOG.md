@@ -186,10 +186,12 @@ upgrades and cosmetic funnel skins.
   autoplay driver finishes at **11,095** (0.25x). An 11x spread means no single
   fraction fits both ends — a ladder tuned for the top makes the bot's run a flat
   EF-0, one tuned for the bot is what we have.
-  What is NOT measured: **when** each gate is crossed in a strong run. That needs
-  a score-versus-time curve, and the EF timeline just added to the harness is the
-  start of one — but only for the bot. A device capture of score at 60s and 120s
-  would settle it in one round.
+  What is NOT measured: **when** each gate is crossed in a strong run. The EF
+  timeline just added to the harness gives the curve for the bot, from a local
+  round on 2026-08-29: EF-1 at 10s / 986 pts, EF-2 at 20s / 4,441, EF-3 at 65s /
+  13,370, EF-4 at 95s / 18,053 — no rung skipped, and the gates clearly binding.
+  For a weak run the ladder works as designed. A device capture of score at 60s
+  and 120s would settle the other end in one round.
   Not urgent: the stepper means the climb is at least seen. The question is
   whether it should be earned later.
 
