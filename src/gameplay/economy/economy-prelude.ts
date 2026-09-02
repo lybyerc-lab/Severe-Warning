@@ -22,6 +22,21 @@ import {
   resolveStars,
   stepEfRating,
 } from './economy-system.ts';
+// [SW:ARCH:INTEGRITY_SYSTEM] Funnel integrity rides in this bundle rather than a
+// second one. It is run-rule logic, not economy, but the delivery contract is the
+// identical one -- inlined as a classic script before the gameplay source, called
+// synchronously from the frame loop -- and a second prelude would be a second
+// thing to keep in the right order for no gain.
+import {
+  INTEGRITY_GRACE_SECONDS,
+  INTEGRITY_MAX,
+  INTEGRITY_WARNING,
+  hasRopedOut,
+  isCritical,
+  newIntegrityState,
+  secondsToRopeOut,
+  stepIntegrity,
+} from '../run/integrity-system.ts';
 
 const economy = Object.freeze({
   version: 'SW_ECONOMY_V1',
@@ -34,6 +49,14 @@ const economy = Object.freeze({
   resolveGrade,
   resolveStars,
   stepEfRating,
+  INTEGRITY_GRACE_SECONDS,
+  INTEGRITY_MAX,
+  INTEGRITY_WARNING,
+  hasRopedOut,
+  isCritical,
+  newIntegrityState,
+  secondsToRopeOut,
+  stepIntegrity,
 });
 
 declare global {

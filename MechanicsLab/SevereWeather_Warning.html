@@ -1586,6 +1586,17 @@
   #timerVal { color: #facc15 !important; font-size: 13px; font-weight: 900; }
   .combo-badge { color: #f59e0b !important; font-weight: 900; padding: 2px 6px; background: rgba(245, 158, 11, 0.2); border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.4); }
   .footage-badge { color: #ec4899 !important; font-weight: 900; }
+  /* [SW:GAMEPLAY:INTEGRITY] The meter sits in the telemetry strip rather than the
+     title card because the title card collapses -- a run that can be lost must
+     never hide the reason it is being lost. */
+  .inflow-cell { display: flex; align-items: center; gap: 5px; }
+  .inflow-track { display: inline-block; width: 46px; height: 7px; border-radius: 4px; background: rgba(148, 163, 184, 0.28); border: 1px solid rgba(148, 197, 253, 0.35); overflow: hidden; }
+  .inflow-fill { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #38bdf8, #22d3ee); transition: width 0.12s linear; }
+  .inflow-cell b { color: #38bdf8; }
+  .inflow-cell.critical .inflow-fill { background: linear-gradient(90deg, #f87171, #ef4444); }
+  .inflow-cell.critical b, .inflow-cell.critical { color: #fca5a5 !important; animation: inflowPulse 0.7s ease-in-out infinite; }
+  @keyframes inflowPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  @media (prefers-reduced-motion: reduce) { .inflow-cell.critical, .inflow-cell.critical b { animation: none; } }
   
   .action-btn {
     width: 62px;
@@ -2220,6 +2231,10 @@
       <div>SCORE: <b id="scoreVal">0</b></div>
       <div>FOOTAGE: <b class="footage-badge" id="footageVal">0</b></div>
       <div>MOO-LAH: <b id="moolahVal" style="color:#fbbf24;font-weight:900;">0</b></div>
+      <div class="inflow-cell" id="inflowCell" title="The funnel starves if it stops destroying things.">INFLOW
+        <span class="inflow-track"><span class="inflow-fill" id="inflowFill"></span></span>
+        <b id="inflowVal">100%</b>
+      </div>
       <div class="fps-telemetry">FPS: <b id="fpsVal">60</b></div>
     </div>
 
@@ -6986,6 +7001,15 @@ let peakEfRating = 'EF-0';
 let efRunClock = 0;
 let efBadgeChangedAt = 0;
 let efMultiplier = 1.0;
+// [SW:GAMEPLAY:INTEGRITY] The run's only way to go wrong. The rules are pure and
+// unit-tested in src/gameplay/run/integrity-system.ts; this holds the state the
+// frame loop hands back and forth, plus the count of scoring events since the
+// last step. See that file for why it arms on the first hit rather than at
+// touchdown -- the opening cinematic runs on this same clock.
+let funnelIntegrity = { value: 100, idleSeconds: 0, armed: false };
+let integrityDamageEvents = 0;
+let runEndedByRopeOut = false;
+let integrityCriticalAnnounced = false;
 let funnelScale = 1.0;
 let currentCamY = 78 * mobileFactor, targetCamY = 78 * mobileFactor;
 let currentCamZ = 110 * mobileFactor, targetCamZ = 110 * mobileFactor;
@@ -10337,6 +10361,10 @@ function addScore(pts) {
   maxComboReached = Math.max(maxComboReached, comboMultiplier);
   comboDecayTimer = 4.5;
   baseScore += pts;
+  // [SW:GAMEPLAY:INTEGRITY] addScore is the single chokepoint every award passes
+  // through, which makes it the honest place to say "the storm fed". Counting
+  // damage calls instead would pay for hits that scored nothing.
+  integrityDamageEvents += 1;
 
   if (typeof swRpgAwardMoolah === 'function') {
     const liveMoolah = Math.floor(awarded / 65);
@@ -11456,6 +11484,75 @@ function efRatingRank(label) {
   return match ? Number(match[1]) : -1;
 }
 
+// [SW:GAMEPLAY:INTEGRITY] --- FUNNEL INTEGRITY & ROPE-OUT ---
+//
+// The rules live in src/gameplay/run/integrity-system.ts, unit-tested and pure.
+// This is the wiring: feed it the frame, paint the meter, and end the run when
+// the funnel starves. If the prelude is missing the whole system stands down
+// rather than half-running -- a run that cannot be lost is a worse outcome than
+// one that cannot be lost AND says so, but it is far better than one that ends
+// for reasons the player cannot see.
+function stepFunnelIntegrity(dt) {
+  const economy = globalThis.__SW_ECONOMY__;
+  if (!economy || typeof economy.stepIntegrity !== 'function') { integrityDamageEvents = 0; return; }
+
+  funnelIntegrity = economy.stepIntegrity(funnelIntegrity, {
+    dt,
+    stage: currentStage,
+    damageEvents: integrityDamageEvents,
+    drainScale: integrityDrainScale()
+  });
+  integrityDamageEvents = 0;
+
+  const critical = typeof economy.isCritical === 'function' && economy.isCritical(funnelIntegrity);
+  if (critical && !integrityCriticalAnnounced) {
+    integrityCriticalAnnounced = true;
+    publishMediaHeadline('FUNNEL STARVING — THE STORM NEEDS SOMETHING TO EAT');
+    playSound('siren');
+  } else if (!critical && integrityCriticalAnnounced && funnelIntegrity.value > 60) {
+    // Re-arm only once well clear of the line, so a meter hovering at the
+    // threshold cannot machine-gun the toast.
+    integrityCriticalAnnounced = false;
+  }
+
+  updateIntegrityHud();
+
+  if (typeof economy.hasRopedOut === 'function' && economy.hasRopedOut(funnelIntegrity) && runActive) {
+    ropeOutRun();
+  }
+}
+
+// Which upgrades, if any, ease the drain. Kept as its own function so the
+// upgrade that reads it has one place to hook into.
+function integrityDrainScale() {
+  return (typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('inflow')) ? 0.65 : 1;
+}
+
+function updateIntegrityHud() {
+  const fill = document.getElementById('inflowFill');
+  const val = document.getElementById('inflowVal');
+  const cell = document.getElementById('inflowCell');
+  if (!fill || !val || !cell) return;
+  const economy = globalThis.__SW_ECONOMY__;
+  const max = (economy && economy.INTEGRITY_MAX) || 100;
+  const pct = Math.max(0, Math.min(100, Math.round((funnelIntegrity.value / max) * 100)));
+  fill.style.width = `${pct}%`;
+  val.textContent = `${pct}%`;
+  const critical = Boolean(economy && typeof economy.isCritical === 'function' && economy.isCritical(funnelIntegrity));
+  cell.classList.toggle('critical', critical);
+}
+
+// The run ends, but not the way the clock ends it: the funnel thins, lifts and
+// the paper prints a rope-out. Losing is a story rather than a Game Over card.
+function ropeOutRun() {
+  if (!runActive) return;
+  runEndedByRopeOut = true;
+  playSound('siren');
+  addCameraShake(2.6);
+  publishMediaHeadline('THE FUNNEL ROPES OUT — STORM LOSES ITS INFLOW');
+  finishRun();
+}
+
 function updateEFRating() {
   let badgeText = 'EF-0';
   let mult = 1.0;
@@ -11694,6 +11791,14 @@ function resetWarningRun() {
   peakEfRating = 'EF-0';
   efRunClock = 0;
   efBadgeChangedAt = 0;
+  const integrityEconomy = globalThis.__SW_ECONOMY__;
+  funnelIntegrity = integrityEconomy && typeof integrityEconomy.newIntegrityState === 'function'
+    ? integrityEconomy.newIntegrityState()
+    : { value: 100, idleSeconds: 0, armed: false };
+  integrityDamageEvents = 0;
+  runEndedByRopeOut = false;
+  integrityCriticalAnnounced = false;
+  updateIntegrityHud();
   runActive = true;
   currentStage = 1;
 
@@ -11857,6 +11962,7 @@ function animate(now) {
   if (runActive && !isPaused) {
     runTimeRemaining = Math.max(0, runTimeRemaining - runClockDelta);
     efRunClock += runClockDelta;
+    stepFunnelIntegrity(runClockDelta);
     const mins = Math.floor(runTimeRemaining / 60);
     const secs = Math.floor(runTimeRemaining % 60);
     const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -15430,12 +15536,25 @@ function refreshNewspaperResults() {
   const headlineEl = document.getElementById('newspaperStoryHeadline');
   const copyEl = document.getElementById('newspaperStoryCopy');
   
+  // [SW:GAMEPLAY:INTEGRITY] A rope-out is a different story from a run that went
+  // the distance, and the paper should say so rather than printing the same copy
+  // over a short score. The clock is the evidence: how long the storm held.
+  const ropedOut = typeof runEndedByRopeOut !== 'undefined' && runEndedByRopeOut;
+  const heldSeconds = Math.max(0, Math.round(
+    (getActiveCampaignLevel().durationSeconds || 180) - (typeof runTimeRemaining === 'number' ? runTimeRemaining : 0)
+  ));
+  const heldLabel = `${Math.floor(heldSeconds / 60)}:${String(heldSeconds % 60).padStart(2, '0')}`;
+
   if (headlineEl) {
-    headlineEl.textContent = resolveNewspaperHeadline({ title, grade, score });
+    headlineEl.textContent = ropedOut
+      ? 'FUNNEL ROPES OUT OVER COUNTY — STORM STARVED OF INFLOW'
+      : resolveNewspaperHeadline({ title, grade, score });
   }
   
   if (copyEl) {
-    copyEl.textContent = `${title} closes at ${score} points. The score desk printed the official run record without editorial adjustment.`;
+    copyEl.textContent = ropedOut
+      ? `${title} ends early at ${heldLabel}. The funnel thinned, lifted and dissipated with ${score} points on the board. The weather desk notes that a storm which stops destroying things stops being a storm.`
+      : `${title} closes at ${score} points. The score desk printed the official run record without editorial adjustment.`;
   }
   
   const destEl = document.getElementById('newspaperDestructionStat');
