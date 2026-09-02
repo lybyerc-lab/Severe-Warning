@@ -68,6 +68,14 @@ findings and evidence are in the Landed entries below). The director took items
   fair props. The counties already differ in palette, spawn, target and score
   multiplier; this is the cheapest place left to add real variety.
 
+- **AG: `town-car` is the only vehicle with no `-wreck` partner.** It never
+  needed one — town cars drive, and under the first law a car with a driver is
+  never harmed. The dealership's destructible inventory was borrowing that model
+  anyway and 404ing on `town-car-wreck.glb` at the moment of destruction; the
+  inventory now uses `parked-car` instead. Authoring `town-car-wreck` would let
+  the extra variety back into the lots. Small, optional, and now that
+  displace-before-adding is lifted it costs nothing to add.
+
 - **`currentEfRating` is a ghost.** Six reads, zero writes, repo-wide. The
   satellite's "free at EF-3" path is dead and the phase-6 HUD bridge has been
   fed a constant `EF-0` for its whole life. Decide whether the bridge should read

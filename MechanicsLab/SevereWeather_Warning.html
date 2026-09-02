@@ -10718,7 +10718,17 @@ function createLotCarMesh(color = '#dc2626', variant = 0) {
 
   const isTruck = (variant % 3 === 1);
   const isWagon = (variant % 3 === 2);
-  const modelName = isTruck ? 'pickup-truck' : (isWagon ? 'parked-car' : (variant % 2 === 0 ? 'lot-car' : 'town-car'));
+  // [SW:ASSET:WRECK_PAIRS] Dealership inventory is destructible, so every model
+  // it can use must have a wreck to swap to -- this name is derived, not
+  // authored, so a missing partner is a 404 at the moment of destruction rather
+  // than anything the build can see.
+  //
+  // `town-car` used to be in this rotation and is the ONE vehicle with no wreck,
+  // for a good reason: town cars drive, and under the first law a car with a
+  // driver is never harmed, so nobody ever needed to author one. Inventory
+  // borrowing that model was the mistake. Caught when the QA driver started
+  // steering at targets and actually cleared a lot: 404 on town-car-wreck.glb.
+  const modelName = isTruck ? 'pickup-truck' : (isWagon || variant % 2 !== 0 ? 'parked-car' : 'lot-car');
   const wreckName = `${modelName}-wreck`;
 
   // --- High-Fidelity Procedural Vehicle Assembly (Sedans, Pickups, Wagons) ---
