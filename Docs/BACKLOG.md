@@ -22,7 +22,8 @@ Rules for keeping it alive:
 - Numbers in here are measured, not estimated. If a figure cannot be measured
   right now, say so instead of guessing.
 
-State at last update: 128 models, 2,246,432 bytes of the 4 MB budget (**54%** —
+State at last update: a run can now be lost (funnel integrity, 2026-08-29).
+128 models, 2,246,432 bytes of the 4 MB budget (**54%** —
 the cap was re-derived from measurement on 2026-08-28; see Landed).
 Displace-before-adding was lifted on 2026-08-29; see Standing rules.
 3 branches, 0 open PRs, 127 archive tags. `qa` is the default and the working
@@ -48,7 +49,29 @@ From a director's pass played on a 915x412 phone viewport. Ordered by cost to
 the player, not by ease of fixing. Each one says what was actually measured, so
 the next person does not have to re-derive it.
 
-Nothing queued.
+From the design and playability review of 2026-08-29 (published as an air check;
+findings and evidence are in the Landed entries below). The director took items
+1-4 of its queue and those are done. **What is left of that queue, in order:**
+
+- **Show the MOO-LAH earned on the newspaper.** The code is written and points
+  at `newspaperMoolahEarned`, an element that does not exist in the document, so
+  the payout is banked in silence and then a shop button is offered for it.
+  Tiny. Worth adding a check that no other id in the results path is a phantom --
+  this is the second one found (the first printed EF-0 on every paper ever).
+
+- **Put the county in the empty menu cards.** Two dispatch cards, ~450px tall
+  each on a 932px screen, holding four short lines apiece. No image of the county
+  and none of the storm, on the front door of a game about spectacle.
+
+- **Give each county its own challenge verbs.** Thirty challenge slots across ten
+  counties run three shapes: launch 3 yard props, flatten 2-3 signs, launch 4
+  fair props. The counties already differ in palette, spawn, target and score
+  multiplier; this is the cheapest place left to add real variety.
+
+- **`currentEfRating` is a ghost.** Six reads, zero writes, repo-wide. The
+  satellite's "free at EF-3" path is dead and the phase-6 HUD bridge has been
+  fed a constant `EF-0` for its whole life. Decide whether the bridge should read
+  `efRating` or be removed; either is better than a stuck value nothing noticed.
 
 Previously landed and cleared: the source HTML rename, the county fair /
 industrial landmark animations, and the MOO-LAH economy with Storm Triangle
@@ -318,6 +341,70 @@ upgrades and cosmetic funnel skins.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **A run can now be lost: funnel integrity and rope-out.** Until this, exactly
+  one in-game path ended a round — `runTimeRemaining <= 0` — so a run could be
+  scored but never lost, which capped how much any other tuning could matter.
+  The storm is now fed by destruction: hit something and the funnel holds, coast
+  and it starves; at zero it thins, lifts, and the paper prints a rope-out with
+  the time the storm held.
+  Three rules keep it fair, each a refusal of a harsher option and each with a
+  test: it **arms on the first hit** (so the opening cinematic, which runs on this
+  same clock, and the drive to the first street cost nothing), a **3.5s grace
+  window** covers ordinary travel, and **damage always refills**, so the
+  counter-play is the thing the game is already about.
+  Drain rises with the district — 5.5 / 8 / 11 per second — putting the pressure
+  on the blackout finale. Softened from 6/9/13 on evidence, not feel: the
+  autoplay driver had a measured 10-second stretch scoring nothing in district 2
+  and survived it, while the same stretch in district 3 ended its run.
+  Rules are pure and unit-tested (`src/gameplay/run/integrity-system.ts`, 11
+  tests, proven able to fail — disabling the drain fails 5). Verified live in the
+  packaged build with the control first: 9 seconds of sitting still while unarmed
+  left integrity at 100; armed with one hit and idled, the critical warning fired
+  and it roped out at 19.0s against a designed 19.2, results overlay up, headline
+  and copy correct, zero page errors.
+  The meter lives in the telemetry strip rather than the title card, because the
+  title card collapses and a run that can be lost must never hide why.
+  **Consequence worth knowing:** the autoplay driver used to random-walk, and a
+  random walk starves. It now steers at the nearest live target, which is what a
+  person does; rope-outs are recorded in the report either way.
+
+- **Three slots against six upgrades, and a shop worth six runs.**
+  The Storm Triangle had three slots and exactly three upgrades, so the "loadout"
+  was whatever you had bought. The pool is now six, no two doing the same job:
+  two abilities, one that changes what the storm is (TWIN TWISTER), one that
+  changes how it moves (CHASER GEARING, +19% ground speed) and one that changes
+  how long it lives (DEEP INFLOW, 35% gentler drain). The shop refuses to swap
+  for you — which upgrade to bench is the decision.
+  `swRpgUpgradeActive` now means owned **and** slotted; `swRpgUpgradeOwned` is
+  what it used to mean. TWIN TWISTER read the store directly and so was free
+  forever once bought; it goes through the same gate as everything else now.
+  **Prices, measured both sides.** Before: a 127,649-point run paid at least
+  4,211 MOO-LAH against a 2,175 catalogue — one run bought the store twice. After,
+  replaying that same run in the packaged build: **1,078 against a 6,450
+  catalogue**, six good rounds to own everything, with the two top items out of
+  reach of any single run. The live payout carries its remainder now instead of
+  flooring it: at the old divisor a 600-point award lost 0.2 of a coin, at this
+  one it would have lost nearly half of every award and the divisor would not
+  have been the rate actually paid.
+  **The drift that made this dangerous is now guarded.** The shop is described
+  twice and the two tables disagreed — the page shipped four upgrades while the
+  unit-tested table carried three, so the tested half was not the shipped half.
+  `pnpm verify:economy` fails the build when they disagree on a key, a price or an
+  effect; proven able to fail, and wired into the QA Full Round workflow. The unit
+  tests read the catalogue instead of hard-coding prices, so repricing is a tuning
+  decision rather than a test edit.
+
+- **The portrait HUD clipped the score and hid the verbs.** Two faults in one
+  corner, both visible in a 430x932 capture. The telemetry strip was capped at
+  58vw with `overflow: hidden`, so SCORE ended in a half-digit while the other end
+  ran under the joystick; the footer now stacks on narrow screens — telemetry on
+  its own row, right-aligned clear of the stick, controls beneath — and wraps
+  instead of being cut. Measured after: telemetry x=138..420 against a joystick
+  ending at x=126, and `scrollWidth` no longer exceeding `clientWidth`.
+  The cooldown readout covered the whole button at 0.75 alpha, so a recharging row
+  read `2S 2S 4S` with nothing to say which button was which — in a three-verb
+  game, exactly when it matters. The dim now sits behind the label: `PULL 3S`.
 
 - **The tornado never showed EF-3; it went from EF-2 to EF-4.** Reported from
   play on 2026-08-29 and reproduced in the packaged build before anything was

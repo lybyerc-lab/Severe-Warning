@@ -24,6 +24,22 @@ Current milestone: `v5.1.0 Three.js Production Slice`
   by adding, and nothing has to be retired to make room. The cap is what is
   left — if a batch would take the payload past 4,194,304 bytes it has to name
   what it retires and show the measurement. Repairs never count against it.
+- **A run can be lost now.** Funnel integrity drains whenever the storm is not
+  destroying anything and ropes the run out at zero, with the newspaper printing
+  how long the storm held. It arms on the first hit, gives a 3.5s grace window,
+  and refills on every scoring event, so it punishes coasting rather than
+  travelling. Rules are pure and unit-tested in
+  `src/gameplay/run/integrity-system.ts`; drain is 5.5 / 8 / 11 per second by
+  district. If you are writing a QA driver, note that a random walk starves —
+  `qa-play-full-round.mjs` steers at the nearest live target for this reason.
+
+- **The shop is a choice, not a checklist.** Three slots against six upgrades,
+  and `swRpgUpgradeActive` means owned AND slotted (`swRpgUpgradeOwned` is the
+  old meaning). Catalogue is 6,450 MOO-LAH against ~1,078 for a strong run, so
+  roughly six rounds to own everything. `pnpm verify:economy` fails the build if
+  the page's table and `moolah-system.ts` disagree — they had already drifted
+  once, and the tested half was not the shipped half.
+
 - **The EF ladder is walked, not jumped.** The badge used to go EF-2 -> EF-4
   with EF-3 never displayed: district 1 caps at EF-2 while the score climbs past
   it, so a good run hits the district-2 boundary already above the EF-4 gate and
