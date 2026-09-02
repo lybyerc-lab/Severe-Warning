@@ -120,7 +120,13 @@
   .touch-controls { display: flex; gap: 10px; pointer-events: auto; }
   .action-btn { position: relative; width: 64px; height: 64px; border-radius: 50%; background: var(--panel-bg); border: 2px solid var(--gold); color: white; font-weight: 800; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.6); transition: all 0.1s ease; overflow: hidden; }
   .action-btn.active, .action-btn:active { background: var(--gold); color: #0f172a; transform: scale(0.92); }
-  .cd-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.75); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: var(--gold); opacity: 0; pointer-events: none; }
+  /* [SW:UI:ABILITY_LABEL] The cooldown readout used to cover the whole button at
+     0.75 alpha, so a recharging row read "2S 2S 4S" with nothing to say which
+     button was PULL, which was GUST and which was ZAP -- in a three-verb game,
+     exactly when you need to know. The dim now sits behind the name (which is
+     lifted out of the stacking order below) and the seconds sit under it. */
+  .cd-overlay { position: absolute; inset: 0; background: rgba(9, 14, 23, 0.58); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 900; color: var(--gold); opacity: 0; pointer-events: none; z-index: 1; }
+  .action-btn .btn-name { position: relative; z-index: 2; }
 
   /* Mobile On-Screen Joystick Overlay */
   #joystickZone { position: absolute; bottom: calc(20px + var(--safe-bottom)); left: calc(20px + var(--safe-left)); width: 120px; height: 120px; border-radius: 50%; border: 2px rgba(255,255,255,0.2) solid; background: rgba(0,0,0,0.25); pointer-events: auto; display: flex; align-items: center; justify-content: center; z-index: 150; }
@@ -479,7 +485,13 @@
 
     .key-guide { display: none !important; }
     
-    .telemetry { font-size: 9px; gap: 8px; padding: 4px 8px; }
+    /* [SW:UI:PORTRAIT_FOOTER] In portrait the footer's three panels shared one
+       row, so the telemetry strip ran under the ability cluster on one side and
+       the joystick on the other, and the score was clipped mid-number. The
+       footer now stacks: telemetry on its own row, right-aligned so it clears
+       the joystick, controls beneath it. */
+    .footer { flex-direction: column; align-items: flex-end; gap: 6px; }
+    .telemetry { font-size: 9px; gap: 8px; padding: 4px 8px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 148px); }
     .telemetry .district-telemetry { display: none; }
     .telemetry .fps-telemetry { display: none; }
     
@@ -1637,7 +1649,9 @@
     .action-btn { width: 56px; height: 56px; }
     .action-btn .btn-icon { font-size: 17px; }
     .action-btn .btn-name { font-size: 8px; }
-    .telemetry { max-width: 58vw; overflow: hidden; white-space: nowrap; font-size: 9.5px; padding: 5px 10px; gap: 8px; }
+    /* [SW:UI:PORTRAIT_FOOTER] max-width:58vw with overflow:hidden silently cut
+       the strip off mid-word rather than wrapping it. Wrap instead. */
+    .telemetry { max-width: calc(100vw - 148px); flex-wrap: wrap; justify-content: flex-end; font-size: 9.5px; padding: 5px 10px; gap: 6px 8px; }
   }
   /* [SW:CINEMATIC:LETTERBOX_V1] */
   #cinematicLetterbox {
