@@ -27,6 +27,7 @@
     "verify:newspaper": "node scripts/verify-newspaper-opening.mjs",
     "verify:landmarks": "node scripts/verify-landmark-animations.mjs",
     "verify:shop": "node scripts/verify-shop-system.mjs",
+    "verify:economy": "node scripts/verify-economy-tables.mjs",
     "qa:v510": "node scripts/qa-v510-production-slice.mjs",
     "qa:phase2": "node scripts/qa-modernization-phase2-clocks.mjs",
     "qa:phase3": "node scripts/qa-modernization-phase3-input-abilities.mjs",

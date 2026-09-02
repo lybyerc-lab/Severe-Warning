@@ -1,4 +1,5 @@
 import type {
+  MoolahUpgradeKey,
   MoolahUpgradeDefinition,
   MoolahSkinDefinition,
   StormFunnelSkinKey,
@@ -9,11 +10,23 @@ import type {
 
 export const MOOLAH_STORAGE_KEY = 'severe_weather_rpg_v1';
 
-export const MOOLAH_UPGRADES: Record<'pull' | 'gust' | 'gridZap', MoolahUpgradeDefinition> = Object.freeze({
+/**
+ * The upgrade catalogue.
+ *
+ * This table and SW_RPG_UPGRADES in the gameplay source describe the same shop,
+ * and they had already drifted: the page shipped four upgrades while this one
+ * carried three, and this -- the unit-tested half -- was not the half the game
+ * read. scripts/verify-economy-tables.mjs now fails the build if the two
+ * disagree on a key, a cost or an effect, so the drift cannot come back quietly.
+ *
+ * Costs are tuned against the payout rates in the gameplay source; the reasoning
+ * is written down beside SW_RPG_UPGRADES there.
+ */
+export const MOOLAH_UPGRADES: Record<MoolahUpgradeKey, MoolahUpgradeDefinition> = Object.freeze({
   pull: {
     key: 'pull',
     label: 'PULL VORTEX',
-    cost: 150,
+    cost: 300,
     base: 2.2,
     upgraded: 3.4,
     unit: 's'
@@ -21,7 +34,7 @@ export const MOOLAH_UPGRADES: Record<'pull' | 'gust' | 'gridZap', MoolahUpgradeD
   gust: {
     key: 'gust',
     label: 'GUST BURST',
-    cost: 175,
+    cost: 350,
     base: 180,
     upgraded: 260,
     unit: ' DMG'
@@ -29,10 +42,34 @@ export const MOOLAH_UPGRADES: Record<'pull' | 'gust' | 'gridZap', MoolahUpgradeD
   gridZap: {
     key: 'gridZap',
     label: 'GRID ZAP',
-    cost: 200,
+    cost: 400,
     base: 6,
     upgraded: 10,
     unit: ' NODES'
+  },
+  chaser: {
+    key: 'chaser',
+    label: 'CHASER GEARING',
+    cost: 450,
+    base: 42,
+    upgraded: 50,
+    unit: ' SPEED'
+  },
+  inflow: {
+    key: 'inflow',
+    label: 'DEEP INFLOW',
+    cost: 550,
+    base: 100,
+    upgraded: 65,
+    unit: '% DRAIN'
+  },
+  twinFunnel: {
+    key: 'twinFunnel',
+    label: 'TWIN TWISTER',
+    cost: 1200,
+    base: 0,
+    upgraded: 1,
+    unit: ' SATELLITE'
   }
 });
 
@@ -48,7 +85,7 @@ export const MOOLAH_SKINS: Record<StormFunnelSkinKey, MoolahSkinDefinition> = Ob
   'midnight-neon': {
     key: 'midnight-neon',
     label: 'MIDNIGHT NEON',
-    cost: 250,
+    cost: 400,
     coreColor: '#1e1b4b',
     accentColor: '#38bdf8',
     suctionGlow: '#818cf8'
@@ -56,7 +93,7 @@ export const MOOLAH_SKINS: Record<StormFunnelSkinKey, MoolahSkinDefinition> = Ob
   'crimson-fury': {
     key: 'crimson-fury',
     label: 'CRIMSON FURY',
-    cost: 350,
+    cost: 800,
     coreColor: '#450a0a',
     accentColor: '#ef4444',
     suctionGlow: '#f87171'
@@ -64,7 +101,7 @@ export const MOOLAH_SKINS: Record<StormFunnelSkinKey, MoolahSkinDefinition> = Ob
   'golden-harvest': {
     key: 'golden-harvest',
     label: 'GOLDEN HARVEST',
-    cost: 300,
+    cost: 600,
     coreColor: '#451a03',
     accentColor: '#f59e0b',
     suctionGlow: '#fbbf24'
@@ -72,7 +109,7 @@ export const MOOLAH_SKINS: Record<StormFunnelSkinKey, MoolahSkinDefinition> = Ob
   'emerald-tempest': {
     key: 'emerald-tempest',
     label: 'EMERALD TEMPEST',
-    cost: 400,
+    cost: 1400,
     coreColor: '#022c22',
     accentColor: '#10b981',
     suctionGlow: '#34d399'

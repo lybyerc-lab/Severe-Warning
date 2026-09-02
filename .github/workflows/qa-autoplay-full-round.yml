@@ -104,6 +104,7 @@ jobs:
           node --check scripts/qa-v500-world-tour.mjs
           node --check scripts/verify-v500-campaign.mjs
           npm run verify:v500
+          npm run verify:economy
           npm run modern:typecheck
           npm test
           npm run modern:build

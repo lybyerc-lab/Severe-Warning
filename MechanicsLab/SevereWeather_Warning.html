@@ -7008,6 +7008,8 @@ let efMultiplier = 1.0;
 // touchdown -- the opening cinematic runs on this same clock.
 let funnelIntegrity = { value: 100, idleSeconds: 0, armed: false };
 let integrityDamageEvents = 0;
+// [SW:GAMEPLAY:ECONOMY_RUNWAY] Fractional MOO-LAH carried between awards.
+let liveMoolahRemainder = 0;
 let runEndedByRopeOut = false;
 let integrityCriticalAnnounced = false;
 let funnelScale = 1.0;
@@ -10367,8 +10369,21 @@ function addScore(pts) {
   integrityDamageEvents += 1;
 
   if (typeof swRpgAwardMoolah === 'function') {
-    const liveMoolah = Math.floor(awarded / 65);
-    if (liveMoolah > 0) swRpgAwardMoolah(liveMoolah, 'destruction');
+    // [SW:GAMEPLAY:ECONOMY_RUNWAY] Was floor(awarded / 65), which paid ~1,960
+    // during a single strong run -- most of the old catalogue before the results
+    // screen even appeared. See SW_RPG_UPGRADES for the arithmetic.
+    //
+    // The remainder is carried rather than floored away. At the old divisor a
+    // typical ~600-point award lost 0.2 of a coin to the floor and nobody could
+    // tell; at this one it would lose nearly half of every award, so the rate
+    // written above would not be the rate actually paid. Carrying it makes the
+    // divisor mean what it says.
+    liveMoolahRemainder += awarded / 320;
+    const liveMoolah = Math.floor(liveMoolahRemainder);
+    if (liveMoolah > 0) {
+      liveMoolahRemainder -= liveMoolah;
+      swRpgAwardMoolah(liveMoolah, 'destruction');
+    }
   }
   return awarded;
 }
@@ -11796,6 +11811,7 @@ function resetWarningRun() {
     ? integrityEconomy.newIntegrityState()
     : { value: 100, idleSeconds: 0, armed: false };
   integrityDamageEvents = 0;
+  liveMoolahRemainder = 0;
   runEndedByRopeOut = false;
   integrityCriticalAnnounced = false;
   updateIntegrityHud();
@@ -12095,8 +12111,11 @@ function animate(now) {
     });
   }
 
-  storm.pos.x += moveX * storm.speed * dt;
-  storm.pos.z += moveZ * storm.speed * dt;
+  // [SW:GAMEPLAY:LOADOUT] CHASER GEARING scales the storm here rather than
+  // writing storm.speed, which selectStormClass rewrites for every form.
+  const chaserScale = (typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('chaser')) ? 1.19 : 1;
+  storm.pos.x += moveX * storm.speed * chaserScale * dt;
+  storm.pos.z += moveZ * storm.speed * chaserScale * dt;
 
   storm.pos.x = Math.max(-380, Math.min(380, storm.pos.x));
   storm.pos.z = Math.max(-380, Math.min(380, storm.pos.z));
@@ -15094,21 +15113,50 @@ const SW_RPG_STORAGE_KEY = 'severe_weather_rpg_v1';
 const SW_RPG_SCHEMA_VERSION = 1;
 const SW_RPG_STORM_TRIANGLE_VERSION = 'sw-storm-triangle-v1';
 const SW_RPG_UPGRADE_LOADOUT_VERSION = 'sw-upgrade-loadout-v1';
+// [SW:GAMEPLAY:LOADOUT] The Storm Triangle is three slots against six upgrades,
+// so equipping one means giving another up.
+//
+// It used to be three slots against exactly three upgrades, which made the shop
+// a checklist: buy all three, and the "loadout" was whatever you had bought.
+// Owning everything is still where a player ends up -- that is what a shop is
+// for -- but what they take into a run is now a decision, and the pool is built
+// so no two picks do the same job: two abilities, one that changes what the
+// storm IS, one that changes how it moves, and one that changes how long it
+// lives.
+const SW_RPG_SLOT_COUNT = 3;
+
+// The loadout a fresh save starts equipped with. Unowned upgrades do nothing, so
+// starting with these slotted means a player's first purchase works immediately
+// instead of silently sitting on the bench.
 const SW_RPG_ACTIVE_SLOTS = Object.freeze(['pull', 'gust', 'gridZap']);
 
+// [SW:GAMEPLAY:ECONOMY_RUNWAY] Prices and payout are one decision, so they are
+// tuned together and the arithmetic is written down.
+//
+// Measured before: a 127,649-point run paid at least 4,211 MOO-LAH against a
+// 2,175 catalogue -- one good run bought the entire store twice, and there was
+// nothing left to earn. The rates below put a strong run near 1,100 against a
+// 6,450 catalogue, so owning everything is about six good rounds, and the two
+// top items stay out of reach of a single lucky run.
+//
+// Kept in step with src/gameplay/economy/moolah-system.ts by
+// scripts/verify-economy-tables.mjs, because these two tables had already
+// drifted apart once.
 const SW_RPG_UPGRADES = Object.freeze({
-  pull: { key: 'pull', label: 'PULL VORTEX', cost: 150, base: 2.2, upgraded: 3.4, unit: 's' },
-  gust: { key: 'gust', label: 'GUST BURST', cost: 175, base: 180, upgraded: 260, unit: ' DMG' },
-  gridZap: { key: 'gridZap', label: 'GRID ZAP', cost: 200, base: 6, upgraded: 10, unit: ' NODES' },
-  twinFunnel: { key: 'twinFunnel', label: 'TWIN TWISTER', cost: 350, base: 0, upgraded: 1, unit: ' SATELLITE' }
+  pull: { key: 'pull', label: 'PULL VORTEX', cost: 300, base: 2.2, upgraded: 3.4, unit: 's' },
+  gust: { key: 'gust', label: 'GUST BURST', cost: 350, base: 180, upgraded: 260, unit: ' DMG' },
+  gridZap: { key: 'gridZap', label: 'GRID ZAP', cost: 400, base: 6, upgraded: 10, unit: ' NODES' },
+  chaser: { key: 'chaser', label: 'CHASER GEARING', cost: 450, base: 42, upgraded: 50, unit: ' SPEED' },
+  inflow: { key: 'inflow', label: 'DEEP INFLOW', cost: 550, base: 100, upgraded: 65, unit: '% DRAIN' },
+  twinFunnel: { key: 'twinFunnel', label: 'TWIN TWISTER', cost: 1200, base: 0, upgraded: 1, unit: ' SATELLITE' }
 });
 
 const SW_RPG_SKINS = Object.freeze({
   'default-classic': { key: 'default-classic', label: 'CLASSIC DUST DEVIL', cost: 0, coreColor: '#334155', accentColor: '#64748b', suctionGlow: '#94a3b8' },
-  'midnight-neon': { key: 'midnight-neon', label: 'MIDNIGHT NEON', cost: 250, coreColor: '#1e1b4b', accentColor: '#38bdf8', suctionGlow: '#818cf8' },
-  'crimson-fury': { key: 'crimson-fury', label: 'CRIMSON FURY', cost: 350, coreColor: '#450a0a', accentColor: '#ef4444', suctionGlow: '#f87171' },
-  'golden-harvest': { key: 'golden-harvest', label: 'GOLDEN HARVEST', cost: 300, coreColor: '#451a03', accentColor: '#f59e0b', suctionGlow: '#fbbf24' },
-  'emerald-tempest': { key: 'emerald-tempest', label: 'EMERALD TEMPEST', cost: 400, coreColor: '#022c22', accentColor: '#10b981', suctionGlow: '#34d399' }
+  'midnight-neon': { key: 'midnight-neon', label: 'MIDNIGHT NEON', cost: 400, coreColor: '#1e1b4b', accentColor: '#38bdf8', suctionGlow: '#818cf8' },
+  'crimson-fury': { key: 'crimson-fury', label: 'CRIMSON FURY', cost: 800, coreColor: '#450a0a', accentColor: '#ef4444', suctionGlow: '#f87171' },
+  'golden-harvest': { key: 'golden-harvest', label: 'GOLDEN HARVEST', cost: 600, coreColor: '#451a03', accentColor: '#f59e0b', suctionGlow: '#fbbf24' },
+  'emerald-tempest': { key: 'emerald-tempest', label: 'EMERALD TEMPEST', cost: 1400, coreColor: '#022c22', accentColor: '#10b981', suctionGlow: '#34d399' }
 });
 
 function swRpgEmptyStore() {
@@ -15159,9 +15207,55 @@ function swRpgSaveStore() {
   }
 }
 
-function swRpgUpgradeActive(key) {
+/** Bought and paid for. Ownership is permanent; being equipped is not. */
+function swRpgUpgradeOwned(key) {
   return Boolean(swRpgStore.upgrades[key]);
 }
+
+/** What the run actually gets: owned AND carried in one of the three slots. */
+function swRpgUpgradeActive(key) {
+  return swRpgUpgradeOwned(key) && swRpgEquippedSlots().includes(key);
+}
+
+function swRpgEquippedSlots() {
+  const slots = swRpgStore.stormTriangle && Array.isArray(swRpgStore.stormTriangle.slots)
+    ? swRpgStore.stormTriangle.slots
+    : [];
+  // Defensive: a save written by an older build, or hand-edited storage, must not
+  // be able to smuggle in a fourth slot or an upgrade that no longer exists.
+  return slots.filter(key => SW_RPG_UPGRADES[key]).slice(0, SW_RPG_SLOT_COUNT);
+}
+
+/**
+ * Put an owned upgrade into the loadout.
+ *
+ * Refuses rather than silently swapping when the slots are full: which upgrade
+ * to give up is the whole decision, and making it for the player would be taking
+ * the interesting part away.
+ */
+function equipSwRpgUpgrade(key) {
+  if (!SW_RPG_UPGRADES[key]) return { equipped: false, reason: 'unknown-upgrade' };
+  if (!swRpgUpgradeOwned(key)) return { equipped: false, reason: 'not-owned' };
+  const slots = swRpgEquippedSlots();
+  if (slots.includes(key)) return { equipped: true, reason: 'already-equipped', slots };
+  if (slots.length >= SW_RPG_SLOT_COUNT) return { equipped: false, reason: 'slots-full', slots };
+  const next = [...slots, key];
+  swRpgStore.stormTriangle.slots = next;
+  swRpgSaveStore();
+  return { equipped: true, slots: next };
+}
+
+function unequipSwRpgUpgrade(key) {
+  const slots = swRpgEquippedSlots();
+  if (!slots.includes(key)) return { equipped: false, reason: 'not-equipped', slots };
+  const next = slots.filter(slot => slot !== key);
+  swRpgStore.stormTriangle.slots = next;
+  swRpgSaveStore();
+  return { equipped: false, slots: next };
+}
+globalThis.equipSwRpgUpgrade = equipSwRpgUpgrade;
+globalThis.unequipSwRpgUpgrade = unequipSwRpgUpgrade;
+globalThis.swRpgEquippedSlots = swRpgEquippedSlots;
 
 function swRpgEffectValue(key) {
   const upgrade = SW_RPG_UPGRADES[key];
@@ -15231,10 +15325,14 @@ function swRpgAwardMoolah(amount, reason = 'score') {
 
 function swRpgAwardForAcceptedResult(result) {
   if (!result) return null;
-  const base = Math.floor(((result.destructionScore || 0) + (result.baseScore || 0)) / 60);
-  const combo = Math.floor((result.maxComboReached || 1.0) * 20);
-  const gradeBonus = (result.grade === 'S+' || result.grade === 'UDDER CHAOS') ? 150 : (result.grade === 'A' ? 90 : (result.grade === 'B' ? 50 : 25));
-  const amount = Math.max(35, base + combo + gradeBonus);
+  // [SW:GAMEPLAY:ECONOMY_RUNWAY] Rates chosen with the prices in SW_RPG_UPGRADES,
+  // not separately. The grade bonus is deliberately the part that did NOT shrink
+  // much: it is the only component a weak run can move by playing better rather
+  // than by scoring more, and it should stay worth chasing.
+  const base = Math.floor(((result.destructionScore || 0) + (result.baseScore || 0)) / 300);
+  const combo = Math.floor((result.maxComboReached || 1.0) * 15);
+  const gradeBonus = (result.grade === 'S+' || result.grade === 'UDDER CHAOS') ? 140 : (result.grade === 'A' ? 80 : (result.grade === 'B' ? 45 : 20));
+  const amount = Math.max(40, base + combo + gradeBonus);
   const reward = {
     amount,
     reason: 'county-clear',
@@ -15274,7 +15372,9 @@ globalThis.getSwRpgQaState = function getSwRpgQaState() {
     unlockedSkins: [...swRpgStore.unlockedSkins],
     availableSkins: Object.keys(SW_RPG_SKINS),
     stormTriangle: { version: swRpgStore.stormTriangle.version, slots: [...swRpgStore.stormTriangle.slots] },
-    effects: Object.fromEntries(SW_RPG_ACTIVE_SLOTS.map(key => [key, { base: SW_RPG_UPGRADES[key].base, upgraded: SW_RPG_UPGRADES[key].upgraded, active: swRpgEffectValue(key) }])),
+    slotCount: SW_RPG_SLOT_COUNT,
+    equippedSlots: swRpgEquippedSlots(),
+    effects: Object.fromEntries(Object.keys(SW_RPG_UPGRADES).map(key => [key, { base: SW_RPG_UPGRADES[key].base, upgraded: SW_RPG_UPGRADES[key].upgraded, active: swRpgEffectValue(key), owned: swRpgUpgradeOwned(key), equipped: swRpgUpgradeActive(key) }])),
     lastReward: swRpgLastReward || swRpgStore.lastReward,
     buildMetadata: globalThis.getSwRpgBuildMetadata()
   });
@@ -16326,6 +16426,7 @@ function installShopModalStyles() {
       gap: 8px;
     }
     .sw-shop-balance {
+      white-space: nowrap;
       background: #0f172a;
       border: 1px solid #fbbf24;
       padding: 4px 12px;
@@ -16363,6 +16464,13 @@ function installShopModalStyles() {
       flex-direction: column;
       gap: 12px;
     }
+    .sw-shop-loadout-note {
+      color: #93c5fd;
+      font: 700 12px/1.4 'Outfit', sans-serif;
+      letter-spacing: 0.04em;
+      padding: 2px 2px 6px;
+    }
+    .sw-shop-item-equipped { border-color: #38bdf8 !important; box-shadow: inset 3px 0 0 #38bdf8; }
     .sw-shop-item-card {
       background: #1e293b;
       border: 1px solid #334155;
@@ -16531,8 +16639,9 @@ function renderShopModal() {
         <div class="sw-shop-balance">${moolah} MOO-LAH</div>
       </div>
       <div class="sw-shop-tabs">
-        <button id="swShopTabUpgrades" class="sw-shop-tab-btn ${shopModalState.activeTab === 'upgrades' ? 'active' : ''}">STORM UPGRADES</button>
-        <button id="swShopTabSkins" class="sw-shop-tab-btn ${shopModalState.activeTab === 'skins' ? 'active' : ''}">FUNNEL SKINS</button>
+        <button id="swShopTabUpgrades" class="sw-shop-tab-btn ${shopModalState.activeTab === 'upgrades' ? 'active' : ''}">UPGRADES</button>
+        <button id="swShopTabLoadout" class="sw-shop-tab-btn ${shopModalState.activeTab === 'loadout' ? 'active' : ''}">LOADOUT ${swRpgEquippedSlots().length}/${SW_RPG_SLOT_COUNT}</button>
+        <button id="swShopTabSkins" class="sw-shop-tab-btn ${shopModalState.activeTab === 'skins' ? 'active' : ''}">SKINS</button>
       </div>
       <div id="swShopItemList" class="sw-shop-content">
         <!-- Item cards injected below -->
@@ -16546,18 +16655,55 @@ function renderShopModal() {
   const listEl = document.getElementById('swShopItemList');
   if (shopModalState.activeTab === 'upgrades') {
     Object.values(SW_RPG_UPGRADES).forEach(up => {
-      const owned = swRpgUpgradeActive(up.key);
+      // OWNED and EQUIPPED are different states now, and the shop has to say
+      // which is which: "ACTIVE" on a bought-but-benched upgrade was how the
+      // old checklist read, and it would be a lie here.
+      const owned = swRpgUpgradeOwned(up.key);
+      const equipped = swRpgUpgradeActive(up.key);
       const card = document.createElement('div');
       card.className = 'sw-shop-item-card';
       card.innerHTML = `
         <div class="sw-shop-item-info">
           <h4>${up.label}</h4>
-          <p>Boost: ${up.base}${up.unit} -> ${up.upgraded}${up.unit}</p>
+          <p>${up.base}${up.unit} -> ${up.upgraded}${up.unit}${owned && !equipped ? ' · ON THE BENCH' : ''}</p>
         </div>
         <div>
-          ${owned 
-            ? `<button class="sw-shop-action-btn sw-shop-btn-active" disabled>ACTIVE</button>`
+          ${owned
+            ? (equipped
+                ? `<button class="sw-shop-action-btn sw-shop-btn-equipped" disabled>EQUIPPED</button>`
+                : `<button class="sw-shop-action-btn sw-shop-btn-equip" onclick="shopModalState.activeTab = 'loadout'; renderShopModal();">LOADOUT</button>`)
             : `<button class="sw-shop-action-btn sw-shop-btn-buy" onclick="purchaseSwRpgUpgrade('${up.key}'); renderShopModal();">BUY (${up.cost})</button>`
+          }
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  } else if (shopModalState.activeTab === 'loadout') {
+    const slots = swRpgEquippedSlots();
+    const note = document.createElement('div');
+    note.className = 'sw-shop-loadout-note';
+    note.textContent = slots.length >= SW_RPG_SLOT_COUNT
+      ? `The storm carries ${SW_RPG_SLOT_COUNT}. Drop one to take another.`
+      : `${SW_RPG_SLOT_COUNT - slots.length} slot(s) open.`;
+    listEl.appendChild(note);
+    Object.values(SW_RPG_UPGRADES).forEach(up => {
+      const owned = swRpgUpgradeOwned(up.key);
+      const equipped = slots.includes(up.key);
+      const card = document.createElement('div');
+      card.className = `sw-shop-item-card${equipped ? ' sw-shop-item-equipped' : ''}`;
+      card.innerHTML = `
+        <div class="sw-shop-item-info">
+          <h4>${up.label}</h4>
+          <p>${owned ? `${up.base}${up.unit} -> ${up.upgraded}${up.unit}` : `Not owned · ${up.cost} MOO-LAH`}</p>
+        </div>
+        <div>
+          ${!owned
+            ? `<button class="sw-shop-action-btn sw-shop-btn-buy" onclick="purchaseSwRpgUpgrade('${up.key}'); renderShopModal();">BUY (${up.cost})</button>`
+            : (equipped
+                ? `<button class="sw-shop-action-btn sw-shop-btn-equipped" onclick="unequipSwRpgUpgrade('${up.key}'); renderShopModal();">DROP</button>`
+                : (slots.length >= SW_RPG_SLOT_COUNT
+                    ? `<button class="sw-shop-action-btn sw-shop-btn-active" disabled>SLOTS FULL</button>`
+                    : `<button class="sw-shop-action-btn sw-shop-btn-equip" onclick="equipSwRpgUpgrade('${up.key}'); renderShopModal();">EQUIP</button>`))
           }
         </div>
       `;
@@ -16590,6 +16736,10 @@ function renderShopModal() {
 
   document.getElementById('swShopTabUpgrades').onclick = () => {
     shopModalState.activeTab = 'upgrades';
+    renderShopModal();
+  };
+  document.getElementById('swShopTabLoadout').onclick = () => {
+    shopModalState.activeTab = 'loadout';
     renderShopModal();
   };
   document.getElementById('swShopTabSkins').onclick = () => {
@@ -16735,7 +16885,10 @@ function createProductionSatelliteVortex() {
 }
 
 function updateSatelliteVortex(dt) {
-  const isUnlocked = Boolean(typeof swRpgStore !== 'undefined' && swRpgStore.upgrades && swRpgStore.upgrades.twinFunnel);
+  // [SW:GAMEPLAY:LOADOUT] Read through swRpgUpgradeActive like every other
+  // upgrade, so a satellite funnel costs a slot rather than being free forever
+  // once bought.
+  const isUnlocked = Boolean(typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('twinFunnel'));
   const efNumber = (typeof currentEfRating === 'string' && currentEfRating.startsWith('EF-'))
     ? parseInt(currentEfRating.replace('EF-', ''), 10) || 0
     : 0;

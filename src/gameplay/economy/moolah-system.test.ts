@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MoolahSystem } from './moolah-system.ts';
+import { MOOLAH_SKINS, MOOLAH_UPGRADES, MoolahSystem } from './moolah-system.ts';
 
 test('MoolahSystem: calculates rewards and manages upgrade purchases', () => {
   const moolah = new MoolahSystem();
@@ -17,13 +17,19 @@ test('MoolahSystem: calculates rewards and manages upgrade purchases', () => {
   });
   assert.equal(reward > 0, true);
 
-  moolah.awardReward(300, 'county-completion');
-  assert.equal(moolah.getBalance(), 300);
+  // Read the prices from the table rather than hard-coding them: repricing the
+  // shop is a tuning decision and should not have to come with a test edit, but
+  // the MECHANICS below must hold at any price.
+  const pullCost = MOOLAH_UPGRADES.pull.cost;
+  const gridZapCost = MOOLAH_UPGRADES.gridZap.cost;
+  assert.ok(gridZapCost > pullCost, 'this test needs a dearer second upgrade');
 
-  // Purchase Pull Upgrade (cost 150)
+  moolah.awardReward(pullCost, 'county-completion');
+  assert.equal(moolah.getBalance(), pullCost);
+
   const purchase = moolah.purchaseUpgrade('pull');
   assert.equal(purchase.purchased, true);
-  assert.equal(purchase.balance, 150);
+  assert.equal(purchase.balance, 0, 'the price is taken out of the balance');
   assert.equal(moolah.hasUpgrade('pull'), true);
   assert.equal(moolah.getUpgradeValue('pull'), 3.4);
 
@@ -32,7 +38,7 @@ test('MoolahSystem: calculates rewards and manages upgrade purchases', () => {
   assert.equal(duplicate.purchased, false);
   assert.equal(duplicate.reason, 'already-owned');
 
-  // Attempt purchase with insufficient funds (gridZap cost 200 > 150)
+  // Insufficient funds: the balance is spent, and gridZap costs more anyway.
   const insufficient = moolah.purchaseUpgrade('gridZap');
   assert.equal(insufficient.purchased, false);
   assert.equal(insufficient.reason, 'insufficient-moolah');
@@ -49,11 +55,11 @@ test('MoolahSystem: manages cosmetic funnel skins and equipping', () => {
   assert.equal(lockedEquip.equipped, false);
   assert.equal(lockedEquip.reason, 'skin-locked');
 
-  // Award enough MOO-LAH and buy midnight-neon (cost 250)
-  moolah.awardReward(500, 'test-bonus');
+  const skinCost = MOOLAH_SKINS['midnight-neon'].cost;
+  moolah.awardReward(skinCost + 250, 'test-bonus');
   const purchase = moolah.purchaseSkin('midnight-neon');
   assert.equal(purchase.purchased, true);
-  assert.equal(moolah.getBalance(), 250);
+  assert.equal(moolah.getBalance(), 250, 'the skin price is taken out of the balance');
   assert.equal(moolah.hasSkin('midnight-neon'), true);
   assert.equal(moolah.getActiveSkin(), 'midnight-neon');
 

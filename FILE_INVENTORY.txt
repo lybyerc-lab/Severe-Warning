@@ -354,6 +354,7 @@ scripts/stamp-qa-pages.mjs
 scripts/sync-checkout.sh
 scripts/test-cinematic-sip.mjs
 scripts/update-inventory.mjs
+scripts/verify-economy-tables.mjs
 scripts/verify-full-diligence-audit.mjs
 scripts/verify-landmark-animations.mjs
 scripts/verify-master-audit.mjs

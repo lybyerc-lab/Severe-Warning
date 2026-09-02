@@ -3,8 +3,17 @@
  * Type definitions for the MOO-LAH storm currency and Storm Triangle upgrade loadout.
  */
 
+/**
+ * Every upgrade in the Storm Triangle pool.
+ *
+ * Three of these did not exist when this union was written, and adding them to
+ * the shop without widening the type here is what let the gameplay source and
+ * the tested table drift apart.
+ */
+export type MoolahUpgradeKey = 'pull' | 'gust' | 'gridZap' | 'chaser' | 'inflow' | 'twinFunnel';
+
 export interface MoolahUpgradeDefinition {
-  key: 'pull' | 'gust' | 'gridZap';
+  key: MoolahUpgradeKey;
   label: string;
   cost: number;
   base: number;
@@ -51,9 +60,9 @@ export interface MoolahRewardCalculationInput {
 
 export interface MoolahSystemContract {
   getBalance(): number;
-  hasUpgrade(key: 'pull' | 'gust' | 'gridZap'): boolean;
-  getUpgradeValue(key: 'pull' | 'gust' | 'gridZap'): number;
-  purchaseUpgrade(key: 'pull' | 'gust' | 'gridZap'): { purchased: boolean; balance: number; reason?: string };
+  hasUpgrade(key: MoolahUpgradeKey): boolean;
+  getUpgradeValue(key: MoolahUpgradeKey): number;
+  purchaseUpgrade(key: MoolahUpgradeKey): { purchased: boolean; balance: number; reason?: string };
   getActiveSkin(): StormFunnelSkinKey;
   hasSkin(skinKey: StormFunnelSkinKey): boolean;
   purchaseSkin(skinKey: StormFunnelSkinKey): { purchased: boolean; balance: number; reason?: string };

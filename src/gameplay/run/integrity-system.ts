@@ -29,8 +29,15 @@
 /** Full integrity, and the value a run starts at. */
 export const INTEGRITY_MAX = 100;
 
-/** Seconds of doing no damage before the funnel starts to starve. */
-export const INTEGRITY_GRACE_SECONDS = 2.5;
+/**
+ * Seconds of doing no damage before the funnel starts to starve.
+ *
+ * Raised from 2.5 after watching the autoplay harness: a district transition
+ * card, a corner turn and a short drive to the next block add up to roughly
+ * three seconds in which a player is doing everything right and destroying
+ * nothing.
+ */
+export const INTEGRITY_GRACE_SECONDS = 3.5;
 
 /** Refill per scoring event. Roughly three hits undoes a second of drain. */
 export const INTEGRITY_GAIN_PER_EVENT = 7;
@@ -39,11 +46,19 @@ export const INTEGRITY_GAIN_PER_EVENT = 7;
  * Drain per second, indexed by district. Index 0 is unused so the district
  * number reads directly.
  *
- * From full, ignoring the grace window, that is 16.7 s of idling in district 1,
- * 11.1 s in district 2 and 7.7 s in the finale -- so the pressure arrives with
- * the blackout finale rather than sitting on the whole round.
+ * With the grace window that is 21.7 s of doing nothing in district 1, 16.0 s in
+ * district 2 and 12.6 s in the finale -- so the pressure arrives with the
+ * blackout finale rather than sitting on the whole round.
+ *
+ * Softened from 6/9/13 on evidence rather than feel. The autoplay harness, which
+ * drives at random and is a far worse player than anyone holding a phone, had a
+ * measured 10-second stretch scoring nothing in district 2 and survived it; the
+ * same stretch in district 3 ended its run. A mechanic that kills you while you
+ * are travelling reads as unfair, while one that kills you for idling reads as
+ * the deal. These numbers put the line past ordinary travel and still inside
+ * genuine coasting.
  */
-export const INTEGRITY_DRAIN_PER_SECOND = Object.freeze([0, 6, 9, 13]);
+export const INTEGRITY_DRAIN_PER_SECOND = Object.freeze([0, 5.5, 8, 11]);
 
 /** Below this the meter reads as critical and the HUD says so. */
 export const INTEGRITY_WARNING = 35;

@@ -115,6 +115,9 @@ async function readState() {
       currentStage: typeof currentStage !== 'undefined' ? currentStage : null,
       destructionScore: typeof destructionScore !== 'undefined' ? destructionScore : null,
       efRating: typeof efRating !== 'undefined' ? efRating : null,
+      funnelIntegrity: typeof funnelIntegrity !== 'undefined' && funnelIntegrity
+        ? Number(funnelIntegrity.value.toFixed(1)) : null,
+      ropedOut: typeof runEndedByRopeOut !== 'undefined' ? runEndedByRopeOut : null,
       peakEfRating: typeof peakEfRating !== 'undefined' ? peakEfRating : null,
       efMultiplier: typeof efMultiplier !== 'undefined' ? efMultiplier : null,
       baseScore: typeof baseScore !== 'undefined' ? baseScore : null,
@@ -142,10 +145,59 @@ async function readState() {
   });
 }
 
+// [SW:QA:STEERING] The driver used to cycle these eight directions on a timer,
+// which was fine while a round could not be lost. It cannot survive funnel
+// integrity: a storm that destroys nothing starves, and a random walk spends
+// long stretches over empty ground. The first run under integrity ended at 46s
+// remaining having scored NOTHING in district 3 -- the mechanic working, and a
+// driver that is not a proxy for a person.
+//
+// So it now steers at the nearest thing worth hitting, falling back to the
+// pattern when the page cannot tell it one. This is not the harness cheating:
+// it presses the same keys a player would, and a rope-out is still recorded and
+// reported if it happens.
 const movementPattern = [
   ['KeyW'], ['KeyW', 'KeyD'], ['KeyD'], ['KeyS', 'KeyD'],
   ['KeyS'], ['KeyS', 'KeyA'], ['KeyA'], ['KeyW', 'KeyA']
 ];
+
+/** Keys to hold to travel in a given world direction. W is -z, D is +x. */
+function keysForHeading(dx, dz) {
+  const held = [];
+  if (dz < -0.38) held.push('KeyW');
+  if (dz > 0.38) held.push('KeyS');
+  if (dx > 0.38) held.push('KeyD');
+  if (dx < -0.38) held.push('KeyA');
+  return held;
+}
+
+/** The nearest live target, as a unit heading from the storm. */
+async function headingToNearestTarget(page) {
+  return page.evaluate(() => {
+    if (typeof storm === 'undefined' || !storm?.pos) return null;
+    let best = null;
+    let bestDistance = Infinity;
+    const consider = (x, z) => {
+      if (!Number.isFinite(x) || !Number.isFinite(z)) return;
+      const distance = Math.hypot(x - storm.pos.x, z - storm.pos.z);
+      // Ignore whatever is already inside the funnel: it is being destroyed.
+      if (distance < 12 || distance >= bestDistance) return;
+      bestDistance = distance;
+      best = { x, z };
+    };
+    if (typeof targets !== 'undefined' && Array.isArray(targets)) {
+      targets.forEach(t => { if (t && !t.destroyed) consider(t.x, t.z); });
+    }
+    if (typeof landmarks !== 'undefined' && Array.isArray(landmarks)) {
+      landmarks.forEach(l => { if (l && !l.destroyed) consider(l.x, l.z); });
+    }
+    if (!best) return null;
+    const dx = best.x - storm.pos.x;
+    const dz = best.z - storm.pos.z;
+    const length = Math.hypot(dx, dz) || 1;
+    return { dx: dx / length, dz: dz / length, distance: bestDistance };
+  });
+}
 const activeKeys = new Set();
 async function setMovement(keys) {
   for (const key of [...activeKeys]) {
@@ -166,6 +218,8 @@ const snapshots = [];
 let completed = false;
 let harnessError = null;
 let movementIndex = 0;
+let steeredMoves = 0;
+let patternMoves = 0;
 let nextMoveAt = 0;
 let nextAbilityAt = 0;
 let nextSnapshotAt = 0;
@@ -217,9 +271,19 @@ try {
   while (Date.now() < hardDeadline) {
     runtimeMs = Date.now() - roundStart;
     if (runtimeMs >= nextMoveAt) {
-      await setMovement(movementPattern[movementIndex % movementPattern.length]);
+      const heading = await headingToNearestTarget(page).catch(() => null);
+      if (heading) {
+        const keys = keysForHeading(heading.dx, heading.dz);
+        await setMovement(keys.length ? keys : movementPattern[movementIndex % movementPattern.length]);
+        steeredMoves += 1;
+      } else {
+        await setMovement(movementPattern[movementIndex % movementPattern.length]);
+        patternMoves += 1;
+      }
       movementIndex += 1;
-      nextMoveAt += 6500;
+      // Re-aim often enough to actually arrive somewhere; the old 6.5s meant a
+      // heading was held long past the thing it was aimed at.
+      nextMoveAt += 1500;
     }
     if (runtimeMs >= nextAbilityAt) {
       await page.evaluate(() => {
@@ -351,7 +415,17 @@ const report = {
     glassEventCount: glassEvents.length,
     finalActiveVoices: finalSnapshot.direct?.activeVoices ?? null,
     finalActiveMusicVoices: finalSnapshot.direct?.activeMusicVoices ?? null,
-    peakEfRating: finalSnapshot.direct?.peakEfRating ?? null
+    peakEfRating: finalSnapshot.direct?.peakEfRating ?? null,
+    // [SW:GAMEPLAY:INTEGRITY] A run can now end early. Recorded, not asserted:
+    // this driver moves at random and is a far worse player than a person, so a
+    // rope-out here is information about the driver as much as about the tuning.
+    ropedOut: Boolean(finalSnapshot.direct?.ropedOut),
+    finalIntegrity: finalSnapshot.direct?.funnelIntegrity ?? null,
+    steeredMoves,
+    patternMoves,
+    lowestIntegrity: Math.min(...snapshots
+      .map(s => s.direct?.funnelIntegrity)
+      .filter(v => typeof v === 'number'), Infinity)
   },
   efTimeline,
   consoleErrors,
@@ -398,6 +472,8 @@ ${Object.entries(checks).map(([name, value]) => `| ${name} | ${status(value)} |`
 - Glass events observed: ${report.summary.glassEventCount}
 - Final active voices: ${report.summary.finalActiveVoices ?? 'unknown'}
 - Peak EF rating: ${report.summary.peakEfRating ?? 'unknown'}
+- Ended by rope-out: ${report.summary.ropedOut ? 'YES' : 'no'} (lowest integrity ${Number.isFinite(report.summary.lowestIntegrity) ? report.summary.lowestIntegrity : 'n/a'})
+- Driver headings: ${report.summary.steeredMoves} steered at a target, ${report.summary.patternMoves} fell back to the pattern
 
 ## EF ladder (recorded, not asserted)
 
