@@ -374,8 +374,13 @@ Newest first. Kept for the reasoning, not the changelog.
   The meter lives in the telemetry strip rather than the title card, because the
   title card collapses and a run that can be lost must never hide why.
   **Consequence worth knowing:** the autoplay driver used to random-walk, and a
-  random walk starves. It now steers at the nearest live target, which is what a
-  person does; rope-outs are recorded in the report either way.
+  random walk starves — it roped out in CI with 23.6s left. It now steers at the
+  nearest live target, which is what a person does; rope-outs are recorded in the
+  report either way. Two steered runs since: **full 180s both times**, 62,299 pts
+  with integrity never below 97.3, and 50,602 pts with a low of 59. That is the
+  shape the tuning was aiming for — it bites during a lull and does not touch a
+  player who is landing hits. If a future change makes the driver rope out again,
+  read it as a signal about the tuning, not as a flaky test.
 
 - **Three slots against six upgrades, and a shop worth six runs.**
   The Storm Triangle had three slots and exactly three upgrades, so the "loadout"
