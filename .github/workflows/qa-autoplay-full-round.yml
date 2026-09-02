@@ -183,18 +183,92 @@ jobs:
           node --input-type=module -e "import fs from 'node:fs'; const report=JSON.parse(fs.readFileSync('Docs/QA_AUTOPLAY_REPORT.json','utf8')); if (!report.snapshots?.length) throw new Error('No play snapshots'); console.log(JSON.stringify(report.checks, null, 2));"
           node --input-type=module -e "import fs from 'node:fs'; const report=JSON.parse(fs.readFileSync('Docs/QA_V500_WORLD_TOUR_REPORT.json','utf8')); if (report.states?.length !== 4) throw new Error('Four-stop sweep incomplete'); console.log(JSON.stringify(report.checks, null, 2));"
 
+      # [SW:QA:EVIDENCE_PUSH] Land the evidence on a branch that moves underneath us.
+      #
+      # This step used to be `git commit && git push origin HEAD:qa` against the
+      # SHA the job checked out. This job takes up to forty minutes, so any push
+      # to qa while it runs leaves that push non-fast-forward, and run #172 went
+      # red on exactly that -- every test passed, including a 33-minute visual
+      # gate, and the job failed on bookkeeping. A red run that means "somebody
+      # else pushed" is worse than no run: it trains everyone to ignore the badge.
+      #
+      # So the evidence is rebuilt on top of whatever qa is NOW, on each attempt.
+      # The six files are pure build output, regenerated from scratch every run,
+      # which is what makes reset-and-replay safe here and would not be safe for
+      # a step that produced anything hand-written.
+      #
+      # A losing race is retried and, if it keeps losing, downgraded to a warning
+      # rather than a failure -- the run's job is to test the build, and the same
+      # files go up as a workflow artifact in the next step either way. Any OTHER
+      # push failure (auth, branch protection) still fails the job loudly, because
+      # those are real and must not hide behind a benign-looking retry.
       - name: Commit playtest evidence to QA branch
         shell: bash
         run: |
+          set -uo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add Docs/QA_AUTOPLAY_REPORT.json Docs/QA_AUTOPLAY_REPORT.md Docs/QA_AUTOPLAY_SCREENSHOT.png Docs/QA_V500_WORLD_TOUR_REPORT.json Docs/QA_V500_WORLD_TOUR_REPORT.md Docs/QA_V500_WORLD_TOUR_SCREENSHOT.png
-          if git diff --cached --quiet; then
-            echo 'No report changes to commit.'
-            exit 0
-          fi
-          git commit -m 'Record automated full-round QA playtest'
-          git push origin HEAD:qa
+
+          EVIDENCE=(
+            Docs/QA_AUTOPLAY_REPORT.json
+            Docs/QA_AUTOPLAY_REPORT.md
+            Docs/QA_AUTOPLAY_SCREENSHOT.png
+            Docs/QA_V500_WORLD_TOUR_REPORT.json
+            Docs/QA_V500_WORLD_TOUR_REPORT.md
+            Docs/QA_V500_WORLD_TOUR_SCREENSHOT.png
+          )
+
+          STASH="${RUNNER_TEMP:-/tmp}/qa-evidence"
+          rm -rf "$STASH"
+          mkdir -p "$STASH/Docs"
+          for file in "${EVIDENCE[@]}"; do
+            [ -f "$file" ] && cp "$file" "$STASH/$file"
+          done
+
+          # A lost race is told apart from a real failure BY STATE, not by reading
+          # git's wording. The first version of this matched the stderr against
+          # 'non-fast-forward|fetch first|[rejected]', and a test that pushed a
+          # competing commit between the fetch and the push produced
+          # "cannot lock ref ... [remote rejected]" instead -- so a textbook race
+          # was classified as a real failure and failed the job, which is the
+          # exact bug this step exists to fix. Asking whether the branch moved
+          # cannot be wrong-footed by a message this script does not predict.
+          for attempt in 1 2 3 4; do
+            git fetch --quiet origin qa || { echo "::warning::could not fetch origin/qa on attempt $attempt"; sleep $((attempt * 5)); continue; }
+            BASE=$(git rev-parse FETCH_HEAD)
+            git reset --hard --quiet "$BASE"
+
+            for file in "${EVIDENCE[@]}"; do
+              [ -f "$STASH/$file" ] && cp "$STASH/$file" "$file"
+            done
+            git add "${EVIDENCE[@]}"
+
+            if git diff --cached --quiet; then
+              echo "No report changes to commit (qa already has this evidence)."
+              exit 0
+            fi
+
+            git commit --quiet -m 'Record automated full-round QA playtest'
+            if git push origin HEAD:qa; then
+              echo "Evidence pushed on attempt $attempt: $(git rev-parse --short HEAD)"
+              exit 0
+            fi
+
+            if ! git fetch --quiet origin qa; then
+              echo "::warning::push failed and origin is unreachable; retrying (attempt $attempt)"
+              sleep $((attempt * 5))
+              continue
+            fi
+            if [ "$(git rev-parse FETCH_HEAD)" = "$BASE" ]; then
+              echo "::error::push to qa failed and qa has NOT moved, so this is not a race -- check credentials and branch protection"
+              exit 1
+            fi
+            echo "qa moved under us ($(git rev-parse --short "$BASE") -> $(git rev-parse --short FETCH_HEAD)); rebuilding the evidence commit on the new tip (attempt $attempt)."
+            sleep $((attempt * 5))
+          done
+
+          echo "::warning::qa moved under this job on every attempt, so the playtest evidence was not committed. The same report is attached to this run as an artifact."
+          exit 0
 
       - name: Upload playtest evidence
         uses: actions/upload-artifact@v7
