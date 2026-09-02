@@ -2340,6 +2340,12 @@
           <div>BLOCKS: <b id="resBlocks">0</b><span id="newspaperDestructionStat" style="display:none;">0</span> (CHAINS: <b id="resChains">0</b>)</div>
           <div>MEDIA: <b id="resMediaMoments">0</b><span id="newspaperFieldStat" style="display:none;">0</span> (<b id="resFootageBonus">+0</b>)</div>
           <div style="grid-column: span 2;">RATING: <b id="newspaperRatingStat">EF-0</b> · COSMETIC: <b id="resCosmetic">LOCKED</b></div>
+          <!-- [SW:GAMEPLAY:MOOLAH_PAYOUT] The payout line. updateHudMoolah has
+               written to #newspaperMoolahEarned since the economy shipped, and
+               this element has never existed, so every run banked its MOO-LAH in
+               silence and then offered a shop button for money the player was
+               never told they had earned. -->
+          <div style="grid-column: span 2;">PAYOUT: <b id="newspaperMoolahEarned">+0 MOO-LAH</b></div>
         </div>
 
         <!-- Bovine Situation Report -->
@@ -15318,9 +15324,18 @@ function updateHudMoolah() {
   if (hudEl) hudEl.textContent = mVal.toLocaleString();
   const shopBal = document.querySelector('.sw-shop-balance');
   if (shopBal) shopBal.textContent = `${mVal.toLocaleString()} MOO-LAH`;
+  // [SW:GAMEPLAY:MOOLAH_PAYOUT] This element did not exist until 2026-08-29, so
+  // this line had been writing into nothing since the economy shipped: every run
+  // banked its payout in silence and then offered a shop button for money the
+  // player was never told they had earned. scripts/verify-results-elements.mjs
+  // now fails the build on that class of write.
   const resultsBal = document.getElementById('newspaperMoolahEarned');
-  if (resultsBal && typeof swRpgStore !== 'undefined' && swRpgStore.lastReward) {
-    resultsBal.textContent = `+${swRpgStore.lastReward.amount} MOO-LAH (BANK: ${mVal.toLocaleString()})`;
+  if (resultsBal) {
+    const reward = (typeof swRpgLastReward !== 'undefined' && swRpgLastReward)
+      || (typeof swRpgStore !== 'undefined' ? swRpgStore.lastReward : null);
+    resultsBal.textContent = reward
+      ? `+${reward.amount.toLocaleString()} MOO-LAH · BANK ${mVal.toLocaleString()}`
+      : `BANK ${mVal.toLocaleString()} MOO-LAH`;
   }
 }
 
@@ -15667,6 +15682,13 @@ function refreshNewspaperResults() {
       : `${title} closes at ${score} points. The score desk printed the official run record without editorial adjustment.`;
   }
   
+  // [SW:GAMEPLAY:MOOLAH_PAYOUT] The payout line has exactly one writer, and it is
+  // updateHudMoolah. Writing it here as well produced the right number in the
+  // wrong format, because finishRun calls that function after this one and the
+  // last writer wins -- two formats for one element is how a line starts
+  // disagreeing with itself.
+  if (typeof updateHudMoolah === 'function') updateHudMoolah();
+
   const destEl = document.getElementById('newspaperDestructionStat');
   if (destEl) destEl.textContent = document.getElementById('resBlocks')?.textContent || '0';
   const gridEl = document.getElementById('newspaperGridStat');

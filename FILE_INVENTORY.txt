@@ -368,6 +368,7 @@ scripts/verify-modernization-phase8-engine.mjs
 scripts/verify-moolah-economy.mjs
 scripts/verify-newspaper-opening.mjs
 scripts/verify-qa-package.mjs
+scripts/verify-results-elements.mjs
 scripts/verify-shop-system.mjs
 scripts/verify-v500-campaign.mjs
 scripts/verify-v510-production-slice.mjs
