@@ -4,6 +4,28 @@ import { inflateSync } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// [SW:QA:CANVAS_TARGET] Resolve the RENDER canvas, in preference order.
+//
+// This was `page.locator('#webgl, canvas#gameCanvas, canvas').first()`, which
+// reads as "the webgl canvas, or these fallbacks" and is not what it does:
+// Playwright's .first() takes the first element in DOCUMENT order matching ANY
+// of the three, so the moment a second canvas appeared earlier in the markup --
+// the menu's dispatch-card previews, added 2026-09-02 -- every capture targeted
+// that instead. It is hidden once a run starts, so the screenshot waited for it
+// to become visible and timed out after 60s, and the gate reported INCONCLUSIVE
+// on a build that rendered perfectly well.
+//
+// Preference order now means preference order, and the last resort explicitly
+// excludes the card previews rather than trusting document order.
+async function resolveRenderCanvas(page) {
+  for (const selector of ['#webgl', 'canvas#gameCanvas', 'canvas:not(.tv-card-canvas)', 'canvas']) {
+    const locator = page.locator(selector).first();
+    if (await locator.count()) return locator;
+  }
+  return page.locator('canvas').first();
+}
+
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
 const outputDir = process.env.SEVERE_WEATHER_VISUAL_DIR
@@ -349,7 +371,7 @@ async function capture(url, viewport, scenario, label) {
     return controller.getStatus();
   }, { scenarioName: scenario, timestamps: fixedTimestamps, seed: randomSeed });
 
-  const canvasLocator = page.locator('#webgl, canvas#gameCanvas, canvas').first();
+  const canvasLocator = await resolveRenderCanvas(page);
   const pngBuffer = await canvasLocator.screenshot({ type: 'png' });
   const decoded = decodePng(pngBuffer);
   const validity = analyzeCaptureValidity(decoded);
