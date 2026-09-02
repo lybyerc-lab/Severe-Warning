@@ -76,10 +76,12 @@ findings and evidence are in the Landed entries below). The director took items
   the extra variety back into the lots. Small, optional, and now that
   displace-before-adding is lifted it costs nothing to add.
 
-- **`currentEfRating` is a ghost.** Six reads, zero writes, repo-wide. The
-  satellite's "free at EF-3" path is dead and the phase-6 HUD bridge has been
-  fed a constant `EF-0` for its whole life. Decide whether the bridge should read
-  `efRating` or be removed; either is better than a stuck value nothing noticed.
+- **`scripts/qa-modernization-phase6-ui.mjs` cannot run anywhere.** It hardcodes
+  `C:\Program Files\Google\Chrome\Application\chrome.exe`, so it fails on this
+  container and in CI. Its static sibling `verify:phase6` passes and is what
+  everyone has actually been reading. Either point it at `CHROME_BIN` /
+  Playwright the way the other harnesses do, or delete it — a runtime check that
+  no runtime can run is worse than none, because the name implies coverage.
 
 Previously landed and cleared: the source HTML rename, the county fair /
 industrial landmark animations, and the MOO-LAH economy with Storm Triangle

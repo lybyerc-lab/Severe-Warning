@@ -12149,9 +12149,12 @@ function animate(now) {
   const tTime = now * 0.0035;
   
   // Dynamic Tornado Wedge Profile (EF-0 slender rope -> EF-3 stovepipe -> EF-5 massive roaring wedge)
-  const isEf5 = (typeof efRating === 'string' && efRating === 'EF-5') || (typeof currentEfRating === 'string' && currentEfRating === 'EF-5');
-  const isEf4 = (typeof efRating === 'string' && efRating === 'EF-4') || (typeof currentEfRating === 'string' && currentEfRating === 'EF-4');
-  const isEf3 = (typeof efRating === 'string' && efRating === 'EF-3') || (typeof currentEfRating === 'string' && currentEfRating === 'EF-3');
+  // The `|| currentEfRating === …` half of each of these read a variable that has
+  // never been assigned anywhere in the repository, so it was always false.
+  // efRating is the real one and covers every case on its own.
+  const isEf5 = (typeof efRating === 'string' && efRating === 'EF-5');
+  const isEf4 = (typeof efRating === 'string' && efRating === 'EF-4');
+  const isEf3 = (typeof efRating === 'string' && efRating === 'EF-3');
   const wedgeBaseMultiplier = isEf5 ? 3.4 : (isEf4 ? 2.2 : (isEf3 ? 1.6 : 1.0));
   const wedgeTopMultiplier = isEf5 ? 1.25 : 1.0;
 
@@ -14824,32 +14827,53 @@ const PHASE6_UI_BRIDGE_VERSION = 'MODERNIZATION_PHASE6_UI_V1';
 
 let phase6UiAuthority = null;
 
+// [SW:ARCH:PHASE6_UI_BRIDGE] Read the game, not a set of names the game has
+// never had.
+//
+// Every field in this snapshot used to be guarded with
+// `typeof someName !== 'undefined' ? someName : fallback`, and ELEVEN of the
+// eleven names did not exist anywhere in the repository: remainingSeconds,
+// score, isGamePaused, districtStages, currentDistrict, scorePopups,
+// rampageLevel, districtBannerVisible, resultsCardVisible, campaignStarsEarned,
+// currentEfRating. So the "lexical bridge from the accepted live HUD runtime"
+// reported 180 seconds remaining, score 0, combo 1.0, EF-0 and PINE RIDGE for
+// the entire life of every run, and the typeof guards are exactly why nothing
+// ever threw.
+//
+// The guards stay -- this file is one shared lexical scope and a rename upstream
+// should degrade rather than explode -- but they now guard the real names, and
+// each fallback is a value the game could plausibly hold rather than a lie.
 function phase6ReadLegacySnapshot() {
-  const currentEf = typeof currentEfRating !== 'undefined' ? currentEfRating : 'EF-0';
-  const currentDist = typeof districtStages !== 'undefined' && typeof currentDistrict !== 'undefined' && districtStages[currentDistrict]
-    ? districtStages[currentDistrict].name
+  const districtIndex = typeof currentStage !== 'undefined' ? Number(currentStage) : 1;
+  const currentDist = typeof DISTRICTS !== 'undefined' && DISTRICTS[districtIndex]
+    ? DISTRICTS[districtIndex].name
     : 'PINE RIDGE';
+  const popupLayer = document.getElementById('rampageFeedbackLayer');
+  const districtOverlay = document.getElementById('districtOverlay');
+  const resultsOverlay = document.getElementById('resultsOverlay');
 
   return Object.freeze({
     hud: Object.freeze({
-      remainingSeconds: typeof remainingSeconds !== 'undefined' ? Number(remainingSeconds) : 180,
-      score: typeof score !== 'undefined' ? Number(score) : 0,
+      remainingSeconds: typeof runTimeRemaining !== 'undefined' ? Number(runTimeRemaining) : 180,
+      score: typeof destructionScore !== 'undefined' ? Number(destructionScore) : 0,
       comboMultiplier: typeof comboMultiplier !== 'undefined' ? Number(comboMultiplier) : 1.0,
-      efRating: String(currentEf),
+      efRating: typeof efRating !== 'undefined' ? String(efRating) : 'EF-0',
       districtName: String(currentDist),
-      isPaused: typeof isGamePaused !== 'undefined' ? Boolean(isGamePaused) : false,
+      isPaused: typeof isPaused !== 'undefined' ? Boolean(isPaused) : false,
     }),
     feedback: Object.freeze({
-      scorePopupsActive: typeof scorePopups !== 'undefined' ? scorePopups.length : 0,
-      rampageTier: typeof rampageLevel !== 'undefined' ? Number(rampageLevel) : 0,
+      scorePopupsActive: popupLayer ? popupLayer.childElementCount : 0,
+      rampageTier: typeof rampageFeedbackTier !== 'undefined' ? Number(rampageFeedbackTier) : 0,
     }),
     transitions: Object.freeze({
-      districtAlertVisible: typeof districtBannerVisible !== 'undefined' ? Boolean(districtBannerVisible) : false,
-      currentDistrictIndex: typeof currentDistrict !== 'undefined' ? Number(currentDistrict) : 0,
+      districtAlertVisible: Boolean(districtOverlay && districtOverlay.classList.contains('active')),
+      currentDistrictIndex: districtIndex,
     }),
     results: Object.freeze({
-      isOpen: typeof resultsCardVisible !== 'undefined' ? Boolean(resultsCardVisible) : false,
-      stars: typeof campaignStarsEarned !== 'undefined' ? Number(campaignStarsEarned) : 0,
+      isOpen: Boolean(resultsOverlay && resultsOverlay.classList.contains('active')),
+      stars: (typeof getCampaignStars === 'function' && typeof getActiveCampaignLevel === 'function')
+        ? Number(getCampaignStars(getActiveCampaignLevel().id))
+        : 0,
     }),
   });
 }
@@ -16920,12 +16944,13 @@ function updateSatelliteVortex(dt) {
   // [SW:GAMEPLAY:LOADOUT] Read through swRpgUpgradeActive like every other
   // upgrade, so a satellite funnel costs a slot rather than being free forever
   // once bought.
-  const isUnlocked = Boolean(typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('twinFunnel'));
-  const efNumber = (typeof currentEfRating === 'string' && currentEfRating.startsWith('EF-'))
-    ? parseInt(currentEfRating.replace('EF-', ''), 10) || 0
-    : 0;
-
-  satelliteVortexState.active = isUnlocked || (efNumber >= 3);
+  // [SW:GAMEPLAY:LOADOUT] The satellite is the TWIN TWISTER upgrade, and nothing
+  // else. It used to also appear free at EF-3, via a `currentEfRating` read that
+  // could never fire -- that variable is never assigned anywhere -- so the free
+  // path has never once run. Wiring it to the real rating would have made a
+  // 1,200 MOO-LAH upgrade that costs a loadout slot into something every run
+  // gets for nothing at the second district, so it is removed rather than fixed.
+  satelliteVortexState.active = Boolean(typeof swRpgUpgradeActive === 'function' && swRpgUpgradeActive('twinFunnel'));
   if (!satelliteVortexState.meshGroup && typeof scene !== 'undefined') {
     createProductionSatelliteVortex();
   }
