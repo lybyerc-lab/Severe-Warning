@@ -24,6 +24,18 @@ Current milestone: `v5.1.0 Three.js Production Slice`
   by adding, and nothing has to be retired to make room. The cap is what is
   left — if a batch would take the payload past 4,194,304 bytes it has to name
   what it retires and show the measurement. Repairs never count against it.
+- **Two build checks exist that did not before, and both catch a class of bug
+  this project has shipped twice.** `pnpm verify:results` fails when the results
+  screen writes to an element id the document does not define (two such phantoms
+  have shipped: `#resEfRating` and `#newspaperMoolahEarned`). `pnpm verify:economy`
+  fails when the page's shop table and `moolah-system.ts` disagree. Both run in
+  the QA Full Round workflow and both are proven able to fail.
+
+- **District challenges have kinds.** Not every challenge is "destroy N props
+  with tag T" any more — see `CHALLENGE_KIND_LIMITS` before writing a new county.
+  `grid` and `landmark` are district 2+ only and clamped to 3 and 2, because a
+  world has exactly that many and they are shielded in district 1.
+
 - **A run can be lost now.** Funnel integrity drains whenever the storm is not
   destroying anything and ropes the run out at zero, with the newspaper printing
   how long the storm held. It arms on the first hit, gives a 3.5s grace window,

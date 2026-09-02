@@ -50,42 +50,27 @@ the player, not by ease of fixing. Each one says what was actually measured, so
 the next person does not have to re-derive it.
 
 From the design and playability review of 2026-08-29 (published as an air check;
-findings and evidence are in the Landed entries below). The director took items
-1-4 of its queue and those are done. **What is left of that queue, in order:**
+findings and evidence are in the Landed entries below). **The director took the
+whole queue, items 1-8, and all of it is done.** What that pass left behind, and
+what is genuinely next:
 
-- **Show the MOO-LAH earned on the newspaper.** The code is written and points
-  at `newspaperMoolahEarned`, an element that does not exist in the document, so
-  the payout is banked in silence and then a shop button is offered for it.
-  Tiny. Worth adding a check that no other id in the results path is a phantom --
-  this is the second one found (the first printed EF-0 on every paper ever).
-
-- **Put the county in the empty menu cards.** Two dispatch cards, ~450px tall
-  each on a 932px screen, holding four short lines apiece. No image of the county
-  and none of the storm, on the front door of a game about spectacle.
-
-- **Give each county its own challenge verbs.** Thirty challenge slots across ten
-  counties run three shapes: launch 3 yard props, flatten 2-3 signs, launch 4
-  fair props. The counties already differ in palette, spawn, target and score
-  multiplier; this is the cheapest place left to add real variety.
-
-- **AG: `town-car` is the only vehicle with no `-wreck` partner.** It never
-  needed one — town cars drive, and under the first law a car with a driver is
-  never harmed. The dealership's destructible inventory was borrowing that model
-  anyway and 404ing on `town-car-wreck.glb` at the moment of destruction; the
-  inventory now uses `parked-car` instead. Authoring `town-car-wreck` would let
-  the extra variety back into the lots. Small, optional, and now that
-  displace-before-adding is lifted it costs nothing to add.
+- **AG: `town-car` has no `-wreck` partner.** It never needed one — town cars
+  drive, and under the first law a car with a driver is never harmed. The
+  dealership's destructible inventory was borrowing that model anyway and 404ing
+  at the moment of destruction; inventory uses `parked-car` now. Authoring
+  `town-car-wreck` would let the extra variety back into the lots. Small, and
+  with displace-before-adding lifted it costs nothing.
 
 - **`scripts/qa-modernization-phase6-ui.mjs` cannot run anywhere.** It hardcodes
-  `C:\Program Files\Google\Chrome\Application\chrome.exe`, so it fails on this
+  `C:\Program Files\Google\Chrome\Application\chrome.exe`, so it fails in this
   container and in CI. Its static sibling `verify:phase6` passes and is what
-  everyone has actually been reading. Either point it at `CHROME_BIN` /
-  Playwright the way the other harnesses do, or delete it — a runtime check that
-  no runtime can run is worse than none, because the name implies coverage.
+  everyone has actually been reading. Either point it at `CHROME_BIN` the way the
+  other harnesses do, or delete it — a runtime check no runtime can run is worse
+  than none, because the name implies coverage.
 
-Previously landed and cleared: the source HTML rename, the county fair /
-industrial landmark animations, and the MOO-LAH economy with Storm Triangle
-upgrades and cosmetic funnel skins.
+- **The EF score gates still do not bind for a strong player.** Unchanged by any
+  of this and still the open tuning question below; the funnel-integrity work
+  changed how a run can END, not how fast it climbs.
 
 ## Decisions open
 
@@ -351,6 +336,67 @@ upgrades and cosmetic funnel skins.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The counties ask for different things now.** Thirty challenge slots across
+  ten counties ran three sentences with the nouns swapped. A challenge now names
+  a **kind** — props, chain reactions, substations blacked out, landmarks
+  shattered, vehicles totalled, or a rotation combo to reach — and the kinds read
+  counters the run already keeps, polled once a frame from `updateObjectives`
+  rather than pushed from every damage site.
+  Two placement rules are enforced in code because both failures would be
+  invisible to the player: substations are shielded until district 2 and
+  landmarks unlock there, so a `grid` or `landmark` challenge in district 1 falls
+  back to the district pool; and a world holds exactly three substations and two
+  landmarks, so those targets are clamped rather than trusted.
+  Progress counts from the moment a district opens — verified with the control
+  that matters: entering district 3 with 50 chain reactions already banked gives
+  progress 0, not an instant completion.
+
+- **The dispatch cards have something to show.** Two cards on the front door held
+  four lines of text apiece and ~450px of empty panel each on a phone. Both now
+  draw from data the menu already has: a county plan with its three districts,
+  deterministic lots, the crossroads and a touchdown marker from the county's own
+  spawn; and the selected storm's profile — wedge, anvil, or a shelf cloud with no
+  funnel at all for a derecho — in the equipped funnel skin, which is the only
+  place outside a run where a bought skin is visible. No asset ships for this and
+  a new county gets a picture for free.
+  Drawn once per menu refresh, not per frame. The bitmap is sized to its box
+  first: a fixed 320x200 canvas stretched into the card's real 176x645 box turned
+  the funnel into a lollipop on a stick, measured rather than guessed.
+
+- **The phase-6 UI bridge read eleven names that do not exist.**
+  `phase6ReadLegacySnapshot` guarded every field with
+  `typeof someName !== 'undefined' ? someName : fallback`, and all eleven were
+  fictional — `remainingSeconds`, `score`, `isGamePaused`, `districtStages`,
+  `currentDistrict`, `scorePopups`, `rampageLevel`, `districtBannerVisible`,
+  `resultsCardVisible`, `campaignStarsEarned`, `currentEfRating`. So the "lexical
+  bridge from the accepted live HUD runtime" reported 180 seconds remaining,
+  score 0, combo 1.0, EF-0 and PINE RIDGE for the whole life of every run, and
+  the typeof guards are exactly why it never threw. The modern shell's legacy
+  adapter attaches to this, so it was live infrastructure reading nothing.
+  Now reads the real globals. Verified with a movement control rather than one
+  sample: score, remaining time and district name all change between readings,
+  which a constant-returning bridge cannot do.
+  Two dead clauses of the same ghost went with it. The satellite vortex's "free
+  at EF-3" path could never fire — and rather than wire it to the real rating, it
+  was removed: that would hand every run a 1,200 MOO-LAH loadout upgrade for
+  nothing at the second district.
+
+- **The run's payout is finally visible, and the next phantom id fails the
+  build.** `updateHudMoolah` has written `+N MOO-LAH (BANK: …)` to
+  `#newspaperMoolahEarned` since the economy shipped, and that element never
+  existed, so every run banked its payout in silence and was then offered a shop
+  button for money the player was never told they had earned.
+  This was the **second** bug of exactly this shape — `#resEfRating` was read by
+  the rating line and never present, so every paper ever printed said EF-0,
+  including EF-5 runs graded S+. Neither had a failing test, a console error or
+  any symptom beyond a number that was quietly wrong.
+  `pnpm verify:results` now compares what the results path writes against what the
+  document defines: 5 functions, 40 element writes, 201 defined ids, refusing to
+  pass if either scan comes back suspiciously small, and proven able to fail.
+  One writer, not two: the first version of the fix also wrote the line from
+  `refreshNewspaperResults`, which produced the right number in the wrong format
+  because `finishRun` calls `updateHudMoolah` after it and the last writer wins.
 
 - **A run can now be lost: funnel integrity and rope-out.** Until this, exactly
   one in-game path ended a round — `runTimeRemaining <= 0` — so a run could be
