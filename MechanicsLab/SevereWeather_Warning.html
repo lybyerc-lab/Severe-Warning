@@ -660,6 +660,19 @@
     backdrop-filter: blur(8px);
     min-height: 0;
   }
+  /* [SW:UI:DISPATCH_PREVIEW] The canvas takes the space the cards were wasting.
+     flex:1 with min-height:0 lets it collapse on a short screen rather than
+     pushing the target line and the action button off the card. */
+  .tv-card-canvas {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    border-radius: clamp(4px, 1vmin, 8px);
+    background: rgba(2, 8, 20, 0.55);
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    margin: clamp(4px, 1vmin, 8px) 0;
+  }
+  .tv-dispatch-card.amber-glow .tv-card-canvas { border-color: rgba(245, 158, 11, 0.22); }
   .tv-dispatch-card.amber-glow {
     border-color: rgba(245, 158, 11, 0.45);
     box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 0 16px rgba(245,158,11,0.06);
@@ -1766,6 +1779,13 @@
               <h4>COUNTY DISPATCH TARGET</h4>
               <span class="tv-card-badge">KSWX 8 LIVE</span>
             </div>
+            <!-- [SW:UI:DISPATCH_PREVIEW] The two dispatch cards used to hold four
+                 lines of text apiece and roughly 450px of empty panel each on a
+                 phone -- no picture of the county and none of the storm, on the
+                 front door of a game about spectacle. These draw from data the
+                 menu already has: the county's own palette and district names,
+                 and the storm's profile in the equipped funnel skin. -->
+            <canvas class="tv-card-canvas" id="tvCountyMapCanvas" width="320" height="200" aria-hidden="true"></canvas>
             <div class="tv-card-body">
               <div class="tv-card-main-title" id="tvActiveCountyName">LINCOLN COUNTY</div>
               <div class="tv-card-sub" id="tvActiveCountyStation">KSWX 8 · SUBURB & FARMSTEAD</div>
@@ -1784,6 +1804,7 @@
               <h4>DOPPLER RADAR CLASSIFIER</h4>
               <span class="tv-card-badge" style="color:#fde047;background:rgba(245,158,11,0.2);">CLASS I</span>
             </div>
+            <canvas class="tv-card-canvas" id="tvStormProfileCanvas" width="320" height="200" aria-hidden="true"></canvas>
             <div class="tv-card-body">
               <div class="tv-card-main-title" id="tvActiveStormName">TORNADO</div>
               <div class="tv-card-sub" id="tvActiveStormSubtitle">CLASSIC RANKINE VORTEX</div>
@@ -3768,7 +3789,242 @@ function updateHighScore(stormType, score) {
   }
 }
 
+// [SW:UI:DISPATCH_PREVIEW] --- MENU CARD PREVIEWS ---
+//
+// Both are drawn once per menu refresh, not per frame: the menu is a static
+// screen behind an already-animated CRT overlay, and a rAF loop here would burn
+// a phone battery to redraw an unchanging picture.
+//
+// Everything drawn comes from data the menu already holds -- the county's sky,
+// fog and terrain colours, its three district names, its spawn, the storm's
+// profile and the equipped funnel skin -- so no asset ships for this and a new
+// county gets a picture for free.
+function drawCountyDispatchMap(canvas, level) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx || !level) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  const unit = Math.min(w, h) / 100;   // one "unit" so nothing is a fixed pixel
+  ctx.clearRect(0, 0, w, h);
+
+  const ground = ctx.createLinearGradient(0, 0, 0, h);
+  ground.addColorStop(0, level.skyColor || '#0f172a');
+  ground.addColorStop(0.18, level.fogColor || '#0f172a');
+  ground.addColorStop(1, level.terrainTint || '#e2e8f0');
+  ctx.fillStyle = ground;
+  ctx.fillRect(0, 0, w, h);
+
+  // Three district bands filling the card, near to far, in order of play.
+  const districts = Array.isArray(level.districts) ? level.districts : [];
+  const pad = 3 * unit;
+  const top = 8 * unit;
+  const bandHeight = (h - top - pad) / 3;
+  const labelSize = Math.max(9, Math.min(16, 4.2 * unit));
+
+  for (let i = 0; i < 3; i++) {
+    const y = top + i * bandHeight;
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(8, 20, 38, 0.30)' : 'rgba(8, 20, 38, 0.14)';
+    ctx.fillRect(pad, y, w - pad * 2, bandHeight - unit);
+    ctx.strokeStyle = 'rgba(148, 197, 253, 0.26)';
+    ctx.lineWidth = Math.max(1, unit * 0.25);
+    ctx.strokeRect(pad + 0.5, y + 0.5, w - pad * 2 - 1, bandHeight - unit - 1);
+
+    // Lots: deterministic from the band index, so the picture is stable between
+    // refreshes rather than reshuffling every time the menu redraws.
+    ctx.fillStyle = 'rgba(226, 240, 255, 0.14)';
+    const rows = 3;
+    const cols = 4;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if ((r * 7 + c * 5 + i * 3) % 4 === 0) continue;   // gaps, not a grid
+        const lotW = (w - pad * 2) / cols;
+        const lotH = (bandHeight - unit) / rows;
+        const bx = pad + c * lotW + lotW * 0.22;
+        const by = y + r * lotH + lotH * 0.30;
+        ctx.fillRect(bx, by, lotW * 0.46, lotH * 0.34);
+      }
+    }
+
+    ctx.fillStyle = 'rgba(233, 244, 255, 0.95)';
+    ctx.font = `600 ${labelSize}px monospace`;
+    ctx.textBaseline = 'top';
+    const name = districts[i] && districts[i][0] ? districts[i][0] : `DISTRICT ${i + 1}`;
+    ctx.fillText(`${i + 1}. ${name}`, pad + 1.6 * unit, y + 1.6 * unit);
+  }
+
+  // The crossroads every county is built on.
+  ctx.strokeStyle = 'rgba(226, 240, 255, 0.13)';
+  ctx.lineWidth = Math.max(2, unit * 1.6);
+  ctx.beginPath();
+  ctx.moveTo(w * 0.58, top);
+  ctx.lineTo(w * 0.58, h - pad);
+  ctx.moveTo(pad, top + bandHeight);
+  ctx.lineTo(w - pad, top + bandHeight);
+  ctx.moveTo(pad, top + bandHeight * 2);
+  ctx.lineTo(w - pad, top + bandHeight * 2);
+  ctx.stroke();
+
+  // Touchdown, placed from the county's own spawn inside district 1.
+  const spawn = level.spawn || { x: 0, z: 0 };
+  const x = Math.max(pad + 8 * unit, Math.min(w - pad - 8 * unit, w * 0.5 + (Number(spawn.x) || 0) * (unit * 0.22)));
+  const y = top + bandHeight * 0.62;
+  ctx.strokeStyle = '#f87171';
+  ctx.lineWidth = Math.max(1.5, unit * 0.4);
+  for (const ring of [2, 4, 6]) {
+    ctx.globalAlpha = ring === 2 ? 1 : (ring === 4 ? 0.5 : 0.25);
+    ctx.beginPath();
+    ctx.arc(x, y, ring * unit, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#fecaca';
+  ctx.font = `700 ${Math.max(8, 3.4 * unit)}px monospace`;
+  ctx.textBaseline = 'middle';
+  ctx.fillText('TOUCHDOWN', x + 7.5 * unit, y);
+}
+
+function drawStormProfile(canvas, stormKey) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const skinKey = (typeof swRpgStore !== 'undefined' && swRpgStore.activeSkin) || 'default-classic';
+  const skin = (typeof SW_RPG_SKINS !== 'undefined' && SW_RPG_SKINS[skinKey]) || { label: 'CLASSIC DUST DEVIL', coreColor: '#334155', accentColor: '#64748b', suctionGlow: '#94a3b8' };
+
+  const sky = ctx.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, '#050b18');
+  sky.addColorStop(1, '#101d33');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h);
+
+  // The storm is drawn inside a band whose height is tied to the card's WIDTH,
+  // so a very tall narrow card gets a correctly proportioned storm with sky
+  // above it rather than a funnel stretched into a stick. Everything below is
+  // in units of that band, never in fixed pixels.
+  const bandHeight = Math.min(h * 0.9, w * 1.7);
+  const bandTop = (h - bandHeight) * 0.45;
+  const groundY = bandTop + bandHeight * 0.88;
+  const cx = w / 2;
+  const s = bandHeight;
+
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.13)';
+  ctx.lineWidth = Math.max(1, w * 0.004);
+  for (const ring of [0.16, 0.3, 0.44]) {
+    ctx.beginPath();
+    ctx.arc(cx, groundY, s * ring, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(148, 163, 184, 0.2)';
+  ctx.fillRect(0, groundY, w, h - groundY);
+
+  const body = ctx.createLinearGradient(0, bandTop, 0, groundY);
+  body.addColorStop(0, skin.coreColor);
+  body.addColorStop(1, skin.accentColor);
+  ctx.fillStyle = body;
+
+  if (stormKey === 'derecho') {
+    // A shelf cloud: wide, low, flat, and no funnel at all.
+    const shelfTop = bandTop + s * 0.20;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.04, shelfTop);
+    ctx.lineTo(w * 0.96, shelfTop - s * 0.05);
+    ctx.lineTo(w * 0.88, shelfTop + s * 0.20);
+    ctx.lineTo(w * 0.12, shelfTop + s * 0.24);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = skin.suctionGlow;
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = Math.max(1.5, s * 0.008);
+    for (let i = 0; i < 5; i++) {
+      const y = shelfTop + s * (0.30 + i * 0.09);
+      ctx.beginPath();
+      ctx.moveTo(w * (0.10 + i * 0.03), y);
+      ctx.lineTo(w * (0.9 - i * 0.02), y - s * 0.02);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  } else if (stormKey === 'supercell') {
+    // An anvil over a rain shaft.
+    ctx.beginPath();
+    ctx.ellipse(cx, bandTop + s * 0.18, w * 0.44, s * 0.09, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath();
+    ctx.moveTo(cx - w * 0.16, bandTop + s * 0.24);
+    ctx.lineTo(cx + w * 0.16, bandTop + s * 0.24);
+    ctx.lineTo(cx + w * 0.24, groundY);
+    ctx.lineTo(cx - w * 0.24, groundY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  } else {
+    // The classic wedge: cloud base, funnel widening to the ground.
+    const cloudY = bandTop + s * 0.16;
+    ctx.beginPath();
+    ctx.ellipse(cx, cloudY, w * 0.38, s * 0.085, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const topHalf = w * 0.15;
+    const baseHalf = w * 0.23;
+    ctx.beginPath();
+    ctx.moveTo(cx - topHalf, cloudY + s * 0.05);
+    ctx.bezierCurveTo(cx - topHalf * 0.75, groundY - s * 0.34, cx - baseHalf * 0.7, groundY - s * 0.16, cx - baseHalf, groundY);
+    ctx.lineTo(cx + baseHalf, groundY);
+    ctx.bezierCurveTo(cx + baseHalf * 0.7, groundY - s * 0.16, cx + topHalf * 0.75, groundY - s * 0.34, cx + topHalf, cloudY + s * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = skin.suctionGlow;
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = Math.max(1.5, s * 0.008);
+    ctx.beginPath();
+    ctx.ellipse(cx, groundY - s * 0.01, baseHalf * 1.5, s * 0.035, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.fillStyle = 'rgba(226, 240, 255, 0.82)';
+  ctx.font = `700 ${Math.max(8, w * 0.045)}px monospace`;
+  ctx.textBaseline = 'top';
+  ctx.fillText(`SKIN: ${(skin.label || 'CLASSIC DUST DEVIL').toUpperCase()}`, w * 0.05, h * 0.02);
+}
+
+// Match the bitmap to the box before drawing.
+//
+// Measured on a 430x932 phone: the card gives the canvas a 176x645 box, and a
+// fixed 320x200 bitmap stretched into that is a 1.6:1 picture squashed to 0.27:1
+// -- the funnel came out as a thin smear. Sizing the bitmap to the box (and to
+// devicePixelRatio, or it is soft on every phone) means both drawings lay
+// themselves out from w/h and work in portrait and landscape without a second
+// set of numbers.
+function sizeCanvasToBox(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width < 8 || rect.height < 8) return false;
+  const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+  const width = Math.round(rect.width * dpr);
+  const height = Math.round(rect.height * dpr);
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  return true;
+}
+
+function refreshDispatchPreviews() {
+  const mapCanvas = document.getElementById('tvCountyMapCanvas');
+  if (mapCanvas && sizeCanvasToBox(mapCanvas) && typeof getActiveCampaignLevel === 'function') {
+    drawCountyDispatchMap(mapCanvas, getActiveCampaignLevel());
+  }
+  const profileCanvas = document.getElementById('tvStormProfileCanvas');
+  if (profileCanvas && sizeCanvasToBox(profileCanvas)) {
+    drawStormProfile(profileCanvas, typeof currentStorm !== 'undefined' ? currentStorm : 'tornado');
+  }
+}
+globalThis.refreshDispatchPreviews = refreshDispatchPreviews;
+
 function updateTvMenuDisplays() {
+  refreshDispatchPreviews();
   if (typeof HEARTLAND_CAMPAIGN !== 'undefined' && typeof getActiveCampaignLevel === 'function') {
     const activeLevel = getActiveCampaignLevel();
     if (activeLevel) {
@@ -6982,6 +7238,9 @@ window.addEventListener('keyup', e => {
 });
 
 window.addEventListener('resize', () => {
+  // [SW:UI:DISPATCH_PREVIEW] Box-sized bitmaps have to be redrawn when the box
+  // changes, or a rotation leaves the previous orientation's picture stretched.
+  if (typeof refreshDispatchPreviews === 'function') refreshDispatchPreviews();
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -11333,6 +11592,9 @@ function init3DWorld() {
 
 function selectStormClass(type) {
   currentStorm = type;
+  // [SW:UI:DISPATCH_PREVIEW] The classifier card draws the selected storm, so it
+  // has to be told when the selection changes.
+  if (typeof refreshDispatchPreviews === 'function') refreshDispatchPreviews();
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
   if (typeof tornadoGroup !== 'undefined' && tornadoGroup) tornadoGroup.visible = false;
