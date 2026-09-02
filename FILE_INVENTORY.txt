@@ -398,6 +398,8 @@ src/gameplay/physics/collision-detection-system.ts
 src/gameplay/physics/tornado-physics-contracts.ts
 src/gameplay/physics/tornado-physics-system.test.ts
 src/gameplay/physics/tornado-physics-system.ts
+src/gameplay/run/integrity-system.test.ts
+src/gameplay/run/integrity-system.ts
 src/gameplay/scoring/scoring-contracts.ts
 src/gameplay/scoring/scoring-system.ts
 src/gameplay/traffic/traffic-contracts.ts
