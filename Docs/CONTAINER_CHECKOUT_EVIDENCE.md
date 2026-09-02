@@ -169,6 +169,41 @@ able to read the repository, and nothing more. The case it exists for — a
 restored snapshot that predates the tip — still has not occurred since the fix,
 so the fast-forward branch remains unobserved.
 
+### It happened again AFTER the setup script was set, 2026-08-29
+
+Third occurrence, and the most informative one. Two turns after the hook was
+observed working at `edad653`, the container was re-provisioned and came up at
+**8188a45 again** -- the same Aug-21 commit as the first two times:
+
+    $ git rev-parse --short HEAD
+    8188a45
+    $ git reflog --date=iso | head -1
+    8188a45 HEAD@{2026-08-21 14:37:04 +0000}: commit: fix(qa): stop the visual gate ...
+    $ ls .claude/hooks/
+    ls: cannot access '.claude/hooks/': No such file or directory
+
+The whole session's history was absent from the reflog, and the hook directory
+did not exist -- exactly the bootstrap failure this file predicted, reproduced
+in full.
+
+**What this changes.** Setting the setup script did NOT stop the reverts. The
+snapshot invalidation observed earlier was real but not durable: this container
+was restored from an image that still predates the fix. Either the invalidation
+does not apply to every host in the pool, or a re-provision can draw an older
+cached image than the one the previous session ran from. Nothing observed here
+distinguishes those, and neither should be stated as the cause.
+
+**What still holds.** Recovery cost nothing, because everything had been pushed:
+`git fetch origin qa && git merge --ff-only origin/qa` restored the tree from
+8188a45 to 122d3da with zero conflicts and no lost work. The standing rule --
+push early, check `git status -sb` against origin before trusting a tree -- is
+what actually protected the session, for the third time.
+
+**How it was caught.** Not by the guard, which was absent again. A file the
+session had been editing all day was simply missing from `ls`. That is worth
+saying plainly: the detection that worked was noticing the tree was wrong while
+using it.
+
 **Recorded for comparison across containers** (2026-08-29 03:3x UTC):
 
     CLAUDE_CODE_CONTAINER_ID=container_015qXayYTNPFmN5WcFGcVRkT--claude_code_remote--7512a2
