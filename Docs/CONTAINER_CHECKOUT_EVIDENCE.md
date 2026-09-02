@@ -204,6 +204,33 @@ session had been editing all day was simply missing from `ls`. That is worth
 saying plainly: the detection that worked was noticing the tree was wrong while
 using it.
 
+### The fix has now been observed doing its actual job, 2026-09-02
+
+The last open item in this file was that the fast-forward branch had never been
+seen to run: every observation so far was either a stale tree the guard could not
+reach, or a checkout that was already current. A container restart at 13:07 UTC
+produced the missing case.
+
+While the container was down, CI pushed an evidence commit to `qa`. The session
+came back one commit behind, and the SessionStart hook printed:
+
+    sync-checkout: checkout was 1 commit(s) behind origin/qa; now at d7f3df3.
+
+The reflog confirms the hook did it rather than anything in the session:
+
+    d7f3df3 HEAD@{2026-09-02 13:07:34 +0000}: merge origin/qa: Fast-forward
+
+**Both layers are now observed.** Layer 1 was seen invalidating the stale
+snapshot on 2026-08-29; layer 2 has now been seen detecting a behind checkout and
+fast-forwarding it, cleanly, with no work to lose.
+
+**And note what did NOT happen.** This restart came up one commit behind, not
+three weeks stale at 8188a45. The restored snapshot now contains `.claude/hooks/`
+— the bootstrap problem this whole file is about does not apply to it. That is
+consistent with the setup script having rebuilt the cached image, though a single
+restart is not proof that the old image is gone for good; the third revert on
+2026-08-29 is the reason to keep watching rather than to declare it settled.
+
 **Recorded for comparison across containers** (2026-08-29 03:3x UTC):
 
     CLAUDE_CODE_CONTAINER_ID=container_015qXayYTNPFmN5WcFGcVRkT--claude_code_remote--7512a2
