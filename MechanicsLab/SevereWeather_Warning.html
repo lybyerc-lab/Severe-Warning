@@ -4666,8 +4666,8 @@ const HEARTLAND_WORLD_BLUEPRINTS = {
     media: ['LIVE 8', 'TEAM MESO', 'VORTEX VAN', 'COUNTY 5', 'HOOK ECHO', 'ACTION 12', 'DEBRIS DESK', 'SKY 4', 'CORE PUNCH'],
     challenges: [
       { id: 'mailbox-mixer', text: 'MAILBOX MIXER: Launch 3 yard decorations', tags: ['yard'], target: 3 },
-      { id: 'county-business', text: 'COUNTY BUSINESS: Flatten 2 Main Street signs', tags: ['sign'], target: 2 },
-      { id: 'midway-makeover', text: 'MIDWAY MAKEOVER: Launch 4 fairground props', tags: ['fair'], target: 4 }
+      { id: 'domino-effect', text: 'DOMINO EFFECT: Set off 2 chain reactions', kind: 'chain', tags: [], target: 2 },
+      { id: 'lights-out', text: 'LIGHTS OUT: Black out 2 substations', kind: 'grid', tags: [], target: 2 }
     ],
     landmarks: [
       { kind: 'water-tower', name: 'LINCOLN WATER TOWER', icon: 'WATER', x: -145, z: -110, health: 280 },
@@ -4681,7 +4681,7 @@ const HEARTLAND_WORLD_BLUEPRINTS = {
     challenges: [
       { id: 'prairie-cleanup', text: 'PRAIRIE CLEANUP: Launch 3 yard props', tags: ['yard'], target: 3 },
       { id: 'whistle-stop', text: 'WHISTLE STOP: Remove 3 town signs', tags: ['sign'], target: 3 },
-      { id: 'rodeo-redecorating', text: 'RODEO REDECORATING: Launch 4 fair props', tags: ['fair'], target: 4 }
+      { id: 'rodeo-rollcall', text: 'RODEO ROLL CALL: Total 5 vehicles', kind: 'vehicle', tags: [], target: 5 }
     ],
     landmarks: [
       { kind: 'grain-elevator', name: 'PRAIRIE GRAIN ELEVATOR', icon: 'GRAIN', x: -145, z: -110, health: 340 },
@@ -4694,7 +4694,7 @@ const HEARTLAND_WORLD_BLUEPRINTS = {
     media: ['GRAIN 11', 'BIN CAM', 'HARVEST LIVE', 'DUST DESK', 'BELT WEATHER', 'SHIFT CAM', 'RUST VAN', 'ELEVATOR EYE', 'COMBINE CAM'],
     challenges: [
       { id: 'crop-circle', text: 'CROP CIRCLE: Remove 3 roadside props', tags: ['yard'], target: 3 },
-      { id: 'shift-change', text: 'SHIFT CHANGE: Launch 3 Main Street props', tags: ['main'], target: 3 },
+      { id: 'shift-change', text: 'SHIFT CHANGE: Set off 3 chain reactions', kind: 'chain', tags: [], target: 3 },
       { id: 'harvest-havoc', text: 'HARVEST HAVOC: Wreck 2 carnival rides', tags: ['ride'], target: 2 }
     ],
     landmarks: [
@@ -4707,9 +4707,9 @@ const HEARTLAND_WORLD_BLUEPRINTS = {
     fogDensity: 0.0019, accent: '#f472b6', targetTint: '#b6408a', animalLimit: 8,
     media: ['NETWORK LIVE', 'MIDWAY CAM', 'PRIME STORM', 'SKY TRUCK', 'FERRIS FEED', 'GRANDSTAND', 'NATIONAL 1', 'CHAMP CAM', 'LAST RIDE'],
     challenges: [
-      { id: 'parking-lot-panic', text: 'PARKING LOT PANIC: Launch 3 lawn props', tags: ['lawn'], target: 3 },
-      { id: 'broadcast-interruption', text: 'BROADCAST INTERRUPTION: Flatten 2 signs', tags: ['sign'], target: 2 },
-      { id: 'grand-finale', text: 'GRAND FINALE: Launch 4 fairground props', tags: ['fair'], target: 4 }
+      { id: 'parking-lot-panic', text: 'PARKING LOT PANIC: Total 4 vehicles', kind: 'vehicle', tags: [], target: 4 },
+      { id: 'skyline-clearance', text: 'SKYLINE CLEARANCE: Shatter 2 landmarks', kind: 'landmark', tags: [], target: 2 },
+      { id: 'grand-finale', text: 'GRAND FINALE: Reach a 3.0x rotation combo', kind: 'combo', tags: [], target: 3 }
     ],
     landmarks: [
       { kind: 'ferris-wheel', name: 'CHAMPIONSHIP FERRIS WHEEL', icon: 'WHEEL', x: -145, z: -110, health: 440 },
@@ -4726,7 +4726,7 @@ const COASTAL_WORLD_BLUEPRINTS = {
     challenges: [
       { id: 'dock-dive', text: 'DOCK DIVE: Launch 3 marina props', tags: ['yard'], target: 3 },
       { id: 'sign-splash', text: 'SIGN SPLASH: Flatten 2 coastal road signs', tags: ['sign'], target: 2 },
-      { id: 'pier-pandemonium', text: 'PIER PANDEMONIUM: Launch 4 boardwalk props', tags: ['fair'], target: 4 }
+      { id: 'shrimp-boil', text: 'SHRIMP BOIL: Set off 3 chain reactions', kind: 'chain', tags: [], target: 3 }
     ],
     landmarks: [
       { kind: 'water-tower', name: 'BAYOU BEND WATER TOWER', icon: 'WATER', x: -145, z: -110, health: 320 },
@@ -4739,7 +4739,7 @@ const COASTAL_WORLD_BLUEPRINTS = {
     media: ['SURF 13', 'PALM EYE', 'BOARDWALK 1', 'BEACH TRUCK', 'GALE DESK', 'KEY LIVE', 'SHORE PATROL'],
     challenges: [
       { id: 'umbrella-uplift', text: 'UMBRELLA UPLIFT: Launch 3 beach props', tags: ['yard'], target: 3 },
-      { id: 'wharf-wind', text: 'WHARF WIND: Remove 3 storefront signs', tags: ['sign'], target: 3 },
+      { id: 'boardwalk-blackout', text: 'BOARDWALK BLACKOUT: Black out 2 substations', kind: 'grid', tags: [], target: 2 },
       { id: 'arcade-avalanche', text: 'ARCADE AVALANCHE: Wreck 2 pier attractions', tags: ['fair'], target: 2 }
     ],
     landmarks: [
@@ -4753,8 +4753,8 @@ const COASTAL_WORLD_BLUEPRINTS = {
     media: ['PORT 4', 'REFINERY EYE', 'DELTA CHASER', 'GULF NETWORK', 'POWER WATCH', 'CRANE CAM'],
     challenges: [
       { id: 'tank-tumbler', text: 'TANK TUMBLER: Launch 3 industrial barrels', tags: ['yard'], target: 3 },
-      { id: 'gantry-gale', text: 'GANTRY GALE: Flatten 3 hazard signs', tags: ['sign'], target: 3 },
-      { id: 'refinery-rupture', text: 'REFINERY RUPTURE: Overload 2 power nodes', tags: ['fair'], target: 2 }
+      { id: 'gantry-gale', text: 'GANTRY GALE: Set off 3 chain reactions', kind: 'chain', tags: [], target: 3 },
+      { id: 'refinery-rupture', text: 'REFINERY RUPTURE: Black out 3 substations', kind: 'grid', tags: [], target: 3 }
     ],
     landmarks: [
       { kind: 'silo-bank', name: 'DELTA FUEL STORAGE', icon: 'GRAIN', x: -145, z: -110, health: 460 },
@@ -4770,8 +4770,8 @@ const METRO_WORLD_BLUEPRINTS = {
     media: ['METRO 4', 'SKYLINE EYE', 'DOWNTOWN CHASER', 'TOWER DESK', 'COMMUTER CAM', 'CITY LIVE'],
     challenges: [
       { id: 'plaza-panic', text: 'PLAZA PANIC: Launch 3 streetscape props', tags: ['yard'], target: 3 },
-      { id: 'billboard-blast', text: 'BILLBOARD BLAST: Flatten 2 neon signs', tags: ['sign'], target: 2 },
-      { id: 'transit-toss', text: 'TRANSIT TOSS: Launch 4 city vehicles', tags: ['fair'], target: 4 }
+      { id: 'transit-toss', text: 'TRANSIT TOSS: Total 5 city vehicles', kind: 'vehicle', tags: [], target: 5 },
+      { id: 'tower-topple', text: 'TOWER TOPPLE: Shatter 2 landmarks', kind: 'landmark', tags: [], target: 2 }
     ],
     landmarks: [
       { kind: 'skyscraper', name: 'METRO TOWER A', icon: 'TOWER', x: -145, z: -110, health: 480 },
@@ -4784,8 +4784,8 @@ const METRO_WORLD_BLUEPRINTS = {
     media: ['ACTION 9', 'RAIL EYE', 'TERMINAL 1', 'FREIGHT CHASER', 'POWER GRID', 'DEPOT CAM'],
     challenges: [
       { id: 'switching-havoc', text: 'SWITCHING HAVOC: Launch 3 yard props', tags: ['yard'], target: 3 },
-      { id: 'gantry-gale', text: 'GANTRY GALE: Remove 3 rail signs', tags: ['sign'], target: 3 },
-      { id: 'freight-fury', text: 'FREIGHT FURY: Wreck 2 freight assets', tags: ['fair'], target: 2 }
+      { id: 'freight-fury', text: 'FREIGHT FURY: Set off 3 chain reactions', kind: 'chain', tags: [], target: 3 },
+      { id: 'terminal-velocity', text: 'TERMINAL VELOCITY: Reach a 3.0x rotation combo', kind: 'combo', tags: [], target: 3 }
     ],
     landmarks: [
       { kind: 'grain-elevator', name: 'GRAND CENTRAL TOWER', icon: 'GRAIN', x: -145, z: -110, health: 490 },
@@ -4799,7 +4799,7 @@ const METRO_WORLD_BLUEPRINTS = {
     challenges: [
       { id: 'dish-displacement', text: 'DISH DISPLACEMENT: Launch 3 rooftop antennas', tags: ['yard'], target: 3 },
       { id: 'beacon-blast', text: 'BEACON BLAST: Flatten 2 tower warning signs', tags: ['sign'], target: 2 },
-      { id: 'broadcast-mayhem', text: 'BROADCAST MAYHEM: Launch 4 station vehicles', tags: ['fair'], target: 4 }
+      { id: 'signal-lost', text: 'SIGNAL LOST: Black out 3 substations', kind: 'grid', tags: [], target: 3 }
     ],
     landmarks: [
       { kind: 'radio-tower', name: 'SUMMIT RADIO MAST', icon: 'WATER', x: -145, z: -110, health: 550 },
@@ -5502,13 +5502,87 @@ function saveCosmeticProgress() {
   }
 }
 
+// [SW:GAMEPLAY:CHALLENGE_KINDS] --- DISTRICT CHALLENGES ---
+//
+// Every district challenge in the game used to be the same sentence with the
+// nouns swapped: destroy N props carrying tag T. Ten counties, thirty slots,
+// three verbs -- launch yard props, flatten signs, launch fair props -- so the
+// counties differed in palette, target and score multiplier, and not at all in
+// what they asked you to do.
+//
+// A challenge now names a KIND, and the kinds read counters the run already
+// keeps rather than inventing new tracking:
+//
+//   props      the original: destroy N props matching the challenge's tags
+//   chain      set off N chain reactions
+//   grid       black out N power substations   (district 2+, see below)
+//   landmark   shatter N landmarks             (district 2+, see below)
+//   vehicle    total N vehicles
+//   combo      reach a rotation combo of N
+//
+// TWO PLACEMENT RULES, both load-bearing rather than taste. Substations are
+// shielded until district 2 and landmarks unlock there too, so a `grid` or
+// `landmark` challenge in district 1 would be unwinnable through no fault of the
+// player. And a world holds exactly three substations and two landmarks, so
+// those targets cannot exceed 3 and 2. A county that asks for more gets the
+// district's own pool instead: silently impossible is the one outcome worth
+// engineering against, because the player would have no way to tell.
+const CHALLENGE_KIND_LIMITS = Object.freeze({
+  grid: { minStage: 2, maxTarget: 3 },
+  landmark: { minStage: 2, maxTarget: 2 }
+});
+
+function challengeMetricValue(kind) {
+  switch (kind) {
+    case 'chain': return typeof chainReactionsCount !== 'undefined' ? chainReactionsCount : 0;
+    case 'grid': return typeof destroyedSubstationsCount !== 'undefined' ? destroyedSubstationsCount : 0;
+    case 'landmark': return typeof destroyedLandmarksCount !== 'undefined' ? destroyedLandmarksCount : 0;
+    case 'vehicle': return typeof destroyedCarsCount !== 'undefined' ? destroyedCarsCount : 0;
+    case 'combo': return typeof comboMultiplier !== 'undefined' ? comboMultiplier : 1;
+    default: return 0;
+  }
+}
+
 function setupDistrictChallenges() {
   districtChallenges = [1, 2, 3].map(stage => {
     const pool = DISTRICT_CHALLENGE_POOLS[stage];
     const index = isBotMode ? 0 : Math.floor(Math.random() * pool.length);
     const selected = campaignChallengeFor(stage, pool[index]);
-    return { ...selected, stage, progress: 0, done: false, reward: 450 };
+    const limits = CHALLENGE_KIND_LIMITS[selected.kind || 'props'];
+    const challenge = (!limits || stage >= limits.minStage) ? selected : pool[0];
+    const kind = challenge.kind || 'props';
+    const kindLimits = CHALLENGE_KIND_LIMITS[kind];
+    const target = kindLimits ? Math.min(challenge.target, kindLimits.maxTarget) : challenge.target;
+    return { ...challenge, kind, target, stage, progress: 0, done: false, reward: 450, baseline: null };
   });
+  updateDistrictChallengeHud();
+}
+
+// Polled once a frame from updateObjectives. Prop challenges are still pushed to
+// by recordDistrictChallengeProp; everything else is a counter difference, which
+// means no new bookkeeping at any of the sites that already increment them.
+function updateDistrictChallengeProgress() {
+  const challenge = getDistrictChallenge(currentStage);
+  if (!challenge || challenge.done || challenge.kind === 'props') return;
+
+  const value = challengeMetricValue(challenge.kind);
+  if (challenge.baseline === null) {
+    // Counted from the moment the district opens, so a challenge is never handed
+    // its progress by work done in an earlier one.
+    challenge.baseline = challenge.kind === 'combo' ? 0 : value;
+  }
+
+  const progress = challenge.kind === 'combo'
+    ? Math.min(challenge.target, Math.floor(value * 10) / 10)
+    : Math.min(challenge.target, value - challenge.baseline);
+
+  if (progress === challenge.progress) return;
+  challenge.progress = progress;
+  if (progress >= challenge.target) {
+    challenge.done = true;
+    const awarded = addScore(challenge.reward);
+    showGagToast(`BONUS COMPLETE${awarded > 0 ? ` +${awarded}` : ''}: ${challenge.text}`);
+  }
   updateDistrictChallengeHud();
 }
 
@@ -11915,6 +11989,9 @@ function updateEFRating() {
 }
 
 function updateObjectives() {
+  // [SW:GAMEPLAY:CHALLENGE_KINDS] Counter-based challenges are polled here rather
+  // than pushed from every site that could advance them.
+  if (typeof updateDistrictChallengeProgress === 'function') updateDistrictChallengeProgress();
   if (currentStorm === 'tornado') {
     // [SW:GAMEPLAY:OBJECTIVE_SCALE] These thresholds track the EF table above and
     // the campaign scoreTargets (8k / 12k / 18k / 26k). They used to sit at 3,800
