@@ -193,25 +193,33 @@ what is genuinely next:
   a pointer: reading its defect list sent someone looking at post-run scoring and
   found a live bug by a different mechanism (below).
 
-- **The EF score gates do not bind for a good player, and the district ceilings
-  are doing the work again.** This is the failure the ladder rewrite was written
-  against, back in a different form. The gates are fractions of the county target
-  (EF-4 at 40%, EF-5 at 75%), but a real run finishes far above target, so they
-  are all crossed early and each district opens at its own ceiling.
-  Three measured points, no estimates: the director's device run scored
-  **127,649** against Lincoln's 45,000 target (2.8x); the earlier device run in
-  the test file scored **149,669** against Prairie Junction's 65,000 (2.3x); the
-  autoplay driver finishes at **11,095** (0.25x). An 11x spread means no single
-  fraction fits both ends — a ladder tuned for the top makes the bot's run a flat
-  EF-0, one tuned for the bot is what we have.
-  What is NOT measured: **when** each gate is crossed in a strong run. The EF
-  timeline just added to the harness gives the curve for the bot, from a local
-  round on 2026-08-29: EF-1 at 10s / 986 pts, EF-2 at 20s / 4,441, EF-3 at 65s /
-  13,370, EF-4 at 95s / 18,053 — no rung skipped, and the gates clearly binding.
-  For a weak run the ladder works as designed. A device capture of score at 60s
-  and 120s would settle the other end in one round.
-  Not urgent: the stepper means the climb is at least seen. The question is
-  whether it should be earned later.
+- **ANSWERED, and now a tuning decision: the EF score gates do not bind at all
+  for a good player.** Measured from the director's device run on Lincoln County
+  (target 45,000), 2026-09-02:
+
+      t=65s   score  40,913   EF-4   district 2   inflow 100%
+      t=130s  score 116,043   EF-5   district 3   inflow 100%
+      final   score 137,963   S+     3 stars      peak combo 3.5x
+
+  The district breakdown gives the two boundary scores directly: **23,646 at the
+  district-1 exit (60s) and 105,920 at the district-2 exit (120s)** — 53% and
+  235% of the county target.
+  The gates sit at 40% (EF-4) and 75% (EF-5) of target, so **both upper gates
+  were already cleared before their districts opened.** The ceilings did every
+  bit of the work; the score never bound once. That is the same failure the
+  ladder rewrite was written against, and it is now measured rather than
+  suspected.
+  **Why the fractions are wrong:** the county target is what a *passing* run
+  looks like — 60% of it advances you — while a strong run finishes at 3.1x it.
+  Gates expressed as fractions of target are therefore fractions of the wrong
+  number.
+  **Proposal for the director, not yet built.** Multiply the ladder by roughly
+  2.5-3: `ef1 0.06, ef2 0.18, ef3 0.55, ef4 1.2, ef5 2.2`. Against this same run
+  that puts EF-3 near 60s, EF-4 near 85s and EF-5 near 125s — a climb spread
+  across the whole round instead of two rungs handed over at district boundaries.
+  Against the autoplay driver (21,312 final) it peaks around EF-2, which is the
+  point: the rating would finally distinguish a good run from a poor one. The
+  trade is that EF-5 becomes rare, and whether that is right is a director's call.
 
 - **Debris pulled off the models instead of authored wrecks?** Director's idea,
   2026-08-29, alongside "the waste models are very good." Today the funnel's
@@ -336,6 +344,58 @@ what is genuinely next:
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **CI has an owner and, more usefully, a signal that arrives.** Director's call,
+  2026-09-02. Three parts, and only the first is a promise: an operating law in
+  `AGENTS.md` (CI is owned by whoever pushed and is checked *before* claiming
+  work is done, not when someone asks); `.github/workflows/ci-alert.yml`, which
+  opens an issue in this repository when a watched workflow fails, comments on
+  the same issue for consecutive failures rather than burying the first, and
+  closes it with the commit that fixed things; and `scripts/ci-status.sh`, which
+  the SessionStart hook runs after syncing so every session opens with the state
+  on screen.
+  The name was never the missing piece — nothing was unassigned either time this
+  bit us. Red waits to be discovered, and both supports exist so the law does not
+  rest on anybody's diligence.
+  Cancelled runs raise nothing: half of the bad night was runs cancelling each
+  other under `cancel-in-progress`, and an issue per cancellation is noise on top
+  of noise. `AGENTS.md` states that half plainly instead — a burst of pushes is a
+  decision to skip the gate.
+  Deliberately not reported: "workflow X has not run against HEAD". Two of the
+  three are path-filtered, so a docs commit legitimately leaves them behind and
+  that line would fire on most commits and become the thing everyone learns to
+  skip — the exact failure this is meant to prevent.
+
+- **Device playtest, 2026-09-02 — the first real confirmation of the whole
+  stretch.** Everything built since the design review had been verified against
+  a scripted driver at 2fps and against arithmetic. The director's run on
+  `1f90d0b` confirms it on real hardware:
+  **Funnel integrity never bit.** INFLOW read 100% at 65s and again at 130s, in a
+  run that scored 137,963. The mechanic punishes coasting and does not touch a
+  player who is landing hits — which was the design intent and is now observed
+  rather than argued.
+  **The economy model was accurate.** Predicted ~1,078 for a 127k run; measured
+  **+777 payout, bank 1,243** for a 138k run. Against the 6,450 catalogue that is
+  5.2 runs to own everything — the runway the repricing aimed at.
+  **The ladder is walked, not jumped:** EF-4 at 65s, EF-5 at 130s, both a few
+  seconds after their district boundaries, which is the stepper's 2.5s dwell.
+  **The payout line, the challenge kinds and the loadout all render on device:**
+  `PAYOUT: +777 MOO-LAH · BANK 1,243`, `CHALLENGES: 2/3`, `NEON FUNNEL EQUIPPED`.
+
+- **Three defects the device run exposed** (recorded, not yet fixed):
+  **The bovine stats are impossible numbers.** `Airtime: 4267.4s` in a 180-second
+  round, and `Longest Flight: 19123 yd` — seventeen kilometres. Both are real:
+  `combinedAirtime += dt` sums across every airborne cow at once (35 of them),
+  and `cow.flightDistance += hypot(...)` accumulates *path length* every frame, so
+  a cow orbiting the funnel racks up an odometer rather than a throw distance. The
+  card labels promise a run figure and a displacement and deliver a sum and an
+  odometer. A comedy stat stops being funny when the number is obviously broken.
+  **The results card is clipped in landscape.** The Bovine Situation Report's last
+  two lines — "Cow injuries: 0 · Cow dignity: Under review" and the Moo Brew
+  disclaimer — sit behind the button bar.
+  **The district breakdown still reads as per-district and is cumulative**
+  (23,646 / 105,920 / 137,963, where the last number is just the final score).
+  Flagged in the design review, still unfixed. Subtract, or label them as totals.
 
 - **The counties ask for different things now.** Thirty challenge slots across
   ten counties ran three sentences with the nouns swapped. A challenge now names
