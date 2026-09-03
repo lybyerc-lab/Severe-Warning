@@ -622,6 +622,17 @@
     box-sizing: border-box;
   }
 
+  /* [SW:UI:BROADCAST_MENU] CH 8 is the live feed and its furniture sits over the
+     picture. CH 4 and CH 6 are studio pages -- in 1982 a character generator
+     REPLACED the picture rather than floating over it -- so they black the feed
+     out. Without this they inherited the transparent tube added in stage 2 and
+     the storm cards became washable panels over a moving 3D county. */
+  #campaignMapModal,
+  #stormSelectModal {
+    background: linear-gradient(180deg, #06121c 0%, #030a12 100%);
+    box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.8);
+  }
+
   .tv-glass-glare {
     position: absolute;
     inset: 0;
