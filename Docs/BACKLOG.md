@@ -382,6 +382,75 @@ Newest first. Kept for the reasoning, not the changelog.
   **The payout line, the challenge kinds and the loadout all render on device:**
   `PAYOUT: +777 MOO-LAH · BANK 1,243`, `CHALLENGES: 2/3`, `NEON FUNNEL EQUIPPED`.
 
+- **The three defects the device run exposed are fixed.**
+  **The bovine stats printed impossible numbers.** `Airtime: 4267.4s` in a
+  180-second round, and `Longest Flight: 19123 yd` — seventeen kilometres. Both
+  were real: `combinedAirtime += dt` summed across every airborne cow at once,
+  and `flightDistance += hypot(...)` accumulated *path length* every frame, so a
+  cow orbiting the funnel built an odometer rather than a throw. The card now
+  reports **Best Hang Time**, the longest single flight, and longest flight is
+  **displacement from the launch point** — which is what "how far did it go"
+  means, and is bounded by construction: the orbit radius is 9-16 units, so
+  parking the storm can no longer inflate it however long a cow circles.
+  Career storage went to schema 2 and drops any `longestFlight` written by an
+  older build: those were path length, so a stored best of seventeen kilometres
+  is a record no honest flight can beat, which makes the stat dead rather than
+  merely wrong. Every other career counter is a sum or a tally and survives.
+  Measured after, on a real round: 9 cows relocated in 22 s, best hang 0.42 s,
+  longest flight 41.4 m (45 yd), combined airtime 14.7 s — each figure inside
+  what the run and the map physically allow.
+  **The results card cut its own footer off.** `.results-card` caps at
+  `min(560px, 100dvh - 16px)` and was `overflow: hidden`, so anything past the cap
+  was silently lost — on a phone held sideways the Bovine Situation Report's last
+  lines sat under the button row with no way to reach them. The body scrolls now
+  and the masthead and buttons stay pinned, so nothing can hide behind them.
+  Measured at 900x412: 108 px of content below the fold, reachable.
+  A card that looks finished is exactly the one a player never scrolls, so a
+  **CONTINUED BELOW ▾** cue appears only when the body actually overflows and
+  hides again at the end — the newspaper's own way of saying it.
+  **The district breakdown read as per-district and was cumulative.** It now
+  prints the deltas. Boundaries that a short run never crossed are clamped to the
+  final score, so roping out in district 1 credits district 1 with the whole run
+  rather than a finale that never happened. Verified: cumulative 12,750 / 48,250
+  / 116,500 prints as 12,750 / 35,500 / 68,250, which sums back to the total.
+
+- **CI has an owner and, more usefully, a signal that arrives.** Director's call,
+  2026-09-02. Three parts, and only the first is a promise: an operating law in
+  `AGENTS.md` (CI is owned by whoever pushed and is checked *before* claiming
+  work is done, not when someone asks); `.github/workflows/ci-alert.yml`, which
+  opens an issue in this repository when a watched workflow fails, comments on
+  the same issue for consecutive failures rather than burying the first, and
+  closes it with the commit that fixed things; and `scripts/ci-status.sh`, which
+  the SessionStart hook runs after syncing so every session opens with the state
+  on screen.
+  The name was never the missing piece — nothing was unassigned either time this
+  bit us. Red waits to be discovered, and both supports exist so the law does not
+  rest on anybody's diligence.
+  Cancelled runs raise nothing: half of the bad night was runs cancelling each
+  other under `cancel-in-progress`, and an issue per cancellation is noise on top
+  of noise. `AGENTS.md` states that half plainly instead — a burst of pushes is a
+  decision to skip the gate.
+  Deliberately not reported: "workflow X has not run against HEAD". Two of the
+  three are path-filtered, so a docs commit legitimately leaves them behind and
+  that line would fire on most commits and become the thing everyone learns to
+  skip — the exact failure this is meant to prevent.
+
+- **Device playtest, 2026-09-02 — the first real confirmation of the whole
+  stretch.** Everything built since the design review had been verified against
+  a scripted driver at 2fps and against arithmetic. The director's run on
+  `1f90d0b` confirms it on real hardware:
+  **Funnel integrity never bit.** INFLOW read 100% at 65s and again at 130s, in a
+  run that scored 137,963. The mechanic punishes coasting and does not touch a
+  player who is landing hits — which was the design intent and is now observed
+  rather than argued.
+  **The economy model was accurate.** Predicted ~1,078 for a 127k run; measured
+  **+777 payout, bank 1,243** for a 138k run. Against the 6,450 catalogue that is
+  5.2 runs to own everything — the runway the repricing aimed at.
+  **The ladder is walked, not jumped:** EF-4 at 65s, EF-5 at 130s, both a few
+  seconds after their district boundaries, which is the stepper's 2.5s dwell.
+  **The payout line, the challenge kinds and the loadout all render on device:**
+  `PAYOUT: +777 MOO-LAH · BANK 1,243`, `CHALLENGES: 2/3`, `NEON FUNNEL EQUIPPED`.
+
 - **Three defects the device run exposed** (recorded, not yet fixed):
   **The bovine stats are impossible numbers.** `Airtime: 4267.4s` in a 180-second
   round, and `Longest Flight: 19123 yd` — seventeen kilometres. Both are real:

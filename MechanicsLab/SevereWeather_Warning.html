@@ -227,6 +227,14 @@
     min-height: 0;
     align-items: stretch;
     margin-bottom: 6px;
+    /* [SW:UI:RESULTS_SCROLL] The card is capped at min(560px, 100dvh - 16px) and
+       the card itself is overflow:hidden, so any content past that cap was
+       silently CUT -- on the device run of 2026-09-02 the Bovine Situation
+       Report's last two lines sat behind the button row with no way to reach
+       them. The middle scrolls now, which keeps the masthead and the action
+       buttons pinned where they are and stops the paper eating its own footer. */
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .np-results-left {
     display: flex;
@@ -396,6 +404,19 @@
   }
 
   /* Footer Action Bar */
+  .np-results-more {
+    display: none;
+    align-self: center;
+    font: 800 10px/1 'Outfit', sans-serif;
+    letter-spacing: 0.09em;
+    color: #7c2d12;
+    background: rgba(180, 83, 9, 0.10);
+    border: 1px solid rgba(180, 83, 9, 0.35);
+    border-radius: 999px;
+    padding: 3px 10px;
+    margin: 2px 0 4px;
+  }
+  .np-results-more.is-visible { display: block; }
   .results-actions {
     display: flex;
     gap: 6px;
@@ -501,7 +522,9 @@
     #joystickZone { bottom: calc(42px + var(--safe-bottom)); left: calc(14px + var(--safe-left)); width: 100px; height: 100px; }
     #joystickThumb { width: 36px; height: 36px; }
     
-    .results-card { width: min(340px, calc(100vw - 20px)); max-height: calc(100vh - 12px); overflow-y: auto; padding: 10px 16px; }
+    /* One scroll region, not two: the body scrolls (see [SW:UI:RESULTS_SCROLL]),
+       so the card must not scroll as well or the footer slides away with it. */
+    .results-card { width: min(340px, calc(100vw - 20px)); max-height: calc(100vh - 12px); overflow: hidden; padding: 10px 16px; }
     .results-card h2 { font-size: 18px; }
     .results-stats { margin: 6px 0; padding: 8px 10px; line-height: 1.35; }
     .stage-breakdown { margin-top: 4px; padding-top: 4px; }
@@ -2374,7 +2397,7 @@
           <h3>BOVINE SITUATION REPORT</h3>
           <div class="bovine-report-grid">
             <div>Relocated: <b id="resCowsRelocated">0</b></div>
-            <div>Airtime: <b id="resCowAirtime">0.0s</b></div>
+            <div>Best Hang Time: <b id="resCowAirtime">0.0s</b></div>
             <div>Longest Flight: <b id="resCowDistance">0 yd</b></div>
             <div>Hay Landings: <b id="resHayLandings">0</b></div>
           </div>
@@ -2385,6 +2408,11 @@
     </main>
 
     <!-- Footer Action Bar -->
+    <!-- [SW:UI:RESULTS_SCROLL] Shown only when the body actually overflows. On a
+         phone held sideways there is no room for a broadsheet -- the body scrolls
+         and this says so, because a card that looks finished is exactly the kind
+         a player never scrolls. -->
+    <div class="np-results-more" id="newspaperContinued">CONTINUED BELOW ▾</div>
     <footer class="results-actions">
       <button class="retry-btn" onclick="resetWarningRun()">↺ RETRY</button>
       <button class="retry-btn campaign-next-btn" id="btnNextCampaign" onclick="startNextCampaignLevel()" hidden>NEXT STOP ➔</button>
@@ -8098,6 +8126,11 @@ function createBovineRoundState() {
     relocatedIds: new Set(),
     cowsRelocated: 0,
     combinedAirtime: 0,
+    // [SW:GAMEPLAY:BOVINE_STATS] The longest SINGLE flight, in seconds and in
+    // metres of displacement. combinedAirtime is the sum across every cow in the
+    // air at once and belongs in the career totals, not on a card that says
+    // "airtime": with 35 cows aloft it printed 4,267s for a 180-second round.
+    longestHangTime: 0,
     longestFlight: 0,
     hayLandings: 0,
     launches: 0,
@@ -8110,11 +8143,17 @@ function createBovineRoundState() {
 
 function normalizeBovineCareer(value) {
   const source = value && typeof value === 'object' ? value : {};
+  // [SW:GAMEPLAY:BOVINE_STATS] Schema 2 drops any longestFlight written by an
+  // older build. Those were path length, not displacement, so a stored career
+  // best could be seventeen kilometres -- a record no honest flight can ever
+  // beat, which makes the stat dead rather than merely wrong. Every other
+  // counter here is a sum or a tally and survives the change untouched.
+  const priorSchema = Math.max(0, Number(source.schema) || 0);
   return {
-    schema: 1,
+    schema: 2,
     totalRelocations: Math.max(0, Number(source.totalRelocations) || 0),
     totalAirtime: Math.max(0, Number(source.totalAirtime) || 0),
-    longestFlight: Math.max(0, Number(source.longestFlight) || 0),
+    longestFlight: priorSchema >= 2 ? Math.max(0, Number(source.longestFlight) || 0) : 0,
     hayLandings: Math.max(0, Number(source.hayLandings) || 0),
     cow17Flights: Math.max(0, Number(source.cow17Flights) || 0),
     cow17Stops: source.cow17Stops && typeof source.cow17Stops === 'object' ? source.cow17Stops : {}
@@ -8223,7 +8262,9 @@ function configureBovineAnimal(cowMesh, index, x, z, groundY) {
     altitude: 0.8,
     orbitAngle: (index * 2.399963229728653) % (Math.PI * 2),
     flightTime: 0,
-    flightDistance: 0,
+    flightDisplacement: 0,
+    launchX: 0,
+    launchZ: 0,
     flightMaxAltitude: 0,
     previousX: x,
     previousZ: z,
@@ -8250,7 +8291,14 @@ function spawnBovineHayBales() {
 function beginBovineFlight(cow) {
   cow.airborne = true;
   cow.flightTime = 0;
-  cow.flightDistance = 0;
+  // [SW:GAMEPLAY:BOVINE_STATS] Where this flight began. "Longest flight" used to
+  // accumulate the per-frame path length, so a cow orbiting the funnel for a
+  // minute racked up an odometer -- the results card printed 19,123 yd, which is
+  // seventeen kilometres. It is displacement from the launch point now, which is
+  // what "how far did it go" means.
+  cow.launchX = cow.x;
+  cow.launchZ = cow.z;
+  cow.flightDisplacement = 0;
   cow.flightMaxAltitude = cow.altitude;
   cow.previousX = cow.x;
   cow.previousZ = cow.z;
@@ -8307,7 +8355,8 @@ function finishCowCam() {
 function landBovineFlight(cow) {
   cow.altitude = 0.8;
   cow.airborne = false;
-  bovineRound.longestFlight = Math.max(bovineRound.longestFlight, cow.flightDistance);
+  bovineRound.longestFlight = Math.max(bovineRound.longestFlight, cow.flightDisplacement);
+  bovineRound.longestHangTime = Math.max(bovineRound.longestHangTime, cow.flightTime);
   if (cow.id === 17) {
     bovineRound.cow17Flights++;
     bovineRound.cow17MaxAltitude = Math.max(bovineRound.cow17MaxAltitude, cow.flightMaxAltitude);
@@ -8338,11 +8387,14 @@ function updateBovineSignature(dt) {
       cow.altitude = Math.min(20, cow.altitude + 21 * dt * cowMotionScale);
       cow.x = storm.pos.x + Math.cos(cow.orbitAngle) * (9 + cow.altitude * 0.35);
       cow.z = storm.pos.z + Math.sin(cow.orbitAngle) * (9 + cow.altitude * 0.35);
-      cow.flightDistance += Math.hypot(cow.x - cow.previousX, cow.z - cow.previousZ);
+      cow.flightDisplacement = Math.hypot(cow.x - cow.launchX, cow.z - cow.launchZ);
       cow.previousX = cow.x;
       cow.previousZ = cow.z;
       cow.flightMaxAltitude = Math.max(cow.flightMaxAltitude, cow.altitude);
-      bovineRound.longestFlight = Math.max(bovineRound.longestFlight, cow.flightDistance);
+      bovineRound.longestFlight = Math.max(bovineRound.longestFlight, cow.flightDisplacement);
+      // Tracked here as well as on landing, so a cow still airborne when the
+      // clock runs out still counts for the flight it was having.
+      bovineRound.longestHangTime = Math.max(bovineRound.longestHangTime, cow.flightTime);
       if (cow.id === 17) bovineRound.cow17MaxAltitude = Math.max(bovineRound.cow17MaxAltitude, cow.altitude);
       cow.groundY = terrainHeightAt(cow.x, cow.z);
       cow.mesh.position.set(cow.x, cow.groundY + cow.altitude, cow.z);
@@ -8383,7 +8435,9 @@ function finalizeBovineRun() {
     bovineRound.persisted = true;
   }
   setUI('resCowsRelocated', bovineRound.cowsRelocated);
-  setUI('resCowAirtime', `${bovineRound.combinedAirtime.toFixed(1)}s`);
+  // The card reports the best SINGLE flight; combinedAirtime keeps feeding the
+  // career total above, where a sum across cows is what the name means.
+  setUI('resCowAirtime', `${bovineRound.longestHangTime.toFixed(1)}s`);
   setUI('resCowDistance', `${Math.round(bovineRound.longestFlight * 1.09361)} yd`);
   setUI('resHayLandings', bovineRound.hayLandings);
   finishCowCam();
@@ -12115,9 +12169,21 @@ function finishRun() {
   setUI('resFootageBonus', `+${footageBonus}`);
   setUI('resCosmetic', cosmeticResult);
 
-  setUI('resS1Score', stage1Score);
-  setUI('resS2Score', stage2Score);
-  setUI('resS3Score', stage3Score);
+  // [SW:GAMEPLAY:DISTRICT_SPLIT] Three numbers under three district names read as
+  // "what you scored in each", and they were running totals: the device run of
+  // 2026-09-02 printed 23,646 / 105,920 / 137,963, where the last figure is just
+  // the final score again and the middle one contains the first.
+  //
+  // stage1Score and stage2Score are captured AT the transitions, so a run that
+  // never reached a district leaves them at zero. Clamping the unreached
+  // boundaries to the final score is what makes the subtraction honest for a
+  // short run: rope out in district 1 and the whole score belongs to district 1,
+  // not to a finale that never happened.
+  const boundary1 = currentStage >= 2 ? stage1Score : destructionScore;
+  const boundary2 = currentStage >= 3 ? stage2Score : destructionScore;
+  setUI('resS1Score', Math.max(0, Math.round(boundary1)));
+  setUI('resS2Score', Math.max(0, Math.round(boundary2 - boundary1)));
+  setUI('resS3Score', Math.max(0, Math.round(destructionScore - boundary2)));
 
   finalizeBovineRun();
   updateHighScore(currentStorm, destructionScore);
@@ -16051,6 +16117,25 @@ function refreshNewspaperResults() {
   // last writer wins -- two formats for one element is how a line starts
   // disagreeing with itself.
   if (typeof updateHudMoolah === 'function') updateHudMoolah();
+
+  // [SW:UI:RESULTS_SCROLL] Measured after the paper is filled in, because whether
+  // it overflows depends on the content that was just written into it.
+  const bodyEl = document.querySelector('.np-results-body');
+  const moreEl = document.getElementById('newspaperContinued');
+  if (bodyEl && moreEl) {
+    const syncContinued = () => {
+      const overflows = bodyEl.scrollHeight > bodyEl.clientHeight + 2;
+      const atEnd = bodyEl.scrollTop + bodyEl.clientHeight >= bodyEl.scrollHeight - 4;
+      moreEl.classList.toggle('is-visible', overflows && !atEnd);
+    };
+    if (!bodyEl.dataset.continuedBound) {
+      bodyEl.addEventListener('scroll', syncContinued, { passive: true });
+      bodyEl.dataset.continuedBound = '1';
+    }
+    // The card is display:none until the overlay opens, so a measurement taken
+    // right now reads zero for every height. One frame later it is real.
+    requestAnimationFrame(syncContinued);
+  }
 
   const destEl = document.getElementById('newspaperDestructionStat');
   if (destEl) destEl.textContent = document.getElementById('resBlocks')?.textContent || '0';
