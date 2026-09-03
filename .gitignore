@@ -50,3 +50,6 @@ android/**/build/
 qa-signing/
 android/signing/
 scratch/
+
+# Local probe scripts written during a session; never part of a build.
+*.tmp.mjs
