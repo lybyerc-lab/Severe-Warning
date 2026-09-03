@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "testedCommit": "b92eddd0c66130a14050d3e80bdac8f507c2b9d3",
-  "workflowRun": "179",
-  "startedAt": "2026-09-03T01:54:33.444Z",
-  "finishedAt": "2026-09-03T01:55:30.010Z",
+  "testedCommit": "dca5a7fc669d8bfd830f82048a09be540588f918",
+  "workflowRun": "180",
+  "startedAt": "2026-09-03T11:39:27.583Z",
+  "finishedAt": "2026-09-03T11:40:22.372Z",
   "url": "http://127.0.0.1:4173/",
   "mode": "mobile-landscape four-stop authored-world sweep",
   "checks": {
@@ -85,7 +85,7 @@
           "cow17Seen": false
         },
         "career": {
-          "schema": 1,
+          "schema": 2,
           "totalRelocations": 0,
           "totalAirtime": 0,
           "longestFlight": 0,
@@ -157,7 +157,7 @@
           "cow17Seen": false
         },
         "career": {
-          "schema": 1,
+          "schema": 2,
           "totalRelocations": 0,
           "totalAirtime": 0,
           "longestFlight": 0,
@@ -229,7 +229,7 @@
           "cow17Seen": false
         },
         "career": {
-          "schema": 1,
+          "schema": 2,
           "totalRelocations": 0,
           "totalAirtime": 0,
           "longestFlight": 0,
@@ -301,7 +301,7 @@
           "cow17Seen": false
         },
         "career": {
-          "schema": 1,
+          "schema": 2,
           "totalRelocations": 0,
           "totalAirtime": 0,
           "longestFlight": 0,
