@@ -1,0 +1,98 @@
+# [SW:CI:ALERT] Turn a red workflow into an issue in this repository.
+#
+# WHY THIS EXISTS
+# ---------------
+# Red used to wait to be discovered. Two workflows sat red for ten-plus
+# consecutive commits and nobody noticed; on 2026-09-02 four runs went red or
+# cancelled in one night and were found only because the director asked what was
+# still running. Nothing was unassigned -- the signal was simply passive, and
+# someone had to go looking to learn anything.
+#
+# So a failure now arrives. It opens an issue in this repo, which is where the
+# director asked for it and is the one place that outlives a session, a
+# container, and a cached image three weeks out of date.
+#
+# WHAT IT DOES NOT DO, AND WHY
+# ----------------------------
+# * CANCELLED runs raise nothing. Half of that bad night was runs cancelling each
+#   other because qa-autoplay-full-round sets cancel-in-progress and takes up to
+#   forty minutes. An issue per cancellation would be noise on top of noise. The
+#   cost of a cancellation is that nothing was measured, and AGENTS.md says so;
+#   it is not a broken build.
+# * ONE ISSUE PER WORKFLOW, reused. A new issue per failing run would bury the
+#   first, which is the one with the diagnosis in it. Consecutive failures are
+#   comments on the same issue.
+# * It CLOSES the issue when the workflow goes green again, with the commit that
+#   fixed it. A tracker that only ever opens things is a tracker people stop
+#   reading.
+name: CI Alert
+
+on:
+  workflow_run:
+    workflows:
+      - Validate project
+      - QA Automated Full Round
+      - Build Signed Android QA APK
+    types:
+      - completed
+
+permissions:
+  issues: write
+  actions: read
+
+jobs:
+  alert:
+    # Cancelled and skipped runs are not failures; see the header.
+    if: >
+      github.event.workflow_run.conclusion == 'failure' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Open, update or close the alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          WORKFLOW: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          TITLE="CI failing: ${WORKFLOW}"
+          SHORT="${HEAD_SHA:0:7}"
+
+          # The open alert issue for this workflow, if there is one. Matched on
+          # the exact title rather than a label, so the alert keeps working even
+          # if the label is renamed or deleted by hand.
+          EXISTING=$(gh issue list --repo "$REPO" --state open --limit 100 \
+            --json number,title \
+            --jq "[.[] | select(.title == \"${TITLE}\")] | .[0].number // empty")
+
+          if [ "$CONCLUSION" = "failure" ]; then
+            # printf rather than a heredoc: heredoc content has to sit at column
+            # zero, which breaks out of this YAML block scalar, and indenting it
+            # instead turns the markdown into a code block.
+            BODY=$(printf '**%s** run [#%s](%s) failed on `%s` (`%s`).\n\nPer `AGENTS.md`, CI is owned by whoever pushed, and a red run is the next task ahead of whatever was planned. This issue closes itself when the workflow is green again.\n' \
+              "$WORKFLOW" "$RUN_NUMBER" "$RUN_URL" "$SHORT" "$HEAD_BRANCH")
+            if [ -n "$EXISTING" ]; then
+              gh issue comment "$EXISTING" --repo "$REPO" --body "$BODY"
+              echo "Commented on existing alert issue #${EXISTING}."
+            else
+              NEW=$(gh issue create --repo "$REPO" --title "$TITLE" --body "$BODY")
+              echo "Opened alert issue: ${NEW}"
+            fi
+            exit 0
+          fi
+
+          # Success. Only interesting if this workflow was previously failing.
+          if [ -z "$EXISTING" ]; then
+            echo "${WORKFLOW} is green and had no open alert; nothing to do."
+            exit 0
+          fi
+          gh issue close "$EXISTING" --repo "$REPO" --reason completed --comment \
+            "**${WORKFLOW}** is green again as of run [#${RUN_NUMBER}](${RUN_URL}) on \`${SHORT}\`."
+          echo "Closed alert issue #${EXISTING}."

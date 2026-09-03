@@ -73,6 +73,22 @@ Then inspect the active branch, draft pull request, and latest successful QA bui
 - Record durable product or architecture decisions in `Docs/DECISIONS.md`.
 - Use stable searchable code anchors defined in `Docs/CODE_ANCHORS.md`.
 - Do not merge an unaccepted gameplay milestone.
+- **CI is owned by whoever pushed, and it is checked BEFORE claiming work is
+  done — not when someone asks.** Director's call, 2026-09-02. This is written
+  here rather than assigned to a person because the failure mode is not an
+  unassigned responsibility, it is that red waits to be discovered: two workflows
+  once sat red for ten-plus consecutive commits, and on 2026-09-02 four runs went
+  red or cancelled in one night and were found only because the director asked
+  what was still running. Two supports exist so this does not rest on diligence:
+  the SessionStart hook prints the state of every workflow for the commit it just
+  synced, and `.github/workflows/ci-alert.yml` opens an issue in this repository
+  when a watched workflow fails and closes it when the workflow goes green again.
+  If a run is red, that is the next task, ahead of whatever was planned.
+- **A burst of pushes is a decision to skip the gate.** `qa-autoplay-full-round`
+  sets `cancel-in-progress: true` and takes up to forty minutes, so pushing again
+  inside that window cancels the run in flight. Cancelled is not failed and does
+  not raise an alert, but it does mean nothing was measured. Batch commits, or
+  accept that only the last push of a burst is actually gated.
 
 ## Status vocabulary
 

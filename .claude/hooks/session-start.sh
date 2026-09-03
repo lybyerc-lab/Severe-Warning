@@ -40,6 +40,12 @@ cd "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}" || exit
 
 if [ -x scripts/sync-checkout.sh ]; then
   SW_REPO_DIR="$PWD" bash scripts/sync-checkout.sh
+  # [SW:CI:ALERT] Then say what CI thinks of the tree that was just synced.
+  # Director's call, 2026-09-02: CI is owned by whoever pushed, and it is checked
+  # before claiming work is done rather than when somebody asks. An agent session
+  # starts with no memory of the last one, which makes this the one moment where
+  # the state can be put on screen instead of left to anybody's diligence.
+  [ -x scripts/ci-status.sh ] && bash scripts/ci-status.sh
 else
   echo "session-start: scripts/sync-checkout.sh is missing, which usually means"
   echo "this checkout predates it. Verify the tree before doing any work:"

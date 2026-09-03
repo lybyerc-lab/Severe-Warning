@@ -6,6 +6,7 @@
 .github/workflows/android-debug.yml
 .github/workflows/android-qa-signed.yml
 .github/workflows/archive-branch-tags.yml
+.github/workflows/ci-alert.yml
 .github/workflows/delete-archived-branches.yml
 .github/workflows/deploy-qa-pages.yml
 .github/workflows/deploy-threejs-qa-overlay.yml
@@ -324,6 +325,7 @@ scripts/build-web.mjs
 scripts/check-hygiene.mjs
 scripts/check-inventory.mjs
 scripts/check-model-see-through.mjs
+scripts/ci-status.sh
 scripts/compare-phase5-visual-baseline-legacy.mjs
 scripts/compare-phase5-visual-baseline-v6.mjs
 scripts/compare-phase5-visual-baseline.mjs
