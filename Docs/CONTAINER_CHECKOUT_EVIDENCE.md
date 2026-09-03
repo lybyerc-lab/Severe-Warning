@@ -204,7 +204,7 @@ session had been editing all day was simply missing from `ls`. That is worth
 saying plainly: the detection that worked was noticing the tree was wrong while
 using it.
 
-### The fix has now been observed doing its actual job, 2026-09-02
+### Both layers observed working — and then it reverted again, 2026-09-02
 
 The last open item in this file was that the fast-forward branch had never been
 seen to run: every observation so far was either a stale tree the guard could not
@@ -225,11 +225,22 @@ snapshot on 2026-08-29; layer 2 has now been seen detecting a behind checkout an
 fast-forwarding it, cleanly, with no work to lose.
 
 **And note what did NOT happen.** This restart came up one commit behind, not
-three weeks stale at 8188a45. The restored snapshot now contains `.claude/hooks/`
-— the bootstrap problem this whole file is about does not apply to it. That is
-consistent with the setup script having rebuilt the cached image, though a single
-restart is not proof that the old image is gone for good; the third revert on
-2026-08-29 is the reason to keep watching rather than to declare it settled.
+three weeks stale at 8188a45. The restored snapshot contained `.claude/hooks/` —
+the bootstrap problem this whole file is about did not apply to it.
+
+**Correction, written the same day.** The paragraph above originally read that
+this was "consistent with the setup script having rebuilt the cached image",
+hedged only by saying one restart is not proof. **The very next restart came up
+at 8188a45 again** — fourth occurrence — with no `.claude/hooks/` and a reflog
+whose newest entry was 2026-08-21. So the pool serves at least two images: a
+current one that carries the hook, and the original stale one that does not.
+Which arrives is not something anything here can predict or control.
+
+That is worth stating plainly because it changes what the hook is FOR. It cannot
+be a fix; a guard that ships inside the thing it guards is absent exactly half
+the time. What it is, is a repair for the good half — and the standing rule below
+is what covers the other half. Recovery cost nothing again: fetch, fast-forward,
+zero conflicts, no work lost, because everything had been pushed.
 
 **Recorded for comparison across containers** (2026-08-29 03:3x UTC):
 
