@@ -579,9 +579,17 @@
   }
 
   /* Curved Phosphor CRT Glass Screen with Glass Glare Sheen */
+  /* [SW:UI:BROADCAST_MENU] The menu is the one screen that sets the mood, and it
+     was reading as a 2020s dark-mode glass dashboard wearing a 1982 TV cabinet
+     as a picture frame: cyan on slate navy, blurred translucent panels, a
+     geometric webfont. None of that hue, material or type appears anywhere else
+     in this game -- the world is cream, sage, terracotta and gold, the results
+     paper is cream, black and red, and the EAS bar is red and white.
+     The cabinet was already built. This makes what is ON the screen belong to
+     the same broadcast: warm phosphor ground, EAS red, amber, newsprint. */
   .tv-screen-glass {
-    background: radial-gradient(ellipse at 50% 50%, #0d274c 0%, #07152d 65%, #020817 100%);
-    border: clamp(2px, 0.5vmin, 4px) solid #1e293b;
+    background: radial-gradient(ellipse at 50% 45%, #14202b 0%, #0b131c 62%, #050a0f 100%);
+    border: clamp(2px, 0.5vmin, 4px) solid #2a2119;
     border-radius: clamp(6px, 1.2vmin, 14px);
     margin: clamp(2px, 0.6vmin, 6px) clamp(4px, 1vmin, 8px) clamp(2px, 0.4vmin, 4px) clamp(4px, 1vmin, 8px);
     padding: max(3px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(3px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
@@ -590,7 +598,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-shadow: inset 0 0 50px rgba(0,0,0,0.9), 0 0 20px rgba(14, 165, 233, 0.18);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.92), 0 0 24px rgba(245, 158, 11, 0.10);
     flex: 1;
     min-height: 0;
     box-sizing: border-box;
@@ -671,16 +679,28 @@
     flex: 1;
     min-height: 0;
   }
+  /* [SW:UI:BROADCAST_MENU] The county card is a WIRE DISPATCH -- newsprint, black
+     serif, a red stamp -- so the menu shares its material with the results
+     broadsheet. The storm card is a RADAR READOUT (see .amber-glow below).
+     Two materials that both exist in this world, rather than two identical
+     panes of smartphone glass. */
   .tv-dispatch-card {
-    background: rgba(10, 25, 47, 0.92);
-    border: 1.5px solid rgba(56, 189, 248, 0.4);
+    /* One background-image declaration, not a shorthand followed by an override:
+       `background:` then `background-image:` wipes the shorthand's image, which
+       is how the paper vanished and left black ink on the dark tube. */
+    background-color: #ece2cb;
+    background-image:
+      radial-gradient(rgba(0,0,0,0.07) 1px, transparent 1px),
+      linear-gradient(180deg, #f4ecd9 0%, #e3d6b9 100%);
+    background-size: 7px 7px, auto;
+    color: #1a1410;
+    border: 1.5px solid #8a6a3f;
     border-radius: clamp(8px, 1.5vmin, 12px);
     padding: clamp(6px, 1.2vmin, 10px) clamp(8px, 1.5vw, 12px);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 0 16px rgba(56,189,248,0.06);
-    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.62), inset 0 0 22px rgba(120, 90, 50, 0.10);
     min-height: 0;
   }
   /* [SW:UI:DISPATCH_PREVIEW] The canvas takes the space the cards were wasting.
@@ -689,100 +709,140 @@
   .tv-card-canvas {
     flex: 1 1 auto;
     min-height: 0;
+    max-height: 56%;
     width: 100%;
-    border-radius: clamp(4px, 1vmin, 8px);
-    background: rgba(2, 8, 20, 0.55);
-    border: 1px solid rgba(56, 189, 248, 0.18);
+    border-radius: 2px;
+    background: rgba(26, 20, 16, 0.06);
+    border: 1px solid rgba(26, 20, 16, 0.28);
     margin: clamp(4px, 1vmin, 8px) 0;
   }
-  .tv-dispatch-card.amber-glow .tv-card-canvas { border-color: rgba(245, 158, 11, 0.22); }
+  .tv-dispatch-card.amber-glow .tv-card-canvas { background: #02060420; border-color: rgba(110, 231, 160, 0.28); }
   .tv-dispatch-card.amber-glow {
-    border-color: rgba(245, 158, 11, 0.45);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 0 16px rgba(245,158,11,0.06);
+    background-color: #04100a;
+    background-image: linear-gradient(180deg, #071710 0%, #020806 100%);
+    background-size: auto;
+    color: #7dd39b;
+    border-color: #2f6b45;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.7), inset 0 0 26px rgba(45, 200, 110, 0.09);
   }
   .tv-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.12);
+    border-bottom: 1.5px solid rgba(26, 20, 16, 0.35);
     padding-bottom: clamp(1px, 0.3vmin, 3px);
     margin-bottom: clamp(2px, 0.4vmin, 4px);
     flex-shrink: 0;
   }
+  .tv-dispatch-card.amber-glow .tv-card-header { border-bottom-color: rgba(125, 211, 155, 0.32); }
   .tv-card-header h4 {
     margin: 0;
     font: 900 clamp(9.5px, 2vmin, 11.5px)/1 'Outfit', sans-serif;
-    color: #fde047;
-    letter-spacing: 0.05em;
+    color: #7f1d1d;
+    letter-spacing: 0.06em;
     display: flex;
     align-items: center;
     gap: 5px;
   }
+  /* A rubber stamp on the wire slip, not a status pill. */
   .tv-card-badge {
-    font: 800 clamp(7px, 1.4vmin, 8.5px)/1 'Inter', sans-serif;
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.18);
+    font: 800 clamp(7px, 1.4vmin, 8.5px)/1 'Outfit', sans-serif;
+    color: #b91c1c;
+    background: transparent;
+    border: 1.5px solid rgba(185, 28, 28, 0.7);
     padding: 2px 5px;
-    border-radius: 3px;
+    border-radius: 2px;
+    letter-spacing: 0.08em;
+    transform: rotate(-1.5deg);
   }
+  .tv-dispatch-card.amber-glow .tv-card-header h4 { color: #6ee7a0; }
+  .tv-dispatch-card.amber-glow .tv-card-badge { color: #6ee7a0; border-color: rgba(110, 231, 160, 0.55); transform: none; }
+  /* The county's name is PRINTED. Same serif as the results broadsheet, which is
+     the cheapest and strongest tie between the first screen and the last. */
   .tv-card-main-title {
-    font: 900 clamp(13px, 3vmin, 17px)/1.1 'Outfit', sans-serif;
-    color: #ffffff;
-    letter-spacing: 0.04em;
+    font: 900 clamp(14px, 3.2vmin, 19px)/1.05 'Playfair Display', 'Georgia', serif;
+    color: #1a1410;
+    letter-spacing: 0;
     margin-bottom: 1px;
-    text-shadow: 0 0 12px rgba(255,255,255,0.3);
+    text-shadow: none;
+  }
+  .tv-dispatch-card.amber-glow .tv-card-main-title {
+    font-family: 'Outfit', sans-serif;
+    color: #b7f5cd;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 14px rgba(110, 231, 160, 0.45);
   }
   .tv-card-sub {
-    font: 700 clamp(7.5px, 1.6vmin, 9px)/1.2 'Inter', sans-serif;
-    color: #38bdf8;
+    font: 800 clamp(7.5px, 1.6vmin, 9px)/1.2 'Outfit', sans-serif;
+    color: #7c5a2e;
+    letter-spacing: 0.07em;
     margin-bottom: clamp(1px, 0.3vmin, 3px);
   }
+  .tv-dispatch-card.amber-glow .tv-card-sub { color: #4ba86e; }
+  .tv-dispatch-card.amber-glow .tv-card-gag {
+    font-family: monospace;
+    font-style: normal;
+    color: #3f8f5e;
+    letter-spacing: 0.02em;
+  }
   .tv-card-gag {
-    font: 600 clamp(7px, 1.5vmin, 8.5px)/1.25 'Georgia', serif;
-    color: #cbd5e1;
+    font: 600 clamp(7.2px, 1.5vmin, 8.8px)/1.3 'Georgia', serif;
+    color: #4a3c2c;
     font-style: italic;
     margin-bottom: clamp(2px, 0.4vmin, 4px);
   }
+  /* Struck on the slip by the wire machine: monospace on a ruled band. */
   .tv-card-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font: 800 clamp(8px, 1.8vmin, 9.5px)/1 'Inter', sans-serif;
-    color: #cbd5e1;
+    font: 700 clamp(8px, 1.8vmin, 9.5px)/1 monospace;
+    color: #2b2118;
     margin-bottom: clamp(2px, 0.5vmin, 5px);
-    background: rgba(0,0,0,0.35);
+    background: rgba(26, 20, 16, 0.07);
+    border-top: 1px solid rgba(26, 20, 16, 0.25);
+    border-bottom: 1px solid rgba(26, 20, 16, 0.25);
     padding: clamp(2px, 0.5vmin, 4px) clamp(4px, 1vw, 6px);
-    border-radius: 5px;
+    border-radius: 0;
   }
-  .tv-stars-badge { color: #facc15; font-size: clamp(9px, 2vmin, 11px); }
-  .tv-best-score { color: #22c55e; font-family: monospace; font-size: clamp(9px, 2vmin, 10.5px); }
+  .tv-dispatch-card.amber-glow .tv-card-meta {
+    color: #9ff0bd;
+    background: rgba(110, 231, 160, 0.07);
+    border-color: rgba(110, 231, 160, 0.3);
+  }
+  .tv-stars-badge { color: #7f1d1d; font-size: clamp(10px, 2.2vmin, 12px); letter-spacing: 0.06em; }
+  .tv-best-score { color: #6ee7a0; font-family: monospace; font-size: clamp(9px, 2vmin, 10.5px); }
   
+  /* [SW:UI:BROADCAST_MENU] The blue gradient button was the loudest 2020s note on
+     the screen. Broadcast furniture of this era is a flat colour block with a
+     hard keyline -- red for the alert, amber for the set. */
   .tv-card-action-btn {
-    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-    color: #ffffff;
-    border: 1px solid #38bdf8;
-    border-radius: 7px;
+    background: #b3261e;
+    color: #fff6ee;
+    border: 1.5px solid #7f1d1d;
+    border-radius: 3px;
     padding: clamp(5px, 1.1vmin, 8px) clamp(8px, 1.5vw, 12px);
     font: 900 clamp(9px, 1.9vmin, 11px)/1 'Outfit', sans-serif;
     letter-spacing: 0.05em;
     cursor: pointer;
-    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.4), inset 0 1px rgba(255,255,255,0.25);
-    transition: transform 0.15s ease, background 0.15s ease;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.35);
+    transition: transform 0.12s ease, background 0.12s ease;
     flex-shrink: 0;
+    text-transform: uppercase;
   }
-  .tv-card-action-btn:hover { background: #0284c7; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(56, 189, 248, 0.6); }
+  .tv-card-action-btn:hover { background: #c93a2c; transform: translateY(-1px); }
   .tv-card-action-btn.amber {
-    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-    border-color: #f59e0b;
-    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.4), inset 0 1px rgba(255,255,255,0.25);
+    background: #b8791a;
+    color: #1a1207;
+    border-color: #7c4a08;
   }
-  .tv-card-action-btn.amber:hover { background: #d97706; box-shadow: 0 5px 14px rgba(245, 158, 11, 0.6); }
+  .tv-card-action-btn.amber:hover { background: #d18b1e; }
 
   /* Animated Breaking News Ticker */
   .tv-marquee-container {
-    background: #060c18;
-    border: 1.5px solid rgba(56, 189, 248, 0.35);
-    border-radius: 6px;
+    background: #0a0705;
+    border: 1.5px solid rgba(245, 158, 11, 0.32);
+    border-radius: 3px;
     padding: clamp(2px, 0.4vmin, 3px) 0;
     overflow: hidden;
     position: relative;
@@ -3835,12 +3895,15 @@ function drawCountyDispatchMap(canvas, level) {
   const unit = Math.min(w, h) / 100;   // one "unit" so nothing is a fixed pixel
   ctx.clearRect(0, 0, w, h);
 
-  const ground = ctx.createLinearGradient(0, 0, 0, h);
-  ground.addColorStop(0, level.skyColor || '#0f172a');
-  ground.addColorStop(0.18, level.fogColor || '#0f172a');
-  ground.addColorStop(1, level.terrainTint || '#e2e8f0');
-  ctx.fillStyle = ground;
+  // [SW:UI:BROADCAST_MENU] Printed on the slip, so it is ink on paper: the county
+  // still supplies its own hue, but as a pale wash a press could actually lay
+  // down rather than a backlit gradient.
+  ctx.fillStyle = '#efe6d0';
   ctx.fillRect(0, 0, w, h);
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = level.terrainTint || '#cbd5e1';
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalAlpha = 1;
 
   // Three district bands filling the card, near to far, in order of play.
   const districts = Array.isArray(level.districts) ? level.districts : [];
@@ -3851,15 +3914,15 @@ function drawCountyDispatchMap(canvas, level) {
 
   for (let i = 0; i < 3; i++) {
     const y = top + i * bandHeight;
-    ctx.fillStyle = i % 2 === 0 ? 'rgba(8, 20, 38, 0.30)' : 'rgba(8, 20, 38, 0.14)';
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(26, 20, 16, 0.07)' : 'rgba(26, 20, 16, 0.03)';
     ctx.fillRect(pad, y, w - pad * 2, bandHeight - unit);
-    ctx.strokeStyle = 'rgba(148, 197, 253, 0.26)';
+    ctx.strokeStyle = 'rgba(26, 20, 16, 0.45)';
     ctx.lineWidth = Math.max(1, unit * 0.25);
     ctx.strokeRect(pad + 0.5, y + 0.5, w - pad * 2 - 1, bandHeight - unit - 1);
 
     // Lots: deterministic from the band index, so the picture is stable between
     // refreshes rather than reshuffling every time the menu redraws.
-    ctx.fillStyle = 'rgba(226, 240, 255, 0.14)';
+    ctx.fillStyle = 'rgba(26, 20, 16, 0.20)';
     const rows = 3;
     const cols = 4;
     for (let r = 0; r < rows; r++) {
@@ -3873,15 +3936,15 @@ function drawCountyDispatchMap(canvas, level) {
       }
     }
 
-    ctx.fillStyle = 'rgba(233, 244, 255, 0.95)';
-    ctx.font = `600 ${labelSize}px monospace`;
+    ctx.fillStyle = 'rgba(26, 20, 16, 0.92)';
+    ctx.font = `700 ${labelSize}px monospace`;
     ctx.textBaseline = 'top';
     const name = districts[i] && districts[i][0] ? districts[i][0] : `DISTRICT ${i + 1}`;
     ctx.fillText(`${i + 1}. ${name}`, pad + 1.6 * unit, y + 1.6 * unit);
   }
 
   // The crossroads every county is built on.
-  ctx.strokeStyle = 'rgba(226, 240, 255, 0.13)';
+  ctx.strokeStyle = 'rgba(26, 20, 16, 0.16)';
   ctx.lineWidth = Math.max(2, unit * 1.6);
   ctx.beginPath();
   ctx.moveTo(w * 0.58, top);
@@ -3896,7 +3959,7 @@ function drawCountyDispatchMap(canvas, level) {
   const spawn = level.spawn || { x: 0, z: 0 };
   const x = Math.max(pad + 8 * unit, Math.min(w - pad - 8 * unit, w * 0.5 + (Number(spawn.x) || 0) * (unit * 0.22)));
   const y = top + bandHeight * 0.62;
-  ctx.strokeStyle = '#f87171';
+  ctx.strokeStyle = '#b3261e';
   ctx.lineWidth = Math.max(1.5, unit * 0.4);
   for (const ring of [2, 4, 6]) {
     ctx.globalAlpha = ring === 2 ? 1 : (ring === 4 ? 0.5 : 0.25);
@@ -3905,7 +3968,7 @@ function drawCountyDispatchMap(canvas, level) {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#fecaca';
+  ctx.fillStyle = '#7f1d1d';
   ctx.font = `700 ${Math.max(8, 3.4 * unit)}px monospace`;
   ctx.textBaseline = 'middle';
   ctx.fillText('TOUCHDOWN', x + 7.5 * unit, y);
@@ -3921,9 +3984,12 @@ function drawStormProfile(canvas, stormKey) {
   const skinKey = (typeof swRpgStore !== 'undefined' && swRpgStore.activeSkin) || 'default-classic';
   const skin = (typeof SW_RPG_SKINS !== 'undefined' && SW_RPG_SKINS[skinKey]) || { label: 'CLASSIC DUST DEVIL', coreColor: '#334155', accentColor: '#64748b', suctionGlow: '#94a3b8' };
 
+  // [SW:UI:BROADCAST_MENU] A radar scope, which is the one place in this menu a
+  // cool hue is earned -- scopes of this era were green phosphor. The equipped
+  // skin still reads, as the colour of the return rather than of the whole UI.
   const sky = ctx.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, '#050b18');
-  sky.addColorStop(1, '#101d33');
+  sky.addColorStop(0, '#04100a');
+  sky.addColorStop(1, '#020806');
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
 
@@ -3937,7 +4003,7 @@ function drawStormProfile(canvas, stormKey) {
   const cx = w / 2;
   const s = bandHeight;
 
-  ctx.strokeStyle = 'rgba(56, 189, 248, 0.13)';
+  ctx.strokeStyle = 'rgba(110, 231, 160, 0.22)';
   ctx.lineWidth = Math.max(1, w * 0.004);
   for (const ring of [0.16, 0.3, 0.44]) {
     ctx.beginPath();
@@ -3945,12 +4011,16 @@ function drawStormProfile(canvas, stormKey) {
     ctx.stroke();
   }
 
-  ctx.fillStyle = 'rgba(148, 163, 184, 0.2)';
+  ctx.fillStyle = 'rgba(110, 231, 160, 0.10)';
   ctx.fillRect(0, groundY, w, h - groundY);
 
+  // A scope cannot show paint. The return is drawn in the tube's own phosphor and
+  // the skin identifies itself in the label below, in its own colour -- which is
+  // both physically honest and stops the funnel reading as a foreign object
+  // pasted onto a radar screen.
   const body = ctx.createLinearGradient(0, bandTop, 0, groundY);
-  body.addColorStop(0, skin.coreColor);
-  body.addColorStop(1, skin.accentColor);
+  body.addColorStop(0, 'rgba(110, 231, 160, 0.30)');
+  body.addColorStop(1, 'rgba(163, 245, 196, 0.60)');
   ctx.fillStyle = body;
 
   if (stormKey === 'derecho') {
@@ -3963,7 +4033,7 @@ function drawStormProfile(canvas, stormKey) {
     ctx.lineTo(w * 0.12, shelfTop + s * 0.24);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = skin.suctionGlow;
+    ctx.strokeStyle = 'rgba(183, 245, 205, 0.8)';
     ctx.globalAlpha = 0.5;
     ctx.lineWidth = Math.max(1.5, s * 0.008);
     for (let i = 0; i < 5; i++) {
@@ -4003,8 +4073,8 @@ function drawStormProfile(canvas, stormKey) {
     ctx.bezierCurveTo(cx + baseHalf * 0.7, groundY - s * 0.16, cx + topHalf * 0.75, groundY - s * 0.34, cx + topHalf, cloudY + s * 0.05);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = skin.suctionGlow;
-    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = 'rgba(183, 245, 205, 0.85)';
+    ctx.globalAlpha = 0.9;
     ctx.lineWidth = Math.max(1.5, s * 0.008);
     ctx.beginPath();
     ctx.ellipse(cx, groundY - s * 0.01, baseHalf * 1.5, s * 0.035, 0, 0, Math.PI * 2);
@@ -4012,10 +4082,12 @@ function drawStormProfile(canvas, stormKey) {
     ctx.globalAlpha = 1;
   }
 
-  ctx.fillStyle = 'rgba(226, 240, 255, 0.82)';
-  ctx.font = `700 ${Math.max(8, w * 0.045)}px monospace`;
+  ctx.font = `700 ${Math.max(8, w * 0.042)}px monospace`;
   ctx.textBaseline = 'top';
-  ctx.fillText(`SKIN: ${(skin.label || 'CLASSIC DUST DEVIL').toUpperCase()}`, w * 0.05, h * 0.02);
+  ctx.fillStyle = 'rgba(159, 240, 189, 0.7)';
+  ctx.fillText('SKIN', w * 0.05, h * 0.03);
+  ctx.fillStyle = skin.accentColor || '#9ff0bd';
+  ctx.fillText((skin.label || 'CLASSIC DUST DEVIL').toUpperCase(), w * 0.05 + ctx.measureText('SKIN  ').width, h * 0.03);
 }
 
 // Match the bitmap to the box before drawing.
