@@ -549,7 +549,10 @@
     height: 100vh;
     height: 100dvh;
     z-index: 99999 !important;
-    background: #000000;
+    /* [SW:UI:BROADCAST_MENU] Was #000000, an opaque sheet over the entire
+       viewport -- which is why the live county underneath was invisible. The
+       cabinet paints its own frame below; the middle is a window now. */
+    background: transparent;
     display: flex;
     align-items: stretch;
     justify-content: stretch;
@@ -562,11 +565,23 @@
   }
   #mainMenu.hidden { display: none !important; }
 
+  /* [SW:UI:BROADCAST_MENU] The run's own furniture must not show through the
+     window. Before the tube was transparent these were simply hidden behind an
+     opaque sheet; now they have to be told. */
+  #mainMenu:not(.hidden) ~ #hud,
+  #mainMenu:not(.hidden) ~ #easBanner,
+  #mainMenu:not(.hidden) ~ #joystickZone { display: none !important; }
+
   /* Authentic 1980s Walnut Woodgrain TV Cabinet Chassis (Full-Screen Edge-to-Edge) */
   .tv-cabinet-chassis {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #451a03 0%, #291002 45%, #170700 100%);
+    /* A frame, not a fill: the walnut is painted as an inset ring so the screen
+       area stays transparent down to the live world. The bezel below keeps its
+       own wood. */
+    background: transparent;
+    box-shadow: inset 0 0 0 clamp(3px, 0.8vmin, 7px) #3d1703,
+                inset 0 0 90px rgba(0, 0, 0, 0.85);
     border: clamp(2px, 0.6vmin, 5px) solid #5c2406;
     border-radius: 0;
     box-shadow: none;
@@ -588,7 +603,10 @@
      The cabinet was already built. This makes what is ON the screen belong to
      the same broadcast: warm phosphor ground, EAS red, amber, newsprint. */
   .tv-screen-glass {
-    background: radial-gradient(ellipse at 50% 45%, #14202b 0%, #0b131c 62%, #050a0f 100%);
+    /* Transparent so the live county shows through; the vignette below keeps the
+       broadcast furniture readable over it. */
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(10, 16, 22, 0.06) 0%, rgba(5, 10, 15, 0.55) 72%, rgba(3, 6, 9, 0.86) 100%);
     border: clamp(2px, 0.5vmin, 4px) solid #2a2119;
     border-radius: clamp(6px, 1.2vmin, 14px);
     margin: clamp(2px, 0.6vmin, 6px) clamp(4px, 1vmin, 8px) clamp(2px, 0.4vmin, 4px) clamp(4px, 1vmin, 8px);
@@ -669,14 +687,18 @@
   }
 
   /* Two-Card Dispatch Grid (Responsive Full-Screen Landscape) */
+  /* [SW:UI:BROADCAST_MENU] Broadcast furniture over a live picture, not the
+     picture itself: the pair sits low and takes a little under half the tube, so
+     the top of the screen is county and sky. */
   .tv-dispatch-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: clamp(6px, 1.2vw, 12px);
-    margin: clamp(1px, 0.3vmin, 3px) 0 clamp(2px, 0.5vmin, 5px);
+    margin: auto 0 clamp(2px, 0.5vmin, 5px);
     position: relative;
     z-index: 7;
-    flex: 1;
+    flex: 0 1 auto;
+    max-height: min(36vh, 258px);
     min-height: 0;
   }
   /* [SW:UI:BROADCAST_MENU] The county card is a WIRE DISPATCH -- newsprint, black
@@ -784,6 +806,16 @@
     font-style: normal;
     color: #3f8f5e;
     letter-spacing: 0.02em;
+  }
+  .tv-card-districts {
+    font: 700 clamp(7.5px, 1.6vmin, 9.5px)/1.75 monospace;
+    color: #3b2f22;
+    letter-spacing: 0.02em;
+    margin: clamp(2px, 0.6vmin, 6px) 0;
+    white-space: pre-line;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .tv-card-gag {
     font: 600 clamp(7.2px, 1.5vmin, 8.8px)/1.3 'Georgia', serif;
@@ -1868,11 +1900,15 @@
                  front door of a game about spectacle. These draw from data the
                  menu already has: the county's own palette and district names,
                  and the storm's profile in the equipped funnel skin. -->
-            <canvas class="tv-card-canvas" id="tvCountyMapCanvas" width="320" height="200" aria-hidden="true"></canvas>
             <div class="tv-card-body">
               <div class="tv-card-main-title" id="tvActiveCountyName">LINCOLN COUNTY</div>
               <div class="tv-card-sub" id="tvActiveCountyStation">KSWX 8 · SUBURB & FARMSTEAD</div>
               <div class="tv-card-gag">"100% chance of roof adjustments and flying livestock."</div>
+              <!-- [SW:UI:BROADCAST_MENU] What a wire slip would actually carry:
+                   the run order, typed. The drawn plan that used to sit here was
+                   a picture of the county printed directly beneath the live
+                   county, which is one county too many. -->
+              <div class="tv-card-districts" id="tvCountyDistricts"></div>
               <div class="tv-card-meta">
                 <span id="tvActiveCountyTarget">TARGET: 45,000 PTS</span>
                 <span class="tv-stars-badge" id="tvActiveCountyStars">★★★ 0/3</span>
@@ -4134,6 +4170,14 @@ function updateTvMenuDisplays() {
       const targetVal = activeLevel.scoreTarget || activeLevel.targetPoints || 50000;
       setUI('tvActiveCountyTarget', `TARGET: ${targetVal.toLocaleString()} PTS`);
       setUI('tvActiveCountyStars', '★'.repeat(stars) + '☆'.repeat(3 - stars) + ` (${stars}/3)`);
+      // [SW:UI:BROADCAST_MENU] The run order, typed onto the slip.
+      const districtsEl = document.getElementById('tvCountyDistricts');
+      if (districtsEl) {
+        const list = Array.isArray(activeLevel.districts) ? activeLevel.districts : [];
+        districtsEl.textContent = list.length
+          ? list.map((entry, index) => `${index + 1}. ${entry[0]}`).join('\n')
+          : '1. PINE RIDGE\n2. MAIN STREET\n3. COUNTY FAIR';
+      }
     }
   }
 
@@ -7439,6 +7483,9 @@ let peakEfRating = 'EF-0';
 // counter rather than a reading of the timer.
 let efRunClock = 0;
 let efBadgeChangedAt = 0;
+// [SW:UI:BROADCAST_MENU] Drives the slow arc the menu camera flies while the
+// player is still choosing. Its own clock so it does not touch the run clock.
+let menuCameraClock = 0;
 let efMultiplier = 1.0;
 // [SW:GAMEPLAY:INTEGRITY] The run's only way to go wrong. The rules are pure and
 // unit-tested in src/gameplay/run/integrity-system.ts; this holds the state the
@@ -12787,7 +12834,29 @@ function animate(now) {
   const presentationLatched = typeof globalThis.isPhase5PresentationLatched === 'function'
     && globalThis.isPhase5PresentationLatched();
   const cinematicActive = typeof openingCinematicState !== 'undefined' && openingCinematicState.active;
-  if (!qaCameraParked && !presentationLatched && !cinematicActive) {
+  // [SW:UI:BROADCAST_MENU] The county is already built and rendering while the
+  // menu is up -- 303 objects in the scene, the loop running, and the whole thing
+  // hidden behind an opaque panel. So the menu shows the live world instead of a
+  // drawing of one: a slow arc over the town with the funnel on the horizon,
+  // which is the cold open the first screen was missing and costs nothing that
+  // was not already being spent.
+  const menuIdle = typeof gameStarted !== 'undefined' && !gameStarted;
+  if (menuIdle && !qaCameraParked && !presentationLatched && !cinematicActive) {
+    menuCameraClock += Math.min(0.05, dt);
+    const angle = menuCameraClock * 0.055;
+    const radius = 340;
+    const targetX = Math.cos(angle) * radius;
+    const targetZ = Math.sin(angle) * radius;
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.02);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, 28, 0.02);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.02);
+    // Framing measured rather than eyeballed, and the elevation matters as much
+    // as the projection: a steep look-down put the funnel numerically high in
+    // frame but showed the top of the cloud, which reads as a grey disc. This is
+    // a near-level chase shot -- the funnel in profile against sky, its top at
+    // 39% of screen height and its base at 59%, just above the furniture.
+    camera.lookAt(0, 26, 0);
+  } else if (!qaCameraParked && !presentationLatched && !cinematicActive) {
     if (bovineCowCam.active && bovineCowCam.cow && bovineCowCam.cow.mesh) {
       const cow = bovineCowCam.cow;
       const cinematicX = cow.x + 23;
