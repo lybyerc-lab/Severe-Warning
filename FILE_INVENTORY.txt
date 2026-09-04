@@ -369,6 +369,7 @@ scripts/verify-modernization-phase7-audio-traffic.mjs
 scripts/verify-modernization-phase8-engine.mjs
 scripts/verify-moolah-economy.mjs
 scripts/verify-newspaper-opening.mjs
+scripts/verify-orientation-lock.mjs
 scripts/verify-qa-package.mjs
 scripts/verify-results-elements.mjs
 scripts/verify-shop-system.mjs

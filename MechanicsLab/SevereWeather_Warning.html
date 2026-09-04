@@ -1929,6 +1929,20 @@
     letter-spacing: 0.14em;
     color: #a16207;
   }
+  .rotate-gate-tap {
+    display: none;
+    margin-top: 12px;
+    padding: 7px 10px;
+    border: 1px solid #b45309;
+    border-radius: 4px;
+    background: rgba(180, 83, 9, 0.16);
+    font: 900 9px/1 'Inter', sans-serif;
+    letter-spacing: 0.16em;
+    color: #fcd34d;
+  }
+  #rotateGate.rotate-gate-actionable .rotate-gate-tap { display: block; }
+  #rotateGate.rotate-gate-actionable { cursor: pointer; }
+
   /* Phones and small tablets held upright. A desktop window is neither coarse-
      pointer nor this narrow, so a windowed browser is never gated. */
   @media (orientation: portrait) and (max-width: 900px) {
@@ -2620,6 +2634,7 @@
       Our coverage is broadcast in widescreen.<br>
       Turn your device sideways to rejoin the storm.
     </div>
+    <div class="rotate-gate-tap">TAP ANYWHERE FOR FULLSCREEN</div>
     <div class="rotate-gate-sig">KSWX-7 &nbsp;&bull;&nbsp; SEVERE WEATHER DESK</div>
   </div>
 </div>
@@ -4434,6 +4449,10 @@ function selectMenuStorm(stormType) {
 function startRunFromMenu() {
   initAudio();
   playSound('click');
+  // [SW:UI:ORIENTATION_LOCK] The one gesture every player makes, and the only
+  // moment the browser will grant fullscreen -- which is what makes the
+  // landscape lock stick rather than merely be asked for.
+  if (typeof requestImmersiveLandscape === 'function') requestImmersiveLandscape();
   const menu = getCachedEl('mainMenu');
   if (menu) {
     menu.classList.add('hidden');
@@ -12562,6 +12581,15 @@ document.addEventListener('visibilitychange', () => {
 // to enforce it -- screen.orientation.lock is fullscreen-only where it exists at
 // all, and iOS Safari has no lock -- so the web lane asks, and when the ask is
 // refused it stops the run rather than playing on sideways.
+//
+// FULLSCREEN IS WHY THE LOCK WORKS AT ALL. On Android Chrome, lock() rejects
+// with a SecurityError outside fullscreen, so a build that never enters
+// fullscreen is all gate and no lock -- it can only ask the player to turn the
+// phone, never keep it turned. Going fullscreen is a user gesture away and this
+// takes the two gestures a player already makes: starting a run, and tapping
+// the stand-by card. On iOS Safari, where Element.requestFullscreen does not
+// exist on the document and there is no orientation lock at any price, both
+// requests no-op and the card is the whole answer.
 let runSuspendedByRotation = false;
 let orientationLockRequested = false;
 
@@ -12573,6 +12601,22 @@ const rotateGateQuery = window.matchMedia('(orientation: portrait) and (max-widt
 function orientationGateActive() {
   if (document.documentElement.classList.contains('sw-orientation-ungated')) return false;
   return rotateGateQuery.matches;
+}
+
+// The native shell is already landscape and already fills the screen; asking a
+// WebView to go fullscreen there buys nothing and can fight the status bar.
+function isNativeShell() {
+  return Boolean(window.Capacitor || window.cordova);
+}
+
+function fullscreenSupported() {
+  if (isNativeShell()) return false;
+  const el = document.documentElement;
+  return Boolean(el.requestFullscreen || el.webkitRequestFullscreen);
+}
+
+function isFullscreen() {
+  return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
 }
 
 function requestLandscapeLock() {
@@ -12588,6 +12632,27 @@ function requestLandscapeLock() {
       if (result && typeof result.catch === 'function') result.catch(() => {});
     }
   } catch (e) {}
+}
+
+// Called only from a real user gesture -- requestFullscreen is refused from
+// anywhere else -- and always followed by a fresh lock attempt, because the
+// attempt made before fullscreen was entered is exactly the one that failed.
+function requestImmersiveLandscape() {
+  if (!fullscreenSupported()) {
+    orientationLockRequested = false;
+    requestLandscapeLock();
+    return;
+  }
+  if (!isFullscreen()) {
+    try {
+      const el = document.documentElement;
+      const request = el.requestFullscreen || el.webkitRequestFullscreen;
+      const result = request.call(el, { navigationUI: 'hide' });
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (e) {}
+  }
+  orientationLockRequested = false;
+  requestLandscapeLock();
 }
 
 function syncOrientationGate() {
@@ -12617,6 +12682,20 @@ function syncOrientationGate() {
 
 if (isBotMode || urlParams.get('qa') === '1') {
   document.documentElement.classList.add('sw-orientation-ungated');
+}
+// Entering or leaving fullscreen changes whether the lock can succeed, so the
+// one-shot guard is dropped and the ask is repeated on the far side.
+document.addEventListener('fullscreenchange', () => {
+  orientationLockRequested = false;
+  if (isFullscreen()) requestLandscapeLock();
+});
+// The card is the one thing a portrait player can reach, so it is the button.
+// The hint only appears where fullscreen is real; on iOS it would be a promise
+// the browser will not keep.
+const rotateGateEl = document.getElementById('rotateGate');
+if (rotateGateEl) {
+  if (fullscreenSupported()) rotateGateEl.classList.add('rotate-gate-actionable');
+  rotateGateEl.addEventListener('click', requestImmersiveLandscape);
 }
 if (typeof rotateGateQuery.addEventListener === 'function') {
   rotateGateQuery.addEventListener('change', syncOrientationGate);

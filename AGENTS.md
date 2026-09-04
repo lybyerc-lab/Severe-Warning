@@ -90,7 +90,9 @@ Then inspect the active branch, draft pull request, and latest successful QA bui
   lock and raises a stand-by card when refused (`[SW:UI:ORIENTATION_LOCK]`). A
   portrait viewport in a QA script measures a layout that cannot ship —
   `scripts/qa-play-full-round.mjs` did exactly that at 430x932 for months. If a
-  new script opens a page, its viewport is wider than it is tall.
+  new script opens a page, its viewport is wider than it is tall. `npm run
+  verify:orientation` checks exactly this and fails the build; do not weaken it
+  to make a portrait experiment pass.
 - **A burst of pushes is a decision to skip the gate.** `qa-autoplay-full-round`
   sets `cancel-in-progress: true` and takes up to forty minutes, so pushing again
   inside that window cancels the run in flight. Cancelled is not failed and does

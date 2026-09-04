@@ -305,12 +305,15 @@ what is genuinely next:
   the world is framed for a wide picture — three things portrait cannot have at
   once. Android enforces it (`android:screenOrientation="sensorLandscape"`).
   The browser cannot be made to: `screen.orientation.lock` is fullscreen-only
-  where it exists and absent on iOS Safari, so the web build asks for the lock
-  and, when refused, raises the KSWX-7 stand-by card
-  (`[SW:UI:ORIENTATION_LOCK]`) and suspends the run through the same door as a
-  backgrounded tab. **Every harness viewport must be landscape.** The full-round
+  where it exists and absent on iOS Safari, so the web build goes fullscreen on
+  the player's own gesture — which is what makes the lock succeed rather than
+  merely be asked for — and where that is refused it raises the KSWX-7 stand-by
+  card (`[SW:UI:ORIENTATION_LOCK]`) and suspends the run through the same door as
+  a backgrounded tab. **Every harness viewport must be landscape.** The full-round
   playtest ran at 430x932 for months, which is an orientation the shipping app
   cannot be in — it was measuring a layout no player will ever see.
+  `npm run verify:orientation` holds all three halves of this and fails the
+  build rather than trusting anyone to remember.
 
 - **First law: nothing that moves is ever harmed.** Enforced at `damageTarget`,
   which is the single chokepoint every hazard reaches a target through.
@@ -370,6 +373,28 @@ what is genuinely next:
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The landscape lock got the half that makes it work, and a guard.**
+  2026-09-04, straight after the lock itself. Two gaps. `screen.orientation.lock`
+  rejects with a SecurityError outside fullscreen on Android Chrome and we never
+  requested fullscreen, so the web lane was **all gate and no lock** — able to ask
+  a player to turn the phone, never to keep it turned. And nothing anywhere
+  checked the decision, which is exactly how a portrait harness viewport survived
+  for months. Now: fullscreen is requested on the two gestures a player already
+  makes (GO LIVE ON AIR, and tapping the stand-by card, which is itself the
+  button and says so); the lock is re-asked on the far side of
+  `fullscreenchange`, because the attempt made before fullscreen is precisely the
+  one that failed; the native shell is skipped, since the manifest already has
+  it. `scripts/verify-orientation-lock.mjs` (12 checks, wired into the full-round
+  workflow) asserts the manifest string, six code paths, and that **every**
+  viewport in `scripts/*.mjs` is wider than it is tall. Proved live: tapping GO
+  LIVE ON AIR puts `document.fullscreenElement` on `<html>` and starts the run;
+  the card shows `TAP ANYWHERE FOR FULLSCREEN` and going fullscreen works from
+  it; with `Element.prototype.requestFullscreen` deleted — standing in for iOS
+  Safari — the hint does not appear and tapping is harmless; rotation
+  suspend/resume is unchanged (0.00s of clock over 2.5s gated). The verifier was
+  proved able to fail three ways — portrait viewport, portrait manifest, lock
+  request removed — before it was trusted.
 
 - **Landscape is now the only orientation, and the harness finally tests it.**
   Director's call, 2026-09-04. The Android manifest had said `sensorLandscape`

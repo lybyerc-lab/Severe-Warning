@@ -106,6 +106,7 @@ jobs:
           npm run verify:v500
           npm run verify:economy
           npm run verify:results
+          npm run verify:orientation
           npm run modern:typecheck
           npm test
           npm run modern:build

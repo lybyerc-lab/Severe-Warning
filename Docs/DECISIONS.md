@@ -119,9 +119,10 @@ Status: explicitly approved by director
 Decision:
 - Severe Warning ships landscape. There is no portrait layout and none will be built.
 - Android enforces it: `MainActivity` keeps `android:screenOrientation="sensorLandscape"`, which allows either landscape direction and no upright one.
-- The browser lane cannot enforce it — `screen.orientation.lock` is fullscreen-only where it exists at all and absent on iOS Safari — so the web build asks for the lock and, when refused, raises the KSWX-7 stand-by card at `[SW:UI:ORIENTATION_LOCK]` and suspends a live run through the same path a backgrounded tab uses.
+- The browser lane cannot enforce it — `screen.orientation.lock` is fullscreen-only where it exists at all and absent on iOS Safari — so the web build enters fullscreen on the player's own gesture (GO LIVE ON AIR, or a tap on the stand-by card) and asks for the lock there, which is the only place Android Chrome grants it. Where fullscreen or the lock is refused, the KSWX-7 stand-by card at `[SW:UI:ORIENTATION_LOCK]` goes up and a live run is suspended through the same path a backgrounded tab uses.
 - The gate is media-query driven (`(orientation: portrait) and (max-width: 900px)`), so a windowed desktop browser is never gated. The bot harness (`?bot=true`) and the QA labs (`?qa=1`) are ungated by class.
 - Every automated harness viewport must be landscape. A portrait viewport measures a layout that cannot ship.
+- `npm run verify:orientation` (`scripts/verify-orientation-lock.mjs`) enforces all of the above on every build and is wired into the full-round workflow. This decision is not maintained by memory.
 
 Rationale:
 - The twin-stick layout wants the thumbs wide apart, the HUD is a broadcast lower-third, and the world is framed for a wide picture. Portrait cannot have all three, and supporting it doubles the layout surface of every screen for a hand nobody wants to play.
