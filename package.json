@@ -30,6 +30,8 @@
     "verify:economy": "node scripts/verify-economy-tables.mjs",
     "verify:results": "node scripts/verify-results-elements.mjs",
     "verify:orientation": "node scripts/verify-orientation-lock.mjs",
+    "verify:art": "node scripts/verify-app-art.mjs",
+    "brand:render": "node tools/brand/render-app-art.mjs",
     "qa:v510": "node scripts/qa-v510-production-slice.mjs",
     "qa:phase2": "node scripts/qa-modernization-phase2-clocks.mjs",
     "qa:phase3": "node scripts/qa-modernization-phase3-input-abilities.mjs",

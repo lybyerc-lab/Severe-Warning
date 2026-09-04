@@ -42,11 +42,20 @@ place to write *fin*. A list can be emptied. This one is deliberately short and
 probably slightly wrong, and a slightly wrong list that gets finished beats a
 perfect standard that never does.
 
-- [ ] **1. Real launcher icon and splash.** `mipmap-*/ic_launcher.png` and
-  `drawable-*/splash.png` are still the stock Capacitor logo — a blue X on white.
-  On a device the drawer icon is Capacitor's and the app opens on a white screen
-  with Capacitor's mark before the 1982 newsroom ever appears. Everything inside
-  is bespoke; the first two seconds belong to somebody else's placeholder.
+- [x] **1. Real launcher icon and splash.** Done 2026-09-04. Both were the stock
+  Capacitor logo — a blue X on white — so the drawer icon and the first two
+  seconds of the app belonged to the tooling. Now a gold wedge funnel with two
+  debris arcs on the game's own storm navy, over the red EAS rule the warning
+  banner already uses; the splash carries the same mark over SEVERE WEATHER /
+  KSWX-7 STORM DESK on a flat field that survives any stretch or crop. The art is
+  **source, not binaries**: `tools/brand/brand-art.mjs` holds the shapes and
+  `npm run brand:render` rasterizes all 26 densities through Chromium, so it can
+  be changed by editing a path rather than by finding whoever has the original
+  file. The adaptive background colour moved off `#FFFFFF`, and the two leftover
+  stock Capacitor vectors are deleted. `npm run verify:art` reads the actual
+  pixels — sizes from the PNG header, and the foreground's painted extent against
+  Android's 66% crop circle. The first draft reached 65.4% of the radius and
+  would have lost its edges on a tighter launcher; it is 58.8% now.
 
 - [x] **2. Gate the other six counties into progression.** Done 2026-09-04, and
   it was not only a missing gate. Coastal and Metro declared `targetPoints` where
@@ -61,9 +70,9 @@ perfect standard that never does.
   onto its first stop. All three regions now gate, unlock, advance and complete
   on their own list, per-region unlock state persists beside the untouched
   Heartland save, and the star total counts all ten counties instead of four.
-  **Open decision:** whether a region should be locked until the previous one is
-  cleared. Not done — it would take away access the director currently has, so it
-  is the director's call, not a default.
+  **Decided 2026-09-04: regions stay unlocked.** The director's call — each
+  region's first county is open from the start and the chain runs inside a
+  region, not between them. Do not relitigate this by adding a region gate.
 
 - [ ] **3. One logged device run on current code.** `Docs/DEVICE_TEST_LOG.md` was
   last written 2026-08-26. The economy, funnel integrity and rope-out, the

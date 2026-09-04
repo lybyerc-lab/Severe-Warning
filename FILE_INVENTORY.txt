@@ -150,8 +150,6 @@ android/app/src/main/res/drawable-port-mdpi/splash.png
 android/app/src/main/res/drawable-port-xhdpi/splash.png
 android/app/src/main/res/drawable-port-xxhdpi/splash.png
 android/app/src/main/res/drawable-port-xxxhdpi/splash.png
-android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml
-android/app/src/main/res/drawable/ic_launcher_background.xml
 android/app/src/main/res/drawable/splash.png
 android/app/src/main/res/layout/activity_main.xml
 android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
@@ -356,6 +354,7 @@ scripts/stamp-qa-pages.mjs
 scripts/sync-checkout.sh
 scripts/test-cinematic-sip.mjs
 scripts/update-inventory.mjs
+scripts/verify-app-art.mjs
 scripts/verify-economy-tables.mjs
 scripts/verify-full-diligence-audit.mjs
 scripts/verify-landmark-animations.mjs
@@ -478,6 +477,8 @@ tools/asset-pipeline/generate-vehicle-models.mjs
 tools/asset-pipeline/glb-builder.mjs
 tools/asset-pipeline/model-validator.mjs
 tools/asset-pipeline/upgrade-hero-models.mjs
+tools/brand/brand-art.mjs
+tools/brand/render-app-art.mjs
 tsconfig.json
 vendor/three-gltfloader-r128.js
 vite.config.ts

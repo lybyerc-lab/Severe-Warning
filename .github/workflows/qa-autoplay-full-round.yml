@@ -107,6 +107,7 @@ jobs:
           npm run verify:economy
           npm run verify:results
           npm run verify:orientation
+          npm run verify:art
           npm run modern:typecheck
           npm test
           npm run modern:build

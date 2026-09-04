@@ -146,3 +146,17 @@ Decision:
 Rationale:
 - A quality bar has no bottom. "Does the menu have the right vibe" can always take another pass, and every such question generated real, good work that moved the line further away. A list can be emptied.
 - The list is deliberately short and probably slightly wrong. A slightly wrong list that gets finished beats a perfect standard that never does.
+
+## D-013: Regions stay unlocked; the icon and splash are source, not binaries
+
+Date: 2026-09-04
+Status: explicitly approved by director
+
+Decision:
+- **Campaign regions are not gated against each other.** Heartland, Coastal and Metro are all reachable from the start; each region's first county is open and the unlock chain runs inside a region. Director's call, asked directly after the county gating landed: "keep the regions unlocked". Do not add a region gate.
+- **The launcher icon and splash are authored as source.** `tools/brand/brand-art.mjs` holds the SVG shapes and the game's own palette; `npm run brand:render` rasterizes all 26 Android densities through Chromium. The PNGs in `android/app/src/main/res` are build output that happens to be committed, not hand-placed art nobody can regenerate — which is how the stock Capacitor logo survived the entire project.
+- `npm run verify:art` is the guard, wired into the full-round workflow. It reads pixels rather than filenames: every density at its exact size, the adaptive foreground's painted extent against Android's 66% crop circle, the background colour off white, the stock vectors gone, and the splash not a white field.
+
+Rationale:
+- Region gating would have taken away access the director already had, for a structure the game does not need: the counties inside a region already form a chain.
+- The icon was the clearest evidence that binary assets without a generator rot silently. Nothing in twenty-one active days noticed that the app's own icon belonged to the tooling, because there was nothing to notice with.
