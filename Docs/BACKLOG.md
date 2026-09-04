@@ -48,12 +48,22 @@ perfect standard that never does.
   with Capacitor's mark before the 1982 newsroom ever appears. Everything inside
   is bespoke; the first two seconds belong to somebody else's placeholder.
 
-- [ ] **2. Gate the other six counties into progression.**
-  `SevereWeather_Warning.html:4834` reads
-  `const locked = selectedCampaignRegion === 0 ? (index > campaignProgress.unlockedLevel) : false`.
-  Only Heartland's four counties lock and unlock. Coastal (3) and Metro (3) are
-  unconditionally open — no gating, no next-stop chain, no structure. Six of ten
-  counties are content already paid for that the campaign cannot reach.
+- [x] **2. Gate the other six counties into progression.** Done 2026-09-04, and
+  it was not only a missing gate. Coastal and Metro declared `targetPoints` where
+  Heartland declares `scoreTarget`, a key nothing in the gameplay path read, so
+  on those six counties: the "Beat the County Score Target" objective **threw a
+  TypeError** when its detail line rendered; two and three stars were
+  unreachable, because both thresholds compared against `undefined` (a measured
+  200,000-point run with 3/3 objectives on Port Delta awarded **one** star); and
+  every writer — the unlock, the NEXT STOP button, the outcome line — was
+  hardcoded to Heartland, so clearing the last Coastal county announced "NEXT:
+  STATE FAIR UNLOCKED" and NEXT STOP walked off the end of the Coastal list back
+  onto its first stop. All three regions now gate, unlock, advance and complete
+  on their own list, per-region unlock state persists beside the untouched
+  Heartland save, and the star total counts all ten counties instead of four.
+  **Open decision:** whether a region should be locked until the previous one is
+  cleared. Not done — it would take away access the director currently has, so it
+  is the director's call, not a default.
 
 - [ ] **3. One logged device run on current code.** `Docs/DEVICE_TEST_LOG.md` was
   last written 2026-08-26. The economy, funnel integrity and rope-out, the
@@ -107,6 +117,14 @@ nowhere else to put it. This is that place.
   `C:\Program Files\Google\Chrome\Application\chrome.exe`. Its static sibling
   `verify:phase6` passes and is what anyone has actually been reading. Fix or
   delete — after v5.2.
+
+- **`campaignStarTotal` is a third phantom id.** `renderCampaignMap` computes the
+  star total and writes it to `document.getElementById('campaignStarTotal')`,
+  which does not exist in the markup — the write is a guarded no-op, so the total
+  has never been displayed to anyone. The arithmetic is now correct (all ten
+  counties, derived denominator) and `verify:v500` guards it; only the readout is
+  missing. Found while gating the counties, filed here rather than built, per the
+  valve.
 
 - **`bindClick('btnStartMenu', ...)` binds an id that is not in the DOM.** The
   real button is `btnTvPower`. A dead line, same phantom-id class as the payout

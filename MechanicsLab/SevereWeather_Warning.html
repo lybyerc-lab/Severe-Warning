@@ -4289,7 +4289,7 @@ function updateTvMenuDisplays() {
       const stars = typeof getCampaignStars === 'function' ? getCampaignStars(activeLevel.id) : 0;
       setUI('tvActiveCountyName', activeLevel.name);
       setUI('tvActiveCountyStation', `${activeLevel.station} · ${activeLevel.districts && activeLevel.districts[0] ? activeLevel.districts[0][0] : 'COUNTY LOCAL'}`);
-      const targetVal = activeLevel.scoreTarget || activeLevel.targetPoints || 50000;
+      const targetVal = activeLevel.scoreTarget || 50000;
       setUI('tvActiveCountyTarget', `TARGET: ${targetVal.toLocaleString()} PTS`);
       setUI('tvActiveCountyStars', '★'.repeat(stars) + '☆'.repeat(3 - stars) + ` (${stars}/3)`);
       // [SW:UI:BROADCAST_MENU] The run order, typed onto the slip.
@@ -4667,7 +4667,7 @@ const COASTAL_CAMPAIGN = [
   {
     id: 'bayou-bend', name: 'BAYOU BEND MARINA', shortName: 'BAYOU BEND', station: 'KSWX COASTAL 6',
     brief: 'Stilt fish houses, wooden docks and water craft meeting atmospheric uplift.',
-    targetPoints: 55000, scoreMultiplier: 1.10, durationSeconds: 180,
+    scoreTarget: 55000, scoreMultiplier: 1.10, durationSeconds: 180,
     skyColor: '#0b2e36', fogColor: '#0f3d47', terrainTint: '#a7f3d0', sunColor: '#6ee7b7',
     spawn: { x: -80, z: -80 },
     coastalDistricts: [
@@ -4679,7 +4679,7 @@ const COASTAL_CAMPAIGN = [
   {
     id: 'pelican-key', name: 'PELICAN KEY BOARDWALK', shortName: 'PELICAN KEY', station: 'BAYOU ACTION 13',
     brief: 'Coastal amusement pier and palm-lined boulevard with tropical gale force.',
-    targetPoints: 75000, scoreMultiplier: 1.20, durationSeconds: 180,
+    scoreTarget: 75000, scoreMultiplier: 1.20, durationSeconds: 180,
     skyColor: '#0c4a6e', fogColor: '#075985', terrainTint: '#bae6fd', sunColor: '#38bdf8',
     spawn: { x: 100, z: -75 },
     coastalDistricts: [
@@ -4691,7 +4691,7 @@ const COASTAL_CAMPAIGN = [
   {
     id: 'port-delta', name: 'PORT DELTA REFINERY', shortName: 'PORT DELTA', station: 'GULF NETWORK LIVE',
     brief: 'Industrial deepwater terminal. Massive fuel tanks, crane gantries and lightning grid.',
-    targetPoints: 110000, scoreMultiplier: 1.35, durationSeconds: 180,
+    scoreTarget: 110000, scoreMultiplier: 1.35, durationSeconds: 180,
     skyColor: '#1e1b4b', fogColor: '#312e81', terrainTint: '#c7d2fe', sunColor: '#818cf8',
     spawn: { x: 90, z: 90 },
     coastalDistricts: [
@@ -4706,7 +4706,7 @@ const METRO_CAMPAIGN = [
   {
     id: 'downtown-core', name: 'SKYLINE PLAZA', shortName: 'DOWNTOWN', station: 'METRO 4 NEWS',
     brief: 'High-density commercial core. Skyscraper towers and bustling transit corridors.',
-    targetPoints: 85000, scoreMultiplier: 1.25, durationSeconds: 180,
+    scoreTarget: 85000, scoreMultiplier: 1.25, durationSeconds: 180,
     skyColor: '#090d16', fogColor: '#1e293b', terrainTint: '#cbd5e1', sunColor: '#38bdf8',
     spawn: { x: -60, z: -60 },
     metroDistricts: [
@@ -4718,7 +4718,7 @@ const METRO_CAMPAIGN = [
   {
     id: 'rail-terminal', name: 'GRAND CENTRAL TERMINAL', shortName: 'RAIL TERMINAL', station: 'ACTION 9 METRO',
     brief: 'Industrial switching yard, signal gantries and multi-track freight corridors.',
-    targetPoints: 115000, scoreMultiplier: 1.40, durationSeconds: 180,
+    scoreTarget: 115000, scoreMultiplier: 1.40, durationSeconds: 180,
     skyColor: '#18181b', fogColor: '#27272a', terrainTint: '#e4e4e7', sunColor: '#fbbf24',
     spawn: { x: 75, z: -85 },
     metroDistricts: [
@@ -4730,7 +4730,7 @@ const METRO_CAMPAIGN = [
   {
     id: 'broadcast-heights', name: 'BROADCAST HEIGHTS', shortName: 'TRANSMITTER ROW', station: 'NETWORK HEADQUARTERS',
     brief: 'Metro communications summit. Massive broadcast lattice towers and antenna arrays.',
-    targetPoints: 150000, scoreMultiplier: 1.60, durationSeconds: 180,
+    scoreTarget: 150000, scoreMultiplier: 1.60, durationSeconds: 180,
     skyColor: '#172554', fogColor: '#1e3a8a', terrainTint: '#93c5fd', sunColor: '#60a5fa',
     spawn: { x: 95, z: 95 },
     metroDistricts: [
@@ -4742,18 +4742,83 @@ const METRO_CAMPAIGN = [
 ];
 
 let selectedCampaignRegion = 0;
-let campaignProgress = { schema: 1, unlockedLevel: 0, selectedLevel: 0, levels: {} };
+let campaignProgress = { schema: 1, unlockedLevel: 0, selectedLevel: 0, levels: {}, regionUnlocked: {} };
 let selectedCampaignIndex = 0;
+
+// [SW:CAMPAIGN:REGION_PROGRESSION] One table instead of three ternaries.
+// Every region reader below went through
+// `region === 2 ? METRO : (region === 1 ? COASTAL : HEARTLAND)`, repeated at
+// six call sites, and the writers did not go through it at all -- which is why
+// clearing a Coastal county announced that a Heartland one had unlocked.
+const CAMPAIGN_REGIONS = [
+  { key: 'heartland', label: 'HEARTLAND TOUR', list: HEARTLAND_CAMPAIGN },
+  { key: 'coastal', label: 'COASTAL BAYOU', list: COASTAL_CAMPAIGN },
+  { key: 'metro', label: 'METRO ROW', list: METRO_CAMPAIGN }
+];
+
+function campaignRegion(index = selectedCampaignRegion) {
+  return CAMPAIGN_REGIONS[index] || CAMPAIGN_REGIONS[0];
+}
+
+function campaignRegionList(index = selectedCampaignRegion) {
+  return campaignRegion(index).list;
+}
+
+// Heartland's unlock index stays in `unlockedLevel`, exactly where it has always
+// been. The typed save schema at src/platform/persistence/campaign-save-schema.ts
+// reads that field by name, its store tests assert on it, and it is already on
+// every player's device -- so the two new regions get their own map beside it
+// rather than a migration that would rewrite a save that is not broken. This
+// accessor pair is the only place that asymmetry exists.
+function campaignUnlockedIndex(region = selectedCampaignRegion) {
+  if (region === 0) {
+    return Number.isInteger(campaignProgress.unlockedLevel) ? campaignProgress.unlockedLevel : 0;
+  }
+  const stored = campaignProgress.regionUnlocked || {};
+  const value = stored[campaignRegion(region).key];
+  return Number.isInteger(value) ? value : 0;
+}
+
+function setCampaignUnlockedIndex(region, value) {
+  const list = campaignRegionList(region);
+  const clamped = Math.max(0, Math.min(list.length - 1, value));
+  if (region === 0) {
+    campaignProgress.unlockedLevel = Math.max(campaignUnlockedIndex(0), clamped);
+    return;
+  }
+  if (!campaignProgress.regionUnlocked || typeof campaignProgress.regionUnlocked !== 'object') {
+    campaignProgress.regionUnlocked = {};
+  }
+  const key = campaignRegion(region).key;
+  campaignProgress.regionUnlocked[key] = Math.max(campaignUnlockedIndex(region), clamped);
+}
+
+function campaignLevelLocked(region, index) {
+  return index > campaignUnlockedIndex(region);
+}
 
 function normalizeCampaignProgress(value) {
   const safe = value && typeof value === 'object' ? value : {};
   const unlocked = Number.isInteger(safe.unlockedLevel) ? safe.unlockedLevel : 0;
   const selected = Number.isInteger(safe.selectedLevel) ? safe.selectedLevel : 0;
+  // A save written before the two new regions were gated has no regionUnlocked
+  // map at all; it reads as zero, which is the correct answer -- first county
+  // open, rest earned. Nothing needs migrating and no schema bump is required.
+  const storedRegions = safe.regionUnlocked && typeof safe.regionUnlocked === 'object' ? safe.regionUnlocked : {};
+  const regionUnlocked = {};
+  for (let region = 1; region < CAMPAIGN_REGIONS.length; region += 1) {
+    const definition = CAMPAIGN_REGIONS[region];
+    const raw = storedRegions[definition.key];
+    regionUnlocked[definition.key] = Number.isInteger(raw)
+      ? Math.max(0, Math.min(definition.list.length - 1, raw))
+      : 0;
+  }
   return {
     schema: 1,
     unlockedLevel: Math.max(0, Math.min(HEARTLAND_CAMPAIGN.length - 1, unlocked)),
     selectedLevel: Math.max(0, Math.min(HEARTLAND_CAMPAIGN.length - 1, selected)),
-    levels: safe.levels && typeof safe.levels === 'object' ? safe.levels : {}
+    levels: safe.levels && typeof safe.levels === 'object' ? safe.levels : {},
+    regionUnlocked
   };
 }
 
@@ -4772,7 +4837,11 @@ loadCampaignProgress();
 loadHighScores();
 
 function saveCampaignProgress() {
-  campaignProgress.selectedLevel = selectedCampaignIndex;
+  // `selectedLevel` is Heartland's remembered stop -- the typed save schema
+  // clamps it to the Heartland list and boot restores it into region 0. Writing
+  // a Coastal or Metro index into it would silently move the player's Heartland
+  // selection, so only region 0 writes here.
+  if (selectedCampaignRegion === 0) campaignProgress.selectedLevel = selectedCampaignIndex;
   try { localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(campaignProgress)); } catch (_) {}
 }
 
@@ -4799,13 +4868,8 @@ function switchCampaignRegion(regionIndex) {
 }
 
 function getActiveCampaignLevel() {
-  if (selectedCampaignRegion === 2) {
-    return METRO_CAMPAIGN[selectedCampaignIndex] || METRO_CAMPAIGN[0];
-  }
-  if (selectedCampaignRegion === 1) {
-    return COASTAL_CAMPAIGN[selectedCampaignIndex] || COASTAL_CAMPAIGN[0];
-  }
-  return HEARTLAND_CAMPAIGN[selectedCampaignIndex] || HEARTLAND_CAMPAIGN[0];
+  const list = campaignRegionList();
+  return list[selectedCampaignIndex] || list[0];
 }
 
 function getCampaignStars(levelId) {
@@ -4813,8 +4877,17 @@ function getCampaignStars(levelId) {
   return entry && Number.isFinite(entry.stars) ? Math.max(0, Math.min(3, entry.stars)) : 0;
 }
 
+function campaignTotalStarCapacity() {
+  return CAMPAIGN_REGIONS.reduce((sum, region) => sum + region.list.length * 3, 0);
+}
+
 function getCampaignTotalStars() {
-  return HEARTLAND_CAMPAIGN.reduce((sum, level) => sum + getCampaignStars(level.id), 0);
+  // Was Heartland only, so the star total on the map ignored six of the ten
+  // counties and could never exceed 12 of a possible 30.
+  return CAMPAIGN_REGIONS.reduce(
+    (sum, region) => sum + region.list.reduce((total, level) => total + getCampaignStars(level.id), 0),
+    0
+  );
 }
 
 function renderCampaignMap() {
@@ -4823,7 +4896,7 @@ function renderCampaignMap() {
   const total = document.getElementById('campaignStarTotal');
   if (!grid) return;
 
-  const currentList = selectedCampaignRegion === 2 ? METRO_CAMPAIGN : (selectedCampaignRegion === 1 ? COASTAL_CAMPAIGN : HEARTLAND_CAMPAIGN);
+  const currentList = campaignRegionList();
   const positions = selectedCampaignRegion === 2
     ? ['left: 24%; top: 38%;', 'left: 64%; top: 38%;', 'left: 44%; top: 68%;']
     : (selectedCampaignRegion === 1
@@ -4831,7 +4904,7 @@ function renderCampaignMap() {
       : ['left: 22%; top: 32%;', 'left: 70%; top: 32%;', 'left: 22%; top: 72%;', 'left: 70%; top: 72%;']);
 
   grid.innerHTML = currentList.map((level, index) => {
-    const locked = selectedCampaignRegion === 0 ? (index > campaignProgress.unlockedLevel) : false;
+    const locked = campaignLevelLocked(selectedCampaignRegion, index);
     const selected = index === selectedCampaignIndex;
     const stars = getCampaignStars(level.id);
 
@@ -4845,7 +4918,7 @@ function renderCampaignMap() {
 
     const pos = positions[index] || 'left: 50%; top: 50%;';
     const badgeText = locked ? '[LOCKED]' : ('★ ' + stars + '/3');
-    const targetScoreVal = level.scoreTarget || level.targetPoints || 50000;
+    const targetScoreVal = level.scoreTarget || 50000;
     return '<button type="button" class="campaign-stop' + (selected ? ' selected' : '') + (locked ? ' locked' : '') + '" style="' + pos + '" ' +
       'onclick="selectCampaignLevel(' + index + ')" aria-disabled="' + locked + '">' +
       '<strong>' + (locked ? '[LOCKED] ' : '') + level.name + '</strong>' +
@@ -4854,9 +4927,11 @@ function renderCampaignMap() {
   }).join('');
 
   const active = getActiveCampaignLevel();
-  const targetScoreVal = active.scoreTarget || active.targetPoints || 50000;
+  const targetScoreVal = active.scoreTarget || 50000;
   if (brief) brief.textContent = active.station + ': ' + active.brief;
-  if (total) total.textContent = getCampaignTotalStars() + '/12 STARS';
+  // Was a hardcoded /12 -- Heartland's four counties. Ten counties are three
+  // stars each, and the denominator is now derived so it cannot drift again.
+  if (total) total.textContent = getCampaignTotalStars() + '/' + campaignTotalStarCapacity() + ' STARS';
 
   // Update integrated cartouche legend on map
   setUI('tvSitePopupName', active.name);
@@ -4882,9 +4957,9 @@ function handleTerritoryClick(index) {
 }
 
 function selectCampaignLevel(index) {
-  const currentList = selectedCampaignRegion === 2 ? METRO_CAMPAIGN : (selectedCampaignRegion === 1 ? COASTAL_CAMPAIGN : HEARTLAND_CAMPAIGN);
+  const currentList = campaignRegionList();
   if (!Number.isInteger(index) || index < 0 || index >= currentList.length) return false;
-  if (selectedCampaignRegion === 0 && index > campaignProgress.unlockedLevel) {
+  if (campaignLevelLocked(selectedCampaignRegion, index)) {
     showGagToast('FORECAST LOCKED: CLEAR THE PREVIOUS COUNTY FIRST.');
     return false;
   }
@@ -5587,7 +5662,7 @@ function applyCampaignWorldIdentity(level) {
     scene.remove(animal.mesh);
   }
 
-  const regionPrefix = selectedCampaignRegion === 2 ? 'METRO ROW' : (selectedCampaignRegion === 1 ? 'COASTAL BAYOU' : 'HEARTLAND TOUR');
+  const regionPrefix = campaignRegion().label;
   setUI('campaignHud', regionPrefix + ' | ' + level.name + ' | ' + world.broadcast + ' | SCORE x' + level.scoreMultiplier.toFixed(2));
 }
 
@@ -5636,7 +5711,7 @@ function applyCampaignPresentation() {
   if (countyApron && countyApron.material) countyApron.material.color.set(level.terrainTint);
   if (dirLight) dirLight.color.set(level.sunColor);
   storm.pos.set(level.spawn.x, terrainHeightAt(level.spawn.x, level.spawn.z), level.spawn.z);
-  const regionPrefix = selectedCampaignRegion === 2 ? 'METRO ROW' : (selectedCampaignRegion === 1 ? 'COASTAL BAYOU' : 'HEARTLAND TOUR');
+  const regionPrefix = campaignRegion().label;
   setUI('campaignHud', regionPrefix + ' · ' + level.name + ' · SCORE x' + level.scoreMultiplier.toFixed(2));
   applyCampaignWorldIdentity(level);
   const firstDist = districtList[0] || ['PINE RIDGE', 'Neighborhood touchdown'];
@@ -5658,27 +5733,38 @@ function completeCampaignRun(grade, score, objectivesDone) {
     runs: (previous.runs || 0) + 1,
     bestGrade: bestStars > (previous.stars || 0) ? grade : (previous.bestGrade || grade)
   };
+  // [SW:CAMPAIGN:REGION_PROGRESSION] Every name below used to be HEARTLAND,
+  // whichever region the run was actually in. Clearing the last Coastal county
+  // announced "NEXT: STATE FAIR UNLOCKED" -- a Heartland county -- and NEXT STOP
+  // then walked off the end of the Coastal list and landed back on its first
+  // stop. The unlock it wrote went to Heartland's counter, so nothing in Coastal
+  // or Metro was ever gated or ever opened.
   const cleared = stars > 0;
+  const region = campaignRegion();
+  const regionList = region.list;
   const nextIndex = selectedCampaignIndex + 1;
-  if (cleared && nextIndex < HEARTLAND_CAMPAIGN.length) {
-    campaignProgress.unlockedLevel = Math.max(campaignProgress.unlockedLevel, nextIndex);
+  if (cleared && nextIndex < regionList.length) {
+    setCampaignUnlockedIndex(selectedCampaignRegion, nextIndex);
   }
   saveCampaignProgress();
   renderCampaignMap();
   const outcome = document.getElementById('campaignOutcome');
   const nextButton = document.getElementById('btnNextCampaign');
   if (outcome) {
-    const unlockText = cleared && nextIndex < HEARTLAND_CAMPAIGN.length
-      ? ' · NEXT: ' + HEARTLAND_CAMPAIGN[nextIndex].name + ' UNLOCKED'
-      : (selectedCampaignIndex === HEARTLAND_CAMPAIGN.length - 1 && cleared ? ' · HEARTLAND TOUR COMPLETE!' : ' · HIT ' + Math.round(level.scoreTarget * 0.6).toLocaleString() + ' TO ADVANCE');
+    const unlockText = cleared && nextIndex < regionList.length
+      ? ' · NEXT: ' + regionList[nextIndex].name + ' UNLOCKED'
+      : (selectedCampaignIndex === regionList.length - 1 && cleared
+        ? ' · ' + region.label + ' COMPLETE!'
+        : ' · HIT ' + Math.round(level.scoreTarget * 0.6).toLocaleString() + ' TO ADVANCE');
     outcome.textContent = level.name + ' · ' + '★'.repeat(stars) + '☆'.repeat(3 - stars) + ' · BEST ' + campaignProgress.levels[level.id].bestScore.toLocaleString() + unlockText;
   }
-  if (nextButton) nextButton.hidden = !(cleared && nextIndex < HEARTLAND_CAMPAIGN.length);
+  if (nextButton) nextButton.hidden = !(cleared && nextIndex < regionList.length);
 }
 
 function startNextCampaignLevel() {
+  const regionList = campaignRegionList();
   const nextIndex = selectedCampaignIndex + 1;
-  if (nextIndex >= HEARTLAND_CAMPAIGN.length || nextIndex > campaignProgress.unlockedLevel) return false;
+  if (nextIndex >= regionList.length || campaignLevelLocked(selectedCampaignRegion, nextIndex)) return false;
   selectedCampaignIndex = nextIndex;
   saveCampaignProgress();
   getCachedEl('resultsOverlay').classList.remove('active');

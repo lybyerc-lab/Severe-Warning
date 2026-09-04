@@ -67,16 +67,32 @@ for (const [name, marker] of [
   ['grain belt animated turbine', 'campaignAnimatedMeshes.push({ mesh: roofTurbine'],
   ['persistent save', 'localStorage.setItem(CAMPAIGN_STORAGE_KEY'],
   ['persistent load', 'localStorage.getItem(CAMPAIGN_STORAGE_KEY'],
-  ['locked-level guard', 'index > campaignProgress.unlockedLevel'],
-  ['four-stop star total', "'/12 STARS'"],
-  ['tour completion', 'HEARTLAND TOUR COMPLETE!']
+  // [SW:CAMPAIGN:REGION_PROGRESSION] Was the literal
+  // `index > campaignProgress.unlockedLevel`, which only ever described
+  // Heartland. The guard is now one region-aware predicate used by the map, the
+  // selector and NEXT STOP alike.
+  ['locked-level guard', 'function campaignLevelLocked'],
+  ['locked-level guard is applied when selecting', 'if (campaignLevelLocked(selectedCampaignRegion, index)) {'],
+  ['per-region unlock accessors', 'function setCampaignUnlockedIndex'],
+  ['region table', 'const CAMPAIGN_REGIONS = ['],
+  // Assert the CALL SITE, not the definition: a marker that matches
+  // `function campaignTotalStarCapacity()` passes even when nothing calls it,
+  // which is exactly how this check first slipped through its own control.
+  ['star total is derived, not hardcoded', "getCampaignTotalStars() + '/' + campaignTotalStarCapacity()"],
+  ['region completion names its own region', "region.label + ' COMPLETE!'"]
 ]) {
   check(name, html.includes(marker), marker);
 }
 
 check('no stale v4.5 identity', !html.includes('v4.5.0'));
 check('four campaign stops', (html.match(/id: '(?:lincoln-county|prairie-junction|grain-belt|state-fair-finale)'/g) || []).length === 4);
-check('three-star contracts', (html.match(/scoreTarget: \d+/g) || []).length === 4);
+// Every county in all three regions, not just Heartland's four. Coastal and
+// Metro used to declare `targetPoints`, a key nothing in the gameplay path read:
+// the score objective threw on their counties, and two and three stars were
+// unreachable there because both thresholds tested against undefined.
+check('every county declares a score target', (html.match(/scoreTarget: \d+/g) || []).length === 10);
+check('no county still declares targetPoints', !html.includes('targetPoints'));
+check('all ten counties exist', (html.match(/id: '(?:lincoln-county|prairie-junction|grain-belt|state-fair-finale|bayou-bend|pelican-key|port-delta|downtown-core|rail-terminal|broadcast-heights)'/g) || []).length === 10);
 check('distinct district contracts', (html.match(/districts: \[/g) || []).length === 4);
 check('campaign applies after world reset', html.includes('init3DWorld();\n  applyCampaignPresentation();'));
 check('campaign completion precedes results', html.includes('completeCampaignRun(grade, destructionScore, doneCount);'));
