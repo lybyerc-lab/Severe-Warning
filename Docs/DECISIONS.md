@@ -110,3 +110,18 @@ Decision:
 - Cow-Cam is rare and brief; it may change presentation and cow animation but must not slow player controls or the warning clock.
 - Moo Brew sponsors the media circus without becoming a real-world brand or an intrusive advertisement.
 - Animal injuries remain zero by design.
+
+## D-011: The game is landscape-only
+
+Date: 2026-09-04
+Status: explicitly approved by director
+
+Decision:
+- Severe Warning ships landscape. There is no portrait layout and none will be built.
+- Android enforces it: `MainActivity` keeps `android:screenOrientation="sensorLandscape"`, which allows either landscape direction and no upright one.
+- The browser lane cannot enforce it — `screen.orientation.lock` is fullscreen-only where it exists at all and absent on iOS Safari — so the web build asks for the lock and, when refused, raises the KSWX-7 stand-by card at `[SW:UI:ORIENTATION_LOCK]` and suspends a live run through the same path a backgrounded tab uses.
+- The gate is media-query driven (`(orientation: portrait) and (max-width: 900px)`), so a windowed desktop browser is never gated. The bot harness (`?bot=true`) and the QA labs (`?qa=1`) are ungated by class.
+- Every automated harness viewport must be landscape. A portrait viewport measures a layout that cannot ship.
+
+Rationale:
+- The twin-stick layout wants the thumbs wide apart, the HUD is a broadcast lower-third, and the world is framed for a wide picture. Portrait cannot have all three, and supporting it doubles the layout surface of every screen for a hand nobody wants to play.

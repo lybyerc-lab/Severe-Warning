@@ -54,13 +54,6 @@ findings and evidence are in the Landed entries below). **The director took the
 whole queue, items 1-8, and all of it is done.** What that pass left behind, and
 what is genuinely next:
 
-- **The menu camera is framed for landscape.** The arc was measured against a
-  1600x720 frame, where the funnel stands on the horizon with the town below it.
-  In portrait (430x932) the vertical field of view shows far more sky: the town
-  compresses to a band near the top and the middle third is dead cloud. The cards
-  and copy are all fine — this is framing only. Either the radius and pitch key
-  off the viewport aspect, or portrait gets its own pair of numbers.
-
 - **Small things left on the menu, none of them load-bearing.** The radar scope's
   anvil is clipped by the top of its canvas; the `SKIN` label lost its colon when
   the label was split so the skin name could take the skin's colour; the studio
@@ -305,6 +298,20 @@ what is genuinely next:
 
 ## Standing rules — settled, do not relitigate
 
+- **The game is landscape. There is no portrait layout and there will not be
+  one.** Director's call, 2026-09-04: "I'd rather keep the game landscape
+  locked. it's easier to play and I think it'll be easier." The twin-stick
+  layout wants the thumbs wide apart, the HUD is a broadcast lower-third, and
+  the world is framed for a wide picture — three things portrait cannot have at
+  once. Android enforces it (`android:screenOrientation="sensorLandscape"`).
+  The browser cannot be made to: `screen.orientation.lock` is fullscreen-only
+  where it exists and absent on iOS Safari, so the web build asks for the lock
+  and, when refused, raises the KSWX-7 stand-by card
+  (`[SW:UI:ORIENTATION_LOCK]`) and suspends the run through the same door as a
+  backgrounded tab. **Every harness viewport must be landscape.** The full-round
+  playtest ran at 430x932 for months, which is an orientation the shipping app
+  cannot be in — it was measuring a layout no player will ever see.
+
 - **First law: nothing that moves is ever harmed.** Enforced at `damageTarget`,
   which is the single chokepoint every hazard reaches a target through.
   The dealership draws the line precisely: **a car with a driver is a protected
@@ -363,6 +370,26 @@ what is genuinely next:
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **Landscape is now the only orientation, and the harness finally tests it.**
+  Director's call, 2026-09-04. The Android manifest had said `sensorLandscape`
+  all along, so the shipping APK was never in portrait — but nothing else in the
+  project knew. The browser build had no lock and no fallback, so a phone held
+  upright there got the menu camera's arc pointed at empty cloud and a HUD built
+  for a 2.2:1 picture squeezed into 0.46:1. And `scripts/qa-play-full-round.mjs`
+  drove every evidence run at **430x932**: the one automated playtest we trust
+  was playing the game in an orientation the app cannot be in. Three parts: the
+  manifest lock stays and is now written down as a standing rule; the web lane
+  asks for `screen.orientation.lock('landscape')` and, when the browser refuses,
+  raises a stand-by card and suspends the run rather than dealing a hand nobody
+  can play; the full-round harness moved to 932x430. Proved live rather than
+  reasoned: the card shows and is the topmost element in portrait, is `display:
+  none` in landscape, a mid-run rotation drops `runActive` and freezes
+  `runTimeRemaining` at 0.00s over 2.5s, and rotating back resumes at the
+  control's rate (3.05s vs 3.48s of clock over ~4s wall — no catch-up). The bot
+  and QA lanes are ungated so they are never answering a card instead of the
+  game. No visual baseline moved: all three baseline viewports were already
+  landscape.
 
 - **The menu stopped being a launcher with a TV border.** Director's read,
   2026-09-03: the first screen did not have the vibe of the rest of the game. It

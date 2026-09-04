@@ -50,6 +50,7 @@ End marker:
 - `[SW:UI:RAMPAGE_FEEDBACK]`
 - `[SW:UI:QA_PANEL]`
 - `[SW:UI:RESULTS]`
+- `[SW:UI:ORIENTATION_LOCK]` — landscape lock and the portrait stand-by gate
 
 ### World
 

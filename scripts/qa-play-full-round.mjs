@@ -23,7 +23,11 @@ const browser = await chromium.launch({
 });
 
 const context = await browser.newContext({
-  viewport: { width: 430, height: 932 },
+  // [SW:UI:ORIENTATION_LOCK] The shipping app is landscape-locked, so the full
+  // round has to be played landscape. This was 430x932 -- an orientation the
+  // Android build cannot be in and the browser build now gates -- which meant
+  // every playtest evidence run measured a layout no player ever sees.
+  viewport: { width: 932, height: 430 },
   deviceScaleFactor: 1,
   isMobile: true,
   hasTouch: true

@@ -84,6 +84,13 @@ Then inspect the active branch, draft pull request, and latest successful QA bui
   synced, and `.github/workflows/ci-alert.yml` opens an issue in this repository
   when a watched workflow fails and closes it when the workflow goes green again.
   If a run is red, that is the next task, ahead of whatever was planned.
+- **The game is landscape-only, and every harness viewport must be landscape.**
+  Director's call, 2026-09-04. Android enforces it in the manifest
+  (`android:screenOrientation="sensorLandscape"`); the browser build asks for the
+  lock and raises a stand-by card when refused (`[SW:UI:ORIENTATION_LOCK]`). A
+  portrait viewport in a QA script measures a layout that cannot ship —
+  `scripts/qa-play-full-round.mjs` did exactly that at 430x932 for months. If a
+  new script opens a page, its viewport is wider than it is tall.
 - **A burst of pushes is a decision to skip the gate.** `qa-autoplay-full-round`
   sets `cancel-in-progress: true` and takes up to forty minutes, so pushing again
   inside that window cancels the run in flight. Cancelled is not failed and does

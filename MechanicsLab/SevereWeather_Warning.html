@@ -1856,6 +1856,88 @@
     text-overflow: ellipsis;
   }
 </style>
+<!-- [SW:UI:ORIENTATION_LOCK] The game is landscape. The Android build says so in
+     the manifest (android:screenOrientation="sensorLandscape"), so on the shipping
+     APK this gate never appears. The browser lane has no such guarantee -- a phone
+     held upright there gets a joystick under the HUD, a menu framed for a 2.2:1
+     picture squeezed into 0.46:1, and a camera arc that points at empty cloud. So
+     the web build asks for the lock, and when the browser refuses (iOS Safari
+     always does, and any browser outside fullscreen usually does) it says so on a
+     stand-by card instead of dealing a hand nobody can play. -->
+<style id="orientationGateStyles">
+  #rotateGate {
+    position: fixed;
+    inset: 0;
+    /* Above the main menu (99999) and the cinematic letterbox (99990), below the
+       QA forensic trace (100002) -- the gate is never up in a QA lane anyway. */
+    z-index: 100000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #0a0603;
+    color: #fcd34d;
+    text-align: center;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .rotate-gate-card {
+    max-width: 340px;
+    padding: 20px 18px 18px;
+    border: 2px solid #b45309;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #1a1005, #0d0803);
+    box-shadow: 0 0 0 1px rgba(252, 211, 77, 0.18), 0 18px 44px rgba(0, 0, 0, 0.7);
+  }
+  .rotate-gate-eyebrow {
+    font: 900 9px/1 'Inter', monospace;
+    letter-spacing: 0.28em;
+    color: #f87171;
+  }
+  .rotate-gate-icon {
+    margin: 14px auto 12px;
+    width: 74px;
+    height: 46px;
+    border: 3px solid #fcd34d;
+    border-radius: 7px;
+    box-shadow: inset 0 0 0 2px #0a0603;
+    animation: rotateGateTip 2.4s ease-in-out infinite;
+  }
+  @keyframes rotateGateTip {
+    0%, 34% { transform: rotate(90deg) scale(0.82); }
+    58%, 100% { transform: rotate(0deg) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rotate-gate-icon { animation: none; }
+  }
+  .rotate-gate-title {
+    font: 900 19px/1.15 'Outfit', sans-serif;
+    letter-spacing: 0.06em;
+    color: #fef3c7;
+  }
+  .rotate-gate-body {
+    margin-top: 9px;
+    font: 700 11px/1.5 'Inter', sans-serif;
+    letter-spacing: 0.03em;
+    color: #d6bd8a;
+  }
+  .rotate-gate-sig {
+    margin-top: 13px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(180, 83, 9, 0.55);
+    font: 800 8px/1.3 'Inter', sans-serif;
+    letter-spacing: 0.14em;
+    color: #a16207;
+  }
+  /* Phones and small tablets held upright. A desktop window is neither coarse-
+     pointer nor this narrow, so a windowed browser is never gated. */
+  @media (orientation: portrait) and (max-width: 900px) {
+    #rotateGate { display: flex; }
+  }
+  /* The bot harness and the QA labs drive the page directly and must never be
+     answering a stand-by card instead of the game. */
+  html.sw-orientation-ungated #rotateGate { display: none !important; }
+</style>
 </head>
 <body>
 <div id="productionSliceBadge">SEVERE WEATHER WARNING · 3D PRODUCTION</div>
@@ -2525,6 +2607,20 @@
       <button class="retry-btn campaign-next-btn" id="btnNextCampaign" onclick="startNextCampaignLevel()" hidden>NEXT STOP ➔</button>
       <button class="retry-btn" onclick="quitToMainMenu()">WEATHER MAP</button>
     </footer>
+  </div>
+</div>
+
+<!-- [SW:UI:ORIENTATION_LOCK] -->
+<div id="rotateGate" aria-hidden="true">
+  <div class="rotate-gate-card">
+    <div class="rotate-gate-eyebrow">&#9632; TECHNICAL DIFFICULTIES</div>
+    <div class="rotate-gate-icon"></div>
+    <div class="rotate-gate-title">PLEASE STAND BY</div>
+    <div class="rotate-gate-body">
+      Our coverage is broadcast in widescreen.<br>
+      Turn your device sideways to rejoin the storm.
+    </div>
+    <div class="rotate-gate-sig">KSWX-7 &nbsp;&bull;&nbsp; SEVERE WEATHER DESK</div>
   </div>
 </div>
 
@@ -12457,6 +12553,81 @@ document.addEventListener('visibilitychange', () => {
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
   }
 });
+
+// [SW:UI:ORIENTATION_LOCK] --- LANDSCAPE LOCK & STAND-BY GATE ---
+//
+// The game is landscape-only by design: the twin-stick layout wants the thumbs
+// wide apart, the HUD is a broadcast lower-third, and the world is framed for a
+// wide picture. Android enforces it in the manifest. The browser cannot be made
+// to enforce it -- screen.orientation.lock is fullscreen-only where it exists at
+// all, and iOS Safari has no lock -- so the web lane asks, and when the ask is
+// refused it stops the run rather than playing on sideways.
+let runSuspendedByRotation = false;
+let orientationLockRequested = false;
+
+// A run held upright is a run the player cannot see or steer. Suspending it uses
+// the same door as backgrounding the tab, so the clock does not charge time the
+// player never got.
+const rotateGateQuery = window.matchMedia('(orientation: portrait) and (max-width: 900px)');
+
+function orientationGateActive() {
+  if (document.documentElement.classList.contains('sw-orientation-ungated')) return false;
+  return rotateGateQuery.matches;
+}
+
+function requestLandscapeLock() {
+  // Best effort, and quiet about failing: every browser that refuses does so by
+  // rejecting, and there is nothing to tell the player that the gate does not
+  // already say better.
+  if (orientationLockRequested) return;
+  orientationLockRequested = true;
+  try {
+    const orientation = window.screen && window.screen.orientation;
+    if (orientation && typeof orientation.lock === 'function') {
+      const result = orientation.lock('landscape');
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    }
+  } catch (e) {}
+}
+
+function syncOrientationGate() {
+  const gate = getCachedEl('rotateGate');
+  const gated = orientationGateActive();
+  if (gate) gate.setAttribute('aria-hidden', gated ? 'false' : 'true');
+  if (gated) {
+    // Only a live run can be suspended. On the menu the gate is just a card over
+    // a paused-looking world, and resuming from it must not announce a return to
+    // a run that never started.
+    if (runActive && gameStarted) {
+      runActive = false;
+      runSuspendedByRotation = true;
+    }
+    return;
+  }
+  requestLandscapeLock();
+  if (runSuspendedByRotation) {
+    runActive = true;
+    runSuspendedByRotation = false;
+    lastFrameTime = performance.now();
+    runClockLastTimestamp = lastFrameTime;
+    globalThis.__SW_PHASE2_CLOCK_BRIDGE__?.resume(lastFrameTime);
+    showGagToast('WE NOW RETURN TO YOUR REGULARLY SCHEDULED DESTRUCTION.');
+  }
+}
+
+if (isBotMode || urlParams.get('qa') === '1') {
+  document.documentElement.classList.add('sw-orientation-ungated');
+}
+if (typeof rotateGateQuery.addEventListener === 'function') {
+  rotateGateQuery.addEventListener('change', syncOrientationGate);
+} else if (typeof rotateGateQuery.addListener === 'function') {
+  rotateGateQuery.addListener(syncOrientationGate);
+}
+// resize covers the desktop case and any browser whose media-query change event
+// lags a rotation; both paths land in the same idempotent sync.
+window.addEventListener('resize', syncOrientationGate);
+syncOrientationGate();
+// [SW:UI:ORIENTATION_LOCK:END]
 
 function animate(now) {
   frameCount++;
