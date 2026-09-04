@@ -1,9 +1,15 @@
 # Active Handoff
 
-Last updated: 2026-08-28 America/Chicago
+Last updated: 2026-09-04 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Working branch: **`qa`** — this is the default branch and where work lands.
-Current milestone: `v5.1.0 Three.js Production Slice`
+Current milestone: **`v5.2.0 Hand It To Someone`** — the declared finish line.
+Shipped milestone: `v5.1.0 Three.js Production Slice`.
+
+**Next action: the five items at the top of `Docs/BACKLOG.md`, and nothing else.**
+v5.2.0 is a list, not a quality bar (`Docs/DECISIONS.md` D-012). Anything found
+that is not one of the five goes on the `NOT IN v5.2` list directly beneath them,
+by default — that list is the point, not a parking lot.
 
 > **Read `Docs/BACKLOG.md` first.** It is the living work board and it is kept
 > current in the same commit as the work. Everything below the next section is

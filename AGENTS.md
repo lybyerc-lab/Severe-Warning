@@ -84,6 +84,19 @@ Then inspect the active branch, draft pull request, and latest successful QA bui
   synced, and `.github/workflows/ci-alert.yml` opens an issue in this repository
   when a watched workflow fails and closes it when the workflow goes green again.
   If a run is red, that is the next task, ahead of whatever was planned.
+- **v5.2.0 is five items, and everything else goes on the NOT IN list.**
+  Director's call, 2026-09-04. `Docs/BACKLOG.md` opens with the five, and with a
+  `NOT IN v5.2` section directly beneath it. Anything discovered that is not one
+  of the five goes on that list **by default** -- including anything you find
+  yourself, and especially anything that looks like a quick fix while you are
+  already in the file. Not "we'll see", not "while we're here". Promotion off
+  that list is a deliberate act by the director, not a default, and not something
+  to talk them into. This law exists because the drift was never new ideas: a
+  third of three weeks' commits were repairs to the checking apparatus, and every
+  finding became work because there was nowhere else to put it. Filing it is
+  doing something about it. If you cannot tell whether a finding is one of the
+  five, it is not.
+
 - **The game is landscape-only, and every harness viewport must be landscape.**
   Director's call, 2026-09-04. Android enforces it in the manifest
   (`android:screenOrientation="sensorLandscape"`); the browser build asks for the

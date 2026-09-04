@@ -31,6 +31,102 @@ branch.
 
 ---
 
+## The finish line — v5.2.0 "Hand It To Someone"
+
+Declared 2026-09-04. See `Docs/DECISIONS.md` D-012 for why.
+
+**This milestone is five items. It is not a quality bar and it cannot be raised.**
+A quality bar has no bottom — "does the menu have the right vibe" can always take
+another pass, which is exactly how twenty-one days of real progress ended with no
+place to write *fin*. A list can be emptied. This one is deliberately short and
+probably slightly wrong, and a slightly wrong list that gets finished beats a
+perfect standard that never does.
+
+- [ ] **1. Real launcher icon and splash.** `mipmap-*/ic_launcher.png` and
+  `drawable-*/splash.png` are still the stock Capacitor logo — a blue X on white.
+  On a device the drawer icon is Capacitor's and the app opens on a white screen
+  with Capacitor's mark before the 1982 newsroom ever appears. Everything inside
+  is bespoke; the first two seconds belong to somebody else's placeholder.
+
+- [ ] **2. Gate the other six counties into progression.**
+  `SevereWeather_Warning.html:4834` reads
+  `const locked = selectedCampaignRegion === 0 ? (index > campaignProgress.unlockedLevel) : false`.
+  Only Heartland's four counties lock and unlock. Coastal (3) and Metro (3) are
+  unconditionally open — no gating, no next-stop chain, no structure. Six of ten
+  counties are content already paid for that the campaign cannot reach.
+
+- [ ] **3. One logged device run on current code.** `Docs/DEVICE_TEST_LOG.md` was
+  last written 2026-08-26. The economy, funnel integrity and rope-out, the
+  loadout, the menu rework and the landscape lock have never been through a
+  logged device run. Screenshots are not the log.
+
+- [ ] **4. Tag it and merge `qa` to `main`.** `main` has not moved since
+  2026-08-14 (`f0e80da`) and sits 358 commits behind. This item exists to prove
+  the promotion path still works, not because anyone is waiting on `main`.
+
+- [ ] **5. Nothing else.** This is an item, not a footnote. See below.
+
+**Explicitly not in this milestone:** the Play Store. No release key exists —
+`android/app/build.gradle:93` signs the `release` build type with the QA keystore
+— and there is no listing, privacy policy, or data-safety declaration. Whether to
+publish is a separate decision for after v5.2 ships, and it is entirely allowed to
+be answered "no".
+
+## NOT IN v5.2 — the valve
+
+**Everything found that is not one of the five above goes here, by default.**
+Including anything an agent finds mid-task, and especially anything that looks
+like a quick fix while we are already in the file. Not "we'll see", not "while
+we're here" — here, by default. Promotion out of this list is a deliberate act by
+the director, not a default.
+
+This list exists because the drift was never caused by new ideas. Roughly a third
+of the substantive commits between 2026-08-22 and 2026-09-04 were repairs to the
+*checking apparatus* rather than to the game: the visual gate screenshotting the
+wrong canvas, the gate reporting its own crash as a picture change, the
+stray-model guard blinded by a case-insensitive compare, the evidence push racing
+itself, the stale-checkout guard that could not fire, three asset scripts that had
+never run. 37 of the 55 files in `scripts/` are verification rigs; there are 10
+workflows. The machine that checks the game now generates more work than the game
+does, and every finding went straight into the current push because there was
+nowhere else to put it. This is that place.
+
+- **Menu cosmetics.** The radar scope's anvil is clipped by the top of its
+  canvas; the `SKIN` label lost its colon when the label was split so the skin
+  name could take the skin's colour; the studio channels show a sliver of the live
+  world at the extreme edges; the county slip has empty paper below the target
+  band.
+
+- **The HUD sibling-selector fragility.** The run's HUD, EAS banner and joystick
+  are hidden at the menu by `#mainMenu:not(.hidden) ~ #hud` and friends, which
+  depends on those three staying siblings after `#mainMenu` in the document. Move
+  the markup and the HUD reappears over the menu with no error anywhere. A `body`
+  class toggled at run start would be sturdier. Nothing is currently broken.
+
+- **`scripts/qa-modernization-phase6-ui.mjs` cannot run anywhere.** It hardcodes
+  `C:\Program Files\Google\Chrome\Application\chrome.exe`. Its static sibling
+  `verify:phase6` passes and is what anyone has actually been reading. Fix or
+  delete — after v5.2.
+
+- **`bindClick('btnStartMenu', ...)` binds an id that is not in the DOM.** The
+  real button is `btnTvPower`. A dead line, same phantom-id class as the payout
+  bug, harmless today.
+
+- **The EF score gates do not bind for a strong player.** Still the open tuning
+  question. Do not touch the ladder on fewer than three or four landscape
+  full-round samples: two consecutive runs at the same viewport scored 29,815
+  (peak EF-4) and 41,547 (peak EF-5), a ~40% swing from driver variance alone.
+
+- **`Docs/BUILD_LEDGER.md` is a month stale** (last written 2026-08-04) while
+  `AGENTS.md` requires every meaningful QA result be recorded there. **17 of 20
+  entries in `Docs/QA_BACKLOG.md`** still read pending, open, or planned, and
+  several are certainly fixed. Real debt, genuinely not worth a day of v5.2.
+
+- **AG: `town-car` has no `-wreck` partner.** Would let the extra variety back
+  into the dealership lots. Cheap, not needed to finish.
+
+- **Debris-off-models.** Idea only.
+
 ## Next up — AG (assets)
 
 Nothing queued. ASSET-001 is verified closed (see Landed).
@@ -51,38 +147,12 @@ the next person does not have to re-derive it.
 
 From the design and playability review of 2026-08-29 (published as an air check;
 findings and evidence are in the Landed entries below). **The director took the
-whole queue, items 1-8, and all of it is done.** What that pass left behind, and
-what is genuinely next:
+whole queue, items 1-8, and all of it is done.**
 
-- **Small things left on the menu, none of them load-bearing.** The radar scope's
-  anvil is clipped by the top of its canvas; the `SKIN` label lost its colon when
-  the label was split so the skin name could take the skin's colour; the studio
-  channels show a sliver of the live world at the extreme edges; and the county
-  slip has empty paper below the target band now that the plan is gone.
-
-- **A fragility worth knowing about.** The run's HUD, EAS banner and joystick are
-  hidden at the menu by `#mainMenu:not(.hidden) ~ #hud` and friends. That depends
-  on those three staying SIBLINGS AFTER `#mainMenu` in the document. Move the
-  markup and the HUD reappears over the menu with no error anywhere. A class on
-  `body` toggled at run start would be sturdier if anyone touches that region.
-
-- **AG: `town-car` has no `-wreck` partner.** It never needed one — town cars
-  drive, and under the first law a car with a driver is never harmed. The
-  dealership's destructible inventory was borrowing that model anyway and 404ing
-  at the moment of destruction; inventory uses `parked-car` now. Authoring
-  `town-car-wreck` would let the extra variety back into the lots. Small, and
-  with displace-before-adding lifted it costs nothing.
-
-- **`scripts/qa-modernization-phase6-ui.mjs` cannot run anywhere.** It hardcodes
-  `C:\Program Files\Google\Chrome\Application\chrome.exe`, so it fails in this
-  container and in CI. Its static sibling `verify:phase6` passes and is what
-  everyone has actually been reading. Either point it at `CHROME_BIN` the way the
-  other harnesses do, or delete it — a runtime check no runtime can run is worse
-  than none, because the name implies coverage.
-
-- **The EF score gates still do not bind for a strong player.** Unchanged by any
-  of this and still the open tuning question below; the funnel-integrity work
-  changed how a run can END, not how fast it climbs.
+**Superseded by the finish line above (2026-09-04).** What that pass left behind
+was five loose ends, none of them load-bearing; all five now live under
+**NOT IN v5.2**, which is where they belong until the milestone ships. The only
+code work queued is items 1, 2 and 4 of the finish line.
 
 ## Decisions open
 

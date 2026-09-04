@@ -126,3 +126,23 @@ Decision:
 
 Rationale:
 - The twin-stick layout wants the thumbs wide apart, the HUD is a broadcast lower-third, and the world is framed for a wide picture. Portrait cannot have all three, and supporting it doubles the layout surface of every screen for a hand nobody wants to play.
+
+## D-012: v5.2.0 is the finish line, and it is a list rather than a bar
+
+Date: 2026-09-04
+Status: explicitly approved by director
+
+Context:
+- Asked where to write *fin*, the director's answer was that they did not know: "Every time we make solid progress, it's shanghaied several directions."
+- Nothing in the repository had ever defined "finished". `CORE_DIRECTION.md`, `PRODUCT_VISION_AND_ROADMAP.md` and `BUILD_TRAIN.md` name no release target, no date, and no acceptance bar; the roadmap ends on "twin-funnel and multi-vortex advanced forms" with no terminus.
+- The project was never at risk of dying. 358 commits across 21 active days, ~17 a day, all four workflows green on the current head. The risk was the opposite one: high velocity with no edge to stop at.
+- The drift was measured rather than guessed. Of the substantive commits between 2026-08-22 and 2026-09-04, roughly a third repaired the *checking apparatus* rather than the game. 37 of 55 files in `scripts/` are verification rigs; there are 10 workflows. The machine that checks the game now generates more work than the game does.
+
+Decision:
+- The finish line is **v5.2.0 "Hand It To Someone"**, five items, listed at the top of `Docs/BACKLOG.md`: real icon and splash; the other six counties gated into progression; one logged device run on current code; tag and merge `qa` to `main`; and nothing else.
+- "Nothing else" is an item, not a footnote. A `NOT IN v5.2` section sits directly beneath the five and is the **default destination** for everything else found, including findings raised by agents mid-task. Promotion off it is a deliberate act by the director.
+- The Play Store is explicitly **not** in this milestone and is a separate decision for afterwards. It is allowed to be answered "no", in which case the missing release key, the frozen `main` and the absent store artifacts stop being debt and become unused machinery.
+
+Rationale:
+- A quality bar has no bottom. "Does the menu have the right vibe" can always take another pass, and every such question generated real, good work that moved the line further away. A list can be emptied.
+- The list is deliberately short and probably slightly wrong. A slightly wrong list that gets finished beats a perfect standard that never does.
