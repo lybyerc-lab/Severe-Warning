@@ -54,6 +54,25 @@ findings and evidence are in the Landed entries below). **The director took the
 whole queue, items 1-8, and all of it is done.** What that pass left behind, and
 what is genuinely next:
 
+- **The menu camera is framed for landscape.** The arc was measured against a
+  1600x720 frame, where the funnel stands on the horizon with the town below it.
+  In portrait (430x932) the vertical field of view shows far more sky: the town
+  compresses to a band near the top and the middle third is dead cloud. The cards
+  and copy are all fine — this is framing only. Either the radius and pitch key
+  off the viewport aspect, or portrait gets its own pair of numbers.
+
+- **Small things left on the menu, none of them load-bearing.** The radar scope's
+  anvil is clipped by the top of its canvas; the `SKIN` label lost its colon when
+  the label was split so the skin name could take the skin's colour; the studio
+  channels show a sliver of the live world at the extreme edges; and the county
+  slip has empty paper below the target band now that the plan is gone.
+
+- **A fragility worth knowing about.** The run's HUD, EAS banner and joystick are
+  hidden at the menu by `#mainMenu:not(.hidden) ~ #hud` and friends. That depends
+  on those three staying SIBLINGS AFTER `#mainMenu` in the document. Move the
+  markup and the HUD reappears over the menu with no error anywhere. A class on
+  `body` toggled at run start would be sturdier if anyone touches that region.
+
 - **AG: `town-car` has no `-wreck` partner.** It never needed one — town cars
   drive, and under the first law a car with a driver is never harmed. The
   dealership's destructible inventory was borrowing that model anyway and 404ing
@@ -344,6 +363,35 @@ what is genuinely next:
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The menu stopped being a launcher with a TV border.** Director's read,
+  2026-09-03: the first screen did not have the vibe of the rest of the game. It
+  was a 2020s dark-mode glass dashboard — cyan on slate navy, blurred panels, a
+  geometric webfont — wearing a 1982 cabinet as a picture frame. None of that
+  hue, material or type appears anywhere else in the game. The cabinet itself was
+  already fully built in the markup; it had been demoted to a border.
+  **Palette and type.** Two identical panes of glass became two materials that
+  already exist in this world: the county card is a wire dispatch (newsprint, the
+  results broadsheet's own serif, a red stamp, a monospace ruled band) and the
+  classifier is a radar scope in green phosphor. The scope shows a radar RETURN,
+  not paint — the funnel is drawn in the tube's phosphor and the equipped skin
+  names itself in the label, in its own colour, because a scope cannot show what
+  colour something is.
+  **The live county behind it.** Nearly free: the world was already built and
+  rendering while the menu was up (303 objects, loop running) behind an opaque
+  black sheet. The sheet is transparent, the walnut is an inset frame, and a menu
+  camera flies a slow arc on its own clock. Framing was measured, and elevation
+  mattered more than projection — a steep look-down put the funnel numerically
+  high in frame but showed the top of the cloud, which reads as a grey disc.
+  **The channel metaphor was already built.** `switchTvChannel` fires the static
+  burst, turns the knob, blooms the incoming view and retags the channel. It only
+  had to survive the transparent tube, and it did not at first: CH 6's storm cards
+  became washed-out panels over a moving 3D county. The studio channels black the
+  feed out now, which is what a character generator did in 1982.
+  Two of my own mistakes, both found by looking rather than reasoning: a
+  `background:` shorthand followed by `background-image:` wiped the paper and put
+  black ink on a dark tube, and `git add -A` swept a screenshot probe into a
+  commit and desynced the inventory (`*.tmp.mjs` is gitignored now).
 
 - **CI has an owner and, more usefully, a signal that arrives.** Director's call,
   2026-09-02. Three parts, and only the first is a promise: an operating law in
