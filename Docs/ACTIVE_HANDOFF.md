@@ -1,12 +1,18 @@
 # Active Handoff
 
-Last updated: 2026-09-04 America/Chicago
+Last updated: 2026-09-05 America/Chicago
 Repository: `lybyerc-lab/Severe-Warning`
 Working branch: **`qa`** — this is the default branch and where work lands.
 Current milestone: **`v5.2.0 Hand It To Someone`** — the declared finish line.
 Shipped milestone: `v5.1.0 Three.js Production Slice`.
 
-**Next action: the five items at the top of `Docs/BACKLOG.md`, and nothing else.**
+**Next action: the device run. It is the last item nobody else can do.**
+Four of the five finish-line items in `Docs/BACKLOG.md` are done or armed; item 3
+is a physical test and the code side has gone as far as it can. A prepared entry
+waits at the end of `Docs/DEVICE_TEST_LOG.md` — the build to install, ten things
+that have never been on a device, and the four areas unproven since 2026-08-26.
+Fill it in on the Galaxy and item 3 closes.
+
 v5.2.0 is a list, not a quality bar (`Docs/DECISIONS.md` D-012). Anything found
 that is not one of the five goes on the `NOT IN v5.2` list directly beneath them,
 by default — that list is the point, not a parking lot.

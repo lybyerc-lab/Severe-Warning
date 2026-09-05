@@ -445,3 +445,72 @@ The run earned `S+` with `0/3` substations. This is not a build failure, but it 
 - sustained heat and battery behavior
 - interruption recovery and close/reopen persistence
 - repeated-run cleanup beyond the accepted completed run
+
+---
+
+## v5.2.0 "Hand It To Someone" — PREPARED, AWAITING THE DEVICE
+
+Prepared 2026-09-04 by the code side. **Nothing below is evidence yet.** Fill in
+the results on the device and delete this warning line; an unfilled section is an
+untested build, and this file is the one place that distinction is kept.
+
+Why this entry exists: the last logged run was **2026-08-26**, and **139 commits**
+have landed since. Everything in "What is new and has never been on a device" has
+only ever been proved in a headless browser. Under the first operating law, that
+is not acceptance.
+
+### The build to test
+
+- Branch `qa`, tag `v5.2.0` (cut once CI is green on the tagged commit).
+- Artifact from the **Build Signed Android QA APK** workflow on that commit:
+  `severe-weather-v5.2.0-qa-<run number>`, containing
+  `Severe-Weather-v5.2.0-QA-<run number>.apk`.
+- Application id `com.lybyerclab.severeweather.qa`, version name `5.2.0-qa.<run>`,
+  version code `520<run>`. It installs **over** the previous QA build; do not
+  uninstall first — update-in-place is itself part of the test.
+
+### What is new and has never been on a device
+
+Tick each, and write what you actually saw. "Looked fine" is a result; so is
+"never got there".
+
+- [ ] **Launcher icon and splash.** The drawer icon and the first two seconds
+      were the stock Capacitor logo until now. Look at the icon in the drawer
+      before opening anything.
+- [ ] **Landscape lock.** The app should never present a portrait layout. Try
+      rotating during a run.
+- [ ] **The menu.** Rebuilt as a broadcast over the live county — CRT cabinet,
+      wire-dispatch card, region map. Does it set the right mood before play?
+- [ ] **Funnel integrity / rope-out.** A run can now END early if the storm stops
+      destroying things. Try idling for ~10s mid-run and watch the meter.
+- [ ] **MOO-LAH economy and the shop.** Payout after a run, and the storefront:
+      6 upgrades against 3 loadout slots.
+- [ ] **Star-gated skins.** SIREN AMBER at 8 stars, DOPPLER VIOLET at 18,
+      WHITEOUT at 30. Locked ones should show a star requirement, not a price.
+- [ ] **Ten counties across three regions.** Coastal and Metro now gate and
+      unlock like Heartland. Clear one county and check the next opens.
+- [ ] **The campaign finale.** Clearing all ten prints a season's-end special
+      edition in the Evening Edition. (Long test — skip unless you want it.)
+- [ ] **Metro dressing.** Skyline Plaza, Grand Central and Broadcast Heights were
+      nearly empty; they now carry street grid, rail yard and a dish farm. Watch
+      the frame rate here especially — this is the most geometry added in months.
+- [ ] **The results card.** Bovine stats, the district split, and the payout line.
+
+### Still unproven from the 2026-08-26 entry
+
+Carried forward untouched — none of these has been tested since:
+
+- [ ] ordinary or older Android performance
+- [ ] sustained heat and battery behavior
+- [ ] interruption recovery and close/reopen persistence
+- [ ] repeated-run cleanup beyond the accepted completed run
+
+### Result
+
+- Device:
+- APK / run number:
+- Installed over previous build without uninstall: yes / no
+- Completed a full run: yes / no
+- Crashes, hangs or visual faults:
+- Frame rate impression (especially Metro):
+- Verdict: accepted / not accepted / partial —

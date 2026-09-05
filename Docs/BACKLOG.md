@@ -79,7 +79,11 @@ perfect standard that never does.
   region's first county is open from the start and the chain runs inside a
   region, not between them. Do not relitigate this by adding a region gate.
 
-- [ ] **3. One logged device run on current code.** `Docs/DEVICE_TEST_LOG.md` was
+- [ ] **3. One logged device run on current code.** **Prepared 2026-09-04 — the
+  code side is done and it is waiting on the device.** A fill-in entry sits at the
+  end of `Docs/DEVICE_TEST_LOG.md`: which APK, ten things that have never been on
+  a device across the 139 commits since the last run, and the four areas unproven
+  since then. `Docs/DEVICE_TEST_LOG.md` was
   last written 2026-08-26. The economy, funnel integrity and rope-out, the
   loadout, the menu rework and the landscape lock have never been through a
   logged device run. Screenshots are not the log.
