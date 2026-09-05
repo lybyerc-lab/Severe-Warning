@@ -174,7 +174,17 @@ async function runDiligenceAudit() {
   ];
 
   console.log('\n--- Auditing All 10 Campaign Stops Across 3 Regions ---');
-  await cdp.evaluate(`campaignProgress.unlockedLevel = 3;`);
+  // [SW:CAMPAIGN:REGION_PROGRESSION] Coastal and Metro are gated now, so opening
+  // Heartland alone would leave this audit selecting a locked stop, being
+  // refused, and then inspecting whichever county it was already on -- passing
+  // while measuring the wrong world. Open every region before walking them.
+  await cdp.evaluate(`
+    campaignProgress.unlockedLevel = HEARTLAND_CAMPAIGN.length - 1;
+    campaignProgress.regionUnlocked = {
+      coastal: COASTAL_CAMPAIGN.length - 1,
+      metro: METRO_CAMPAIGN.length - 1
+    };
+  `);
   for (const lvl of campaignLevels) {
     const res = await cdp.evaluate(`
       (() => {

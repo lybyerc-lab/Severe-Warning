@@ -70,6 +70,11 @@ perfect standard that never does.
   onto its first stop. All three regions now gate, unlock, advance and complete
   on their own list, per-region unlock state persists beside the untouched
   Heartland save, and the star total counts all ten counties instead of four.
+  The same Heartland-only assumption was encoded in two more places found only
+  when the signed-APK build went red: `verify-qa-package.mjs` asserted the old
+  guard against the **packaged** bundle, and `verify-full-diligence-audit.mjs`
+  opened Heartland alone before walking all ten stops, so four of them failed
+  once the gate existed. Both now assert and unlock per region.
   **Decided 2026-09-04: regions stay unlocked.** The director's call — each
   region's first county is open from the start and the chain runs inside a
   region, not between them. Do not relitigate this by adding a region gate.

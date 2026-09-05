@@ -92,7 +92,14 @@ const requiredMarkers = [
   ['bovine end report', 'BOVINE SITUATION REPORT'],
   ['Moo Brew sponsor disclaimer', 'Moo Brew accepts no responsibility for atmospheric cattle'],
   ['campaign weather map', 'campaignMapGrid'],
-  ['campaign unlock guard', 'index > campaignProgress.unlockedLevel'],
+  // [SW:CAMPAIGN:REGION_PROGRESSION] Was the literal
+  // `index > campaignProgress.unlockedLevel`, which described Heartland only.
+  // The guard is one region-aware predicate now, and the packaged build has to
+  // carry it -- this file is the check that the SHIPPED bundle does, not just
+  // the source.
+  ['campaign unlock guard', 'function campaignLevelLocked'],
+  ['campaign unlock guard is applied', 'if (campaignLevelLocked(selectedCampaignRegion, index)) {'],
+  ['per-region unlock state', 'function setCampaignUnlockedIndex'],
   ['campaign completion', 'function completeCampaignRun'],
   ['QA build stamp', 'QA_BUILD_STAMP'],
   ['rampage feedback layer', 'rampageFeedbackLayer'],
