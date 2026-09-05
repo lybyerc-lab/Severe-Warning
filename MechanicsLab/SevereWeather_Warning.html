@@ -1388,7 +1388,30 @@
   .campaign-stop strong { display: none; }
   .campaign-stop small { display: none; }
   .campaign-stop .campaign-stars { color: #facc15; font: 900 10.5px/1 'Outfit', sans-serif; }
-  #campaignBrief { min-height: 28px; margin-top: 8px; color: #bae6fd; font: 700 9px/1.35 Inter, sans-serif; }
+  /* [SW:CAMPAIGN:BRIEF] Sized for the cartouche it sits in rather than the panel
+     it was written for: the popup is narrow, and a brief that pushes the UNLEASH
+     button off the card is worse than one nobody reads. */
+  #campaignBrief {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(56, 189, 248, 0.25);
+    max-width: 46ch;
+    color: #bae6fd;
+    font: 600 8.5px/1.35 Inter, sans-serif;
+  }
+  /* [SW:CAMPAIGN:STAR_TOTAL] */
+  .tv-campaign-star-total {
+    margin-left: auto;
+    padding: 2px 8px;
+    border: 1px solid rgba(251, 191, 36, 0.55);
+    border-radius: 3px;
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    font: 900 9px/1.1 'Inter', sans-serif;
+    letter-spacing: 0.12em;
+    text-shadow: none;
+    white-space: nowrap;
+  }
   .campaign-hud-chip { margin: 4px 0 0; color: #fde68a; font: 900 9px/1.2 Inter, sans-serif; letter-spacing: 0.07em; }
   .campaign-result { margin: 9px 0 0; padding: 8px 10px; border: 1px solid rgba(56,189,248,0.4); border-radius: 9px; background: rgba(8,47,73,0.35); color: #e0f2fe; font: 800 11px/1.35 Inter, sans-serif; }
   .results-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
@@ -2075,6 +2098,11 @@
         <div class="tv-subchannel-header">
           <div class="tv-subchannel-title">
             REGION · KSWX ACTION DOPPLER 4
+            <!-- [SW:CAMPAIGN:STAR_TOTAL] renderCampaignMap has always written the
+                 campaign star total to #campaignStarTotal. The element was never
+                 in the markup, so the write was a guarded no-op and the total has
+                 never been shown to anyone. -->
+            <span class="tv-campaign-star-total" id="campaignStarTotal">0/30 STARS</span>
           </div>
           <button type="button" class="tv-subchannel-back-btn" onclick="closeCampaignMapModal()">⮌ CH 8: RETURN</button>
         </div>
@@ -2267,7 +2295,11 @@
                 <span class="tv-card-badge" id="tvSitePopupStation">KSWX 8</span>
               </div>
               <div class="tv-site-popup-meta" id="tvSitePopupMeta">TARGET: 45,000 PTS · ★ 0/3</div>
-              <div id="campaignBrief" style="display:none;"></div>
+              <!-- [SW:CAMPAIGN:BRIEF] Ten counties carry an authored brief, this
+                   element was written on every render, and it was display:none --
+                   so none of them was ever read. The map is where a stop is
+                   chosen, which is the one place the brief is worth anything. -->
+              <div id="campaignBrief"></div>
             </div>
             <button type="button" class="tv-cartouche-launch-btn" id="btnLaunchFromMap" onclick="triggerTvPowerLaunch()">⚡ UNLEASH</button>
           </div>
@@ -4897,11 +4929,17 @@ function renderCampaignMap() {
   if (!grid) return;
 
   const currentList = campaignRegionList();
+  // [SW:CAMPAIGN:STOP_ANCHOR] These sit BELOW their county names, not on them.
+  // The pill carries `transform: translate(-50%, -50%)`, so each pair is the
+  // pill's centre. Measured before: the star pills covered 44-63% of every
+  // Heartland label and about 25% of the third Coastal and Metro ones, which
+  // rendered as "LI[* 3/3]OUNTY". Verified at both landscape shapes the game
+  // ships in; if a label moves in the SVG, re-measure rather than nudge.
   const positions = selectedCampaignRegion === 2
-    ? ['left: 24%; top: 38%;', 'left: 64%; top: 38%;', 'left: 44%; top: 68%;']
+    ? ['left: 24%; top: 47%;', 'left: 64%; top: 47%;', 'left: 44%; top: 78%;']
     : (selectedCampaignRegion === 1
-      ? ['left: 22%; top: 38%;', 'left: 62%; top: 38%;', 'left: 48%; top: 68%;']
-      : ['left: 22%; top: 32%;', 'left: 70%; top: 32%;', 'left: 22%; top: 72%;', 'left: 70%; top: 72%;']);
+      ? ['left: 22%; top: 47%;', 'left: 62%; top: 47%;', 'left: 48%; top: 78%;']
+      : ['left: 22%; top: 45%;', 'left: 70%; top: 45%;', 'left: 22%; top: 81%;', 'left: 70%; top: 81%;']);
 
   grid.innerHTML = currentList.map((level, index) => {
     const locked = campaignLevelLocked(selectedCampaignRegion, index);
@@ -4941,6 +4979,20 @@ function renderCampaignMap() {
   if (typeof updateTvMenuDisplays === 'function') updateTvMenuDisplays();
 }
 
+// [SW:CAMPAIGN:STOP_ANCHOR] The stop pills were placed at hand-tuned percentages
+// of the map wrapper, while the county names they belong to are drawn in the
+// SVG's own 880x250 viewBox. preserveAspectRatio letterboxes that viewBox inside
+// the wrapper, so the two coordinate systems drift apart with the viewport and
+// the pills landed on the names: measured at 44-63% of each Heartland label
+// covered, and about 25% on the third Coastal and Metro stops. "LI[* 3/3]OUNTY"
+// is the sort of thing a screenshot shows and a percentage never will.
+//
+// The fix converts the label's OWN viewBox coordinates through the SVG's current
+// screen matrix, rather than measuring the laid-out label and reacting to it.
+// Measuring was tried first and is a trap here: reading a rect forces layout,
+// which resizes the box, which re-triggers the measurement -- and the styles and
+// the rects then disagree with each other in a way that reads as "the fix did
+// nothing" three times running. One matrix, computed per render, cannot loop.
 let lastTerritoryClickIndex = -1;
 let lastTerritoryClickTime = 0;
 

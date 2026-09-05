@@ -132,14 +132,6 @@ nowhere else to put it. This is that place.
   `verify:phase6` passes and is what anyone has actually been reading. Fix or
   delete — after v5.2.
 
-- **`campaignStarTotal` is a third phantom id.** `renderCampaignMap` computes the
-  star total and writes it to `document.getElementById('campaignStarTotal')`,
-  which does not exist in the markup — the write is a guarded no-op, so the total
-  has never been displayed to anyone. The arithmetic is now correct (all ten
-  counties, derived denominator) and `verify:v500` guards it; only the readout is
-  missing. Found while gating the counties, filed here rather than built, per the
-  valve.
-
 - **`bindClick('btnStartMenu', ...)` binds an id that is not in the DOM.** The
   real button is `btnTvPower`. A dead line, same phantom-id class as the payout
   bug, harmless today.
@@ -475,6 +467,30 @@ code work queued is items 1, 2 and 4 of the finish line.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **Three things the campaign map was computing and not showing.** Director asked
+  for campaign polish, 2026-09-04. Measured rather than guessed: (1) every one of
+  the ten counties carries an authored brief, `renderCampaignMap` wrote it on
+  every render, and the element had inline `display: none` — none of them had
+  ever been read; (2) `#campaignStarTotal` was a phantom id, so the campaign star
+  total was computed and written to nothing; (3) the star pills sat **on top of**
+  their own county names — measured at 44-63% of every Heartland label covered
+  and ~25% on the third Coastal and Metro ones, rendering as "LI[★ 3/3]OUNTY".
+  The brief now shows in the map cartouche, the star total is a pill in the map
+  header, and the stops sit below their names with **0% overlap at all four
+  landscape viewports the project targets** (932x430, 1365x768, 915x412,
+  1280x540), every pill inside the map bounds.
+
+  The pill fix cost four wrong attempts and the reason is worth keeping: the
+  positions are percentages of a box the SVG is letterboxed inside, so I tried to
+  anchor them to the laid-out labels instead. Reading a label's rect forces the
+  layout that moves it, and the applied styles and the reported rects then
+  disagree in a way that looks exactly like "the change did nothing" — three
+  times running. Twice inside that, a top-level `const` declared beside a
+  function that `loadCampaignProgress()` reaches during script evaluation threw a
+  TDZ error at load; function declarations hoist, so the page half-worked and the
+  pills silently fell back to their CSS percentages. **In this file, state a
+  load-time path can reach must be `var`.**
 
 - **The landscape lock got the half that makes it work, and a guard.**
   2026-09-04, straight after the lock itself. Two gaps. `screen.orientation.lock`
