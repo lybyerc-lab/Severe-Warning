@@ -5264,6 +5264,44 @@ function campaignGroundPart(geometry, color, x, z, yOffset = 0, options = {}) {
   return mesh;
 }
 
+// [SW:WORLD:METRO_DRESSING] One mesh for a repeated prop, not one per copy.
+// "Mesh count stays intentionally modest for mobile thermals" is an invariant of
+// this region, and dressing a rail yard honestly means well over a hundred
+// sleepers -- a first pass at it put Rail Terminal on 199 meshes against
+// Coastal's 40. The file already reaches for InstancedMesh when a prop repeats
+// (see the power-pole trunks at [SW:WORLD:RAMPAGE]); this is the campaign's
+// version of the same move. Placements are {x, z} in world space with an
+// optional y lift, rotation and per-axis scale.
+function campaignInstancedGroundPart(geometry, color, placements, options = {}) {
+  ensureCampaignSceneryGroup();
+  if (!placements.length) return null;
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    roughness: options.roughness ?? 0.7,
+    metalness: options.metalness ?? 0.05,
+    emissive: options.emissive || '#000000',
+    emissiveIntensity: options.emissiveIntensity || 0
+  });
+  const mesh = new THREE.InstancedMesh(geometry, material, placements.length);
+  const placer = new THREE.Object3D();
+  placements.forEach((placement, index) => {
+    placer.position.set(
+      placement.x,
+      terrainHeightAt(placement.x, placement.z) + (placement.y || 0),
+      placement.z
+    );
+    placer.rotation.set(placement.rx || 0, placement.ry || 0, placement.rz || 0);
+    placer.scale.set(placement.sx || 1, placement.sy || 1, placement.sz || 1);
+    placer.updateMatrix();
+    mesh.setMatrixAt(index, placer.matrix);
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.castShadow = options.castShadow !== false;
+  mesh.receiveShadow = options.receiveShadow !== false;
+  campaignSceneryGroup.add(mesh);
+  return mesh;
+}
+
 function addCampaignWindmill(x, z, scale = 1, color = '#e2e8f0') {
   const group = new THREE.Group();
   group.position.set(x, terrainHeightAt(x, z), z);
@@ -5430,6 +5468,57 @@ function spawnCampaignScenery(level) {
     });
   } else if (world.profile === 7) {
     // DOWNTOWN CORE / SKYLINE PLAZA: High-rise skyscrapers, construction cranes, commuter buses
+    //
+    // [SW:WORLD:METRO_DRESSING] Metro's three counties used to be models and
+    // nothing else -- no authored ground geometry at all, where Coastal mixes
+    // piers, water and boardwalk under its boats. Measured: 8 / 9 / 6 scenery
+    // objects against Coastal's 40 / 27 / 11, with the campaign's FINALE county
+    // the emptiest world in the game. The dressing below is the missing half:
+    // pavement, kerbs, plazas, rail and antenna clutter, all authored geometry
+    // rather than new assets, so it costs the payload nothing.
+    const kerb = '#334155';
+    const asphalt = '#1e293b';
+    const paving = '#475569';
+    // A street grid: two avenues and two cross-streets, with kerb lines.
+    [-190, 190].forEach(z => {
+      campaignGroundPart(new THREE.BoxGeometry(760, 0.2, 34), asphalt, 0, z, 0.14, { castShadow: false, roughness: 0.95 });
+      [-18, 18].forEach(offset => campaignGroundPart(new THREE.BoxGeometry(760, 0.5, 2.2), kerb, 0, z + offset, 0.32, { castShadow: false }));
+    });
+    [-150, 150].forEach(x => {
+      campaignGroundPart(new THREE.BoxGeometry(30, 0.2, 620), asphalt, x, 0, 0.14, { castShadow: false, roughness: 0.95 });
+    });
+    // Lane dashes down both avenues.
+    const dashes = [];
+    for (let i = -8; i <= 8; i++) {
+      [-190, 190].forEach(z => dashes.push({ x: i * 42, z, y: 0.3 }));
+    }
+    campaignInstancedGroundPart(new THREE.BoxGeometry(16, 0.1, 1.1), '#e2e8f0', dashes, { castShadow: false, emissive: '#94a3b8', emissiveIntensity: 0.1 });
+    // The plaza itself, with planter blocks around its rim.
+    campaignGroundPart(new THREE.CylinderGeometry(72, 72, 0.4, 24), paving, 0, 0, 0.2, { castShadow: false, roughness: 0.85 });
+    const planters = [];
+    const shrubs = [];
+    for (let i = 0; i < 10; i++) {
+      const angle = (i / 10) * Math.PI * 2;
+      const px = Math.cos(angle) * 66;
+      const pz = Math.sin(angle) * 66;
+      planters.push({ x: px, z: pz, y: 1.6 });
+      shrubs.push({ x: px, z: pz, y: 5.4 });
+    }
+    campaignInstancedGroundPart(new THREE.BoxGeometry(11, 3.2, 11), '#3f4a5c', planters, { roughness: 0.9 });
+    campaignInstancedGroundPart(new THREE.SphereGeometry(4.2, 7, 6), '#2f5d3a', shrubs, { roughness: 0.95 });
+    // Glass curtain-wall stubs behind the hero towers, so the skyline has depth
+    // instead of four models on an empty apron. One instanced block scaled per
+    // copy, so nine buildings of different heights still cost one mesh.
+    const stubs = [];
+    const crowns = [];
+    for (let i = 0; i < 9; i++) {
+      const bx = -320 + i * 80;
+      const h = 26 + ((i * 37) % 40);
+      stubs.push({ x: bx, z: -330, y: h / 2, sy: h / 40 });
+      crowns.push({ x: bx, z: -330, y: h - 3 });
+    }
+    campaignInstancedGroundPart(new THREE.BoxGeometry(38, 40, 38), '#26374d', stubs, { metalness: 0.45, roughness: 0.35 });
+    campaignInstancedGroundPart(new THREE.BoxGeometry(39, 1.2, 39), '#38bdf8', crowns, { emissive: '#38bdf8', emissiveIntensity: 0.32, castShadow: false });
     [[-240, -240], [-150, -250], [180, -240], [260, -250]].forEach(([sx, sz]) => {
       instantiateActorModel('skyscraper', { damageable: true }).then(tower => {
         if (!tower) return;
@@ -5454,6 +5543,47 @@ function spawnCampaignScenery(level) {
     });
   } else if (world.profile === 8) {
     // RAIL TERMINAL / GRAND CENTRAL: Signal cranes, commuter transit buses, communication towers
+    // [SW:WORLD:METRO_DRESSING] A switching yard needs track to be a switching
+    // yard: six roads of rail with sleepers, a container stack, and the gantry
+    // masts the challenges already talk about.
+    const ballast = '#3f3a33';
+    const rail = '#8a8f98';
+    const beds = [];
+    const rails = [];
+    const sleepers = [];
+    for (let track = 0; track < 6; track++) {
+      const z = -240 + track * 34;
+      beds.push({ x: 0, z, y: 0.28 });
+      [-3.2, 3.2].forEach(offset => rails.push({ x: 0, z: z + offset, y: 0.8 }));
+      for (let tie = -11; tie <= 11; tie++) sleepers.push({ x: tie * 31, z, y: 0.5 });
+    }
+    campaignInstancedGroundPart(new THREE.BoxGeometry(720, 0.5, 15), ballast, beds, { castShadow: false, roughness: 0.98 });
+    campaignInstancedGroundPart(new THREE.BoxGeometry(720, 0.6, 0.9), rail, rails, { metalness: 0.75, roughness: 0.3, castShadow: false });
+    // 138 sleepers, one mesh.
+    campaignInstancedGroundPart(new THREE.BoxGeometry(2.0, 0.4, 13), '#4a3f33', sleepers, { castShadow: false });
+    // Freight containers, stacked two high in a couple of places. Instanced per
+    // colour so the yard still reads as mixed cargo.
+    const containerColors = ['#b45309', '#0e7490', '#7f1d1d', '#3f6212', '#1e40af'];
+    const stacksByColor = containerColors.map(() => []);
+    for (let i = 0; i < 14; i++) {
+      const cx = -300 + (i % 7) * 100;
+      const cz = i < 7 ? 150 : 205;
+      stacksByColor[i % containerColors.length].push({ x: cx, z: cz, y: 6 });
+      if (i % 3 === 0) stacksByColor[(i + 2) % containerColors.length].push({ x: cx, z: cz, y: 18.4 });
+    }
+    containerColors.forEach((color, index) => {
+      campaignInstancedGroundPart(new THREE.BoxGeometry(46, 12, 15), color, stacksByColor[index], { roughness: 0.85, metalness: 0.25 });
+    });
+    // Overhead catenary gantries across the yard.
+    const posts = [];
+    const spans = [];
+    for (let g = -2; g <= 2; g++) {
+      const gx = g * 150;
+      [-250, -80].forEach(gz => posts.push({ x: gx, z: gz, y: 13 }));
+      spans.push({ x: gx, z: -165, y: 25.5 });
+    }
+    campaignInstancedGroundPart(new THREE.CylinderGeometry(0.7, 0.9, 26, 6), '#525b66', posts, { metalness: 0.7 });
+    campaignInstancedGroundPart(new THREE.BoxGeometry(1.4, 1.4, 175), '#525b66', spans, { metalness: 0.7 });
     [[-220, -250], [220, -250]].forEach(([rx, rz]) => {
       instantiateActorModel('radio-tower', { damageable: true }).then(tower => {
         if (!tower) return;
@@ -5479,6 +5609,61 @@ function spawnCampaignScenery(level) {
     }
   } else if (world.profile === 9) {
     // BROADCAST HEIGHTS: Telecommunication broadcast towers, high-altitude radio towers & skyscraper transmitters
+    // [SW:WORLD:METRO_DRESSING] The campaign's last county had six objects in
+    // it -- fewer than anywhere else in the game, at the point the player is
+    // meant to be finishing on. Concrete pads, a satellite dish farm, guyed
+    // masts and the summit service road.
+    const concrete = '#5b6470';
+    const dish = '#cbd5e1';
+    // The summit service road, switchbacking up to the transmitter pads.
+    [[-300, -60, 0.1], [-60, 60, -0.08], [90, 180, 0.06]].forEach(([x0, x1, tilt]) => {
+      const width = x1 - x0;
+      campaignGroundPart(new THREE.BoxGeometry(width, 0.25, 22), '#2a2f38', (x0 + x1) / 2, 70 + tilt * 180, 0.2, { castShadow: false, rotation: { y: tilt }, roughness: 0.95 });
+    });
+    // Equipment pads with cabinets on them.
+    const pads = [];
+    const cabinets = [];
+    for (let i = 0; i < 8; i++) {
+      const px = -280 + (i % 4) * 190;
+      const pz = i < 4 ? -180 : 40;
+      pads.push({ x: px, z: pz, y: 0.5 });
+      cabinets.push({ x: px - 14, z: pz + 12, y: 4.5 }, { x: px + 14, z: pz + 12, y: 4.5 });
+    }
+    campaignInstancedGroundPart(new THREE.BoxGeometry(52, 1.0, 40), concrete, pads, { castShadow: false, roughness: 0.9 });
+    campaignInstancedGroundPart(new THREE.BoxGeometry(9, 7, 5), '#94a3b8', cabinets, { metalness: 0.5 });
+    // The dish farm: parabolics on short pedestals, all facing the same arc.
+    // Instanced, which costs them the slow idle rotation an individual mesh
+    // could have had -- a fair trade for nine dishes at one draw call, and they
+    // are 250 units out where a 0.06 rad/s turn was never going to read.
+    const pedestals = [];
+    const faces = [];
+    for (let i = 0; i < 9; i++) {
+      const angle = -0.9 + (i / 8) * 1.8;
+      const dx = Math.cos(angle) * 250;
+      const dz = Math.sin(angle) * 250 - 40;
+      pedestals.push({ x: dx, z: dz, y: 4.5 });
+      faces.push({ x: dx, z: dz, y: 11.5, rx: -1.05, ry: angle });
+    }
+    campaignInstancedGroundPart(new THREE.CylinderGeometry(1.4, 2.0, 9, 8), '#64748b', pedestals, { metalness: 0.6 });
+    campaignInstancedGroundPart(new THREE.SphereGeometry(7.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2.6), dish, faces, { metalness: 0.35, roughness: 0.4 });
+    // Guyed masts with their stay wires, red-banded like the real things.
+    const bandsWhite = [];
+    const bandsRed = [];
+    const stays = [];
+    const beacons = [];
+    [[-190, 260], [190, 260]].forEach(([mx, mz]) => {
+      for (let band = 0; band < 7; band++) {
+        (band % 2 ? bandsWhite : bandsRed).push({ x: mx, z: mz, y: 4.5 + band * 9 });
+      }
+      [[-1, -1], [1, -1], [0, 1]].forEach(([sx, sz]) => {
+        stays.push({ x: mx + sx * 16, z: mz + sz * 16, y: 33, rx: sz * 0.42, rz: -sx * 0.42 });
+      });
+      beacons.push({ x: mx, z: mz, y: 68 });
+    });
+    campaignInstancedGroundPart(new THREE.BoxGeometry(3.4, 9, 3.4), '#e2e8f0', bandsWhite, { metalness: 0.4 });
+    campaignInstancedGroundPart(new THREE.BoxGeometry(3.4, 9, 3.4), '#dc2626', bandsRed, { metalness: 0.4 });
+    campaignInstancedGroundPart(new THREE.CylinderGeometry(0.22, 0.22, 74, 4), '#94a3b8', stays, { metalness: 0.6, castShadow: false });
+    campaignInstancedGroundPart(new THREE.SphereGeometry(1.7, 8, 8), '#ef4444', beacons, { emissive: '#ef4444', emissiveIntensity: 0.85 });
     [[-240, -240], [-120, -260], [120, -260], [240, -240]].forEach(([rx, rz]) => {
       instantiateActorModel('radio-tower', { damageable: true }).then(tower => {
         if (!tower) return;
