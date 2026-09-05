@@ -20,12 +20,12 @@ def severeWeatherApplicationId = resolveBuildValue(
 def severeWeatherVersionCodeText = resolveBuildValue(
     'severeWeatherVersionCode',
     'SEVERE_WEATHER_VERSION_CODE',
-    '510'
+    '520'
 )
 def severeWeatherVersionName = resolveBuildValue(
     'severeWeatherVersionName',
     'SEVERE_WEATHER_VERSION_NAME',
-    '5.1.0'
+    '5.2.0'
 )
 
 if (!(severeWeatherVersionCodeText ==~ /[0-9]+/)) {

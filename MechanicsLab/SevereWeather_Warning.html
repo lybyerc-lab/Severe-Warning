@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#030712">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self';">
-<title>Severe Weather Warning v5.1.0 - Three.js Production Slice</title>
+<title>Severe Weather Warning v5.2.0 - Three.js Production Slice</title>
 <link rel="icon" href="data:,">
 <script>
 /* INLINED THREE.JS R128 */
@@ -464,7 +464,7 @@
   #gagToast { position: absolute; top: 52px; left: 50%; transform: translateX(-50%) translateY(-8px); z-index: 1600; pointer-events: none; opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease; max-width: 78vw; padding: 8px 14px; border-radius: 999px; background: rgba(15,23,42,0.94); border: 1px solid rgba(251,191,36,0.65); color: #fde68a; font: 900 11px/1.2 Outfit, sans-serif; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
   #gagToast.active { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* v5.1.0 Rampage Feedback: screen-space callouts stay legible on mobile. */
+  /* Rampage Feedback: screen-space callouts stay legible on mobile. */
   #rampageFeedbackLayer { position: fixed; inset: 0; z-index: 1500; pointer-events: none; overflow: hidden; contain: layout paint; }
   .rampage-popup { --rampage-color: #fbbf24; position: absolute; display: flex; align-items: center; gap: 7px; max-width: 82vw; white-space: nowrap; transform: translate(-50%, -50%); filter: drop-shadow(0 5px 8px rgba(0,0,0,0.72)); animation: rampagePopupFloat 0.95s cubic-bezier(0.18,0.82,0.22,1) forwards; }
   .rampage-word { color: var(--rampage-color); font: 1000 clamp(15px, 2.7vw, 28px)/0.95 Outfit, sans-serif; letter-spacing: 0.045em; -webkit-text-stroke: 1.5px rgba(0,0,0,0.9); text-shadow: 0 2px 0 #000, 0 0 12px color-mix(in srgb, var(--rampage-color) 60%, transparent); }
@@ -2470,7 +2470,7 @@
 <!-- Pinned NOAA EAS Banner -->
 <div id="easBanner">
   <div class="eas-ticker" id="easTicker">NOAA EAS STAGE 1: TORNADO TOUCHDOWN IN LINCOLN COUNTY (EF-0/EF-2 CAP)</div>
-  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">SEVERE WEATHER WARNING v5.1.0</div>
+  <div style="font-size: 10px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">SEVERE WEATHER WARNING v5.2.0</div>
 </div>
 
 <!-- Glassmorphism HUD -->
@@ -2831,7 +2831,7 @@ function rearmTitleCardIfReopenedDuringRun() {
   if (!isTitleCardCollapsed && runActive && gameStarted) titleCardCollapseArmed = true;
 }
 
-// [SW:AUDIO:ENGINE] --- v5.1.0 HEARTLAND CAMPAIGN AUDIO ENGINE ---
+// [SW:AUDIO:ENGINE] --- HEARTLAND CAMPAIGN AUDIO ENGINE ---
 let audioCtx = null;
 let isAudioMuted = false;
 let stormAudioReady = false;
@@ -9150,7 +9150,7 @@ let comboFreezeTimer = 0;       // Active combo freeze pickup
 let efBoostTimer = 0;           // Active EF boost pickup
 let destroyedCarsCount = 0;
 
-// [SW:UI:RAMPAGE_HUD] --- v5.1.0 SCREEN-SPACE RAMPAGE FEEDBACK SYSTEM ---
+// [SW:UI:RAMPAGE_HUD] --- SCREEN-SPACE RAMPAGE FEEDBACK SYSTEM ---
 let rampageFeedbackTier = 0;
 const RAMPAGE_TIER_LABELS = [
   null,
@@ -13407,7 +13407,7 @@ function animate(now) {
   tornadoGroup.rotation.z = THREE.MathUtils.lerp(tornadoGroup.rotation.z, -moveX * 0.14, 0.1);
   tornadoGroup.rotation.x = THREE.MathUtils.lerp(tornadoGroup.rotation.x, moveZ * 0.14, 0.1);
 
-  // v5.1.0 LAYERED STORM SOUNDSCAPE MODULATION
+  // LAYERED STORM SOUNDSCAPE MODULATION
   updateStormSoundscape(isMoving ? storm.speed : 0, efMultiplier);
 
   // SUPERCELL 3D ANVIL ROTATION & HAIL SWARM ANIMATION
@@ -16819,7 +16819,7 @@ function decorateNewspaperMenu() {
         <span>FIVE CENTS</span>
       </div>
       <h1 class="newspaper-main-title">THE DAILY WARNING</h1>
-      <div class="newspaper-kicker-banner">NOAA ISSUES COUNTY-WIDE ROTATION BULLETIN · ARCADE DISASTER SIMULATOR v5.1.0</div>
+      <div class="newspaper-kicker-banner">NOAA ISSUES COUNTY-WIDE ROTATION BULLETIN · ARCADE DISASTER SIMULATOR v5.2.0</div>
     `;
     card.insertBefore(mastheadBox, card.firstChild);
     const oldTitle = card.querySelector('.menu-title');

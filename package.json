@@ -1,6 +1,6 @@
 {
   "name": "severe-weather-mobile",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "buildLabel": "Three.js Production Slice",
   "private": true,
   "type": "module",

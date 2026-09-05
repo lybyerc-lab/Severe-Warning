@@ -33,15 +33,21 @@ for (const file of PRODUCTION_SLICE_REGIONS) {
 }
 const runtime = Object.values(runtimeText).join('\n');
 
-check('package version', packageJson.version === '5.1.0', packageJson.version);
+// [SW:BUILD:VERSION_IDENTITY] package.json is the single source of the version
+// identity, so this file follows it rather than the other way round. The script
+// keeps its v510 name because three workflows and two npm scripts call it by
+// that name; renaming it is a rename, not a version bump.
+const EXPECTED_VERSION = '5.2.0';
+const EXPECTED_VERSION_CODE = '520';
+check('package version', packageJson.version === EXPECTED_VERSION, packageJson.version);
 check('package build label', packageJson.buildLabel === 'Three.js Production Slice', packageJson.buildLabel);
 // The build-time patch chain was flattened into the gameplay source, so there is
 // no patch command to verify. The markers below now assert directly against the
 // committed file rather than against a script that regenerates it.
 check('verify command', packageJson.scripts?.['verify:v510'] === 'node scripts/verify-v510-production-slice.mjs');
 check('QA command', packageJson.scripts?.['qa:v510'] === 'node scripts/qa-v510-production-slice.mjs');
-check('Android version code', gradle.includes("'510'"));
-check('Android version name', gradle.includes("'5.1.0'"));
+check('Android version code', gradle.includes(`'${EXPECTED_VERSION_CODE}'`), EXPECTED_VERSION_CODE);
+check('Android version name', gradle.includes(`'${EXPECTED_VERSION}'`), EXPECTED_VERSION);
 
 for (const marker of [
   'V510_THREEJS_PRODUCTION_SLICE_V1',
@@ -71,7 +77,19 @@ check(
   'QA camera park flag is read lexically',
   html.includes("const qaCameraParked = typeof productionQaPrepared !== 'undefined' && productionQaPrepared"),
 );
-check('single v5.1.0 identity', html.includes('v5.1.0') && !html.includes('v5.0.0'));
+// The three PLAYER-VISIBLE identity strings -- the tab title, the HUD badge and
+// the newspaper kicker -- must all name the current version. Comments elsewhere
+// in the file still say v5.1.0 and should: they name the version a system
+// ARRIVED in, which is history and stays true. A blanket
+// `!html.includes(old)` would force those to be falsified on every bump.
+for (const [what, needle] of [
+  ['title', `<title>Severe Weather Warning v${EXPECTED_VERSION} - Three.js Production Slice</title>`],
+  ['HUD badge', `SEVERE WEATHER WARNING v${EXPECTED_VERSION}</div>`],
+  ['newspaper kicker', `ARCADE DISASTER SIMULATOR v${EXPECTED_VERSION}</div>`]
+]) {
+  check(`visible identity: ${what}`, html.includes(needle), needle.slice(0, 60));
+}
+check('no stale v5.0.0 identity', !html.includes('v5.0.0'));
 check('accepted district law preserved', html.includes('[SW:LAW:DISTRICTS-FORWARD-ONLY]'));
 check('accepted Cow 17 law preserved', html.includes('[SW:LAW:SAFE-ANIMALS]'));
 check('accepted QA4 preserved', html.includes('QA4_DETERMINISTIC_V1'));
@@ -120,7 +138,7 @@ inlineScripts.forEach((source, index) => {
 });
 
 const failures = checks.filter(item => !item.passed);
-console.log(`\nv5.1.0 production slice verification: ${checks.length - failures.length}/${checks.length} checks passed.`);
+console.log(`\nv${EXPECTED_VERSION} production slice verification: ${checks.length - failures.length}/${checks.length} checks passed.`);
 if (failures.length) {
   console.error(`Failed checks: ${failures.map(item => item.name).join(', ')}`);
   process.exitCode = 1;

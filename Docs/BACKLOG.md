@@ -84,9 +84,19 @@ perfect standard that never does.
   loadout, the menu rework and the landscape lock have never been through a
   logged device run. Screenshots are not the log.
 
-- [ ] **4. Tag it and merge `qa` to `main`.** `main` has not moved since
-  2026-08-14 (`f0e80da`) and sits 358 commits behind. This item exists to prove
-  the promotion path still works, not because anyone is waiting on `main`.
+- [ ] **4. Tag the release on `qa`.** Re-scoped 2026-09-04 on evidence: `main`
+  and `qa` have **no common ancestor**. Different root commits, an empty
+  `git merge-base`, 370 commits on `qa` that `main` lacks and **134 on `main`
+  that `qa` lacks** — they are unrelated histories, not a branch behind its
+  trunk. So "merge to main" was one of three things, none of them the cheap
+  ceremony the item assumed: an `--allow-unrelated-histories` merge in which
+  essentially every file conflicts; force-replacing `main` and destroying 134
+  commits; or recognising that `AGENTS.md` already calls **`qa` the default
+  branch**, which makes `main` a vestige of an older lineage. Taking the third
+  reading: the release marker is a tag on `qa`, and `main` is left alone until
+  someone decides deliberately what to do with it. **Do not merge or force-push
+  `main` without the director saying so explicitly** — it is destructive and
+  outward-facing.
 
 - [ ] **5. Nothing else.** This is an item, not a footnote. See below.
 
