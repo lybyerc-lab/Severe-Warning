@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "testedCommit": "dafc1845f766caf48c76a682183d784f3db10d1e",
-  "workflowRun": "188",
-  "startedAt": "2026-09-05T00:12:35.463Z",
-  "finishedAt": "2026-09-05T00:13:27.796Z",
+  "testedCommit": "24220c0af48d7f41c0871c1f9481ea4d1bb47268",
+  "workflowRun": "189",
+  "startedAt": "2026-09-05T00:22:43.509Z",
+  "finishedAt": "2026-09-05T00:23:35.081Z",
   "url": "http://127.0.0.1:4173/",
   "mode": "mobile-landscape four-stop authored-world sweep",
   "checks": {
