@@ -40,6 +40,14 @@ const RENDER_INPUTS = [
   'scripts/lib',
   'vite.config.ts',
   'vite.prelude.config.ts',
+  // package.json is a render input because build-web reads the version out of it
+  // and REFUSES a gameplay source that does not carry the same one. Leaving it
+  // out meant the baseline's v5.1.0 source got built against a bumped 5.2.0
+  // package.json, which threw before a single pixel was rendered and reported
+  // itself as "the rendered picture moved" -- so every version bump would fail
+  // this gate, blaming the artwork. That is the same incompleteness the comment
+  // above describes, found the same way, one input later.
+  'package.json',
 ];
 
 const git = (...args) => execFileSync('git', args, { cwd: projectRoot, encoding: 'utf8' }).trim();
