@@ -468,6 +468,35 @@ code work queued is items 1, 2 and 4 of the finish line.
 
 Newest first. Kept for the reasoning, not the changelog.
 
+- **The campaign got an ending, a reward for its stars, and a dressed finale.**
+  Director asked for campaign polish and then took all three, 2026-09-04.
+
+  **Metro was the emptiest region while being the climax.** Its three counties
+  were models on an empty apron with no authored ground geometry at all --
+  measured at 8 / 9 / 6 scenery objects against Coastal's 40 / 27 / 11, with
+  Broadcast Heights the barest world in the game at 150,000 points. Now a street
+  grid and plaza, a rail yard with sleepers and containers, and a dish farm with
+  guyed masts. A first pass put Rail Terminal on 199 meshes, against a stated
+  invariant of that region; `campaignInstancedGroundPart` brought it to 22 / 19 /
+  17 -- inside the range the other seven counties occupy -- carrying 89 / 199 /
+  73 visible instances. Verified numerically after the framing fought the fog
+  three times: nothing buried, nothing floating, everything inside the envelope
+  Coastal already uses.
+
+  **The season now ends.** `campaignIsComplete()` is the state that did not
+  exist, and the Evening Edition runs a special edition on the tenth county:
+  career totals, best grade on record, Cow 17's flights. Grades are ranked, not
+  string-compared -- a career of B, B, A reports **B** under a plain maximum and
+  A under the ranking.
+
+  **The thirty stars buy three skins that MOO-LAH cannot.** SIREN AMBER at 8,
+  DOPPLER VIOLET at 18, WHITEOUT at 30, refused for sale at any price and never
+  written into `unlockedSkins`. Gates hold exactly at their boundaries (7 locked
+  / 8 owned, 17 / 18, 29 / 30). Testing the reset found a real hole: ownership of
+  a star skin can go **backwards**, and the funnel kept wearing WHITEOUT at zero
+  stars because activeSkin lives in a different storage key from the campaign
+  save. `swRpgActiveSkinKey()` is now the single answer to what is on the funnel.
+
 - **Three things the campaign map was computing and not showing.** Director asked
   for campaign polish, 2026-09-04. Measured rather than guessed: (1) every one of
   the ten counties carries an authored brief, `renderCampaignMap` wrote it on

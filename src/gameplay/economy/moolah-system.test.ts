@@ -68,3 +68,37 @@ test('MoolahSystem: manages cosmetic funnel skins and equipping', () => {
   assert.equal(equipClassic.equipped, true);
   assert.equal(moolah.getActiveSkin(), 'default-classic');
 });
+
+// [SW:CAMPAIGN:STAR_SKINS] Stars were earnable across ten counties and bought
+// nothing. These three skins are the destination, and the rule they follow is
+// deliberately not the purchase rule: they are never added to unlockedSkins, so
+// they follow the star total both up and back down again.
+test('MoolahSystem: star-gated skins are earned, never sold', () => {
+  const system = new MoolahSystem();
+  system.awardReward(100000, 'test-bonus');
+
+  assert.equal(system.hasSkin('siren-amber'), false, 'not owned at zero stars');
+  const attempt = system.purchaseSkin('siren-amber');
+  assert.equal(attempt.purchased, false, 'a star skin cannot be bought');
+  assert.equal(attempt.reason, 'not-for-sale');
+  assert.equal(system.getBalance(), 100000, 'a refused purchase costs nothing');
+
+  system.setEarnedStars(7);
+  assert.equal(system.hasSkin('siren-amber'), false, 'one star short is still short');
+  system.setEarnedStars(8);
+  assert.equal(system.hasSkin('siren-amber'), true, 'earned at exactly the requirement');
+  assert.equal(system.equipSkin('siren-amber').equipped, true, 'an earned skin equips');
+
+  assert.equal(system.hasSkin('doppler-violet'), false, '18 stars is a separate gate');
+  assert.equal(system.hasSkin('whiteout'), false, 'the sweep skin needs all thirty');
+  system.setEarnedStars(30);
+  assert.equal(system.hasSkin('doppler-violet'), true);
+  assert.equal(system.hasSkin('whiteout'), true);
+
+  // A star skin is not a purchase, so losing the stars loses the skin. A bought
+  // skin is unaffected either way.
+  system.purchaseSkin('midnight-neon');
+  system.setEarnedStars(0);
+  assert.equal(system.hasSkin('whiteout'), false, 'stars taken back take the skin back');
+  assert.equal(system.hasSkin('midnight-neon'), true, 'a bought skin stays bought');
+});

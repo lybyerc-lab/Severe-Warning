@@ -4206,7 +4206,7 @@ function drawStormProfile(canvas, stormKey) {
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
 
-  const skinKey = (typeof swRpgStore !== 'undefined' && swRpgStore.activeSkin) || 'default-classic';
+  const skinKey = typeof swRpgActiveSkinKey === 'function' ? swRpgActiveSkinKey() : 'default-classic';
   const skin = (typeof SW_RPG_SKINS !== 'undefined' && SW_RPG_SKINS[skinKey]) || { label: 'CLASSIC DUST DEVIL', coreColor: '#334155', accentColor: '#64748b', suctionGlow: '#94a3b8' };
 
   // [SW:UI:BROADCAST_MENU] A radar scope, which is the one place in this menu a
@@ -12887,8 +12887,8 @@ function resetWarningRun() {
   updateEFRating();
   renderObjectives();
   if (typeof updateHudMoolah === 'function') updateHudMoolah();
-  if (typeof swRpgStore !== 'undefined' && swRpgStore.activeSkin && typeof applyFunnelSkinMaterials === 'function') {
-    applyFunnelSkinMaterials(swRpgStore.activeSkin);
+  if (typeof swRpgActiveSkinKey === 'function' && typeof applyFunnelSkinMaterials === 'function') {
+    applyFunnelSkinMaterials(swRpgActiveSkinKey());
   }
   if (urlParams.get('cowcam') === '1' || urlParams.get('bovinereport') === '1') {
     setTimeout(runBovineQaScenario, 180);
@@ -16388,8 +16388,43 @@ const SW_RPG_SKINS = Object.freeze({
   'midnight-neon': { key: 'midnight-neon', label: 'MIDNIGHT NEON', cost: 400, coreColor: '#1e1b4b', accentColor: '#38bdf8', suctionGlow: '#818cf8' },
   'crimson-fury': { key: 'crimson-fury', label: 'CRIMSON FURY', cost: 800, coreColor: '#450a0a', accentColor: '#ef4444', suctionGlow: '#f87171' },
   'golden-harvest': { key: 'golden-harvest', label: 'GOLDEN HARVEST', cost: 600, coreColor: '#451a03', accentColor: '#f59e0b', suctionGlow: '#fbbf24' },
-  'emerald-tempest': { key: 'emerald-tempest', label: 'EMERALD TEMPEST', cost: 1400, coreColor: '#022c22', accentColor: '#10b981', suctionGlow: '#34d399' }
+  'emerald-tempest': { key: 'emerald-tempest', label: 'EMERALD TEMPEST', cost: 1400, coreColor: '#022c22', accentColor: '#10b981', suctionGlow: '#34d399' },
+  // [SW:CAMPAIGN:STAR_SKINS] Earned against campaign stars, never sold. Thirty
+  // stars were reachable across the ten counties and bought nothing at all;
+  // MOO-LAH already has a catalogue, so stars needed a currency of their own
+  // rather than a second price on the same shelf. Mirrored in
+  // src/gameplay/economy/moolah-system.ts, where the rule is unit-tested.
+  'siren-amber': { key: 'siren-amber', label: 'SIREN AMBER', cost: 0, starRequirement: 8, coreColor: '#431407', accentColor: '#f59e0b', suctionGlow: '#fdba74' },
+  'doppler-violet': { key: 'doppler-violet', label: 'DOPPLER VIOLET', cost: 0, starRequirement: 18, coreColor: '#2e1065', accentColor: '#a855f7', suctionGlow: '#d8b4fe' },
+  'whiteout': { key: 'whiteout', label: 'WHITEOUT', cost: 0, starRequirement: 30, coreColor: '#e2e8f0', accentColor: '#f8fafc', suctionGlow: '#ffffff' }
 });
+
+// [SW:CAMPAIGN:STAR_SKINS] A star skin is never written into unlockedSkins: it
+// is owned exactly while the stars stand, so a campaign reset takes it back
+// rather than leaving a trophy for work that no longer exists.
+function swRpgSkinStarRequirement(skinKey) {
+  const skin = SW_RPG_SKINS[skinKey];
+  return skin && typeof skin.starRequirement === 'number' ? skin.starRequirement : null;
+}
+
+function swRpgSkinOwned(skinKey) {
+  const requirement = swRpgSkinStarRequirement(skinKey);
+  if (requirement !== null) {
+    return (typeof getCampaignTotalStars === 'function' ? getCampaignTotalStars() : 0) >= requirement;
+  }
+  return swRpgStore.unlockedSkins.includes(skinKey);
+}
+
+// Ownership of a star skin can go BACKWARDS, which no bought skin can do: the
+// campaign save and the shop save are separate keys, so clearing campaign
+// progress leaves activeSkin pointing at a skin the player no longer has. Found
+// by testing the reset rather than by reasoning about it -- the funnel kept
+// wearing WHITEOUT at zero stars. Every read of the equipped skin goes through
+// here so there is one answer to "what is actually on the funnel".
+function swRpgActiveSkinKey() {
+  const active = (typeof swRpgStore !== 'undefined' && swRpgStore.activeSkin) || 'default-classic';
+  return swRpgSkinOwned(active) ? active : 'default-classic';
+}
 
 function swRpgEmptyStore() {
   return {
@@ -16511,6 +16546,10 @@ function purchaseSwRpgUpgrade(key) {
 function purchaseSwRpgSkin(skinKey) {
   const skin = SW_RPG_SKINS[skinKey];
   if (!skin) return Object.freeze({ purchased: false, reason: 'unknown-skin' });
+  // A star skin has cost 0, which would otherwise hand it over for nothing.
+  if (swRpgSkinStarRequirement(skinKey) !== null) {
+    return Object.freeze({ purchased: false, reason: 'not-for-sale', skinKey });
+  }
   if (swRpgStore.unlockedSkins.includes(skinKey)) return Object.freeze({ purchased: false, reason: 'already-owned', skinKey });
   if (swRpgStore.moolah < skin.cost) return Object.freeze({ purchased: false, reason: 'insufficient-moolah', skinKey, cost: skin.cost, balance: swRpgStore.moolah });
   swRpgStore.moolah -= skin.cost;
@@ -16524,7 +16563,7 @@ function purchaseSwRpgSkin(skinKey) {
 }
 
 function equipSwRpgSkin(skinKey) {
-  if (!swRpgStore.unlockedSkins.includes(skinKey)) {
+  if (!swRpgSkinOwned(skinKey)) {
     return Object.freeze({ equipped: false, reason: 'skin-locked', activeSkin: swRpgStore.activeSkin });
   }
   swRpgStore.activeSkin = skinKey;
@@ -17956,7 +17995,7 @@ function renderShopModal() {
   }
 
   const moolah = typeof swRpgStore !== 'undefined' ? swRpgStore.moolah : 0;
-  const activeSkin = typeof swRpgStore !== 'undefined' ? swRpgStore.activeSkin : 'default-classic';
+  const activeSkin = typeof swRpgActiveSkinKey === 'function' ? swRpgActiveSkinKey() : 'default-classic';
   const unlockedSkins = typeof swRpgStore !== 'undefined' ? swRpgStore.unlockedSkins : ['default-classic'];
 
   modal.innerHTML = `
@@ -18037,25 +18076,39 @@ function renderShopModal() {
       listEl.appendChild(card);
     });
   } else {
+    // [SW:CAMPAIGN:STAR_SKINS] Three of these are earned rather than bought, so
+    // the card has to say which currency it wants and how far off the player is.
+    // A locked star skin that just says BUY (0) would be a lie twice over.
+    const earnedStars = typeof getCampaignTotalStars === 'function' ? getCampaignTotalStars() : 0;
     Object.values(SW_RPG_SKINS).forEach(skin => {
-      const owned = unlockedSkins.includes(skin.key);
+      const requirement = swRpgSkinStarRequirement(skin.key);
+      const owned = swRpgSkinOwned(skin.key);
       const isEquipped = activeSkin === skin.key;
       const card = document.createElement('div');
       card.className = 'sw-shop-item-card';
+      // "18/8 stars" is a progress bar for something already finished. Once it
+      // is earned the line should say so and stop counting.
+      const subtitle = requirement !== null
+        ? (owned
+          ? `Campaign reward · earned at ${requirement} stars`
+          : `Campaign reward · ${earnedStars}/${requirement} stars`)
+        : `Core: ${skin.coreColor} · Suction: ${skin.suctionGlow}`;
+      let action;
+      if (isEquipped) {
+        action = `<button class="sw-shop-action-btn sw-shop-btn-equipped" disabled>EQUIPPED</button>`;
+      } else if (owned) {
+        action = `<button class="sw-shop-action-btn sw-shop-btn-equip" onclick="equipSwRpgSkin('${skin.key}'); applyFunnelSkinMaterials('${skin.key}'); renderShopModal();">EQUIP</button>`;
+      } else if (requirement !== null) {
+        action = `<button class="sw-shop-action-btn sw-shop-btn-active" disabled>&#9733; ${requirement} STARS</button>`;
+      } else {
+        action = `<button class="sw-shop-action-btn sw-shop-btn-buy" onclick="purchaseSwRpgSkin('${skin.key}'); applyFunnelSkinMaterials('${skin.key}'); renderShopModal();">BUY (${skin.cost})</button>`;
+      }
       card.innerHTML = `
         <div class="sw-shop-item-info">
           <h4 style="color: ${skin.accentColor}">${skin.label}</h4>
-          <p>Core: ${skin.coreColor} · Suction: ${skin.suctionGlow}</p>
+          <p>${subtitle}</p>
         </div>
-        <div>
-          ${isEquipped 
-            ? `<button class="sw-shop-action-btn sw-shop-btn-equipped" disabled>EQUIPPED</button>`
-            : (owned 
-                ? `<button class="sw-shop-action-btn sw-shop-btn-equip" onclick="equipSwRpgSkin('${skin.key}'); applyFunnelSkinMaterials('${skin.key}'); renderShopModal();">EQUIP</button>`
-                : `<button class="sw-shop-action-btn sw-shop-btn-buy" onclick="purchaseSwRpgSkin('${skin.key}'); applyFunnelSkinMaterials('${skin.key}'); renderShopModal();">BUY (${skin.cost})</button>`
-              )
-          }
-        </div>
+        <div>${action}</div>
       `;
       listEl.appendChild(card);
     });

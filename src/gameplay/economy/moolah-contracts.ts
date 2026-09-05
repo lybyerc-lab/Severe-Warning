@@ -21,12 +21,25 @@ export interface MoolahUpgradeDefinition {
   unit: string;
 }
 
-export type StormFunnelSkinKey = 'default-classic' | 'midnight-neon' | 'crimson-fury' | 'golden-harvest' | 'emerald-tempest';
+export type StormFunnelSkinKey =
+  | 'default-classic'
+  | 'midnight-neon'
+  | 'crimson-fury'
+  | 'golden-harvest'
+  | 'emerald-tempest'
+  // [SW:CAMPAIGN:STAR_SKINS] Earned against campaign stars, never sold. Their
+  // cost is 0 because they are not for sale at any price -- purchaseSkin refuses
+  // them outright rather than handing them over for nothing.
+  | 'siren-amber'
+  | 'doppler-violet'
+  | 'whiteout';
 
 export interface MoolahSkinDefinition {
   key: StormFunnelSkinKey;
   label: string;
   cost: number;
+  /** Campaign stars required to earn this skin. Absent means it is bought. */
+  starRequirement?: number;
   coreColor: string;
   accentColor: string;
   suctionGlow: string;

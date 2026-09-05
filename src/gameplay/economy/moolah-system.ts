@@ -113,6 +113,37 @@ export const MOOLAH_SKINS: Record<StormFunnelSkinKey, MoolahSkinDefinition> = Ob
     coreColor: '#022c22',
     accentColor: '#10b981',
     suctionGlow: '#34d399'
+  },
+  // [SW:CAMPAIGN:STAR_SKINS] Earned against campaign stars, not bought. Thirty
+  // stars were reachable and bought nothing at all before these existed; MOO-LAH
+  // already has a catalogue, so stars needed a currency of their own rather than
+  // a second price on the same shelf.
+  'siren-amber': {
+    key: 'siren-amber',
+    label: 'SIREN AMBER',
+    cost: 0,
+    starRequirement: 8,
+    coreColor: '#431407',
+    accentColor: '#f59e0b',
+    suctionGlow: '#fdba74'
+  },
+  'doppler-violet': {
+    key: 'doppler-violet',
+    label: 'DOPPLER VIOLET',
+    cost: 0,
+    starRequirement: 18,
+    coreColor: '#2e1065',
+    accentColor: '#a855f7',
+    suctionGlow: '#d8b4fe'
+  },
+  'whiteout': {
+    key: 'whiteout',
+    label: 'WHITEOUT',
+    cost: 0,
+    starRequirement: 30,
+    coreColor: '#e2e8f0',
+    accentColor: '#f8fafc',
+    suctionGlow: '#ffffff'
   }
 });
 
@@ -182,13 +213,33 @@ export class MoolahSystem implements MoolahSystemContract {
     return this.state.activeSkin;
   }
 
+  /**
+   * [SW:CAMPAIGN:STAR_SKINS] Campaign stars earned so far. A star-gated skin is
+   * owned when this reaches its requirement -- it is never added to
+   * unlockedSkins, because it is not a purchase and must not survive a campaign
+   * reset that takes the stars back.
+   */
+  private earnedStars = 0;
+
+  public setEarnedStars(stars: number): void {
+    this.earnedStars = Number.isFinite(stars) ? Math.max(0, Math.floor(stars)) : 0;
+  }
+
   public hasSkin(skinKey: StormFunnelSkinKey): boolean {
+    const skin = MOOLAH_SKINS[skinKey];
+    if (skin && typeof skin.starRequirement === 'number') {
+      return this.earnedStars >= skin.starRequirement;
+    }
     return this.state.unlockedSkins.includes(skinKey);
   }
 
   public purchaseSkin(skinKey: StormFunnelSkinKey): { purchased: boolean; balance: number; reason?: string } {
     const skin = MOOLAH_SKINS[skinKey];
     if (!skin) return { purchased: false, balance: this.state.moolah, reason: 'unknown-skin' };
+    // A star-gated skin has cost 0, which would otherwise hand it over free.
+    if (typeof skin.starRequirement === 'number') {
+      return { purchased: false, balance: this.state.moolah, reason: 'not-for-sale' };
+    }
     if (this.hasSkin(skinKey)) return { purchased: false, balance: this.state.moolah, reason: 'already-owned' };
     if (this.state.moolah < skin.cost) return { purchased: false, balance: this.state.moolah, reason: 'insufficient-moolah' };
 
