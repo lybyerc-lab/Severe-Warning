@@ -134,6 +134,7 @@ jobs:
           node scripts/verify-qa-package.mjs
           node scripts/verify-v500-campaign.mjs
           node scripts/verify-v510-production-slice.mjs
+          node scripts/verify-app-art.mjs
           npm run verify:phase2
           npm run verify:phase3
           npm run verify:phase4

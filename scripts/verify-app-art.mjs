@@ -161,7 +161,57 @@ check('every icon and splash density is present at its exact size', sizeMismatch
   );
 }
 
-// --- 3. none of it is the stock Capacitor art any more -----------------------
+// --- 3. the resource XML this change touches is actually valid ---------------
+// Learned the hard way: a comment in ic_launcher_background.xml carried the CSS
+// token name `--bg-dark`, XML forbids a double hyphen inside a comment, and aapt
+// failed the entire signed build on it. verify:art passed, because it read the
+// colour value and never asked whether the file parsed. This is a targeted lint
+// for what aapt actually rejects rather than a general XML validator -- Node has
+// no parser built in, and the specific rules below are the ones that have bitten
+// this project.
+{
+  const xmlFiles = [
+    'values/ic_launcher_background.xml',
+    'mipmap-anydpi-v26/ic_launcher.xml',
+    'mipmap-anydpi-v26/ic_launcher_round.xml',
+    'values/strings.xml',
+    'values/styles.xml'
+  ];
+  let problems = 0;
+  for (const relative of xmlFiles) {
+    const file = `${RES}/${relative}`;
+    if (!existsSync(file)) {
+      failures.push(`missing resource xml: ${relative}`);
+      problems += 1;
+      continue;
+    }
+    const xml = readFileSync(file, 'utf8');
+    let index = 0;
+    while ((index = xml.indexOf('<!--', index)) !== -1) {
+      const close = xml.indexOf('-->', index + 4);
+      if (close === -1) {
+        failures.push(`${relative}: an XML comment is never closed`);
+        problems += 1;
+        break;
+      }
+      const body = xml.slice(index + 4, close);
+      if (body.includes('--')) {
+        failures.push(`${relative}: a comment contains "--", which XML forbids and aapt fails the build on`);
+        problems += 1;
+      }
+      index = close + 3;
+    }
+    const opens = (xml.match(/<!--/g) || []).length;
+    const closes = (xml.match(/-->/g) || []).length;
+    if (opens !== closes) {
+      failures.push(`${relative}: ${opens} comment openers against ${closes} closers`);
+      problems += 1;
+    }
+  }
+  check('the resource xml aapt reads is well formed', problems === 0, `${xmlFiles.length} files`);
+}
+
+// --- 4. none of it is the stock Capacitor art any more -----------------------
 {
   const background = readFileSync(`${RES}/values/ic_launcher_background.xml`, 'utf8');
   const colour = (background.match(/<color name="ic_launcher_background">\s*(#[0-9a-fA-F]{6,8})/) || [])[1] || '';

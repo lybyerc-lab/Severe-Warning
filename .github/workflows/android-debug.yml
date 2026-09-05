@@ -93,6 +93,7 @@ jobs:
         run: |
           node scripts/verify-qa-package.mjs
           node scripts/verify-v500-campaign.mjs
+          node scripts/verify-app-art.mjs
 
       - name: Verify Android asset synchronization
         shell: bash
