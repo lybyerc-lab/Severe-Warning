@@ -102,6 +102,27 @@ perfect standard that never does.
   `main` without the director saying so explicitly** — it is destructive and
   outward-facing.
 
+  **ACTION FOR THE DIRECTOR — the tag cannot be pushed from a session.** The
+  annotated tag was written and is correct, but `git push origin v5.2.0` returns
+  **HTTP 403 on `git-receive-pack`**. This is not the agent proxy
+  (`recentRelayFailures: []`) and not an expired credential — proved by control:
+  pushing a new BRANCH from the same session in the same minute succeeds, while
+  creating a tag and deleting a ref both 403. The session credential is scoped to
+  creating and updating `refs/heads/*` only. Run this from a checkout with your
+  own credentials:
+
+      git fetch origin qa
+      git tag -a v5.2.0 66b2454 -m "v5.2.0 Hand It To Someone - code ready for device acceptance"
+      git push origin v5.2.0
+
+  `66b2454` is deliberate: it is the commit carrying a complete four-workflow
+  green record, and everything after it on `qa` is documentation and playtest
+  evidence, so the tagged tree is code-identical to the branch tip.
+
+  Also: diagnosing the above left a stray branch `tag-push-probe-tmp` on the
+  remote. Deleting a ref is refused from here for the same reason, so please
+  delete it in the GitHub UI — it holds nothing.
+
 - [ ] **5. Nothing else.** This is an item, not a footnote. See below.
 
 **Explicitly not in this milestone:** the Play Store. No release key exists —
