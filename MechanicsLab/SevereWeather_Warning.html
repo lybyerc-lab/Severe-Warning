@@ -630,7 +630,13 @@
   #campaignMapModal,
   #stormSelectModal {
     background: linear-gradient(180deg, #06121c 0%, #030a12 100%);
-    box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.8);
+    /* The inset shadow is the tube's vignette. The OUTSET ring is the fix for a
+       measured gap: the channel view sits inside the screen's padding, so it
+       covered the picture area 12px short on each side and 5px top and bottom,
+       and the live county went on moving in those strips at the extreme edges.
+       A spread-only shadow paints exactly that margin in the studio's own black,
+       without changing the element's box or disturbing the layout inside it. */
+    box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.8), 0 0 0 16px #040d16;
   }
 
   .tv-glass-glare {
@@ -712,6 +718,15 @@
     max-height: min(36vh, 258px);
     min-height: 0;
   }
+  /* [SW:UI:DISPATCH_PREVIEW] The county slip is its own height; the classifier is
+     NOT. Stretched to the row, the slip ran a band of blank newsprint between
+     the TARGET line and the button -- ~30px on a 1365x768 frame, worse the taller
+     the frame got. But `align-items: start` on the GRID broke the other card:
+     the classifier's scope is `flex: 1 1 auto` with a percentage max-height, so
+     without a stretched row to resolve against it grew to 267px, taking the card
+     past the ticker and pushing its own storm name and button off the screen.
+     Only the slip shrinks. */
+  .tv-dispatch-card:not(.amber-glow) { align-self: start; }
   /* [SW:UI:BROADCAST_MENU] The county card is a WIRE DISPATCH -- newsprint, black
      serif, a red stamp -- so the menu shares its material with the results
      broadsheet. The storm card is a RADAR READOUT (see .amber-glow below).
@@ -741,7 +756,14 @@
      pushing the target line and the action button off the card. */
   .tv-card-canvas {
     flex: 1 1 auto;
-    min-height: 0;
+    /* [SW:UI:DISPATCH_PREVIEW] `min-height: 0` let the scope collapse to whatever
+       the type left over -- measured at 416x39 inside a 442x155 card, a 10.7:1
+       letterbox in which the storm has no vertical room and its cloud reads as
+       flat-topped. A scope needs a floor, not just a ceiling. */
+    /* 46px, not more: at 58 the card's content ran 166px inside a 155px box and
+       pushed CHANGE STORM FORM out through the bottom. A scope with room to
+       breathe is not worth losing the button under it. */
+    min-height: clamp(46px, 9vmin, 82px);
     max-height: 56%;
     width: 100%;
     border-radius: 2px;
@@ -4222,8 +4244,14 @@ function drawStormProfile(canvas, stormKey) {
   // so a very tall narrow card gets a correctly proportioned storm with sky
   // above it rather than a funnel stretched into a stick. Everything below is
   // in units of that band, never in fixed pixels.
-  const bandHeight = Math.min(h * 0.9, w * 1.7);
-  const bandTop = (h - bandHeight) * 0.45;
+  // [SW:UI:DISPATCH_PREVIEW] The legend gets its own band at the foot of the
+  // scope and the storm is drawn ABOVE it. Moving the text without reserving the
+  // space just moved the collision from the top of the picture to the bottom.
+  const legendSize = Math.max(7, Math.min(11, w * 0.028));
+  const legendBand = legendSize + Math.max(6, h * 0.12);
+  const artH = Math.max(20, h - legendBand);
+  const bandHeight = Math.min(artH * 0.94, w * 1.7);
+  const bandTop = (artH - bandHeight) * 0.45;
   const groundY = bandTop + bandHeight * 0.88;
   const cx = w / 2;
   const s = bandHeight;
@@ -4307,12 +4335,20 @@ function drawStormProfile(canvas, stormKey) {
     ctx.globalAlpha = 1;
   }
 
-  ctx.font = `700 ${Math.max(8, w * 0.042)}px monospace`;
-  ctx.textBaseline = 'top';
+  // [SW:UI:DISPATCH_PREVIEW] The legend sits along the BOTTOM of the scope, not
+  // across the top of it. Drawn at h * 0.03 it printed straight through the
+  // cloud -- the storm and its caption occupying the same pixels, which reads as
+  // a rendering fault rather than a label. And the colon came off when this was
+  // split in two so the skin name could carry the skin's own colour; a legend
+  // reading "SKIN  CLASSIC DUST DEVIL" is a typo with a reason, but still a typo.
+  ctx.font = `700 ${legendSize}px monospace`;
+  ctx.textBaseline = 'alphabetic';
+  const legendY = h - Math.max(3, h * 0.05);
+  const label = 'SKIN:';
   ctx.fillStyle = 'rgba(159, 240, 189, 0.7)';
-  ctx.fillText('SKIN', w * 0.05, h * 0.03);
+  ctx.fillText(label, w * 0.04, legendY);
   ctx.fillStyle = skin.accentColor || '#9ff0bd';
-  ctx.fillText((skin.label || 'CLASSIC DUST DEVIL').toUpperCase(), w * 0.05 + ctx.measureText('SKIN  ').width, h * 0.03);
+  ctx.fillText((skin.label || 'CLASSIC DUST DEVIL').toUpperCase(), w * 0.04 + ctx.measureText(label + ' ').width, legendY);
 }
 
 // Match the bitmap to the box before drawing.

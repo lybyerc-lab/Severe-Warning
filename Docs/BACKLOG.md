@@ -155,12 +155,6 @@ workflows. The machine that checks the game now generates more work than the gam
 does, and every finding went straight into the current push because there was
 nowhere else to put it. This is that place.
 
-- **Menu cosmetics.** The radar scope's anvil is clipped by the top of its
-  canvas; the `SKIN` label lost its colon when the label was split so the skin
-  name could take the skin's colour; the studio channels show a sliver of the live
-  world at the extreme edges; the county slip has empty paper below the target
-  band.
-
 - **The HUD sibling-selector fragility.** The run's HUD, EAS banner and joystick
   are hidden at the menu by `#mainMenu:not(.hidden) ~ #hud` and friends, which
   depends on those three staying siblings after `#mainMenu` in the document. Move
@@ -507,6 +501,36 @@ code work queued is items 1, 2 and 4 of the finish line.
 ## Landed
 
 Newest first. Kept for the reasoning, not the changelog.
+
+- **The four menu cosmetics, promoted off the NOT IN list by the director.**
+  2026-09-05. All four measured rather than eyeballed, and each had a cause worth
+  keeping:
+
+  **The scope's cloud was clipped** because `.tv-card-canvas` had `min-height: 0`
+  and collapsed to whatever the type left over — measured at **416x39 inside a
+  442x155 card**, a 10.7:1 letterbox with no vertical room. It has a floor now,
+  46px, chosen by measurement: at 58 the card's content ran 166px in a 155px box
+  and pushed CHANGE STORM FORM out through the bottom.
+
+  **The `SKIN` legend** lost its colon when it was split in two so the skin name
+  could carry the skin's own colour, and it was drawn at `h * 0.03` — straight
+  through the cloud. It reads `SKIN:` again, and the storm now gets a reserved
+  band above it. Moving the text alone just moved the collision to the bottom of
+  the picture, which is how the second attempt was caught.
+
+  **The studio channels' sliver** was a measured gap: the channel view sits inside
+  the screen's padding and covered the picture area **12px short each side and 5px
+  top and bottom**, so the live county kept moving in those strips. A spread-only
+  box-shadow paints exactly that margin in the studio's own black.
+
+  **The county slip's empty paper** was ~30px of blank newsprint between the
+  TARGET line and the button on a 1365x768 frame, worse the taller the frame.
+  `align-items: start` on the grid fixed it and **broke the other card**: the
+  classifier's scope is `flex: 1 1 auto` with a percentage max-height, so with no
+  stretched row to resolve against it grew to 267px and pushed its own storm name
+  and button off the screen. Only the slip shrinks now — `align-self` on the
+  county card alone. The regression was caught by looking at the whole menu after
+  a fix that measured clean.
 
 - **The campaign got an ending, a reward for its stars, and a dressed finale.**
   Director asked for campaign polish and then took all three, 2026-09-04.
