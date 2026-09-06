@@ -1,11 +1,11 @@
 # QA Automated Full-Round Report
 
-- Tested commit: `66b24544547c3ace8dc6d270b78636c4fc5ae43b`
-- Workflow run: `195`
+- Tested commit: `fd57e59d65b5cf98a2c4e99c2c8b2f66dff2ed87`
+- Workflow run: `196`
 - Mode: normal-audio scripted full round
-- Started: 2026-09-05T13:23:17.976Z
-- Finished: 2026-09-05T13:27:49.832Z
-- Runtime: 250 seconds
+- Started: 2026-09-06T12:51:02.208Z
+- Finished: 2026-09-06T12:55:26.635Z
+- Runtime: 245 seconds
 
 ## Checks
 
@@ -28,18 +28,18 @@
 
 - Final district: 3
 - Time remaining: 0
-- Destruction score: 57968
-- Base score: 14664
+- Destruction score: 52202
+- Base score: 13210
 - Maximum combo: 3.5
-- Maximum simultaneous visible popups: 1
+- Maximum simultaneous visible popups: 0
 - Music low/high decoded energy: 0.159472 / 0.077905
 - Music events observed: 9
-- Moo events observed: 13
-- Glass events observed: 83
+- Moo events observed: 17
+- Glass events observed: 69
 - Final active voices: 7
 - Peak EF rating: EF-5
 - Ended by rope-out: no (lowest integrity 100)
-- Driver headings: 167 steered at a target, 0 fell back to the pattern
+- Driver headings: 164 steered at a target, 0 fell back to the pattern
 
 ## EF ladder (recorded, not asserted)
 
@@ -51,10 +51,11 @@ over `stepEfRating`.
 | At | Rung | Score | District |
 |---|---|---|---|
 | 0s | EF-0 | 0 | 1 |
-| 10s | EF-1 | 948 | 1 |
-| 35s | EF-2 | 2889 | 1 |
-| 90s | EF-4 | 18893 | 2 |
-| 185s | EF-5 | 34287 | 3 |
+| 15s | EF-1 | 1592 | 1 |
+| 35s | EF-2 | 3453 | 1 |
+| 95s | EF-3 | 10655 | 2 |
+| 115s | EF-4 | 18665 | 2 |
+| 175s | EF-5 | 34045 | 3 |
 
 ## Errors
 
