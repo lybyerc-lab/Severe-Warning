@@ -1,0 +1,23 @@
+v5.2.0 Hand It To Someone
+
+The first release tag in this repository. Marks the code as ready for device
+acceptance -- NOT as accepted. Under this project's first operating law, code,
+CI and packaging success are never physical acceptance, and the device run is
+still outstanding: see the prepared entry at the end of Docs/DEVICE_TEST_LOG.md.
+
+Tagged at 66b2454, the commit carrying a complete four-workflow green record.
+Everything after it on qa is documentation and playtest evidence, so the tagged
+tree is code-identical to the branch tip.
+
+The milestone, declared in Docs/DECISIONS.md D-012, was five items:
+  1. Real launcher icon and splash          - done
+  2. Gate the other six counties            - done
+  3. One logged device run on current code  - PENDING, prepared
+  4. Tag the release on qa                  - this tag
+  5. Nothing else                           - held
+
+What v5.2.0 contains that v5.1.0 did not: the app's own icon and splash in place
+of the stock Capacitor logo; landscape as the only orientation, enforced and
+guarded; ten counties gating and unlocking across three regions; a campaign that
+ends, with a season's-end edition; thirty stars that buy three skins MOO-LAH
+cannot; and dressed Metro counties.

@@ -112,8 +112,13 @@ perfect standard that never does.
   own credentials:
 
       git fetch origin qa
-      git tag -a v5.2.0 66b2454 -m "v5.2.0 Hand It To Someone - code ready for device acceptance"
+      git tag -a v5.2.0 66b2454 -F Docs/RELEASE_v5.2.0.txt
       git push origin v5.2.0
+
+  `Docs/RELEASE_v5.2.0.txt` is the annotation, kept in the repo rather than in a
+  session so a container rewind cannot take it. It is verified to work as a `-F`
+  source. Or, without a terminal: GitHub **Releases -> Draft a new release ->
+  Choose a tag -> `v5.2.0` -> Create new tag on publish**, target `66b2454`.
 
   `66b2454` is deliberate: it is the commit carrying a complete four-workflow
   green record, and everything after it on `qa` is documentation and playtest
